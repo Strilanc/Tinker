@@ -1,6 +1,6 @@
-Imports HostBot.BNET
-Imports HostBot.BNET.BnetClient
-Imports HostBot.BNET.BnetPacket
+Imports HostBot.Bnet
+Imports HostBot.Bnet.BnetClient
+Imports HostBot.Bnet.BnetPacket
 
 Public Class BnetClientControl
     Implements IHookable(Of BnetClient)
@@ -11,11 +11,11 @@ Public Class BnetClientControl
 #End Region
 
 #Region "Hook"
-    Private Function f_caption() As IFuture(Of String) Implements IHookable(Of BNET.BnetClient).f_caption
+    Private Function f_caption() As IFuture(Of String) Implements IHookable(Of Bnet.BnetClient).f_caption
         Return uiRef.enqueue(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.name)))
     End Function
 
-    Public Function f_hook(ByVal client As BnetClient) As IFuture Implements IHookable(Of BNET.BnetClient).f_hook
+    Public Function f_hook(ByVal client As BnetClient) As IFuture Implements IHookable(Of Bnet.BnetClient).f_hook
         Return uiRef.enqueue(Function() eval(AddressOf _f_hook, client))
     End Function
     Private Sub _f_hook(ByVal client As BnetClient)

@@ -1,0 +1,110 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<asmv1:assembly manifestVersion="1.0" xsi:schemaLocation="urn:schemas-microsoft-com:asm.v1 assembly.adaptive.xsd" xmlns:asmv3="urn:schemas-microsoft-com:asm.v3" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns="urn:schemas-microsoft-com:asm.v2" xmlns:asmv1="urn:schemas-microsoft-com:asm.v1" xmlns:asmv2="urn:schemas-microsoft-com:asm.v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:co.v1="urn:schemas-microsoft-com:clickonce.v1">
+  <asmv1:assemblyIdentity version="1.0.0.28" name="HostBot.exe" publicKeyToken="9bae8fba86733575" language="neutral" processorArchitecture="x86" type="win32" />
+  <description asmv2:iconFile="Resources\HostBotIcon.ico" xmlns="urn:schemas-microsoft-com:asm.v1" />
+  <application />
+  <entryPoint>
+    <assemblyIdentity name="HostBot" version="1.0.0.0" language="neutral" processorArchitecture="x86" />
+    <commandLine file="HostBot.exe" parameters="" />
+  </entryPoint>
+  <trustInfo>
+    <security>
+      <applicationRequestMinimum>
+        <PermissionSet Unrestricted="true" ID="Custom" SameSite="site" />
+        <defaultAssemblyRequest permissionSetReference="Custom" />
+      </applicationRequestMinimum>
+      <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">
+        <!-- UAC Manifest Options
+            If you want to change the Windows User Account Control level replace the 
+            requestedExecutionLevel node with one of the following.
+
+        <requestedExecutionLevel  level="asInvoker" uiAccess="false" />
+        <requestedExecutionLevel  level="requireAdministrator" uiAccess="false" />
+        <requestedExecutionLevel  level="highestAvailable" uiAccess="false" />
+
+            If you want to utilize File and Registry Virtualization for backward 
+            compatibility then delete the requestedExecutionLevel node.
+        -->
+        <requestedExecutionLevel level="asInvoker" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentOS>
+      <osVersionInfo>
+        <os majorVersion="5" minorVersion="1" buildNumber="2600" servicePackMajor="0" />
+      </osVersionInfo>
+    </dependentOS>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="Microsoft.Windows.CommonLanguageRuntime" version="2.0.50727.0" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="System.Core" version="3.5.0.0" publicKeyToken="b77a5c561934e089" language="neutral" processorArchitecture="msil" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="preRequisite" allowDelayedBinding="true">
+      <assemblyIdentity name="WindowsBase" version="3.0.0.0" publicKeyToken="31bf3856ad364e35" language="neutral" processorArchitecture="msil" />
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="HostBot.exe" size="646656">
+      <assemblyIdentity name="HostBot" version="1.0.0.0" language="neutral" processorArchitecture="x86" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <dsig:DigestValue>XtCfR5HgsrSul2K6l7SUxwCrtTE=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Interop.Warden_Module_Lib.dll" size="6144">
+      <assemblyIdentity name="Interop.Warden_Module_Lib" version="4.0.0.0" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <dsig:DigestValue>sa/xtxlBE3s9rFz75q7uBO7g07Q=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <file name="HostBot.exe.config" size="3779">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+      <dsig:DigestValue>umqUz9ml9fhLGKBwRJrpP3heDO4=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="Resources\HostBotIcon.ico" size="4286">
+    <hash>
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+      <dsig:DigestValue>DE/n52AC6nJ3jaNI9EbKxCFK8Bo=</dsig:DigestValue>
+    </hash>
+  </file>
+  <file name="Warden Module Lib.dll" asmv2:size="40960" xmlns="urn:schemas-microsoft-com:asm.v1">
+    <hash xmlns="urn:schemas-microsoft-com:asm.v2">
+      <dsig:Transforms>
+        <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+      </dsig:Transforms>
+      <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+      <dsig:DigestValue>bt5F9a2hvgvnNa7iRgkdwjW2Yxo=</dsig:DigestValue>
+    </hash>
+    <typelib tlbid="{2146772e-4657-404b-b9fd-3d5c5f25aac8}" version="4.0" helpdir="" resourceid="0" flags="HASDISKIMAGE" />
+    <comClass clsid="{f2f43619-a4e3-498c-832e-6e14b311af26}" tlbid="{2146772e-4657-404b-b9fd-3d5c5f25aac8}" progid="Warden_Module_Lib.RC4State" />
+    <comClass clsid="{b78b4651-9400-41c6-955b-2fd12380bb3c}" tlbid="{2146772e-4657-404b-b9fd-3d5c5f25aac8}" progid="Warden_Module_Lib.ModuleHandler" />
+    <comClass clsid="{d8a9a9ca-efb8-4388-99ad-68d32d6827db}" tlbid="{2146772e-4657-404b-b9fd-3d5c5f25aac8}" progid="Warden_Module_Lib.EMOutput1" />
+    <comClass clsid="{269bc251-1ff1-419b-b724-24771b033590}" tlbid="{2146772e-4657-404b-b9fd-3d5c5f25aac8}" progid="Warden_Module_Lib.EMOutput2" />
+  </file>
+<publisherIdentity name="CN=Strilanc\Craig" issuerKeyHash="2b7e472a0ae60dbd4b505529c3ad2f72d928739d" /><Signature Id="StrongNameSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>uWi6b/HEWWiM9qjwr2bL2cdSWBI=</DigestValue></Reference></SignedInfo><SignatureValue>pfH5B+ykAtTsUL14ghQ0iNm2tT4A413iLxapEztssJG5XBcIOGbxfzndkyXTJSKS19slRE4A+1Uhy8mDUuU7QwDHZSkqqaoly7kzQgGMv1+k7xYbtXYRclC+E8mPqFrFWRbhwi+5mBoBfNWRZdALAkSXhJbOkKloxrTRKFd7PCQ=</SignatureValue><KeyInfo Id="StrongNameKeyInfo"><KeyValue><RSAKeyValue><Modulus>6WUmQqSbRgBuD2rfw5ZbK0O9aOWAbb3d6JBZTWQ2M8r5XFmAL8NKtAopvGL6vDvf6O/YOhg0MXcJ1Fq1mo9eOYGT2atW2tjAB4nP42TDuhUMY3eSf0SK/M89t4uZqUtL+AqDlVmq52nMweM+GajRof85TqutbzBXEQHhqWcgUls=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><msrel:RelData xmlns:msrel="http://schemas.microsoft.com/windows/rel/2005/reldata"><r:license xmlns:r="urn:mpeg:mpeg21:2003:01-REL-R-NS" xmlns:as="http://schemas.microsoft.com/windows/pki/2005/Authenticode"><r:grant><as:ManifestInformation Hash="125852c7d9cb66aff0a8f68c6859c4f16fba68b9" Description="" Url=""><as:assemblyIdentity version="1.0.0.28" name="HostBot.exe" publicKeyToken="9bae8fba86733575" language="neutral" processorArchitecture="x86" type="win32" /></as:ManifestInformation><as:SignedBy /><as:AuthenticodePublisher><as:X509SubjectName>CN=Strilanc\Craig</as:X509SubjectName></as:AuthenticodePublisher></r:grant><r:issuer><Signature Id="AuthenticodeSignature" xmlns="http://www.w3.org/2000/09/xmldsig#"><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1" /><Reference URI=""><Transforms><Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature" /><Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /></Transforms><DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" /><DigestValue>2qoJhM0cuhW3a6HJKhFyYXSCwtE=</DigestValue></Reference></SignedInfo><SignatureValue>EeDYIlRYY7heJwfHYwrESDJOHeIJxkFQkPtYdZYIoB58cCEmCE+wgNp2APcKww7Kp22NYmxEKmN6iY0Zgh7+RshbNws3+gVLE895Gavnqw7RDjxzMVwPcvCxkTg/1JC5ryYepjAjdrU2KV/KhZfG2Gjv0CrysiG7DApjEOmmgR4=</SignatureValue><KeyInfo><KeyValue><RSAKeyValue><Modulus>6WUmQqSbRgBuD2rfw5ZbK0O9aOWAbb3d6JBZTWQ2M8r5XFmAL8NKtAopvGL6vDvf6O/YOhg0MXcJ1Fq1mo9eOYGT2atW2tjAB4nP42TDuhUMY3eSf0SK/M89t4uZqUtL+AqDlVmq52nMweM+GajRof85TqutbzBXEQHhqWcgUls=</Modulus><Exponent>AQAB</Exponent></RSAKeyValue></KeyValue><X509Data><X509Certificate>MIIB0TCCATqgAwIBAgIQmtRs2/LhGJxFg8oJMF+5LjANBgkqhkiG9w0BAQUFADAnMSUwIwYDVQQDHhwAUwB0AHIAaQBsAGEAbgBjAFwAQwByAGEAaQBnMB4XDTA5MDUyNDAxNTM1NFoXDTEwMDUyNDA3NTM1NFowJzElMCMGA1UEAx4cAFMAdAByAGkAbABhAG4AYwBcAEMAcgBhAGkAZzCBnzANBgkqhkiG9w0BAQEFAAOBjQAwgYkCgYEA6WUmQqSbRgBuD2rfw5ZbK0O9aOWAbb3d6JBZTWQ2M8r5XFmAL8NKtAopvGL6vDvf6O/YOhg0MXcJ1Fq1mo9eOYGT2atW2tjAB4nP42TDuhUMY3eSf0SK/M89t4uZqUtL+AqDlVmq52nMweM+GajRof85TqutbzBXEQHhqWcgUlsCAwEAATANBgkqhkiG9w0BAQUFAAOBgQDEOl2XSHq2qIQhHwmBHZHZfrnyhaDShWSkUqQ0y3RTRs0E1fHt5dCdrKDpgpQ8/0DhNwkmHESjk/1wvA+vud9OxolcTIu4xAh1OFzwqDkrMp+275t+OjXRYfhKVkKEcUQfxS99YjNSxVeeOZbvbZ0ELBRXcivYHRJXm03E8gei9g==</X509Certificate></X509Data></KeyInfo></Signature></r:issuer></r:license></msrel:RelData></KeyInfo></Signature></asmv1:assembly>

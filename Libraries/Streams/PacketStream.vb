@@ -38,7 +38,7 @@ Public Class PacketStream
         Me.pre_size = num_bytes_before_size
         Me.header_size = num_size_bytes + num_bytes_before_size
         Me.default_mode = interface_mode
-        Me.logger = logger
+        Me.logger = If(logger, New MultiLogger)
         Me.log_destination = log_destination
         ReDim read_header_buffer(0 To num_bytes_before_size + num_size_bytes - 1)
     End Sub

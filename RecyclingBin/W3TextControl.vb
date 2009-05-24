@@ -1,4 +1,4 @@
-Imports HostBot.BNET
+Imports HostBot.Bnet
 
 Public Class W3TextControl
     'Private WithEvents texter As W3Texter

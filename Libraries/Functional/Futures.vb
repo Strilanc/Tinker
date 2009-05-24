@@ -6,7 +6,7 @@ Namespace Functional.Futures
         '''<summary>Raised when the future becomes ready.</summary>
         Event ready()
         '''<summary>Returns true if the future is ready.</summary>
-        Function isReady() As Boolean
+        ReadOnly Property isReady() As Boolean
     End Interface
 
     '''<summary>Represents a thread-safe read-only class that fires an event when its value becomes ready.</summary>
@@ -25,14 +25,16 @@ Namespace Functional.Futures
     Public Class Future
         Implements IFuture
 
-        Private ready_LOCKED As Boolean = False
+        Private is_ready As Boolean = False
         Private ReadOnly lock As New Object()
         Public Event ready() Implements IFuture.ready
 
         '''<summary>Returns true if the future is ready.</summary>
-        Public Function isReady() As Boolean Implements IFuture.isReady
-            Return ready_LOCKED
-        End Function
+        Public ReadOnly Property isReady() As Boolean Implements IFuture.isReady
+            Get
+                Return is_ready
+            End Get
+        End Property
 
         '''<summary>
         '''Makes the future ready.
@@ -42,8 +44,8 @@ Namespace Functional.Futures
             'Transition from unready to ready
             SyncLock lock
                 '[only once!]
-                If ready_LOCKED Then Throw New InvalidOperationException("Future readied more than once.")
-                ready_LOCKED = True
+                If is_ready Then Throw New InvalidOperationException("Future readied more than once.")
+                is_ready = True
             End SyncLock
 
             RaiseEvent ready()
@@ -67,9 +69,11 @@ Namespace Functional.Futures
         Public Event ready() Implements IFuture.ready
 
         '''<summary>Returns true if the future is ready.</summary>
-        Public Function isReady() As Boolean Implements IFuture.isReady
-            Return is_ready
-        End Function
+        Public ReadOnly Property isReady() As Boolean Implements IFuture.isReady
+            Get
+                Return is_ready
+            End Get
+        End Property
 
         '''<summary>
         '''Returns the future's value.

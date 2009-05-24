@@ -125,7 +125,7 @@ Public Class BnetSocket
     End Sub
 
     Private Sub read_complete(ByVal ar As IAsyncResult)
-        If Not (ar IsNot Nothing) Then Throw New ArgumentException()
+        If ar Is Nothing Then Throw New ArgumentException()
 
         Try
             'read

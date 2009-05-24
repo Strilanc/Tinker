@@ -1,5 +1,5 @@
 Imports System.Net.Sockets
-Imports HostBot.BNET
+Imports HostBot.Bnet
 Imports HostBot.Warcraft3.W3Server
 Imports HostBot.Links
 

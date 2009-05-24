@@ -597,7 +597,7 @@ Namespace Warcraft3
             Dim vals As New Dictionary(Of String, Object)
             vals("time span") = delta
             If subdata IsNot Nothing AndAlso subdata.Length > 0 Then
-                vals("subpacket") = concat(subArray(BNET.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(), 0, 2), subdata)
+                vals("subpacket") = concat(subArray(Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(), 0, 2), subdata)
             Else
                 vals("subpacket") = New Byte() {}
             End If
@@ -622,7 +622,7 @@ Namespace Warcraft3
             vals("sending player index") = sender_index
             vals("unknown") = CUInt(1)
             vals("file position") = file_pos
-            vals("crc32") = BNET.Crypt.crc32(New IO.MemoryStream(filedata)).bytes()
+            vals("crc32") = Bnet.Crypt.crc32(New IO.MemoryStream(filedata)).bytes()
             vals("file data") = filedata
             data_size = filedata.Length
             Return New W3Packet(DL_MAP_CHUNK, vals)
@@ -827,7 +827,7 @@ Namespace Warcraft3
         Public Overrides Function pack(ByVal o As Object) As Pickling.IPickle
             Dim vals As New Dictionary(Of String, Object)
             vals(subjar.getName()) = o
-            vals(subjar.getName() + ":crc32") = subArray(BNET.Crypt.crc32(New IO.MemoryStream(subjar.pack(o).getData().ToArray)).bytes(), 0, size)
+            vals(subjar.getName() + ":crc32") = subArray(Bnet.Crypt.crc32(New IO.MemoryStream(subjar.pack(o).getData().ToArray)).bytes(), 0, size)
             Return MyBase.pack(vals)
         End Function
 
@@ -839,7 +839,7 @@ Namespace Warcraft3
                 Dim vals = CType(p.getVal(), Dictionary(Of String, Object))
                 m.Seek(size, IO.SeekOrigin.Begin)
                 Dim crc = CType(vals(subjar.getName() + ":crc32"), Byte())
-                Dim crc2 = subArray(BNET.Crypt.crc32(m, view.length - size).bytes(), 0, size)
+                Dim crc2 = subArray(Bnet.Crypt.crc32(m, view.length - size).bytes(), 0, size)
                 If Not ArraysEqual(crc, crc2) Then Throw New PicklingException("Incorrect CRC")
             End Using
 

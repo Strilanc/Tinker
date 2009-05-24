@@ -45,13 +45,13 @@
                             If P(i).Length >= plen Then
                                 Dim payload(0 To plen - 1) As Byte
                                 P(i).Read(payload, 0, plen)
-                                If header(i)(1) = BNET.BnetPacketID.WARDEN Then
+                                If header(i)(1) = Bnet.BnetPacketID.WARDEN Then
                                     If i = 0 Then
                                         p_wc3.Add(payload)
                                     Else
                                         P_bnet.Add(payload)
                                     End If
-                                ElseIf header(i)(1) = BNET.BnetPacketID.AUTHENTICATION_FINISH And i = 0 Then
+                                ElseIf header(i)(1) = Bnet.BnetPacketID.AUTHENTICATION_FINISH And i = 0 Then
                                     seed = payload.subArray(36, 4).ToUInteger()
                                 End If
                                 header(i) = Nothing
@@ -63,7 +63,7 @@
                 Loop
             End Using
 
-            handler = New WardenPacketHandler(seed, module_folder:=GetTestingPath("Modules"))
+            handler = New WardenPacketHandler(seed, New ThreadedCallQueue("warden"), module_folder:=GetTestingPath("Modules"))
         End Sub
 
         Private Shared Function GetTestingPath(ByVal sub_folder As String) As String
@@ -101,6 +101,7 @@
             For Each payload In P_bnet
                 handler.ReceiveData(payload.ToArray)
             Next payload
+            Threading.Thread.Sleep(1000)
             If rcv_index < p_wc3.Count Then
                 Throw New IO.IOException("DIdn't send as much data as wc3.")
             End If

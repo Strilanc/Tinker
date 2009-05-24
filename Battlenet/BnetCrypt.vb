@@ -14,7 +14,7 @@
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
 ''''Implements the various cryptographic checks and algorithms blizzard uses
-Namespace BNET.Crypt
+Namespace Bnet.Crypt
     Public Module common
 #Region "Constants"
         Private ReadOnly G As BigNum = 47
@@ -75,7 +75,7 @@ Namespace BNET.Crypt
             Dim privateKey = N.randomUniformUpTo(r, False, False)
             Dim privateKeyBytes = privateKey.tobytes().toarray()
 
-            Dim publicKey = BNET.Crypt.G.powerMod(privateKey, N)
+            Dim publicKey = Bnet.Crypt.G.powerMod(privateKey, N)
             Dim publicKeyBytes = publicKey.toBytes().ToArray()
 
             ReDim Preserve privateKeyBytes(0 To 31)

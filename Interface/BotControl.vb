@@ -1,4 +1,4 @@
-Imports HostBot.BNET
+Imports HostBot.Bnet
 Imports HostBot.Warcraft3
 
 Public Class BotControl

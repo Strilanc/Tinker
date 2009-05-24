@@ -58,13 +58,13 @@ Public Class BigNum
         End Get
     End Property
 
-    Public ReadOnly Property abs() As BigNum
+    Public ReadOnly Property Abs() As BigNum
         Get
 
             Return If(Me < 0, -Me, Me)
         End Get
     End Property
-    Public ReadOnly Property bit(ByVal i As Integer) As Boolean
+    Public ReadOnly Property Bit(ByVal i As Integer) As Boolean
         Get
             If i < 0 Then Return False
             Return CBool(wordValue(i \ WORD_SIZE) And (CUInt(1) << (i Mod WORD_SIZE)))
@@ -107,7 +107,7 @@ Public Class BigNum
 
         Dim a_over_b_quot As BigNum
         Dim a_over_b_rem As BigNum
-        With divMod(a, b)
+        With DivMod(a, b)
             a_over_b_quot = .quotient
             a_over_b_rem = .remainder
         End With
@@ -138,7 +138,7 @@ Public Class BigNum
         Dim n = Zero
         Dim strictly_less_than = False
         For i = CInt(Me.lg()) To 0 Step -1
-            If strictly_less_than Or Me.bit(i) Then
+            If strictly_less_than Or Me.Bit(i) Then
                 Dim r = rand.Next(2)
                 If r = 0 Then
                     strictly_less_than = True
@@ -182,7 +182,7 @@ Public Class BigNum
         If b < Long.MinValue OrElse b > Long.MaxValue Then
             Throw New ArgumentOutOfRangeException("b", "Value is outside of range of Long")
         End If
-        Dim n = CLng(CULng(b.abs()))
+        Dim n = CLng(CULng(b.Abs()))
         Return If(b.neg, -n, n)
     End Operator
 
@@ -288,7 +288,7 @@ Public Class BigNum
 
         If b1 = 0 Then Return -b2
         If b2 = 0 Then Return b1
-        If b1.abs < b2.abs Then Return -(b2 + -b1)
+        If b1.Abs < b2.Abs Then Return -(b2 + -b1)
         If b1.neg <> b2.neg Then Return b1 + -b2
 
         Dim neg = b1.neg
@@ -312,8 +312,8 @@ Public Class BigNum
 
 
         Dim neg = b1.neg Xor b2.neg
-        b1 = b1.abs()
-        b2 = b2.abs()
+        b1 = b1.Abs()
+        b2 = b2.Abs()
         Dim p = Zero
         For Each word In b1.words
             p += b2 * word
@@ -448,7 +448,7 @@ Public Class BigNum
         If b1 Is Nothing Then Throw New ArgumentException()
         If b2 Is Nothing Then Throw New ArgumentException()
 
-        Return divMod(b1, b2).quotient
+        Return DivMod(b1, b2).quotient
     End Operator
     '''<summary>Returns the remainder of b1\b2</summary>
     Public Shared Operator Mod(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
@@ -456,7 +456,7 @@ Public Class BigNum
         If b2 Is Nothing Then Throw New ArgumentException()
 
 
-        Return divMod(b1, b2).remainder
+        Return DivMod(b1, b2).remainder
     End Operator
 #End Region
 
@@ -474,17 +474,16 @@ Public Class BigNum
         End Sub
     End Class
     '''<summary>Returns the quotient and remainder for the given numerator and denominator.</summary>
-    Public Shared Function divMod(ByVal numerator As BigNum, ByVal denominator As BigNum) As DivModResult
-        If Not (numerator IsNot Nothing) Then Throw New ArgumentException()
-        If Not (denominator IsNot Nothing) Then Throw New ArgumentException()
-        If Not (denominator <> 0) Then Throw New ArgumentException()
-
+    Public Shared Function DivMod(ByVal numerator As BigNum, ByVal denominator As BigNum) As DivModResult
+        If numerator Is Nothing Then Throw New ArgumentNullException("numerator")
+        If denominator Is Nothing Then Throw New ArgumentNullException("denominator")
+        If denominator = 0 Then Throw New DivideByZeroException()
 
         If denominator = 1 Then Return New DivModResult(numerator, 0)
         If numerator = denominator Then Return New DivModResult(1, 0)
 
         If numerator < 0 Then
-            With divMod(-numerator, denominator)
+            With DivMod(-numerator, denominator)
                 If .remainder = 0 Then
                     Return New DivModResult(-.quotient, .remainder)
                 Else
@@ -492,7 +491,7 @@ Public Class BigNum
                 End If
             End With
         ElseIf denominator < 0 Then
-            With divMod(numerator, -denominator)
+            With DivMod(numerator, -denominator)
                 Return New DivModResult(-.quotient, .remainder)
             End With
         End If
@@ -528,7 +527,7 @@ Public Class BigNum
         Dim factor = Me Mod m
         Dim total = Unit
         For i = 0 To CInt(p.lg()) - 1
-            If p.bit(i) Then total = (total * factor) Mod m
+            If p.Bit(i) Then total = (total * factor) Mod m
             factor = (factor * factor) Mod m
         Next i
 
@@ -537,13 +536,14 @@ Public Class BigNum
 #End Region
 
 #Region "Base Conversions"
-    Public Shared Function fromBase(ByVal L As IEnumerable(Of UInteger), ByVal base As UInteger, Optional ByVal BigEndian As Boolean = False) As BigNum
-        If Not (L IsNot Nothing) Then Throw New ArgumentException()
-        If Not (base >= 2) Then Throw New ArgumentException()
-
+    Public Shared Function fromBase(ByVal L As IEnumerable(Of UInteger), _
+                                    ByVal base As UInteger, _
+                                    Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
+        If L Is Nothing Then Throw New ArgumentNullException("L")
+        If base < 2 Then Throw New ArgumentOutOfRangeException("base")
 
         Dim n = Zero
-        If Not BigEndian Then L = L.Reverse()
+        If byte_order = ByteOrder.LittleEndian Then L = L.Reverse()
         For Each e In L
             n *= base
             If e >= base Then Throw New ArgumentException("A digit was larger than the base")
@@ -551,7 +551,8 @@ Public Class BigNum
         Next e
         Return n
     End Function
-    Public Shared Function fromBaseBytes(ByVal L As IEnumerable(Of Byte), ByVal base As UInteger, Optional ByVal BigEndian As Boolean = False) As BigNum
+    Public Shared Function fromBaseBytes(ByVal L As IEnumerable(Of Byte), ByVal base As UInteger, _
+                                         Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
         If Not (L IsNot Nothing) Then Throw New ArgumentException()
         If Not (base >= 2) Then Throw New ArgumentException()
 
@@ -560,13 +561,14 @@ Public Class BigNum
         For Each e In L
             Lu.Add(e)
         Next e
-        Return fromBase(Lu, base, BigEndian)
+        Return fromBase(Lu, base, byte_order)
     End Function
-    Public Shared Function fromBytes(ByVal L As IEnumerable(Of Byte), Optional ByVal BigEndian As Boolean = False) As BigNum
+    Public Shared Function fromBytes(ByVal L As IEnumerable(Of Byte), _
+                                     Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
         If Not (L IsNot Nothing) Then Throw New ArgumentException()
 
 
-        Return fromBaseBytes(L, 256, BigEndian)
+        Return fromBaseBytes(L, 256, byte_order)
     End Function
 
     Public Function toBase(ByVal base As UInteger, Optional ByVal BigEndian As Boolean = False) As IEnumerable(Of UInteger)
@@ -574,9 +576,9 @@ Public Class BigNum
 
 
         Dim L As New List(Of UInteger)
-        Dim d As New DivModResult(Me.abs(), 0)
+        Dim d As New DivModResult(Me.Abs(), 0)
         While d.quotient > 0
-            d = BigNum.divMod(d.quotient, base)
+            d = BigNum.DivMod(d.quotient, base)
             L.Add(CUInt(d.remainder))
         End While
         Dim Li = CType(L, IEnumerable(Of UInteger))
@@ -624,7 +626,7 @@ Public Class BigNum
     Public Shadows Function toString(ByVal base As UInteger, Optional ByVal BigEndian As Boolean = True) As String
         If base < 2 Or base > 36 Then Throw New ArgumentOutOfRangeException("base", "base must be in [2,36]")
         If Me = 0 Then Return "0"
-        If Me < 0 Then Return "-" + Me.abs().toString(base)
+        If Me < 0 Then Return "-" + Me.Abs().toString(base)
         Dim digits = toBase(base, BigEndian)
         Dim s As New System.Text.StringBuilder()
         For i = 0 To digits.Count - 1
@@ -639,7 +641,8 @@ Public Class BigNum
         Next i
         Return s.ToString
     End Function
-    Public Shared Function fromString(ByVal s As String, ByVal base As UInteger, Optional ByVal BigEndian As Boolean = True) As BigNum
+    Public Shared Function fromString(ByVal s As String, ByVal base As UInteger, _
+                                      Optional ByVal byte_order As ByteOrder = ByteOrder.BigEndian) As BigNum
         If base < 2 Or base > 36 Then Throw New ArgumentOutOfRangeException("base", "base must be in [2,36]")
         Dim L As New List(Of UInteger)
         For Each c In s
@@ -654,7 +657,7 @@ Public Class BigNum
                     Throw New ArgumentException("Invalid string.")
             End Select
         Next c
-        Return fromBase(L, base, BigEndian)
+        Return fromBase(L, base, byte_order)
     End Function
 #End Region
 

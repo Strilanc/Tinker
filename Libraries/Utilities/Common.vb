@@ -146,6 +146,27 @@ Public Module Common
         Return New Pair(Of T1, T2)(arg1, arg2)
     End Function
 
+    Public Function FutureConnectTo(ByVal host As String, ByVal port As UShort) As IFuture(Of Outcome(Of Sockets.TcpClient))
+        Dim f = New Future(Of Outcome(Of Sockets.TcpClient))
+        Try
+            Dim client = New Sockets.TcpClient
+            client.BeginConnect(host, port, Function(ar) _FutureConnectTo(f, client, ar), Nothing)
+        Catch e As Exception
+            f.setValue(failure("Failed to connect: {0}".frmt(e.Message)))
+        End Try
+        Return f
+    End Function
+    Private Function _FutureConnectTo(ByVal f As Future(Of Outcome(Of Sockets.TcpClient)), _
+                                      ByVal client As Sockets.TcpClient, _
+                                      ByVal ar As IAsyncResult) As Boolean
+        Try
+            client.EndConnect(ar)
+            f.setValue(successVal(client, "Connected"))
+        Catch e As Exception
+            f.setValue(failure("Failed to connect: {0}".frmt(e.Message)))
+        End Try
+    End Function
+
 #Region "Strings Extra"
     Public Function breakQuotedWords(ByVal text As String) As List(Of String)
         Dim quoted_words As New List(Of String)

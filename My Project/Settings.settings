@@ -3,7 +3,7 @@
   <Profiles />
   <Settings>
     <Setting Name="mapPath" Type="System.String" Scope="User">
-      <Value Profile="(Default)">C:\Program Files\Warcraft III\Maps\</Value>
+      <Value Profile="(Default)" />
     </Setting>
     <Setting Name="commandPrefix" Type="System.String" Scope="User">
       <Value Profile="(Default)">!</Value>
@@ -21,7 +21,7 @@
       <Value Profile="(Default)">HostBot</Value>
     </Setting>
     <Setting Name="war3path" Type="System.String" Scope="User">
-      <Value Profile="(Default)">C:\Program Files\Warcraft III\</Value>
+      <Value Profile="(Default)" />
     </Setting>
     <Setting Name="botstore" Type="System.String" Scope="User">
       <Value Profile="(Default)" />

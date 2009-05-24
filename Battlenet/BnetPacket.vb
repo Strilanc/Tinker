@@ -17,7 +17,7 @@ Imports HostBot.Pickling
 Imports HostBot.Pickling.Jars
 Imports HostBot.Warcraft3
 
-Namespace BNET
+Namespace Bnet
     '''<summary>Header values for packets to/from BNET</summary>
     '''<source>BNETDocs.org</source>
     Public Enum BnetPacketID As Byte
@@ -391,7 +391,7 @@ Namespace BNET
 
             vals("client cd key salt") = client_cd_key_salt
             vals("exe version") = version
-            vals("mpq challenge response") = BNET.Crypt.generateRevisionCheck(mpq_folder, mpq_number_string, mpq_hash_challenge).bytes()
+            vals("mpq challenge response") = Bnet.Crypt.generateRevisionCheck(mpq_folder, mpq_number_string, mpq_hash_challenge).bytes()
             vals("# cd keys") = CUInt(2)
             vals("spawn [unused]") = CUInt(0)
             vals("ROC cd key") = CDKeyJar.packCDKey(rocKey, client_cd_key_salt, server_cd_key_salt)
@@ -525,7 +525,7 @@ Namespace BNET
 
             vals("client cd key salt") = client_cd_key_salt
             vals("exe version") = version
-            vals("mpq challenge response") = BNET.Crypt.generateRevisionCheck(mpq_folder, mpq_number_string, mpq_hash_challenge).bytes()
+            vals("mpq challenge response") = Bnet.Crypt.generateRevisionCheck(mpq_folder, mpq_number_string, mpq_hash_challenge).bytes()
             vals("# cd keys") = CUInt(2)
             vals("spawn [unused]") = CUInt(0)
             vals("exe info") = exe_information
@@ -610,12 +610,12 @@ Namespace BNET
                 If Not (serverToken IsNot Nothing) Then Throw New ArgumentException()
 
                 Dim d As New Dictionary(Of String, Object)
-                With New BNET.Crypt.CDKey(key)
+                With New Bnet.Crypt.CDKey(key)
                     d("length") = CUInt(key.Length)
                     d("product key") = .productKey
                     d("public key") = .publicKey
                     d("unknown") = CUInt(0)
-                    d("hash") = BNET.Crypt.SHA1(concat(clientToken.ToArray, serverToken.ToArray, .productKey, .publicKey, .privateKey))
+                    d("hash") = Bnet.Crypt.SHA1(concat(clientToken.ToArray, serverToken.ToArray, .productKey, .publicKey, .privateKey))
                 End With
                 Return d
             End Function

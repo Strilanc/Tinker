@@ -1,5 +1,5 @@
 ﻿Imports HostBot.Warcraft3
-Imports HostBot.BNET
+Imports HostBot.Bnet
 
 Namespace Links
 #Region "AdvertisingLink"

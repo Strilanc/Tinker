@@ -1,6 +1,6 @@
 Imports HostBot.Commands
-Imports HostBot.BNET
-Imports HostBot.BNET.BnetClient
+Imports HostBot.Bnet
+Imports HostBot.Bnet.BnetClient
 Imports HostBot.Warcraft3
 Imports HostBot.Links
 
@@ -27,7 +27,7 @@ Namespace Commands.Specializations
         Public Overrides Function process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Return get_current_command_set(target).process(target, user, arguments)
         End Function
-        Public Overrides Sub processLocalText(ByVal target As BNET.BnetClient, ByVal text As String, ByVal logger As MultiLogger)
+        Public Overrides Sub processLocalText(ByVal target As Bnet.BnetClient, ByVal text As String, ByVal logger As MultiLogger)
             get_current_command_set(target).processLocalText(target, text, logger)
         End Sub
     End Class

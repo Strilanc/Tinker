@@ -366,6 +366,8 @@ Admin=-Admin=Strilanc,-a=user,-a: Sets the auto-elevated username. Use no argume
 Autostart=-Autostart, -as: Instances will start automatically when they fill up.
 Instances=-Instances=X, -i=X: Sets the initial number of instances. Use =0 for unlimited instances.
 FullShare=-FullShare: Turns on wc3's 'full shared control' option.
+Grab=-Grab: Downloads the map file from joining players.
+LoadInGame=-LoadInGame, -lig: Players wait for loaders in the game. Nicer than staring, but not compatible with some maps (causes desyncs).
 MultiObs=-MultiObs,-mo: Turns on observers, and creates a special slot which can accept large amounts of players. The map must have two available obs slots for this to work.
 NoUL=-NoUL: Turns off uploads from the bot, but still allows players to download from each other.
 NoDL=-NoDL: Boots players who need to DL the map.

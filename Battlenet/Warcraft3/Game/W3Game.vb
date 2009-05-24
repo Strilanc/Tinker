@@ -59,14 +59,15 @@ Namespace Warcraft3
             End Select
         End Sub
         Private Function CommandProcessText(ByVal player As IW3Player, ByVal text As String) As Functional.Futures.IFuture(Of Functional.Outcome)
+            Dim user = New BotUser(player.name)
             If player IsNot admin_player Then
                 Select Case state
                     Case Is < W3GameStates.Loading
-                        Return parent.parent.instance_commands_guest_setup.processText(lobby, Nothing, text)
+                        Return parent.parent.instance_commands_guest_setup.processText(lobby, user, text)
                     Case W3GameStates.Loading
-                        Return parent.parent.instance_commands_guest_load.processText(load_screen, Nothing, text)
+                        Return parent.parent.instance_commands_guest_load.processText(load_screen, user, text)
                     Case Is > W3GameStates.Loading
-                        Return parent.parent.instance_commands_guest_play.processText(gameplay, Nothing, text)
+                        Return parent.parent.instance_commands_guest_play.processText(gameplay, user, text)
                     Case Else
                         Throw New UnreachableStateException()
                 End Select
@@ -75,11 +76,11 @@ Namespace Warcraft3
             Else
                 Select Case state
                     Case Is < W3GameStates.Loading
-                        Return parent.parent.instance_commands_setup.processText(lobby, Nothing, text)
+                        Return parent.parent.instance_commands_setup.processText(lobby, user, text)
                     Case W3GameStates.Loading
-                        Return parent.parent.instance_commands_load.processText(load_screen, Nothing, text)
+                        Return parent.parent.instance_commands_load.processText(load_screen, user, text)
                     Case Is > W3GameStates.Loading
-                        Return parent.parent.instance_commands_play.processText(gameplay, Nothing, text)
+                        Return parent.parent.instance_commands_play.processText(gameplay, user, text)
                     Case Else
                         Throw New UnreachableStateException()
                 End Select

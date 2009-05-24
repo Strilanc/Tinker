@@ -178,7 +178,7 @@ Namespace Warcraft3
             Me.folder = folder
             Using f = New IO.BufferedStream(New IO.FileStream(full_path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
                 Me.fileSize = CUInt(f.Length)
-                Me.crc32 = BNET.Crypt.crc32(f).bytes()
+                Me.crc32 = Bnet.Crypt.crc32(f).bytes()
             End Using
             Dim mpqa = New MPQ.MPQArchive(full_path)
             Dim mpq_war3path = OpenWar3PatchMpq(w3patch_folder)
@@ -603,7 +603,7 @@ Namespace Warcraft3
 
             Public Overrides Function pack(ByVal o As Object) As Pickling.IPickle
                 Dim p = subjar.pack(o)
-                Dim bb = BNET.Crypt.encodePreMaskedByteArray(p.getData)
+                Dim bb = Bnet.Crypt.encodePreMaskedByteArray(p.getData)
                 Return New EncodedPickle(Me, o, bb, p)
             End Function
 

@@ -1,13 +1,12 @@
-﻿Imports Warden_Module_Lib
-
-Namespace Warcraft3.Warden
+﻿Namespace Warcraft3.Warden
     Public Class WardenPacketHandler
         Private ReadOnly original_seed As UInteger
         Private ReadOnly module_folder As String
-        Private ReadOnly module_handler As New Warden_Module_Lib.ModuleHandler()
+        Private ReadOnly module_handler As New Warden_Module_Lib.ModuleHandler
         Private ReadOnly iniA As New Dictionary(Of String, Byte())
         Private ReadOnly iniB As New Dictionary(Of String, Byte())
         Private ReadOnly logger As MultiLogger
+        Private ReadOnly ref As ICallQueue
 
         Private state As states = states.idle
         Private cur_module As ModuleMetaData
@@ -15,6 +14,7 @@ Namespace Warcraft3.Warden
         Private rc4_in As RC4Converter
 
         Public Event Send(ByVal data As Byte())
+        Public Event Fail(ByVal e As Exception)
 
         Private Enum states As Byte
             idle = 0
@@ -123,9 +123,11 @@ Namespace Warcraft3.Warden
         End Sub
 
         Public Sub New(ByVal seed As UInteger, _
+                       ByVal ref As ICallQueue, _
                        Optional ByVal logger As MultiLogger = Nothing, _
                        Optional ByVal module_folder As String = Nothing)
             load_ini_data()
+            Me.ref = ContractNotNull(ref, "ref")
             Me.logger = If(logger, New MultiLogger)
             Me.original_seed = seed
             Me.module_folder = If(module_folder, GetDataFolderPath("Warden"))
@@ -139,32 +141,38 @@ Namespace Warcraft3.Warden
 #Region "Input Output"
         Public Sub ReceiveData(ByVal raw_data As Byte())
             If raw_data Is Nothing Then Throw New ArgumentNullException("raw_data")
-
-            'Extract
             raw_data = raw_data.ToArray() 'clone data to avoid modifying source
-            rc4_in.convert(raw_data, raw_data, raw_data.Length, raw_data.Length)
-            Dim id = CType(raw_data(0), WardenPacketId)
-            Dim data = New ImmutableArrayView(Of Byte)(raw_data, 1, raw_data.Length - 1)
-            logger.log(Function() "Decrypted Warden Packet: {0}".frmt(id), LogMessageTypes.DataEvents)
-            logger.log(Function() "Warden Data (after decrypt): {0}".frmt(unpackHexString(raw_data)), LogMessageTypes.RawData)
+            ref.enqueue(Function() eval(AddressOf _ReceiveData, raw_data))
+        End Sub
+        Private Sub _ReceiveData(ByVal raw_data As Byte())
+            Try
+                'Extract
+                rc4_in.convert(raw_data, raw_data, raw_data.Length, raw_data.Length)
+                Dim id = CType(raw_data(0), WardenPacketId)
+                Dim data = New ImmutableArrayView(Of Byte)(raw_data, 1, raw_data.Length - 1)
+                logger.log(Function() "Decrypted Warden Packet: {0}".frmt(id), LogMessageTypes.DataEvents)
+                logger.log(Function() "Warden Data (after decrypt): {0}".frmt(unpackHexString(raw_data)), LogMessageTypes.RawData)
 
-            'Parse
-            Dim p = WardenPacket.FromData(id, data)
-            If p.payload.getData.length <> data.length Then Throw New Pickling.PicklingException("Didn't parse entire Warden packet.")
-            Dim d = CType(p.payload.getVal(), Dictionary(Of String, Object))
-            logger.log(Function() p.payload.toString(), LogMessageTypes.ParsedData)
-            Select Case id
-                Case WardenPacketId.LoadModule
-                    Call parse_0_CheckModule(d)
-                Case WardenPacketId.DownloadModule
-                    Call parse_1_DownloadModule(d)
-                Case WardenPacketId.MemCheck
-                    Call parse_2_MemCheck(d)
-                Case WardenPacketId.RunModule
-                    Call parse_5_ExecuteModule(d)
-                Case Else
-                    Throw New Pickling.PicklingException("Unrecognized warden packet ID.")
-            End Select
+                'Parse
+                Dim p = WardenPacket.FromData(id, data)
+                If p.payload.getData.length <> data.length Then Throw New Pickling.PicklingException("Didn't parse entire Warden packet.")
+                Dim d = CType(p.payload.getVal(), Dictionary(Of String, Object))
+                logger.log(Function() p.payload.toString(), LogMessageTypes.ParsedData)
+                Select Case id
+                    Case WardenPacketId.LoadModule
+                        Call parse_0_CheckModule(d)
+                    Case WardenPacketId.DownloadModule
+                        Call parse_1_DownloadModule(d)
+                    Case WardenPacketId.MemCheck
+                        Call parse_2_MemCheck(d)
+                    Case WardenPacketId.RunModule
+                        Call parse_5_ExecuteModule(d)
+                    Case Else
+                        Throw New Pickling.PicklingException("Unrecognized warden packet ID.")
+                End Select
+            Catch e As Exception
+                RaiseEvent Fail(e)
+            End Try
         End Sub
 
         Private Sub SendData(ByVal data() As Byte)

@@ -1,5 +1,5 @@
 Imports HostBot.Commands
-Imports HostBot.BNET
+Imports HostBot.Bnet
 Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations

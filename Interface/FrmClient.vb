@@ -1,4 +1,4 @@
-Imports HostBot.BNET
+Imports HostBot.Bnet
 
 Public Class FrmClient
     Private WithEvents bot As MainBot
@@ -13,7 +13,7 @@ Public Class FrmClient
 
             'prep bot
             BeginCacheExternalIP()
-            bot = New MainBot()
+            bot = New MainBot(New InvokedCallQueue(Me))
             For Each port In FrmSettings.parse_port_list(My.Settings.port_pool, "")
                 bot.port_pool.TryAddPort(port)
             Next port
@@ -21,6 +21,13 @@ Public Class FrmClient
             botcMain.f_hook(bot)
 
             Me.Show()
+
+            Try
+                Dim x = New Warden_Module_Lib.ModuleHandler
+                x.UnloadModule()
+            Catch ex As Exception
+                botcMain.logBot.logMessage("Error loading warden module library:{0}{1}".frmt(vbNewLine, ex), Color.Red)
+            End Try
 
             'load initial plugins
             Dim plugin_names = (From x In My.Settings.initial_plugins.Split(";"c) Where x <> "").ToList
@@ -44,6 +51,12 @@ Public Class FrmClient
             botcMain.logBot.logMessage("---", Color.Black)
 
             'show settings on first run
+            If My.Settings.war3path = "" Then
+                My.Settings.war3path = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) + IO.Path.DirectorySeparatorChar + "Warcraft III" + IO.Path.DirectorySeparatorChar
+            End If
+            If My.Settings.mapPath = "" Then
+                My.Settings.mapPath = My.Settings.war3path + "Maps" + IO.Path.DirectorySeparatorChar
+            End If
             If My.Settings.botstore = "" Then
                 uiBtnSettings(Nothing, Nothing)
             End If

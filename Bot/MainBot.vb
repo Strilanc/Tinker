@@ -13,7 +13,7 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
-Imports HostBot.BNET
+Imports HostBot.Bnet
 Imports HostBot.Warcraft3
 Imports HostBot.Links
 
@@ -38,6 +38,7 @@ Public NotInheritable Class MainBot
 
     Private ReadOnly ref As ICallQueue
     Private ReadOnly eventRef As ICallQueue
+    Private ReadOnly warden_ref As ICallQueue
     Private intentionalDisconnectFlag As Boolean = False
 
     Private ReadOnly clients As New List(Of BnetClient)
@@ -55,7 +56,8 @@ Public NotInheritable Class MainBot
 #End Region
 
 #Region "New"
-    Public Sub New(Optional ByVal logger As MultiLogger = Nothing)
+    Public Sub New(ByVal warden_ref As ICallQueue, Optional ByVal logger As MultiLogger = Nothing)
+        Me.warden_ref = ContractNotNull(warden_ref, "warden_ref")
         Me.logger = If(logger, New MultiLogger)
         Me.eventRef = New ThreadedCallQueue("{0} eref".frmt(Me.GetType.Name))
         Me.ref = New ThreadedCallQueue("{0} ref".frmt(Me.GetType.Name))
@@ -193,7 +195,7 @@ Public NotInheritable Class MainBot
             Return failure("Invalid profile.")
         End If
 
-        Dim client = New BnetClient(Me, find_client_profile_L(profile_name), name)
+        Dim client = New BnetClient(Me, find_client_profile_L(profile_name), name, warden_ref)
         AddHandler client.chat_event, AddressOf catch_client_chat_event_R
         AddHandler client.state_changed, AddressOf catch_client_state_changed_R
         clients.Add(client)
@@ -414,9 +416,9 @@ Public NotInheritable Class MainBot
         RaiseEvent server_state_changed(sender, old_state, new_state)
     End Sub
 
-    Private Sub catch_client_chat_event_R(ByVal client As BnetClient, ByVal id As BNET.BnetPacket.CHAT_EVENT_ID, ByVal username As String, ByVal text As String)
+    Private Sub catch_client_chat_event_R(ByVal client As BnetClient, ByVal id As Bnet.BnetPacket.CHAT_EVENT_ID, ByVal username As String, ByVal text As String)
         'Exit if this is not a command
-        If id <> BNET.BnetPacket.CHAT_EVENT_ID.TALK And id <> BNET.BnetPacket.CHAT_EVENT_ID.WHISPER Then
+        If id <> Bnet.BnetPacket.CHAT_EVENT_ID.TALK And id <> Bnet.BnetPacket.CHAT_EVENT_ID.WHISPER Then
             Return
         ElseIf text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
             If text.ToLower() <> "?trigger" Then

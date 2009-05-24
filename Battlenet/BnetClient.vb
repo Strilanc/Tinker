@@ -16,7 +16,7 @@
 Imports HostBot.Warcraft3
 Imports HostBot.Links
 
-Namespace BNET
+Namespace Bnet
     Public NotInheritable Class BnetClient
         Implements IDependencyLinkMaster
         Implements IAdvertisingLinkMember
@@ -66,6 +66,7 @@ Namespace BNET
         'refs
         Private ReadOnly eventRef As ICallQueue
         Private ReadOnly ref As ICallQueue
+        Private ReadOnly warden_ref As ICallQueue
 
         'packets
         Private ReadOnly LOCAL_handlers(0 To 255) As Action(Of Dictionary(Of String, Object))
@@ -120,8 +121,10 @@ Namespace BNET
         Public Sub New(ByVal parent As MainBot, _
                        ByVal profile As ClientProfile, _
                        ByVal name As String, _
+                       ByVal warden_ref As ICallQueue, _
                        Optional ByVal logger As MultiLogger = Nothing)
             'Pass values
+            Me.warden_ref = ContractNotNull(warden_ref, "warden_ref")
             Me.name = name
             Me.parent = parent
             Me.profile = profile
@@ -131,23 +134,23 @@ Namespace BNET
             Me.ref = New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name))
 
             'Init crypto
-            With BNET.Crypt.generatePublicPrivateKeyPair(New System.Random())
+            With Bnet.Crypt.generatePublicPrivateKeyPair(New System.Random())
                 client_public_key = .v1
                 client_private_key = .v2
             End With
 
             'Start packet machinery
-            LOCAL_handlers(BNET.BnetPacketID.AUTHENTICATION_BEGIN) = AddressOf receivePacket_AUTHENTICATION_BEGIN_L
-            LOCAL_handlers(BNET.BnetPacketID.AUTHENTICATION_FINISH) = AddressOf receivePacket_AUTHENTICATION_FINISH_L
-            LOCAL_handlers(BNET.BnetPacketID.ACCOUNT_LOGON_BEGIN) = AddressOf receivePacket_ACCOUNT_LOGON_BEGIN_L
-            LOCAL_handlers(BNET.BnetPacketID.ACCOUNT_LOGON_FINISH) = AddressOf receivePacket_ACCOUNT_LOGON_FINISH_L
-            LOCAL_handlers(BNET.BnetPacketID.CHAT_EVENT) = AddressOf receivePacket_CHAT_EVENT_L
-            LOCAL_handlers(BNET.BnetPacketID.ENTER_CHAT) = AddressOf receivePacket_ENTER_CHAT_L
-            LOCAL_handlers(BNET.BnetPacketID.NULL) = AddressOf receivePacket_NULL_L
-            LOCAL_handlers(BNET.BnetPacketID.PING) = AddressOf receivePacket_PING_L
-            LOCAL_handlers(BNET.BnetPacketID.MESSAGE_BOX) = AddressOf receivePacket_MESSAGE_BOX_L
-            LOCAL_handlers(BNET.BnetPacketID.CREATE_GAME_3) = AddressOf receivePacket_CREATE_GAME_3_L
-            LOCAL_handlers(BNET.BnetPacketID.WARDEN) = AddressOf receivePacket_WARDEN_L
+            LOCAL_handlers(Bnet.BnetPacketID.AUTHENTICATION_BEGIN) = AddressOf receivePacket_AUTHENTICATION_BEGIN_L
+            LOCAL_handlers(Bnet.BnetPacketID.AUTHENTICATION_FINISH) = AddressOf receivePacket_AUTHENTICATION_FINISH_L
+            LOCAL_handlers(Bnet.BnetPacketID.ACCOUNT_LOGON_BEGIN) = AddressOf receivePacket_ACCOUNT_LOGON_BEGIN_L
+            LOCAL_handlers(Bnet.BnetPacketID.ACCOUNT_LOGON_FINISH) = AddressOf receivePacket_ACCOUNT_LOGON_FINISH_L
+            LOCAL_handlers(Bnet.BnetPacketID.CHAT_EVENT) = AddressOf receivePacket_CHAT_EVENT_L
+            LOCAL_handlers(Bnet.BnetPacketID.ENTER_CHAT) = AddressOf receivePacket_ENTER_CHAT_L
+            LOCAL_handlers(Bnet.BnetPacketID.NULL) = AddressOf receivePacket_NULL_L
+            LOCAL_handlers(Bnet.BnetPacketID.PING) = AddressOf receivePacket_PING_L
+            LOCAL_handlers(Bnet.BnetPacketID.MESSAGE_BOX) = AddressOf receivePacket_MESSAGE_BOX_L
+            LOCAL_handlers(Bnet.BnetPacketID.CREATE_GAME_3) = AddressOf receivePacket_CREATE_GAME_3_L
+            LOCAL_handlers(Bnet.BnetPacketID.WARDEN) = AddressOf receivePacket_WARDEN_L
         End Sub
 #End Region
 
@@ -219,7 +222,7 @@ Namespace BNET
             ref.enqueue(AddressOf disconnect_L)
         End Sub
         Private Sub catch_socket_receivedPacket(ByVal sender As BnetSocket, ByVal flag As Byte, ByVal id As Byte, ByVal data As ImmutableArrayView(Of Byte)) Handles socket_P.receivedPacket
-            ref.enqueue(Function() eval(AddressOf receivePacket_L, flag, CType(id, BNET.BnetPacketID), data))
+            ref.enqueue(Function() eval(AddressOf receivePacket_L, flag, CType(id, Bnet.BnetPacketID), data))
         End Sub
 
         Private Sub catch_refresh_timer_tick() Handles game_refresh_timer.Elapsed
@@ -505,7 +508,7 @@ Namespace BNET
             Return success("Sent data.")
         End Function
 
-        Private Sub receivePacket_L(ByVal flag As Byte, ByVal id As BNET.BnetPacketID, ByVal data As ImmutableArrayView(Of Byte))
+        Private Sub receivePacket_L(ByVal flag As Byte, ByVal id As Bnet.BnetPacketID, ByVal data As ImmutableArrayView(Of Byte))
             Try
                 'Validate
                 If flag <> BnetPacket.PACKET_PREFIX Then Throw New Pickling.PicklingException("Invalid packet prefix")
@@ -607,6 +610,9 @@ Namespace BNET
         End Sub
         Private Sub finish_ckl(ByVal out As Outcome(Of BnetPacket))
             If out.outcome = Outcomes.succeeded Then
+                Dim roc_key = CType(CType(out.val.payload.getVal(), Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
+                Dim roc_hash = CType(roc_key("hash"), Byte())
+                Me.warden_seed = subArray(roc_hash, 0, 4).ToUInteger()
                 logger.log(out.message, LogMessageTypes.PositiveEvent)
                 send_packet_L(out.val)
             Else
@@ -668,22 +674,22 @@ Namespace BNET
 
 #Region "Warden"
         Private Sub receivePacket_WARDEN_L(ByVal vals As Dictionary(Of String, Object))
-            If warden Is Nothing Then
-                warden = New Warden.WardenPacketHandler(warden_seed, Me.logger)
-            End If
-
             Try
+                warden = If(warden, New Warden.WardenPacketHandler(warden_seed, warden_ref, logger))
                 Dim data = CType(vals("encrypted data"), Byte())
                 warden.ReceiveData(data)
             Catch e As Exception
-                Logging.logUnexpectedException("Warden", e)
-                logger.log("Error dealing with Warden packet. Disconnecting.", LogMessageTypes.Problem)
-                disconnect_L()
+                warden_Fail(e)
             End Try
         End Sub
         Private Sub warden_Send(ByVal data() As Byte) Handles warden.Send
-            If Not (data IsNot Nothing) Then Throw New ArgumentException()
+            If data Is Nothing Then Throw New ArgumentException()
             send_packet_R(BnetPacket.MakePacket_Warden(data))
+        End Sub
+        Private Sub warden_Fail(ByVal e As Exception) Handles warden.Fail
+            Logging.logUnexpectedException("Warden", e)
+            logger.log("Error dealing with Warden packet. Disconnecting.", LogMessageTypes.Problem)
+            disconnect_R()
         End Sub
 #End Region
 
@@ -720,7 +726,7 @@ Namespace BNET
             'generate password proofs
             Dim account_salt = CType(vals("account password salt"), Byte())
             Dim server_key = CType(vals("server public key"), Byte())
-            With BNET.Crypt.generateClientServerPasswordProofs( _
+            With Bnet.Crypt.generateClientServerPasswordProofs( _
                         username, _
                         password_P, _
                         account_salt, _
