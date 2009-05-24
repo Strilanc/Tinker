@@ -1,0 +1,465 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="3.5">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{2986B2AE-1AEB-4A71-8EEA-D102866A42AB}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <StartupObject>HostBot.My.MyApplication</StartupObject>
+    <RootNamespace>HostBot</RootNamespace>
+    <AssemblyName>HostBot</AssemblyName>
+    <MyType>WindowsForms</MyType>
+    <OptionStrict>On</OptionStrict>
+    <ApplicationIcon>Resources\HostBotIcon.ico</ApplicationIcon>
+    <ManifestCertificateThumbprint>F8A9EBCC2E340570AD94A1D4A896F45B26D97D27</ManifestCertificateThumbprint>
+    <ManifestKeyFile>HostBot_TemporaryKey.pfx</ManifestKeyFile>
+    <GenerateManifests>true</GenerateManifests>
+    <SignManifests>false</SignManifests>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>2.0</OldToolsVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <OptionInfer>On</OptionInfer>
+    <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
+    <TargetFrameworkSubset>
+    </TargetFrameworkSubset>
+    <PublishUrl>C:\Documents and Settings\Craig_2\My Documents\Visual Studio 2005\Projects\BNET\Installer\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>24</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DocumentationFile>HostBot.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
+    <CodeContractsCustomRewriterAssembly>
+    </CodeContractsCustomRewriterAssembly>
+    <CodeContractsCustomRewriterClass>
+    </CodeContractsCustomRewriterClass>
+    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
+    <CodeContractsNonNullObligations>False</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
+    <CodeContractsLibPaths>
+    </CodeContractsLibPaths>
+    <CodeContractsPlatformPath>
+    </CodeContractsPlatformPath>
+    <CodeContractsExtraAnalysisOptions>
+    </CodeContractsExtraAnalysisOptions>
+    <CodeContractsBaseLineFile>
+    </CodeContractsBaseLineFile>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsRunInBackground>False</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DocumentationFile>HostBot.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
+    <CodeContractsCustomRewriterAssembly>
+    </CodeContractsCustomRewriterAssembly>
+    <CodeContractsCustomRewriterClass>
+    </CodeContractsCustomRewriterClass>
+    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
+    <CodeContractsNonNullObligations>False</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
+    <CodeContractsLibPaths>
+    </CodeContractsLibPaths>
+    <CodeContractsPlatformPath>
+    </CodeContractsPlatformPath>
+    <CodeContractsExtraAnalysisOptions>
+    </CodeContractsExtraAnalysisOptions>
+    <CodeContractsBaseLineFile>
+    </CodeContractsBaseLineFile>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsRunInBackground>False</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="HostBot.DataStructures" />
+    <Import Include="HostBot.Functional" />
+    <Import Include="HostBot.Functional.Futures" />
+    <Import Include="HostBot.Functional.Queueing" />
+    <Import Include="HostBot.Logging" />
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Linq" />
+    <Import Include="System.Windows.Forms" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Battlenet\BnetPacket.vb" />
+    <Compile Include="Battlenet\Warcraft3\Dummy Player\W3P2PPlayer.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3MapDownload.vb" />
+    <Compile Include="Battlenet\Warcraft3\Game\W3GameInterface.vb" />
+    <Compile Include="Battlenet\Warcraft3\Game\W3GamePart.vb" />
+    <Compile Include="Battlenet\Warcraft3\Game\W3GameLoadScreen.vb" />
+    <Compile Include="Battlenet\Warcraft3\Game\W3GameLobby.vb" />
+    <Compile Include="Battlenet\Warcraft3\Game\W3GamePlay.vb" />
+    <Compile Include="Battlenet\Warcraft3\Player\W3Player.vb" />
+    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerInterface.vb" />
+    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerLoadScreen.vb" />
+    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerLobby.vb" />
+    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerGameplay.vb" />
+    <Compile Include="Battlenet\Warcraft3\Server\W3ServerDoor.vb" />
+    <Compile Include="Battlenet\Warcraft3\Server\W3ServerInterface.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3ConnectionAccepter.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3Slot.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3Socket.vb" />
+    <Compile Include="Battlenet\Warcraft3\Warden\Warden BSha1.vb" />
+    <Compile Include="Battlenet\Warcraft3\Warden\Warden Packet.vb" />
+    <Compile Include="Battlenet\Warcraft3\Warden\Warden RC4.vb" />
+    <Compile Include="Battlenet\Warcraft3\Warden\Warden PRNG.vb" />
+    <Compile Include="Battlenet\Warcraft3\Warden\Warden Tester.vb" />
+    <Compile Include="Bot\Commands\Lan Commands.vb" />
+    <Compile Include="Interface\ProfileSettingsControl.Designer.vb">
+      <DependentUpon>ProfileSettingsControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\ProfileSettingsControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Libraries\Data Structures\ArrayView.vb" />
+    <Compile Include="Libraries\Data Structures\BigNum.vb" />
+    <Compile Include="Libraries\Data Structures\MStack.vb" />
+    <Compile Include="Libraries\MPQ\MPQHashTable.vb" />
+    <Compile Include="Libraries\MPQ\MPQFileTable.vb" />
+    <Compile Include="Libraries\MPQ\MPQFileStream.vb" />
+    <Compile Include="Libraries\Utilities\ConnectionAccepter.vb" />
+    <Compile Include="Libraries\Streams\SeekableStream.vb" />
+    <Compile Include="Libraries\Utilities\Iterator.vb" />
+    <Compile Include="Battlenet\Warcraft3\Dummy Player\W3DummyPlayer.vb" />
+    <Compile Include="Battlenet\Warcraft3\W3LanAdvertiser.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\TransferScheduler.vb" />
+    <Compile Include="Bot\Commands\Base Commands.vb" />
+    <Compile Include="Bot\Commands\Bot Commands.vb" />
+    <Compile Include="Bot\Commands\Client Commands.vb" />
+    <Compile Include="Bot\Commands\Instance Commands.vb" />
+    <Compile Include="Bot\Commands\Server Commands.vb" />
+    <Compile Include="Bot\Links.vb" />
+    <Compile Include="Bot\Profile.vb" />
+    <Compile Include="Interface\BotControl.Designer.vb">
+      <DependentUpon>BotControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\BotControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\BotWidgetControl.Designer.vb">
+      <DependentUpon>BotWidgetControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\BotWidgetControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Libraries\MPQ\Compression\MPQPkWare.vb" />
+    <Compile Include="RecyclingBin\Settings.vb" />
+    <Compile Include="RecyclingBin\SettingsList.Designer.vb">
+      <DependentUpon>SettingsList.vb</DependentUpon>
+    </Compile>
+    <Compile Include="RecyclingBin\SettingsList.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Bot\Plugins.vb" />
+    <Compile Include="Battlenet\Warcraft3\Warden\Warden Packet Handler.vb" />
+    <Compile Include="Bot\Widgets\CKL Server.vb" />
+    <Compile Include="Test\Test2.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3Packet.vb" />
+    <Compile Include="RecyclingBin\BotCommander.vb" />
+    <Compile Include="Bot\BotUser.vb" />
+    <Compile Include="Libraries\Functional\Queueing.vb" />
+    <Compile Include="RecyclingBin\FrmLogger.Designer.vb">
+      <DependentUpon>FrmLogger.vb</DependentUpon>
+    </Compile>
+    <Compile Include="RecyclingBin\FrmLogger.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Libraries\Logging\LoggerControl.Designer.vb">
+      <DependentUpon>LoggerControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Libraries\Logging\LoggerControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Libraries\Data Structures\BitBuffer.vb" />
+    <Compile Include="Libraries\Functional\FunctionalCommon.vb" />
+    <Compile Include="Libraries\Logging\Logging.vb" />
+    <Compile Include="Libraries\PackParse\Pickling.vb" />
+    <Compile Include="Libraries\Utilities\BlockConverter.vb" />
+    <Compile Include="Libraries\MPQ\MPQCommon.vb" />
+    <Compile Include="Libraries\MPQ\Compression\MPQHuffman.vb" />
+    <Compile Include="RecyclingBin\RateList.vb" />
+    <Compile Include="RecyclingBin\TimeGraphControl.Designer.vb">
+      <DependentUpon>TimeGraphControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="RecyclingBin\TimeGraphControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Libraries\Functional\Futures.vb" />
+    <Compile Include="Libraries\Streams\BottleneckedWriteStream.vb" />
+    <Compile Include="Interface\BnetClientControl.Designer.vb">
+      <DependentUpon>BnetClientControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\BnetClientControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\W3GameServerControl.Designer.vb">
+      <DependentUpon>W3GameServerControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\W3GameServerControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="RecyclingBin\W3TextControl.Designer.vb">
+      <DependentUpon>W3TextControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="RecyclingBin\W3TextControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Bot\MainBot.vb" />
+    <Compile Include="Libraries\MPQ\MPQArchive.vb" />
+    <Compile Include="Libraries\MPQ\MPQCrypt.vb" />
+    <Compile Include="Libraries\Streams\PacketStream.vb" />
+    <Compile Include="Libraries\Utilities\IFactory.vb" />
+    <Compile Include="Libraries\Streams\StreamWrapper.vb" />
+    <Compile Include="Battlenet\BnetClient.vb" />
+    <Compile Include="Libraries\Utilities\Common.vb" />
+    <Compile Include="Battlenet\BnetCrypt.vb" />
+    <Compile Include="Libraries\PackParse\Pack.vb" />
+    <Compile Include="Battlenet\BnetSocket.vb" />
+    <Compile Include="Libraries\MPQ\Compression\MPQWave.vb" />
+    <Compile Include="Libraries\Streams\ConcatStream.vb" />
+    <Compile Include="RecyclingBin\W3SlotControl.Designer.vb">
+      <DependentUpon>W3SlotControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="RecyclingBin\W3SlotControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\W3GameInstanceControl.Designer.vb">
+      <DependentUpon>W3GameInstanceControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\W3GameInstanceControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\FrmClient.Designer.vb">
+      <DependentUpon>FrmClient.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\FrmClient.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface\FrmSettings.Designer.vb">
+      <DependentUpon>FrmSettings.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\FrmSettings.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Battlenet\Warcraft3\Game\W3Game.vb" />
+    <Compile Include="Battlenet\Warcraft3\Server\W3Server.vb" />
+    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerPart.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3Map.vb" />
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="Test\Test.vb" />
+    <Compile Include="RecyclingBin\BotStats.vb" />
+    <Compile Include="RecyclingBin\W3StatsControl.Designer.vb">
+      <DependentUpon>W3StatsControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="RecyclingBin\W3StatsControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Bot\Widgets\Hookable.vb" />
+    <Compile Include="RecyclingBin\RelayServer.vb" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Interface\BotControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>BotControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\BotWidgetControl.resx">
+      <DependentUpon>BotWidgetControl.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\ProfileSettingsControl.resx">
+      <DependentUpon>ProfileSettingsControl.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RecyclingBin\FrmLogger.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FrmLogger.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Libraries\Logging\LoggerControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>LoggerControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RecyclingBin\TimeGraphControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TimeGraphControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\BnetClientControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>BnetClientControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\W3GameServerControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>W3GameServerControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RecyclingBin\W3SlotControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>W3SlotControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\W3GameInstanceControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>W3GameInstanceControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\FrmClient.resx">
+      <DependentUpon>FrmClient.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\FrmSettings.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FrmSettings.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RecyclingBin\W3TextControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>W3TextControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RecyclingBin\SettingsList.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>SettingsList.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RecyclingBin\W3StatsControl.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>W3StatsControl.vb</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="My Project\app.manifest" />
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\Settings.settings">
+      <Generator>PublicSettingsSingleFileGenerator</Generator>
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Docs.txt" />
+    <None Include="Resources\HostBotIcon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="Warden_Module_Lib">
+      <Guid>{2146772E-4657-404B-B9FD-3D5C5F25AAC8}</Guid>
+      <VersionMajor>4</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

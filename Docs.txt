@@ -1,0 +1,80 @@
+Synchronization:
+  Instead of using locks for objects being accessed in parallel, many objects are synchronized using call queues (called the "referee").
+Calls that need to access the object in ways that aren't thread-safe (eg. writing a value) have to be placed in the queue. Calls that must
+be executed by the referee are called LOCAL. The referee and local methods must not be public. All outside access to local methods and the referee
+is done through public non-local methods. Methods tagged REF are both local and non-local, in that they will queue themselves if not on the
+referee thread.
+
+  To ensure there are no deadlocks, local calls are not supposed to block, ever. A consequence of this is that local calls are not permitted to
+sleep or call unknown functions (eg. by raising an event). These things must be achieved by running a non-local call on another thread. This
+also complicates returning function values between threaded objects, because A can't expect B to evaluate a function immediately and A can't
+block on B evaluating the function. Thread-unsafe functions generally return a Functional.Future.IFuture which only becomes ready once
+the function has been evaluated.
+
+Prefixes:
+- LOCAL or LOC: Must only be called/read/written using the object's queue thread, or from other LOCAL methods.
+- THREAD: Must not be called on the object's queue thread (eg. because it blocks).
+- PEEK: Can be called/read from any thread. Must only be written on the object's queue thread, or from LOCAL methods.
+- PERM: Equivalent to PEEK, except the value may not change after it has been initialized.
+- REMOTE or REM: Call will be queued on ref thread.
+- REF: Call will queue itself on the object's referee if it is not already on the ref thread.
+- EREF or E: Call will queue itself on object's event referee [so if listeners block the main referee isn't blocked]
+- UIREF or UI: Call will queue itself on a UI referee [invokes calls on UI thread]
+- F: Returns a future
+- _E: Call runs on event queue
+- C: Call catches an event, most likely not going to run on queue
+- _C: Call processes an event, most likely going to run on queue (but not always, see the related C sub to check)
+
+Suffixes:
+L = LOCAL
+R = REMOTE
+S = Safe/REF
+T = THREAD
+E = EREF
+P = PEEK
+I = Initialized/PERM
+F = Returns a future
+
+Permissions (approximate):
+	root:
+		1 say stuff
+		2 download maps
+		3 access to other clients and servers
+		4 complete control over clients and servers
+		5 load plugins
+
+	users:
+		1 promote existing users
+		2 create new users
+		3 demote existing users
+		4 destroy users
+		5
+
+	games:
+		1 host normal games, view maps
+		2 
+		3 
+		4 manual instance control
+		5 control over advertising
+
+Local Base / Public Face queue pattern:
+  To guarantee remote classes queue their calls to the local class, and to guarantee the local class doesn't queue calls to itself, the remote
+interface is encapsulated in a child class [so they aren't accessible from the local class] and internal calls are protected [so the outside can
+only get to them through the child]. The class looks pretty much the same to the outside. The main downside is duplicate commenting on local
+and remote methods. It looks something like this:
+public notinheritable class Foo
+	public sub new()
+		mybase.MyFace = me
+	end sub
+	public sub REM_call
+		ref.queueCall(addressof LOC_call)
+	end sub
+end class
+public mustinherit class FooLocal
+	protected MyChild as Foo
+	protected ref as new ThreadedCallQueue("Foo ref")
+	protected sub LOC_call
+	    'do stuff
+	end sub
+end class
+	
