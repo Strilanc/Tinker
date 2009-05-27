@@ -14,9 +14,9 @@ Public Interface IBlockConverter
     '''</remarks>
     '''<param name="OutReadCount">Number of bytes consumed from start of read view.</param>
     '''<param name="OutWriteCount">Number of bytes produced from start of write view.</param>
-    Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte), _
-                ByVal WriteView As ArrayView(Of Byte), _
-                ByRef OutReadCount As Integer, _
+    Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte),
+                ByVal WriteView As ArrayView(Of Byte),
+                ByRef OutReadCount As Integer,
                 ByRef OutWriteCount As Integer)
 End Interface
 

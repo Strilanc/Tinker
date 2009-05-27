@@ -14,7 +14,7 @@
         Private ReadOnly future_can_host As New Future(Of Boolean)
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private WithEvents socket As W3Socket = Nothing
-        Private ReadOnly logger As MultiLogger
+        Private ReadOnly logger As Logger
         Private ReadOnly ref As ICallQueue
         Private ReadOnly eventRef As ICallQueue
         Private ReadOnly ping_queue As New Queue(Of W3PlayerPingRecord)
@@ -43,17 +43,17 @@
         End Property
 
         '''<summary>Creates a fake player.</summary>
-        Public Sub New(ByVal ref As ICallQueue, _
-                       ByVal index As Byte, _
-                       ByVal game As IW3Game, _
-                       ByVal name As String, _
-                       Optional ByVal logger As MultiLogger = Nothing)
+        Public Sub New(ByVal ref As ICallQueue,
+                       ByVal index As Byte,
+                       ByVal game As IW3Game,
+                       ByVal name As String,
+                       Optional ByVal logger As Logger = Nothing)
             Me.lobby = New W3PlayerLobby(Me)
             Me.load_screen = New W3PlayerLoadScreen(Me)
             Me.gameplay = New W3PlayerGameplay(Me)
-            Me.logger = If(logger, New MultiLogger)
-            Me.eventRef = New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
-            Me.ref = If(ref, New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name)))
+            Me.logger = If(logger, New Logger)
+            Me.eventRef = New ThreadPoolCallQueue 'New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
+            Me.ref = If(ref, New ThreadPoolCallQueue) 'New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name)))
             Me.game = game
             Me.index = index
             If name.Length > MAX_NAME_LENGTH Then
@@ -66,15 +66,15 @@
 
         '''<summary>Creates a real player.</summary>
         '''<remarks>Real players are assigned a game by the lobby.</remarks>
-        Public Sub New(ByVal ref As ICallQueue, _
-                       ByVal index As Byte, _
-                       ByVal game As IW3Game, _
-                       ByVal p As W3ConnectingPlayer, _
-                       Optional ByVal logging As MultiLogger = Nothing)
+        Public Sub New(ByVal ref As ICallQueue,
+                       ByVal index As Byte,
+                       ByVal game As IW3Game,
+                       ByVal p As W3ConnectingPlayer,
+                       Optional ByVal logging As Logger = Nothing)
             Me.lobby = New W3PlayerLobby(Me)
             Me.load_screen = New W3PlayerLoadScreen(Me)
             Me.gameplay = New W3PlayerGameplay(Me)
-            Me.logger = If(logging, New MultiLogger)
+            Me.logger = If(logging, New Logger)
             p.socket.logger = Me.logger
             Me.eventRef = New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
             Me.ref = If(ref, New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name)))
@@ -88,7 +88,7 @@
             Me.socket.set_reading(True)
 
             Me.lobby.Start()
-            threadedCall(AddressOf testCanHost_T, Me.GetType.Name + "[" + Me.name + "].TestCanHost")
+            ThreadedAction(AddressOf testCanHost_T, Me.GetType.Name + "[" + Me.name + "].TestCanHost")
         End Sub
 
         '''<summary>Determines if a player can host by attempting to connect to them.</summary>
@@ -144,10 +144,10 @@
         End Function
 
         Private Sub catch_socket_received_packet(ByVal sender As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object)) Handles socket.ReceivedPacket
-            ref.enqueue(Function() eval(AddressOf soul.receivePacket_L, id, vals))
+            ref.enqueueAction(Sub() soul.receivePacket_L(id, vals))
         End Sub
         Private Sub catch_socket_disconnected() Handles socket.Disconnected
-            ref.enqueue(Function() eval(AddressOf disconnect_L, False, W3PlayerLeaveTypes.disc))
+            ref.enqueueAction(Sub() disconnect_L(False, W3PlayerLeaveTypes.disc))
         End Sub
 
 #Region "Interface"
@@ -211,7 +211,7 @@
         End Property
 
         Private Function _disconnect_R(ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes) As IFuture Implements IW3Player.disconnect_R
-            Return ref.enqueue(Function() eval(AddressOf disconnect_L, expected, leave_type))
+            Return ref.enqueueAction(Sub() disconnect_L(expected, leave_type))
         End Function
         Public ReadOnly Property _game() As IW3Game Implements IW3Player.game
             Get
@@ -219,10 +219,10 @@
             End Get
         End Property
         Private Function _send_packet_R(ByVal pk As W3Packet) As IFuture(Of Outcome) Implements IW3Player.f_SendPacket
-            Return ref.enqueue(Function() send_packet_L(pk))
+            Return ref.enqueueFunc(Function() send_packet_L(pk))
         End Function
         Private Function _queue_ping_R(ByVal record As W3PlayerPingRecord) As IFuture Implements IW3Player.f_QueuePing
-            Return ref.enqueue(Function() eval(AddressOf queue_ping_L, record))
+            Return ref.enqueueAction(Sub() queue_ping_L(record))
         End Function
         Private ReadOnly Property _soul() As IW3PlayerPart Implements IW3Player.soul
             Get

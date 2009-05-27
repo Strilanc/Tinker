@@ -1,10 +1,10 @@
 Imports HostBot.Logging
-Imports HostBot.Logging.MultiLogger
+Imports HostBot.Logging.Logger
 
 Public Class LoggerControl
     Private callback_mode As New Dictionary(Of LogMessageTypes, CallbackMode)
     Private callback_colors As New Dictionary(Of LogMessageTypes, Color)
-    Private WithEvents logger As MultiLogger
+    Private WithEvents logger As Logger
     Private blockEvents As Boolean = False
     Private ReadOnly uiRef As New InvokedCallQueue(Me)
     Private last_queued_message As New QueuedMessage(Nothing, Color.Black)
@@ -42,20 +42,20 @@ Public Class LoggerControl
 #Region "Life"
     Public Sub New()
         InitializeComponent()
-        callback_mode(LogMessageTypes.NormalEvent) = CallbackMode.On
+        callback_mode(LogMessageTypes.Typical) = CallbackMode.On
         callback_mode(LogMessageTypes.Problem) = CallbackMode.On
-        callback_mode(LogMessageTypes.NegativeEvent) = CallbackMode.On
-        callback_mode(LogMessageTypes.PositiveEvent) = CallbackMode.On
-        callback_mode(LogMessageTypes.DataEvents) = CallbackMode.Off
-        callback_mode(LogMessageTypes.ParsedData) = CallbackMode.Off
-        callback_mode(LogMessageTypes.RawData) = CallbackMode.Off
-        callback_colors(LogMessageTypes.NormalEvent) = Color.Black
-        callback_colors(LogMessageTypes.DataEvents) = Color.DarkBlue
-        callback_colors(LogMessageTypes.ParsedData) = Color.DarkBlue
-        callback_colors(LogMessageTypes.RawData) = Color.DarkBlue
+        callback_mode(LogMessageTypes.Negative) = CallbackMode.On
+        callback_mode(LogMessageTypes.Positive) = CallbackMode.On
+        callback_mode(LogMessageTypes.DataEvent) = CallbackMode.Off
+        callback_mode(LogMessageTypes.DataParsed) = CallbackMode.Off
+        callback_mode(LogMessageTypes.DataRaw) = CallbackMode.Off
+        callback_colors(LogMessageTypes.Typical) = Color.Black
+        callback_colors(LogMessageTypes.DataEvent) = Color.DarkBlue
+        callback_colors(LogMessageTypes.DataParsed) = Color.DarkBlue
+        callback_colors(LogMessageTypes.DataRaw) = Color.DarkBlue
         callback_colors(LogMessageTypes.Problem) = Color.Red
-        callback_colors(LogMessageTypes.PositiveEvent) = Color.DarkGreen
-        callback_colors(LogMessageTypes.NegativeEvent) = Color.DarkOrange
+        callback_colors(LogMessageTypes.Positive) = Color.DarkGreen
+        callback_colors(LogMessageTypes.Negative) = Color.DarkOrange
     End Sub
 #End Region
 
@@ -66,17 +66,17 @@ Public Class LoggerControl
             If b = unex_reged Then Return
             unex_reged = b
             If unex_reged Then
-                AddHandler Logging.UnexpectedExceptionLogger.LoggedMessage, AddressOf catch_logerror
+                AddHandler Logging.CaughtUnexpectedException, AddressOf catch_logerror
             Else
-                RemoveHandler Logging.UnexpectedExceptionLogger.LoggedMessage, AddressOf catch_logerror
+                RemoveHandler Logging.CaughtUnexpectedException, AddressOf catch_logerror
             End If
         End SyncLock
     End Sub
 
-    Public Sub setLogger(ByVal logger As MultiLogger, _
-                         ByVal name As String, _
-                         Optional ByVal log_data_events As CallbackMode = CallbackMode.Unspecified, _
-                         Optional ByVal log_data_parsed As CallbackMode = CallbackMode.Unspecified, _
+    Public Sub setLogger(ByVal logger As Logger,
+                         ByVal name As String,
+                         Optional ByVal log_data_events As CallbackMode = CallbackMode.Unspecified,
+                         Optional ByVal log_data_parsed As CallbackMode = CallbackMode.Unspecified,
                          Optional ByVal log_data_raw As CallbackMode = CallbackMode.Unspecified)
         SyncLock lock
             blockEvents = True
@@ -96,16 +96,16 @@ Public Class LoggerControl
                                              "Current Target File: '(My Documents)\HostBot\Logs\" + filename + "'")
             End If
             If log_data_events <> CallbackMode.Unspecified Then
-                callback_mode(LogMessageTypes.DataEvents) = log_data_events
-                sync_to_checkbox(chkDataEvents, LogMessageTypes.DataEvents)
+                callback_mode(LogMessageTypes.DataEvent) = log_data_events
+                sync_to_checkbox(chkDataEvents, LogMessageTypes.DataEvent)
             End If
             If log_data_parsed <> CallbackMode.Unspecified Then
-                callback_mode(LogMessageTypes.ParsedData) = log_data_parsed
-                sync_to_checkbox(chkParsedData, LogMessageTypes.ParsedData)
+                callback_mode(LogMessageTypes.DataParsed) = log_data_parsed
+                sync_to_checkbox(chkParsedData, LogMessageTypes.DataParsed)
             End If
             If log_data_raw <> CallbackMode.Unspecified Then
-                callback_mode(LogMessageTypes.RawData) = log_data_raw
-                sync_to_checkbox(chkRawData, LogMessageTypes.RawData)
+                callback_mode(LogMessageTypes.DataRaw) = log_data_raw
+                sync_to_checkbox(chkRawData, LogMessageTypes.DataRaw)
             End If
             blockEvents = False
         End SyncLock
@@ -136,7 +136,7 @@ Public Class LoggerControl
             Return True
         End SyncLock
     End Function
-    Public Function getLogger() As MultiLogger
+    Public Function getLogger() As Logger
         Return Me.logger
     End Function
 
@@ -163,7 +163,7 @@ Public Class LoggerControl
         End SyncLock
 
         If Not file_only Then
-            uiRef.enqueue(AddressOf emptyQueue_UI)
+            uiRef.enqueueAction(AddressOf emptyQueue_UI)
         End If
     End Sub
 
@@ -243,7 +243,7 @@ Public Class LoggerControl
     End Sub
     Private Sub logFutureMessage2(ByVal line As QueuedMessage, ByVal out As Outcome)
         SyncLock lock
-            Dim color = callback_colors(If(out.outcome = Outcomes.succeeded, LogMessageTypes.PositiveEvent, LogMessageTypes.Problem))
+            Dim color = callback_colors(If(out.succeeded, LogMessageTypes.Positive, LogMessageTypes.Problem))
             logMessage(New QueuedMessage(out.message, color, line))
         End SyncLock
     End Sub
@@ -257,22 +257,22 @@ Public Class LoggerControl
         End SyncLock
     End Sub
     Private Sub catch_log_future(ByVal placeholder As String, ByVal out As IFuture(Of Outcome)) Handles logger.LoggedFutureMessage
-        uiRef.enqueue(Function() eval(AddressOf logFutureMessage, placeholder, out))
+        uiRef.enqueueAction(Sub() logFutureMessage(placeholder, out))
     End Sub
-    Private Sub catch_logerror(ByVal message As Func(Of String))
-        logMessage(message, Color.Red)
+    Private Sub catch_logerror(ByVal context As String, ByVal e As Exception)
+        logMessage(GenerateUnexpectedExceptionDescription(context, e), Color.Red)
     End Sub
 #End Region
 
 #Region "UI Events"
     Private Sub chkDataEvents_CheckedChanged() Handles chkDataEvents.CheckStateChanged
-        sync_from_checkbox(chkDataEvents, LogMessageTypes.DataEvents)
+        sync_from_checkbox(chkDataEvents, LogMessageTypes.DataEvent)
     End Sub
     Private Sub chkParsedData_CheckedChanged() Handles chkParsedData.CheckStateChanged
-        sync_from_checkbox(chkParsedData, LogMessageTypes.ParsedData)
+        sync_from_checkbox(chkParsedData, LogMessageTypes.DataParsed)
     End Sub
     Private Sub chkRawData_CheckedChanged() Handles chkRawData.CheckStateChanged
-        sync_from_checkbox(chkRawData, LogMessageTypes.RawData)
+        sync_from_checkbox(chkRawData, LogMessageTypes.DataRaw)
     End Sub
 
     Private Sub sync_from_checkbox(ByVal c As CheckBox, ByVal e As LogMessageTypes)
@@ -325,7 +325,7 @@ Public Class LoggerControl
             lblNumBuffered.Visible = False
             SyncLock lock
                 If num_queued_message > 0 Then
-                    uiRef.enqueue(AddressOf emptyQueue_UI)
+                    uiRef.enqueueAction(AddressOf emptyQueue_UI)
                 End If
             End SyncLock
         End If

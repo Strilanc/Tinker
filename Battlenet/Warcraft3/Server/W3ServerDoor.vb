@@ -1,13 +1,13 @@
 ﻿Namespace Warcraft3
     Public Class W3ServerDoor
         Public ReadOnly server As IW3Server
-        Public ReadOnly logger As MultiLogger
+        Public ReadOnly logger As Logger
         Private WithEvents _accepter As W3ConnectionAccepter
         Private connecting_players As New List(Of W3ConnectingPlayer)
         Private ReadOnly lock As New Object()
 
-        Public Sub New(ByVal server As IW3Server, Optional ByVal logger As MultiLogger = Nothing)
-            Me.logger = If(logger, New MultiLogger())
+        Public Sub New(ByVal server As IW3Server, Optional ByVal logger As Logger = Nothing)
+            Me.logger = If(logger, New Logger())
             Me.server = server
             Me._accepter = New W3ConnectionAccepter(Me.logger)
         End Sub
@@ -42,29 +42,29 @@
 
         Private Sub find_game_for_player(ByVal player As W3ConnectingPlayer)
             Dim success_filter As Func(Of Outcome, Boolean) = _
-                  Function(outcome) outcome.outcome = Outcomes.succeeded
+                  Function(outcome) outcome.succeeded
 
             Dim added_player_filter As Func(Of IW3Game, IFuture(Of Boolean)) = _
-                  Function(game) FutureFunc(Of Boolean).frun(success_filter, game.lobby.f_TryAddPlayer(player))
+                  Function(game) FutureFunc.frun(game.lobby.f_TryAddPlayer(player), success_filter)
 
             Dim future_selected_game = _
                   futureSelect(server.f_EnumGames, added_player_filter)
 
-            FutureSub.frun(AddressOf finished_selecting_game, futurize(player), future_selected_game)
+            FutureSub.frun(future_selected_game, Sub(g) finished_selecting_game(player, g))
         End Sub
 
         Private Sub finished_selecting_game(ByVal player As W3ConnectingPlayer, ByVal game As IW3Game)
             SyncLock lock
                 If server.settings.instances = 0 AndAlso game Is Nothing Then
-                    FutureSub.schedule(Function() eval(AddressOf find_game_for_player, player), server.f_CreateGame)
+                    FutureSub.schedule(Sub() find_game_for_player(player), server.f_CreateGame)
                 Else
                     connecting_players.Remove(player)
                     If game Is Nothing Then
-                        logger.log("Couldn't find a game for player {0}.".frmt(player.name), LogMessageTypes.NegativeEvent)
+                        logger.log("Couldn't find a game for player {0}.".frmt(player.name), LogMessageTypes.Negative)
                         player.socket.SendPacket(W3Packet.MakePacket_REJECT(W3Packet.RejectReason.GameFull))
                         player.socket.disconnect()
                     Else
-                        logger.log("Player {0} entered game {1}.".frmt(player.name, game.name), LogMessageTypes.PositiveEvent)
+                        logger.log("Player {0} entered game {1}.".frmt(player.name, game.name), LogMessageTypes.Positive)
                     End If
                 End If
             End SyncLock

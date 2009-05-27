@@ -6,6 +6,25 @@ Public Class W3LanAdvertiser
     Implements IBotWidget
     Implements IDependencyLinkServant
 
+    Private ReadOnly games As New Dictionary(Of UInteger, LanGame)
+    Private ReadOnly socket As UdpClient
+    Public Const TYPE_NAME As String = "LanAdvertiser"
+
+    Private ReadOnly logger As Logger
+    Private ReadOnly name As String
+
+    Private ReadOnly server_listen_port As UShort
+    Private ReadOnly remote_host As String
+    Private ReadOnly remote_port As UShort
+    Private ReadOnly lock As New Object()
+    Private ReadOnly parent As MainBot
+    Private pool_port As PortPool.PortHandle
+
+    Private create_count As UInteger = 0
+    Private WithEvents refresh_timer As New System.Timers.Timer(3000)
+
+    Public Event killed() Implements IDependencyLinkServant.Closed
+
 #Region "Inner"
     Private Class LanGame
         Public ReadOnly id As UInteger
@@ -41,11 +60,11 @@ Public Class W3LanAdvertiser
             RaiseEvent started_advertising(Me, server, name, map, options)
             If server IsNot Nothing Then
                 Dim listened = server.f_OpenPort(parent.server_listen_port)
-                FutureSub.frun(AddressOf server_listened_result, listened)
+                FutureSub.frun(listened, AddressOf server_listened_result)
             End If
         End Sub
         Private Sub server_listened_result(ByVal listened As Outcome)
-            If listened.outcome = Outcomes.failed Then
+            If Not listened.succeeded Then
                 stop_advertising(listened.message)
             End If
         End Sub
@@ -65,45 +84,24 @@ Public Class W3LanAdvertiser
     End Class
 #End Region
 
-#Region "Variables"
-    Private ReadOnly games As New Dictionary(Of UInteger, LanGame)
-    Private ReadOnly socket As UdpClient
-    Public Const TYPE_NAME As String = "LanAdvertiser"
-
-    Public ReadOnly logger As MultiLogger
-    Public ReadOnly name As String
-
-    Private ReadOnly server_listen_port As UShort
-    Private ReadOnly remote_host As String
-    Private ReadOnly remote_port As UShort
-    Private ReadOnly lock As New Object()
-    Private ReadOnly parent As MainBot
-    Private pool_port As PortPool.PortHandle
-
-    Private create_count As UInteger = 0
-    Private WithEvents refresh_timer As New System.Timers.Timer(3000)
-
-    Public Event killed() Implements IDependencyLinkServant.Closed
-#End Region
-
 #Region "Life"
-    Public Sub New(ByVal parent As MainBot, _
-                   ByVal name As String, _
-                   ByVal server_listen_pool_port As PortPool.PortHandle, _
-                   Optional ByVal remote_host As String = "localhost", _
-                   Optional ByVal remote_port As UShort = 6112, _
-                   Optional ByVal logger As MultiLogger = Nothing)
+    Public Sub New(ByVal parent As MainBot,
+                   ByVal name As String,
+                   ByVal server_listen_pool_port As PortPool.PortHandle,
+                   Optional ByVal remote_host As String = "localhost",
+                   Optional ByVal remote_port As UShort = 6112,
+                   Optional ByVal logger As Logger = Nothing)
         Me.New(parent, name, server_listen_pool_port.port, remote_host, remote_port, logger)
         Me.server_listen_port = server_listen_pool_port.port
         Me.pool_port = server_listen_pool_port
     End Sub
-    Public Sub New(ByVal parent As MainBot, _
-                   ByVal name As String, _
-                   ByVal server_listen_port As UShort, _
-                   Optional ByVal remote_host As String = "localhost", _
-                   Optional ByVal remote_port As UShort = 6112, _
-                   Optional ByVal logger As MultiLogger = Nothing)
-        Me.logger = If(logger, New MultiLogger)
+    Public Sub New(ByVal parent As MainBot,
+                   ByVal name As String,
+                   ByVal server_listen_port As UShort,
+                   Optional ByVal remote_host As String = "localhost",
+                   Optional ByVal remote_port As UShort = 6112,
+                   Optional ByVal logger As Logger = Nothing)
+        Me.logger = If(logger, New Logger)
         Me.name = name
         Me.parent = parent
         Me.remote_host = remote_host
@@ -126,13 +124,13 @@ Public Class W3LanAdvertiser
         parent.remove_widget_R(TYPE_NAME, name)
 
         If Me.pool_port IsNot Nothing Then
-            logger.log("Returned port {0} to the pool.".frmt(Me.server_listen_port), LogMessageTypes.PositiveEvent)
+            logger.log("Returned port {0} to the pool.".frmt(Me.server_listen_port), LogMessageTypes.Positive)
             Me.pool_port.Dispose()
             Me.pool_port = Nothing
         End If
 
         'Log
-        logger.log("Shutdown Advertiser", LogMessageTypes.NegativeEvent)
+        logger.log("Shutdown Advertiser", LogMessageTypes.Negative)
         RaiseEvent clear_state_strings()
         RaiseEvent killed()
     End Sub
@@ -157,7 +155,7 @@ Public Class W3LanAdvertiser
         End SyncLock
 
         'Log
-        logger.log("Added game " + game.name, LogMessageTypes.PositiveEvent)
+        logger.log("Added game " + game.name, LogMessageTypes.Positive)
         RaiseEvent add_state_string(id.ToString + "=" + name, False)
 
         Return id
@@ -179,7 +177,7 @@ Public Class W3LanAdvertiser
         End SyncLock
 
         'Log
-        logger.log("Removed game " + game.name, LogMessageTypes.NegativeEvent)
+        logger.log("Removed game " + game.name, LogMessageTypes.Negative)
         RaiseEvent remove_state_string(game.id.ToString + "=" + game.name)
         Return True
     End Function
@@ -199,13 +197,13 @@ Public Class W3LanAdvertiser
         SyncLock lock
             For Each game In games.Values
                 Dim pk = W3Packet.MakePacket_LAN_DESCRIBE_GAME( _
-                                server_listen_port, _
-                                game.creation_time, _
-                                game.name, _
-                                My.Resources.ProgramName, _
-                                MainBot.Wc3MajorVersion, _
-                                game.id, _
-                                game.map, _
+                                server_listen_port,
+                                game.creation_time,
+                                game.name,
+                                My.Resources.ProgramName,
+                                MainBot.Wc3MajorVersion,
+                                game.id,
+                                game.map,
                                 game.map_settings)
                 send(pk, remote_host, remote_port)
             Next game
@@ -217,19 +215,19 @@ Public Class W3LanAdvertiser
         Try
             'pack
             Dim data = pk.payload.getData.ToArray()
-            data = concat(New Byte() {W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).bytes(), data)
+            data = concat({W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).bytes(ByteOrder.LittleEndian), data)
 
             'Log
-            logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageTypes.DataEvents)
-            logger.log(Function() pk.payload.toString(), LogMessageTypes.ParsedData)
-            logger.log(Function() "Sending {0} to {1}: {2}".frmt(unpackHexString(data), remote_host, remote_port), LogMessageTypes.RawData)
+            logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageTypes.DataEvent)
+            logger.log(Function() pk.payload.toString(), LogMessageTypes.DataParsed)
+            logger.log(Function() "Sending {0} to {1}: {2}".frmt(unpackHexString(data), remote_host, remote_port), LogMessageTypes.DataRaw)
 
             'Send
             socket.Send(data, data.Length, remote_host, remote_port)
 
         Catch e As Pickling.PicklingException
             'Ignore
-            logger.log("Error packing {0}: {1} (skipped)".frmt(pk.id, e.Message), LogMessageTypes.NegativeEvent)
+            logger.log("Error packing {0}: {1} (skipped)".frmt(pk.id, e.Message), LogMessageTypes.Negative)
         Catch e As Exception
             'Fail
             logger.log("Error sending {0}: {1}".frmt(pk.id, e.Message()), LogMessageTypes.Problem)
@@ -254,7 +252,7 @@ Public Class W3LanAdvertiser
             RaiseEvent add_state_string(game_name, False)
         Next game_name
     End Sub
-    Private Function get_logger() As MultiLogger Implements IBotWidget.logger
+    Private Function get_logger() As Logger Implements IBotWidget.logger
         Return logger
     End Function
     Private Function get_name() As String Implements IBotWidget.name

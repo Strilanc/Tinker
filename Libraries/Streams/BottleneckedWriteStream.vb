@@ -15,11 +15,11 @@ Public Class ThrottledWriteStream
     Private last_write_time As Date = DateTime.Now()
     Private ReadOnly lock As New Object()
 
-    Public Sub New(ByVal substream As IO.Stream, _
-                Optional ByVal initial_slack As Double = 0, _
-                Optional ByVal cost_per_write As Double = 0, _
-                Optional ByVal cost_per_character As Double = 0, _
-                Optional ByVal cost_limit As Double = 0, _
+    Public Sub New(ByVal substream As IO.Stream,
+                Optional ByVal initial_slack As Double = 0,
+                Optional ByVal cost_per_write As Double = 0,
+                Optional ByVal cost_per_character As Double = 0,
+                Optional ByVal cost_limit As Double = 0,
                 Optional ByVal cost_recovered_per_second As Double = 1)
         MyBase.New(substream)
         Me.available_slack = initial_slack
@@ -66,7 +66,7 @@ Public Class ThrottledWriteStream
             writeQueue.Enqueue(bb)
             If writing Then Return
             writing = True
-            threadedCall(AddressOf writeLoop, "{0} writeLoop".frmt(Me.GetType.Name))
+            ThreadedAction(AddressOf writeLoop, "{0} writeLoop".frmt(Me.GetType.Name))
         End SyncLock
     End Sub
 

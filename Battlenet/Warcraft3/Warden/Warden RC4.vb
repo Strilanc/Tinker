@@ -10,9 +10,9 @@
             Me.rc4 = New RC4XorStream(state)
         End Sub
 
-        Public Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte), _
-                           ByVal WriteView As ArrayView(Of Byte), _
-                           ByRef OutReadCount As Integer, _
+        Public Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte),
+                           ByVal WriteView As ArrayView(Of Byte),
+                           ByRef OutReadCount As Integer,
                            ByRef OutWriteCount As Integer) _
                            Implements IBlockConverter.convert
             Dim n = Math.Min(ReadView.length, WriteView.length)

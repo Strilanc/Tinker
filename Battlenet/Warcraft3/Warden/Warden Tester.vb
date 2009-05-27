@@ -52,7 +52,7 @@
                                         P_bnet.Add(payload)
                                     End If
                                 ElseIf header(i)(1) = Bnet.BnetPacketID.AUTHENTICATION_FINISH And i = 0 Then
-                                    seed = payload.subArray(36, 4).ToUInteger()
+                                    seed = payload.subArray(36, 4).ToUInteger(ByteOrder.LittleEndian)
                                 End If
                                 header(i) = Nothing
                                 i -= 1

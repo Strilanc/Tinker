@@ -6,7 +6,7 @@ Public Class PacketStream
     Inherits StreamWrapper
 
 #Region "Variables"
-    Public ReadOnly logger As MultiLogger
+    Public ReadOnly logger As Logger
     Public log_destination As String
 
     Private ReadOnly pre_size As Integer
@@ -24,11 +24,11 @@ Public Class PacketStream
 #End Region
 
 #Region "New"
-    Public Sub New(ByVal substream As IO.Stream, _
-                   ByVal num_bytes_before_size As Integer, _
-                   ByVal num_size_bytes As Integer, _
-                   ByVal interface_mode As InterfaceModes, _
-                   ByVal logger As MultiLogger, _
+    Public Sub New(ByVal substream As IO.Stream,
+                   ByVal num_bytes_before_size As Integer,
+                   ByVal num_size_bytes As Integer,
+                   ByVal interface_mode As InterfaceModes,
+                   ByVal logger As Logger,
                    ByVal log_destination As String)
         MyBase.New(substream)
         ContractNonNegative(num_bytes_before_size, "num_bytes_before_size")
@@ -38,7 +38,7 @@ Public Class PacketStream
         Me.pre_size = num_bytes_before_size
         Me.header_size = num_size_bytes + num_bytes_before_size
         Me.default_mode = interface_mode
-        Me.logger = If(logger, New MultiLogger)
+        Me.logger = If(logger, New Logger)
         Me.log_destination = log_destination
         ReDim read_header_buffer(0 To num_bytes_before_size + num_size_bytes - 1)
     End Sub
@@ -110,7 +110,7 @@ Public Class PacketStream
             read_size += n
         End While
 
-        logger.log(Function() "Received from {0}: {1}".frmt(log_destination, unpackHexString(subArray(buffer, offset, total_size))), LogMessageTypes.RawData)
+        logger.log(Function() "Received from {0}: {1}".frmt(log_destination, unpackHexString(subArray(buffer, offset, total_size))), LogMessageTypes.DataRaw)
         Return total_size
     End Function
 
@@ -150,7 +150,7 @@ Public Class PacketStream
                 Throw New NotSupportedException("Unrecognized interface mode.")
         End Select
 
-        logger.log(Function() "Sending to {0}: {1}".frmt(log_destination, unpackHexString(subArray(buffer, offset, count))), LogMessageTypes.RawData)
+        logger.log(Function() "Sending to {0}: {1}".frmt(log_destination, unpackHexString(subArray(buffer, offset, count))), LogMessageTypes.DataRaw)
         substream.Write(buffer, offset, count)
     End Sub
 

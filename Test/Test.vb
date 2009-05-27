@@ -238,28 +238,28 @@ Public Module TestModule
     '       Dim dst = "C:\Program Files\Warcraft III\Maps\Test\Castle Fight Hacked2 v1.12.w3x"
     '       Dim mpq As New MPQ.Archive(src)
     '       IO.File.Delete("C:\Program Files\Warcraft III\Maps\Test\Castle Fight Hacked2 v1.12.w3x")
-    '       mpq.plainWriteToFile(dst, _
-    '                            "war3map.w3u", "replace C:\Program Files\Warcraft III\Maps\Test\war3map.w3u.new", _
+    '       mpq.plainWriteToFile(dst,
+    '                            "war3map.w3u", "replace C:\Program Files\Warcraft III\Maps\Test\war3map.w3u.new",
     '_
-    '                            "war3map.w3a", "append " + unpackHexString(packString(arg)), _
+    '                            "war3map.w3a", "append " + unpackHexString(packString(arg)),
     '_
-    '                            "war3map.w3u", "compress", _
-    '                            "war3map.doo", "compress", _
-    '                            "war3map.shd", "compress", _
-    '                            "war3map.w3a", "compress", _
-    '                            "scripts\war3map.j", "compress", _
+    '                            "war3map.w3u", "compress",
+    '                            "war3map.doo", "compress",
+    '                            "war3map.shd", "compress",
+    '                            "war3map.w3a", "compress",
+    '                            "scripts\war3map.j", "compress",
     '_
-    '                            "UI\Glues\Loading\Load-Generic\Generic-Loading-BotLeft.blp", "delete", _
-    '                            "UI\Glues\Loading\Load-Generic\Generic-Loading-BotRight.blp", "delete", _
-    '                            "UI\Glues\Loading\Load-Generic\Generic-Loading-TopLeft.blp", "delete", _
-    '                            "UI\Glues\Loading\Load-Generic\Generic-Loading-TopRight.blp", "delete", _
-    '                            "(attributes)", "delete", _
+    '                            "UI\Glues\Loading\Load-Generic\Generic-Loading-BotLeft.blp", "delete",
+    '                            "UI\Glues\Loading\Load-Generic\Generic-Loading-BotRight.blp", "delete",
+    '                            "UI\Glues\Loading\Load-Generic\Generic-Loading-TopLeft.blp", "delete",
+    '                            "UI\Glues\Loading\Load-Generic\Generic-Loading-TopRight.blp", "delete",
+    '                            "(attributes)", "delete",
     '                            "war3mapPreview.tga", "delete")
 
-    '       '"scripts\war3map.j", "delete", _
-    '       '"war3map.j", "add", _
-    '       '"war3map.j", "replace C:\Program Files\Warcraft III\Maps\Test\scripts\war3map.j.new", _
-    '       '"war3map.j", "prepend " + unpackHexString(packString("globals" + Environment.NewLine + " //" + arg)), _
+    '       '"scripts\war3map.j", "delete",
+    '       '"war3map.j", "add",
+    '       '"war3map.j", "replace C:\Program Files\Warcraft III\Maps\Test\scripts\war3map.j.new",
+    '       '"war3map.j", "prepend " + unpackHexString(packString("globals" + Environment.NewLine + " //" + arg)),
 
     '       'Pad remainder
     '       Dim n As Long = 0

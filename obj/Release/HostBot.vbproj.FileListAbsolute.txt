@@ -68,8 +68,6 @@ C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Release\Hos
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Release\HostBot.exe
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Release\HostBot.xml
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Release\HostBot.pdb
-C:\Users\Craig\Desktop\BNET\HostBot\bin\Release\HostBot.Contracts.dll
-C:\Users\Craig\Desktop\BNET\HostBot\bin\Release\HostBot.Contracts.pdb
 C:\Users\Craig\Desktop\BNET\HostBot\obj\Release\ResolveAssemblyReference.cache
 C:\Users\Craig\Desktop\BNET\HostBot\obj\Release\Interop.Warden_Module_Lib.dll
 C:\Users\Craig\Desktop\BNET\HostBot\obj\Release\HostBot.vbproj.ResolveComReference.cache
@@ -103,3 +101,36 @@ C:\Users\Craig\Desktop\BNET\HostBot\bin\Release\HostBot.xml
 C:\Users\Craig\Desktop\BNET\HostBot\bin\Release\Interop.Warden_Module_Lib.dll
 C:\Users\Craig\Desktop\BNET\HostBot\bin\Release\Warden Module Lib.dll
 C:\Users\Craig\Desktop\BNET\HostBot\obj\Release\HostBot.application
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Release\HostBot.exe.config
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\Interop.Warden_Module_Lib.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.vbproj.ResolveComReference.cache
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.exe
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.xml
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.pdb
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Release\HostBot.exe.manifest
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Release\HostBot.application
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Release\HostBot.exe
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Release\HostBot.pdb
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Release\HostBot.xml
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Release\Interop.Warden_Module_Lib.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Release\Warden Module Lib.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\ResolveAssemblyReference.cache
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.BotControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.BotWidgetControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.ProfileSettingsControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.FrmLogger.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.LoggerControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.TimeGraphControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.BnetClientControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.W3GameServerControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.W3SlotControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.W3GameControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.FrmClient.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.FrmSettings.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.W3TextControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.SettingsList.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.Resources.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.W3StatsControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.vbproj.GenerateResource.Cache
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.exe.manifest
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Release\HostBot.application

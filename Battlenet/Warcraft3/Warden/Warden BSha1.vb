@@ -122,11 +122,11 @@
             For i = 0 To 4
                 S(i) = ReverseByteEndian(S(i))
             Next i
-            Return concat(S(0).bytes(), _
-                          S(1).bytes(), _
-                          S(2).bytes(), _
-                          S(3).bytes(), _
-                          S(4).bytes())
+            Return concat(S(0).bytes(ByteOrder.LittleEndian),
+                          S(1).bytes(ByteOrder.LittleEndian),
+                          S(2).bytes(ByteOrder.LittleEndian),
+                          S(3).bytes(ByteOrder.LittleEndian),
+                          S(4).bytes(ByteOrder.LittleEndian))
         End Function
 
         Private Shared Function iterate(ByVal data() As UInteger, ByVal state() As UInteger) As UInteger()

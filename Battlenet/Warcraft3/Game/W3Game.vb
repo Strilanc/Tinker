@@ -30,7 +30,7 @@ Namespace Warcraft3
         Private ReadOnly slots As New List(Of W3Slot)
         Private ReadOnly ref As ICallQueue
         Private ReadOnly eventRef As ICallQueue
-        Private ReadOnly logger As MultiLogger
+        Private ReadOnly logger As Logger
         Private Const PING_PERIOD As UShort = 5000
         Private WithEvents ping_timer As New Timers.Timer(PING_PERIOD)
         Private state As W3GameStates = W3GameStates.AcceptingPlayers
@@ -46,7 +46,7 @@ Namespace Warcraft3
         Private Event state_changed(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates) Implements IW3Game.ChangedState
 
 #Region "Commands"
-        Private Sub CommandProcessLocalText(ByVal text As String, ByVal logger As MultiLogger)
+        Private Sub CommandProcessLocalText(ByVal text As String, ByVal logger As Logger)
             Select Case state
                 Case Is < W3GameStates.Loading
                     parent.parent.instance_commands_setup.processLocalText(lobby, text, logger)
@@ -95,12 +95,12 @@ Namespace Warcraft3
             set_handicap = &H14
             game_chat = &H20
         End Enum
-        Private Sub ReceiveChat(ByVal sending_player As IW3Player, _
-                                  ByVal text As String, _
-                                  ByVal flags() As Byte, _
+        Private Sub ReceiveChat(ByVal sending_player As IW3Player,
+                                  ByVal text As String,
+                                  ByVal flags() As Byte,
                                   ByVal requested_receiver_indexes As IList(Of Byte))
             'Log
-            logger.log(sending_player.name + ": " + text, LogMessageTypes.NormalEvent)
+            logger.log(sending_player.name + ": " + text, LogMessageTypes.Typical)
             e_ThrowPlayerTalked(sending_player, text)
 
             'Forward to requested players
@@ -128,14 +128,14 @@ Namespace Warcraft3
             'Player Chat
             Select Case command_type
                 Case ClientActions.game_chat
-                    ReceiveChat(sending_player, _
-                                   CStr(subvals("message")), _
-                                   CType(subvals("flags"), Byte()), _
+                    ReceiveChat(sending_player,
+                                   CStr(subvals("message")),
+                                   CType(subvals("flags"), Byte()),
                                    CType(vals("receiving player indexes"), IList(Of Byte)))
                 Case ClientActions.lobby_chat
-                    ReceiveChat(sending_player, _
-                                   CStr(subvals("message")), _
-                                   Nothing, _
+                    ReceiveChat(sending_player,
+                                   CStr(subvals("message")),
+                                   Nothing,
                                    CType(vals("receiving player indexes"), IList(Of Byte)))
                 Case ClientActions.set_team
                     lobby.ReceiveSetTeam(sending_player, CByte(subvals("new value")))
@@ -150,25 +150,25 @@ Namespace Warcraft3
                     lobby.ReceiveSetColor(sending_player, CType(subvals("new value"), W3Slot.PlayerColor))
 
                 Case Else
-                    logger.log("{0} sent unrecognized client command type: {1}".frmt(sending_player.name, command_type), LogMessageTypes.NegativeEvent)
+                    logger.log("{0} sent unrecognized client command type: {1}".frmt(sending_player.name, command_type), LogMessageTypes.Negative)
                     RemovePlayer(sending_player, True, W3PlayerLeaveTypes.disc)
             End Select
         End Sub
 #End Region
 
 #Region "Life"
-        Public Sub New(ByVal parent As IW3Server, _
-                        ByVal name As String, _
-                        ByVal map As W3Map, _
-                        ByVal arguments As IEnumerable(Of String), _
-                        Optional ByRef ref As ICallQueue = Nothing, _
-                        Optional ByVal logger As MultiLogger = Nothing)
+        Public Sub New(ByVal parent As IW3Server,
+                        ByVal name As String,
+                        ByVal map As W3Map,
+                        ByVal arguments As IEnumerable(Of String),
+                        Optional ByRef ref As ICallQueue = Nothing,
+                        Optional ByVal logger As Logger = Nothing)
             Me.map = ContractNotNull(map, "map")
             Me.parent = ContractNotNull(parent, "parent")
             Me.name = ContractNotNull(name, "name")
-            Me.eventRef = New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
-            Me.ref = If(ref, New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name)))
-            Me.logger = If(logger, New MultiLogger)
+            Me.eventRef = New ThreadPoolCallQueue 'New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
+            Me.ref = If(ref, New ThreadPoolCallQueue) 'New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name)))
+            Me.logger = If(logger, New Logger)
             For i = 0 To index_map.Length - 1
                 index_map(i) = CByte(i)
             Next i
@@ -191,9 +191,9 @@ Namespace Warcraft3
                 Dim host = reduce(players, AddressOf W3Player.W3PlayerPart.ReduceBetterHost)
                 If host IsNot Nothing Then
                     BroadcastPacket(W3Packet.MakePacket_SET_HOST(host.index), Nothing)
-                    logger.log(name + " has handed off hosting to " + host.name, LogMessageTypes.PositiveEvent)
+                    logger.log(name + " has handed off hosting to " + host.name, LogMessageTypes.Positive)
                 Else
-                    logger.log(name + " has failed to hand off hosting", LogMessageTypes.NegativeEvent)
+                    logger.log(name + " has failed to hand off hosting", LogMessageTypes.Negative)
                 End If
             End If
 
@@ -210,45 +210,49 @@ Namespace Warcraft3
 
 #Region "Events"
         Private Sub e_ThrowUpdated()
-            eventRef.enqueue(Function() eval(AddressOf _e_ThrowUpdated, (From slot In slots Select slot.Cloned(Me)).ToList()))
+            Dim slots = (From slot In Me.slots Select slot.Cloned(Me)).ToList()
+            eventRef.enqueueAction(
+                Sub()
+                    RaiseEvent updated(Me, slots)
+                End Sub
+            )
         End Sub
-        Private Sub _e_ThrowUpdated(ByVal slots As List(Of W3Slot))
-            RaiseEvent updated(Me, slots)
-        End Sub
-
         Private Sub e_ThrowPlayerTalked(ByVal speaker As IW3Player, ByVal text As String)
-            eventRef.enqueue(Function() eval(AddressOf _e_ThrowPlayerTalked, speaker, text))
+            eventRef.enqueueAction(
+                Sub()
+                    RaiseEvent player_talked(Me, speaker, text)
+                End Sub
+            )
         End Sub
-        Private Sub _e_ThrowPlayerTalked(ByVal speaker As IW3Player, ByVal text As String)
-            RaiseEvent player_talked(Me, speaker, text)
-        End Sub
-
         Private Sub e_ThrowPlayerLeft(ByVal leaver As IW3Player, ByVal reason As W3PlayerLeaveTypes)
-            eventRef.enqueue(Function() eval(AddressOf _e_ThrowPlayerLeft, state, leaver, reason))
+            Dim state = Me.state
+            eventRef.enqueueAction(
+                Sub()
+                    RaiseEvent player_left(Me, state, leaver, reason)
+                End Sub
+            )
         End Sub
-        Private Sub _e_ThrowPlayerLeft(ByVal game_state As W3GameStates, ByVal leaver As IW3Player, ByVal reason As W3PlayerLeaveTypes)
-            RaiseEvent player_left(Me, game_state, leaver, reason)
-        End Sub
-
         Private Sub e_ThrowStateChanged(ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
-            eventRef.enqueue(Function() eval(AddressOf _e_ThrowStateChanged, old_state, new_state))
-        End Sub
-        Private Sub _e_ThrowStateChanged(ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
-            RaiseEvent state_changed(Me, old_state, new_state)
+            eventRef.enqueueAction(
+                Sub()
+                    RaiseEvent state_changed(Me, old_state, new_state)
+                End Sub
+            )
         End Sub
 
-        Private Sub c_Ping(ByVal sender As Object, ByVal e As Timers.ElapsedEventArgs) Handles ping_timer.Elapsed
-            ref.enqueue(AddressOf _c_Ping)
-        End Sub
-        Private Sub _c_Ping()
-            Dim salt = CUInt(rand.Next(0, Integer.MaxValue))
-            Dim tick = Environment.TickCount
-            Dim record = New W3PlayerPingRecord(salt, tick)
-            For Each player In players
-                player.f_QueuePing(record)
-            Next player
-            BroadcastPacket(W3Packet.MakePacket_PING(salt), Nothing)
-            e_ThrowUpdated()
+        Private Sub c_Ping() Handles ping_timer.Elapsed
+            ref.enqueueAction(
+                Sub()
+                    Dim salt = CUInt(rand.Next(0, Integer.MaxValue))
+                    Dim tick = Environment.TickCount
+                    Dim record = New W3PlayerPingRecord(salt, tick)
+                    For Each player In players
+                        player.f_QueuePing(record)
+                    Next player
+                    BroadcastPacket(W3Packet.MakePacket_PING(salt), Nothing)
+                    e_ThrowUpdated()
+                End Sub
+            )
         End Sub
 #End Region
 
@@ -390,11 +394,11 @@ Namespace Warcraft3
 
             'Log
             If player.is_fake Then
-                logger.log(player.name + " has been removed from the game.", LogMessageTypes.NegativeEvent)
+                logger.log(player.name + " has been removed from the game.", LogMessageTypes.Negative)
             Else
                 flag_player_left = True
                 If expected Then
-                    logger.log(player.name + " has left the game.", LogMessageTypes.NegativeEvent)
+                    logger.log(player.name + " has left the game.", LogMessageTypes.Negative)
                 Else
                     logger.log(player.name + " has disconnected.", LogMessageTypes.Problem)
                 End If
@@ -429,21 +433,21 @@ Namespace Warcraft3
         '''<summary>Boots players in the slot with the given index.</summary>
         Private Function Boot(ByVal slotid As String) As Outcome
             Dim slot_out = FindMatchingSlot(slotid)
-            If slot_out.outcome <> Outcomes.succeeded Then Return slot_out
+            If Not slot_out.succeeded Then Return slot_out
             Dim slot = slot_out.val
             If Not slot.contents.EnumPlayers.Any Then
                 Return failure("There is no player to boot in slot '{0}'.".frmt(slotid))
             End If
             For Each player In slot.contents.EnumPlayers
                 If player.name.ToLower() = slotid.ToLower() Then
-                    logger.log("Booting " + player.name, LogMessageTypes.NegativeEvent)
+                    logger.log("Booting " + player.name, LogMessageTypes.Negative)
                     slot.contents = slot.contents.RemovePlayer(player)
                     RemovePlayer(player, True, W3PlayerLeaveTypes.disc)
                     Return success("Booting player '{0}'.".frmt(slotid))
                 End If
             Next player
             For Each player In slot.contents.EnumPlayers
-                logger.log("Booting " + player.name, LogMessageTypes.NegativeEvent)
+                logger.log("Booting " + player.name, LogMessageTypes.Negative)
                 slot.contents = slot.contents.RemovePlayer(player)
                 RemovePlayer(player, True, W3PlayerLeaveTypes.disc)
             Next player
@@ -483,7 +487,7 @@ Namespace Warcraft3
                 Return name
             End Get
         End Property
-        Private ReadOnly Property _logger() As MultiLogger Implements IW3Game.logger
+        Private ReadOnly Property _logger() As Logger Implements IW3Game.logger
             Get
                 Return logger
             End Get
@@ -505,49 +509,49 @@ Namespace Warcraft3
         End Property
 
         Private Function _f_admin_player() As IFuture(Of IW3Player) Implements IW3Game.f_admin_player
-            Return ref.enqueue(Function() admin_player)
+            Return ref.enqueueFunc(Function() admin_player)
         End Function
         Private Function _f_fake_host_player() As IFuture(Of IW3Player) Implements IW3Game.f_fake_host_player
-            Return ref.enqueue(Function() fake_host_player)
+            Return ref.enqueueFunc(Function() fake_host_player)
         End Function
-        Private Function _f_CommandProcessLocalText(ByVal text As String, ByVal logger As MultiLogger) As IFuture Implements IW3Game.f_CommandProcessLocalText
-            Return ref.enqueue(Function() eval(AddressOf CommandProcessLocalText, text, logger))
+        Private Function _f_CommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture Implements IW3Game.f_CommandProcessLocalText
+            Return ref.enqueueAction(Sub() CommandProcessLocalText(text, logger))
         End Function
         Private Function _f_CommandProcessText(ByVal player As IW3Player, ByVal text As String) As Functional.Futures.IFuture(Of Functional.Outcome) Implements IW3Game.f_CommandProcessText
-            Return futurefuture(ref.enqueue(Function() CommandProcessText(player, text)))
+            Return futurefuture(ref.enqueueFunc(Function() CommandProcessText(player, text)))
         End Function
         Private Function _f_TryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture(Of Outcome) Implements IW3Game.f_TryElevatePlayer
-            Return ref.enqueue(Function() TryElevatePlayer(name, password))
+            Return ref.enqueueFunc(Function() TryElevatePlayer(name, password))
         End Function
         Private Function _f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Game.f_FindPlayer
-            Return ref.enqueue(Function() FindPlayer(username))
+            Return ref.enqueueFunc(Function() FindPlayer(username))
         End Function
         Private Function _f_RemovePlayer(ByVal p As IW3Player, ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes) As IFuture(Of Outcome) Implements IW3Game.f_RemovePlayer
-            Return ref.enqueue(Function() RemovePlayer(p, expected, leave_type))
+            Return ref.enqueueFunc(Function() RemovePlayer(p, expected, leave_type))
         End Function
         Private Function _f_EnumPlayers() As IFuture(Of List(Of IW3Player)) Implements IW3Game.f_EnumPlayers
-            Return ref.enqueue(Function() players.ToList)
+            Return ref.enqueueFunc(Function() players.ToList)
         End Function
         Private Function _f_ThrowUpdated() As IFuture Implements IW3Game.f_ThrowUpdated
-            Return ref.enqueue(AddressOf e_ThrowUpdated)
+            Return ref.enqueueAction(AddressOf e_ThrowUpdated)
         End Function
         Private Function _f_Close() As IFuture(Of Outcome) Implements IW3Game.f_Close
-            Return ref.enqueue(Function() Close())
+            Return ref.enqueueFunc(Function() Close())
         End Function
         Private Function _f_BroadcastMessage(ByVal message As String) As IFuture Implements IW3Game.f_BroadcastMessage
-            Return ref.enqueue(Function() eval(AddressOf BroadcastMessage, message))
+            Return ref.enqueueAction(Sub() BroadcastMessage(message))
         End Function
         Private Function _f_SendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture Implements IW3Game.f_SendMessageTo
-            Return ref.enqueue(Function() eval(AddressOf SendMessageTo, message, player))
+            Return ref.enqueueAction(Sub() SendMessageTo(message, player))
         End Function
         Private Function _f_BootSlot(ByVal slot_query As String) As IFuture(Of Outcome) Implements IW3Game.f_BootSlot
-            Return ref.enqueue(Function() Boot(slot_query))
+            Return ref.enqueueFunc(Function() Boot(slot_query))
         End Function
         Private Function _f_State() As IFuture(Of W3GameStates) Implements IW3Game.f_State
-            Return ref.enqueue(Function() Me.state)
+            Return ref.enqueueFunc(Function() Me.state)
         End Function
         Private Function _f_ReceivePacket_CLIENT_COMMAND(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.f_ReceivePacket_CLIENT_COMMAND
-            Return ref.enqueue(Function() eval(AddressOf ReceivePacket_CLIENT_COMMAND, player, vals))
+            Return ref.enqueueAction(Sub() ReceivePacket_CLIENT_COMMAND(player, vals))
         End Function
 #End Region
     End Class

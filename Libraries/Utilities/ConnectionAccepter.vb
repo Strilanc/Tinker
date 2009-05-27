@@ -13,7 +13,7 @@ Public Class ConnectionAccepter
             SyncLock lock
                 'already listening?
                 Dim out = get_listener_on_port(port)
-                If out.outcome = Outcomes.succeeded Then Return success("Already listening on port {0}.".frmt(port))
+                If out.succeeded Then Return success("Already listening on port {0}.".frmt(port))
 
                 'listen
                 Dim listener = New TcpListener(Net.IPAddress.Any, port)
@@ -44,7 +44,7 @@ Public Class ConnectionAccepter
         SyncLock lock
             'already not listening?
             Dim out = get_listener_on_port(port)
-            If out.outcome <> Outcomes.succeeded Then Return success("Already not listening on port {0}.".frmt(port))
+            If Not out.succeeded Then Return success("Already not listening on port {0}.".frmt(port))
 
             'stop listening
             Dim listener = out.val

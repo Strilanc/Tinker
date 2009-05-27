@@ -12,7 +12,7 @@ Public Class FrmClient
             trayIcon.Text = My.Application.Info.ProductName
 
             'prep bot
-            BeginCacheExternalIP()
+            CacheIPAddresses()
             bot = New MainBot(New InvokedCallQueue(Me))
             For Each port In FrmSettings.parse_port_list(My.Settings.port_pool, "")
                 bot.port_pool.TryAddPort(port)
@@ -38,8 +38,8 @@ Public Class FrmClient
                 Dim plugin = plugin_names(i)
                 Dim loaded = plugin_loads(i)
 
-                If loaded.outcome = Outcomes.succeeded Then
-                    bot.logger.log("Loaded plugin '" + plugin + "'.", LogMessageTypes.PositiveEvent)
+                If loaded.succeeded Then
+                    bot.logger.log("Loaded plugin '" + plugin + "'.", LogMessageTypes.Positive)
                 Else
                     bot.logger.log("Failed to load plugin '" + plugin + "': " + loaded.message, LogMessageTypes.Problem)
                 End If
@@ -70,10 +70,10 @@ Public Class FrmClient
         If bot Is Nothing Then Return
 
         If e.CloseReason = CloseReason.UserClosing Then
-            If MessageBox.Show("Are you sure you want to close " + My.Resources.ProgramName + "?", _
-                               "Confirm Close", _
-                               MessageBoxButtons.YesNo, _
-                               MessageBoxIcon.Question, _
+            If MessageBox.Show("Are you sure you want to close " + My.Resources.ProgramName + "?",
+                               "Confirm Close",
+                               MessageBoxButtons.YesNo,
+                               MessageBoxIcon.Question,
                                MessageBoxDefaultButton.Button2) = Windows.Forms.DialogResult.No Then
                 e.Cancel = True
                 Return

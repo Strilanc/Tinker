@@ -45,23 +45,23 @@ Namespace Commands
         Public ReadOnly hide_arguments As Boolean = False
 
         Public Sub New( _
-                    ByVal name As String, _
-                    ByVal argument_limit_value As Integer, _
-                    ByVal argument_limit_type As ArgumentLimits, _
-                    ByVal help As String, _
-                    ByVal required_permissions As String, _
-                    ByVal extra_help As String, _
+                    ByVal name As String,
+                    ByVal argument_limit_value As Integer,
+                    ByVal argument_limit_type As ArgumentLimits,
+                    ByVal help As String,
+                    ByVal required_permissions As String,
+                    ByVal extra_help As String,
                     Optional ByVal hide_arguments As Boolean = False _
                     )
             Me.New(name, argument_limit_value, argument_limit_type, help, DictStrUInt(required_permissions), DictStrStr(extra_help, vbNewLine), hide_arguments)
         End Sub
         Public Sub New( _
-                    ByVal name As String, _
-                    ByVal argument_limit_value As Integer, _
-                    ByVal argument_limit_type As ArgumentLimits, _
-                    ByVal help As String, _
-                    Optional ByVal required_permissions As Dictionary(Of String, UInteger) = Nothing, _
-                    Optional ByVal extra_help As Dictionary(Of String, String) = Nothing, _
+                    ByVal name As String,
+                    ByVal argument_limit_value As Integer,
+                    ByVal argument_limit_type As ArgumentLimits,
+                    ByVal help As String,
+                    Optional ByVal required_permissions As Dictionary(Of String, UInteger) = Nothing,
+                    Optional ByVal extra_help As Dictionary(Of String, String) = Nothing,
                     Optional ByVal hide_arguments As Boolean = False _
                     )
             If extra_help Is Nothing Then extra_help = New Dictionary(Of String, String)
@@ -139,14 +139,14 @@ Namespace Commands
 
             'Run
             Try
-                Return process(target, user, arguments)
+                Return Process(target, user, arguments)
             Catch e As Exception
-                Logging.logUnexpectedException("Processing text for command.", e)
+                Logging.LogUnexpectedException("Processing text for command.", e)
                 Return futurize(failure("Unexpected exception encountered ({0}).".frmt(e.Message)))
             End Try
         End Function
 
-        Public MustOverride Function process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public MustOverride Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
     End Class
 #End Region
 
@@ -158,8 +158,8 @@ Namespace Commands
         Private commands As New List(Of ICommand(Of T))
 
         Public Sub New()
-            MyBase.New(My.Resources.Command_General_Help, _
-                       2, ArgumentLimits.max, _
+            MyBase.New(My.Resources.Command_General_Help,
+                       2, ArgumentLimits.max,
                        My.Resources.Command_General_Help_Help)
         End Sub
 
@@ -191,7 +191,7 @@ Namespace Commands
             Next key
         End Sub
 
-        Public Overrides Function process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Dim arg As String = Nothing
             If arguments.Count > 0 Then arg = arguments(0)
             If arguments.Count = 2 Then arg += " " + arguments(1)
@@ -250,7 +250,7 @@ Namespace Commands
             help_command.remove_command(subcommand)
         End Sub
 
-        Public Overrides Function process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             'Get subcommand
             Dim name As String = arguments(0).ToLower()
             If Not subcommand_map.ContainsKey(name) Then
@@ -269,16 +269,16 @@ Namespace Commands
 
         Private Function process_helper(ByVal f As Future(Of Outcome), ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As Boolean
             Try
-                FutureSub.frun(AddressOf f.setValue, MyBase.process(target, user, arguments))
+                FutureSub.frun(MyBase.Process(target, user, arguments), AddressOf f.setValue)
                 Return True
             Catch e As Exception
                 f.setValue(failure("Error processing command: " + e.Message))
                 Return False
             End Try
         End Function
-        Public Overrides Function process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Dim f As New Future(Of Outcome)
-            threadedCall(Function() process_helper(f, target, user, arguments), Me.GetType.Name)
+            ThreadedAction(Function() process_helper(f, target, user, arguments), Me.GetType.Name)
             Return f
         End Function
     End Class
@@ -286,7 +286,7 @@ Namespace Commands
     Public Class UICommandSet(Of T)
         Inherits ThreadedCommandSet(Of T)
 
-        Public Overridable Sub processLocalText(ByVal target As T, ByVal text As String, ByVal logger As MultiLogger)
+        Public Overridable Sub processLocalText(ByVal target As T, ByVal text As String, ByVal logger As Logger)
             Try
                 Dim name = breakQuotedWords(text)(0).ToLower()
                 If Not subcommand_map.ContainsKey(name) Then
@@ -295,14 +295,14 @@ Namespace Commands
                 End If
                 Dim hide_args = subcommand_map(name).hide_arguments
                 If hide_args Then
-                    logger.log("Command [arguments hidden]: " + name, LogMessageTypes.NormalEvent)
+                    logger.log("Command [arguments hidden]: " + name, LogMessageTypes.Typical)
                 Else
-                    logger.log("Command: " + text, LogMessageTypes.NormalEvent)
+                    logger.log("Command: " + text, LogMessageTypes.Typical)
                 End If
 
-                logger.futurelog("[running command '{0}'...]".frmt(name), _
-                                 FutureFunc(Of Outcome).frun(AddressOf output_of_command, _
-                                                             processText(target, Nothing, text)))
+                logger.futurelog("[running command '{0}'...]".frmt(name),
+                                 FutureFunc.frun(processText(target, Nothing, text),
+                                                             AddressOf output_of_command))
             Catch e As Exception
                 Logging.logUnexpectedException("Exception rose past " + Me.GetType.Name + "[" + Me.name + "].processLocalText", e)
             End Try
@@ -311,9 +311,9 @@ Namespace Commands
         Private Function output_of_command(ByVal out As Outcome) As Outcome
             Dim message = out.message
             If message Is Nothing Or message = "" Then
-                message = "Command {0}.".frmt(out.outcome.ToString())
+                message = "Command {0}.".frmt(If(out.succeeded, "Succeeded", "Failed"))
             End If
-            Return New Outcome(out.outcome, "({0}) {1}".frmt(out.outcome, message))
+            Return New Outcome(out.succeeded, "({0}) {1}".frmt(If(out.succeeded, "Succeeded", "Failed"), message))
         End Function
     End Class
 #End Region

@@ -5,11 +5,11 @@ Public Class BnetSocket
     Private Class SafeReadPacketStream
         Inherits PacketStream
         Private read_exception As Exception
-        Public Sub New(ByVal substream As IO.Stream, _
-                       ByVal num_bytes_before_size As Integer, _
-                       ByVal num_size_bytes As Integer, _
-                       ByVal mode As InterfaceModes, _
-                       ByVal logger As MultiLogger, _
+        Public Sub New(ByVal substream As IO.Stream,
+                       ByVal num_bytes_before_size As Integer,
+                       ByVal num_size_bytes As Integer,
+                       ByVal mode As InterfaceModes,
+                       ByVal logger As Logger,
                        ByVal log_destination As String)
             MyBase.New(substream, num_bytes_before_size, num_size_bytes, mode, logger, log_destination)
         End Sub
@@ -42,7 +42,7 @@ Public Class BnetSocket
     Private want_reading As Boolean = False
     Private expectConnected As Boolean = False
     Private ReadOnly client As TcpClient = Nothing
-    Public logger As MultiLogger
+    Public logger As Logger
     Private ReadOnly lock As New Object()
     Private packet_stream As SafeReadPacketStream
 
@@ -53,12 +53,12 @@ Public Class BnetSocket
 #End Region
 
 #Region "New"
-    Public Sub New(ByVal client As TcpClient, Optional ByVal logger As MultiLogger = Nothing, Optional ByVal stream_wrapper As Func(Of IO.Stream, IO.Stream) = Nothing)
+    Public Sub New(ByVal client As TcpClient, Optional ByVal logger As Logger = Nothing, Optional ByVal stream_wrapper As Func(Of IO.Stream, IO.Stream) = Nothing)
         If client Is Nothing Then Throw New ArgumentNullException("client")
         Dim stream As IO.Stream = client.GetStream
         If stream_wrapper IsNot Nothing Then stream = stream_wrapper(stream)
 
-        Me.logger = If(logger, New MultiLogger)
+        Me.logger = If(logger, New Logger)
         Me.packet_stream = New SafeReadPacketStream(stream, 2, 2, PacketStream.InterfaceModes.IncludeSizeBytes, Me.logger, "")
         Me.client = client
         name = CType(client.Client.RemoteEndPoint, Net.IPEndPoint).ToString()
@@ -76,8 +76,8 @@ Public Class BnetSocket
     Public Function getRemoteIp() As Byte()
         Try
             Dim x = CType(client.Client.RemoteEndPoint, Net.IPEndPoint).Address.GetAddressBytes()
-            If ArraysEqual(x, getIpAddress().GetAddressBytes()) OrElse ArraysEqual(x, New Byte() {127, 0, 0, 1}) Then
-                x = GetExternalIp()
+            If ArraysEqual(x, GetIpAddressBytes(external:=False)) OrElse ArraysEqual(x, {127, 0, 0, 1}) Then
+                x = GetIpAddressBytes(external:=True)
             End If
             Return x
         Catch e As Exception
@@ -98,7 +98,7 @@ Public Class BnetSocket
             packet_stream.Close()
             is_reading = False
             want_reading = False
-            threadedCall(AddressOf throw_disconnected_T, "disconnect socket")
+            ThreadedAction(AddressOf throw_disconnected_T, "disconnect socket")
         End SyncLock
     End Sub
     Private Sub throw_disconnected_T()
@@ -130,13 +130,13 @@ Public Class BnetSocket
         Try
             'read
             If Not packet_stream.CanRead Then
-                logger.log("Socket '{0}' Closed.".frmt(name), LogMessageTypes.RawData)
+                logger.log("Socket '{0}' Closed.".frmt(name), LogMessageTypes.DataRaw)
                 disconnect()
                 Return
             End If
             Dim n = packet_stream.EndRead(ar)
             If n = 0 Then
-                logger.log("Socket '{0}' Ended.".frmt(name), LogMessageTypes.RawData)
+                logger.log("Socket '{0}' Ended.".frmt(name), LogMessageTypes.DataRaw)
                 disconnect()
                 Return
             End If
@@ -168,7 +168,7 @@ Public Class BnetSocket
 
 #Region "Write"
     Public Function Write(ByVal header() As Byte, ByVal body() As Byte) As Outcome
-        Return WriteMode(concat(header, New Byte() {0, 0}, body), PacketStream.InterfaceModes.IncludeSizeBytes)
+        Return WriteMode(concat(header, {0, 0}, body), PacketStream.InterfaceModes.IncludeSizeBytes)
     End Function
 
     Public Function WriteMode(ByVal data() As Byte, ByVal mode As PacketStream.InterfaceModes) As Outcome

@@ -1,74 +1,79 @@
 ﻿'''<summary>Schedules transfers for sharing a copyable resource among multiple clients.</summary>
-Public Class TransferScheduler(Of T)
-#Region "Variables"
+Public Class TransferScheduler(Of K)
+    Private ReadOnly typical_rate As Double
+    Private ReadOnly clients As New Dictionary(Of K, ClientState)
+    Private ReadOnly ref As ICallQueue = New ThreadedCallQueue(Me.GetType.Name)
+
+    Public Event actions(ByVal started As List(Of TransferEndPoint), ByVal stopped As List(Of TransferEndPoint))
+
     Public Class TransferEndPoint
-        Public ReadOnly src As T
-        Public ReadOnly dst As T
-        Public Sub New(ByVal src As T, ByVal dst As T)
+        Public ReadOnly src As K
+        Public ReadOnly dst As K
+        Public Sub New(ByVal src As K, ByVal dst As K)
             Me.src = src
             Me.dst = dst
         End Sub
     End Class
-    Public Event actions(ByVal started As List(Of TransferEndPoint), ByVal stopped As List(Of TransferEndPoint))
-
-    Private ReadOnly typical_rate As Double
-    Private ReadOnly client_states As New Dictionary(Of T, ClientState)
-    Private lock As New Object()
-#End Region
 
     Public Sub New(ByVal typical_rate As Double)
         Me.typical_rate = typical_rate
     End Sub
 
     '''<summary>Adds a new client to the pool.</summary>
-    Public Sub add(ByVal client As T, ByVal completed As Boolean, Optional ByVal expected_rate As Double = 0)
-        SyncLock lock
-            If client_states.ContainsKey(client) Then Throw New ArgumentException("Same widget added twice.")
-            Dim state = New ClientState(completed, If(expected_rate = 0, typical_rate, expected_rate))
-            client_states(client) = state
-        End SyncLock
-    End Sub
+    Public Function add(ByVal client_key As K, ByVal completed As Boolean, Optional ByVal expected_rate As Double = 0) As IFuture(Of Outcome)
+        Return ref.enqueueFunc(
+            Function()
+                If clients.ContainsKey(client_key) Then  Return failure("client key already exists")
+                clients(client_key) = New ClientState(client_key, completed, If(expected_rate = 0, typical_rate, expected_rate))
+                Return success("added")
+            End Function
+        )
+    End Function
 
     '''<summary>Adds a link between two clients.</summary>
-    Public Sub set_link(ByVal client1 As T, ByVal client2 As T, ByVal linked As Boolean)
-        SyncLock lock
-            If Not client_states.ContainsKey(client1) Then Return
-            If Not client_states.ContainsKey(client2) Then Return
-            Dim state1 = client_states(client1)
-            Dim state2 = client_states(client2)
-            If state1.links.Contains(client2) = linked Then Return
-            If linked Then
-                state1.links.Add(client2)
-                state2.links.Add(client1)
-            Else
-                state1.links.Remove(client2)
-                state2.links.Remove(client1)
-                If state1.busy AndAlso client_states(state1.other) Is state2 Then
-                    stop_transfer(client1, False)
+    Public Function set_link(ByVal client_key_1 As K, ByVal client_key_2 As K, ByVal linked As Boolean) As IFuture(Of Outcome)
+        Return ref.enqueueFunc(
+            Function()
+                If Not clients.ContainsKey(client_key_1) Then  Return failure("No such client key")
+                If Not clients.ContainsKey(client_key_2) Then  Return failure("No such client key")
+                Dim client1 = clients(client_key_1)
+                Dim client2 = clients(client_key_2)
+                If client1.links.Contains(client2) = linked Then  Return success("Already set.")
+                If linked Then
+                    client1.links.Add(client2)
+                    client2.links.Add(client1)
+                Else
+                    client1.links.Remove(client2)
+                    client2.links.Remove(client1)
+                    If client1.busy AndAlso client1.other Is client2 Then
+                        stop_transfer(client_key_1, False)
+                    End If
                 End If
-            End If
-        End SyncLock
-    End Sub
+                Return success("Set.")
+            End Function
+        )
+    End Function
 
     '''<summary>Removes a client from the pool.</summary>
-    Public Sub remove(ByVal client As T)
-        SyncLock lock
-            If Not client_states.ContainsKey(client) Then Return
-            stop_transfer(client, False)
-            Dim state = client_states(client)
-            client_states.Remove(client)
-            For Each linked_client In state.links
-                If client_states.ContainsKey(linked_client) Then
-                    client_states(linked_client).links.Remove(client)
-                End If
-            Next linked_client
-        End SyncLock
-    End Sub
+    Public Function remove(ByVal client_key As K) As IFuture(Of Outcome)
+        Return ref.enqueueFunc(
+            Function()
+                If Not clients.ContainsKey(client_key) Then  Return failure("No such client.")
+                stop_transfer(client_key, False)
+                Dim client = clients(client_key)
+                clients.Remove(client_key)
+                For Each linked_client In client.links
+                    linked_client.links.Remove(client)
+                Next linked_client
+                Return success("removed")
+            End Function
+        )
+    End Function
 
-    Public ReadOnly Property rate_estimate_string(ByVal e As T) As String
+    Public ReadOnly Property rate_estimate_string(ByVal client_key As K) As String
         Get
-            If Not client_states.ContainsKey(e) Then Return "?"
-            With client_states(e)
+            If Not clients.ContainsKey(client_key) Then Return "?"
+            With clients(client_key)
                 If Not .measured AndAlso Not .busy Then Return "?"
 
                 Dim d = .get_cur_rate_estimate * 1000
@@ -87,112 +92,84 @@ Public Class TransferScheduler(Of T)
     End Property
 
     '''<summary>Updates the progress of a transfer to or from the given client.</summary>
-    Public Sub update_progress(ByVal widget As T, ByVal progress As Double)
-        SyncLock lock
-            If Not client_states.ContainsKey(widget) Then Return
-            Dim state = client_states(widget)
-            If Not state.busy Then Return
-            state.update_progress(progress)
-            client_states(state.other).update_progress(progress)
-        End SyncLock
-    End Sub
+    Public Function update_progress(ByVal client_key As K, ByVal progress As Double) As IFuture(Of Outcome)
+        Return ref.enqueueFunc(
+            Function()
+                If Not clients.ContainsKey(client_key) Then  Return failure("No such client key.")
+                Dim client = clients(client_key)
+                If Not client.busy Then  Return failure("Client isn't transfering.")
+                client.update_progress(progress)
+                client.other.update_progress(progress)
+                Return success("Updated")
+            End Function
+        )
+    End Function
 
     '''<summary>Stops any transfers to or from the given client.</summary>
-    Public Sub stop_transfer(ByVal client As T, ByVal complete As Boolean)
-        SyncLock lock
-            If Not client_states.ContainsKey(client) Then Return
+    Public Sub stop_transfer(ByVal client_key As K, ByVal complete As Boolean)
+        ref.enqueueAction(
+            Sub()
+                If Not clients.ContainsKey(client_key) Then  Return
 
-            Dim state = client_states(client)
-            If Not state.busy Then
-                state.set_not_transfering(complete)
-                Return
-            End If
+                Dim client = clients(client_key)
+                If Not client.busy Then
+                    client.set_not_transfering(complete)
+                    Return
+                End If
 
-            Dim other_state = client_states(state.other)
-            state.set_not_transfering(complete)
-            other_state.set_not_transfering(complete)
-        End SyncLock
+                Dim other = client.other
+                client.set_not_transfering(complete)
+                other.set_not_transfering(complete)
+            End Sub
+        )
     End Sub
 
     Public Sub update()
-        Dim transfers = New List(Of TransferEndPoint)
-        Dim breaks = New List(Of TransferEndPoint)
+        ref.enqueueAction(
+            Sub()
+                Dim transfers = New List(Of TransferEndPoint)
+                Dim breaks = New List(Of TransferEndPoint)
 
-        'Match downloaders to uploaders
-        SyncLock lock
-            For Each c In client_states.Keys
-                Dim cs = client_states(c)
-                If cs.links.Count = 0 Then Continue For
-                If cs.completed Then Continue For
-                If Not cs.busy Then
-                    'Find best uploader and start transfer
-                    Dim b As T = Nothing
-                    Dim bs As ClientState = Nothing
-                    For Each e In cs.links
-                        Dim es = client_states(e)
-                        If Not es.completed Then Continue For 'can't upload file you don't have
-                        If es.busy Then Continue For 'already uploading to someone else
-                        
-                        Dim better = False
-                        If bs Is Nothing Then
-                            better = True 'anyone is better than nothing
-                        ElseIf es.get_max_rate_estimate > bs.get_max_rate_estimate Then
-                            better = True 'faster is better
-                        ElseIf es.get_max_rate_estimate = bs.get_max_rate_estimate AndAlso es.links.Count < bs.links.Count Then
-                            better = True 'less important to others is good
+                'Match downloaders to uploaders
+                For Each downloader In (From client In clients.Values Where Not client.completed)
+                    Dim available_uploaders = From e In downloader.links Where e.completed AndAlso Not e.busy
+                    If available_uploaders.None Then  Continue For
+
+                    Dim cur_uploader = downloader.other
+                    Dim best_uploader = available_uploaders.Max(Function(e1, e2)
+                                                                    Dim n = Math.Sign(e1.get_max_rate_estimate - e2.get_max_rate_estimate)
+                                                                    If n <> 0 Then  Return n
+                                                                    Return Math.Sign(e1.links.Count - e2.links.Count)
+                                                                End Function)
+
+                    If cur_uploader Is Nothing Then
+                        'Start transfer
+                        best_uploader.set_transfering(downloader.last_progress, downloader)
+                        downloader.set_transfering(downloader.last_progress, best_uploader)
+                        transfers.Add(New TransferEndPoint(best_uploader.client, downloader.client))
+                    ElseIf Math.Min(downloader.transfering_time, cur_uploader.transfering_time) > ClientState.MIN_SWITCH_PERIOD Then
+                        'Stop transfer if a significantly better uploader is available
+                        If cur_uploader.is_probably_frozen OrElse best_uploader.get_max_rate_estimate > cur_uploader.get_max_rate_estimate * 2 + 1 Then
+                            breaks.Add(New TransferEndPoint(cur_uploader.client, downloader.client))
                         End If
-                        If better Then
-                            b = e
-                            bs = es
-                        End If
-                    Next e
+                    End If
+                Next downloader
 
-                    If bs IsNot Nothing Then
-                        bs.set_transfering(cs.last_progress, c)
-                        cs.set_transfering(cs.last_progress, b)
-                        transfers.Add(New TransferEndPoint(b, c))
-                    End If
-                Else
-                    'Stop transfer if a significantly better uploader is available
-                    '[stopped clients will not be reassigned this update to avoid forcing start/stop order dependence on outside]
-                    Dim p = cs.other
-                    Dim ps = client_states(p)
-                    Dim breakit = False
-                    If Math.Min(cs.transfering_time, ps.transfering_time) <= ClientState.MIN_SWITCH_PERIOD Then Continue For
-                    If ps.is_probably_frozen Then
-                        breakit = True
-                    Else
-                        For Each e In cs.links
-                            Dim es = client_states(e)
-                            If Not es.completed Then Continue For 'can't upload file you don't have
-                            If es.busy Then Continue For 'already uploading to someone else
+                'Stop transfers seen as improvable
+                '[Done here instead of in the loop to avoid potentially giving two commands to clients at the same time]
+                For Each e In breaks
+                    set_link(e.src, e.dst, False)
+                Next e
 
-                            If es.get_max_rate_estimate > ps.get_max_rate_estimate * 2 + 1 Then
-                                breakit = True
-                                Exit For
-                            End If
-                        Next e
-                    End If
-                    If breakit Then
-                        breaks.Add(New TransferEndPoint(p, c))
-                    End If
+                'Report actions to the outside
+                If transfers.Any Or breaks.Any Then
+                    RaiseEvent actions(transfers, breaks)
                 End If
-            Next c
-
-            'Stop transfers seen as 'improvable'
-            For Each e In breaks
-                set_link(e.src, e.dst, False)
-            Next e
-        End SyncLock
-
-        'Report actions to the outside
-        If transfers.Count + breaks.Count > 0 Then
-            RaiseEvent actions(transfers, breaks)
-        End If
+            End Sub
+        )
     End Sub
 
     Private Class ClientState
-#Region "Variables"
         Private max_rate_estimate As Double
         Private cur_rate_estimate As Double
 
@@ -202,13 +179,13 @@ Public Class TransferScheduler(Of T)
         Private last_start_time As Integer
         Private num_measures As Integer = 0
 
-        Public other As T = Nothing
-        Public links As New List(Of T)
+        Public ReadOnly client As K
+        Public other As ClientState = Nothing
+        Public links As New HashSet(Of ClientState)
 
         Public Const PROBABLY_FROZEN_PERIOD As Integer = 10000
         Public Const MIN_SWITCH_PERIOD As Integer = 3000
         Private Const CUR_ESTIMATE_CONVERGENCE_PER_SECOND As Double = 0.6
-#End Region
 
 #Region "Properties"
         Public ReadOnly Property transfering_time() As Double
@@ -266,7 +243,8 @@ Public Class TransferScheduler(Of T)
 #End Region
 
 #Region "New"
-        Public Sub New(ByVal completed As Boolean, ByVal typical_rate_per_ms As Double)
+        Public Sub New(ByVal client As K, ByVal completed As Boolean, ByVal typical_rate_per_ms As Double)
+            Me.client = client
             Me.completed = completed
             Me.max_rate_estimate = typical_rate_per_ms
             Me.cur_rate_estimate = typical_rate_per_ms
@@ -274,7 +252,7 @@ Public Class TransferScheduler(Of T)
 #End Region
 
 #Region "State"
-        Public Sub set_transfering(ByVal progress As Double, ByVal other As T)
+        Public Sub set_transfering(ByVal progress As Double, ByVal other As ClientState)
             If busy Then Return
 
             'Update state

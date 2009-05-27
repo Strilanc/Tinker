@@ -23,17 +23,18 @@ Namespace Commands.Specializations
             add_subcommand(New com_SetSetting)
             add_subcommand(New com_CreateAdmin)
             add_subcommand(New com_KillLan)
+            add_subcommand(New com_RecacheIP)
         End Sub
 
         Public Class com_GetSetting
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_GetSetting, _
-                           1, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_GetSetting_Help, _
+                MyBase.New(My.Resources.Command_Bot_GetSetting,
+                           1, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_GetSetting_Help,
                            DictStrUInt("root=1"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
                 Dim val As Object
                 Select Case arguments(0).ToLower()
                     Case "tickperiod"
@@ -53,12 +54,12 @@ Namespace Commands.Specializations
         Public Class com_SetSetting
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_SetSetting, _
-                           2, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_SetSetting_Help, _
+                MyBase.New(My.Resources.Command_Bot_SetSetting,
+                           2, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_SetSetting_Help,
                            DictStrUInt("root=2"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
                 Dim val_us As UShort
                 Dim vald As Double
                 Dim is_short = UShort.TryParse(arguments(1), val_us)
@@ -85,14 +86,14 @@ Namespace Commands.Specializations
         Private Class com_CreateAdmin
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_CreateAdmin, _
-                            2, ArgumentLimits.min, _
-                            My.Resources.Command_Bot_CreateAdmin_Help, _
-                            My.Resources.Command_Bot_CreateAdmin_Access, _
-                            My.Resources.Command_Bot_CreateAdmin_ExtraHelp, _
+                MyBase.New(My.Resources.Command_Bot_CreateAdmin,
+                            2, ArgumentLimits.min,
+                            My.Resources.Command_Bot_CreateAdmin_Help,
+                            My.Resources.Command_Bot_CreateAdmin_Access,
+                            My.Resources.Command_Bot_CreateAdmin_ExtraHelp,
                             True)
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim name = arguments(0)
                 Dim password = arguments(1)
                 Dim remote_host = "localhost"
@@ -108,14 +109,14 @@ Namespace Commands.Specializations
         Private Class com_CreateLan
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_CreateLan, _
-                            1, ArgumentLimits.min, _
-                            My.Resources.Command_Bot_CreateLan_Help, _
-                            My.Resources.Command_Bot_CreateLan_Access, _
+                MyBase.New(My.Resources.Command_Bot_CreateLan,
+                            1, ArgumentLimits.min,
+                            My.Resources.Command_Bot_CreateLan_Help,
+                            My.Resources.Command_Bot_CreateLan_Access,
                             My.Resources.Command_Bot_CreateLan_ExtraHelp)
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, _
-                                              ByVal user As BotUser, _
+            Public Overrides Function Process(ByVal target As MainBot,
+                                              ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim name = arguments(0)
                 Dim listen_port = CUShort(0)
@@ -127,7 +128,7 @@ Namespace Commands.Specializations
 
                 If listen_port = 0 Then
                     Dim out = target.port_pool.TryTakePortFromPool()
-                    If out.outcome = Outcomes.failed Then Return futurize(Of Outcome)(out)
+                    If Not out.succeeded Then Return futurize(Of Outcome)(out)
                     Return target.add_widget_R(New W3LanAdvertiser(target, name, out.val, remote_host))
                 Else
                     Return target.add_widget_R(New W3LanAdvertiser(target, name, listen_port, remote_host))
@@ -137,13 +138,13 @@ Namespace Commands.Specializations
         Public Class com_KillLan
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_KillLan, _
-                            1, ArgumentLimits.exact, _
-                            My.Resources.Command_Bot_KillLan_Help, _
-                            My.Resources.Command_Bot_KillLan_Access, _
+                MyBase.New(My.Resources.Command_Bot_KillLan,
+                            1, ArgumentLimits.exact,
+                            My.Resources.Command_Bot_KillLan_Help,
+                            My.Resources.Command_Bot_KillLan_Access,
                             My.Resources.Command_Bot_KillLan_ExtraHelp)
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.remove_widget_R(W3LanAdvertiser.TYPE_NAME, arguments(0))
             End Function
         End Class
@@ -152,24 +153,20 @@ Namespace Commands.Specializations
         Public Class com_Client
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_Client, _
-                            1, ArgumentLimits.min, _
-                            My.Resources.Command_Bot_Client_Help, _
-                            My.Resources.Command_Bot_Client_Access, _
+                MyBase.New(My.Resources.Command_Bot_Client,
+                            1, ArgumentLimits.min,
+                            My.Resources.Command_Bot_Client_Help,
+                            My.Resources.Command_Bot_Client_Access,
                             My.Resources.Command_Bot_Client_ExtraHelp)
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
-                Return futurefuture( _
-                        FutureFunc(Of IFuture(Of Outcome)).frun( _
-                            AddressOf runOnClient, _
-                                target.find_client_R(arguments(0)), _
-                                futurize(target), _
-                                futurize(user), _
-                                futurize(mendQuotedWords(arguments, 1))))
-            End Function
-            Private Function runOnClient(ByVal client As BnetClient, ByVal target As MainBot, ByVal user As BotUser, ByVal argument_text As String) As IFuture(Of Outcome)
-                If client Is Nothing Then Return futurize(failure("No matching client"))
-                Return target.client_commands.processText(client, user, argument_text)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
+                Return FutureFunc.ffrun(
+                    target.find_client_R(arguments(0)),
+                    Function(client)
+                        If client Is Nothing Then  Return futurize(failure("No matching client"))
+                        Return target.client_commands.processText(client, user, mendQuotedWords(arguments, 1))
+                    End Function
+                )
             End Function
         End Class
 
@@ -177,26 +174,21 @@ Namespace Commands.Specializations
         Public Class com_Server
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_Server, _
-                           1, ArgumentLimits.min, _
-                           My.Resources.Command_Bot_Server_Help, _
+                MyBase.New(My.Resources.Command_Bot_Server,
+                           1, ArgumentLimits.min,
+                           My.Resources.Command_Bot_Server_Help,
                            DictStrUInt("root=3"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
-                Return futurefuture( _
-                        FutureFunc(Of IFuture(Of Outcome)).frun( _
-                            AddressOf runOnServer, _
-                                target.find_server_R(arguments(0)), _
-                                futurize(target), _
-                                futurize(user), _
-                                futurize(mendQuotedWords(arguments, 1))))
-            End Function
-            Private Function runOnServer(ByVal server As IW3Server, _
-                                         ByVal target As MainBot, _
-                                         ByVal user As BotUser, _
-                                         ByVal argument_text As String) As IFuture(Of Outcome)
-                If server Is Nothing Then Return futurize(failure("No matching server"))
-                Return target.server_commands.processText(server, user, argument_text)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
+                'Find the server, then pass the command to it
+                Return FutureFunc.ffrun(
+                    target.find_server_R(arguments(0)),
+                    Function(server)
+                        If server Is Nothing Then  Return futurize(failure("No matching server"))
+                        'Pass the command
+                        Return target.server_commands.processText(server, user, mendQuotedWords(arguments, 1))
+                    End Function
+                )
             End Function
         End Class
 
@@ -204,13 +196,13 @@ Namespace Commands.Specializations
         Public Class com_CreateClient
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_CreateClient, _
-                           1, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_CreateClient_Help, _
+                MyBase.New(My.Resources.Command_Bot_CreateClient,
+                           1, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_CreateClient_Help,
                            DictStrUInt("root=4"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return stripFutureOutcome(target.create_client_R(arguments(0)))
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return stripFutureOutcome(target.f_CreateClient(arguments(0)))
             End Function
         End Class
 
@@ -218,13 +210,13 @@ Namespace Commands.Specializations
         Public Class com_KillClient
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_KillClient, _
-                           1, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_KillClient_Help, _
+                MyBase.New(My.Resources.Command_Bot_KillClient,
+                           1, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_KillClient_Help,
                            DictStrUInt("root=4"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.remove_client_R(arguments(0))
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return target.f_RemoveClient(arguments(0))
             End Function
         End Class
 
@@ -232,12 +224,12 @@ Namespace Commands.Specializations
         Public Class com_KillServer
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_KillServer, _
-                           1, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_KillServer_Help, _
+                MyBase.New(My.Resources.Command_Bot_KillServer,
+                           1, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_KillServer_Help,
                            DictStrUInt("root=4"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.remove_server_R(arguments(0))
             End Function
         End Class
@@ -246,21 +238,21 @@ Namespace Commands.Specializations
         Public Class com_CreateServer
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_CreateServer, _
-                           2, ArgumentLimits.min, _
-                           My.Resources.Command_Bot_CreateServer_Help, _
-                           My.Resources.Command_Bot_CreateServer_Access, _
+                MyBase.New(My.Resources.Command_Bot_CreateServer,
+                           2, ArgumentLimits.min,
+                           My.Resources.Command_Bot_CreateServer_Help,
+                           My.Resources.Command_Bot_CreateServer_Access,
                            My.Resources.Command_Bot_CreateServer_ExtraHelp)
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, _
-                                              ByVal user As BotUser, _
+            Public Overrides Function Process(ByVal target As MainBot,
+                                              ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim map_out = W3Map.FromArgument(arguments(1))
-                If map_out.outcome <> Outcomes.succeeded Then Return futurize(Of Outcome)(map_out)
+                If Not map_out.succeeded Then Return futurize(Of Outcome)(map_out)
                 Dim map = map_out.val
 
-                Dim settings = New ServerSettings(map, _
-                                                  If(user Is Nothing, Nothing, user.name), _
+                Dim settings = New ServerSettings(map,
+                                                  If(user Is Nothing, Nothing, user.name),
                                                   arguments:=arguments)
                 Return stripFutureOutcome(target.create_server_R(arguments(0), settings))
             End Function
@@ -270,13 +262,27 @@ Namespace Commands.Specializations
         Public Class com_LoadPlugin
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_LoadPlugin, _
-                           1, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_LoadPlugin_Help, _
+                MyBase.New(My.Resources.Command_Bot_LoadPlugin,
+                           1, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_LoadPlugin_Help,
                            DictStrUInt("root=5"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.loadPlugin_R(arguments(0))
+            End Function
+        End Class
+
+        Public Class com_RecacheIP
+            Inherits BaseCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New("RecacheIP",
+                           0, ArgumentLimits.exact,
+                           "Recaches external and internal IP addresses",
+                           DictStrUInt("root=5"))
+            End Sub
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                CacheIPAddresses()
+                Return futurize(success("Recaching addresses."))
             End Function
         End Class
 
@@ -284,132 +290,125 @@ Namespace Commands.Specializations
         Private Class com_Connect
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_Connect, _
-                           1, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_Connect_Help, _
-                           My.Resources.Command_Bot_Connect_Access, _
+                MyBase.New(My.Resources.Command_Bot_Connect,
+                           1, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_Connect_Help,
+                           My.Resources.Command_Bot_Connect_Access,
                            My.Resources.Command_Bot_Connect_ExtraHelp)
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Dim f As New Future(Of Outcome)()
-                FutureSub.frun(AddressOf process_created_client, _
-                            futurize(f), _
-                            target.create_client_R(arguments(0), arguments(0)), _
-                            futurize(target), _
-                            futurize(arguments))
-                Return f
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Dim client_name = arguments(0)
+                Dim profile_name = arguments(0) '[Yes, client named same as profile]
+                'Create client, then connect to bnet, then login
+                Return FutureFunc.ffrun(
+                    target.f_CreateClient(client_name, profile_name),
+                    Function(createdClient)
+                        If Not createdClient.succeeded Then
+                            Return futurize(CType(createdClient, Outcome)) 'failed
+                        End If
+                        Dim client = createdClient.val
+
+                        'Connect to bnet, then login
+                        Dim connectedAndLoggedIn = FutureFunc.ffrun(
+                            client.f_Connect(client.profile.server.Split(" "c)(0)),
+                            Function(connected)
+                                If Not connected.succeeded Then
+                                    Return futurize(connected) 'failed
+                                End If
+
+                                'Login
+                                Return client.f_Login(client.profile.username, client.profile.password)
+                            End Function
+                        )
+
+                        'Cleanup client if connection or login fail
+                        FutureSub.frun(
+                            connectedAndLoggedIn,
+                            Sub(finished)
+                                If Not finished.succeeded Then
+                                    target.f_RemoveClient(arguments(0))
+                                End If
+                            End Sub
+                        )
+
+                        Return connectedAndLoggedIn
+                    End Function
+                )
             End Function
-            Private Sub process_created_client(ByVal f As Future(Of Outcome), ByVal out As Outcome(Of BnetClient), ByVal target As MainBot, ByVal arguments As IList(Of String))
-                If out.outcome <> Outcomes.succeeded Then
-                    f.setValue(out)
-                    Return
-                End If
-
-                FutureSub.frun(AddressOf process_conected, _
-                            futurize(f), _
-                            out.val.connect_R(out.val.profile.server.Split(" "c)(0)), _
-                            futurize(target), _
-                            futurize(out.val), _
-                            futurize(arguments))
-            End Sub
-            Private Sub process_conected(ByVal f As Future(Of Outcome), ByVal out As Outcome, ByVal target As MainBot, ByVal client As BnetClient, ByVal arguments As IList(Of String))
-                If out.outcome <> Outcomes.succeeded Then
-                    target.remove_client_R(arguments(0))
-                    f.setValue(out)
-                    Return
-                End If
-
-                FutureSub.frun(AddressOf process_logged_on, _
-                            futurize(f), _
-                            client.logon_R(client.profile.username, client.profile.password), _
-                            futurize(target), _
-                            futurize(client), _
-                            futurize(arguments))
-            End Sub
-            Private Sub process_logged_on(ByVal f As Future(Of Outcome), ByVal out As Outcome, ByVal target As MainBot, ByVal client As BnetClient, ByVal arguments As IList(Of String))
-                If out.outcome <> Outcomes.succeeded Then
-                    target.remove_client_R(arguments(0))
-                End If
-                f.setValue(out)
-            End Sub
         End Class
 
         Public Class com_DownloadEpicWarMap
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_DownloadEpicWarMap, _
-                           1, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_DownloadEpicWarMap_Help, _
+                MyBase.New(My.Resources.Command_Bot_DownloadEpicWarMap,
+                           1, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_DownloadEpicWarMap_Help,
                            DictStrUInt("root=2"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
                 Dim epicWarNumber As UInteger
                 If Not UInteger.TryParse(arguments(0), epicWarNumber) Then
                     Return futurize(failure("Expected a numeric argument."))
                 End If
-                Dim f As New Future(Of Outcome)
-                threadedCall(Function() eval(AddressOf dlmap, f, epicWarNumber), "Download Map")
-                Return f
+                Return ThreadedFunc(
+                    Function()
+                        Dim filename As String = Nothing
+                        Dim path As String = Nothing
+                        Try
+                            Dim http As New Net.WebClient()
+                            Dim httpFile As String = http.DownloadString("http://epicwar.com/maps/" + epicWarNumber.ToString() + "/")
+
+                            'Find download link
+                            Dim i = httpFile.IndexOf("alt=""Download""")
+                            i = httpFile.IndexOf("a href=""", i)
+                            i += "a href=""".Length
+                            Dim j = httpFile.IndexOf(">", i)
+                            Dim link As String = "http://epicwar.com" + httpFile.Substring(i, j - i)
+
+                            'Find filename
+                            i = httpFile.IndexOf("Download ", i) + "Download ".Length
+                            j = httpFile.IndexOf("<", i)
+                            filename = httpFile.Substring(i, j - i)
+                            path = My.Settings.mapPath + filename
+
+                            'Check for existing files
+                            If IO.File.Exists(path + ".dl") Then
+                                Return failure("A map with the filename '{0}' is already being downloaded.".frmt(filename))
+                            ElseIf IO.File.Exists(path) Then
+                                Return failure("A map with the filename '{0}' already exists.".frmt(filename))
+                            End If
+
+                            'Download
+                            http.DownloadFile(link, path + ".dl")
+                            IO.File.Move(path + ".dl", path)
+
+                            'Finished
+                            Return success("Finished downloading map with filename '{0}'.".frmt(filename))
+                        Catch e As Exception
+                            If path IsNot Nothing Then
+                                'cleanup
+                                IO.File.Delete(path + ".dl")
+                                IO.File.Delete(path)
+
+                                Return failure("There was an error downloading the map '{0}'".frmt(filename))
+                            Else
+                                Return failure("There was an error downloading the map '{0}'".frmt(epicWarNumber))
+                            End If
+                        End Try
+                    End Function
+                )
             End Function
-            Private Sub dlmap(ByVal f As Future(Of Outcome), ByVal epicWarNumber As UInteger)
-                Dim filename As String = Nothing
-                Dim path As String = Nothing
-                Try
-                    Dim http As New Net.WebClient()
-                    Dim httpFile As String = http.DownloadString("http://epicwar.com/maps/" + epicWarNumber.ToString() + "/")
-
-                    'Find download link
-                    Dim i As Integer = httpFile.IndexOf("alt=""Download""")
-                    i = httpFile.IndexOf("a href=""", i)
-                    i += "a href=""".Length
-                    Dim j As Integer = httpFile.IndexOf(">", i)
-                    Dim link As String = "http://epicwar.com" + httpFile.Substring(i, j - i)
-
-                    'Find filename
-                    i = httpFile.IndexOf("Download ", i) + "Download ".Length
-                    j = httpFile.IndexOf("<", i)
-                    filename = httpFile.Substring(i, j - i)
-                    path = My.Settings.mapPath + filename
-
-                    'Check for existing files
-                    If IO.File.Exists(path + ".dl") Then
-                        f.setValue(failure("A map with the filename '{0}' is already being downloaded.".frmt(filename)))
-                        Return
-                    End If
-                    If IO.File.Exists(path) Then
-                        f.setValue(failure("A map with the filename '{0}' already exists.".frmt(filename)))
-                        Return
-                    End If
-
-                    'Download
-                    http.DownloadFile(link, path + ".dl")
-                    IO.File.Move(path + ".dl", path)
-
-                    'Finished
-                    f.setValue(success("Finished downloading map with filename '{0}'.".frmt(filename)))
-                Catch e As Exception
-                    If path IsNot Nothing Then
-                        'cleanup
-                        IO.File.Delete(path + ".dl")
-                        IO.File.Delete(path)
-
-                        f.setValue(failure("There was an error downloading the map '{0}'".frmt(filename)))
-                    Else
-                        f.setValue(failure("There was an error downloading the map '{0}'".frmt(epicWarNumber)))
-                    End If
-                End Try
-            End Sub
         End Class
 
         Public Class com_FindMaps
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_FindMaps, _
-                           1, ArgumentLimits.min, _
-                           My.Resources.Command_Bot_FindMaps_Help, _
+                MyBase.New(My.Resources.Command_Bot_FindMaps,
+                           1, ArgumentLimits.min,
+                           My.Resources.Command_Bot_FindMaps_Help,
                            DictStrUInt("games=1"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Const MAX_RESULTS As Integer = 5
                 Dim out = findFilesMatching("*" + arguments(0) + "*", "*.[wW]3[mxMX]", My.Settings.mapPath, MAX_RESULTS)
                 Dim ret = ""
@@ -417,7 +416,7 @@ Namespace Commands.Specializations
                     If ret <> "" Then ret += ", "
                     ret += result
                 Next result
-                If out.outcome = Outcomes.failed AndAlso out.val.Count = 0 Then
+                If Not out.succeeded AndAlso out.val.Count = 0 Then
                     Return futurize(failure(out.message))
                 ElseIf out.val.Count = 0 Then
                     Return futurize(success("No matching maps."))
@@ -429,12 +428,12 @@ Namespace Commands.Specializations
         Public Class com_CreateCKL
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_CreateCKL, _
-                           4, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_CreateCKL_Help, _
+                MyBase.New(My.Resources.Command_Bot_CreateCKL,
+                           4, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_CreateCKL_Help,
                            DictStrUInt("root=5"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim port As UShort
                 If Not UShort.TryParse(arguments(1), port) Then
                     Return futurize(failure("Expected port number for second argument."))
@@ -446,12 +445,12 @@ Namespace Commands.Specializations
         Public Class com_KillCKL
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Bot_KillCKL, _
-                           1, ArgumentLimits.exact, _
-                           My.Resources.Command_Bot_KillCKL_Help, _
+                MyBase.New(My.Resources.Command_Bot_KillCKL,
+                           1, ArgumentLimits.exact,
+                           My.Resources.Command_Bot_KillCKL_Help,
                            DictStrUInt("root=5"))
             End Sub
-            Public Overrides Function process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.remove_widget_R(BotCKLServer.WIDGET_TYPE_NAME, arguments(0))
             End Function
         End Class

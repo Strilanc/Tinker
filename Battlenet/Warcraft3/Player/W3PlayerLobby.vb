@@ -65,7 +65,7 @@
                         player.game.lobby.download_scheduler.add(player.index, has_map)
                     Else
                         If Not player.game.parent.settings.allowDownloads Then
-                            player.logger.log(player.name + " doesn't have the map and DLs are not allowed.", LogMessageTypes.NegativeEvent)
+                            player.logger.log(player.name + " doesn't have the map and DLs are not allowed.", LogMessageTypes.Negative)
                             player.disconnect_L(True, W3PlayerLeaveTypes.disc)
                             Return
                         End If
@@ -73,7 +73,7 @@
                     End If
                     player.game.lobby.download_scheduler.set_link(player.index, 255, True)
                 ElseIf downloaded_map_size_L = player.game.map.fileSize Then
-                    player.logger.log(player.name + " finished downloading the map.", LogMessageTypes.PositiveEvent)
+                    player.logger.log(player.name + " finished downloading the map.", LogMessageTypes.Positive)
                     player.game.lobby.download_scheduler.stop_transfer(player.index, True)
                 Else
                     player.game.lobby.download_scheduler.update_progress(player.index, downloaded_map_size_L)
@@ -111,10 +111,10 @@
                 End Set
             End Property
             Private Function _buffer_map_R() As IFuture Implements IW3PlayerLobby.f_BufferMap
-                Return player.ref.enqueue(AddressOf BufferMap)
+                Return player.ref.enqueueAction(AddressOf BufferMap)
             End Function
             Private Function _start_countdown_R() As IFuture Implements IW3PlayerLobby.f_StartCountdown
-                Return player.ref.enqueue(AddressOf start_countdown_L)
+                Return player.ref.enqueueAction(AddressOf start_countdown_L)
             End Function
 #End Region
 
@@ -134,11 +134,11 @@
 
             Private Sub BufferMap()
                 Dim f_host = player.game.f_fake_host_player
-                Dim f_index = FutureFunc(Of Byte).frun(Function(player) If(player Is Nothing, CByte(0), player.index), f_host)
-                FutureSub.frun(AddressOf _BufferMap, f_index)
+                Dim f_index = FutureFunc.frun(f_host, Function(player) If(player Is Nothing, CByte(0), player.index))
+                FutureSub.frun(f_index, AddressOf _BufferMap)
             End Sub
             Private Sub _BufferMap(ByVal sender_index As Byte)
-                player.ref.enqueue(Function() eval(AddressOf __BufferMap, sender_index))
+                player.ref.enqueueAction(sub() __BufferMap( sender_index))
             End Sub
             Private Sub __BufferMap(ByVal sender_index As Byte)
                 If sent_map_size - downloaded_map_size_L >= MAX_BUFFERED_MAP_SIZE Then Return

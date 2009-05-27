@@ -1,8 +1,8 @@
 Public Class FrmLogger
-    Public Sub New(ByVal name As String, _
-                   ByVal logger As MultiLogger, _
-                   Optional ByVal showDataEvents As LoggerControl.CallbackMode = LoggerControl.CallbackMode.Unspecified, _
-                   Optional ByVal showDataParsed As LoggerControl.CallbackMode = LoggerControl.CallbackMode.Unspecified, _
+    Public Sub New(ByVal name As String,
+                   ByVal logger As Logger,
+                   Optional ByVal showDataEvents As LoggerControl.CallbackMode = LoggerControl.CallbackMode.Unspecified,
+                   Optional ByVal showDataParsed As LoggerControl.CallbackMode = LoggerControl.CallbackMode.Unspecified,
                    Optional ByVal showDataRaw As LoggerControl.CallbackMode = LoggerControl.CallbackMode.Unspecified)
         MyBase.New()
         InitializeComponent()

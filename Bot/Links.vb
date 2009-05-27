@@ -4,22 +4,22 @@ Imports HostBot.Bnet
 Namespace Links
 #Region "AdvertisingLink"
     Public Interface IAdvertisingLinkMember
-        Event started_advertising(ByVal sender As IAdvertisingLinkMember, _
-                                  ByVal server As IW3Server, _
-                                  ByVal name As String, _
-                                  ByVal map As W3Map, _
+        Event started_advertising(ByVal sender As IAdvertisingLinkMember,
+                                  ByVal server As IW3Server,
+                                  ByVal name As String,
+                                  ByVal map As W3Map,
                                   ByVal options As IList(Of String))
-        Event stopped_advertising(ByVal sender As IAdvertisingLinkMember, _
+        Event stopped_advertising(ByVal sender As IAdvertisingLinkMember,
                                   ByVal reason As String)
 
-        Sub start_advertising(ByVal server As IW3Server, _
-                              ByVal name As String, _
-                              ByVal map As W3Map, _
+        Sub start_advertising(ByVal server As IW3Server,
+                              ByVal name As String,
+                              ByVal map As W3Map,
                               ByVal options As IList(Of String))
         Sub stop_advertising(ByVal reason As String)
         Sub set_advertising_options(ByVal [private] As Boolean)
 
-        Event break(ByVal sender As IAdvertisingLinkMember, _
+        Event break(ByVal sender As IAdvertisingLinkMember,
                     ByVal partner As IAdvertisingLinkMember)
     End Interface
 
@@ -58,7 +58,7 @@ Namespace Links
             RaiseEvent closed()
         End Sub
 
-        Private Function opposite(ByVal m As IAdvertisingLinkMember, _
+        Private Function opposite(ByVal m As IAdvertisingLinkMember,
                                   ByVal desired_advertising_state As Boolean) As IAdvertisingLinkMember
             SyncLock lock
                 Dim i = -1
@@ -70,17 +70,17 @@ Namespace Links
                 Return members(i)
             End SyncLock
         End Function
-        Private Sub member_break(ByVal sender As IAdvertisingLinkMember, _
+        Private Sub member_break(ByVal sender As IAdvertisingLinkMember,
                                  ByVal partner As IAdvertisingLinkMember)
             SyncLock lock
                 If partner IsNot Nothing AndAlso Not members.Contains(partner) Then Return
                 break()
             End SyncLock
         End Sub
-        Private Sub member_started_advertising(ByVal sender As IAdvertisingLinkMember, _
-                                               ByVal server As IW3Server, _
-                                               ByVal name As String, _
-                                               ByVal map As Warcraft3.W3Map, _
+        Private Sub member_started_advertising(ByVal sender As IAdvertisingLinkMember,
+                                               ByVal server As IW3Server,
+                                               ByVal name As String,
+                                               ByVal map As Warcraft3.W3Map,
                                                ByVal options As IList(Of String))
             SyncLock lock
                 advertising(sender) = True
@@ -89,7 +89,7 @@ Namespace Links
             If receiver Is Nothing Then Return
             receiver.start_advertising(server, name, map, options)
         End Sub
-        Private Sub member_stopped_advertising(ByVal sender As IAdvertisingLinkMember, _
+        Private Sub member_stopped_advertising(ByVal sender As IAdvertisingLinkMember,
                                                ByVal reason As String)
             SyncLock lock
                 advertising(sender) = False
@@ -135,7 +135,7 @@ Namespace Links
         End Sub
 
         Public Function break_R(ByVal kill_servant As Boolean) As IFuture(Of Boolean)
-            Return ref.enqueue(Function() break_L(kill_servant))
+            Return ref.enqueueFunc(Function() break_L(kill_servant))
         End Function
         Private Function break_L(ByVal kill_servant As Boolean) As Boolean
             If broken Then Return False

@@ -20,6 +20,9 @@
             Private game_data_queue As New Queue(Of GameTickDatum)
             Private game_time As Integer = 0
             Private game_time_buffer As Double = 0
+            Property setting_speed_factor As Double = My.Settings.game_speed_factor Implements IW3GamePlay.setting_game_rate
+            Property setting_tick_period As Double = My.Settings.game_tick_period Implements IW3GamePlay.setting_tick_period
+            Property setting_lag_limit As Double = My.Settings.game_lag_limit Implements IW3GamePlay.setting_lag_limit
 
             Public Sub New(ByVal body As W3Game)
                 MyBase.New(body)
@@ -39,7 +42,7 @@
             End Sub
 
             Private Sub e_ThrowPlayerSentData(ByVal p As IW3PlayerGameplay, ByVal data As Byte())
-                game.eventRef.enqueue(Function() eval(AddressOf _e_ThrowPlayerSentData, p, data))
+                game.eventRef.enqueueAction(Sub() _e_ThrowPlayerSentData(p, data))
             End Sub
             Private Sub _e_ThrowPlayerSentData(ByVal p As IW3PlayerGameplay, ByVal data As Byte())
                 RaiseEvent PlayerSentData(Me, p, data)
@@ -61,28 +64,29 @@
 
             '''<summary>Advances game time</summary>
             Private Sub c_Tick(ByVal sender As Object, ByVal e As Timers.ElapsedEventArgs) Handles tick_timer.Elapsed
-                game.ref.enqueue(AddressOf _c_Tick)
-            End Sub
-            Private Sub _c_Tick()
-                Dim t = Environment.TickCount
-                Dim dt = TickCountDelta(t, last_tick_time) * My.Settings.game_speed_factor
-                Dim dgt = CUShort(My.Settings.game_tick_period * My.Settings.game_speed_factor)
-                last_tick_time = t
+                game.ref.enqueueAction(
+                    Sub()
+                        Dim t = Environment.TickCount
+                        Dim dt = TickCountDelta(t, last_tick_time) * Me.setting_speed_factor
+                        Dim dgt = CUShort(Me.setting_tick_period * Me.setting_speed_factor)
+                        last_tick_time = t
 
-                'Stop for laggers
-                UpdateLagScreen()
-                If lagging_players.Count > 0 Then
-                    Return
-                End If
+                        'Stop for laggers
+                        UpdateLagScreen()
+                        If lagging_players.Count > 0 Then
+                            Return
+                        End If
 
-                'Throttle tick rate
-                game_time_buffer += dt - dgt
-                game_time_buffer = game_time_buffer.between(-dgt * 10, dgt * 10)
-                tick_timer.Interval = (dgt - game_time_buffer).between(dgt / 2, dgt * 2)
+                        'Throttle tick rate
+                        game_time_buffer += dt - dgt
+                        game_time_buffer = game_time_buffer.between(-dgt * 10, dgt * 10)
+                        tick_timer.Interval = (dgt - game_time_buffer).between(dgt / 2, dgt * 2)
 
-                'Send
-                SendQueuedGameData(New TickRecord(dgt, game_time))
-                game_time += dgt
+                        'Send
+                        SendQueuedGameData(New TickRecord(dgt, game_time))
+                        game_time += dgt
+                    End Sub
+                )
             End Sub
             Private Sub UpdateLagScreen()
                 If lagging_players.Count > 0 Then
@@ -96,7 +100,7 @@
                                                                Where game.GetVisiblePlayer(q) Is game.GetVisiblePlayer(p_)).None Then
                                 game.BroadcastPacket( _
                                         W3Packet.MakePacket_END_LAG( _
-                                                game.GetVisiblePlayer(p), _
+                                                game.GetVisiblePlayer(p),
                                                 CUInt(last_tick_time - lag_start_time)))
                             End If
                         End If
@@ -104,7 +108,7 @@
                 Else
                     lagging_players = (From p In game.players _
                                       Where Not p.is_fake _
-                                      AndAlso p.gameplay.tock_time < game_time - My.Settings.game_lag_limit).ToList()
+                                      AndAlso p.gameplay.tock_time < game_time - Me.setting_lag_limit).ToList()
                     If lagging_players.Count > 0 Then
                         game.BroadcastPacket(W3Packet.MakePacket_START_LAG(lagging_players), Nothing)
                         lag_start_time = last_tick_time
@@ -127,9 +131,9 @@
                     outgoing_data.Add(e)
 
                     'append client data to broadcast game data
-                    Dim data = concat(New Byte() {game.GetVisiblePlayer(e.source.player).index}, _
-                                                  CUShort(e.data.Length).bytes(), _
-                                                  e.data)
+                    Dim data = concat({game.GetVisiblePlayer(e.source.player).index},
+                                      CUShort(e.data.Length).bytes(ByteOrder.LittleEndian),
+                                      e.data)
                     data_list.Add(data)
                     data_length += data.Length
                 End While
@@ -144,16 +148,14 @@
                     End If
                 Next receiver
             End Sub
-            Private Function CreatePacketForInvisiblePlayer(ByVal receiver As IW3Player, _
-                                                            ByVal dgt As UShort, _
+            Private Function CreatePacketForInvisiblePlayer(ByVal receiver As IW3Player,
+                                                            ByVal dgt As UShort,
                                                             ByVal data As IEnumerable(Of GameTickDatum)) As W3Packet
-                Return W3Packet.MakePacket_TICK(dgt, _
+                Return W3Packet.MakePacket_TICK(dgt,
                         concat((From e In data _
                                 Select concat( _
-                                              New Byte() {If(e.source Is receiver, _
-                                                             receiver, _
-                                                             game.GetVisiblePlayer(e.source.player)).index}, _
-                                              CUShort(e.data.Length).bytes(), _
+                                              {If(e.source Is receiver, receiver, game.GetVisiblePlayer(e.source.player)).index},
+                                              CUShort(e.data.Length).bytes(ByteOrder.LittleEndian),
                                               e.data))))
             End Function
 #End Region
@@ -165,10 +167,10 @@
                 End Get
             End Property
             Private Function _f_DropLagger() As IFuture Implements IW3GamePlay.f_DropLagger
-                Return game.ref.enqueue(AddressOf DropLagger)
+                Return game.ref.enqueueAction(AddressOf DropLagger)
             End Function
             Private Function _f_QueueGameData(ByVal sender As IW3PlayerGameplay, ByVal data() As Byte) As IFuture Implements IW3GamePlay.f_QueueGameData
-                Return game.ref.enqueue(Function() eval(AddressOf QueueGameData, sender, data))
+                Return game.ref.enqueueAction(Sub() QueueGameData(sender, data))
             End Function
 #End Region
         End Class

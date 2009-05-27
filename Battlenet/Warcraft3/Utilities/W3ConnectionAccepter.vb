@@ -3,12 +3,12 @@
         Private Shared ReadOnly EXPIRY_PERIOD As New TimeSpan(0, 0, 10)
 
         Private WithEvents _accepter As New ConnectionAccepter
-        Private ReadOnly logger As MultiLogger
+        Private ReadOnly logger As Logger
         Private ReadOnly sockets As New HashSet(Of W3Socket)
         Private ReadOnly lock As New Object()
 
-        Public Sub New(Optional ByVal logger As MultiLogger = Nothing)
-            Me.logger = If(logger, New MultiLogger)
+        Public Sub New(Optional ByVal logger As Logger = Nothing)
+            Me.logger = If(logger, New Logger)
         End Sub
 
         ''' <summary>
@@ -37,13 +37,13 @@
         Private Sub catch_connection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient) Handles _accepter.accepted_connection
             Try
                 Dim socket = New W3Socket(New BnetSocket(client, logger))
-                logger.log("New player connecting from {0}.".frmt(socket.name), LogMessageTypes.PositiveEvent)
+                logger.log("New player connecting from {0}.".frmt(socket.name), LogMessageTypes.Positive)
 
                 SyncLock lock
                     sockets.Add(socket)
                 End SyncLock
                 AddHandler socket.ReceivedPacket, AddressOf catch_knocked
-                FutureSub.schedule(Function() eval(AddressOf catch_expired, socket), futurewait(EXPIRY_PERIOD))
+                FutureSub.schedule(Sub() catch_expired(socket), futurewait(EXPIRY_PERIOD))
 
                 socket.set_reading(True)
             Catch e As Exception
@@ -86,7 +86,7 @@
 
         Public Event Connection(ByVal sender As W3ConnectionAccepter, ByVal player As W3ConnectingPlayer)
 
-        Public Sub New(Optional ByVal logger As MultiLogger = Nothing)
+        Public Sub New(Optional ByVal logger As Logger = Nothing)
             MyBase.New(logger)
         End Sub
 
@@ -97,11 +97,11 @@
 
             Dim addr = CType(vals("internal address"), Dictionary(Of String, Object))
             Dim player = New W3ConnectingPlayer( _
-                                CStr(vals("name")), _
-                                CUInt(vals("connection key")), _
-                                CUShort(vals("listen port")), _
-                                CUShort(addr("port")), _
-                                CType(addr("ip"), Byte()), _
+                                CStr(vals("name")),
+                                CUInt(vals("connection key")),
+                                CUShort(vals("listen port")),
+                                CUShort(addr("port")),
+                                CType(addr("ip"), Byte()),
                                 socket)
 
             socket.name = player.name
@@ -115,7 +115,7 @@
 
         Public Event Connection(ByVal sender As W3P2PConnectionAccepter, ByVal player As W3P2PConnectingPlayer)
 
-        Public Sub New(Optional ByVal logger As MultiLogger = Nothing)
+        Public Sub New(Optional ByVal logger As Logger = Nothing)
             MyBase.New(logger)
         End Sub
 
@@ -123,9 +123,9 @@
             If id <> W3PacketId.P2P_KNOCK Then
                 Throw New IO.IOException("{0} was not a p2p warcraft 3 player connection.".frmt(socket.name))
             End If
-            Dim player = New W3P2PConnectingPlayer(socket, _
-                                              CByte(vals("receiver p2p key")), _
-                                              CByte(vals("sender player id")), _
+            Dim player = New W3P2PConnectingPlayer(socket,
+                                              CByte(vals("receiver p2p key")),
+                                              CByte(vals("sender player id")),
                                               CUShort(vals("sender p2p flags")))
             socket.set_reading(False)
             RaiseEvent Connection(Me, player)

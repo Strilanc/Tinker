@@ -2,7 +2,7 @@ Public Class SettingsList
     'Private ReadOnly uiRef As New InvokedCallQueue(Me, Me.gettype.name + " ui ref")
     'Private settings As Settings.Settings
     'Public Sub UIREF_hook(ByVal settings As Settings.Settings)
-    '    If uiRef.queueIfRemote(Function() eval(AddressOf UIREF_hook, settings)) Then Return
+    '    If uiRef.queueIfRemote(sub() UIREF_hook, settings)) Then Return
     '    If Me.settings Is settings Then Return
     '    Me.settings = settings
     '    gridSettings.Rows.Clear()

@@ -17,7 +17,7 @@ Namespace Warcraft3
         Private ReadOnly games_gameplay As New List(Of IW3Game)
 
         Private ReadOnly door As W3ServerDoor
-        Private ReadOnly logger As MultiLogger
+        Private ReadOnly logger As Logger
 
         Private ReadOnly ref As ICallQueue
         Private ReadOnly eref As ICallQueue
@@ -48,29 +48,29 @@ Namespace Warcraft3
 #End Region
 
 #Region "New"
-        Public Sub New(ByVal name As String, _
-                       ByVal parent As MainBot, _
-                       ByVal settings As ServerSettings, _
-                       Optional ByVal suffix As String = "", _
-                       Optional ByVal logger As MultiLogger = Nothing)
+        Public Sub New(ByVal name As String,
+                       ByVal parent As MainBot,
+                       ByVal settings As ServerSettings,
+                       Optional ByVal suffix As String = "",
+                       Optional ByVal logger As Logger = Nothing)
             Try
                 Me.settings = ContractNotNull(settings, "settings")
                 Me.parent = ContractNotNull(parent, "parent")
                 Me.name = ContractNotNull(name, "name")
                 Me.suffix = suffix
-                Me.logger = If(logger, New MultiLogger)
+                Me.logger = If(logger, New Logger)
                 Me.door = New W3ServerDoor(Me, Me.logger)
                 Me.eref = New ThreadedCallQueue("{0} {1} eref".frmt(Me.GetType.Name, name))
                 Me.ref = New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name))
 
                 For Each port In settings.default_listen_ports
                     Dim out = door.accepter.accepter.OpenPort(port)
-                    If out.outcome = Outcomes.failed Then Throw New InvalidOperationException(out.message)
+                    If Not out.succeeded Then Throw New InvalidOperationException(out.message)
                 Next port
                 For i = 1 To settings.instances
                     CreateGame()
                 Next i
-                parent.logger.log("Server started for map {0}.".frmt(settings.map.relative_path), LogMessageTypes.PositiveEvent)
+                parent.logger.log("Server started for map {0}.".frmt(settings.map.relative_path), LogMessageTypes.Positive)
             Catch e As Exception
                 door.Reset()
                 Throw
@@ -80,22 +80,25 @@ Namespace Warcraft3
 
 #Region "Events"
         Private Sub e_ThrowStateChanged(ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
-            eref.enqueue(Function() eval(AddressOf _e_ThrowStateChanged, old_state, new_state))
+            eref.enqueueAction(
+                Sub()
+                    RaiseEvent ChangedState(Me, old_state, new_state)
+                End Sub
+            )
         End Sub
         Private Sub e_ThrowAddedGame(ByVal game As IW3Game)
-            eref.enqueue(Function() eval(AddressOf _e_ThrowAddedGame, game))
+            eref.enqueueAction(
+                Sub()
+                    RaiseEvent AddedGame(Me, game)
+                End Sub
+            )
         End Sub
         Private Sub e_ThrowRemovedGame(ByVal game As IW3Game)
-            eref.enqueue(Function() eval(AddressOf _e_ThrowRemovedGame, game))
-        End Sub
-        Private Sub _e_ThrowStateChanged(ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
-            RaiseEvent ChangedState(Me, old_state, new_state)
-        End Sub
-        Private Sub _e_ThrowAddedGame(ByVal game As IW3Game)
-            RaiseEvent AddedGame(Me, game)
-        End Sub
-        Private Sub _e_ThrowRemovedGame(ByVal game As IW3Game)
-            RaiseEvent RemovedGame(Me, game)
+            eref.enqueueAction(
+                Sub()
+                    RaiseEvent RemovedGame(Me, game)
+                End Sub
+            )
         End Sub
 
         Private Sub c_PlayerTalked(ByVal game As IW3Game, ByVal player As IW3Player, ByVal text As String)
@@ -105,57 +108,57 @@ Namespace Warcraft3
             RaiseEvent PlayerSentData(Me, game, player, data)
         End Sub
         Private Sub c_PlayerLeft(ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal reason As W3PlayerLeaveTypes)
-            logger.log("{0} left game {1}".frmt(player.name, game.name), LogMessageTypes.NegativeEvent)
+            logger.log("{0} left game {1}".frmt(player.name, game.name), LogMessageTypes.Negative)
             RaiseEvent PlayerLeft(Me, game, game_state, player, reason)
         End Sub
         Private Sub c_PlayerEntered(ByVal game As IW3GameLobby, ByVal player As IW3PlayerLobby)
             RaiseEvent PlayerEntered(Me, game, player)
         End Sub
         Private Sub c_GameStateChanged(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
-            ref.enqueue(Function() eval(AddressOf _c_GameStateChanged, sender, old_state, new_state))
-        End Sub
+            ref.enqueueAction(
+                Sub()
+                    If Not games_all.Contains(sender) Then  Return
 
-        Private Sub _c_GameStateChanged(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
-            If Not games_all.Contains(sender) Then Return
+                    Select Case new_state
+                        Case W3GameStates.Loading
+                            logger.log(sender.name + " has begun loading.", LogMessageTypes.Positive)
+                            games_lobby.Remove(sender)
+                            games_load_screen.Add(sender)
+                        Case W3GameStates.Playing
+                            logger.log(sender.name + " has started play.", LogMessageTypes.Positive)
+                            games_load_screen.Remove(sender)
+                            games_gameplay.Add(sender)
+                        Case W3GameStates.Closed
+                            logger.log(sender.name + " has closed.", LogMessageTypes.Negative)
+                            RemoveGame(sender.name)
+                    End Select
 
-            Select Case new_state
-                Case W3GameStates.Loading
-                    logger.log(sender.name + " has begun loading.", LogMessageTypes.PositiveEvent)
-                    games_lobby.Remove(sender)
-                    games_load_screen.Add(sender)
-                Case W3GameStates.Playing
-                    logger.log(sender.name + " has started play.", LogMessageTypes.PositiveEvent)
-                    games_load_screen.Remove(sender)
-                    games_gameplay.Add(sender)
-                Case W3GameStates.Closed
-                    logger.log(sender.name + " has closed.", LogMessageTypes.NegativeEvent)
-                    RemoveGame(sender.name)
-            End Select
-
-            'Advance from only_accepting if there is a game started
-            If state = W3ServerStates.only_accepting Then
-                If games_all.Count > games_lobby.Count Then
-                    change_state(W3ServerStates.accepting_and_playing)
-                End If
-            End If
-
-            'Advance from accepting_and_playing if there are no more games accepting players
-            If state = W3ServerStates.accepting_and_playing AndAlso settings.instances > 0 Then
-                If games_lobby.Count = 0 Then
-                    If settings.permanent Then
-                        set_advertiser_options(True)
-                    Else
-                        StopAcceptingPlayers()
+                    'Advance from only_accepting if there is a game started
+                    If state = W3ServerStates.only_accepting Then
+                        If games_all.Count > games_lobby.Count Then
+                            change_state(W3ServerStates.accepting_and_playing)
+                        End If
                     End If
-                End If
-            End If
 
-            'Advance from only_playing_out if there are no more games being played
-            If state = W3ServerStates.only_playing_out Then
-                If games_all.Count = 0 Then
-                    Kill()
-                End If
-            End If
+                    'Advance from accepting_and_playing if there are no more games accepting players
+                    If state = W3ServerStates.accepting_and_playing AndAlso settings.instances > 0 Then
+                        If games_lobby.Count = 0 Then
+                            If settings.permanent Then
+                                set_advertiser_options(True)
+                            Else
+                                StopAcceptingPlayers()
+                            End If
+                        End If
+                    End If
+
+                    'Advance from only_playing_out if there are no more games being played
+                    If state = W3ServerStates.only_playing_out Then
+                        If games_all.Count = 0 Then
+                            Kill()
+                        End If
+                    End If
+                End Sub
+            )
         End Sub
 #End Region
 
@@ -205,7 +208,7 @@ Namespace Warcraft3
 
 #Region "Games"
         '''<summary>Adds a game to the server.</summary>
-        Private Function CreateGame(Optional ByVal game_name As String = Nothing, _
+        Private Function CreateGame(Optional ByVal game_name As String = Nothing,
                                     Optional ByVal arguments As IEnumerable(Of String) = Nothing) As Outcome(Of IW3Game)
             If game_name Is Nothing Then game_name = total_instances_created_P.ToString()
             If arguments Is Nothing Then arguments = settings.arguments
@@ -218,7 +221,7 @@ Namespace Warcraft3
             End If
 
             game = New W3Game(Me, game_name, settings.map, arguments)
-            logger.log(game.name + " opened.", LogMessageTypes.PositiveEvent)
+            logger.log(game.name + " opened.", LogMessageTypes.Positive)
             total_instances_created_P += 1
             games_all.Add(game)
             games_lobby.Add(game)
@@ -240,16 +243,16 @@ Namespace Warcraft3
 
         '''<summary>Finds a player with the given name in any of the server's games.</summary>
         Private Function f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player)
-            Return futureSelect(futureMap(futurize(games_all.ToList), _
-                                          Function(game) game.f_FindPlayer(username)), _
+            Return futureSelect(futureMap(futurize(games_all.ToList),
+                                          Function(game) game.f_FindPlayer(username)),
                                 Function(player) futurize(player IsNot Nothing))
         End Function
 
         '''<summary>Finds a game containing a player with the given name.</summary>
         Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of IW3Game)
-            Return futureSelect(futurize(games_all.ToList), _
-                                Function(game) FutureFunc(Of Boolean).frun(Function(player) player IsNot Nothing, _
-                                                                           game.f_FindPlayer(username)))
+            Return futureSelect(futurize(games_all.ToList),
+                                Function(game) FutureFunc.frun(game.f_FindPlayer(username),
+                                                                           Function(player) player IsNot Nothing))
         End Function
 
         '''<summary>Removes a game with the given name.</summary>
@@ -295,7 +298,7 @@ Namespace Warcraft3
         End Sub
 
         Private Sub remove_stalled_advertised_R(ByVal m As IAdvertisingLinkMember, ByVal reason As String)
-            ref.enqueue(Function() eval(AddressOf remove_stalled_advertised_L, m, reason))
+            ref.enqueueAction(Sub() remove_stalled_advertised_L(m, reason))
         End Sub
         Private Sub remove_stalled_advertised_L(ByVal m As IAdvertisingLinkMember, ByVal reason As String)
             If Not link_advertisers.Contains(m) Then Return
@@ -334,48 +337,48 @@ Namespace Warcraft3
 
 #Region "Interface"
         Private Function _f_FindGame(ByVal game_name As String) As IFuture(Of IW3Game) Implements IW3Server.f_FindGame
-            Return ref.enqueue(Function() FindGame(game_name))
+            Return ref.enqueueFunc(Function() FindGame(game_name))
         End Function
         Private Function _f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Server.f_FindPlayer
-            Return futurefuture(ref.enqueue(Function() f_FindPlayer(username)))
+            Return futurefuture(ref.enqueueFunc(Function() f_FindPlayer(username)))
         End Function
         Private Function _f_FindPlayerGame(ByVal username As String) As IFuture(Of IW3Game) Implements IW3Server.f_FindPlayerGame
-            Return futurefuture(ref.enqueue(Function() f_FindPlayerGame(username)))
+            Return futurefuture(ref.enqueueFunc(Function() f_FindPlayerGame(username)))
         End Function
         Private Function _f_EnumGames() As IFuture(Of IEnumerable(Of IW3Game)) Implements IW3Server.f_EnumGames
-            Return ref.enqueue(Function() CType(games_all.ToList, IEnumerable(Of IW3Game)))
+            Return ref.enqueueFunc(Function() CType(games_all.ToList, IEnumerable(Of IW3Game)))
         End Function
         Private Function _f_CreateGame(Optional ByVal instance_name As String = Nothing) As IFuture(Of Outcome(Of IW3Game)) Implements IW3Server.f_CreateGame
-            Return ref.enqueue(Function() CreateGame(instance_name))
+            Return ref.enqueueFunc(Function() CreateGame(instance_name))
         End Function
         Private Function _f_RemoveGame(ByVal instance_name As String) As IFuture(Of Outcome) Implements IW3Server.f_RemoveGame
-            Return ref.enqueue(Function() RemoveGame(instance_name))
+            Return ref.enqueueFunc(Function() RemoveGame(instance_name))
         End Function
         Private Function _f_ClosePort(ByVal port As UShort) As IFuture(Of Outcome) Implements IW3Server.f_ClosePort
-            Return ref.enqueue(Function() door.accepter.accepter.ClosePort(port))
+            Return ref.enqueueFunc(Function() door.accepter.accepter.ClosePort(port))
         End Function
         Private Function _f_OpenPort(ByVal port As UShort) As IFuture(Of Outcome) Implements IW3Server.f_OpenPort
-            Return ref.enqueue(Function() door.accepter.accepter.OpenPort(port))
+            Return ref.enqueueFunc(Function() door.accepter.accepter.OpenPort(port))
         End Function
         Private Function _f_CloseAllPorts() As IFuture(Of Outcome) Implements IW3Server.f_CloseAllPorts
-            Return ref.enqueue(Function() door.accepter.accepter.CloseAllPorts())
+            Return ref.enqueueFunc(Function() door.accepter.accepter.CloseAllPorts())
         End Function
         Private Function _f_StopAcceptingPlayers() As IFuture(Of Outcome) Implements IW3Server.f_StopAcceptingPlayers
-            Return ref.enqueue(Function() StopAcceptingPlayers())
+            Return ref.enqueueFunc(Function() StopAcceptingPlayers())
         End Function
         Private Sub _servant_close() Implements Links.IDependencyLinkServant.close
-            ref.enqueue(Function() Kill())
+            ref.enqueueAction(Function() Kill())
         End Sub
         Private Function _f_Kill() As IFuture(Of Outcome) Implements IW3Server.f_Kill
-            Return ref.enqueue(Function() Kill())
+            Return ref.enqueueFunc(Function() Kill())
         End Function
         Private Function _add_advertiser_R(ByVal m As IAdvertisingLinkMember) As IFuture(Of outcome) Implements IW3Server.f_AddAvertiser
-            Return ref.enqueue(Function() add_advertiser_L(m))
+            Return ref.enqueueFunc(Function() add_advertiser_L(m))
         End Function
         Private Function _advertising_dep() As IDependencyLinkServant Implements IW3Server.advertising_dep
             Return New AdvertisingDependency(Me)
         End Function
-        Private ReadOnly Property _logger() As MultiLogger Implements IW3Server.logger
+        Private ReadOnly Property _logger() As Logger Implements IW3Server.logger
             Get
                 Return logger
             End Get

@@ -87,11 +87,11 @@ Namespace Bnet.Crypt
 
 #Region "Password Proofs"
         Public Function generateClientServerPasswordProofs( _
-                    ByVal username As String, _
-                    ByVal password As String, _
-                    ByVal account_salt As Byte(), _
-                    ByVal server_offset_public_key_bytes As Byte(), _
-                    ByVal client_private_key_bytes As Byte(), _
+                    ByVal username As String,
+                    ByVal password As String,
+                    ByVal account_salt As Byte(),
+                    ByVal server_offset_public_key_bytes As Byte(),
+                    ByVal client_private_key_bytes As Byte(),
                     ByVal client_public_key_bytes As Byte() _
                 ) As Pair(Of Byte(), Byte())
             If Not (username IsNot Nothing) Then Throw New ArgumentNullException()
@@ -143,32 +143,32 @@ Namespace Bnet.Crypt
             Next i
 
             'Proofs
-            Dim client_proof = SHA1(concat(fixed_salt, _
-                                           SHA1(packString(username)), _
-                                           account_salt, _
-                                           client_public_key_bytes, _
-                                           server_offset_public_key_bytes, _
+            Dim client_proof = SHA1(concat(fixed_salt,
+                                           SHA1(packString(username)),
+                                           account_salt,
+                                           client_public_key_bytes,
+                                           server_offset_public_key_bytes,
                                            shared_secret))
-            Dim server_proof = SHA1(concat(Of Byte)(client_public_key_bytes, client_proof, shared_secret))
-            Return New Pair(Of Byte(), Byte())(client_proof, server_proof)
+            Dim server_proof = SHA1(concat(client_public_key_bytes, client_proof, shared_secret))
+            Return MakePair(client_proof, server_proof)
         End Function
 #End Region
 
 #Region "MPQ Revision Check"
         Public Function generateRevisionCheck(ByVal folder As String, ByVal mpq_number_string As String, ByVal mpq_hash_challenge As String) As UInteger
             Dim revCheckFiles() As String = { _
-                    "War3.exe", _
-                    "Storm.dll", _
+                    "War3.exe",
+                    "Storm.dll",
                     "Game.dll" _
                 }
             Dim hashcodes As UInteger() = { _
-                    &HE7F4CB62L, _
-                    &HF6A14FFCL, _
-                    &HAA5504AFL, _
-                    &H871FCDC2L, _
-                    &H11BF6A18L, _
-                    &HC57292E6L, _
-                    &H7927D27EL, _
+                    &HE7F4CB62L,
+                    &HF6A14FFCL,
+                    &HAA5504AFL,
+                    &H871FCDC2L,
+                    &H11BF6A18L,
+                    &HC57292E6L,
+                    &H7927D27EL,
                     &H2FEC8733L _
                 }
 
@@ -336,35 +336,35 @@ Namespace Bnet.Crypt
         Private Shared ReadOnly invKeyMap As Dictionary(Of Byte, Char) = initInvKeyMap()
         '''<summary>30 permutations of 0-15</summary>
         Private Shared ReadOnly permutationSet As Byte()() = { _
-                    New Byte() {&H9, &H4, &H7, &HF, &HD, &HA, &H3, &HB, &H1, &H2, &HC, &H8, &H6, &HE, &H5, &H0}, _
-                    New Byte() {&H9, &HB, &H5, &H4, &H8, &HF, &H1, &HE, &H7, &H0, &H3, &H2, &HA, &H6, &HD, &HC}, _
-                    New Byte() {&HC, &HE, &H1, &H4, &H9, &HF, &HA, &HB, &HD, &H6, &H0, &H8, &H7, &H2, &H5, &H3}, _
-                    New Byte() {&HB, &H2, &H5, &HE, &HD, &H3, &H9, &H0, &H1, &HF, &H7, &HC, &HA, &H6, &H4, &H8}, _
-                    New Byte() {&H6, &H2, &H4, &H5, &HB, &H8, &HC, &HE, &HD, &HF, &H7, &H1, &HA, &H0, &H3, &H9}, _
-                    New Byte() {&H5, &H4, &HE, &HC, &H7, &H6, &HD, &HA, &HF, &H2, &H9, &H1, &H0, &HB, &H8, &H3}, _
-                    New Byte() {&HC, &H7, &H8, &HF, &HB, &H0, &H5, &H9, &HD, &HA, &H6, &HE, &H2, &H4, &H3, &H1}, _
-                    New Byte() {&H3, &HA, &HE, &H8, &H1, &HB, &H5, &H4, &H2, &HF, &HD, &HC, &H6, &H7, &H9, &H0}, _
-                    New Byte() {&HC, &HD, &H1, &HF, &H8, &HE, &H5, &HB, &H3, &HA, &H9, &H0, &H7, &H2, &H4, &H6}, _
-                    New Byte() {&HD, &HA, &H7, &HE, &H1, &H6, &HB, &H8, &HF, &HC, &H5, &H2, &H3, &H0, &H4, &H9}, _
-                    New Byte() {&H3, &HE, &H7, &H5, &HB, &HF, &H8, &HC, &H1, &HA, &H4, &HD, &H0, &H6, &H9, &H2}, _
-                    New Byte() {&HB, &H6, &H9, &H4, &H1, &H8, &HA, &HD, &H7, &HE, &H0, &HC, &HF, &H2, &H3, &H5}, _
-                    New Byte() {&HC, &H7, &H8, &HD, &H3, &HB, &H0, &HE, &H6, &HF, &H9, &H4, &HA, &H1, &H5, &H2}, _
-                    New Byte() {&HC, &H6, &HD, &H9, &HB, &H0, &H1, &H2, &HF, &H7, &H3, &H4, &HA, &HE, &H8, &H5}, _
-                    New Byte() {&H3, &H6, &H1, &H5, &HB, &HC, &H8, &H0, &HF, &HE, &H9, &H4, &H7, &HA, &HD, &H2}, _
-                    New Byte() {&HA, &H7, &HB, &HF, &H2, &H8, &H0, &HD, &HE, &HC, &H1, &H6, &H9, &H3, &H5, &H4}, _
-                    New Byte() {&HA, &HB, &HD, &H4, &H3, &H8, &H5, &H9, &H1, &H0, &HF, &HC, &H7, &HE, &H2, &H6}, _
-                    New Byte() {&HB, &H4, &HD, &HF, &H1, &H6, &H3, &HE, &H7, &HA, &HC, &H8, &H9, &H2, &H5, &H0}, _
-                    New Byte() {&H9, &H6, &H7, &H0, &H1, &HA, &HD, &H2, &H3, &HE, &HF, &HC, &H5, &HB, &H4, &H8}, _
-                    New Byte() {&HD, &HE, &H5, &H6, &H1, &H9, &H8, &HC, &H2, &HF, &H3, &H7, &HB, &H4, &H0, &HA}, _
-                    New Byte() {&H9, &HF, &H4, &H0, &H1, &H6, &HA, &HE, &H2, &H3, &H7, &HD, &H5, &HB, &H8, &HC}, _
-                    New Byte() {&H3, &HE, &H1, &HA, &H2, &HC, &H8, &H4, &HB, &H7, &HD, &H0, &HF, &H6, &H9, &H5}, _
-                    New Byte() {&H7, &H2, &HC, &H6, &HA, &H8, &HB, &H0, &HF, &H4, &H3, &HE, &H9, &H1, &HD, &H5}, _
-                    New Byte() {&HC, &H4, &H5, &H9, &HA, &H2, &H8, &HD, &H3, &HF, &H1, &HE, &H6, &H7, &HB, &H0}, _
-                    New Byte() {&HA, &H8, &HE, &HD, &H9, &HF, &H3, &H0, &H4, &H6, &H1, &HC, &H7, &HB, &H2, &H5}, _
-                    New Byte() {&H3, &HC, &H4, &HA, &H2, &HF, &HD, &HE, &H7, &H0, &H5, &H8, &H1, &H6, &HB, &H9}, _
-                    New Byte() {&HA, &HC, &H1, &H0, &H9, &HE, &HD, &HB, &H3, &H7, &HF, &H8, &H5, &H2, &H4, &H6}, _
-                    New Byte() {&HE, &HA, &H1, &H8, &H7, &H6, &H5, &HC, &H2, &HF, &H0, &HD, &H3, &HB, &H4, &H9}, _
-                    New Byte() {&H3, &H8, &HE, &H0, &H7, &H9, &HF, &HC, &H1, &H6, &HD, &H2, &H5, &HA, &HB, &H4}, _
+                    New Byte() {&H9, &H4, &H7, &HF, &HD, &HA, &H3, &HB, &H1, &H2, &HC, &H8, &H6, &HE, &H5, &H0},
+                    New Byte() {&H9, &HB, &H5, &H4, &H8, &HF, &H1, &HE, &H7, &H0, &H3, &H2, &HA, &H6, &HD, &HC},
+                    New Byte() {&HC, &HE, &H1, &H4, &H9, &HF, &HA, &HB, &HD, &H6, &H0, &H8, &H7, &H2, &H5, &H3},
+                    New Byte() {&HB, &H2, &H5, &HE, &HD, &H3, &H9, &H0, &H1, &HF, &H7, &HC, &HA, &H6, &H4, &H8},
+                    New Byte() {&H6, &H2, &H4, &H5, &HB, &H8, &HC, &HE, &HD, &HF, &H7, &H1, &HA, &H0, &H3, &H9},
+                    New Byte() {&H5, &H4, &HE, &HC, &H7, &H6, &HD, &HA, &HF, &H2, &H9, &H1, &H0, &HB, &H8, &H3},
+                    New Byte() {&HC, &H7, &H8, &HF, &HB, &H0, &H5, &H9, &HD, &HA, &H6, &HE, &H2, &H4, &H3, &H1},
+                    New Byte() {&H3, &HA, &HE, &H8, &H1, &HB, &H5, &H4, &H2, &HF, &HD, &HC, &H6, &H7, &H9, &H0},
+                    New Byte() {&HC, &HD, &H1, &HF, &H8, &HE, &H5, &HB, &H3, &HA, &H9, &H0, &H7, &H2, &H4, &H6},
+                    New Byte() {&HD, &HA, &H7, &HE, &H1, &H6, &HB, &H8, &HF, &HC, &H5, &H2, &H3, &H0, &H4, &H9},
+                    New Byte() {&H3, &HE, &H7, &H5, &HB, &HF, &H8, &HC, &H1, &HA, &H4, &HD, &H0, &H6, &H9, &H2},
+                    New Byte() {&HB, &H6, &H9, &H4, &H1, &H8, &HA, &HD, &H7, &HE, &H0, &HC, &HF, &H2, &H3, &H5},
+                    New Byte() {&HC, &H7, &H8, &HD, &H3, &HB, &H0, &HE, &H6, &HF, &H9, &H4, &HA, &H1, &H5, &H2},
+                    New Byte() {&HC, &H6, &HD, &H9, &HB, &H0, &H1, &H2, &HF, &H7, &H3, &H4, &HA, &HE, &H8, &H5},
+                    New Byte() {&H3, &H6, &H1, &H5, &HB, &HC, &H8, &H0, &HF, &HE, &H9, &H4, &H7, &HA, &HD, &H2},
+                    New Byte() {&HA, &H7, &HB, &HF, &H2, &H8, &H0, &HD, &HE, &HC, &H1, &H6, &H9, &H3, &H5, &H4},
+                    New Byte() {&HA, &HB, &HD, &H4, &H3, &H8, &H5, &H9, &H1, &H0, &HF, &HC, &H7, &HE, &H2, &H6},
+                    New Byte() {&HB, &H4, &HD, &HF, &H1, &H6, &H3, &HE, &H7, &HA, &HC, &H8, &H9, &H2, &H5, &H0},
+                    New Byte() {&H9, &H6, &H7, &H0, &H1, &HA, &HD, &H2, &H3, &HE, &HF, &HC, &H5, &HB, &H4, &H8},
+                    New Byte() {&HD, &HE, &H5, &H6, &H1, &H9, &H8, &HC, &H2, &HF, &H3, &H7, &HB, &H4, &H0, &HA},
+                    New Byte() {&H9, &HF, &H4, &H0, &H1, &H6, &HA, &HE, &H2, &H3, &H7, &HD, &H5, &HB, &H8, &HC},
+                    New Byte() {&H3, &HE, &H1, &HA, &H2, &HC, &H8, &H4, &HB, &H7, &HD, &H0, &HF, &H6, &H9, &H5},
+                    New Byte() {&H7, &H2, &HC, &H6, &HA, &H8, &HB, &H0, &HF, &H4, &H3, &HE, &H9, &H1, &HD, &H5},
+                    New Byte() {&HC, &H4, &H5, &H9, &HA, &H2, &H8, &HD, &H3, &HF, &H1, &HE, &H6, &H7, &HB, &H0},
+                    New Byte() {&HA, &H8, &HE, &HD, &H9, &HF, &H3, &H0, &H4, &H6, &H1, &HC, &H7, &HB, &H2, &H5},
+                    New Byte() {&H3, &HC, &H4, &HA, &H2, &HF, &HD, &HE, &H7, &H0, &H5, &H8, &H1, &H6, &HB, &H9},
+                    New Byte() {&HA, &HC, &H1, &H0, &H9, &HE, &HD, &HB, &H3, &H7, &HF, &H8, &H5, &H2, &H4, &H6},
+                    New Byte() {&HE, &HA, &H1, &H8, &H7, &H6, &H5, &HC, &H2, &HF, &H0, &HD, &H3, &HB, &H4, &H9},
+                    New Byte() {&H3, &H8, &HE, &H0, &H7, &H9, &HF, &HC, &H1, &H6, &HD, &H2, &H5, &HA, &HB, &H4},
                     New Byte() {&H3, &HA, &HC, &H4, &HD, &HB, &H9, &HE, &HF, &H6, &H1, &H7, &H2, &H0, &H5, &H8} _
                 }
         Private Shared ReadOnly invPermutationSet As Byte()() = initInvPermMap()
@@ -450,11 +450,11 @@ Namespace Bnet.Crypt
         Public Sub New(ByVal productKey As Byte(), ByVal publicKey As Byte(), ByVal privateKey As Byte())
             'Inject keys
             Dim n_digitsBase256 = New Byte() { _
-                        privateKey(6), privateKey(7), privateKey(8), privateKey(9), _
-                        privateKey(2), privateKey(3), privateKey(4), privateKey(5), _
-                        privateKey(0), privateKey(1), _
-                        publicKey(0), publicKey(1), publicKey(2), _
-                        productKey(0) << &H2, _
+                        privateKey(6), privateKey(7), privateKey(8), privateKey(9),
+                        privateKey(2), privateKey(3), privateKey(4), privateKey(5),
+                        privateKey(0), privateKey(1),
+                        publicKey(0), publicKey(1), publicKey(2),
+                        productKey(0) << &H2,
                         0, 0}
 
             'Swap bits

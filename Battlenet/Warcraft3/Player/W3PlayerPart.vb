@@ -22,7 +22,7 @@ Namespace Warcraft3
                 Try
                     If handlers(id) Is Nothing Then
                         Dim msg = String.Format("(Ignored) No handler for parsed packet of type {0} from {1}.", id, player.name)
-                        player.logger.log(msg, LogMessageTypes.NegativeEvent)
+                        player.logger.log(msg, LogMessageTypes.Negative)
                     Else
                         Call handlers(id)(vals)
                     End If
@@ -43,7 +43,7 @@ Namespace Warcraft3
             Private Sub receivePacket_PONG_L(ByVal vals As Dictionary(Of String, Object))
                 Dim lambda = 0.5
                 Dim tick = Environment.TickCount
-                Dim salt = ToUInteger(CType(vals("salt"), Byte()))
+                Dim salt = CType(vals("salt"), Byte()).ToUInteger(ByteOrder.LittleEndian)
 
                 If player.ping_queue.Count <= 0 Then
                     player.logger.log("Banned behavior: {0} responded to a ping which wasn't sent.".frmt(player.name), LogMessageTypes.Problem)

@@ -13,7 +13,7 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         Me.tab_collection = tab_collection
     End Sub
 
-    Public Function add(ByVal element As T) As Boolean
+    Public Sub add(ByVal element As T)
         If tabs.ContainsKey(element) Then Throw New InvalidOperationException("Already have a control added for element.")
 
         'create
@@ -34,7 +34,7 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         control.f_hook(element)
         page.Text = "..."
         Call FutureSub.frun(AddressOf set_page_text, futurize(page), control.f_caption)
-    End Function
+    End Sub
     Private Function set_page_text(ByVal page As TabPage, ByVal text As String) As Boolean
         Try
             page.BeginInvoke(Function() _set_page_text(page, text))
@@ -64,7 +64,7 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         control.f_hook(new_element)
     End Sub
 
-    Public Function remove(ByVal element As T) As Boolean
+    Public Sub remove(ByVal element As T)
         If Not tabs.ContainsKey(element) Then Throw New InvalidOperationException("Don't have a control to remove for element.")
 
         'retrieve
@@ -85,7 +85,7 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         tabs.Remove(element)
         controls.Remove(element)
         elements.Remove(element)
-    End Function
+    End Sub
 
     Public Sub clear()
         For Each element In elements.ToList
@@ -101,7 +101,7 @@ Public Interface IBotWidget
 
     Function name() As String
     Function type_name() As String
-    Function logger() As MultiLogger
+    Function logger() As Logger
 
     Sub [stop]()
     Sub hooked()

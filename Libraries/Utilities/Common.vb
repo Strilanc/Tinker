@@ -1,3 +1,4 @@
+Imports System.Net.NetworkInformation
 Imports System.Runtime.CompilerServices
 Imports System.IO.Path
 Imports System.Text
@@ -150,21 +151,21 @@ Public Module Common
         Dim f = New Future(Of Outcome(Of Sockets.TcpClient))
         Try
             Dim client = New Sockets.TcpClient
-            client.BeginConnect(host, port, Function(ar) _FutureConnectTo(f, client, ar), Nothing)
+            client.BeginConnect(host,
+                                port,
+                                Sub(ar)
+                                    Try
+                                        client.EndConnect(ar)
+                                        f.setValue(successVal(client, "Connected"))
+                                    Catch e As Exception
+                                        f.setValue(failure("Failed to connect: {0}".frmt(e.Message)))
+                                    End Try
+                                End Sub,
+                                Nothing)
         Catch e As Exception
             f.setValue(failure("Failed to connect: {0}".frmt(e.Message)))
         End Try
         Return f
-    End Function
-    Private Function _FutureConnectTo(ByVal f As Future(Of Outcome(Of Sockets.TcpClient)), _
-                                      ByVal client As Sockets.TcpClient, _
-                                      ByVal ar As IAsyncResult) As Boolean
-        Try
-            client.EndConnect(ar)
-            f.setValue(successVal(client, "Connected"))
-        Catch e As Exception
-            f.setValue(failure("Failed to connect: {0}".frmt(e.Message)))
-        End Try
     End Function
 
 #Region "Strings Extra"
@@ -272,32 +273,26 @@ Public Module Common
         Next i
         Return subArrayData
     End Function
-    Public Function concat(Of T)(ByVal list_of_arrays As IEnumerable(Of T())) As T()
-        If Not (list_of_arrays IsNot Nothing) Then Throw New ArgumentException()
-
+    Public Function concat(Of T)(ByVal arrays As IEnumerable(Of T())) As T()
+        If arrays Is Nothing Then Throw New ArgumentNullException("arrays")
 
         Dim n = 0
-        For Each array In list_of_arrays
+        For Each array In arrays
             If array Is Nothing Then Continue For
             n += array.Length
         Next array
 
         Dim flattened_array(0 To n - 1) As T
         Dim i = 0
-        For Each array In list_of_arrays
+        For Each array In arrays
             If array Is Nothing Then Continue For
-            For Each value In array
-                flattened_array(i) = value
-                i += 1
-            Next value
+            System.Array.Copy(array, 0, flattened_array, i, array.Length)
+            i += array.Length
         Next array
 
         Return flattened_array
     End Function
     Public Function concat(Of T)(ByVal ParamArray baseArrays As T()()) As T()
-        If Not (baseArrays IsNot Nothing) Then Throw New ArgumentException()
-
-
         Return concat(CType(baseArrays, IEnumerable(Of T())))
     End Function
     <Extension()> Public Function reversed(Of T)(ByVal baseArray As T()) As T()
@@ -403,35 +398,6 @@ Public Module Common
     End Function
 #End Region
 
-#Region "Exceptions"
-    Public Function debug_trap(ByVal action As Action) As Exception
-        If My.Settings.debugMode Then
-            Call action()
-            Return Nothing
-        Else
-            Return trap(action)
-        End If
-    End Function
-    Public Function def_trap(Of R)(ByVal action As Func(Of R), ByVal def As R) As R
-        Try
-            Return action()
-        Catch e As Exception
-            Return def
-        End Try
-    End Function
-    Public Function trap(ByVal action As Action) As Exception
-        Try
-            Call action()
-            Return Nothing
-        Catch e As Exception
-            Return e
-        End Try
-    End Function
-    Public Function expect_trap(Of E As Exception)(ByVal action As Action) As Boolean
-        Return TypeOf trap(action) Is E
-    End Function
-#End Region
-
 #Region "Contracts"
     Public Sub ContractPositive(ByVal i As Integer, Optional ByVal param_name As String = Nothing)
         If i <= 0 Then
@@ -471,23 +437,42 @@ Public Module Common
     End Function
 
     Private cached_external_ip As Byte() = Nothing
-    Private Sub CacheExternalIP()
-        Dim utf8 = New UTF8Encoding()
-        Dim webClient = New WebClient()
-        Dim externalIp = utf8.GetString(webClient.DownloadData("http://whatismyip.com/automation/n09230945.asp"))
-        If externalIp.Length > 15 Then Return
-        Dim words = externalIp.Split("."c)
-        If words.Length <> 4 Or (From word In words Where Not Byte.TryParse(word, 0)).Any Then Return
-        cached_external_ip = (From word In words Select Byte.Parse(word)).ToArray()
+    Private cached_internal_ip As Byte() = Nothing
+    Public Sub CacheIPAddresses()
+        'Internal IP
+        Dim addr = (From nic In NetworkInterface.GetAllNetworkInterfaces
+                         Where nic.Supports(NetworkInterfaceComponent.IPv4)
+                         Select a = (From address In nic.GetIPProperties.UnicastAddresses
+                                     Where address.Address.AddressFamily = Net.Sockets.AddressFamily.InterNetwork
+                                     Where address.Address.ToString <> "127.0.0.1").FirstOrDefault()
+                         Where a IsNot Nothing).FirstOrDefault()
+        If addr IsNot Nothing Then
+            cached_internal_ip = addr.Address.GetAddressBytes
+        Else
+            cached_internal_ip = New Byte() {127, 0, 0, 1}
+        End If
+
+        'External IP
+        ThreadedAction(
+            Sub()
+                Dim utf8 = New UTF8Encoding()
+                Dim webClient = New WebClient()
+                Dim externalIp = utf8.GetString(webClient.DownloadData("http://whatismyip.com/automation/n09230945.asp"))
+                If externalIp.Length < 7 OrElse externalIp.Length > 15 Then  Return  'not correct length for style (#.#.#.# to ###.###.###.###)
+                Dim words = externalIp.Split("."c)
+                If words.Length <> 4 OrElse (From word In words Where Not Byte.TryParse(word, 0)).Any Then  Return
+                cached_external_ip = (From word In words Select Byte.Parse(word)).ToArray()
+            End Sub,
+            "CacheExternalIP"
+        )
     End Sub
 
-    Public Sub BeginCacheExternalIP()
-        threadedCall(Function() eval(AddressOf CacheExternalIP), "CacheExternalIP")
-    End Sub
-
-    Public Function GetExternalIp() As Byte()
-        If cached_external_ip IsNot Nothing Then Return cached_external_ip
-        Return getIpAddress().GetAddressBytes()
+    Public Function GetIpAddressBytes(ByVal external As Boolean) As Byte()
+        If external AndAlso cached_external_ip IsNot Nothing Then
+            Return cached_external_ip
+        Else
+            Return cached_internal_ip
+        End If
     End Function
 
     Public Function streamBytes(ByVal s As IO.Stream) As Byte()
@@ -533,9 +518,9 @@ Public Module Common
         End Try
     End Function
 
-    <Extension()> Public Function MaxPair(Of T, C As IComparable)(ByVal sequence As IEnumerable(Of T), _
-                                                                  ByVal transformation As Func(Of T, C), _
-                                                                  ByRef out_element As T, _
+    <Extension()> Public Function MaxPair(Of T, C As IComparable)(ByVal sequence As IEnumerable(Of T),
+                                                                  ByVal transformation As Func(Of T, C),
+                                                                  ByRef out_element As T,
                                                                   ByRef out_transformation As C) As Boolean
         Dim any = False
         Dim max_element = out_element
@@ -555,6 +540,18 @@ Public Module Common
             out_transformation = max_transformation
         End If
         Return any
+    End Function
+    <Extension()> Public Function Max(Of T)(ByVal sequence As IEnumerable(Of T), ByVal comparator As Func(Of T, T, Integer)) As T
+        Dim any = False
+        Dim max_element As T = Nothing
+
+        For Each e In sequence
+            If Not any OrElse comparator(max_element, e) < 0 Then
+                max_element = e
+            End If
+        Next e
+
+        Return max_element
     End Function
 End Module
 

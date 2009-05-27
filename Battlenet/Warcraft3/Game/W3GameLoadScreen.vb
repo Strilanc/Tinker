@@ -23,7 +23,7 @@
                 Next player
 
                 'Load
-                game.logger.log("Players Loading", LogMessageTypes.PositiveEvent)
+                game.logger.log("Players Loading", LogMessageTypes.Positive)
 
                 'Ready any lingering fake players
                 For Each player In (From p In game.players Where p.is_fake _
@@ -69,7 +69,7 @@
                 End If
 
                 game.change_state(W3GameStates.Playing)
-                game.logger.log("Launching", LogMessageTypes.PositiveEvent)
+                game.logger.log("Launching", LogMessageTypes.Positive)
 
                 'start gameplay
                 Me.Stop()
@@ -131,7 +131,7 @@
             End Sub
 
             Private Sub c_fake_tick() Handles tick_timer.Elapsed
-                game.ref.enqueue(AddressOf _c_fake_tick)
+                game.ref.enqueueAction(AddressOf _c_fake_tick)
             End Sub
             Private Sub _c_fake_tick()
                 If game.state > W3GameStates.Loading Then Return
@@ -149,7 +149,7 @@
             End Sub
 
             Private Function _receivePacket_READY(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3GameLoadScreen.f_ReceivePacket_READY
-                Return game.ref.enqueue(Function() eval(AddressOf receivePacket_READY, player, vals))
+                Return game.ref.enqueueAction(Sub() receivePacket_READY(player, vals))
             End Function
         End Class
     End Class

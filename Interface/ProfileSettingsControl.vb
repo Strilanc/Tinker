@@ -50,8 +50,8 @@
                 Dim s = CStr(.Cells(0).Value)
                 existing_users.Add(s)
                 p.users.update_user(New BotUser( _
-                            s, _
-                            CStr(.Cells(1).Value), _
+                            s,
+                            CStr(.Cells(1).Value),
                             CStr(.Cells(2).Value)))
             End With
         Next i

@@ -57,9 +57,9 @@ Namespace MPQ.Crypt
             Return alignedReadCount(outputSize, inBitBuffer.numBits \ 8, outBitBuffer.numBits \ 8, 4)
         End Function
 
-        Public Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte), _
-                           ByVal WriteView As ArrayView(Of Byte), _
-                           ByRef OutReadCount As Integer, _
+        Public Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte),
+                           ByVal WriteView As ArrayView(Of Byte),
+                           ByRef OutReadCount As Integer,
                            ByRef OutWriteCount As Integer) _
                            Implements IBlockConverter.convert
             OutWriteCount = 0

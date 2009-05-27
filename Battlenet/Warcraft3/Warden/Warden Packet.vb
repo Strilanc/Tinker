@@ -6,7 +6,7 @@ Namespace Warcraft3.Warden
     Public Enum WardenPacketId As Byte
         LoadModule = 0
         DownloadModule = 1
-        MemCheck = 2
+        PerformCheck = 2
         RunModule = 5
     End Enum
 
@@ -38,12 +38,12 @@ Namespace Warcraft3.Warden
         End Sub
         Public Shared Function MakeWardenPacketJar() As ManualSwitchJar
             Dim g = New ManualSwitchJar()
-            regParse(g, LoadModule, _
-                                New ArrayJar("module id", 16), _
-                                New ArrayJar("module rc4 seed", 16), _
+            regParse(g, LoadModule,
+                                New ArrayJar("module id", 16),
+                                New ArrayJar("module rc4 seed", 16),
                                 New ValueJar("dl size", 4))
             regParse(g, DownloadModule, New ArrayJar("dl data", , 2))
-            regParse(g, MemCheck, New ArrayJar("unknown0", , , True))
+            regParse(g, PerformCheck, New ArrayJar("unknown0", , , True))
             regParse(g, RunModule, New ArrayJar("module input data", , , True))
             Return g
         End Function

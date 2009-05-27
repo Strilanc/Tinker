@@ -22,7 +22,7 @@
 
             Private Sub receivePacket_READY_L(ByVal vals As System.Collections.Generic.Dictionary(Of String, Object))
                 player.ready = True
-                player.logger.log(player.name + " is ready", LogMessageTypes.PositiveEvent)
+                player.logger.log(player.name + " is ready", LogMessageTypes.Positive)
                 player.game.load_screen.f_ReceivePacket_READY(player, vals)
             End Sub
             Private Sub receivePacket_PLAYERS_CONNECTED_L(ByVal vals As Dictionary(Of String, Object))
@@ -49,7 +49,7 @@
             End Property
 
             Private Function _f_start() As IFuture Implements IW3PlayerLoadScreen.f_Start
-                Return player.ref.enqueue(AddressOf Start)
+                Return player.ref.enqueueAction(AddressOf Start)
             End Function
         End Class
     End Class

@@ -34,7 +34,7 @@ Public NotInheritable Class MainBot
     Public ReadOnly instance_commands_play As New Commands.Specializations.InstancePlayCommands
     Public ReadOnly instance_commands_setup As New Commands.Specializations.InstanceSetupCommands
     Public ReadOnly instance_commands_admin As New Commands.Specializations.InstanceAdminCommands
-    Public ReadOnly logger As MultiLogger
+    Public ReadOnly logger As Logger
 
     Private ReadOnly ref As ICallQueue
     Private ReadOnly eventRef As ICallQueue
@@ -56,9 +56,9 @@ Public NotInheritable Class MainBot
 #End Region
 
 #Region "New"
-    Public Sub New(ByVal warden_ref As ICallQueue, Optional ByVal logger As MultiLogger = Nothing)
+    Public Sub New(ByVal warden_ref As ICallQueue, Optional ByVal logger As Logger = Nothing)
         Me.warden_ref = ContractNotNull(warden_ref, "warden_ref")
-        Me.logger = If(logger, New MultiLogger)
+        Me.logger = If(logger, New Logger)
         Me.eventRef = New ThreadedCallQueue("{0} eref".frmt(Me.GetType.Name))
         Me.ref = New ThreadedCallQueue("{0} ref".frmt(Me.GetType.Name))
         If My.Settings.botstore <> "" Then
@@ -125,9 +125,9 @@ Public NotInheritable Class MainBot
         Next repeat
     End Sub
 
-    Private Function create_server_L(ByVal name As String, _
-                                     ByVal default_settings As ServerSettings, _
-                                     Optional ByVal suffix As String = "", _
+    Private Function create_server_L(ByVal name As String,
+                                     ByVal default_settings As ServerSettings,
+                                     Optional ByVal suffix As String = "",
                                      Optional ByVal avoid_name_collision As Boolean = False) _
                                      As Outcome(Of IW3Server)
         Try
@@ -146,7 +146,7 @@ Public NotInheritable Class MainBot
 
             Dim server As IW3Server = New W3Server(name, Me, default_settings, suffix)
             AddHandler server.PlayerTalked, AddressOf catch_server_player_talked_R
-            AddHandler server.ChangedState, AddressOf catch_server_state_changed_R
+            AddHandler server.ChangedState, AddressOf c_ServerStateChanged
             servers.Add(server)
             e_ThrowAddedServer(server)
 
@@ -162,7 +162,7 @@ Public NotInheritable Class MainBot
         End If
 
         RemoveHandler server.PlayerTalked, AddressOf catch_server_player_talked_R
-        RemoveHandler server.ChangedState, AddressOf catch_server_state_changed_R
+        RemoveHandler server.ChangedState, AddressOf c_ServerStateChanged
         servers.Remove(server)
         server.f_Kill()
         e_ThrowRemovedServer(server)
@@ -196,8 +196,8 @@ Public NotInheritable Class MainBot
         End If
 
         Dim client = New BnetClient(Me, find_client_profile_L(profile_name), name, warden_ref)
-        AddHandler client.chat_event, AddressOf catch_client_chat_event_R
-        AddHandler client.state_changed, AddressOf catch_client_state_changed_R
+        AddHandler client.chat_event, AddressOf c_ClientChatEvent
+        AddHandler client.state_changed, AddressOf c_ClientStateChanged
         clients.Add(client)
 
         e_ThrowAddedClient(client)
@@ -209,8 +209,8 @@ Public NotInheritable Class MainBot
             Return failure("No client with name {0}.".frmt(name))
         End If
 
-        RemoveHandler client.chat_event, AddressOf catch_client_chat_event_R
-        RemoveHandler client.state_changed, AddressOf catch_client_state_changed_R
+        RemoveHandler client.chat_event, AddressOf c_ClientChatEvent
+        RemoveHandler client.state_changed, AddressOf c_ClientStateChanged
         client.disconnect_R()
         clients.Remove(client)
         e_ThrowRemovedClient(client)
@@ -270,11 +270,11 @@ Public NotInheritable Class MainBot
         If profile Is Nothing Then Return failure("No plugin matches the name '{0}'.".frmt(name))
 
         Dim loaded = plugin_manager.load_plugin(profile.name, profile.location)
-        If loaded.outcome = Outcomes.succeeded Then loaded_plugin_names.Add(name)
+        If loaded.succeeded Then loaded_plugin_names.Add(name)
         Return loaded
     End Function
     Private Sub plugin_manager_Unloaded_Plugin(ByVal name As String, ByVal plugin As Plugins.IPlugin, ByVal reason As String) Handles plugin_manager.Unloaded_Plugin
-        logger.log("Plugin '{0}' was unloaded ({1})".frmt(name, reason), LogMessageTypes.NegativeEvent)
+        logger.log("Plugin '{0}' was unloaded ({1})".frmt(name, reason), LogMessageTypes.Negative)
     End Sub
 #End Region
 
@@ -295,28 +295,28 @@ Public NotInheritable Class MainBot
         Return exeV
     End Function
 
-    Private Function create_lan_admin_L(ByVal name As String, _
-                                          ByVal password As String, _
-                                          Optional ByVal remote_host As String = "localhost", _
+    Private Function create_lan_admin_L(ByVal name As String,
+                                          ByVal password As String,
+                                          Optional ByVal remote_host As String = "localhost",
                                           Optional ByVal listen_port As UShort = 0) As IFuture(Of Outcome)
-        Dim map = New W3Map("Maps\", _
-                            "AdminGame.w3x", _
-                            1, _
-                            (From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(), _
-                            (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(), _
-                            (From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(), _
+        Dim map = New W3Map("Maps\",
+                            "AdminGame.w3x",
+                            1,
+                            (From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
+                            (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
+                            (From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
                             2)
         map.slots(1).contents = New W3SlotContentsComputer(map.slots(1), W3Slot.ComputerLevel.Normal)
-        Dim settings = New ServerSettings(map:=map, _
-                                          username:=Nothing, _
-                                          allowUpload:=False, _
-                                          defaultSlotLockState:=W3Slot.Lock.frozen, _
-                                          instances:=0, _
-                                          password:=password, _
-                                          arguments:=New String() {"-permanent"}, _
+        Dim settings = New ServerSettings(map:=map,
+                                          username:=Nothing,
+                                          allowUpload:=False,
+                                          defaultSlotLockState:=W3Slot.Lock.frozen,
+                                          instances:=0,
+                                          password:=password,
+                                          arguments:=New String() {"-permanent"},
                                           is_admin_game:=True)
         Dim server_out = create_server_L(name, settings)
-        If server_out.outcome <> Outcomes.succeeded Then
+        If Not server_out.succeeded Then
             Return futurize(failure("Failed to create server."))
         End If
         Dim server = server_out.val
@@ -328,25 +328,25 @@ Public NotInheritable Class MainBot
             Return futurize(failure("Error creating lan advertiser: {0}".frmt(e.Message)))
         End Try
         Dim added = add_widget_L(lan)
-        If added.outcome = Outcomes.failed Then
+        If Not added.succeeded Then
             Return futurize(failure("Failed to create LAN advertizer."))
         End If
         lan.add_game("Admin Game", map, server.settings.map_settings)
 
         Dim listen_out = server.f_OpenPort(listen_port)
         Dim f = New Future(Of Outcome)
-        FutureSub.frun(AddressOf create_lan_admin_2_T, _
-                       futurize(f), _
-                       futurize(server), _
-                       futurize(lan), _
+        FutureSub.frun(AddressOf create_lan_admin_2_T,
+                       futurize(f),
+                       futurize(server),
+                       futurize(lan),
                        listen_out)
         Return f
     End Function
-    Private Sub create_lan_admin_2_T(ByVal f As Future(Of Outcome), _
-                                     ByVal server As IW3Server, _
-                                     ByVal lan As W3LanAdvertiser, _
+    Private Sub create_lan_admin_2_T(ByVal f As Future(Of Outcome),
+                                     ByVal server As IW3Server,
+                                     ByVal lan As W3LanAdvertiser,
                                      ByVal listened As outcome)
-        If listened.outcome <> Outcomes.succeeded Then
+        If Not listened.succeeded Then
             server.f_Kill()
             lan.Kill()
             f.setValue(failure("Failed to listen on tcp port."))
@@ -361,62 +361,49 @@ Public NotInheritable Class MainBot
 
 #Region "Events"
     Private Sub e_ThrowAddedWidget(ByVal widget As IBotWidget)
-        eventRef.enqueue(Function() eval(AddressOf _e_ThrowAddedWidget, widget))
+        eventRef.enqueueAction(
+            Sub()
+                RaiseEvent added_widget(widget)
+            End Sub
+        )
     End Sub
-    Private Sub _e_ThrowAddedWidget(ByVal widget As IBotWidget)
-        RaiseEvent added_widget(widget)
-    End Sub
-
     Private Sub e_ThrowRemovedWidget(ByVal widget As IBotWidget)
-        eventRef.enqueue(Function() eval(AddressOf _e_ThrowRemovedWidget, widget))
+        eventRef.enqueueAction(
+            Sub()
+                RaiseEvent removed_widget(widget)
+            End Sub
+        )
     End Sub
-    Private Sub _e_ThrowRemovedWidget(ByVal widget As IBotWidget)
-        RaiseEvent removed_widget(widget)
-    End Sub
-
     Private Sub e_ThrowAddedServer(ByVal server As IW3Server)
-        eventRef.enqueue(Function() eval(AddressOf _e_ThrowAddedServer, server))
+        eventRef.enqueueAction(
+            Sub()
+                RaiseEvent added_server(server)
+            End Sub
+        )
     End Sub
-    Private Sub _e_ThrowAddedServer(ByVal server As IW3Server)
-        RaiseEvent added_server(server)
-    End Sub
-
     Private Sub e_ThrowRemovedServer(ByVal server As IW3Server)
-        eventRef.enqueue(Function() eval(AddressOf _e_ThrowRemovedServer, server))
+        eventRef.enqueueAction(
+            Sub()
+                RaiseEvent removed_server(server)
+            End Sub
+        )
     End Sub
-    Private Sub _e_ThrowRemovedServer(ByVal server As IW3Server)
-        RaiseEvent removed_server(server)
-    End Sub
-
     Private Sub e_ThrowAddedClient(ByVal client As BnetClient)
-        eventRef.enqueue(Function() eval(AddressOf _e_ThrowAddedClient, client))
+        eventRef.enqueueAction(
+            Sub()
+                RaiseEvent added_client(client)
+            End Sub
+        )
     End Sub
-    Private Sub _e_ThrowAddedClient(ByVal client As BnetClient)
-        RaiseEvent added_client(client)
-    End Sub
-
     Private Sub e_ThrowRemovedClient(ByVal client As BnetClient)
-        eventRef.enqueue(Function() eval(AddressOf _e_ThrowRemovedClient, client))
-    End Sub
-    Private Sub _e_ThrowRemovedClient(ByVal client As BnetClient)
-        RaiseEvent removed_client(client)
-    End Sub
-
-    Private Sub e_ThrowClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
-        eventRef.enqueue(Function() eval(AddressOf _e_ThrowClientStateChanged, sender, old_state, new_state))
-    End Sub
-    Private Sub _e_ThrowClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
-        RaiseEvent client_state_changed(sender, old_state, new_state)
+        eventRef.enqueueAction(
+            Sub()
+                RaiseEvent removed_client(client)
+            End Sub
+        )
     End Sub
 
-    Private Sub e_ThrowServerStateChanged(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
-        eventRef.enqueue(Function() eval(AddressOf _e_ThrowServerStateChanged, sender, old_state, new_state))
-    End Sub
-    Private Sub _e_ThrowServerStateChanged(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
-        RaiseEvent server_state_changed(sender, old_state, new_state)
-    End Sub
-
-    Private Sub catch_client_chat_event_R(ByVal client As BnetClient, ByVal id As Bnet.BnetPacket.CHAT_EVENT_ID, ByVal username As String, ByVal text As String)
+    Private Sub c_ClientChatEvent(ByVal client As BnetClient, ByVal id As Bnet.BnetPacket.CHAT_EVENT_ID, ByVal username As String, ByVal text As String)
         'Exit if this is not a command
         If id <> Bnet.BnetPacket.CHAT_EVENT_ID.TALK And id <> Bnet.BnetPacket.CHAT_EVENT_ID.WHISPER Then
             Return
@@ -441,11 +428,11 @@ Public NotInheritable Class MainBot
         Dim f = client_commands.processText(client, user, command_text)
         FutureSub.frun(AddressOf command_response_T, futurize(client), futurize(user), f)
         If Not f.isReady Then
-            threadedCall(Function() eval(AddressOf command_response_wait_T, client, command_text, user, f), "commandWait " + command_text)
+            ThreadedAction(Sub() command_response_wait_T(client, command_text, user, f), "commandWait " + command_text)
         End If
     End Sub
     Private Sub command_response_T(ByVal client As BnetClient, ByVal user As BotUser, ByVal output As Outcome)
-        client.sendWhisper_R(user.name, If(output.outcome = Outcomes.succeeded, "", "(" + output.outcome.ToString() + ") ") + output.message)
+        client.sendWhisper_R(user.name, If(output.succeeded, "", "(Failed) ") + output.message)
     End Sub
     Private Sub command_response_wait_T(ByVal client As BnetClient, ByVal text As String, ByVal user As BotUser, ByVal response As IFuture(Of Outcome))
         Threading.Thread.Sleep(2000)
@@ -453,9 +440,9 @@ Public NotInheritable Class MainBot
         client.sendWhisper_R(user.name, "Command '{0}' is running... You will be informed when it finishes.".frmt(text))
     End Sub
 
-    Private Sub catch_server_player_talked_R(ByVal sender As IW3Server, _
-                                             ByVal game As IW3Game, _
-                                             ByVal player As IW3Player, _
+    Private Sub catch_server_player_talked_R(ByVal sender As IW3Server,
+                                             ByVal game As IW3Game,
+                                             ByVal player As IW3Player,
                                              ByVal text As String)
         If text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
             If text.ToLower() <> "?trigger" Then
@@ -471,79 +458,79 @@ Public NotInheritable Class MainBot
 
         'Process prefixed commands
         Dim command_text = text.Substring(My.Settings.commandPrefix.Length)
-        FutureSub.frun(Function(out) finish_instance_command(out, player, game), game.f_CommandProcessText(player, command_text))
+        FutureSub.frun(game.f_CommandProcessText(player, command_text), Function(out) finish_instance_command(out, player, game))
     End Sub
     Private Function finish_instance_command(ByVal out As outcome, ByVal player As IW3Player, ByVal game As IW3Game) As Boolean
         If player Is Nothing Then Return False
-        Dim msg = out.outcome.ToString() + ": " + out.message
+        Dim msg = If(out.succeeded, "Succeeded", "Failed") + ": " + out.message
         game.f_SendMessageTo(msg, player)
-        game.logger.log("(Private to " + player.name + "): " + msg, LogMessageTypes.NormalEvent)
+        game.logger.log("(Private to " + player.name + "): " + msg, LogMessageTypes.Typical)
         Return True
     End Function
 
-    Private Sub catch_client_state_changed_R(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
-        e_ThrowClientStateChanged(sender, old_state, new_state)
+    Private Sub c_ClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
+        RaiseEvent client_state_changed(sender, old_state, new_state)
     End Sub
-    Private Sub catch_server_state_changed_R(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
-        e_ThrowServerStateChanged(sender, old_state, new_state)
+    Private Sub c_ServerStateChanged(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
+        RaiseEvent server_state_changed(sender, old_state, new_state)
     End Sub
 #End Region
 
 #Region "Remote Calls"
     Public Function find_server_R(ByVal name As String) As IFuture(Of IW3Server)
-        Return ref.enqueue(Function() find_server_L(name))
+        Return ref.enqueueFunc(Function() find_server_L(name))
     End Function
     Public Function kill_R() As IFuture(Of Outcome)
-        Return ref.enqueue(AddressOf kill_L)
+        Return ref.enqueueFunc(AddressOf kill_L)
     End Function
-    Public Function create_lan_admin_R(ByVal name As String, _
-                                       ByVal password As String, _
-                                       Optional ByVal remote_host As String = "localhost", _
+    Public Function create_lan_admin_R(ByVal name As String,
+                                       ByVal password As String,
+                                       Optional ByVal remote_host As String = "localhost",
                                        Optional ByVal listen_port As UShort = 0) As IFuture(Of Outcome)
-        Return futurefuture(ref.enqueue(Function() create_lan_admin_L(name, password, remote_host, listen_port)))
+        Return futurefuture(ref.enqueueFunc(Function() create_lan_admin_L(name, password, remote_host, listen_port)))
     End Function
     Public Function add_widget_R(ByVal widget As IBotWidget) As IFuture(Of Outcome)
-        Return ref.enqueue(Function() add_widget_L(widget))
+        Return ref.enqueueFunc(Function() add_widget_L(widget))
     End Function
     Public Function remove_widget_R(ByVal type_name As String, ByVal name As String) As IFuture(Of Outcome)
-        Return ref.enqueue(Function() remove_widget_L(type_name, name))
+        Return ref.enqueueFunc(Function() remove_widget_L(type_name, name))
     End Function
     Public Function has_server_R(ByVal name As String) As IFuture(Of Boolean)
-        Return ref.enqueue(Function() has_server_L(name))
+        Return ref.enqueueFunc(Function() has_server_L(name))
     End Function
     Public Function remove_server_R(ByVal name As String) As IFuture(Of Outcome)
-        Return ref.enqueue(Function() remove_server_L(name))
+        Return ref.enqueueFunc(Function() remove_server_L(name))
     End Function
-    Public Function create_server_R(ByVal name As String, _
-                                    ByVal default_settings As ServerSettings, _
-                                    Optional ByVal suffix As String = "", _
+    Public Function create_server_R(ByVal name As String,
+                                    ByVal default_settings As ServerSettings,
+                                    Optional ByVal suffix As String = "",
                                     Optional ByVal avoid_name_collision As Boolean = False) _
                                     As IFuture(Of Outcome(Of IW3Server))
-        Return ref.enqueue(Function() create_server_L(name, default_settings, suffix, avoid_name_collision))
+        Return ref.enqueueFunc(Function() create_server_L(name, default_settings, suffix, avoid_name_collision))
     End Function
     Public Function find_client_R(ByVal name As String) As IFuture(Of BnetClient)
-        Return ref.enqueue(Function() find_client_L(name))
+        Return ref.enqueueFunc(Function() find_client_L(name))
     End Function
     Public Function has_client_R(ByVal name As String) As IFuture(Of Boolean)
-        Return ref.enqueue(Function() has_client_L(name))
+        Return ref.enqueueFunc(Function() has_client_L(name))
     End Function
-    Public Function remove_client_R(ByVal name As String) As IFuture(Of Outcome)
-        Return ref.enqueue(Function() remove_client_L(name))
+    Public Function f_RemoveClient(ByVal name As String) As IFuture(Of Outcome)
+        Return ref.enqueueFunc(Function() remove_client_L(name))
     End Function
-    Public Function create_client_R(ByVal name As String, Optional ByVal profile_name As String = "Default") As IFuture(Of Outcome(Of BnetClient))
-        Return ref.enqueue(Function() create_client_L(name, profile_name))
+    Public Function f_CreateClient(ByVal name As String, Optional ByVal profile_name As String = "Default") As IFuture(Of Outcome(Of BnetClient))
+        Return ref.enqueueFunc(Function() create_client_L(name, profile_name))
     End Function
     Public Function shallow_copy_servers_R() As IFuture(Of List(Of IW3Server))
-        Return ref.enqueue(Function() servers.ToList)
+        Return ref.enqueueFunc(Function() servers.ToList)
     End Function
     Public Function shallow_copy_clients_R() As IFuture(Of List(Of BnetClient))
-        Return ref.enqueue(Function() clients.ToList)
+        Return ref.enqueueFunc(Function() clients.ToList)
     End Function
     Public Function shallow_copy_widgets_R() As IFuture(Of List(Of IBotWidget))
-        Return ref.enqueue(Function() widgets.ToList)
+        Return ref.enqueueFunc(Function() widgets.ToList)
     End Function
     Public Function loadPlugin_R(ByVal name As String) As IFuture(Of Outcome)
-        Return ref.enqueue(Function() loadPlugin_L(name))
+        Return ref.enqueueFunc(Function() loadPlugin_L(name))
     End Function
 #End Region
 

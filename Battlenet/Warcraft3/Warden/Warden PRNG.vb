@@ -7,7 +7,7 @@
         Private num_buffered As Integer
 
         Public Sub New(ByVal seed_ As UInteger)
-            Dim seed = seed_.bytes()
+            Dim seed = seed_.bytes(ByteOrder.LittleEndian)
             Dim hash_left = BSha1Processor.process(New IO.MemoryStream(subArray(seed, 0, 2)))
             Dim hash_right = BSha1Processor.process(New IO.MemoryStream(subArray(seed, 2, 2)))
             For i = 0 To 19

@@ -12,7 +12,7 @@
         ReadOnly Property map() As W3Map
         ReadOnly Property parent() As IW3Server
         ReadOnly Property name() As String
-        ReadOnly Property logger() As MultiLogger
+        ReadOnly Property logger() As Logger
         ReadOnly Property lobby() As IW3GameLobby
         ReadOnly Property load_screen() As IW3GameLoadScreen
         ReadOnly Property gameplay() As IW3GamePlay
@@ -36,7 +36,7 @@
         Event PlayerTalked(ByVal sender As IW3Game, ByVal player As IW3Player, ByVal text As String)
         Event PlayerLeft(ByVal sender As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal reason As W3PlayerLeaveTypes)
 
-        Function f_CommandProcessLocalText(ByVal text As String, ByVal logger As MultiLogger) As IFuture
+        Function f_CommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture
         Function f_CommandProcessText(ByVal player As IW3Player, ByVal text As String) As IFuture(Of Outcome)
     End Interface
 
@@ -79,6 +79,10 @@
 
         Function f_DropLagger() As IFuture
         Function f_QueueGameData(ByVal sender As IW3PlayerGameplay, ByVal data() As Byte) As IFuture
+
+        Property setting_game_rate As Double
+        Property setting_lag_limit As Double
+        Property setting_tick_period As Double
 
         Event PlayerSentData(ByVal game As IW3GamePlay, ByVal player As IW3PlayerGameplay, ByVal data As Byte())
     End Interface

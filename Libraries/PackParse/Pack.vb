@@ -1,14 +1,15 @@
-Imports System.Net.NetworkInformation
 Imports System.Runtime.CompilerServices
 
 Public Enum ByteOrder
+    '''<summary>Least significant bytes first.</summary>
     LittleEndian
+    '''<summary>Most significant bytes first.</summary>
     BigEndian
 End Enum
 
 Public Module Pack
-    <Extension()> Public Function ToULong(ByVal data As IEnumerable(Of Byte), _
-                                 Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As ULong
+    <Extension()> Public Function ToULong(ByVal data As IEnumerable(Of Byte),
+                                          ByVal byte_order As ByteOrder) As ULong
         If data Is Nothing Then Throw New ArgumentNullException("data")
         Dim val As ULong
         For Each b In If(byte_order = ByteOrder.LittleEndian, data.Reverse, data)
@@ -17,23 +18,23 @@ Public Module Pack
         Next b
         Return val
     End Function
-    <Extension()> Public Function ToUInteger(ByVal data As IEnumerable(Of Byte), _
-                                             Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As UInteger
+    <Extension()> Public Function ToUInteger(ByVal data As IEnumerable(Of Byte),
+                                             ByVal byte_order As ByteOrder) As UInteger
         Return CUInt(ToULong(data, byte_order))
     End Function
-    <Extension()> Public Function bytes(ByVal n As UShort, _
-                                        Optional ByVal min_size As Integer = 2, _
-                                        Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As Byte()
-        Return CULng(n).bytes(min_size, byte_order)
+    <Extension()> Public Function bytes(ByVal n As UShort,
+                                        ByVal byte_order As ByteOrder,
+                                        Optional ByVal min_size As Integer = 2) As Byte()
+        Return CULng(n).bytes(byte_order, min_size)
     End Function
-    <Extension()> Public Function bytes(ByVal n As UInteger, _
-                                        Optional ByVal min_size As Integer = 4, _
-                                        Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As Byte()
-        Return CULng(n).bytes(min_size, byte_order)
+    <Extension()> Public Function bytes(ByVal n As UInteger,
+                                        ByVal byte_order As ByteOrder,
+                                        Optional ByVal min_size As Integer = 4) As Byte()
+        Return CULng(n).bytes(byte_order, min_size)
     End Function
-    <Extension()> Public Function bytes(ByVal n As ULong, _
-                                        Optional ByVal min_size As Integer = 8, _
-                                        Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As Byte()
+    <Extension()> Public Function bytes(ByVal n As ULong,
+                                        ByVal byte_order As ByteOrder,
+                                        Optional ByVal min_size As Integer = 8) As Byte()
         Dim data As New List(Of Byte)
         Do Until n = 0 And data.Count >= min_size
             data.Add(CByte(n And CULng(&HFF)))
@@ -49,7 +50,7 @@ Public Module Pack
         End Select
     End Function
 
-    Public Function packString(ByVal s As String, _
+    Public Function packString(ByVal s As String,
                                Optional ByVal nullTerminate As Boolean = False) As Byte()
         If Not (s IsNot Nothing) Then Throw New ArgumentException()
 
@@ -61,7 +62,7 @@ Public Module Pack
         Next i
         Return buffer
     End Function
-    <Extension()> Public Function toChrString(ByVal data As IEnumerable(Of Byte), _
+    <Extension()> Public Function toChrString(ByVal data As IEnumerable(Of Byte),
                                  Optional ByVal null_terminated As Boolean = True) As String
         If data Is Nothing Then Return ""
 
@@ -74,8 +75,8 @@ Public Module Pack
         Return chars.ToArray
     End Function
 
-    Public Function unpackHexString(ByVal data As IEnumerable(Of Byte), _
-                                    Optional ByVal minByteLength As Byte = 2, _
+    Public Function unpackHexString(ByVal data As IEnumerable(Of Byte),
+                                    Optional ByVal minByteLength As Byte = 2,
                                     Optional ByVal separator As String = " ") As String
 
         If data Is Nothing Then Return ""
@@ -123,19 +124,5 @@ Public Module Pack
                     dehex = dehex * 16 + Asc(c) - Asc("A") + 10
             End Select
         Next i
-    End Function
-    Public Function getIpAddress() As Net.IPAddress
-        For Each nic As NetworkInterface In NetworkInterface.GetAllNetworkInterfaces
-            If nic.Supports(NetworkInterfaceComponent.IPv4) Then
-                For Each addr As UnicastIPAddressInformation In nic.GetIPProperties.UnicastAddresses
-                    If addr.Address.AddressFamily = Net.Sockets.AddressFamily.InterNetwork Then
-                        If addr.Address.ToString <> "127.0.0.1" Then
-                            Return addr.Address
-                        End If
-                    End If
-                Next
-            End If
-        Next nic
-        Return New Net.IPAddress(New Byte() {127, 0, 0, 1})
     End Function
 End Module

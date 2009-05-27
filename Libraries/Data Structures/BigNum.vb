@@ -536,8 +536,8 @@ Public Class BigNum
 #End Region
 
 #Region "Base Conversions"
-    Public Shared Function fromBase(ByVal L As IEnumerable(Of UInteger), _
-                                    ByVal base As UInteger, _
+    Public Shared Function fromBase(ByVal L As IEnumerable(Of UInteger),
+                                    ByVal base As UInteger,
                                     Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
         If L Is Nothing Then Throw New ArgumentNullException("L")
         If base < 2 Then Throw New ArgumentOutOfRangeException("base")
@@ -551,7 +551,7 @@ Public Class BigNum
         Next e
         Return n
     End Function
-    Public Shared Function fromBaseBytes(ByVal L As IEnumerable(Of Byte), ByVal base As UInteger, _
+    Public Shared Function fromBaseBytes(ByVal L As IEnumerable(Of Byte), ByVal base As UInteger,
                                          Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
         If Not (L IsNot Nothing) Then Throw New ArgumentException()
         If Not (base >= 2) Then Throw New ArgumentException()
@@ -563,7 +563,7 @@ Public Class BigNum
         Next e
         Return fromBase(Lu, base, byte_order)
     End Function
-    Public Shared Function fromBytes(ByVal L As IEnumerable(Of Byte), _
+    Public Shared Function fromBytes(ByVal L As IEnumerable(Of Byte),
                                      Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
         If Not (L IsNot Nothing) Then Throw New ArgumentException()
 
@@ -641,7 +641,7 @@ Public Class BigNum
         Next i
         Return s.ToString
     End Function
-    Public Shared Function fromString(ByVal s As String, ByVal base As UInteger, _
+    Public Shared Function fromString(ByVal s As String, ByVal base As UInteger,
                                       Optional ByVal byte_order As ByteOrder = ByteOrder.BigEndian) As BigNum
         If base < 2 Or base > 36 Then Throw New ArgumentOutOfRangeException("base", "base must be in [2,36]")
         Dim L As New List(Of UInteger)

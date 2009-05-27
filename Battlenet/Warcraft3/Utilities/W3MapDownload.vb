@@ -20,11 +20,11 @@ Namespace Warcraft3
             Dim file_extension = IO.Path.GetExtension(filename)
             Dim n = 1
             Do
-                Me.filepath = "{0}{1}{2}{3}{4}{5}".frmt(My.Settings.mapPath, _
-                                                        "HostBot", _
-                                                        IO.Path.DirectorySeparatorChar, _
-                                                        filename_without_extension, _
-                                                        If(n = 1, "", " " + n.ToString), _
+                Me.filepath = "{0}{1}{2}{3}{4}{5}".frmt(My.Settings.mapPath,
+                                                        "HostBot",
+                                                        IO.Path.DirectorySeparatorChar,
+                                                        filename_without_extension,
+                                                        If(n = 1, "", " " + n.ToString),
                                                         file_extension)
                 Me.temp_filepath = Me.filepath + ".dl"
                 n += 1

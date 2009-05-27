@@ -13,11 +13,11 @@ Namespace Warcraft3
         End Sub
 
 #Region "Properties"
-        Public Property logger() As MultiLogger
+        Public Property logger() As Logger
             Get
                 Return socket.logger
             End Get
-            Set(ByVal value As MultiLogger)
+            Set(ByVal value As Logger)
                 socket.logger = value
             End Set
         End Property
@@ -66,8 +66,8 @@ Namespace Warcraft3
                 End If
 
                 'Log
-                logger.log(Function() "Sending {0} to {1}".frmt(pk.id, name), LogMessageTypes.DataEvents)
-                logger.log(Function() pk.payload.toString(), LogMessageTypes.ParsedData)
+                logger.log(Function() "Sending {0} to {1}".frmt(pk.id, name), LogMessageTypes.DataEvent)
+                logger.log(Function() pk.payload.toString(), LogMessageTypes.DataParsed)
 
                 'Send
                 Return socket.Write(New Byte() {W3Packet.PACKET_PREFIX, pk.id}, pk.payload.getData.ToArray)
@@ -94,7 +94,7 @@ Namespace Warcraft3
                 End If
 
                 'Log Event
-                logger.log(Function() "Received {0} from {1}".frmt(id, name), LogMessageTypes.DataEvents)
+                logger.log(Function() "Received {0} from {1}".frmt(id, name), LogMessageTypes.DataEvent)
 
                 'Parse
                 Dim p = W3Packet.FromData(id, data).payload
@@ -104,14 +104,14 @@ Namespace Warcraft3
                 Dim d = CType(p.getVal(), Dictionary(Of String, Object))
 
                 'Log Parsed Data
-                logger.log(Function() p.toString(), LogMessageTypes.ParsedData)
+                logger.log(Function() p.toString(), LogMessageTypes.DataParsed)
 
                 'Handle
                 RaiseEvent ReceivedPacket(Me, id, d)
 
             Catch e As Pickling.PicklingException
                 Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".frmt(id, name, e.Message)
-                logger.log(msg, LogMessageTypes.NegativeEvent)
+                logger.log(msg, LogMessageTypes.Negative)
 
             Catch e As Exception
                 Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".frmt(id, name, e.Message)

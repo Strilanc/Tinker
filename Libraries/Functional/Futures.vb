@@ -1,6 +1,5 @@
 ''''Provides type-safe methods for return values that will be ready in the future, and for passing future arguments into normal functions.
 Namespace Functional.Futures
-#Region "Interfaces"
     '''<summary>Represents a thread-safe read-only class that fires an event when it becomes ready.</summary>
     Public Interface IFuture
         '''<summary>Raised when the future becomes ready.</summary>
@@ -10,7 +9,7 @@ Namespace Functional.Futures
     End Interface
 
     '''<summary>Represents a thread-safe read-only class that fires an event when its value becomes ready.</summary>
-    Public Interface IFuture(Of R)
+    Public Interface IFuture(Of Out R)
         Inherits IFuture
         '''<summary>
         '''Returns the future's value.
@@ -18,9 +17,7 @@ Namespace Functional.Futures
         '''</summary>
         Function getValue() As R
     End Interface
-#End Region
 
-#Region "Base Classes"
     '''<summary>A thread-safe class that fires an event when it becomes ready.</summary>
     Public Class Future
         Implements IFuture
@@ -52,19 +49,11 @@ Namespace Functional.Futures
         End Sub
     End Class
 
-    Public Class FutureException
-        Inherits Exception
-        Public Sub New(ByVal message As String, ByVal innerException As Exception)
-            MyBase.New(message, innerException)
-        End Sub
-    End Class
-
     '''<summary>A thread-safe class that fires an event when its value becomes ready.</summary>
     Public Class Future(Of R)
         Implements IFuture(Of R)
         Private val As R = Nothing
         Private is_ready As Boolean = False
-        Private exc As Exception = Nothing
         Private ReadOnly lock As New Object()
         Public Event ready() Implements IFuture.ready
 
@@ -81,7 +70,6 @@ Namespace Functional.Futures
         '''</summary>
         Public Function getValue() As R Implements IFuture(Of R).getValue
             If Not isReady() Then Throw New InvalidOperationException("Attempted to get a future value before it was ready.")
-            If exc IsNot Nothing Then Throw New FutureException("The future contained an exception instead of a value.", exc)
             Return val
         End Function
 
@@ -98,21 +86,6 @@ Namespace Functional.Futures
             val = v
             RaiseEvent ready()
         End Sub
-
-        ''''<summary>
-        ''''Sets the future's value to an exception and makes the future ready.
-        ''''The exception will be thrown as the InnerException of a FutureException when getValue is called.
-        ''''Throws a InvalidOperationException if the future was already ready.
-        ''''</summary>
-        'Public Sub setException(ByVal e As Exception)
-        '    SyncLock lock
-        '        If is_ready Then Throw New InvalidOperationException("Future readied more than once.")
-        '        is_ready = True
-        '    End SyncLock
-
-        '    exc = e
-        '    RaiseEvent ready()
-        'End Sub
     End Class
 
     '''<summary>Becomes ready once a set of futures is ready. Runs an overridable call just before becoming ready.</summary>
@@ -123,6 +96,7 @@ Namespace Functional.Futures
         Private initialized As Boolean
         Private waiting_to_run As Boolean
         Private next_future_index As Integer
+        Private ReadOnly action As Action
 
         '''<summary>
         '''Adds the BaseFutureKeeper as a parent to all its child futures.
@@ -130,8 +104,10 @@ Namespace Functional.Futures
         '''Throws an InvalidOperationException if called twice.
         '''Should only be run after child has finished initializing, because 'run' may be called before init finishes.
         '''</summary>
-        Protected Sub init(ByVal futures As IEnumerable(Of IFuture))
-            If Not (futures IsNot Nothing) Then Throw New ArgumentException()
+        Public Sub New(ByVal action As Action, ByVal futures As IEnumerable(Of IFuture))
+            If futures Is Nothing Then Throw New ArgumentNullException("futures")
+            If action Is Nothing Then Throw New ArgumentNullException("action")
+            Me.action = action
 
             SyncLock lock
                 'Only allow one execution past this point
@@ -185,126 +161,102 @@ Namespace Functional.Futures
             End SyncLock
 
             'Run
-            Dim e = debug_trap(AddressOf run)
-            If e IsNot Nothing Then
-                Logging.logUnexpectedException("Exception rose past {0}.notify().".frmt(Me.GetType.Name), e)
-            End If
+            Try
+                Call action()
+            Catch ex As Exception
+                Logging.LogUnexpectedException("Exception rose past {0}.notify().".frmt(Me.GetType.Name), ex)
+            End Try
             Call setReady()
         End Sub
-
-        '''<summary>Called when all child futures become ready for the first time.</summary>
-        Protected Overridable Sub run()
-        End Sub
     End Class
-#End Region
 
-#Region "Scheduling Classes"
     '''<summary>Runs a subroutine once a set of futures is ready. Makes the completion available as a future.</summary>
     Public Class FutureSub
-        Inherits FutureKeeper
-#Region "non-shared"
-        Private ReadOnly callback As Action
-
-        Private Sub New(ByVal callback As Action, ByVal futures As IEnumerable(Of IFuture))
-            If callback Is Nothing Then Throw New ArgumentNullException("callback")
-            If futures Is Nothing Then Throw New ArgumentNullException("futures")
-            Me.callback = callback
-            MyBase.init(futures)
-        End Sub
-
-        '''<summary>Runs the callback subroutine.</summary>
-        Protected Overrides Sub run()
-            Call callback()
-        End Sub
-#End Region
-
-#Region "schedule"
         '''<summary>Runs the given subroutine once the given futures become ready, and returns a future for the sub's completion.</summary>
         Public Shared Function schedule(ByVal callback As Action, ByVal ParamArray futures() As IFuture) As IFuture
-            Return New FutureSub(callback, futures)
+            Return New FutureKeeper(callback, futures)
         End Function
         '''<summary>Runs the given subroutine once the given futures become ready, and returns a future for the sub's completion.</summary>
         Public Shared Function schedule(ByVal callback As Action, ByVal futures As IEnumerable(Of IFuture)) As IFuture
-            Return New FutureSub(callback, futures)
+            Return New FutureKeeper(callback, futures)
         End Function
-#End Region
 
-#Region "frun"
         '''<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-        Public Shared Function frun(Of A1)(ByVal s As Action(Of A1), ByVal arg1 As IFuture(Of A1)) As IFuture
-            Return schedule(Function() eval(s, arg1.getValue), arg1)
+        Public Shared Function frun(Of A1)(ByVal arg1 As IFuture(Of A1), ByVal action As Action(Of A1)) As IFuture
+            Return schedule(Sub() action(arg1.getValue), arg1)
         End Function
         '''<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-        Public Shared Function frun(Of A1, A2)(ByVal s As Action(Of A1, A2), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2)) As IFuture
-            Return schedule(Function() eval(s, arg1.getValue, arg2.getValue), arg1, arg2)
+        Public Shared Function frun(Of A1, A2)(ByVal action As Action(Of A1, A2), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2)) As IFuture
+            Return schedule(Sub() action(arg1.getValue, arg2.getValue), arg1, arg2)
         End Function
         '''<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-        Public Shared Function frun(Of A1, A2, A3)(ByVal s As Action(Of A1, A2, A3), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3)) As IFuture
-            Return schedule(Function() eval(s, arg1.getValue, arg2.getValue, arg3.getValue), arg1, arg2, arg3)
+        Public Shared Function frun(Of A1, A2, A3)(ByVal action As Action(Of A1, A2, A3), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3)) As IFuture
+            Return schedule(Sub() action(arg1.getValue, arg2.getValue, arg3.getValue), arg1, arg2, arg3)
         End Function
         '''<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-        Public Shared Function frun(Of A1, A2, A3, A4)(ByVal s As Action(Of A1, A2, A3, A4), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3), ByVal arg4 As IFuture(Of A4)) As IFuture
-            Return schedule(Function() eval(s, arg1.getValue, arg2.getValue, arg3.getValue, arg4.getValue), arg1, arg2, arg3, arg4)
+        Public Shared Function frun(Of A1, A2, A3, A4)(ByVal action As Action(Of A1, A2, A3, A4), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3), ByVal arg4 As IFuture(Of A4)) As IFuture
+            Return schedule(Sub() action(arg1.getValue, arg2.getValue, arg3.getValue, arg4.getValue), arg1, arg2, arg3, arg4)
         End Function
         '''<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-        Public Shared Function frun(Of A1, A2, A3, A4, A5)(ByVal s As Action(Of A1, A2, A3, A4, A5), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3), ByVal arg4 As IFuture(Of A4), ByVal arg5 As IFuture(Of A5)) As IFuture
-            Return schedule(Function() eval(s, arg1.getValue, arg2.getValue, arg3.getValue, arg4.getValue, arg5.getValue), arg1, arg2, arg3, arg4, arg5)
+        Public Shared Function frun(Of A1, A2, A3, A4, A5)(ByVal action As Action(Of A1, A2, A3, A4, A5), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3), ByVal arg4 As IFuture(Of A4), ByVal arg5 As IFuture(Of A5)) As IFuture
+            Return schedule(Sub() action(arg1.getValue, arg2.getValue, arg3.getValue, arg4.getValue, arg5.getValue), arg1, arg2, arg3, arg4, arg5)
         End Function
         '''<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-        Public Shared Function frun(Of A1, A2, A3, A4, A5, A6)(ByVal s As Action(Of A1, A2, A3, A4, A5, A6), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3), ByVal arg4 As IFuture(Of A4), ByVal arg5 As IFuture(Of A5), ByVal arg6 As IFuture(Of A6)) As IFuture
-            Return schedule(Function() eval(s, arg1.getValue, arg2.getValue, arg3.getValue, arg4.getValue, arg5.getValue, arg6.getValue), arg1, arg2, arg3, arg4, arg5, arg6)
+        Public Shared Function frun(Of A1, A2, A3, A4, A5, A6)(ByVal action As Action(Of A1, A2, A3, A4, A5, A6), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3), ByVal arg4 As IFuture(Of A4), ByVal arg5 As IFuture(Of A5), ByVal arg6 As IFuture(Of A6)) As IFuture
+            Return schedule(Sub() action(arg1.getValue, arg2.getValue, arg3.getValue, arg4.getValue, arg5.getValue, arg6.getValue), arg1, arg2, arg3, arg4, arg5, arg6)
         End Function
-#End Region
     End Class
 
     '''<summary>Runs a function once a set of futures is ready. Makes the return value available as a future.</summary>
-    Public Class FutureFunc(Of R)
-        Inherits Future(Of R)
-#Region "new"
-        Private Sub New(ByVal callback As func(Of R), Optional ByVal futures As IEnumerable(Of IFuture) = Nothing)
-            If callback Is Nothing Then Throw New ArgumentNullException("callback")
-            If futures Is Nothing Then Throw New ArgumentNullException("futures")
-
-            '[callback may have late curried future arguments that aren't ready yet, so use late curry]
-            '[Not inlined to avoid a compiler error in VS2008 team edition]
-            init(callback, futures)
-        End Sub
-        Private Sub init(ByVal callback As func(Of R), Optional ByVal futures As IEnumerable(Of IFuture) = Nothing)
-            FutureSub.schedule(Function() eval(AddressOf setValue, callback()), futures)
-        End Sub
-#End Region
-
+    Public Class FutureFunc
 #Region "schedule"
         '''<summary>Runs the given function once the given futures become ready, and returns a future for the function's return value.</summary>
-        Public Shared Function schedule(ByVal callback As func(Of R), Optional ByVal futures As IEnumerable(Of IFuture) = Nothing) As IFuture(Of R)
-            Return New FutureFunc(Of R)(callback, futures)
-        End Function
-        '''<summary>Runs the given function once the given futures become ready, and returns a future for the function's return value.</summary>
-        Public Shared Function schedule(Of T)(ByVal callback As func(Of R), Optional ByVal futures As IEnumerable(Of IFuture(Of T)) = Nothing) As IFuture(Of R)
-            Return schedule(callback, From f In futures Select CType(f, IFuture))
+        Public Shared Function schedule(Of R)(ByVal func As Func(Of R), Optional ByVal futures As IEnumerable(Of IFuture) = Nothing) As IFuture(Of R)
+            Dim f As New Future(Of R)
+            FutureSub.schedule(Sub() f.setValue(func()), futures)
+            Return f
         End Function
 #End Region
 
 #Region "frun"
+        Public Shared Function ffrun(Of R, A1, A2)(ByVal arg1 As IFuture(Of A1),
+                                                   ByVal arg2 As IFuture(Of A2),
+                                                   ByVal f As Func(Of A1, A2, IFuture(Of R))) As IFuture(Of R)
+            Return futurefuture(FutureFunc.frun(arg1, arg2, f))
+        End Function
+        Public Shared Function ffrun(Of R, A1)(ByVal arg1 As IFuture(Of A1),
+                                               ByVal f As Func(Of A1, IFuture(Of R))) As IFuture(Of R)
+            Return futurefuture(FutureFunc.frun(arg1, f))
+        End Function
+
         '''<summary>Runs the given function once its arguments are ready, and returns a future for its return value.</summary>
-        Public Shared Function frun(Of A1)(ByVal f As Func(Of A1, R), ByVal arg1 As IFuture(Of A1)) As IFuture(Of R)
-            Return schedule(Function() f(arg1.getValue), New IFuture() {arg1})
+        Public Shared Function frun(Of A1, R)(ByVal arg1 As IFuture(Of A1),
+                                              ByVal func As Func(Of A1, R)) As IFuture(Of R)
+            Return schedule(Function() func(arg1.getValue), {arg1})
         End Function
         '''<summary>Runs the given function once its arguments are ready, and returns a future for its return value.</summary>
-        Public Shared Function frun(Of A1, A2)(ByVal f As Func(Of A1, A2, R), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2)) As IFuture(Of R)
-            Return schedule(Function() f(arg1.getValue, arg2.getValue), New IFuture() {arg1, arg2})
+        Public Shared Function frun(Of A1, A2, R)(ByVal arg1 As IFuture(Of A1),
+                                                  ByVal arg2 As IFuture(Of A2),
+                                                  ByVal func As Func(Of A1, A2, R)) As IFuture(Of R)
+            Return schedule(Function() func(arg1.getValue, arg2.getValue), {arg1, arg2})
         End Function
         '''<summary>Runs the given function once its arguments are ready, and returns a future for its return value.</summary>
-        Public Shared Function frun(Of A1, A2, A3)(ByVal f As Func(Of A1, A2, A3, R), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3)) As IFuture(Of R)
-            Return schedule(Function() f(arg1.getValue, arg2.getValue, arg3.getValue), New IFuture() {arg1, arg2, arg3})
+        Public Shared Function frun(Of A1, A2, A3, R)(ByVal arg1 As IFuture(Of A1),
+                                                      ByVal arg2 As IFuture(Of A2),
+                                                      ByVal arg3 As IFuture(Of A3),
+                                                      ByVal func As Func(Of A1, A2, A3, R)) As IFuture(Of R)
+            Return schedule(Function() func(arg1.getValue, arg2.getValue, arg3.getValue), {arg1, arg2, arg3})
         End Function
         '''<summary>Runs the given function once its arguments are ready, and returns a future for its return value.</summary>
-        Public Shared Function frun(Of A1, A2, A3, A4)(ByVal f As Func(Of A1, A2, A3, A4, R), ByVal arg1 As IFuture(Of A1), ByVal arg2 As IFuture(Of A2), ByVal arg3 As IFuture(Of A3), ByVal arg4 As IFuture(Of A4)) As IFuture(Of R)
-            Return schedule(Function() f(arg1.getValue, arg2.getValue, arg3.getValue, arg4.getValue), New IFuture() {arg1, arg2, arg3, arg4})
+        Public Shared Function frun(Of A1, A2, A3, A4, R)(ByVal arg1 As IFuture(Of A1),
+                                                          ByVal arg2 As IFuture(Of A2),
+                                                          ByVal arg3 As IFuture(Of A3),
+                                                          ByVal arg4 As IFuture(Of A4),
+                                                          ByVal func As Func(Of A1, A2, A3, A4, R)) As IFuture(Of R)
+            Return schedule(Function() func(arg1.getValue, arg2.getValue, arg3.getValue, arg4.getValue), {arg1, arg2, arg3, arg4})
         End Function
 #End Region
     End Class
-#End Region
 
     Public Module Common
 #Region "Secondary Functions"
@@ -316,25 +268,33 @@ Namespace Functional.Futures
         End Function
 
         '''<summary>Returns a future for the final value of a future of a future.</summary>
-        Public Function futurefuture(Of R)(ByVal future_of_future As IFuture(Of IFuture(Of R))) As IFuture(Of R)
-            Dim ret = New Future(Of R)
-            Dim sv As Action(Of R) = AddressOf ret.setValue
-            FutureSub.frun(AddressOf FutureSub.frun, futurize(sv), future_of_future)
-            Return ret
+        Public Function futurefuture(Of R)(ByVal futureFutureVal As IFuture(Of IFuture(Of R))) As IFuture(Of R)
+            Dim f = New Future(Of R)
+            FutureSub.frun(
+                futureFutureVal,
+                Sub(futureVal)
+                    FutureSub.frun(futureVal,
+                                   Sub(val As R) f.setValue(val))
+                End Sub
+            )
+            Return f
         End Function
         '''<summary>Returns a future for the completion of a future of a future.</summary>
-        Public Function futurefuture(ByVal future_of_future As IFuture(Of IFuture)) As IFuture
-            Dim ret = New Future
-            FutureSub.frun(AddressOf ffhelper, futurize(ret), future_of_future)
-            Return ret
+        Public Function futurefuture(ByVal futureFutureAction As IFuture(Of IFuture)) As IFuture
+            Dim f = New Future
+            FutureSub.frun(
+                futureFutureAction,
+                Sub(futureAction)
+                    FutureSub.schedule(Sub() f.setReady(),
+                                       futureAction)
+                End Sub
+            )
+            Return f
         End Function
-        Private Sub ffhelper(ByVal ret As Future, ByVal f As IFuture)
-            FutureSub.schedule(AddressOf ret.setReady, f)
-        End Sub
 
         Public Function futurecast(Of P, T As P)(ByVal f As IFuture(Of T)) As IFuture(Of P)
             Dim f2 As New Future(Of P)
-            FutureSub.frun(AddressOf f2.setValue, f)
+            FutureSub.frun(f, AddressOf f2.setValue)
             Return f2
         End Function
 
@@ -396,7 +356,7 @@ Namespace Functional.Futures
                 Me.iterFunction = iterFunction
                 Me.curReturnVal = baseReturnVal
                 'wait for the list to be ready
-                FutureSub.frun(AddressOf retrieveList, srcListPromise)
+                FutureSub.frun(srcListPromise, AddressOf retrieveList)
             End Sub
 
             Private Sub retrieveList(ByVal srcList As IEnumerable(Of DOM))
@@ -419,7 +379,7 @@ Namespace Functional.Futures
                     Return
                 End If
                 'start processing the next item in the list
-                FutureSub.frun(AddressOf retrieveValue, iterFunction(srcList(curIndex)))
+                FutureSub.frun(iterFunction(srcList(curIndex)), AddressOf retrieveValue)
             End Sub
         End Class
         Private Class FutureFilterer(Of D)

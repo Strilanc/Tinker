@@ -165,7 +165,7 @@ Public Class W3SlotControl
 
     '    Private Sub mnuShowLog_Click(ByVal sender As Object, ByVal e As System.EventArgs) Handles mnuShowLog.Click
     '        FutureSub.schedule( _
-    '            AddressOf UIREF_showLog, _
+    '            AddressOf UIREF_showLog,
     '                Me.game.REF_FUTURE_deepCopyOfSlots())
     '    End Sub
     '    Private Sub UIREF_showLog(ByVal slots As List(Of W3Slot))

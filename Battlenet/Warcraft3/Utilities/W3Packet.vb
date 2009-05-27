@@ -214,96 +214,96 @@ Namespace Warcraft3
             jar.reg(id, New TupleJar(id.ToString(), subjars))
         End Sub
         Private Shared Sub reg_general(ByVal jar As ManualSwitchJar)
-            reg(jar, PING, _
+            reg(jar, PING,
                     New ArrayJar("salt", 4))
 
-            reg(jar, PONG, _
+            reg(jar, PONG,
                     New ArrayJar("salt", 4))
 
             '[server receive] [Informs the server when the set of clients a client is interconnected with changes]
-            reg(jar, PLAYERS_CONNECTED, _
+            reg(jar, PLAYERS_CONNECTED,
                     New ValueJar("player bitflags", 2))
 
             '[server send] [Tells clients to display a message]
             Dim text_value_jar As New AutoSwitchJar(TEXT.ToString(), -1, Nothing)
-            text_value_jar.regPacker(&H10, New TupleJar("lobby text", _
+            text_value_jar.regPacker(&H10, New TupleJar("lobby text",
                     New StringJar("text")))
-            text_value_jar.regPacker(&H20, New TupleJar("game Text", _
-                    New ArrayJar("flags", 4), _
+            text_value_jar.regPacker(&H20, New TupleJar("game Text",
+                    New ArrayJar("flags", 4),
                     New StringJar("text")))
-            reg(jar, TEXT, _
-                    New ListJar("receiving player indexes", New ValueJar("player index", 1)), _
-                    New ValueJar("sending player index", 1), _
-                    New ValueJar("chat type", 1), _
+            reg(jar, TEXT,
+                    New ListJar("receiving player indexes", New ValueJar("player index", 1)),
+                    New ValueJar("sending player index", 1),
+                    New ValueJar("chat type", 1),
                     text_value_jar)
 
             '[server receive] [Tells the server a client wants to perform a slot action or talk]
             Dim command_value_jar As New AutoSwitchJar("command value", -1, Nothing)
-            command_value_jar.regParser(&H10, New TupleJar("lobby chat", _
+            command_value_jar.regParser(&H10, New TupleJar("lobby chat",
                     New StringJar("message")))
-            command_value_jar.regParser(&H11, New TupleJar("set team", _
+            command_value_jar.regParser(&H11, New TupleJar("set team",
                     New ValueJar("new value", 1)))
-            command_value_jar.regParser(&H12, New TupleJar("set color", _
+            command_value_jar.regParser(&H12, New TupleJar("set color",
                     New ValueJar("new value", 1)))
-            command_value_jar.regParser(&H13, New TupleJar("set race", _
+            command_value_jar.regParser(&H13, New TupleJar("set race",
                     New ValueJar("new value", 1)))
-            command_value_jar.regParser(&H14, New TupleJar("set handicap", _
+            command_value_jar.regParser(&H14, New TupleJar("set handicap",
                     New ValueJar("new value", 1)))
-            command_value_jar.regParser(&H20, New TupleJar("game chat", _
-                    New ArrayJar("flags", 4), _
+            command_value_jar.regParser(&H20, New TupleJar("game chat",
+                    New ArrayJar("flags", 4),
                     New StringJar("message")))
-            reg(jar, CLIENT_COMMAND, _
-                    New ArrayJar("receiving player indexes", , 1), _
-                    New ValueJar("sending player", 1), _
-                    New ValueJar("command type", 1), _
+            reg(jar, CLIENT_COMMAND,
+                    New ArrayJar("receiving player indexes", , 1),
+                    New ValueJar("sending player", 1),
+                    New ValueJar("command type", 1),
                     command_value_jar)
         End Sub
         Private Shared Sub reg_leave(ByVal jar As ManualSwitchJar)
             'EXPERIMENTAL
             reg(jar, CONFIRM_HOST)
-            reg(jar, SET_HOST, _
+            reg(jar, SET_HOST,
                     New ValueJar("player index", 1))
             reg(jar, ACCEPT_HOST)
 
             '[server receive] [Informs the server a client is leaving the game]
-            reg(jar, LEAVING, _
+            reg(jar, LEAVING,
                     New ValueJar("leave type", 4))
 
             '[server send; broadcast when a player leaves] [informs other players a player has left]
-            reg(jar, OTHER_PLAYER_LEFT, _
-                    New ValueJar("player index", 1), _
+            reg(jar, OTHER_PLAYER_LEFT,
+                    New ValueJar("player index", 1),
                     New ValueJar("leave type", 4, "1=disc, 7=lose, 8=melee lose, 9=win, 10=draw, 11=obs, 13=lobby"))
         End Sub
         Private Shared Sub reg_new(ByVal jar As ManualSwitchJar)
-            reg(jar, KNOCK, _
-                    New ValueJar("entry key", 1), _
-                    New ValueJar("unknown1", 4, "=0?"), _
-                    New ValueJar("unknown2", 4, "=0?"), _
-                    New ValueJar("listen port", 2), _
-                    New ValueJar("connection key", 4, "value other players must provide when interconnecting"), _
-                    New StringJar("name", , , , "max 15 characters + terminator"), _
-                    New ValueJar("unknown3", 2, "=1"), _
+            reg(jar, KNOCK,
+                    New ValueJar("entry key", 1),
+                    New ValueJar("unknown1", 4, "=0?"),
+                    New ValueJar("unknown2", 4, "=0?"),
+                    New ValueJar("listen port", 2),
+                    New ValueJar("connection key", 4, "value other players must provide when interconnecting"),
+                    New StringJar("name", , , , "max 15 characters + terminator"),
+                    New ValueJar("unknown3", 2, "=1"),
                     New AddressJar("internal address"))
 
-            reg(jar, GREET, _
-                    New ValueJar("slot layout included", 2, "=0; other mode not supported"), _
-                    New ValueJar("player index", 1), _
+            reg(jar, GREET,
+                    New ValueJar("slot layout included", 2, "=0; other mode not supported"),
+                    New ValueJar("player index", 1),
                     New AddressJar("external address"))
 
-            reg(jar, MAP_INFO, _
-                    New ValueJar("unknown", 4, "=1"), _
-                    New StringJar("path"), _
-                    New ValueJar("size", 4), _
-                    New ArrayJar("crc32", 4), _
-                    New ArrayJar("xoro checksum", 4), _
+            reg(jar, MAP_INFO,
+                    New ValueJar("unknown", 4, "=1"),
+                    New StringJar("path"),
+                    New ValueJar("size", 4),
+                    New ArrayJar("crc32", 4),
+                    New ArrayJar("xoro checksum", 4),
                     New ArrayJar("sha1 checksum", 20))
 
-            reg(jar, REJECT_ENTRY, _
+            reg(jar, REJECT_ENTRY,
                     New ValueJar("reason", 4, "9=full, 10=started, 27=password wrong, else=game not found"))
         End Sub
         Private Shared Sub reg_lobby_to_play(ByVal jar As ManualSwitchJar)
             '[server send; broadcast when a player becomes ready to play] [informs other players a player is ready] [players auto start when all others ready]
-            reg(jar, OTHER_PLAYER_READY, _
+            reg(jar, OTHER_PLAYER_READY,
                     New ValueJar("player index", 1))
 
             reg(jar, START_LOADING)
@@ -311,128 +311,128 @@ Namespace Warcraft3
             reg(jar, READY)
         End Sub
         Private Shared Sub reg_lobby(ByVal jar As ManualSwitchJar)
-            reg(jar, OTHER_PLAYER_JOINED, _
-                    New ValueJar("p2p key", 4), _
-                    New ValueJar("index", 1), _
-                    New StringJar("name", , , , "max 15 chars + terminator"), _
-                    New ValueJar("unknown[0x01]", 2, "=1"), _
-                    New AddressJar("external address"), _
+            reg(jar, OTHER_PLAYER_JOINED,
+                    New ValueJar("p2p key", 4),
+                    New ValueJar("index", 1),
+                    New StringJar("name", , , , "max 15 chars + terminator"),
+                    New ValueJar("unknown[0x01]", 2, "=1"),
+                    New AddressJar("external address"),
                     New AddressJar("internal address"))
 
-            reg(jar, SLOT_LAYOUT, _
-                    New ValueJar("state size", 2), _
-                    New ListJar("slots", New SlotJar("slot")), _
-                    New ValueJar("time", 4), _
-                    New ValueJar("layout style", 1), _
+            reg(jar, SLOT_LAYOUT,
+                    New ValueJar("state size", 2),
+                    New ListJar("slots", New SlotJar("slot")),
+                    New ValueJar("time", 4),
+                    New ValueJar("layout style", 1),
                     New ValueJar("num player slots", 1))
         End Sub
         Private Shared Sub reg_play(ByVal jar As ManualSwitchJar)
-            reg(jar, START_LAG, _
-                    New ListJar("laggers", _
-                        New TupleJar("lagger", _
-                            New ValueJar("player index", 1), _
+            reg(jar, START_LAG,
+                    New ListJar("laggers",
+                        New TupleJar("lagger",
+                            New ValueJar("player index", 1),
                             New ValueJar("initial time used", 4, "in milliseconds"))))
-            reg(jar, END_LAG, _
-                    New ValueJar("player index", 1), _
+            reg(jar, END_LAG,
+                    New ValueJar("player index", 1),
                     New ValueJar("marginal time used", 4, "in milliseconds"))
             reg(jar, CLIENT_DROP_LAGGER)
 
-            reg(jar, TICK, _
-                    New ValueJar("time span", 2), _
+            reg(jar, TICK,
+                    New ValueJar("time span", 2),
                     New ArrayJar("subpacket", , , True))
-            reg(jar, TOCK, _
+            reg(jar, TOCK,
                     New ArrayJar("game state checksum", 5))
-            jar.reg(GAME_ACTION, _
-                    New CRC32Jar(GAME_ACTION.ToString(), _
-                        New TupleJar("subpacket", _
-                            New ValueJar("id", 1), _
+            jar.reg(GAME_ACTION,
+                    New CRC32Jar(GAME_ACTION.ToString(),
+                        New TupleJar("subpacket",
+                            New ValueJar("id", 1),
                             New ArrayJar("data", , , True))))
         End Sub
         Private Shared Sub reg_lan(ByVal jar As ManualSwitchJar)
-            reg(jar, LAN_REQUEST_GAME, _
-                    New StringJar("product id", False, True, 4), _
-                    New ValueJar("major version", 4), _
+            reg(jar, LAN_REQUEST_GAME,
+                    New StringJar("product id", False, True, 4),
+                    New ValueJar("major version", 4),
                     New ValueJar("unknown1", 4, "=0"))
 
-            reg(jar, LAN_REFRESH_GAME, _
-                    New ValueJar("game id", 4, "=0"), _
-                    New ValueJar("num players", 4), _
+            reg(jar, LAN_REFRESH_GAME,
+                    New ValueJar("game id", 4, "=0"),
+                    New ValueJar("num players", 4),
                     New ValueJar("free slots", 4))
 
-            reg(jar, LAN_CREATE_GAME, _
-                    New StringJar("product id", False, True, 4), _
-                    New ValueJar("major version", 4), _
+            reg(jar, LAN_CREATE_GAME,
+                    New StringJar("product id", False, True, 4),
+                    New ValueJar("major version", 4),
                     New ValueJar("game id", 4))
 
-            reg(jar, LAN_DESTROY_GAME, _
+            reg(jar, LAN_DESTROY_GAME,
                     New ValueJar("game id", 4))
 
-            reg(jar, LAN_DESCRIBE_GAME, _
-                    New StringJar("product id", False, True, 4), _
-                    New ValueJar("major version", 4), _
-                    New ValueJar("game id", 4), _
-                    New ValueJar("unknown1", 4, "varies"), _
-                    New StringJar("name", True), _
-                    New StringJar("password", True, , , "unused"), _
-                    Warcraft3.W3Map.makeStatStringParser(), _
-                    New ValueJar("num slots", 4), _
-                    New ArrayJar("game type", 4), _
-                    New ValueJar("unknown2", 4, "=1"), _
-                    New ValueJar("free slots + 1", 4), _
-                    New ValueJar("age", 4), _
+            reg(jar, LAN_DESCRIBE_GAME,
+                    New StringJar("product id", False, True, 4),
+                    New ValueJar("major version", 4),
+                    New ValueJar("game id", 4),
+                    New ValueJar("unknown1", 4, "varies"),
+                    New StringJar("name", True),
+                    New StringJar("password", True, , , "unused"),
+                    Warcraft3.W3Map.makeStatStringParser(),
+                    New ValueJar("num slots", 4),
+                    New ArrayJar("game type", 4),
+                    New ValueJar("unknown2", 4, "=1"),
+                    New ValueJar("free slots + 1", 4),
+                    New ValueJar("age", 4),
                     New ValueJar("listen port", 2))
         End Sub
         Private Shared Sub reg_p2p(ByVal jar As ManualSwitchJar)
             '[Peer introduction]
-            reg(jar, P2P_KNOCK, _
-                    New ValueJar("receiver p2p key", 4, "As received from host in OTHER_PLAYER_JOINED"), _
-                    New ValueJar("unknown1", 4, "=0"), _
-                    New ValueJar("sender player id", 1), _
-                    New ValueJar("unknown3", 1, "=0xFF"), _
+            reg(jar, P2P_KNOCK,
+                    New ValueJar("receiver p2p key", 4, "As received from host in OTHER_PLAYER_JOINED"),
+                    New ValueJar("unknown1", 4, "=0"),
+                    New ValueJar("sender player id", 1),
+                    New ValueJar("unknown3", 1, "=0xFF"),
                     New ValueJar("sender p2p flags", 4, "connection bit flags"))
 
             '[Periodic update and keep-alive]
-            reg(jar, P2P_PING, _
-                    New ArrayJar("salt", 4), _
-                    New ValueJar("sender p2p flags", 4, "connection bit flags"), _
+            reg(jar, P2P_PING,
+                    New ArrayJar("salt", 4),
+                    New ValueJar("sender p2p flags", 4, "connection bit flags"),
                     New ValueJar("unknown2", 4, "=0"))
 
             '[Response to periodic keep-alive]
-            reg(jar, P2P_PONG, _
+            reg(jar, P2P_PONG,
                     New ArrayJar("salt", 4))
         End Sub
         Private Shared Sub reg_dl(ByVal jar As ManualSwitchJar)
-            reg(jar, DL_STATE, _
-                    New ValueJar("unknown", 4, "=1"), _
-                    New ValueJar("dl state", 1, "1=no dl, 3=active dl"), _
+            reg(jar, DL_STATE,
+                    New ValueJar("unknown", 4, "=1"),
+                    New ValueJar("dl state", 1, "1=no dl, 3=active dl"),
                     New ValueJar("total downloaded", 4))
 
-            reg(jar, UL_START, _
-                    New ValueJar("unknown1", 4, "=1"), _
-                    New ValueJar("receiving player index", 1), _
+            reg(jar, UL_START,
+                    New ValueJar("unknown1", 4, "=1"),
+                    New ValueJar("receiving player index", 1),
                     New ValueJar("starting file pos", 4, "=0"))
 
-            reg(jar, DL_START, _
-                    New ValueJar("unknown", 4, "=1"), _
+            reg(jar, DL_START,
+                    New ValueJar("unknown", 4, "=1"),
                     New ValueJar("sending player index", 1))
 
-            reg(jar, DL_MAP_CHUNK, _
-                    New ValueJar("receiving player index", 1), _
-                    New ValueJar("sending player index", 1), _
-                    New ValueJar("unknown", 4, "=1"), _
-                    New ValueJar("file position", 4), _
-                    New ArrayJar("crc32", 4), _
+            reg(jar, DL_MAP_CHUNK,
+                    New ValueJar("receiving player index", 1),
+                    New ValueJar("sending player index", 1),
+                    New ValueJar("unknown", 4, "=1"),
+                    New ValueJar("file position", 4),
+                    New ArrayJar("crc32", 4),
                     New ArrayJar("file data", , , True))
 
-            reg(jar, DL_RECEIVED_CHUNK, _
-                    New ValueJar("sender index", 1), _
-                    New ValueJar("receiver index", 1), _
-                    New ValueJar("unknown", 4, "=1"), _
+            reg(jar, DL_RECEIVED_CHUNK,
+                    New ValueJar("sender index", 1),
+                    New ValueJar("receiver index", 1),
+                    New ValueJar("unknown", 4, "=1"),
                     New ValueJar("total downloaded", 4))
 
-            reg(jar, DL_CHUNK_PROBLEM, _
-                    New ValueJar("sender index", 1), _
-                    New ValueJar("receiver index", 1), _
+            reg(jar, DL_CHUNK_PROBLEM,
+                    New ValueJar("sender index", 1),
+                    New ValueJar("receiver index", 1),
                     New ValueJar("unknown", 4, "=1"))
         End Sub
 #End Region
@@ -470,16 +470,16 @@ Namespace Warcraft3
             vals("laggers") = L
             Return New W3Packet(START_LAG, vals)
         End Function
-        Public Shared Function MakePacket_END_LAG(ByVal p As IW3Player, _
+        Public Shared Function MakePacket_END_LAG(ByVal p As IW3Player,
                                                   ByVal lag_time_milliseconds As UInteger) As W3Packet
             Dim vals As New Dictionary(Of String, Object)
             vals("player index") = p.index
             vals("marginal time used") = lag_time_milliseconds
             Return New W3Packet(END_LAG, vals)
         End Function
-        Public Shared Function MakePacket_TEXT(ByVal text As String, _
-                                               ByVal flags() As Byte, _
-                                               ByVal receivingPlayers As IEnumerable(Of IW3Player), _
+        Public Shared Function MakePacket_TEXT(ByVal text As String,
+                                               ByVal flags() As Byte,
+                                               ByVal receivingPlayers As IEnumerable(Of IW3Player),
                                                ByVal sender As IW3Player) As W3Packet
             Dim vals As New Dictionary(Of String, Object)
             Dim d As New Dictionary(Of String, Object)
@@ -501,9 +501,9 @@ Namespace Warcraft3
             vals("chat type") = chat_type
             Return New W3Packet(W3PacketId.TEXT, vals)
         End Function
-        Public Shared Function MakePacket_GREET(ByVal p As IW3Player, _
-                                                ByVal newIndex As Byte, _
-                                                ByVal map As W3Map, _
+        Public Shared Function MakePacket_GREET(ByVal p As IW3Player,
+                                                ByVal newIndex As Byte,
+                                                ByVal map As W3Map,
                                                 ByVal slots As List(Of W3Slot)) As W3Packet
             Dim vals As New Dictionary(Of String, Object)
             'vals(SLOT_LAYOUT.ToString()) = packPacket_SLOT_LAYOUT_vals(p, map, slots)
@@ -527,7 +527,7 @@ Namespace Warcraft3
             vals("sha1 checksum") = map.checksum_sha1
             Return New W3Packet(MAP_INFO, vals)
         End Function
-        Public Shared Function MakePacket_OTHER_PLAYER_JOINED(ByVal stranger As IW3Player, _
+        Public Shared Function MakePacket_OTHER_PLAYER_JOINED(ByVal stranger As IW3Player,
                                                               Optional ByVal overrideIndex As Byte = 0) As W3Packet
             Dim vals As New Dictionary(Of String, Object)
             vals("p2p key") = stranger.p2p_key
@@ -540,7 +540,7 @@ Namespace Warcraft3
         End Function
         Public Shared Function MakePacket_PING(ByVal nonce As UInteger) As W3Packet
             Dim vals As New Dictionary(Of String, Object)
-            vals("salt") = nonce.bytes()
+            vals("salt") = nonce.bytes(ByteOrder.LittleEndian)
             Return New W3Packet(PING, vals)
         End Function
 
@@ -555,10 +555,10 @@ Namespace Warcraft3
             vals("leave type") = CByte(leave_type)
             Return New W3Packet(OTHER_PLAYER_LEFT, vals)
         End Function
-        Public Shared Function MakePacket_SLOT_LAYOUT(ByVal receiver As IW3Player, _
-                                               ByVal map As W3Map, _
-                                               ByVal slots As List(Of W3Slot), _
-                                               ByVal time As UInteger, _
+        Public Shared Function MakePacket_SLOT_LAYOUT(ByVal receiver As IW3Player,
+                                               ByVal map As W3Map,
+                                               ByVal slots As List(Of W3Slot),
+                                               ByVal time As UInteger,
                                                Optional ByVal hide_slots As Boolean = False) As W3Packet
             Dim vals As New Dictionary(Of String, Object)
             vals("state size") = CUShort(slots.Count() * 9 + 7)
@@ -597,7 +597,7 @@ Namespace Warcraft3
             Dim vals As New Dictionary(Of String, Object)
             vals("time span") = delta
             If subdata IsNot Nothing AndAlso subdata.Length > 0 Then
-                vals("subpacket") = concat(subArray(Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(), 0, 2), subdata)
+                vals("subpacket") = concat(subArray(Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(ByteOrder.LittleEndian), 0, 2), subdata)
             Else
                 vals("subpacket") = New Byte() {}
             End If
@@ -607,10 +607,10 @@ Namespace Warcraft3
 #End Region
 
 #Region "Packing: DL Packets"
-        Public Shared Function MakePacket_DL_MAP_CHUNK(ByVal sender_index As Byte, _
-                                                       ByVal map As W3Map, _
-                                                       ByVal receiver_index As Byte, _
-                                                       ByVal file_pos As Integer, _
+        Public Shared Function MakePacket_DL_MAP_CHUNK(ByVal sender_index As Byte,
+                                                       ByVal map As W3Map,
+                                                       ByVal receiver_index As Byte,
+                                                       ByVal file_pos As Integer,
                                                        ByRef data_size As Integer) As W3Packet
             Dim filedata = map.getChunk(file_pos)
             data_size = 0
@@ -622,7 +622,7 @@ Namespace Warcraft3
             vals("sending player index") = sender_index
             vals("unknown") = CUInt(1)
             vals("file position") = file_pos
-            vals("crc32") = Bnet.Crypt.crc32(New IO.MemoryStream(filedata)).bytes()
+            vals("crc32") = Bnet.Crypt.crc32(New IO.MemoryStream(filedata)).bytes(ByteOrder.LittleEndian)
             vals("file data") = filedata
             data_size = filedata.Length
             Return New W3Packet(DL_MAP_CHUNK, vals)
@@ -684,14 +684,14 @@ Namespace Warcraft3
             vals("free slots") = map.numPlayerAndObsSlots(map_settings)
             Return New W3Packet(LAN_REFRESH_GAME, vals)
         End Function
-        Public Shared Function MakePacket_LAN_DESCRIBE_GAME(ByVal listen_port As UShort, _
-                                                     ByVal creation_time As Integer, _
-                                                     ByVal game_name As String, _
-                                                     ByVal user_name As String, _
-                                                     ByVal major_version As UInteger, _
-                                                     ByVal game_id As UInteger, _
-                                                     ByVal map As W3Map, _
-                                                     ByVal map_settings As W3Map.MapSettings, _
+        Public Shared Function MakePacket_LAN_DESCRIBE_GAME(ByVal listen_port As UShort,
+                                                     ByVal creation_time As Integer,
+                                                     ByVal game_name As String,
+                                                     ByVal user_name As String,
+                                                     ByVal major_version As UInteger,
+                                                     ByVal game_id As UInteger,
+                                                     ByVal map As W3Map,
+                                                     ByVal map_settings As W3Map.MapSettings,
                                                      Optional ByVal game_type As UInteger = 1) As W3Packet
 
 
@@ -704,7 +704,7 @@ Namespace Warcraft3
             vals("password") = ""
             vals("statstring") = map.generateStatStringVals(user_name, map_settings)
             vals("num slots") = map.numPlayerAndObsSlots(map_settings)
-            vals("game type") = game_type.bytes()
+            vals("game type") = game_type.bytes(ByteOrder.LittleEndian)
             vals("unknown2") = 1
             vals("free slots + 1") = map.numPlayerAndObsSlots(map_settings) + 1
             vals("age") = TickCountDelta(Environment.TickCount, creation_time)
@@ -730,7 +730,7 @@ Namespace Warcraft3
             vals("connection key") = 0
             vals("name") = name
             vals("unknown3") = 1
-            vals("internal address") = AddressJar.packIPv4Address(GetExternalIp(), sending_port)
+            vals("internal address") = AddressJar.packIPv4Address(GetIpAddressBytes(external:=True), sending_port)
             Return New W3Packet(KNOCK, vals)
         End Function
         Public Shared Function MakePacket_READY() As W3Packet
@@ -790,10 +790,10 @@ Namespace Warcraft3
         Inherits TupleJar
 
         Public Sub New(ByVal name As String)
-            MyBase.New(name, _
-                    New ValueJar("protocol", 2), _
-                    New ValueJar("port", 2, , False), _
-                    New ArrayJar("ip", 4), _
+            MyBase.New(name,
+                    New ValueJar("protocol", 2),
+                    New ValueJar("port", 2, , False),
+                    New ArrayJar("ip", 4),
                     New ArrayJar("unknown", 8))
         End Sub
 
@@ -827,7 +827,7 @@ Namespace Warcraft3
         Public Overrides Function pack(ByVal o As Object) As Pickling.IPickle
             Dim vals As New Dictionary(Of String, Object)
             vals(subjar.getName()) = o
-            vals(subjar.getName() + ":crc32") = subArray(Bnet.Crypt.crc32(New IO.MemoryStream(subjar.pack(o).getData().ToArray)).bytes(), 0, size)
+            vals(subjar.getName() + ":crc32") = subArray(Bnet.Crypt.crc32(New IO.MemoryStream(subjar.pack(o).getData().ToArray)).bytes(ByteOrder.LittleEndian), 0, size)
             Return MyBase.pack(vals)
         End Function
 
@@ -839,7 +839,7 @@ Namespace Warcraft3
                 Dim vals = CType(p.getVal(), Dictionary(Of String, Object))
                 m.Seek(size, IO.SeekOrigin.Begin)
                 Dim crc = CType(vals(subjar.getName() + ":crc32"), Byte())
-                Dim crc2 = subArray(Bnet.Crypt.crc32(m, view.length - size).bytes(), 0, size)
+                Dim crc2 = subArray(Bnet.Crypt.crc32(m, view.length - size).bytes(ByteOrder.LittleEndian), 0, size)
                 If Not ArraysEqual(crc, crc2) Then Throw New PicklingException("Incorrect CRC")
             End Using
 
@@ -851,15 +851,15 @@ Namespace Warcraft3
         Inherits TupleJar
 
         Public Sub New(ByVal name As String)
-            MyBase.New(name, _
-                    New ValueJar("player index", 1), _
-                    New ValueJar("dl percent", 1), _
-                    New ValueJar("slot state", 1), _
-                    New ValueJar("is computer", 1), _
-                    New ValueJar("team index", 1), _
-                    New ValueJar("color", 1), _
-                    New ValueJar("race", 1), _
-                    New ValueJar("computer difficulty", 1), _
+            MyBase.New(name,
+                    New ValueJar("player index", 1),
+                    New ValueJar("dl percent", 1),
+                    New ValueJar("slot state", 1),
+                    New ValueJar("is computer", 1),
+                    New ValueJar("team index", 1),
+                    New ValueJar("color", 1),
+                    New ValueJar("race", 1),
+                    New ValueJar("computer difficulty", 1),
                     New ValueJar("handicap", 1))
         End Sub
 

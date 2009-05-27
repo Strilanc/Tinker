@@ -16,13 +16,13 @@ Namespace Commands.Specializations
         Private Class com_Add
             Inherits BaseCommand(Of W3LanAdvertiser)
             Public Sub New()
-                MyBase.New("Add", _
-                            2, ArgumentLimits.exact, _
+                MyBase.New("Add",
+                            2, ArgumentLimits.exact,
                             "[--Add GameName Map] Adds a game to be advertised.")
             End Sub
-            Public Overrides Function process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim map_out = W3Map.FromArgument(arguments(1))
-                If map_out.outcome <> Outcomes.succeeded Then Return futurize(Of Outcome)(map_out)
+                If Not map_out.succeeded Then Return futurize(Of Outcome)(map_out)
                 Dim map = map_out.val
                 Dim name = arguments(0)
                 Dim id = target.add_game(name, map, New W3Map.MapSettings(arguments))
@@ -34,11 +34,11 @@ Namespace Commands.Specializations
         Private Class com_Remove
             Inherits BaseCommand(Of W3LanAdvertiser)
             Public Sub New()
-                MyBase.New("Remove", _
-                            1, ArgumentLimits.exact, _
+                MyBase.New("Remove",
+                            1, ArgumentLimits.exact,
                             "[--Remove GameId] Removes a game being advertised.")
             End Sub
-            Public Overrides Function process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim id As UInteger
                 If Not UInteger.TryParse(arguments(0), id) Then
                     Return futurize(failure("Invalid game id."))

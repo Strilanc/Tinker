@@ -75,7 +75,7 @@
                             End If
                         Case "-teams=", "-t="
                             Dim out = XvX(arg2)
-                            If out.outcome = Outcomes.succeeded Then
+                            If out.succeeded Then
                                 TrySetTeamSizes(out.val)
                             End If
                         Case "-reserve=", "-r="
@@ -101,7 +101,7 @@
                     End If
 
                     Dim grab_port = game.parent.parent.port_pool.TryTakePortFromPool()
-                    If grab_port.outcome = Outcomes.failed Then
+                    If Not grab_port.succeeded Then
                         Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
                     End If
 
@@ -147,12 +147,12 @@
                 game.change_state(W3GameStates.PreCounting)
                 'Give people a few seconds to realize the game is full before continuing
                 FutureSub.schedule( _
-                        AddressOf r_TryContinueAutoStart1, _
+                        AddressOf r_TryContinueAutoStart1,
                         futurewait(New TimeSpan(0, 0, 3)))
                 Return success("Autostart has begun")
             End Function
             Private Sub r_TryContinueAutoStart1()
-                game.ref.enqueue(AddressOf _r_TryContinueAutoStart1)
+                game.ref.enqueueAction(AddressOf _r_TryContinueAutoStart1)
             End Sub
             Private Sub _r_TryContinueAutoStart1()
                 If game.state <> W3GameStates.PreCounting Then Return
@@ -168,16 +168,16 @@
                 End If
 
                 'Inform players autostart has begun
-                game.logger.log("Preparing to launch", LogMessageTypes.PositiveEvent)
+                game.logger.log("Preparing to launch", LogMessageTypes.Positive)
                 game.BroadcastMessage("Game is Full. Waiting 5 seconds for stability.")
 
                 'Give jittery players a few seconds to leave
                 FutureSub.schedule( _
-                        AddressOf r_TryContinueAutoStart2, _
+                        AddressOf r_TryContinueAutoStart2,
                         futurewait(New TimeSpan(0, 0, 5)))
             End Sub
             Private Sub r_TryContinueAutoStart2()
-                game.ref.enqueue(AddressOf _r_TryContinueAutoStart2)
+                game.ref.enqueueAction(AddressOf _r_TryContinueAutoStart2)
             End Sub
             Private Sub _r_TryContinueAutoStart2()
                 If game.state <> W3GameStates.PreCounting Then Return
@@ -193,7 +193,7 @@
                 End If
 
                 'Start the countdown
-                game.logger.log("Starting Countdown", LogMessageTypes.PositiveEvent)
+                game.logger.log("Starting Countdown", LogMessageTypes.Positive)
                 TryStartCountdown()
             End Sub
 
@@ -215,12 +215,12 @@
                 Next player
 
                 FutureSub.schedule( _
-                            Function() eval(AddressOf r_ContinueCountdown, 5), _
+                            Sub() r_ContinueCountdown(5),
                             futurewait(New TimeSpan(0, 0, 1)))
                 Return success("Countdown started.")
             End Function
             Private Sub r_ContinueCountdown(ByVal ticks_left As Integer)
-                game.ref.enqueue(Function() eval(AddressOf _r_ContinueCountdown, ticks_left))
+                game.ref.enqueueAction(Sub() _r_ContinueCountdown(ticks_left))
             End Sub
             Private Sub _r_ContinueCountdown(ByVal ticks_left As Integer)
                 If game.state <> W3GameStates.CountingDown Then
@@ -229,7 +229,7 @@
 
                 'Abort if a player left
                 If game.flag_player_left Then
-                    game.logger.log("Countdown Aborted", LogMessageTypes.NegativeEvent)
+                    game.logger.log("Countdown Aborted", LogMessageTypes.Negative)
                     TryRestoreFakeHost()
                     game.BroadcastMessage("===============================================")
                     game.BroadcastMessage("A player left. Launch is held.")
@@ -244,13 +244,13 @@
 
                 If ticks_left > 0 Then
                     'Next tick
-                    game.logger.log("Game starting in " + ticks_left.ToString(), LogMessageTypes.PositiveEvent)
+                    game.logger.log("Game starting in " + ticks_left.ToString(), LogMessageTypes.Positive)
                     For Each player In (From p In game.players Where p.lobby.overcounted)
                         game.SendMessageTo("Game starting in {0}...".frmt(ticks_left), player)
                     Next player
 
                     FutureSub.schedule( _
-                                Function() eval(AddressOf r_ContinueCountdown, ticks_left - 1), _
+                                Sub() r_ContinueCountdown(ticks_left - 1),
                                 futurewait(New TimeSpan(0, 0, 1)))
                     Return
                 End If
@@ -318,7 +318,7 @@
 
                 'Inform bot
                 e_ThrowPlayerEntered(new_player.lobby)
-                game.logger.log(new_player.name + " has been placed in the game.", LogMessageTypes.PositiveEvent)
+                game.logger.log(new_player.name + " has been placed in the game.", LogMessageTypes.Positive)
 
                 'Update state
                 ChangedSlotState()
@@ -332,7 +332,7 @@
                 End If
 
                 Dim out = TryAddFakePlayer(My.Settings.ingame_name, Nothing)
-                If out.outcome = Outcomes.succeeded Then
+                If out.succeeded Then
                     game.fake_host_player = out.val
                 End If
                 Return out
@@ -348,8 +348,8 @@
                 'Assign slot
                 Dim best_slot As W3Slot = Nothing
                 Dim best_match = W3SlotContents.WantPlayerPriority.Reject
-                game.slots.MaxPair(Function(slot) slot.contents.WantPlayer(connecting_player.name), _
-                                   best_slot, _
+                game.slots.MaxPair(Function(slot) slot.contents.WantPlayer(connecting_player.name),
+                                   best_slot,
                                    best_match)
                 If best_match <= W3SlotContents.WantPlayerPriority.Reluctant Then
                     Return failure("No slot available for player.")
@@ -404,7 +404,7 @@
 
                 'Inform bot
                 e_ThrowPlayerEntered(new_player.lobby)
-                game.logger.log("{0} has entered the game.".frmt(new_player.name), LogMessageTypes.PositiveEvent)
+                game.logger.log("{0} has entered the game.".frmt(new_player.name), LogMessageTypes.Positive)
 
                 'Update state
                 ChangedSlotState()
@@ -424,60 +424,59 @@
 
 #Region "Events"
             Private Sub e_ThrowPlayerEntered(ByVal new_player As IW3PlayerLobby)
-                game.eventRef.enqueue(Function() eval(AddressOf _e_ThrowPlayerEntered, new_player))
-            End Sub
-            Private Sub _e_ThrowPlayerEntered(ByVal new_player As IW3PlayerLobby)
-                RaiseEvent player_entered(Me, new_player)
+                game.eventRef.enqueueAction(
+                    Sub()
+                        RaiseEvent player_entered(Me, new_player)
+                    End Sub
+                )
             End Sub
 
-            Private Sub c_DownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndPoint), _
+            Private Sub c_DownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndPoint),
                                                    ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndPoint)) Handles download_scheduler.actions
-                game.ref.enqueue(Function() eval(AddressOf _c_DownloadSchedulerActions, started, stopped))
+                game.ref.enqueueAction(
+                    Sub()
+                        'Start transfers
+                        For Each e In started
+                            'Find matching players
+                            Dim src = game.FindPlayer(e.src)
+                            Dim dst = game.FindPlayer(e.dst)
+                            If dst Is Nothing Then  Continue For
+
+                            'Apply
+                            If e.src = SELF_DOWNLOAD_ID Then
+                                game.logger.log("Initiating map upload to {0}.".frmt(dst.name), LogMessageTypes.Positive)
+                                dst.lobby.getting_map_from_bot = True
+                                dst.lobby.f_BufferMap()
+                            ElseIf src IsNot Nothing Then
+                                game.logger.log("Initiating p2p map transfer from {0} to {1}.".frmt(src.name, dst.name), LogMessageTypes.Positive)
+                                src.f_SendPacket(W3Packet.MakePacket_UL_START(e.dst, CUInt(Math.Max(0, dst.lobby.downloaded_map_size_P))))
+                                dst.f_SendPacket(W3Packet.MakePacket_DL_START(e.src))
+                            End If
+                        Next e
+
+                        'Stop transfers
+                        For Each e In stopped
+                            'Find matching players
+                            Dim src = game.FindPlayer(e.src)
+                            Dim dst = game.FindPlayer(e.dst)
+                            If dst Is Nothing Then  Continue For
+
+                            'Apply
+                            If e.src = SELF_DOWNLOAD_ID Then
+                                game.logger.log("Stopping map upload to {0}.".frmt(dst.name), LogMessageTypes.Positive)
+                                dst.lobby.getting_map_from_bot = False
+                            ElseIf src IsNot Nothing Then
+                                game.logger.log("Stopping p2p map transfer from {0} to {1}.".frmt(src.name, dst.name), LogMessageTypes.Positive)
+                                src.f_SendPacket(W3Packet.MakePacket_OTHER_PLAYER_LEFT(dst, W3PlayerLeaveTypes.disc))
+                                src.f_SendPacket(W3Packet.MakePacket_OTHER_PLAYER_JOINED(dst))
+                                dst.f_SendPacket(W3Packet.MakePacket_OTHER_PLAYER_LEFT(src, W3PlayerLeaveTypes.disc))
+                                dst.f_SendPacket(W3Packet.MakePacket_OTHER_PLAYER_JOINED(src))
+                            End If
+                        Next e
+                    End Sub
+                )
             End Sub
-            Private Sub _c_DownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndPoint), _
-                                                    ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndPoint))
-                'Start transfers
-                For Each e In started
-                    'Find matching players
-                    Dim src = game.FindPlayer(e.src)
-                    Dim dst = game.FindPlayer(e.dst)
-                    If dst Is Nothing Then Continue For
 
-                    'Apply
-                    If e.src = SELF_DOWNLOAD_ID Then
-                        game.logger.log("Initiating map upload to {0}.".frmt(dst.name), LogMessageTypes.PositiveEvent)
-                        dst.lobby.getting_map_from_bot = True
-                        dst.lobby.f_BufferMap()
-                    ElseIf src IsNot Nothing Then
-                        game.logger.log("Initiating p2p map transfer from {0} to {1}.".frmt(src.name, dst.name), LogMessageTypes.PositiveEvent)
-                        src.f_SendPacket(W3Packet.MakePacket_UL_START(e.dst, CUInt(Math.Max(0, dst.lobby.downloaded_map_size_P))))
-                        dst.f_SendPacket(W3Packet.MakePacket_DL_START(e.src))
-                    End If
-                Next e
-
-                'Stop transfers
-                For Each e In stopped
-                    'Find matching players
-                    Dim src = game.FindPlayer(e.src)
-                    Dim dst = game.FindPlayer(e.dst)
-                    If dst Is Nothing Then Continue For
-
-                    'Apply
-                    If e.src = SELF_DOWNLOAD_ID Then
-                        game.logger.log("Stopping map upload to {0}.".frmt(dst.name), LogMessageTypes.PositiveEvent)
-                        dst.lobby.getting_map_from_bot = False
-                    ElseIf src IsNot Nothing Then
-                        game.logger.log("Stopping p2p map transfer from {0} to {1}.".frmt(src.name, dst.name), LogMessageTypes.PositiveEvent)
-                        src.f_SendPacket(W3Packet.MakePacket_OTHER_PLAYER_LEFT(dst, W3PlayerLeaveTypes.disc))
-                        src.f_SendPacket(W3Packet.MakePacket_OTHER_PLAYER_JOINED(dst))
-                        dst.f_SendPacket(W3Packet.MakePacket_OTHER_PLAYER_LEFT(src, W3PlayerLeaveTypes.disc))
-                        dst.f_SendPacket(W3Packet.MakePacket_OTHER_PLAYER_JOINED(src))
-                    End If
-                Next e
-            End Sub
-#End Region
-
-#Region "Over"
             Private Sub c_ScheduleDownloads() Handles download_timer.Elapsed
                 download_scheduler.update()
             End Sub
@@ -490,12 +489,13 @@
                 TryRestoreFakeHost()
                 ChangedSlotState()
             End Sub
+
+            Private Sub c_ChangedSlotState() Handles slot_layout_timer.Elapsed
+                game.ref.enqueueAction(AddressOf ChangedSlotState)
+            End Sub
 #End Region
 
 #Region "Slots"
-            Private Sub c_ChangedSlotState() Handles slot_layout_timer.Elapsed
-                game.ref.enqueue(AddressOf ChangedSlotState)
-            End Sub
             '''<summary>Broadcasts new game state to players, and throws the updated event.</summary>
             Private Sub ChangedSlotState()
                 game.e_ThrowUpdated()
@@ -568,16 +568,16 @@
                 Return success("Set team sizes.")
             End Function
 
-            Private Function ModifySlotContents(ByVal slot_query As String, _
-                                                  ByVal action As Action(Of W3Slot), _
-                                                  ByVal success_description As String, _
+            Private Function ModifySlotContents(ByVal slot_query As String,
+                                                  ByVal action As Action(Of W3Slot),
+                                                  ByVal success_description As String,
                                                   Optional ByVal avoid_players As Boolean = False) As Outcome
                 If game.state >= W3GameStates.CountingDown Then
                     Return failure("Can't modify slots during launch.")
                 End If
 
                 Dim found_slot = game.FindMatchingSlot(slot_query)
-                If found_slot.outcome <> Outcomes.succeeded Then
+                If Not found_slot.succeeded Then
                     Return found_slot
                 End If
 
@@ -594,25 +594,25 @@
 #Region "Slot Contents"
             '''<summary>Opens the slot with the given index, unless the slot contains a player.</summary>
             Private Function OpenSlot(ByVal slotid As String) As Outcome
-                Return ModifySlotContents(slotid, _
-                                            Function(slot) Assign(slot.contents, New W3SlotContentsOpen(slot)), _
-                                            "Slot '{0}' opened.".frmt(slotid), _
+                Return ModifySlotContents(slotid,
+                                            Function(slot) Assign(slot.contents, New W3SlotContentsOpen(slot)),
+                                            "Slot '{0}' opened.".frmt(slotid),
                                             avoid_players:=True)
             End Function
 
             '''<summary>Places a computer with the given difficulty in the slot with the given index, unless the slot contains a player.</summary>
             Private Function ComputerizeSlot(ByVal slotid As String, ByVal cpu As W3Slot.ComputerLevel) As outcome
-                Return ModifySlotContents(slotid, _
-                                            Function(slot) Assign(slot.contents, New W3SlotContentsComputer(slot, cpu)), _
-                                            "Slot '{0}' computerized.".frmt(slotid), _
+                Return ModifySlotContents(slotid,
+                                            Function(slot) Assign(slot.contents, New W3SlotContentsComputer(slot, cpu)),
+                                            "Slot '{0}' computerized.".frmt(slotid),
                                             avoid_players:=True)
             End Function
 
             '''<summary>Closes the slot with the given index, unless the slot contains a player.</summary>
             Private Function CloseSlot(ByVal slotid As String) As Outcome
-                Return ModifySlotContents(slotid, _
-                                            Function(slot) Assign(slot.contents, New W3SlotContentsClosed(slot)), _
-                                            "Slot '{0}' closed.".frmt(slotid), _
+                Return ModifySlotContents(slotid,
+                                            Function(slot) Assign(slot.contents, New W3SlotContentsClosed(slot)),
+                                            "Slot '{0}' closed.".frmt(slotid),
                                             avoid_players:=True)
             End Function
 
@@ -622,7 +622,7 @@
                     Return failure("Can't reserve slots after launch.")
                 End If
                 Dim slot_out = game.FindMatchingSlot(slotid)
-                If slot_out.outcome <> Outcomes.succeeded Then Return slot_out
+                If Not slot_out.succeeded Then Return slot_out
                 Dim slot = slot_out.val
                 If slot.contents.Type = W3SlotContents.ContentType.Player Then
                     Return failure("Slot '{0}' can't be reserved because it already contains a player.".frmt(slotid))
@@ -637,8 +637,8 @@
                 End If
                 Dim slot_out1 = game.FindMatchingSlot(query1)
                 Dim slot_out2 = game.FindMatchingSlot(query2)
-                If slot_out1.outcome <> Outcomes.succeeded Then Return slot_out1
-                If slot_out2.outcome <> Outcomes.succeeded Then Return slot_out2
+                If Not slot_out1.succeeded Then Return slot_out1
+                If Not slot_out2.succeeded Then Return slot_out2
                 Dim slot1 = slot_out1.val
                 Dim slot2 = slot_out2.val
                 If slot1 Is Nothing Then
@@ -666,7 +666,7 @@
                 End If
 
                 Dim slot_out = game.FindMatchingSlot(slotid)
-                If slot_out.outcome <> Outcomes.succeeded Then Return slot_out
+                If Not slot_out.succeeded Then Return slot_out
 
                 Dim swap_color_slot = (From x In game.slots Where x.color = color).FirstOrDefault
                 If swap_color_slot IsNot Nothing Then swap_color_slot.color = slot_out.val.color
@@ -677,26 +677,26 @@
             End Function
 
             Private Function SetSlotRace(ByVal slotid As String, ByVal race As W3Slot.RaceFlags) As Outcome
-                Return ModifySlotContents(slotid, _
-                                            Function(slot) Assign(slot.race, race), _
+                Return ModifySlotContents(slotid,
+                                            Function(slot) Assign(slot.race, race),
                                             "Slot '{0}' race set to {1}.".frmt(slotid, race))
             End Function
 
             Private Function SetSlotTeam(ByVal slotid As String, ByVal team As Byte) As Outcome
-                Return ModifySlotContents(slotid, _
-                                            Function(slot) Assign(slot.team, team), _
+                Return ModifySlotContents(slotid,
+                                            Function(slot) Assign(slot.team, team),
                                             "Slot '{0}' team set to {1}.".frmt(slotid, team))
             End Function
 
             Private Function SetSlotHandicap(ByVal slotid As String, ByVal handicap As Byte) As Outcome
-                Return ModifySlotContents(slotid, _
-                                            Function(slot) Assign(slot.handicap, handicap), _
+                Return ModifySlotContents(slotid,
+                                            Function(slot) Assign(slot.handicap, handicap),
                                             "Slot '{0}' handicap set to {1}.".frmt(slotid, handicap))
             End Function
 
             Private Function SetSlotLocked(ByVal slotid As String, ByVal locked As W3Slot.Lock) As Outcome
-                Return ModifySlotContents(slotid, _
-                                            Function(slot) Assign(slot.locked, locked), _
+                Return ModifySlotContents(slotid,
+                                            Function(slot) Assign(slot.locked, locked),
                                             "Slot '{0}' lock state set to {1}.".frmt(slotid, locked))
             End Function
 
@@ -818,55 +818,55 @@
             End Property
 
             Private Function _f_UpdatedGameState() As IFuture Implements IW3GameLobby.f_UpdatedGameState
-                Return game.ref.enqueue(AddressOf ChangedSlotState)
+                Return game.ref.enqueueAction(AddressOf ChangedSlotState)
             End Function
 
             Private Function _f_OpenSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3GameLobby.f_OpenSlot
-                Return game.ref.enqueue(Function() OpenSlot(query))
+                Return game.ref.enqueueFunc(Function() OpenSlot(query))
             End Function
             Private Function _f_CloseSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3GameLobby.f_CloseSlot
-                Return game.ref.enqueue(Function() CloseSlot(query))
+                Return game.ref.enqueueFunc(Function() CloseSlot(query))
             End Function
             Private Function _f_ReserveSlot(ByVal query As String, ByVal username As String) As IFuture(Of Outcome) Implements IW3GameLobby.f_ReserveSlot
-                Return game.ref.enqueue(Function() ReserveSlot(query, username))
+                Return game.ref.enqueueFunc(Function() ReserveSlot(query, username))
             End Function
             Private Function _f_SwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture(Of Outcome) Implements IW3GameLobby.f_SwapSlotContents
-                Return game.ref.enqueue(Function() SwapSlotContents(query1, query2))
+                Return game.ref.enqueueFunc(Function() SwapSlotContents(query1, query2))
             End Function
 
             Private Function _f_SetSlotCpu(ByVal query As String, ByVal c As W3Slot.ComputerLevel) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotCpu
-                Return game.ref.enqueue(Function() ComputerizeSlot(query, c))
+                Return game.ref.enqueueFunc(Function() ComputerizeSlot(query, c))
             End Function
             Private Function _f_SetSlotLocked(ByVal query As String, ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotLocked
-                Return game.ref.enqueue(Function() SetSlotLocked(query, new_lock_state))
+                Return game.ref.enqueueFunc(Function() SetSlotLocked(query, new_lock_state))
             End Function
             Private Function _f_SetAllSlotsLocked(ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetAllSlotsLocked
-                Return game.ref.enqueue(Function() SetAllSlotsLocked(new_lock_state))
+                Return game.ref.enqueueFunc(Function() SetAllSlotsLocked(new_lock_state))
             End Function
             Private Function _f_SetSlotHandicap(ByVal query As String, ByVal new_handicap As Byte) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotHandicap
-                Return game.ref.enqueue(Function() SetSlotHandicap(query, new_handicap))
+                Return game.ref.enqueueFunc(Function() SetSlotHandicap(query, new_handicap))
             End Function
             Private Function _f_SetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotTeam
-                Return game.ref.enqueue(Function() SetSlotTeam(query, new_team))
+                Return game.ref.enqueueFunc(Function() SetSlotTeam(query, new_team))
             End Function
             Private Function _f_SetSlotRace(ByVal query As String, ByVal new_race As W3Slot.RaceFlags) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotRace
-                Return game.ref.enqueue(Function() SetSlotRace(query, new_race))
+                Return game.ref.enqueueFunc(Function() SetSlotRace(query, new_race))
             End Function
             Private Function _f_SetSlotColor(ByVal query As String, ByVal new_color As W3Slot.PlayerColor) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotColor
-                Return game.ref.enqueue(Function() SetSlotColor(query, new_color))
+                Return game.ref.enqueueFunc(Function() SetSlotColor(query, new_color))
             End Function
 
             Private Function _f_TryAddPlayer(ByVal new_player As W3ConnectingPlayer) As IFuture(Of Outcome) Implements IW3GameLobby.f_TryAddPlayer
-                Return game.ref.enqueue(Function() TryAddPlayer(new_player))
+                Return game.ref.enqueueFunc(Function() TryAddPlayer(new_player))
             End Function
             Private Function _f_PlayerVoteToStart(ByVal name As String, ByVal val As Boolean) As IFuture(Of Outcome) Implements IW3GameLobby.f_PlayerVoteToStart
-                Return game.ref.enqueue(Function() player_vote_to_start_L(name, val))
+                Return game.ref.enqueueFunc(Function() player_vote_to_start_L(name, val))
             End Function
             Private Function _f_StartCountdown() As IFuture(Of Outcome) Implements IW3GameLobby.f_StartCountdown
-                Return game.ref.enqueue(Function() TryStartCountdown())
+                Return game.ref.enqueueFunc(Function() TryStartCountdown())
             End Function
             Private Function _f_TrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture(Of Outcome) Implements IW3GameLobby.f_TrySetTeamSizes
-                Return game.ref.enqueue(Function() TrySetTeamSizes(sizes))
+                Return game.ref.enqueueFunc(Function() TrySetTeamSizes(sizes))
             End Function
 #End Region
         End Class

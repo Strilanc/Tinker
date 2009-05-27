@@ -37,8 +37,8 @@ Namespace Bnet
             Public [private] As Boolean
             Public ReadOnly creation_time As Date
             Public ReadOnly map_settings As W3Map.MapSettings
-            Public Sub New(ByVal name As String, _
-                           ByVal map As W3Map, _
+            Public Sub New(ByVal name As String,
+                           ByVal map As W3Map,
                            ByVal arguments As IList(Of String))
                 Me.name = name
                 Me.map = map
@@ -59,7 +59,7 @@ Namespace Bnet
         Public ReadOnly profile As ClientProfile
         Public ReadOnly parent As MainBot
         Public ReadOnly name As String = "unnamed_client"
-        Public ReadOnly logger As MultiLogger
+        Public ReadOnly logger As Logger
         Public Const BNET_PORT As Integer = 6112
         Private WithEvents socket_P As BnetSocket = Nothing
 
@@ -118,18 +118,18 @@ Namespace Bnet
 #End Region
 
 #Region "New"
-        Public Sub New(ByVal parent As MainBot, _
-                       ByVal profile As ClientProfile, _
-                       ByVal name As String, _
-                       ByVal warden_ref As ICallQueue, _
-                       Optional ByVal logger As MultiLogger = Nothing)
+        Public Sub New(ByVal parent As MainBot,
+                       ByVal profile As ClientProfile,
+                       ByVal name As String,
+                       ByVal warden_ref As ICallQueue,
+                       Optional ByVal logger As Logger = Nothing)
             'Pass values
             Me.warden_ref = ContractNotNull(warden_ref, "warden_ref")
             Me.name = name
             Me.parent = parent
             Me.profile = profile
             Me.listen_port = profile.listen_port
-            Me.logger = If(logger, New MultiLogger)
+            Me.logger = If(logger, New Logger)
             Me.eventRef = New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
             Me.ref = New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name))
 
@@ -161,7 +161,7 @@ Namespace Bnet
         End Function
 
         Public Function send_text_R(ByVal text As String) As IFuture(Of outcome)
-            Return ref.enqueue(Function() send_text_L(text))
+            Return ref.enqueueFunc(Function() send_text_L(text))
         End Function
         Private Function send_text_L(ByVal text As String) As outcome
             If text Is Nothing Then Return failure("Invalid text")
@@ -170,7 +170,7 @@ Namespace Bnet
         End Function
 
         Public Function sendWhisper_R(ByVal username As String, ByVal text As String) As IFuture(Of Outcome)
-            Return ref.enqueue(Function() sendWhisper_L(username, text))
+            Return ref.enqueueFunc(Function() sendWhisper_L(username, text))
         End Function
         Private Function sendWhisper_L(ByVal username As String, ByVal text As String) As Outcome
             If text Is Nothing Then Return failure("Invalid text")
@@ -189,10 +189,10 @@ Namespace Bnet
                     If pool_port IsNot Nothing Then
                         pool_port.Dispose()
                         pool_port = Nothing
-                        logger.log("Returned port {0} to pool.".frmt(Me.listen_port), LogMessageTypes.PositiveEvent)
+                        logger.log("Returned port {0} to pool.".frmt(Me.listen_port), LogMessageTypes.Positive)
                     End If
                     listen_port = new_port
-                    logger.log("Changed listen port to " + new_port.ToString(), LogMessageTypes.NormalEvent)
+                    logger.log("Changed listen port to " + new_port.ToString(), LogMessageTypes.Typical)
                     If state_P <> States.disconnected Then
                         sendPacket_NET_GAME_PORT_L()
                     End If
@@ -205,28 +205,29 @@ Namespace Bnet
 
 #Region "Events"
         Private Sub e_ThrowChatEvent(ByVal id As BnetPacket.CHAT_EVENT_ID, ByVal user As String, ByVal text As String)
-            eventRef.enqueue(Function() eval(AddressOf _e_ThrowChatEvent, id, user, text))
+            eventRef.enqueueAction(
+                Sub()
+                    RaiseEvent chat_event(Me, id, user, text)
+                End Sub
+            )
         End Sub
-        Private Sub _e_ThrowChatEvent(ByVal id As BnetPacket.CHAT_EVENT_ID, ByVal user As String, ByVal text As String)
-            RaiseEvent chat_event(Me, id, user, text)
-        End Sub
-
         Private Sub e_ThrowStateChanged(ByVal old_state As States, ByVal new_state As States)
-            eventRef.enqueue(Function() eval(AddressOf _e_ThrowStateChanged, old_state, new_state))
-        End Sub
-        Private Sub _e_ThrowStateChanged(ByVal old_state As States, ByVal new_state As States)
-            RaiseEvent state_changed(Me, old_state, new_state)
-        End Sub
-
-        Private Sub catch_socket_disconnected() Handles socket_P.disconnected
-            ref.enqueue(AddressOf disconnect_L)
-        End Sub
-        Private Sub catch_socket_receivedPacket(ByVal sender As BnetSocket, ByVal flag As Byte, ByVal id As Byte, ByVal data As ImmutableArrayView(Of Byte)) Handles socket_P.receivedPacket
-            ref.enqueue(Function() eval(AddressOf receivePacket_L, flag, CType(id, Bnet.BnetPacketID), data))
+            eventRef.enqueueAction(
+                Sub()
+                    RaiseEvent state_changed(Me, old_state, new_state)
+                End Sub
+            )
         End Sub
 
-        Private Sub catch_refresh_timer_tick() Handles game_refresh_timer.Elapsed
-            ref.enqueue(Function() sendPacket_CREATE_GAME_3_L(False, True))
+        Private Sub c_SocketDisconnected() Handles socket_P.disconnected
+            ref.enqueueAction(Sub() disconnect_L())
+        End Sub
+        Private Sub c_SocketReceivedPacket(ByVal sender As BnetSocket, ByVal flag As Byte, ByVal id As Byte, ByVal data As ImmutableArrayView(Of Byte)) Handles socket_P.receivedPacket
+            ref.enqueueAction(Sub() receivePacket_L(flag, CType(id, Bnet.BnetPacketID), data))
+        End Sub
+
+        Private Sub c_RefreshTimerTick() Handles game_refresh_timer.Elapsed
+            ref.enqueueAction(Sub() sendPacket_CREATE_GAME_3_L(False, True))
         End Sub
 #End Region
 
@@ -242,16 +243,16 @@ Namespace Bnet
                 'Allocate port
                 If Me.listen_port = 0 Then
                     Dim out = parent.port_pool.TryTakePortFromPool()
-                    If out.outcome = Outcomes.failed Then
+                    If Not out.succeeded Then
                         Return futurize(failure("No listen port specified, and no ports available in the pool."))
                     End If
                     Me.pool_port = out.val
                     Me.listen_port = Me.pool_port.port
-                    logger.log("Took port {0} from pool.".frmt(Me.listen_port), LogMessageTypes.PositiveEvent)
+                    logger.log("Took port {0} from pool.".frmt(Me.listen_port), LogMessageTypes.Positive)
                 End If
 
                 'Establish connection
-                logger.log("Connecting to " + remoteHost + "...", LogMessageTypes.NormalEvent)
+                logger.log("Connecting to " + remoteHost + "...", LogMessageTypes.Typical)
                 Dim port = BNET_PORT
                 If remoteHost Like "*:*" Then
                     port = UShort.Parse(remoteHost.Split(":"c)(1))
@@ -259,11 +260,11 @@ Namespace Bnet
                 End If
                 Dim c As New Net.Sockets.TcpClient()
                 c.Connect(remoteHost, port)
-                socket_P = New BnetSocket(c, logger, Function(stream) New ThrottledWriteStream(stream, _
-                                                                                                  initial_slack:=3000, _
-                                                                                                  cost_per_write:=100, _
-                                                                                                  cost_per_character:=1, _
-                                                                                                  cost_limit:=480, _
+                socket_P = New BnetSocket(c, logger, Function(stream) New ThrottledWriteStream(stream,
+                                                                                                  initial_slack:=3000,
+                                                                                                  cost_per_write:=100,
+                                                                                                  cost_per_character:=1,
+                                                                                                  cost_limit:=480,
                                                                                                   cost_recovered_per_second:=48))
                 socket_P.name = "BNET"
                 state_P = States.connecting
@@ -290,7 +291,7 @@ Namespace Bnet
             Me.password_P = password
             Me.state_P = States.logon
             sendPacket_ACCOUNT_LOGON_BEGIN_L()
-            logger.log("Initiating logon with username " + username, LogMessageTypes.NormalEvent)
+            logger.log("Initiating logon with username " + username, LogMessageTypes.Typical)
             Return future_logon
         End Function
 
@@ -314,13 +315,13 @@ Namespace Bnet
             End If
 
             state_P = States.disconnected
-            logger.log("Disconnected", LogMessageTypes.NegativeEvent)
+            logger.log("Disconnected", LogMessageTypes.Negative)
             warden = Nothing
 
             If pool_port IsNot Nothing Then
                 pool_port.Dispose()
                 pool_port = Nothing
-                logger.log("Returned port {0} to pool.".frmt(Me.listen_port), LogMessageTypes.PositiveEvent)
+                logger.log("Returned port {0} to pool.".frmt(Me.listen_port), LogMessageTypes.Positive)
                 Me.listen_port = 0
             End If
 
@@ -328,9 +329,9 @@ Namespace Bnet
             Return success("Disconnected.")
         End Function
 
-        Private Function start_advertising_game_L(ByVal server As IW3Server, _
-                                                    ByVal game_name As String, _
-                                                    ByVal map As W3Map, _
+        Private Function start_advertising_game_L(ByVal server As IW3Server,
+                                                    ByVal game_name As String,
+                                                    ByVal map As W3Map,
                                                     ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Select Case state_P
                 Case States.disconnected, States.connecting, States.enter_username, States.logon
@@ -341,12 +342,12 @@ Namespace Bnet
                     Return futurize(failure("Already advertising a game."))
                 Case States.channel
                     game_settings = New GameSettings(game_name, map, arguments)
-                    logger.log("Creating Game...", LogMessageTypes.PositiveEvent)
+                    logger.log("Creating Game...", LogMessageTypes.Positive)
                     flag_create_game_success = New Future(Of Outcome)
                     state_P = States.creating_game
                     host_count += 1
                     Dim out = sendPacket_CREATE_GAME_3_L(False, False)
-                    If out.outcome <> Outcomes.succeeded Then
+                    If Not out.succeeded Then
                         flag_create_game_success.setValue(failure("Failed to send data."))
                         state_P = States.channel
                         Return futurize(out)
@@ -357,7 +358,7 @@ Namespace Bnet
                         server.f_AddAvertiser(Me)
                         DependencyLink.link(Me.advertising_dep, server.advertising_dep)
                         Dim listened = server.f_OpenPort(Me.listen_port)
-                        FutureSub.frun(AddressOf server_listened_result_R, listened)
+                        FutureSub.frun(listened, AddressOf r_ServerListened)
                     End If
                     Return flag_create_game_success
                 Case Else
@@ -390,16 +391,17 @@ Namespace Bnet
                 close()
             End Sub
         End Class
-        Private Sub server_listened_result_R(ByVal listened As Outcome)
-            ref.enqueue(Function() eval(AddressOf server_listened_result_L, listened))
-        End Sub
-        Private Sub server_listened_result_L(ByVal listened As Outcome)
-            If listened.outcome = Outcomes.failed Then
-                If Not flag_create_game_success.isReady Then
-                    flag_create_game_success.setValue(listened)
-                End If
-                stop_advertising_game_L(listened.message)
-            End If
+        Private Sub r_ServerListened(ByVal listened As Outcome)
+            ref.enqueueAction(
+                Sub()
+                    If Not listened.succeeded Then
+                        If Not flag_create_game_success.isReady Then
+                            flag_create_game_success.setValue(listened)
+                        End If
+                        stop_advertising_game_L(listened.message)
+                    End If
+                End Sub
+            )
         End Sub
 
         Private Function stop_advertising_game_L(ByVal reason As String) As Outcome
@@ -465,13 +467,13 @@ Namespace Bnet
         Public Event started_advertising(ByVal sender As IAdvertisingLinkMember, ByVal server As IW3Server, ByVal name As String, ByVal map As W3Map, ByVal options As IList(Of String)) Implements IAdvertisingLinkMember.started_advertising
         Public Event stopped_advertising(ByVal sender As IAdvertisingLinkMember, ByVal reason As String) Implements IAdvertisingLinkMember.stopped_advertising
         Private Sub advlink_start_advertising(ByVal server As IW3Server, ByVal name As String, ByVal map As Warcraft3.W3Map, ByVal options As IList(Of String)) Implements Links.IAdvertisingLinkMember.start_advertising
-            ref.enqueue(Function() eval(AddressOf start_advertising_game_L, server, name, map, options))
+            ref.enqueueAction(Sub() start_advertising_game_L(server, name, map, options))
         End Sub
         Private Sub advlink_stop_advertising(ByVal reason As String) Implements Links.IAdvertisingLinkMember.stop_advertising
-            ref.enqueue(Function() eval(AddressOf stop_advertising_game_L, reason))
+            ref.enqueueAction(Sub() stop_advertising_game_L(reason))
         End Sub
         Private Sub advlink_set_advertising_options_R(ByVal [private] As Boolean) Implements Links.IAdvertisingLinkMember.set_advertising_options
-            ref.enqueue(Function() set_advertised_private_L([private]))
+            ref.enqueueAction(Function() set_advertised_private_L([private]))
         End Sub
         Public Sub clear_advertising_partner(ByVal other As IAdvertisingLinkMember)
             RaiseEvent advlink_break(Me, other)
@@ -482,7 +484,7 @@ Namespace Bnet
             End If
 
             game_settings.private = [private]
-            Me.catch_refresh_timer_tick()
+            Me.c_RefreshTimerTick()
             If [private] Then
                 Me.game_refresh_timer.Stop()
                 Return success("Game will now be advertised as private.")
@@ -498,8 +500,8 @@ Namespace Bnet
         Private Function send_packet_L(ByVal cp As BnetPacket) As Outcome
             'if not (cp IsNot Nothing)
 
-            logger.log(Function() "Sending {0} to BNET".frmt(cp.id), LogMessageTypes.DataEvents)
-            logger.log(Function() cp.payload.toString, LogMessageTypes.ParsedData)
+            logger.log(Function() "Sending {0} to BNET".frmt(cp.id), LogMessageTypes.DataEvent)
+            logger.log(Function() cp.payload.toString, LogMessageTypes.DataParsed)
 
             If socket_P Is Nothing OrElse Not socket_P.connected Then
                 Return failure("Couldn't send data: socket isn't open.")
@@ -514,7 +516,7 @@ Namespace Bnet
                 If flag <> BnetPacket.PACKET_PREFIX Then Throw New Pickling.PicklingException("Invalid packet prefix")
 
                 'Log Event
-                logger.log(Function() "Received {0} from BNET".frmt(id), LogMessageTypes.DataEvents)
+                logger.log(Function() "Received {0} from BNET".frmt(id), LogMessageTypes.DataEvent)
 
                 'Parse
                 Dim p = BnetPacket.FromData(id, data).payload
@@ -523,7 +525,7 @@ Namespace Bnet
                 End If
 
                 'Log Parsed Data
-                logger.log(Function() p.toString, LogMessageTypes.ParsedData)
+                logger.log(Function() p.toString, LogMessageTypes.DataParsed)
 
                 'Handle
                 If LOCAL_handlers(id) Is Nothing Then Throw New Pickling.PicklingException("No handler for parsed " + id.ToString())
@@ -531,7 +533,7 @@ Namespace Bnet
 
             Catch e As Pickling.PicklingException
                 'Ignore
-                logger.log("Error Parsing {0}: {1} (ignored)".frmt(id, e.Message), LogMessageTypes.NegativeEvent)
+                logger.log("Error Parsing {0}: {1} (ignored)".frmt(id, e.Message), LogMessageTypes.Negative)
 
             Catch e As Exception
                 'Fail
@@ -544,8 +546,8 @@ Namespace Bnet
 #Region "Connect"
         Private Sub sendPacket_AUTHENTICATION_BEGIN_L()
             send_packet_L(BnetPacket.MakePacket_AUTHENTICATION_BEGIN( _
-                           MainBot.Wc3MajorVersion, _
-                           getIpAddress().GetAddressBytes()))
+                           MainBot.Wc3MajorVersion,
+                           GetIpAddressBytes(external:=False)))
         End Sub
         Private Sub receivePacket_AUTHENTICATION_BEGIN_L(ByVal vals As Dictionary(Of String, Object))
             Const LOGON_TYPE_WC3 As UInteger = 2
@@ -564,13 +566,13 @@ Namespace Bnet
             Dim mpq_number_string = CStr(vals("mpq number string"))
             Dim mpq_hash_challenge = CStr(vals("mpq hash challenge"))
             sendPacket_AUTHENTICATION_FINISH_L( _
-                    server_cd_key_salt, _
-                    mpq_number_string, _
+                    server_cd_key_salt,
+                    mpq_number_string,
                     mpq_hash_challenge)
         End Sub
 
-        Private Sub sendPacket_AUTHENTICATION_FINISH_L(ByVal server_cd_key_salt As Byte(), _
-                                                       ByVal mpq_number_string As String, _
+        Private Sub sendPacket_AUTHENTICATION_FINISH_L(ByVal server_cd_key_salt As Byte(),
+                                                       ByVal mpq_number_string As String,
                                                        ByVal mpq_hash_challenge As String)
             If Not (server_cd_key_salt IsNot Nothing) Then Throw New ArgumentException()
             If Not (mpq_number_string IsNot Nothing) Then Throw New ArgumentException()
@@ -581,44 +583,44 @@ Namespace Bnet
             If profile.CKL_server Like "*:#*" Then
                 Dim pair = profile.CKL_server.Split(":"c)
                 Dim port = UShort.Parse(pair(1))
-                FutureSub.frun(AddressOf finish_ckl, BnetPacket.CKL_MakePacket_AUTHENTICATION_FINISH( _
-                            MainBot.Wc3Version, _
-                            war_3_path, _
-                            mpq_number_string, _
-                            mpq_hash_challenge, _
-                            server_cd_key_salt, _
-                            cd_key_owner, _
-                            exe_info, _
-                            pair(0), _
-                            port))
+                FutureSub.frun(BnetPacket.CKL_MakePacket_AUTHENTICATION_FINISH(MainBot.Wc3Version,
+                                                                               war_3_path,
+                                                                               mpq_number_string,
+                                                                               mpq_hash_challenge,
+                                                                               server_cd_key_salt,
+                                                                               cd_key_owner,
+                                                                               exe_info,
+                                                                               pair(0),
+                                                                               port),
+                               AddressOf finish_ckl)
             Else
                 Dim p = BnetPacket.MakePacket_AUTHENTICATION_FINISH( _
-                            MainBot.Wc3Version, _
-                            war_3_path, _
-                            mpq_number_string, _
-                            mpq_hash_challenge, _
-                            server_cd_key_salt, _
-                            cd_key_owner, _
-                            exe_info, _
-                            profile.roc_cd_key, _
+                            MainBot.Wc3Version,
+                            war_3_path,
+                            mpq_number_string,
+                            mpq_hash_challenge,
+                            server_cd_key_salt,
+                            cd_key_owner,
+                            exe_info,
+                            profile.roc_cd_key,
                             profile.tft_cd_key)
                 Dim roc_key = CType(CType(p.payload.getVal(), Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
                 Dim roc_hash = CType(roc_key("hash"), Byte())
-                Me.warden_seed = subArray(roc_hash, 0, 4).ToUInteger()
+                Me.warden_seed = subArray(roc_hash, 0, 4).ToUInteger(ByteOrder.LittleEndian)
                 send_packet_L(p)
             End If
         End Sub
         Private Sub finish_ckl(ByVal out As Outcome(Of BnetPacket))
-            If out.outcome = Outcomes.succeeded Then
+            If out.succeeded Then
                 Dim roc_key = CType(CType(out.val.payload.getVal(), Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
                 Dim roc_hash = CType(roc_key("hash"), Byte())
-                Me.warden_seed = subArray(roc_hash, 0, 4).ToUInteger()
-                logger.log(out.message, LogMessageTypes.PositiveEvent)
+                Me.warden_seed = subArray(roc_hash, 0, 4).ToUInteger(ByteOrder.LittleEndian)
+                logger.log(out.message, LogMessageTypes.Positive)
                 send_packet_L(out.val)
             Else
-                logger.log(out.message, LogMessageTypes.NegativeEvent)
+                logger.log(out.message, LogMessageTypes.Negative)
                 future_connect.setValue(failure("Failed to borrow keys: '{0}'.".frmt(out.message)))
-                ref.enqueue(AddressOf disconnect_L)
+                ref.enqueueFunc(AddressOf disconnect_L)
             End If
         End Sub
 
@@ -687,7 +689,7 @@ Namespace Bnet
             send_packet_R(BnetPacket.MakePacket_Warden(data))
         End Sub
         Private Sub warden_Fail(ByVal e As Exception) Handles warden.Fail
-            Logging.logUnexpectedException("Warden", e)
+            Logging.LogUnexpectedException("Warden", e)
             logger.log("Error dealing with Warden packet. Disconnecting.", LogMessageTypes.Problem)
             disconnect_R()
         End Sub
@@ -696,7 +698,7 @@ Namespace Bnet
 #Region "Logon"
         Private Sub sendPacket_ACCOUNT_LOGON_BEGIN_L()
             send_packet_L(BnetPacket.MakePacket_ACCOUNT_LOGON_BEGIN( _
-                        username, _
+                        username,
                         client_public_key))
         End Sub
         Private Sub receivePacket_ACCOUNT_LOGON_BEGIN_L(ByVal vals As Dictionary(Of String, Object))
@@ -727,11 +729,11 @@ Namespace Bnet
             Dim account_salt = CType(vals("account password salt"), Byte())
             Dim server_key = CType(vals("server public key"), Byte())
             With Bnet.Crypt.generateClientServerPasswordProofs( _
-                        username, _
-                        password_P, _
-                        account_salt, _
-                        server_key, _
-                        client_private_key, _
+                        username,
+                        password_P,
+                        account_salt,
+                        server_key,
+                        client_private_key,
                         client_public_key)
                 client_password_proof = .v1
                 server_password_proof = .v2
@@ -801,7 +803,7 @@ Namespace Bnet
                 End Try
             End If
             'log
-            logger.log("Logged on with username {0}.".frmt(username), LogMessageTypes.NormalEvent)
+            logger.log("Logged on with username {0}.".frmt(username), LogMessageTypes.Typical)
             future_logon.setValue(success("Succesfully logged on with username {0}.".frmt(username)))
             'respond
             sendPacket_NET_GAME_PORT_L()
@@ -812,7 +814,7 @@ Namespace Bnet
             send_packet_L(BnetPacket.MakePacket_ENTER_CHAT())
         End Sub
         Private Sub receivePacket_ENTER_CHAT_L(ByVal vals As Dictionary(Of String, Object))
-            logger.log("Entered chat", LogMessageTypes.NormalEvent)
+            logger.log("Entered chat", LogMessageTypes.Typical)
             sendPacket_JOIN_CHANNEL_L(profile.initial_channel)
             state_P = States.channel
         End Sub
@@ -823,7 +825,7 @@ Namespace Bnet
             send_packet_L(BnetPacket.MakePacket_NET_GAME_PORT(listen_port))
         End Sub
 
-        Private Function sendPacket_CREATE_GAME_3_L(Optional ByVal useFull As Boolean = False, _
+        Private Function sendPacket_CREATE_GAME_3_L(Optional ByVal useFull As Boolean = False,
                                                     Optional ByVal refreshing As Boolean = False) As Outcome
             If refreshing Then
                 If state_P <> States.game Then
@@ -834,13 +836,13 @@ Namespace Bnet
 
             Try
                 Return send_packet_L(BnetPacket.MakePacket_CREATE_GAME_3( _
-                                username, _
-                                game_settings.name, _
-                                game_settings.map, _
-                                game_settings.map_settings, _
-                                game_settings.creation_time, _
-                                game_settings.private, _
-                                host_count, _
+                                username,
+                                game_settings.name,
+                                game_settings.map,
+                                game_settings.map_settings,
+                                game_settings.creation_time,
+                                game_settings.private,
+                                host_count,
                                 useFull))
             Catch e As ArgumentException
                 Return failure("Error sending packet: {0}.".frmt(e.Message))
@@ -851,14 +853,14 @@ Namespace Bnet
 
             If result = 0 Then
                 If state_P = States.creating_game Then
-                    logger.log("Finished creating game.", LogMessageTypes.PositiveEvent)
+                    logger.log("Finished creating game.", LogMessageTypes.Positive)
                     state_P = States.game
                     If Not game_settings.private Then game_refresh_timer.Start()
                     If Not flag_create_game_success.isReady Then
                         flag_create_game_success.setValue(success("Succesfully created game {0} for map {1}.".frmt(game_settings.name, game_settings.map.relative_path)))
                     End If
                 Else
-                    logger.log("Refreshed game", LogMessageTypes.PositiveEvent)
+                    logger.log("Refreshed game", LogMessageTypes.Positive)
                 End If
             Else
                 If state_P = States.creating_game Then
@@ -923,31 +925,31 @@ Namespace Bnet
 
 #Region "Remote Calls"
         Public Function send_packet_R(ByVal cp As BnetPacket) As IFuture(Of Outcome)
-            Return ref.enqueue(Function() send_packet_L(cp))
+            Return ref.enqueueFunc(Function() send_packet_L(cp))
         End Function
         Public Function set_listen_port_R(ByVal new_port As UShort) As IFuture(Of Outcome)
-            Return ref.enqueue(Function() set_listen_port_L(new_port))
+            Return ref.enqueueFunc(Function() set_listen_port_L(new_port))
         End Function
         Public Function stop_advertising_game_R(ByVal reason As String) As IFuture(Of Outcome)
-            Return ref.enqueue(Function() stop_advertising_game_L(reason))
+            Return ref.enqueueFunc(Function() stop_advertising_game_L(reason))
         End Function
         Public Function start_advertising_game_R(ByVal server As IW3Server, ByVal game_name As String, ByVal map As W3Map, ByVal options As IList(Of String)) As IFuture(Of Outcome)
-            Return futurefuture(ref.enqueue(Function() start_advertising_game_L(server, game_name, map, options)))
+            Return futurefuture(ref.enqueueFunc(Function() start_advertising_game_L(server, game_name, map, options)))
         End Function
         Public Function disconnect_R() As IFuture(Of Outcome)
-            Return ref.enqueue(Function() disconnect_L())
+            Return ref.enqueueFunc(Function() disconnect_L())
         End Function
-        Public Function connect_R(ByVal remoteHost As String) As IFuture(Of Outcome)
-            Return futurefuture(ref.enqueue(Function() connect_L(remoteHost)))
+        Public Function f_Connect(ByVal remoteHost As String) As IFuture(Of Outcome)
+            Return futurefuture(ref.enqueueFunc(Function() connect_L(remoteHost)))
         End Function
-        Public Function logon_R(ByVal username As String, ByVal password As String) As IFuture(Of Outcome)
-            Return futurefuture(ref.enqueue(Function() logon_L(username, password)))
+        Public Function f_Login(ByVal username As String, ByVal password As String) As IFuture(Of Outcome)
+            Return futurefuture(ref.enqueueFunc(Function() logon_L(username, password)))
         End Function
-        Public Function get_user_server_R(ByVal user As BotUser) As IFuture(Of IW3Server)
-            Return ref.enqueue(Function() get_user_server_L(user))
+        Public Function f_GetUserServer(ByVal user As BotUser) As IFuture(Of IW3Server)
+            Return ref.enqueueFunc(Function() get_user_server_L(user))
         End Function
         Public Function set_user_server_R(ByVal user As BotUser, ByVal server As IW3Server) As IFuture
-            Return ref.enqueue(Function() eval(AddressOf set_user_server_L, user, server))
+            Return ref.enqueueAction(Sub() set_user_server_L(user, server))
         End Function
         Public Shadows ReadOnly Property listen_port_P() As UShort
             Get

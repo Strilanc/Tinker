@@ -7,7 +7,7 @@ Namespace Warcraft3
         ReadOnly Property parent() As MainBot
         ReadOnly Property name() As String
         ReadOnly Property settings() As ServerSettings
-        ReadOnly Property logger() As MultiLogger
+        ReadOnly Property logger() As Logger
         ReadOnly Property suffix() As String
 
         Event ChangedState(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
@@ -48,11 +48,11 @@ Namespace Warcraft3
         Public ReadOnly remote_port As UShort
         Public ReadOnly remote_ip As Byte()
         Public ReadOnly socket As W3Socket
-        Public Sub New(ByVal name As String, _
-                       ByVal connection_key As UInteger, _
-                       ByVal listen_port As UShort, _
-                       ByVal remote_port As UShort, _
-                       ByVal remote_ip As Byte(), _
+        Public Sub New(ByVal name As String,
+                       ByVal connection_key As UInteger,
+                       ByVal listen_port As UShort,
+                       ByVal remote_port As UShort,
+                       ByVal remote_ip As Byte(),
                        ByVal socket As W3Socket)
             Me.name = name
             Me.p2p_key = connection_key
@@ -82,19 +82,19 @@ Namespace Warcraft3
         Public arguments As IList(Of String)
         Public load_in_game As Boolean
 
-        Public Sub New(ByVal map As W3Map, _
-                       ByVal username As String, _
-                       Optional ByVal allowDownloads As Boolean = True, _
-                       Optional ByVal allowUpload As Boolean = True, _
-                       Optional ByVal autostarted As Boolean = False, _
-                       Optional ByVal defaultSlotLockState As W3Slot.Lock = W3Slot.Lock.unlocked, _
-                       Optional ByVal instances As Integer = 1, _
-                       Optional ByVal password As String = Nothing, _
-                       Optional ByVal arguments As IList(Of String) = Nothing, _
-                       Optional ByVal auto_elevate_user As String = Nothing, _
-                       Optional ByVal managed_lifecycle As Boolean = True, _
-                       Optional ByVal is_admin_game As Boolean = False, _
-                       Optional ByVal grab_map As Boolean = False, _
+        Public Sub New(ByVal map As W3Map,
+                       ByVal username As String,
+                       Optional ByVal allowDownloads As Boolean = True,
+                       Optional ByVal allowUpload As Boolean = True,
+                       Optional ByVal autostarted As Boolean = False,
+                       Optional ByVal defaultSlotLockState As W3Slot.Lock = W3Slot.Lock.unlocked,
+                       Optional ByVal instances As Integer = 1,
+                       Optional ByVal password As String = Nothing,
+                       Optional ByVal arguments As IList(Of String) = Nothing,
+                       Optional ByVal auto_elevate_user As String = Nothing,
+                       Optional ByVal managed_lifecycle As Boolean = True,
+                       Optional ByVal is_admin_game As Boolean = False,
+                       Optional ByVal grab_map As Boolean = False,
                        Optional ByVal default_listen_ports As IEnumerable(Of UShort) = Nothing)
             If Not (map IsNot Nothing) Then Throw New ArgumentException()
             If arguments Is Nothing Then arguments = New List(Of String)

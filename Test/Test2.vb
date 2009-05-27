@@ -21,18 +21,18 @@
 '        Dim mpqa = New MPQ.Archive(src)
 
 '        Dim ss = New String() { _
-'                        "war3map.j", _
-'                        "Scripts\common.j", _
-'                        "Scripts\blizzard.j", _
-'                        "scripts\war3map.j", _
-'                        "war3map.w3e", _
-'                        "war3map.wpm", _
-'                        "war3map.doo", _
-'                        "war3map.w3u", _
-'                        "war3map.w3b", _
-'                        "war3map.w3d", _
-'                        "war3map.w3a", _
-'                        "war3map.w3i", _
+'                        "war3map.j",
+'                        "Scripts\common.j",
+'                        "Scripts\blizzard.j",
+'                        "scripts\war3map.j",
+'                        "war3map.w3e",
+'                        "war3map.wpm",
+'                        "war3map.doo",
+'                        "war3map.w3u",
+'                        "war3map.w3b",
+'                        "war3map.w3d",
+'                        "war3map.w3a",
+'                        "war3map.w3i",
 '                        "war3map.w3q"}
 
 '        Dim i = 0

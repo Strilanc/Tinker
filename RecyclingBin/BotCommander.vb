@@ -142,16 +142,16 @@
 '                End Select
 '            Case "boot"
 '                If words.Length < 2 Then Return "Incorrect command format, need name argument."
-'                schedule(Of String, W3GameInstance, List(Of W3Player))(AddressOf ref.queueCall, _
-'                            AddressOf LOCAL_bootPlayers, _
-'                            futurize(arg), _
-'                            futurize(p.PERM_game), _
+'                schedule(Of String, W3GameInstance, List(Of W3Player))(AddressOf ref.queueCall,
+'                            AddressOf LOCAL_bootPlayers,
+'                            futurize(arg),
+'                            futurize(p.PERM_game),
 '                            p.PERM_game.REF_FUTURE_makeShallowCopyOfPlayers())
 '            Case "swap"
 '                If words.Length <> 3 Then Return "Incorrect command format, need two color arguments."
-'                schedule(Nothing, _
-'                        AddressOf p.PERM_game.REF_swapSlots, _
-'                            p.PERM_game.REF_FUTURE_getSlotIndexMatching(words(1)), _
+'                schedule(Nothing,
+'                        AddressOf p.PERM_game.REF_swapSlots,
+'                            p.PERM_game.REF_FUTURE_getSlotIndexMatching(words(1)),
 '                            p.PERM_game.REF_FUTURE_getSlotIndexMatching(words(2)))
 '            Case "reserve"
 '                If words.Length < 2 Then Return "Incorrect command format, need name argument."
@@ -405,14 +405,14 @@
 '                        My.Settings.defaultLobbyMap = ss(0)
 '                        Dim map As New W3Map(My.Settings.war3path + My.Settings.relMapPath + My.Settings.defaultLobbyMap)
 '                        Dim settings As New W3GameSettings( _
-'                                    My.Settings.defaultLobbyName, _
-'                                    map, _
-'                                    My.Settings.defaultSilent, _
-'                                    My.Settings.defaultLobbyPrivate, _
-'                                    My.Settings.defaultLobbyAllowDL, _
-'                                    My.Settings.lobbyAllowBotUpload, _
-'                                    My.Settings.defaultLobbyAutoInstance, _
-'                                    My.Settings.defaultLobbyAutoStart, _
+'                                    My.Settings.defaultLobbyName,
+'                                    map,
+'                                    My.Settings.defaultSilent,
+'                                    My.Settings.defaultLobbyPrivate,
+'                                    My.Settings.defaultLobbyAllowDL,
+'                                    My.Settings.lobbyAllowBotUpload,
+'                                    My.Settings.defaultLobbyAutoInstance,
+'                                    My.Settings.defaultLobbyAutoStart,
 '                                    CType(My.Settings.default_slots_locked, W3Slot.LockStates))
 '                        parent.REF_start_server(settings)
 '                    Catch e As Exception

@@ -19,49 +19,49 @@ Partial Class FrmSettings
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.components = New System.ComponentModel.Container
+        Me.components = New System.ComponentModel.Container()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FrmSettings))
         Me.tipNormal = New System.Windows.Forms.ToolTip(Me.components)
-        Me.txtMapPath = New System.Windows.Forms.TextBox
-        Me.txtProgramPath = New System.Windows.Forms.TextBox
-        Me.txtExeVersion = New System.Windows.Forms.TextBox
-        Me.txtExeInformation = New System.Windows.Forms.TextBox
-        Me.txtCdKeyOwner = New System.Windows.Forms.TextBox
-        Me.txtCommandPrefix = New System.Windows.Forms.TextBox
-        Me.numTickPeriod = New System.Windows.Forms.NumericUpDown
-        Me.numLagLimit = New System.Windows.Forms.NumericUpDown
-        Me.txtNewProfileName = New System.Windows.Forms.TextBox
-        Me.txtInGameName = New System.Windows.Forms.TextBox
-        Me.txtInitialPlugins = New System.Windows.Forms.TextBox
-        Me.tabsSettings = New System.Windows.Forms.TabControl
-        Me.tabGlobalSettings = New System.Windows.Forms.TabPage
-        Me.Label1 = New System.Windows.Forms.Label
-        Me.lblLagLimit = New System.Windows.Forms.Label
-        Me.lblTickPeriod = New System.Windows.Forms.Label
-        Me.lblCommandPrefix = New System.Windows.Forms.Label
-        Me.lblExeInfo = New System.Windows.Forms.Label
-        Me.lblOwner = New System.Windows.Forms.Label
-        Me.lblWc3Version = New System.Windows.Forms.Label
-        Me.lblMapPath = New System.Windows.Forms.Label
-        Me.lblPath = New System.Windows.Forms.Label
-        Me.tabPlugins = New System.Windows.Forms.TabPage
-        Me.Label3 = New System.Windows.Forms.Label
-        Me.Label2 = New System.Windows.Forms.Label
-        Me.btnImportPlugin = New System.Windows.Forms.Button
-        Me.gridPlugins = New System.Windows.Forms.DataGridView
-        Me.colName = New System.Windows.Forms.DataGridViewTextBoxColumn
-        Me.colAccess = New System.Windows.Forms.DataGridViewTextBoxColumn
-        Me.colSettings = New System.Windows.Forms.DataGridViewTextBoxColumn
-        Me.tabNewProfile = New System.Windows.Forms.TabPage
-        Me.btnCreateNewProfile = New System.Windows.Forms.Button
-        Me.lblNewProfileName = New System.Windows.Forms.Label
-        Me.btnPluginsHelp = New System.Windows.Forms.Button
-        Me.btnCancel = New System.Windows.Forms.Button
-        Me.btnSave = New System.Windows.Forms.Button
-        Me.btnUserHelp = New System.Windows.Forms.Button
-        Me.OpenFileDialog = New System.Windows.Forms.OpenFileDialog
-        Me.lblPortPool = New System.Windows.Forms.Label
-        Me.txtPortPool = New System.Windows.Forms.TextBox
+        Me.txtMapPath = New System.Windows.Forms.TextBox()
+        Me.txtProgramPath = New System.Windows.Forms.TextBox()
+        Me.txtExeVersion = New System.Windows.Forms.TextBox()
+        Me.txtExeInformation = New System.Windows.Forms.TextBox()
+        Me.txtCdKeyOwner = New System.Windows.Forms.TextBox()
+        Me.txtCommandPrefix = New System.Windows.Forms.TextBox()
+        Me.numTickPeriod = New System.Windows.Forms.NumericUpDown()
+        Me.numLagLimit = New System.Windows.Forms.NumericUpDown()
+        Me.txtNewProfileName = New System.Windows.Forms.TextBox()
+        Me.txtInGameName = New System.Windows.Forms.TextBox()
+        Me.txtInitialPlugins = New System.Windows.Forms.TextBox()
+        Me.txtPortPool = New System.Windows.Forms.TextBox()
+        Me.tabsSettings = New System.Windows.Forms.TabControl()
+        Me.tabGlobalSettings = New System.Windows.Forms.TabPage()
+        Me.lblPortPool = New System.Windows.Forms.Label()
+        Me.Label1 = New System.Windows.Forms.Label()
+        Me.lblLagLimit = New System.Windows.Forms.Label()
+        Me.lblTickPeriod = New System.Windows.Forms.Label()
+        Me.lblCommandPrefix = New System.Windows.Forms.Label()
+        Me.lblExeInfo = New System.Windows.Forms.Label()
+        Me.lblOwner = New System.Windows.Forms.Label()
+        Me.lblWc3Version = New System.Windows.Forms.Label()
+        Me.lblMapPath = New System.Windows.Forms.Label()
+        Me.lblPath = New System.Windows.Forms.Label()
+        Me.tabPlugins = New System.Windows.Forms.TabPage()
+        Me.Label3 = New System.Windows.Forms.Label()
+        Me.Label2 = New System.Windows.Forms.Label()
+        Me.btnImportPlugin = New System.Windows.Forms.Button()
+        Me.gridPlugins = New System.Windows.Forms.DataGridView()
+        Me.colName = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.colAccess = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.colSettings = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.tabNewProfile = New System.Windows.Forms.TabPage()
+        Me.btnCreateNewProfile = New System.Windows.Forms.Button()
+        Me.lblNewProfileName = New System.Windows.Forms.Label()
+        Me.btnPluginsHelp = New System.Windows.Forms.Button()
+        Me.btnCancel = New System.Windows.Forms.Button()
+        Me.btnSave = New System.Windows.Forms.Button()
+        Me.btnUserHelp = New System.Windows.Forms.Button()
+        Me.OpenFileDialog = New System.Windows.Forms.OpenFileDialog()
         CType(Me.numTickPeriod, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.numLagLimit, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.tabsSettings.SuspendLayout()
@@ -180,6 +180,15 @@ Partial Class FrmSettings
         Me.tipNormal.SetToolTip(Me.txtInitialPlugins, "The names of plugins to load when the bot starts." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Separate names with a semi-col" & _
                 "on, like this:" & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "plugin1;plugin2;plugin3")
         '
+        'txtPortPool
+        '
+        Me.txtPortPool.Location = New System.Drawing.Point(232, 214)
+        Me.txtPortPool.MaxLength = 15
+        Me.txtPortPool.Name = "txtPortPool"
+        Me.txtPortPool.Size = New System.Drawing.Size(220, 20)
+        Me.txtPortPool.TabIndex = 54
+        Me.tipNormal.SetToolTip(Me.txtPortPool, resources.GetString("txtPortPool.ToolTip"))
+        '
         'tabsSettings
         '
         Me.tabsSettings.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
@@ -224,6 +233,15 @@ Partial Class FrmSettings
         Me.tabGlobalSettings.Text = "Global"
         Me.tabGlobalSettings.UseVisualStyleBackColor = True
         '
+        'lblPortPool
+        '
+        Me.lblPortPool.AutoSize = True
+        Me.lblPortPool.Location = New System.Drawing.Point(229, 198)
+        Me.lblPortPool.Name = "lblPortPool"
+        Me.lblPortPool.Size = New System.Drawing.Size(50, 13)
+        Me.lblPortPool.TabIndex = 55
+        Me.lblPortPool.Text = "Port Pool"
+        '
         'Label1
         '
         Me.Label1.AutoSize = True
@@ -238,18 +256,18 @@ Partial Class FrmSettings
         Me.lblLagLimit.AutoSize = True
         Me.lblLagLimit.Location = New System.Drawing.Point(229, 159)
         Me.lblLagLimit.Name = "lblLagLimit"
-        Me.lblLagLimit.Size = New System.Drawing.Size(80, 13)
+        Me.lblLagLimit.Size = New System.Drawing.Size(117, 13)
         Me.lblLagLimit.TabIndex = 51
-        Me.lblLagLimit.Text = "Game Lag Limit"
+        Me.lblLagLimit.Text = "Default Game Lag Limit"
         '
         'lblTickPeriod
         '
         Me.lblTickPeriod.AutoSize = True
         Me.lblTickPeriod.Location = New System.Drawing.Point(3, 159)
         Me.lblTickPeriod.Name = "lblTickPeriod"
-        Me.lblTickPeriod.Size = New System.Drawing.Size(92, 13)
+        Me.lblTickPeriod.Size = New System.Drawing.Size(129, 13)
         Me.lblTickPeriod.TabIndex = 49
-        Me.lblTickPeriod.Text = "Game Tick Period"
+        Me.lblTickPeriod.Text = "Default Game Tick Period"
         '
         'lblCommandPrefix
         '
@@ -455,24 +473,6 @@ Partial Class FrmSettings
         'OpenFileDialog
         '
         Me.OpenFileDialog.Title = "Select Plugin"
-        '
-        'lblPortPool
-        '
-        Me.lblPortPool.AutoSize = True
-        Me.lblPortPool.Location = New System.Drawing.Point(229, 198)
-        Me.lblPortPool.Name = "lblPortPool"
-        Me.lblPortPool.Size = New System.Drawing.Size(50, 13)
-        Me.lblPortPool.TabIndex = 55
-        Me.lblPortPool.Text = "Port Pool"
-        '
-        'txtPortPool
-        '
-        Me.txtPortPool.Location = New System.Drawing.Point(232, 214)
-        Me.txtPortPool.MaxLength = 15
-        Me.txtPortPool.Name = "txtPortPool"
-        Me.txtPortPool.Size = New System.Drawing.Size(220, 20)
-        Me.txtPortPool.TabIndex = 54
-        Me.tipNormal.SetToolTip(Me.txtPortPool, resources.GetString("txtPortPool.ToolTip"))
         '
         'FrmSettings
         '

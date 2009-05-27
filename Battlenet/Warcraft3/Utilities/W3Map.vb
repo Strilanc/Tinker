@@ -138,16 +138,16 @@ Namespace Warcraft3
                 Return successVal(New W3Map(My.Settings.mapPath, path, size, crc32, sha1, xoro, 3), "Loaded map meta data.")
             Else
                 Dim out = findFileMatching("*" + arg + "*", "*.[wW]3[mxMX]", My.Settings.mapPath)
-                If out.outcome <> Outcomes.succeeded Then Return CType(out, Outcome)
+                If Not out.succeeded Then Return CType(out, Outcome)
                 Return successVal(New W3Map(My.Settings.mapPath, out.val, My.Settings.war3path), "Loaded map file.")
             End If
         End Function
-        Public Sub New(ByVal folder As String, _
-                       ByVal rel_path As String, _
-                       ByVal fileSize As UInteger, _
-                       ByVal crc32 As Byte(), _
-                       ByVal sha1_checksum As Byte(), _
-                       ByVal xoro_checksum As Byte(), _
+        Public Sub New(ByVal folder As String,
+                       ByVal rel_path As String,
+                       ByVal fileSize As UInteger,
+                       ByVal crc32 As Byte(),
+                       ByVal sha1_checksum As Byte(),
+                       ByVal xoro_checksum As Byte(),
                        ByVal num_slots As Integer)
             Me.file_available = False
             Me.full_path = folder + rel_path.Substring(5)
@@ -169,8 +169,8 @@ Namespace Warcraft3
                 slots.Add(slot)
             Next i
         End Sub
-        Public Sub New(ByVal folder As String, _
-                       ByVal rel_path As String, _
+        Public Sub New(ByVal folder As String,
+                       ByVal rel_path As String,
                        ByVal w3patch_folder As String)
             Me.file_available = True
             Me.relative_path = rel_path
@@ -178,12 +178,12 @@ Namespace Warcraft3
             Me.folder = folder
             Using f = New IO.BufferedStream(New IO.FileStream(full_path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
                 Me.fileSize = CUInt(f.Length)
-                Me.crc32 = Bnet.Crypt.crc32(f).bytes()
+                Me.crc32 = Bnet.Crypt.crc32(f).bytes(ByteOrder.LittleEndian)
             End Using
             Dim mpqa = New MPQ.MPQArchive(full_path)
             Dim mpq_war3path = OpenWar3PatchMpq(w3patch_folder)
             Me.checksum_sha1 = computeMapSha1Checksum(mpqa, mpq_war3path)
-            Me.checksum_xoro = computeMapXoro(mpqa, mpq_war3path).bytes()
+            Me.checksum_xoro = computeMapXoro(mpqa, mpq_war3path).bytes(ByteOrder.LittleEndian)
 
             readFileInfo(mpqa)
 
@@ -236,7 +236,7 @@ Namespace Warcraft3
 
             'Overridable map files from war3patch.mpq
             For Each filename In New String() { _
-                        "scripts\common.j", _
+                        "scripts\common.j",
                         "scripts\blizzard.j"}
                 Dim mpq_to_use = If(mpqa.hashTable.contains(filename), mpqa, mpq_war3path)
                 streams.Add(New MPQ.MPQFileStream(mpq_to_use, filename))
@@ -247,14 +247,14 @@ Namespace Warcraft3
 
             'Important map files
             For Each fileset In New String() { _
-                        "war3map.j|scripts\war3map.j", _
-                        "war3map.w3e", _
-                        "war3map.wpm", _
-                        "war3map.doo", _
-                        "war3map.w3u", _
-                        "war3map.w3b", _
-                        "war3map.w3d", _
-                        "war3map.w3a", _
+                        "war3map.j|scripts\war3map.j",
+                        "war3map.w3e",
+                        "war3map.wpm",
+                        "war3map.doo",
+                        "war3map.w3u",
+                        "war3map.w3b",
+                        "war3map.w3d",
+                        "war3map.w3a",
                         "war3map.w3q"}
                 For Each filename In fileset.Split("|"c)
                     If mpqa.hashTable.contains(filename) Then
@@ -294,7 +294,7 @@ Namespace Warcraft3
 
             'Overridable map files from war3patch.mpq
             For Each filename In New String() { _
-                        "Scripts\common.j", _
+                        "Scripts\common.j",
                         "Scripts\blizzard.j"}
                 Dim mpq_to_use = If(mpqa.hashTable.contains(filename), mpqa, mpq_war3path)
                 Using f = New MPQ.MPQFileStream(mpq_to_use, filename)
@@ -308,14 +308,14 @@ Namespace Warcraft3
 
             'Important map files
             For Each fileset In New String() { _
-                        "war3map.j|scripts\war3map.j", _
-                        "war3map.w3e", _
-                        "war3map.wpm", _
-                        "war3map.doo", _
-                        "war3map.w3u", _
-                        "war3map.w3b", _
-                        "war3map.w3d", _
-                        "war3map.w3a", _
+                        "war3map.j|scripts\war3map.j",
+                        "war3map.w3e",
+                        "war3map.wpm",
+                        "war3map.doo",
+                        "war3map.w3u",
+                        "war3map.w3b",
+                        "war3map.w3d",
+                        "war3map.w3a",
                         "war3map.w3q"}
                 For Each filename In fileset.Split("|"c)
                     If mpqa.hashTable.contains(filename) Then
@@ -430,7 +430,7 @@ Namespace Warcraft3
                 End If
 
                 Dim numSlots = br.ReadInt32()
-                For i = 0 To numSlots - 1
+                For i = 1 To numSlots
                     Dim slot = New W3Slot(Nothing, CByte(slots.Count + 1))
                     'color
                     slot.color = CType(br.ReadInt32(), W3Slot.PlayerColor)
@@ -492,16 +492,16 @@ Namespace Warcraft3
 
 #Region "StatString"
         Public Shared Function makeStatStringParser() As TupleJar
-            Return New TupleJar("statstring", _
-                New PrecodeJar("encoded", New TupleJar("encoded", _
-                    New ArrayJar("settings", 4), _
-                    New ValueJar("unknown1", 1), _
-                    New ValueJar("playable width", 2), _
-                    New ValueJar("playable height", 2), _
-                    New ArrayJar("xoro checksum", 4), _
-                    New StringJar("relative path"), _
-                    New StringJar("username"), _
-                    New StringJar("unknown2"))), _
+            Return New TupleJar("statstring",
+                New PrecodeJar("encoded", New TupleJar("encoded",
+                    New ArrayJar("settings", 4),
+                    New ValueJar("unknown1", 1),
+                    New ValueJar("playable width", 2),
+                    New ValueJar("playable height", 2),
+                    New ArrayJar("xoro checksum", 4),
+                    New StringJar("relative path"),
+                    New StringJar("username"),
+                    New StringJar("unknown2"))),
                 New ValueJar("terminator", 1))
         End Function
 
