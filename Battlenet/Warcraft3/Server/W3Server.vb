@@ -60,8 +60,8 @@ Namespace Warcraft3
                 Me.suffix = suffix
                 Me.logger = If(logger, New Logger)
                 Me.door = New W3ServerDoor(Me, Me.logger)
-                Me.eref = New ThreadedCallQueue("{0} {1} eref".frmt(Me.GetType.Name, name))
-                Me.ref = New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name))
+                Me.eref = New ThreadPooledCallQueue
+                Me.ref = New ThreadPooledCallQueue
 
                 For Each port In settings.default_listen_ports
                     Dim out = door.accepter.accepter.OpenPort(port)
@@ -80,21 +80,21 @@ Namespace Warcraft3
 
 #Region "Events"
         Private Sub e_ThrowStateChanged(ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
-            eref.enqueueAction(
+            eref.QueueAction(
                 Sub()
                     RaiseEvent ChangedState(Me, old_state, new_state)
                 End Sub
             )
         End Sub
         Private Sub e_ThrowAddedGame(ByVal game As IW3Game)
-            eref.enqueueAction(
+            eref.QueueAction(
                 Sub()
                     RaiseEvent AddedGame(Me, game)
                 End Sub
             )
         End Sub
         Private Sub e_ThrowRemovedGame(ByVal game As IW3Game)
-            eref.enqueueAction(
+            eref.QueueAction(
                 Sub()
                     RaiseEvent RemovedGame(Me, game)
                 End Sub
@@ -115,7 +115,7 @@ Namespace Warcraft3
             RaiseEvent PlayerEntered(Me, game, player)
         End Sub
         Private Sub c_GameStateChanged(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     If Not games_all.Contains(sender) Then  Return
 
@@ -243,15 +243,15 @@ Namespace Warcraft3
 
         '''<summary>Finds a player with the given name in any of the server's games.</summary>
         Private Function f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player)
-            Return futureSelect(futureMap(futurize(games_all.ToList),
+            Return FutureSelect(FutureMap(futurize(games_all.ToList),
                                           Function(game) game.f_FindPlayer(username)),
                                 Function(player) futurize(player IsNot Nothing))
         End Function
 
         '''<summary>Finds a game containing a player with the given name.</summary>
         Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of IW3Game)
-            Return futureSelect(futurize(games_all.ToList),
-                                Function(game) FutureFunc.frun(game.f_FindPlayer(username),
+            Return FutureSelect(futurize(games_all.ToList),
+                                Function(game) FutureFunc.Call(game.f_FindPlayer(username),
                                                                            Function(player) player IsNot Nothing))
         End Function
 
@@ -298,7 +298,7 @@ Namespace Warcraft3
         End Sub
 
         Private Sub remove_stalled_advertised_R(ByVal m As IAdvertisingLinkMember, ByVal reason As String)
-            ref.enqueueAction(Sub() remove_stalled_advertised_L(m, reason))
+            ref.QueueAction(Sub() remove_stalled_advertised_L(m, reason))
         End Sub
         Private Sub remove_stalled_advertised_L(ByVal m As IAdvertisingLinkMember, ByVal reason As String)
             If Not link_advertisers.Contains(m) Then Return
@@ -337,43 +337,43 @@ Namespace Warcraft3
 
 #Region "Interface"
         Private Function _f_FindGame(ByVal game_name As String) As IFuture(Of IW3Game) Implements IW3Server.f_FindGame
-            Return ref.enqueueFunc(Function() FindGame(game_name))
+            Return ref.QueueFunc(Function() FindGame(game_name))
         End Function
         Private Function _f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Server.f_FindPlayer
-            Return futurefuture(ref.enqueueFunc(Function() f_FindPlayer(username)))
+            Return futurefuture(ref.QueueFunc(Function() f_FindPlayer(username)))
         End Function
         Private Function _f_FindPlayerGame(ByVal username As String) As IFuture(Of IW3Game) Implements IW3Server.f_FindPlayerGame
-            Return futurefuture(ref.enqueueFunc(Function() f_FindPlayerGame(username)))
+            Return futurefuture(ref.QueueFunc(Function() f_FindPlayerGame(username)))
         End Function
         Private Function _f_EnumGames() As IFuture(Of IEnumerable(Of IW3Game)) Implements IW3Server.f_EnumGames
-            Return ref.enqueueFunc(Function() CType(games_all.ToList, IEnumerable(Of IW3Game)))
+            Return ref.QueueFunc(Function() CType(games_all.ToList, IEnumerable(Of IW3Game)))
         End Function
         Private Function _f_CreateGame(Optional ByVal instance_name As String = Nothing) As IFuture(Of Outcome(Of IW3Game)) Implements IW3Server.f_CreateGame
-            Return ref.enqueueFunc(Function() CreateGame(instance_name))
+            Return ref.QueueFunc(Function() CreateGame(instance_name))
         End Function
         Private Function _f_RemoveGame(ByVal instance_name As String) As IFuture(Of Outcome) Implements IW3Server.f_RemoveGame
-            Return ref.enqueueFunc(Function() RemoveGame(instance_name))
+            Return ref.QueueFunc(Function() RemoveGame(instance_name))
         End Function
         Private Function _f_ClosePort(ByVal port As UShort) As IFuture(Of Outcome) Implements IW3Server.f_ClosePort
-            Return ref.enqueueFunc(Function() door.accepter.accepter.ClosePort(port))
+            Return ref.QueueFunc(Function() door.accepter.accepter.ClosePort(port))
         End Function
         Private Function _f_OpenPort(ByVal port As UShort) As IFuture(Of Outcome) Implements IW3Server.f_OpenPort
-            Return ref.enqueueFunc(Function() door.accepter.accepter.OpenPort(port))
+            Return ref.QueueFunc(Function() door.accepter.accepter.OpenPort(port))
         End Function
         Private Function _f_CloseAllPorts() As IFuture(Of Outcome) Implements IW3Server.f_CloseAllPorts
-            Return ref.enqueueFunc(Function() door.accepter.accepter.CloseAllPorts())
+            Return ref.QueueFunc(Function() door.accepter.accepter.CloseAllPorts())
         End Function
         Private Function _f_StopAcceptingPlayers() As IFuture(Of Outcome) Implements IW3Server.f_StopAcceptingPlayers
-            Return ref.enqueueFunc(Function() StopAcceptingPlayers())
+            Return ref.QueueFunc(Function() StopAcceptingPlayers())
         End Function
         Private Sub _servant_close() Implements Links.IDependencyLinkServant.close
-            ref.enqueueAction(Function() Kill())
+            ref.QueueAction(Function() Kill())
         End Sub
         Private Function _f_Kill() As IFuture(Of Outcome) Implements IW3Server.f_Kill
-            Return ref.enqueueFunc(Function() Kill())
+            Return ref.QueueFunc(Function() Kill())
         End Function
         Private Function _add_advertiser_R(ByVal m As IAdvertisingLinkMember) As IFuture(Of outcome) Implements IW3Server.f_AddAvertiser
-            Return ref.enqueueFunc(Function() add_advertiser_L(m))
+            Return ref.QueueFunc(Function() add_advertiser_L(m))
         End Function
         Private Function _advertising_dep() As IDependencyLinkServant Implements IW3Server.advertising_dep
             Return New AdvertisingDependency(Me)

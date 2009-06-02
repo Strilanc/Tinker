@@ -111,10 +111,10 @@
                 End Set
             End Property
             Private Function _buffer_map_R() As IFuture Implements IW3PlayerLobby.f_BufferMap
-                Return player.ref.enqueueAction(AddressOf BufferMap)
+                Return player.ref.QueueAction(AddressOf BufferMap)
             End Function
             Private Function _start_countdown_R() As IFuture Implements IW3PlayerLobby.f_StartCountdown
-                Return player.ref.enqueueAction(AddressOf start_countdown_L)
+                Return player.ref.QueueAction(AddressOf start_countdown_L)
             End Function
 #End Region
 
@@ -134,11 +134,11 @@
 
             Private Sub BufferMap()
                 Dim f_host = player.game.f_fake_host_player
-                Dim f_index = FutureFunc.frun(f_host, Function(player) If(player Is Nothing, CByte(0), player.index))
-                FutureSub.frun(f_index, AddressOf _BufferMap)
+                Dim f_index = FutureFunc.Call(f_host, Function(player) If(player Is Nothing, CByte(0), player.index))
+                FutureSub.Call(f_index, AddressOf _BufferMap)
             End Sub
             Private Sub _BufferMap(ByVal sender_index As Byte)
-                player.ref.enqueueAction(sub() __BufferMap( sender_index))
+                player.ref.QueueAction(Sub() __BufferMap(sender_index))
             End Sub
             Private Sub __BufferMap(ByVal sender_index As Byte)
                 If sent_map_size - downloaded_map_size_L >= MAX_BUFFERED_MAP_SIZE Then Return

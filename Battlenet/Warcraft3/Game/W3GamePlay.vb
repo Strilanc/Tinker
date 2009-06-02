@@ -42,7 +42,7 @@
             End Sub
 
             Private Sub e_ThrowPlayerSentData(ByVal p As IW3PlayerGameplay, ByVal data As Byte())
-                game.eventRef.enqueueAction(Sub() _e_ThrowPlayerSentData(p, data))
+                game.eventRef.QueueAction(Sub() _e_ThrowPlayerSentData(p, data))
             End Sub
             Private Sub _e_ThrowPlayerSentData(ByVal p As IW3PlayerGameplay, ByVal data As Byte())
                 RaiseEvent PlayerSentData(Me, p, data)
@@ -64,7 +64,7 @@
 
             '''<summary>Advances game time</summary>
             Private Sub c_Tick(ByVal sender As Object, ByVal e As Timers.ElapsedEventArgs) Handles tick_timer.Elapsed
-                game.ref.enqueueAction(
+                game.ref.QueueAction(
                     Sub()
                         Dim t = Environment.TickCount
                         Dim dt = TickCountDelta(t, last_tick_time) * Me.setting_speed_factor
@@ -167,10 +167,10 @@
                 End Get
             End Property
             Private Function _f_DropLagger() As IFuture Implements IW3GamePlay.f_DropLagger
-                Return game.ref.enqueueAction(AddressOf DropLagger)
+                Return game.ref.QueueAction(AddressOf DropLagger)
             End Function
             Private Function _f_QueueGameData(ByVal sender As IW3PlayerGameplay, ByVal data() As Byte) As IFuture Implements IW3GamePlay.f_QueueGameData
-                Return game.ref.enqueueAction(Sub() QueueGameData(sender, data))
+                Return game.ref.QueueAction(Sub() QueueGameData(sender, data))
             End Function
 #End Region
         End Class

@@ -45,18 +45,18 @@
                   Function(outcome) outcome.succeeded
 
             Dim added_player_filter As Func(Of IW3Game, IFuture(Of Boolean)) = _
-                  Function(game) FutureFunc.frun(game.lobby.f_TryAddPlayer(player), success_filter)
+                  Function(game) FutureFunc.Call(game.lobby.f_TryAddPlayer(player), success_filter)
 
             Dim future_selected_game = _
-                  futureSelect(server.f_EnumGames, added_player_filter)
+                  FutureSelect(server.f_EnumGames, added_player_filter)
 
-            FutureSub.frun(future_selected_game, Sub(g) finished_selecting_game(player, g))
+            FutureSub.Call(future_selected_game, Sub(g) finished_selecting_game(player, g))
         End Sub
 
         Private Sub finished_selecting_game(ByVal player As W3ConnectingPlayer, ByVal game As IW3Game)
             SyncLock lock
                 If server.settings.instances = 0 AndAlso game Is Nothing Then
-                    FutureSub.schedule(Sub() find_game_for_player(player), server.f_CreateGame)
+                    FutureSub.Call({server.f_CreateGame}, Sub() find_game_for_player(player))
                 Else
                     connecting_players.Remove(player)
                     If game Is Nothing Then

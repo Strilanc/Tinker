@@ -108,7 +108,7 @@
                 End Get
             End Property
             Private Function _queue_tick_R(ByVal record As TickRecord) As IFuture Implements IW3PlayerGameplay.f_QueueTick
-                Return player.ref.enqueueAction(Sub() queue_tick_L(record))
+                Return player.ref.QueueAction(Sub() queue_tick_L(record))
             End Function
 #End Region
 
@@ -117,10 +117,10 @@
                         + "DT={0}gms".frmt(player.game.gameplay.game_time - Me.total_tick_time_P)
             End Function
             Private Function _f_start() As IFuture Implements IW3PlayerGameplay.f_Start
-                Return player.ref.enqueueAction(AddressOf Start)
+                Return player.ref.QueueAction(AddressOf Start)
             End Function
             Private Function _f_stop() As IFuture Implements IW3PlayerGameplay.f_Stop
-                Return player.ref.enqueueAction(AddressOf [Stop])
+                Return player.ref.QueueAction(AddressOf [Stop])
             End Function
         End Class
     End Class

@@ -61,16 +61,17 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim client = target
-                Dim other_client = target.parent.find_client_R(arguments(0))
-                Return FutureFunc.ffrun(
-                    other_client,
+                Dim other_client = target.parent.f_FindClient(arguments(0))
+                Return FutureFunc.Call(other_client,
                     Function(client2)
                         If client2 Is Nothing Then
-                            Return futurize(failure("No client matching that name."))
+                            Return failure("No client matching that name.")
+                        ElseIf client2 Is client Then
+                            Return failure("Can't link to self.")
                         End If
 
                         Dim link = New AdvertisingLink(client, client2)
-                        Return futurize(success("Created an advertising link between client {0} and client {1}.".frmt(client.name, client2.name)))
+                        Return success("Created an advertising link between client {0} and client {1}.".frmt(client.name, client2.name))
                     End Function
                 )
             End Function
@@ -84,25 +85,20 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_AdUnlink_Access,
                            My.Resources.Command_Client_AdUnlink_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Dim other_client = target.parent.find_client_R(arguments(0))
-                Dim f = New Future(Of Outcome)
-                FutureSub.frun( _
-                            AddressOf process_2,
-                            futurize(f),
-                            futurize(target),
-                            other_client)
-                Return f
-            End Function
-            Private Sub process_2(ByVal f As Future(Of Outcome), ByVal client As BnetClient, ByVal client2 As BnetClient)
-                If client2 Is Nothing Then
-                    f.setValue(failure("No client matching that name."))
-                    Return
-                End If
+            Public Overrides Function Process(ByVal client As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return FutureFunc.Call(client.parent.f_FindClient(arguments(0)),
+                    Function(client2)
+                        If client2 Is Nothing Then
+                            Return failure("No client matching that name.")
+                        ElseIf client2 Is client Then
+                            Return failure("Can't link to self.")
+                        End If
 
-                client.clear_advertising_partner(client2)
-                f.setValue(success("Any link between client {0} and client {1} has been removed.".frmt(client.name, client2.name)))
-            End Sub
+                        client.clear_advertising_partner(client2)
+                        Return success("Any link between client {0} and client {1} has been removed.".frmt(client.name, client2.name))
+                    End Function
+                )
+            End Function
         End Class
 
         '''<summary>A command which forwards sub-commands to the main bot command set</summary>
@@ -392,7 +388,7 @@ Namespace Commands.Specializations
                 'Create the server, then advertise the game
                 Dim create_server = target.parent.create_server_R(target.name, settings, "[Linked]", True)
                 Dim client = target
-                Return FutureFunc.ffrun(
+                Return FutureFunc.FCall(
                     create_server,
                     Function(created_server)
                         If Not created_server.succeeded Then
@@ -402,7 +398,7 @@ Namespace Commands.Specializations
                         'Start advertising
                         Dim server = created_server.val
                         client.set_user_server_R(user, server)
-                        Return FutureFunc.frun(
+                        Return FutureFunc.Call(
                             client.start_advertising_game_R(server, arguments(0), server.settings.map, arguments),
                             Function(advertised)
                                 If advertised.succeeded Then
@@ -427,7 +423,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'Find hosted server, then find game, then pass command
-                Return FutureFunc.ffrun(
+                Return FutureFunc.FCall(
                     target.f_GetUserServer(user),
                     Function(server)
                         If server Is Nothing Then
@@ -435,7 +431,7 @@ Namespace Commands.Specializations
                         End If
 
                         'Find game, then pass command
-                        Return FutureFunc.ffrun(
+                        Return FutureFunc.FCall(
                             server.f_FindGame(arguments(0)),
                             Function(game)
                                 If game Is Nothing Then
@@ -459,7 +455,7 @@ Namespace Commands.Specializations
                            "[--CancelHost] Cancels the last hosting command.")
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return FutureFunc.frun(
+                Return FutureFunc.Call(
                     target.f_GetUserServer(user),
                     Function(server)
                         If server Is Nothing Then
@@ -483,7 +479,7 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As BnetClient,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return FutureFunc.frun(
+                Return FutureFunc.Call(
                     target.f_GetUserServer(user),
                     Function(server)
                         If server Is Nothing Then
@@ -563,7 +559,7 @@ Namespace Commands.Specializations
                 Dim username = If(arguments.Count = 0, user.name, arguments(0))
 
                 'Find hosted server, then find player's game, then elevate player
-                Return FutureFunc.ffrun(
+                Return FutureFunc.FCall(
                     target.f_GetUserServer(user),
                     Function(server)
                         If server Is Nothing Then
@@ -571,7 +567,7 @@ Namespace Commands.Specializations
                         End If
 
                         'Find player's game, then elevate player
-                        Return FutureFunc.ffrun(
+                        Return FutureFunc.FCall(
                             server.f_FindPlayerGame(username),
                             Function(game)
                                 If game Is Nothing Then

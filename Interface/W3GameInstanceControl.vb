@@ -7,11 +7,11 @@ Public Class W3GameControl
 
 #Region "Hook"
     Private Function f_caption() As IFuture(Of String) Implements IHookable(Of Warcraft3.IW3Game).f_caption
-        Return uiRef.enqueueFunc(Function() If(game Is Nothing, "[No Instance]", game.name))
+        Return uiRef.QueueFunc(Function() If(game Is Nothing, "[No Instance]", game.name))
     End Function
 
     Public Function f_hook(ByVal game As IW3Game) As IFuture Implements IHookable(Of Warcraft3.IW3Game).f_hook
-        Return uiRef.enqueueAction(
+        Return uiRef.QueueAction(
             Sub()
                 For i As Integer = 0 To lstSlots.Items.Count - 1
                     lstSlots.Items(i) = "-"
@@ -34,7 +34,6 @@ Public Class W3GameControl
         If txtInput.Text = "" Then Return
         If game Is Nothing Then Return
         game.f_BroadcastMessage(txtInput.Text)
-        game.logger.log(My.Resources.ProgramName + ": " + txtInput.Text, LogMessageTypes.Typical)
         txtInput.Text = ""
         e.Handled = True
     End Sub
@@ -49,7 +48,7 @@ Public Class W3GameControl
     End Sub
 
     Private Sub c_InstanceUpdated(ByVal sender As IW3Game, ByVal slotClones As List(Of W3Slot)) Handles game.Updated
-        uiRef.enqueueAction(
+        uiRef.QueueAction(
             Sub()
                 If sender IsNot game Then  Return
                 For i As Integer = 0 To slotClones.Count - 1

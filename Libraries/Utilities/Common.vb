@@ -156,14 +156,14 @@ Public Module Common
                                 Sub(ar)
                                     Try
                                         client.EndConnect(ar)
-                                        f.setValue(successVal(client, "Connected"))
+                                        f.SetValue(successVal(client, "Connected"))
                                     Catch e As Exception
-                                        f.setValue(failure("Failed to connect: {0}".frmt(e.Message)))
+                                        f.SetValue(failure("Failed to connect: {0}".frmt(e.Message)))
                                     End Try
                                 End Sub,
                                 Nothing)
         Catch e As Exception
-            f.setValue(failure("Failed to connect: {0}".frmt(e.Message)))
+            f.SetValue(failure("Failed to connect: {0}".frmt(e.Message)))
         End Try
         Return f
     End Function
@@ -528,7 +528,7 @@ Public Module Common
 
         For Each e In sequence
             Dim f = transformation(e)
-            If Not any OrElse (f.CompareTo(max_transformation) > 0) Then
+            If Not any OrElse f.CompareTo(max_transformation) > 0 Then
                 max_element = e
                 max_transformation = f
             End If
@@ -541,7 +541,8 @@ Public Module Common
         End If
         Return any
     End Function
-    <Extension()> Public Function Max(Of T)(ByVal sequence As IEnumerable(Of T), ByVal comparator As Func(Of T, T, Integer)) As T
+    <Extension()> Public Function Max(Of T)(ByVal sequence As IEnumerable(Of T),
+                                            ByVal comparator As Func(Of T, T, Integer)) As T
         Dim any = False
         Dim max_element As T = Nothing
 
@@ -549,6 +550,7 @@ Public Module Common
             If Not any OrElse comparator(max_element, e) < 0 Then
                 max_element = e
             End If
+            any = True
         Next e
 
         Return max_element

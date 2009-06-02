@@ -98,7 +98,7 @@ Public Class BnetSocket
             packet_stream.Close()
             is_reading = False
             want_reading = False
-            ThreadedAction(AddressOf throw_disconnected_T, "disconnect socket")
+            ThreadPooledAction(AddressOf throw_disconnected_T)
         End SyncLock
     End Sub
     Private Sub throw_disconnected_T()

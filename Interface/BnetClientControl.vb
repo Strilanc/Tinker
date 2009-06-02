@@ -9,11 +9,11 @@ Public Class BnetClientControl
 
 #Region "Hook"
     Private Function f_caption() As IFuture(Of String) Implements IHookable(Of Bnet.BnetClient).f_caption
-        Return uiRef.enqueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.name)))
+        Return uiRef.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.name)))
     End Function
 
     Public Function f_hook(ByVal client As BnetClient) As IFuture Implements IHookable(Of Bnet.BnetClient).f_hook
-        Return uiRef.enqueueAction(
+        Return uiRef.QueueAction(
             Sub()
                 If Me.client Is client Then  Return
                 Me.client = client
@@ -35,7 +35,7 @@ Public Class BnetClientControl
 
 #Region "Events"
     Private Sub c_ChatEvent(ByVal sender As BnetClient, ByVal id As CHAT_EVENT_ID, ByVal user As String, ByVal text As String) Handles client.chat_event
-        uiRef.enqueueAction(
+        uiRef.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
                 Select Case id
@@ -99,7 +99,7 @@ Public Class BnetClientControl
     End Sub
 
     Private Sub c_ClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States) Handles client.state_changed
-        uiRef.enqueueAction(
+        uiRef.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
                 Dim cur_state = client.state_P

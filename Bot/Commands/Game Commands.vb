@@ -379,7 +379,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Ping_Help)
             End Sub
             Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return FutureFunc.frun(target.game.f_EnumPlayers(), AddressOf process2)
+                Return FutureFunc.Call(target.game.f_EnumPlayers(), AddressOf process2)
             End Function
             Private Function process2(ByVal players As List(Of IW3Player)) As Outcome
                 Dim msg = "Estimated RTT:"

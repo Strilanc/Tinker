@@ -160,8 +160,8 @@ Namespace Commands.Specializations
                             My.Resources.Command_Bot_Client_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
-                Return FutureFunc.ffrun(
-                    target.find_client_R(arguments(0)),
+                Return FutureFunc.fcall(
+                    target.f_FindClient(arguments(0)),
                     Function(client)
                         If client Is Nothing Then  Return futurize(failure("No matching client"))
                         Return target.client_commands.processText(client, user, mendQuotedWords(arguments, 1))
@@ -181,7 +181,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As System.Collections.Generic.IList(Of String)) As IFuture(Of Outcome)
                 'Find the server, then pass the command to it
-                Return FutureFunc.ffrun(
+                Return FutureFunc.fcall(
                     target.find_server_R(arguments(0)),
                     Function(server)
                         If server Is Nothing Then  Return futurize(failure("No matching server"))
@@ -300,7 +300,7 @@ Namespace Commands.Specializations
                 Dim client_name = arguments(0)
                 Dim profile_name = arguments(0) '[Yes, client named same as profile]
                 'Create client, then connect to bnet, then login
-                Return FutureFunc.ffrun(
+                Return FutureFunc.FCall(
                     target.f_CreateClient(client_name, profile_name),
                     Function(createdClient)
                         If Not createdClient.succeeded Then
@@ -309,7 +309,7 @@ Namespace Commands.Specializations
                         Dim client = createdClient.val
 
                         'Connect to bnet, then login
-                        Dim connectedAndLoggedIn = FutureFunc.ffrun(
+                        Dim connectedAndLoggedIn = FutureFunc.FCall(
                             client.f_Connect(client.profile.server.Split(" "c)(0)),
                             Function(connected)
                                 If Not connected.succeeded Then
@@ -322,7 +322,7 @@ Namespace Commands.Specializations
                         )
 
                         'Cleanup client if connection or login fail
-                        FutureSub.frun(
+                        FutureSub.Call(
                             connectedAndLoggedIn,
                             Sub(finished)
                                 If Not finished.succeeded Then

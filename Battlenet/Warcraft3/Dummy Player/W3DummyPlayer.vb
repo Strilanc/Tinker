@@ -35,7 +35,7 @@ Namespace Warcraft3
             Me.name = name
             Me.mode = mode
             Me.listen_port = listen_port
-            Me.ref = New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name))
+            Me.ref = New ThreadPooledCallQueue
             Me.logger = If(logger, New Logger)
             If listen_port <> 0 Then accepter.accepter.OpenPort(listen_port)
         End Sub
@@ -43,7 +43,7 @@ Namespace Warcraft3
 
 #Region "Networking"
         Public Function f_Connect(ByVal hostname As String, ByVal port As UShort) As IFuture(Of Outcome)
-            Return ref.enqueueFunc(Function() Connect(hostname, port))
+            Return ref.QueueFunc(Function() Connect(hostname, port))
         End Function
         Private Function Connect(ByVal hostname As String, ByVal port As UShort) As Outcome
             Try
@@ -74,7 +74,7 @@ Namespace Warcraft3
         End Sub
 
         Private Sub c_Disconnect(ByVal sender As W3Socket) Handles socket.Disconnected
-            ref.enqueueAction(Sub() Disconnect())
+            ref.QueueAction(Sub() Disconnect())
         End Sub
         Private Sub Disconnect()
             socket.disconnect()
@@ -95,7 +95,7 @@ Namespace Warcraft3
         End Sub
 
         Private Sub c_ReceivedPacket(ByVal sender As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object)) Handles socket.ReceivedPacket
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     Try
                         Select Case id
@@ -131,7 +131,7 @@ Namespace Warcraft3
                                 If mode = Modes.DownloadMap Then
                                     Disconnect()
                                 ElseIf mode = Modes.EnterGame Then
-                                    FutureSub.schedule(Function() socket.SendPacket(W3Packet.MakePacket_READY()), futurewait(ready_delay))
+                                    FutureSub.Call({FutureWait(ready_delay)}, Function() socket.SendPacket(W3Packet.MakePacket_READY()))
                                 End If
                             Case TICK
                                 If CUShort(vals("time span")) > 0 Then
@@ -158,7 +158,7 @@ Namespace Warcraft3
 #Region "P2P Networking"
         Private Sub c_P2PConnection(ByVal sender As W3P2PConnectionAccepter,
                                     ByVal accepted_player As W3P2PConnectingPlayer) Handles accepter.Connection
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     Dim player = (From p In other_players Where p.index = accepted_player.index).FirstOrDefault
                     Dim socket = accepted_player.socket
@@ -177,7 +177,7 @@ Namespace Warcraft3
         End Sub
 
         Private Sub c_P2PDisconnection(ByVal sender As W3P2PPlayer)
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     logger.log("{0}'s p2p connection has closed.".frmt(sender.name), LogMessageTypes.Negative)
                     sender.socket = Nothing
@@ -189,7 +189,7 @@ Namespace Warcraft3
         Private Sub c_P2PReceivedPacket(ByVal sender As W3P2PPlayer,
                                         ByVal id As W3PacketId,
                                         ByVal vals As Dictionary(Of String, Object))
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     Try
                         Select Case id

@@ -33,7 +33,7 @@ Public Class FrmClient
             Dim plugin_names = (From x In My.Settings.initial_plugins.Split(";"c) Where x <> "").ToList
             Dim future_plugin_loads = (From x In plugin_names Select bot.loadPlugin_R(x)).ToList
             BlockOnFutures(future_plugin_loads)
-            Dim plugin_loads = (From x In future_plugin_loads Select x.getValue()).ToList
+            Dim plugin_loads = (From x In future_plugin_loads Select x.GetValue()).ToList
             For i = 0 To plugin_names.Count - 1
                 Dim plugin = plugin_names(i)
                 Dim loaded = plugin_loads(i)

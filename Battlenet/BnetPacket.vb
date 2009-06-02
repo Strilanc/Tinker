@@ -532,7 +532,7 @@ Namespace Bnet
             vals("owner") = cd_key_owner
 
             Dim f = New Future(Of Outcome(Of BnetPacket))
-            FutureSub.frun(New CKL.CKLClient(remote_CKL_host, remote_CKL_port, client_cd_key_salt, server_cd_key_salt).future(),
+            FutureSub.Call(New CKL.CKLClient(remote_CKL_host, remote_CKL_port, client_cd_key_salt, server_cd_key_salt).future(),
                            Sub(v) CKL_MakePacket_AUTHENTICATION_FINISH_2(f, vals, v))
             Return f
         End Function
@@ -541,11 +541,11 @@ Namespace Bnet
                     ByVal vals As Dictionary(Of String, Object),
                     ByVal borrowed As Outcome(Of CKL.CKLBorrowedKeyVals))
             If Not borrowed.succeeded Then
-                f.setValue(failure(borrowed.message))
+                f.SetValue(failure(borrowed.message))
             Else
                 vals("ROC cd key") = borrowed.val.roc_key
                 vals("TFT cd key") = borrowed.val.tft_key
-                f.setValue(successVal(New BnetPacket(BnetPacketID.AUTHENTICATION_FINISH, vals), borrowed.message))
+                f.SetValue(successVal(New BnetPacket(BnetPacketID.AUTHENTICATION_FINISH, vals), borrowed.message))
             End If
         End Sub
 #End Region

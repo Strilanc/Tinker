@@ -49,7 +49,7 @@
             End Property
 
             Private Function _f_start() As IFuture Implements IW3PlayerLoadScreen.f_Start
-                Return player.ref.enqueueAction(AddressOf Start)
+                Return player.ref.QueueAction(AddressOf Start)
             End Function
         End Class
     End Class

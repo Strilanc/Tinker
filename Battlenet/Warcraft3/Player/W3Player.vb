@@ -11,7 +11,7 @@
         Private ReadOnly listen_port As UShort = 0
         Private ReadOnly p2p_key As UInteger = 0
         Private ReadOnly is_fake As Boolean = False
-        Private ReadOnly future_can_host As New Future(Of Boolean)
+        Private ReadOnly future_can_host As IFuture(Of Boolean)
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private WithEvents socket As W3Socket = Nothing
         Private ReadOnly logger As Logger
@@ -52,8 +52,8 @@
             Me.load_screen = New W3PlayerLoadScreen(Me)
             Me.gameplay = New W3PlayerGameplay(Me)
             Me.logger = If(logger, New Logger)
-            Me.eventRef = New ThreadPoolCallQueue 'New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
-            Me.ref = If(ref, New ThreadPoolCallQueue) 'New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name)))
+            Me.eventRef = New ThreadPooledCallQueue
+            Me.ref = If(ref, New ThreadPooledCallQueue)
             Me.game = game
             Me.index = index
             If name.Length > MAX_NAME_LENGTH Then
@@ -62,6 +62,7 @@
             Me.name = name
             is_fake = True
             Me.lobby.Start()
+            Me.future_can_host = futurize(False)
         End Sub
 
         '''<summary>Creates a real player.</summary>
@@ -76,8 +77,8 @@
             Me.gameplay = New W3PlayerGameplay(Me)
             Me.logger = If(logging, New Logger)
             p.socket.logger = Me.logger
-            Me.eventRef = New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
-            Me.ref = If(ref, New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name)))
+            Me.eventRef = New ThreadPooledCallQueue
+            Me.ref = If(ref, New ThreadPooledCallQueue)
             Me.game = game
             Me.p2p_key = p.p2p_key
 
@@ -88,32 +89,31 @@
             Me.socket.set_reading(True)
 
             Me.lobby.Start()
-            ThreadedAction(AddressOf testCanHost_T, Me.GetType.Name + "[" + Me.name + "].TestCanHost")
-        End Sub
 
-        '''<summary>Determines if a player can host by attempting to connect to them.</summary>
-        Private Sub testCanHost_T()
-            If is_fake Then
-                future_can_host.setValue(False)
-                Return
-            End If
+            'Test hosting
+            Me.future_can_host = ThreadedFunc(
+                Function()
+                    If is_fake Then  Return False
 
-            Try
-                Dim testing_socket = New Net.Sockets.TcpClient
-                testing_socket.Connect(New Net.IPAddress(remote_ip_external), listen_port)
-                Dim success = testing_socket.Connected
-                testing_socket.Close()
-                future_can_host.setValue(success)
-            Catch e As Exception
-                future_can_host.setValue(False)
-            End Try
+                    Try
+                        Dim testing_socket = New Net.Sockets.TcpClient
+                        testing_socket.Connect(New Net.IPAddress(remote_ip_external), listen_port)
+                        Dim success = testing_socket.Connected
+                        testing_socket.Close()
+                        Return success
+                    Catch e As Exception
+                        Return False
+                    End Try
+                End Function,
+                Me.GetType.Name + "[" + Me.name + "].TestCanHost"
+            )
         End Sub
 
         Private ReadOnly Property canHost() As HostTestResults
             Get
                 If Not future_can_host.isReady Then
                     Return HostTestResults.test
-                ElseIf future_can_host.getValue() Then
+                ElseIf future_can_host.GetValue() Then
                     Return HostTestResults.pass
                 Else
                     Return HostTestResults.fail
@@ -144,10 +144,10 @@
         End Function
 
         Private Sub catch_socket_received_packet(ByVal sender As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object)) Handles socket.ReceivedPacket
-            ref.enqueueAction(Sub() soul.receivePacket_L(id, vals))
+            ref.QueueAction(Sub() soul.receivePacket_L(id, vals))
         End Sub
         Private Sub catch_socket_disconnected() Handles socket.Disconnected
-            ref.enqueueAction(Sub() disconnect_L(False, W3PlayerLeaveTypes.disc))
+            ref.QueueAction(Sub() disconnect_L(False, W3PlayerLeaveTypes.disc))
         End Sub
 
 #Region "Interface"
@@ -211,7 +211,7 @@
         End Property
 
         Private Function _disconnect_R(ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes) As IFuture Implements IW3Player.disconnect_R
-            Return ref.enqueueAction(Sub() disconnect_L(expected, leave_type))
+            Return ref.QueueAction(Sub() disconnect_L(expected, leave_type))
         End Function
         Public ReadOnly Property _game() As IW3Game Implements IW3Player.game
             Get
@@ -219,10 +219,10 @@
             End Get
         End Property
         Private Function _send_packet_R(ByVal pk As W3Packet) As IFuture(Of Outcome) Implements IW3Player.f_SendPacket
-            Return ref.enqueueFunc(Function() send_packet_L(pk))
+            Return ref.QueueFunc(Function() send_packet_L(pk))
         End Function
         Private Function _queue_ping_R(ByVal record As W3PlayerPingRecord) As IFuture Implements IW3Player.f_QueuePing
-            Return ref.enqueueAction(Sub() queue_ping_L(record))
+            Return ref.QueueAction(Sub() queue_ping_L(record))
         End Function
         Private ReadOnly Property _soul() As IW3PlayerPart Implements IW3Player.soul
             Get

@@ -63,7 +63,7 @@
                 Loop
             End Using
 
-            handler = New WardenPacketHandler(seed, New ThreadedCallQueue("warden"), module_folder:=GetTestingPath("Modules"))
+            handler = New WardenPacketHandler(seed, New ThreadPooledCallQueue, module_folder:=GetTestingPath("Modules"))
         End Sub
 
         Private Shared Function GetTestingPath(ByVal sub_folder As String) As String

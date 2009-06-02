@@ -6,41 +6,7 @@ HostBot
 </name>
 </assembly>
 <members>
-<member name="T:HostBot.Commands.Specializations.InstancePlayCommands.com_Disconnect">
-	<summary>A command which disconnects the bot from the instance.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Open">
-	<summary>A command which opens a slot.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Close">
-	<summary>A command which closes a slot.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetTeam">
-	<summary>A command which sets a slot's team.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetTeams">
-	<summary>A command which preps slots for a particular number of players.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetHandicap">
-	<summary>A command which sets a slot's handicap.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetColor">
-	<summary>A command which sets a slot's color.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Swap">
-	<summary>A command which swaps the contents of two slots.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetComputer">
-	<summary>A command which places a computer in a slot.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Lock">
-	<summary>A command which stops players from leaving a slot.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Unlock">
-	<summary>A command which enables players to leave and modify a slot.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Freeze">
-	<summary>A command which stops players from modifying or leaving a slot.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Reserve">
-	<summary>A command which reserves a slot for a player.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Start">
-	<summary>A command which starts the launch countdown.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Cancel">
-	<summary>A command which kills the instance.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceCommands`1.com_Boot">
-	<summary>A command which boots players from a slot.</summary>
-</member><member name="T:HostBot.Commands.Specializations.InstanceBaseCommands`1.com_Ping">
-	<summary>A command which disconnects the bot from the instance.</summary>
-</member><member name="M:HostBot.Warcraft3.W3ServerDoor.Reset">
+<member name="M:HostBot.Warcraft3.W3ServerDoor.Reset">
 	<summary>
  Clears pending connections and stops listening on all ports.
  WARNING: Doesn't guarantee no more players entering the server!
@@ -67,13 +33,6 @@ HostBot
 </member><member name="T:HostBot.Logging.UnexpectedExceptionLogging">
 	<summary>Implements a simple way to log unexpected exceptions.</summary>
 	<remarks>One of those rare cases where a global is appropriate.</remarks>
-</member><member name="M:HostBot.ThrottledWriteStream.Write(System.Byte[],System.Int32,System.Int32)">
-	<summary>Queues a write to the substream. Doesn't block.</summary>
-</member><member name="T:HostBot.ThrottledWriteStream">
-	<summary>
-Stops the substream from being written to too quickly by queueing write calls.
-Doesn't block the caller.
-</summary>
 </member><member name="P:HostBot.My.Resources.Resources.ResourceManager">
 	<summary>
   Returns the cached ResourceManager instance used by this class.
@@ -937,13 +896,13 @@ LoadInGame=-LoadInGame, -lig: Players wait for loaders in the game. Nicer than s
   2 WORD size including header = n
   3 BYTE[4:n] data
 </data>
-</member><member name="E:HostBot.Functional.Futures.IFuture.ready">
+</member><member name="E:HostBot.Functional.Futures.IFuture.Readied">
 	<summary>Raised when the future becomes ready.</summary>
 </member><member name="P:HostBot.Functional.Futures.IFuture.isReady">
 	<summary>Returns true if the future is ready.</summary>
 </member><member name="T:HostBot.Functional.Futures.IFuture">
 	<summary>Represents a thread-safe read-only class that fires an event when it becomes ready.</summary>
-</member><member name="M:HostBot.Functional.Futures.IFuture`1.getValue">
+</member><member name="M:HostBot.Functional.Futures.IFuture`1.GetValue">
 	<summary>
 Returns the future's value.
 Throws an InvalidOperationException if the value isn't ready yet.
@@ -952,7 +911,7 @@ Throws an InvalidOperationException if the value isn't ready yet.
 	<summary>Represents a thread-safe read-only class that fires an event when its value becomes ready.</summary>
 </member><member name="P:HostBot.Functional.Futures.Future.isReady">
 	<summary>Returns true if the future is ready.</summary>
-</member><member name="M:HostBot.Functional.Futures.Future.setReady">
+</member><member name="M:HostBot.Functional.Futures.Future.SetReady">
 	<summary>
 Makes the future ready.
 Throws an InvalidOperationException if run twice.
@@ -961,61 +920,42 @@ Throws an InvalidOperationException if run twice.
 	<summary>A thread-safe class that fires an event when it becomes ready.</summary>
 </member><member name="P:HostBot.Functional.Futures.Future`1.isReady">
 	<summary>Returns true if the future is ready.</summary>
-</member><member name="M:HostBot.Functional.Futures.Future`1.getValue">
+</member><member name="M:HostBot.Functional.Futures.Future`1.GetValue">
 	<summary>
 Returns the future's value.
 Throws an InvalidOperationException if the value isn't ready yet.
 </summary>
-</member><member name="M:HostBot.Functional.Futures.Future`1.setValue(`0)">
+</member><member name="M:HostBot.Functional.Futures.Future`1.SetValue(`0)">
 	<summary>
 Sets the future's value and makes the future ready.
 Throws a InvalidOperationException if the future was already ready.
 </summary>
 </member><member name="T:HostBot.Functional.Futures.Future`1">
 	<summary>A thread-safe class that fires an event when its value becomes ready.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureKeeper.#ctor(System.Action,System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture})">
-	<summary>
-Adds the BaseFutureKeeper as a parent to all its child futures.
-Runs notify in case all children were already ready.
-Throws an InvalidOperationException if called twice.
-Should only be run after child has finished initializing, because 'run' may be called before init finishes.
-</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureKeeper.notify">
-	<summary>
-Runs the abstract 'run' method if all child futures are ready for the first time.
-Instance future becomes ready after the 'run' method has finished.
-Called by child futures when they become ready.
-</summary>
-</member><member name="T:HostBot.Functional.Futures.FutureKeeper">
-	<summary>Becomes ready once a set of futures is ready. Runs an overridable call just before becoming ready.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureSub.schedule(System.Action,HostBot.Functional.Futures.IFuture[])">
-	<summary>Runs the given subroutine once the given futures become ready, and returns a future for the sub's completion.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureSub.schedule(System.Action,System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture})">
-	<summary>Runs the given subroutine once the given futures become ready, and returns a future for the sub's completion.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureSub.frun``1(HostBot.Functional.Futures.IFuture{``0},System.Action{``0})">
+</member><member name="M:HostBot.Functional.Futures.FutureSub.Call(System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture},System.Action)">
+	<summary>Runs an action once all the given futures become ready and returns a future for the action's completion.</summary>
+</member><member name="M:HostBot.Functional.Futures.FutureSub.Call``1(HostBot.Functional.Futures.IFuture{``0},System.Action{``0})">
 	<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureSub.frun``2(System.Action{``0,``1},HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1})">
+</member><member name="M:HostBot.Functional.Futures.FutureSub.Call``2(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},System.Action{``0,``1})">
 	<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureSub.frun``3(System.Action{``0,``1,``2},HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2})">
-	<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureSub.frun``4(System.Action{``0,``1,``2,``3},HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},HostBot.Functional.Futures.IFuture{``3})">
-	<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureSub.frun``5(HostBot.Functional.Action{``0,``1,``2,``3,``4},HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},HostBot.Functional.Futures.IFuture{``3},HostBot.Functional.Futures.IFuture{``4})">
-	<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureSub.frun``6(HostBot.Functional.Action{``0,``1,``2,``3,``4,``5},HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},HostBot.Functional.Futures.IFuture{``3},HostBot.Functional.Futures.IFuture{``4},HostBot.Functional.Futures.IFuture{``5})">
+</member><member name="M:HostBot.Functional.Futures.FutureSub.Call``3(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},System.Action{``0,``1,``2})">
 	<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
 </member><member name="T:HostBot.Functional.Futures.FutureSub">
 	<summary>Runs a subroutine once a set of futures is ready. Makes the completion available as a future.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.schedule``1(System.Func{``0},System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture})">
-	<summary>Runs the given function once the given futures become ready, and returns a future for the function's return value.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.frun``2(HostBot.Functional.Futures.IFuture{``0},System.Func{``0,``1})">
-	<summary>Runs the given function once its arguments are ready, and returns a future for its return value.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.frun``3(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},System.Func{``0,``1,``2})">
-	<summary>Runs the given function once its arguments are ready, and returns a future for its return value.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.frun``4(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},System.Func{``0,``1,``2,``3})">
-	<summary>Runs the given function once its arguments are ready, and returns a future for its return value.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.frun``5(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},HostBot.Functional.Futures.IFuture{``3},System.Func{``0,``1,``2,``3,``4})">
-	<summary>Runs the given function once its arguments are ready, and returns a future for its return value.</summary>
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.Call``1(System.Func{``0},System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture})">
+	<summary>Runs a function once the given futures are ready, and returns a future for its return value.</summary>
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.Call``2(HostBot.Functional.Futures.IFuture{``0},System.Func{``0,``1})">
+	<summary>Runs a function once its arguments are ready, and returns a future for its return value.</summary>
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.Call``3(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},System.Func{``0,``1,``2})">
+	<summary>Runs a function once its arguments are ready, and returns a future for its return value.</summary>
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.Call``4(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},System.Func{``0,``1,``2,``3})">
+	<summary>Runs a function once its arguments are ready, and returns a future for its return value.</summary>
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``2(HostBot.Functional.Futures.IFuture{``1},System.Func{``1,HostBot.Functional.Futures.IFuture{``0}})">
+	<summary>Runs a function once its arguments are ready, and returns a future for its final return value.</summary>
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``3(HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},System.Func{``1,``2,HostBot.Functional.Futures.IFuture{``0}})">
+	<summary>Runs a function once its arguments are ready, and returns a future for its final return value.</summary>
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``4(HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},HostBot.Functional.Futures.IFuture{``3},System.Func{``1,``2,``3,HostBot.Functional.Futures.IFuture{``0}})">
+	<summary>Runs a function once its arguments are ready, and returns a future for its final return value.</summary>
 </member><member name="T:HostBot.Functional.Futures.FutureFunc">
 	<summary>Runs a function once a set of futures is ready. Makes the return value available as a future.</summary>
 </member><member name="M:HostBot.Functional.Futures.Common.futurize``1(``0)">
@@ -1024,25 +964,50 @@ Called by child futures when they become ready.
 	<summary>Returns a future for the final value of a future of a future.</summary>
 </member><member name="M:HostBot.Functional.Futures.Common.futurefuture(HostBot.Functional.Futures.IFuture{HostBot.Functional.Futures.IFuture})">
 	<summary>Returns a future for the completion of a future of a future.</summary>
-</member><member name="M:HostBot.Functional.Futures.Common.futurewait(System.TimeSpan)">
+</member><member name="M:HostBot.Functional.Futures.Common.FutureWait(System.TimeSpan)">
 	<summary>Returns a future which becomes ready after a specified amount of time.</summary>
 </member><member name="M:HostBot.Functional.Futures.Common.BlockOnFutures(System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture})">
 	<summary>Blocks the calling thread until the given futures finish.</summary>
-</member><member name="T:HostBot.Functional.Futures.Common.FutureLooper`3">
-	<summary>Abstract class for applying functions to a list of data in the future.</summary>
-	<typeparam name="DOM">Domain. The type of data being looped over.</typeparam>
-	<typeparam name="IMG">Image. The output type of the function being applied to the data.</typeparam>
-	<typeparam name="RET">Return. The type returned by the loop.</typeparam>
-</member><member name="M:HostBot.Functional.Futures.Common.futureSelect``1(HostBot.Functional.Futures.IFuture{System.Collections.Generic.List{``0}},System.Func{``0,HostBot.Functional.Futures.IFuture{System.Boolean}})">
+</member><member name="M:HostBot.Functional.Futures.Common.FutureSelect``1(HostBot.Functional.Futures.IFuture{System.Collections.Generic.IEnumerable{``0}},System.Func{``0,HostBot.Functional.Futures.IFuture{System.Boolean}})">
 	<summary>Selects the first element in the list that causes the filter function to return true.</summary>
-</member><member name="M:HostBot.Functional.Futures.Common.futureMap``2(HostBot.Functional.Futures.IFuture{System.Collections.Generic.List{``0}},System.Func{``0,HostBot.Functional.Futures.IFuture{``1}})">
-	<summary>Applies a function to each element in a list and returns a list of all the outputs.</summary>
-</member><member name="M:HostBot.Functional.Futures.Common.futureSelect``1(HostBot.Functional.Futures.IFuture{System.Collections.Generic.IEnumerable{``0}},System.Func{``0,HostBot.Functional.Futures.IFuture{System.Boolean}})">
-	<summary>Selects the first element in the list that causes the filter function to return true.</summary>
-</member><member name="M:HostBot.Functional.Futures.Common.futureMap``2(HostBot.Functional.Futures.IFuture{System.Collections.Generic.IEnumerable{``0}},System.Func{``0,HostBot.Functional.Futures.IFuture{``1}})">
+</member><member name="M:HostBot.Functional.Futures.Common.FutureMap``2(HostBot.Functional.Futures.IFuture{System.Collections.Generic.IEnumerable{``0}},System.Func{``0,HostBot.Functional.Futures.IFuture{``1}})">
 	<summary>Applies a function to each element in a list and returns a list of all the outputs.</summary>
 </member><member name="T:HostBot.MainBot">
 	<summary>The heart and soul of the bot. Handles all of the other pieces.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstancePlayCommands.com_Disconnect">
+	<summary>A command which disconnects the bot from the instance.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Open">
+	<summary>A command which opens a slot.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Close">
+	<summary>A command which closes a slot.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetTeam">
+	<summary>A command which sets a slot's team.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetTeams">
+	<summary>A command which preps slots for a particular number of players.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetHandicap">
+	<summary>A command which sets a slot's handicap.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetColor">
+	<summary>A command which sets a slot's color.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Swap">
+	<summary>A command which swaps the contents of two slots.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_SetComputer">
+	<summary>A command which places a computer in a slot.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Lock">
+	<summary>A command which stops players from leaving a slot.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Unlock">
+	<summary>A command which enables players to leave and modify a slot.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Freeze">
+	<summary>A command which stops players from modifying or leaving a slot.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Reserve">
+	<summary>A command which reserves a slot for a player.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Start">
+	<summary>A command which starts the launch countdown.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceSetupCommands.com_Cancel">
+	<summary>A command which kills the instance.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceCommands`1.com_Boot">
+	<summary>A command which boots players from a slot.</summary>
+</member><member name="T:HostBot.Commands.Specializations.InstanceBaseCommands`1.com_Ping">
+	<summary>A command which disconnects the bot from the instance.</summary>
 </member><member name="M:HostBot.Common.uCUInt(System.Int64)">
 	<summary>Unsafe CUInt. Ignores overflows and underflows.</summary>
 </member><member name="M:HostBot.Common.uCUInt(System.UInt64)">
@@ -1137,37 +1102,47 @@ Called by child futures when they become ready.
 	<summary>A command which attempts to load a plugin from the specified assembly in the plugins folder.</summary>
 </member><member name="T:HostBot.Commands.Specializations.BotCommands.com_Connect">
 	<summary>A command which creates a battle.net client and logs on to a battle.net server.</summary>
-</member><member name="M:HostBot.Functional.Queueing.ICallQueue.enqueueAction(System.Action)">
+</member><member name="M:HostBot.Functional.Queueing.ICallQueue.QueueAction(System.Action)">
 	<summary>Queues a subroutine to be run and returns a future for the subroutine's eventual completion.</summary>
-</member><member name="M:HostBot.Functional.Queueing.ICallQueue.enqueueFunc``1(System.Func{``0})">
-	<summary>Queues a function to be run and returns a future for the function's eventual output.</summary>
 </member><member name="T:HostBot.Functional.Queueing.ICallQueue">
 	<summary>Describes a thread-safe call queue for non-blocking calls.</summary>
-</member><member name="M:HostBot.Functional.Queueing.BaseCallQueue.enqueueAction(System.Action)">
+</member><member name="M:HostBot.Functional.Queueing.QueueExtension.QueueFunc``1(HostBot.Functional.Queueing.ICallQueue,System.Func{``0})">
+	<summary>Queues a function to be run and returns a future for the function's eventual output.</summary>
+</member><member name="M:HostBot.Functional.Queueing.BaseCallQueue.QueueAction(System.Action)">
 	<summary>
 Queues a subroutine to be run and returns a future for the subroutine's eventual completion.
 Starts running calls from the queue if they were not already being run.
 </summary>
-</member><member name="M:HostBot.Functional.Queueing.BaseCallQueue.enqueueFunc``1(System.Func{``0})">
-	<summary>
-Queues a function to be run and returns a future for the function's eventual output.
-Starts running calls from the queue if they were not already being run.
-</summary>
 </member><member name="M:HostBot.Functional.Queueing.BaseCallQueue.StartRunning">
-	<summary>Starts running queued calls.</summary>
-	<remarks>Overriding this subroutine is the easiest way to change how the queue runs its calls.</remarks>
+	<summary>Must call Run to start emptying the queue, and must not block the calling thread (eg. call Run on a new thread).</summary>
 </member><member name="M:HostBot.Functional.Queueing.BaseCallQueue.Run">
 	<summary>Runs queued calls until there are none left.</summary>
 </member><member name="T:HostBot.Functional.Queueing.BaseCallQueue">
 	<summary>
- Runs queued calls from the thread to queue the first call.
+ Runs queued calls in order.
  Logs unexpected exceptions from queued calls.
  </summary>
+</member><member name="M:HostBot.Functional.Queueing.BaseLockFreeCallQueue.QueueAction(System.Action)">
+	<summary>
+Queues a subroutine to be run and returns a future for the subroutine's eventual completion.
+Starts running calls from the queue if they were not already being run.
+</summary>
+</member><member name="M:HostBot.Functional.Queueing.BaseLockFreeCallQueue.Consume(HostBot.Functional.Queueing.BaseLockFreeCallQueue.Node)">
+	<summary>Runs queued calls until there are none left.</summary>
+</member><member name="T:HostBot.Functional.Queueing.BaseLockFreeCallQueue">
+	<summary>
+ A multiple-producer, single-consumer queue for running actions in order.
+ Logs unexpected exceptions from queued calls.
+ </summary>
+	<remarks>
+ The consumer is generated by the producers when items to consume exist and no consumer exists.
+ The queue should never end up non-empty and potentially permanently non-consumed.
+ </remarks>
 </member><member name="T:HostBot.Functional.Queueing.InvokedCallQueue">
 	<summary>Runs queued calls on a control's thread.</summary>
 </member><member name="T:HostBot.Functional.Queueing.ThreadedCallQueue">
 	<summary>Runs queued calls on an independent thread.</summary>
-</member><member name="T:HostBot.Functional.Queueing.ThreadPoolCallQueue">
+</member><member name="T:HostBot.Functional.Queueing.ThreadPooledCallQueue">
 	<summary>Runs queued calls on the thread pool.</summary>
 </member><member name="M:HostBot.Warcraft3.W3ConnectionAccepterBase.Reset">
 	<summary>
@@ -1321,6 +1296,26 @@ If there are not enough bits, restores the backup and returns false.
 	<summary>Returns a string representation of this number.</summary>
 </member><member name="T:HostBot.BigNum">
 	<summary>Immutable BigNum</summary>
+</member><member name="M:HostBot.Functional.Futures.Utilities.FutureKeeper.#ctor(System.Action,System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture})">
+	<summary>
+Adds the BaseFutureKeeper as a parent to all its child futures.
+Runs notify in case all children were already ready.
+Throws an InvalidOperationException if called twice.
+Should only be run after child has finished initializing, because 'run' may be called before init finishes.
+</summary>
+</member><member name="M:HostBot.Functional.Futures.Utilities.FutureKeeper.notify">
+	<summary>
+Runs the abstract 'run' method if all child futures are ready for the first time.
+Instance future becomes ready after the 'run' method has finished.
+Called by child futures when they become ready.
+</summary>
+</member><member name="T:HostBot.Functional.Futures.Utilities.FutureKeeper">
+	<summary>Becomes ready once a set of futures is ready. Runs an overridable call just before becoming ready.</summary>
+</member><member name="T:HostBot.Functional.Futures.Utilities.FutureLooper`3">
+	<summary>Abstract class for applying functions to a list of data in the future.</summary>
+	<typeparam name="DOM">Domain. The type of data being looped over.</typeparam>
+	<typeparam name="IMG">Image. The output type of the function being applied to the data.</typeparam>
+	<typeparam name="RET">Return. The type returned by the loop.</typeparam>
 </member><member name="T:HostBot.MPQ.Compression.Huffman.Encoder">
 	<summary>Implements a Block Converter for huffman compression</summary>
 </member><member name="T:HostBot.MPQ.Compression.Huffman.Decoder">
@@ -1353,6 +1348,31 @@ If there are not enough bits, restores the backup and returns false.
 	<summary>Closes the slot with the given index, unless the slot contains a player.</summary>
 </member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.ReserveSlot(System.String,System.String)">
 	<summary>Reserves a slot for a player.</summary>
+</member><member name="M:HostBot.SingleConsumerLockFreeQueue`1.Enqueue(`0)">
+	<summary>
+ Adds a new item to the queue.
+ </summary>
+</member><member name="M:HostBot.SingleConsumerLockFreeQueue`1.Peek">
+	<summary>
+ Returns the next item in the queue.
+ This function must only be called from the consumer thread.
+ </summary>
+</member><member name="M:HostBot.SingleConsumerLockFreeQueue`1.Dequeue">
+	<summary>
+ Removes and returns an item from the queue.
+ This function must only be called from the consumer thread.
+ </summary>
+</member><member name="P:HostBot.SingleConsumerLockFreeQueue`1.IsEmpty">
+	<summary>
+ Returns true if there any items in the queue.
+ The return value of this function is only stable if the queue is non-empty and you are calling from the consumer thread.
+ </summary>
+</member><member name="M:HostBot.BaseConsumingLockFreeCallQueue`1.StartRunning">
+	<summary>Used to start the Run method using the child class' desired method (eg. on a new thread).</summary>
+</member><member name="M:HostBot.BaseConsumingLockFreeCallQueue`1.Consume(`0)">
+	<summary>Consumes an item.</summary>
+</member><member name="M:HostBot.BaseConsumingLockFreeCallQueue`1.Run">
+	<summary>Runs queued calls until there are none left.</summary>
 </member><member name="T:HostBot.Commands.Specializations.ServerCommands.com_StartListening">
 	<summary>A command which tells the server to stop listening on a port.</summary>
 </member><member name="T:HostBot.Commands.Specializations.ServerCommands.com_StopListening">
@@ -1414,8 +1434,6 @@ If there are not enough bits, restores the backup and returns false.
 </member><member name="M:HostBot.Warcraft3.W3Player.#ctor(HostBot.Functional.Queueing.ICallQueue,System.Byte,HostBot.Warcraft3.IW3Game,HostBot.Warcraft3.W3ConnectingPlayer,HostBot.Logging.Logger)">
 	<summary>Creates a real player.</summary>
 	<remarks>Real players are assigned a game by the lobby.</remarks>
-</member><member name="M:HostBot.Warcraft3.W3Player.testCanHost_T">
-	<summary>Determines if a player can host by attempting to connect to them.</summary>
 </member><member name="M:HostBot.Warcraft3.W3Player.disconnect_L(System.Boolean,HostBot.Warcraft3.W3PlayerLeaveTypes)">
 	<summary>Disconnects this player and removes them from the system.</summary>
 </member><member name="M:HostBot.Warcraft3.Warden.BSha1DataStream.Read(System.Byte[],System.Int32,System.Int32)">
@@ -1469,6 +1487,13 @@ The hashtable doesn't tell you a file's original name, only what it hashes to.
 	<summary>Combines jars to pickle ordered tuples of objects</summary>
 </member><member name="T:HostBot.Pickling.Jars.ListJar">
 	<summary>Pickles lists of the same type of element [size-prefixed]</summary>
+</member><member name="M:HostBot.ThrottledWriteStream.Write(System.Byte[],System.Int32,System.Int32)">
+	<summary>Queues a write to the substream. Doesn't block.</summary>
+</member><member name="T:HostBot.ThrottledWriteStream">
+	<summary>
+Stops the substream from being written to too quickly by queueing write calls.
+Doesn't block the caller.
+</summary>
 </member><member name="T:HostBot.MPQ.Crypt.Cypherer">
 	<summary>Implements a Block Converter for MPQ encryption and decryption</summary>
 </member><member name="M:HostBot.MPQ.Crypt.Common.computeCryptTable">
@@ -1514,7 +1539,7 @@ Decryption:
 	<summary>Returns the slot containing the given player.</summary>
 </member><member name="M:HostBot.Warcraft3.W3Game.BroadcastMessage(System.String,HostBot.Warcraft3.IW3Player)">
 	<summary>Sends text to all players. Uses spoof chat if necessary.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.SendMessageTo(System.String,HostBot.Warcraft3.IW3Player)">
+</member><member name="M:HostBot.Warcraft3.W3Game.SendMessageTo(System.String,HostBot.Warcraft3.IW3Player,System.Boolean)">
 	<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
 </member><member name="M:HostBot.Warcraft3.W3Game.RemovePlayer(HostBot.Warcraft3.IW3Player,System.Boolean,HostBot.Warcraft3.W3PlayerLeaveTypes)">
 	<summary>Removes the given player from the instance</summary>

@@ -43,7 +43,7 @@
                     sockets.Add(socket)
                 End SyncLock
                 AddHandler socket.ReceivedPacket, AddressOf catch_knocked
-                FutureSub.schedule(Sub() catch_expired(socket), futurewait(EXPIRY_PERIOD))
+                FutureSub.Call({FutureWait(EXPIRY_PERIOD)}, Sub() catch_expired(socket))
 
                 socket.set_reading(True)
             Catch e As Exception

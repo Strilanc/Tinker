@@ -11,18 +11,18 @@ Public Class W3GameServerControl
 
 #Region "Hook"
     Private Function f_caption() As IFuture(Of String) Implements IHookable(Of IW3Server).f_caption
-        Return uiRef.enqueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".frmt(server.name, server.suffix)))
+        Return uiRef.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".frmt(server.name, server.suffix)))
     End Function
 
     Public Function f_hook(ByVal server As IW3Server) As IFuture Implements IHookable(Of IW3Server).f_hook
-        Return uiRef.enqueueAction(
+        Return uiRef.QueueAction(
             Sub()
                 If Me.server Is server Then  Return
                 Me.server = Nothing
                 If games IsNot Nothing Then
                     games.clear()
                 Else
-                    games = New TabControlIHookableSet(Of IW3Game, W3GameControl)(tabsServer.TabPages)
+                    games = New TabControlIHookableSet(Of IW3Game, W3GameControl)(tabsServer)
                 End If
                 Me.server = server
 
@@ -31,10 +31,20 @@ Public Class W3GameServerControl
                     logServer.setLogger(Nothing, Nothing)
                 Else
                     logServer.setLogger(server.logger, "Server")
-                    FutureSub.frun( _
-                            AddressOf r_AddExistingGames,
-                            futurize(server),
-                            server.f_EnumGames())
+                    FutureSub.Call( _
+                            server.f_EnumGames(),
+                            Sub(games)
+                                uiRef.QueueAction(
+                                    Sub()
+                                        If server IsNot Me.server Then  Return
+                                        For Each game In games
+                                            If Me.games.contains(game) Then  Continue For
+                                            Me.games.add(game)
+                                        Next game
+                                    End Sub
+                                )
+                            End Sub
+                    )
                     Dim map = server.settings.map
 
                     Me.txtInfo.Text = ("Map Name{0}{1}{0}{0}" +
@@ -61,23 +71,11 @@ Public Class W3GameServerControl
             End Sub
         )
     End Function
-
-    Private Sub r_AddExistingGames(ByVal sender As IW3Server, ByVal games As IEnumerable(Of IW3Game))
-        uiRef.enqueueAction(
-            Sub()
-                If sender IsNot server Then  Return
-                For Each game In games
-                    If Me.games.contains(game) Then  Continue For
-                    Me.games.add(game)
-                Next game
-            End Sub
-        )
-    End Sub
 #End Region
 
 #Region "Events"
     Private Sub c_AddedGame(ByVal sender As IW3Server, ByVal instance As IW3Game) Handles server.AddedGame
-        uiRef.enqueueAction(
+        uiRef.QueueAction(
             Sub()
                 If sender IsNot server Then  Return
                 If Not games.contains(instance) Then
@@ -88,7 +86,7 @@ Public Class W3GameServerControl
     End Sub
 
     Private Sub c_RemovedGame(ByVal sender As IW3Server, ByVal instance As IW3Game) Handles server.RemovedGame
-        uiRef.enqueueAction(
+        uiRef.QueueAction(
             Sub()
                 If sender IsNot server Then  Return
                 If games.contains(instance) Then

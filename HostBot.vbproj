@@ -177,6 +177,8 @@
     <Compile Include="Libraries\Data Structures\ArrayView.vb" />
     <Compile Include="Libraries\Data Structures\BigNum.vb" />
     <Compile Include="Libraries\Data Structures\MStack.vb" />
+    <Compile Include="Libraries\Data Structures\LockFreeQueue.vb" />
+    <Compile Include="Libraries\Functional\FutureUtilities.vb" />
     <Compile Include="Libraries\MPQ\MPQHashTable.vb" />
     <Compile Include="Libraries\MPQ\MPQFileTable.vb" />
     <Compile Include="Libraries\MPQ\MPQFileStream.vb" />
@@ -248,7 +250,7 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Libraries\Functional\Futures.vb" />
-    <Compile Include="Libraries\Streams\BottleneckedWriteStream.vb" />
+    <Compile Include="Libraries\Streams\ThrottledWriteStream.vb" />
     <Compile Include="Interface\BnetClientControl.Designer.vb">
       <DependentUpon>BnetClientControl.vb</DependentUpon>
     </Compile>

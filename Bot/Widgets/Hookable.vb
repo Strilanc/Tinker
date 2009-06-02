@@ -8,9 +8,11 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
     Private ReadOnly controls As New Dictionary(Of T, C)
     Private ReadOnly elements As New List(Of T)
     Private ReadOnly tab_collection As TabControl.TabPageCollection
+    Private ReadOnly uiref As ICallQueue
 
-    Public Sub New(ByVal tab_collection As TabControl.TabPageCollection)
-        Me.tab_collection = tab_collection
+    Public Sub New(ByVal tab_control As TabControl)
+        Me.tab_collection = tab_control.TabPages
+        Me.uiref = New InvokedCallQueue(tab_control)
     End Sub
 
     Public Sub add(ByVal element As T)
@@ -33,24 +35,29 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         control.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Top
         control.f_hook(element)
         page.Text = "..."
-        Call FutureSub.frun(AddressOf set_page_text, futurize(page), control.f_caption)
+        update_text(element)
     End Sub
-    Private Function set_page_text(ByVal page As TabPage, ByVal text As String) As Boolean
-        Try
-            page.BeginInvoke(Function() _set_page_text(page, text))
-        Catch e As Exception
-        End Try
-    End Function
-    Private Function _set_page_text(ByVal page As TabPage, ByVal text As String) As Boolean
-        Try
-            page.Text = text
-        Catch e As Exception
-        End Try
-    End Function
 
+    Private Sub update_text(ByVal element As T)
+        Dim control = controls(element)
+        Dim page = tabs(element)
+        Call FutureSub.Call(
+            control.f_caption,
+            Sub(text)
+                uiref.QueueAction(
+                    Sub()
+                        Try
+                            page.Text = text
+                        Catch e As Exception
+                        End Try
+                    End Sub
+                )
+            End Sub
+        )
+    End Sub
     Public Function update(ByVal element As T) As Outcome
         If Not tabs.ContainsKey(element) Then Return failure("Don't have a control to update for element.")
-        Call FutureSub.frun(AddressOf set_page_text, futurize(tabs(element)), controls(element).f_caption)
+        update_text(element)
         Return success("Element updated.")
     End Function
 

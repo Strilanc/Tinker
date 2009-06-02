@@ -267,19 +267,17 @@ Namespace Commands
     Public Class ThreadedCommandSet(Of T)
         Inherits CommandSet(Of T)
 
-        Private Function process_helper(ByVal f As Future(Of Outcome), ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As Boolean
-            Try
-                FutureSub.frun(MyBase.Process(target, user, arguments), AddressOf f.setValue)
-                Return True
-            Catch e As Exception
-                f.setValue(failure("Error processing command: " + e.Message))
-                Return False
-            End Try
-        End Function
         Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Dim f As New Future(Of Outcome)
-            ThreadedAction(Function() process_helper(f, target, user, arguments), Me.GetType.Name)
-            Return f
+            Return futurefuture(ThreadPooledFunc(
+                Function()
+                    Try
+                        Return MyBase.Process(target, user, arguments)
+                    Catch e As Exception
+                        Return futurize(failure("Error processing command: " + e.Message))
+                    End Try
+                End Function
+            ))
         End Function
     End Class
 
@@ -301,10 +299,10 @@ Namespace Commands
                 End If
 
                 logger.futurelog("[running command '{0}'...]".frmt(name),
-                                 FutureFunc.frun(processText(target, Nothing, text),
+                                 FutureFunc.Call(processText(target, Nothing, text),
                                                              AddressOf output_of_command))
             Catch e As Exception
-                Logging.logUnexpectedException("Exception rose past " + Me.GetType.Name + "[" + Me.name + "].processLocalText", e)
+                Logging.LogUnexpectedException("Exception rose past " + Me.GetType.Name + "[" + Me.name + "].processLocalText", e)
             End Try
         End Sub
 

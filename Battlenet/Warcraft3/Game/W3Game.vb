@@ -166,8 +166,8 @@ Namespace Warcraft3
             Me.map = ContractNotNull(map, "map")
             Me.parent = ContractNotNull(parent, "parent")
             Me.name = ContractNotNull(name, "name")
-            Me.eventRef = New ThreadPoolCallQueue 'New ThreadedCallQueue("{0} {1} eventRef".frmt(Me.GetType.Name, name))
-            Me.ref = If(ref, New ThreadPoolCallQueue) 'New ThreadedCallQueue("{0} {1} ref".frmt(Me.GetType.Name, name)))
+            Me.eventRef = New ThreadPooledCallQueue
+            Me.ref = If(ref, New ThreadPooledCallQueue)
             Me.logger = If(logger, New Logger)
             For i = 0 To index_map.Length - 1
                 index_map(i) = CByte(i)
@@ -211,14 +211,14 @@ Namespace Warcraft3
 #Region "Events"
         Private Sub e_ThrowUpdated()
             Dim slots = (From slot In Me.slots Select slot.Cloned(Me)).ToList()
-            eventRef.enqueueAction(
-                Sub()
+            eventRef.QueueAction(
+                Sub() 
                     RaiseEvent updated(Me, slots)
                 End Sub
             )
         End Sub
         Private Sub e_ThrowPlayerTalked(ByVal speaker As IW3Player, ByVal text As String)
-            eventRef.enqueueAction(
+            eventRef.QueueAction(
                 Sub()
                     RaiseEvent player_talked(Me, speaker, text)
                 End Sub
@@ -226,14 +226,14 @@ Namespace Warcraft3
         End Sub
         Private Sub e_ThrowPlayerLeft(ByVal leaver As IW3Player, ByVal reason As W3PlayerLeaveTypes)
             Dim state = Me.state
-            eventRef.enqueueAction(
+            eventRef.QueueAction(
                 Sub()
                     RaiseEvent player_left(Me, state, leaver, reason)
                 End Sub
             )
         End Sub
         Private Sub e_ThrowStateChanged(ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
-            eventRef.enqueueAction(
+            eventRef.QueueAction(
                 Sub()
                     RaiseEvent state_changed(Me, old_state, new_state)
                 End Sub
@@ -241,7 +241,7 @@ Namespace Warcraft3
         End Sub
 
         Private Sub c_Ping() Handles ping_timer.Elapsed
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     Dim salt = CUInt(rand.Next(0, Integer.MaxValue))
                     Dim tick = Environment.TickCount
@@ -321,15 +321,18 @@ Namespace Warcraft3
 
 #Region "Messaging"
         '''<summary>Sends text to all players. Uses spoof chat if necessary.</summary>
-        Private Sub BroadcastMessage(ByVal message As String, Optional ByVal source_avoid As IW3Player = Nothing)
+        Private Sub BroadcastMessage(ByVal message As String,
+                                     Optional ByVal source_avoid As IW3Player = Nothing)
             For Each player In players
                 If player Is source_avoid Then Continue For
-                SendMessageTo(message, player)
+                SendMessageTo(message, player, display:=False)
             Next player
+            logger.log("{0}: {1}".frmt(My.Resources.ProgramName, message), LogMessageTypes.Typical)
         End Sub
 
         '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
-        Private Sub SendMessageTo(ByVal message As String, ByVal player As IW3Player)
+        Private Sub SendMessageTo(ByVal message As String, ByVal player As IW3Player,
+                                  Optional ByVal display As Boolean = True)
             'Prep
             Dim flags() As Byte
             If state >= W3GameStates.Loading Then
@@ -347,6 +350,10 @@ Namespace Warcraft3
             Else
                 'text spoofs from receiving player
                 player.f_SendPacket(W3Packet.MakePacket_TEXT(My.Resources.ProgramName + ": " + message, flags, players, player))
+            End If
+
+            If display Then
+                logger.log("(Private to {0}): {1}".frmt(player.name, message), LogMessageTypes.Typical)
             End If
         End Sub
 #End Region
@@ -408,14 +415,15 @@ Namespace Warcraft3
             Return success("Removed {0} from {1}.".frmt(player.name, name))
         End Function
 
-        Private Function TryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As Outcome
+        Private Function TryElevatePlayer(ByVal name As String,
+                                          Optional ByVal password As String = Nothing) As Outcome
             Dim p = FindPlayer(name)
             If p Is Nothing Then Return failure("No player found with the name '{0}'.".frmt(name))
             If admin_player IsNot Nothing Then Return failure("A player is already the admin.")
             If password IsNot Nothing Then
                 p.admin_tries += 1
                 If p.admin_tries > 5 Then Return failure("Too many tries.")
-                If password.ToLower() <> parent.settings.admin_password.ToLower() Then failure("Incorrect password.")
+                If password.ToLower() <> parent.settings.admin_password.ToLower() Then Return failure("Incorrect password.")
             End If
 
             admin_player = p
@@ -509,49 +517,49 @@ Namespace Warcraft3
         End Property
 
         Private Function _f_admin_player() As IFuture(Of IW3Player) Implements IW3Game.f_admin_player
-            Return ref.enqueueFunc(Function() admin_player)
+            Return ref.QueueFunc(Function() admin_player)
         End Function
         Private Function _f_fake_host_player() As IFuture(Of IW3Player) Implements IW3Game.f_fake_host_player
-            Return ref.enqueueFunc(Function() fake_host_player)
+            Return ref.QueueFunc(Function() fake_host_player)
         End Function
         Private Function _f_CommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture Implements IW3Game.f_CommandProcessLocalText
-            Return ref.enqueueAction(Sub() CommandProcessLocalText(text, logger))
+            Return ref.QueueAction(Sub() CommandProcessLocalText(text, logger))
         End Function
         Private Function _f_CommandProcessText(ByVal player As IW3Player, ByVal text As String) As Functional.Futures.IFuture(Of Functional.Outcome) Implements IW3Game.f_CommandProcessText
-            Return futurefuture(ref.enqueueFunc(Function() CommandProcessText(player, text)))
+            Return futurefuture(ref.QueueFunc(Function() CommandProcessText(player, text)))
         End Function
         Private Function _f_TryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture(Of Outcome) Implements IW3Game.f_TryElevatePlayer
-            Return ref.enqueueFunc(Function() TryElevatePlayer(name, password))
+            Return ref.QueueFunc(Function() TryElevatePlayer(name, password))
         End Function
         Private Function _f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Game.f_FindPlayer
-            Return ref.enqueueFunc(Function() FindPlayer(username))
+            Return ref.QueueFunc(Function() FindPlayer(username))
         End Function
         Private Function _f_RemovePlayer(ByVal p As IW3Player, ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes) As IFuture(Of Outcome) Implements IW3Game.f_RemovePlayer
-            Return ref.enqueueFunc(Function() RemovePlayer(p, expected, leave_type))
+            Return ref.QueueFunc(Function() RemovePlayer(p, expected, leave_type))
         End Function
         Private Function _f_EnumPlayers() As IFuture(Of List(Of IW3Player)) Implements IW3Game.f_EnumPlayers
-            Return ref.enqueueFunc(Function() players.ToList)
+            Return ref.QueueFunc(Function() players.ToList)
         End Function
         Private Function _f_ThrowUpdated() As IFuture Implements IW3Game.f_ThrowUpdated
-            Return ref.enqueueAction(AddressOf e_ThrowUpdated)
+            Return ref.QueueAction(AddressOf e_ThrowUpdated)
         End Function
         Private Function _f_Close() As IFuture(Of Outcome) Implements IW3Game.f_Close
-            Return ref.enqueueFunc(Function() Close())
+            Return ref.QueueFunc(Function() Close())
         End Function
         Private Function _f_BroadcastMessage(ByVal message As String) As IFuture Implements IW3Game.f_BroadcastMessage
-            Return ref.enqueueAction(Sub() BroadcastMessage(message))
+            Return ref.QueueAction(Sub() BroadcastMessage(message))
         End Function
         Private Function _f_SendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture Implements IW3Game.f_SendMessageTo
-            Return ref.enqueueAction(Sub() SendMessageTo(message, player))
+            Return ref.QueueAction(Sub() SendMessageTo(message, player))
         End Function
         Private Function _f_BootSlot(ByVal slot_query As String) As IFuture(Of Outcome) Implements IW3Game.f_BootSlot
-            Return ref.enqueueFunc(Function() Boot(slot_query))
+            Return ref.QueueFunc(Function() Boot(slot_query))
         End Function
         Private Function _f_State() As IFuture(Of W3GameStates) Implements IW3Game.f_State
-            Return ref.enqueueFunc(Function() Me.state)
+            Return ref.QueueFunc(Function() Me.state)
         End Function
         Private Function _f_ReceivePacket_CLIENT_COMMAND(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.f_ReceivePacket_CLIENT_COMMAND
-            Return ref.enqueueAction(Sub() ReceivePacket_CLIENT_COMMAND(player, vals))
+            Return ref.QueueAction(Sub() ReceivePacket_CLIENT_COMMAND(player, vals))
         End Function
 #End Region
     End Class

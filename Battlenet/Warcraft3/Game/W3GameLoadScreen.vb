@@ -131,7 +131,7 @@
             End Sub
 
             Private Sub c_fake_tick() Handles tick_timer.Elapsed
-                game.ref.enqueueAction(AddressOf _c_fake_tick)
+                game.ref.QueueAction(AddressOf _c_fake_tick)
             End Sub
             Private Sub _c_fake_tick()
                 If game.state > W3GameStates.Loading Then Return
@@ -149,7 +149,7 @@
             End Sub
 
             Private Function _receivePacket_READY(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3GameLoadScreen.f_ReceivePacket_READY
-                Return game.ref.enqueueAction(Sub() receivePacket_READY(player, vals))
+                Return game.ref.QueueAction(Sub() receivePacket_READY(player, vals))
             End Function
         End Class
     End Class

@@ -5,11 +5,11 @@
 
 #Region "Hook"
     Private Function f_caption() As IFuture(Of String) Implements IHookable(Of IBotWidget).f_caption
-        Return uiRef.enqueueFunc(Function() If(widget Is Nothing, "[No Widget]", "{0} {1}".frmt(widget.type_name, widget.name)))
+        Return uiRef.QueueFunc(Function() If(widget Is Nothing, "[No Widget]", "{0} {1}".frmt(widget.type_name, widget.name)))
     End Function
 
     Public Function f_hook(ByVal widget As IBotWidget) As IFuture Implements IHookable(Of IBotWidget).f_hook
-        Return uiRef.enqueueAction(
+        Return uiRef.QueueAction(
             Sub()
                 If Me.widget Is widget Then  Return
 
@@ -29,7 +29,7 @@
 
 #Region "Events"
     Private Sub c_WidgetAddedStateString(ByVal state As String, ByVal insert_at_top As Boolean) Handles widget.add_state_string
-        uiRef.enqueueAction(
+        uiRef.QueueAction(
             Sub()
                 If insert_at_top Then
                     lstState.Items.Insert(0, state)
@@ -41,11 +41,11 @@
     End Sub
 
     Private Sub c_WidgetClearedStateStrings() Handles widget.clear_state_strings
-        uiRef.enqueueAction(Sub() lstState.Items.Clear())
+        uiRef.QueueAction(Sub() lstState.Items.Clear())
     End Sub
 
     Private Sub c_WidgetRemovedStateString(ByVal state As String) Handles widget.remove_state_string
-        uiRef.enqueueAction(Sub() lstState.Items.Remove(state))
+        uiRef.QueueAction(Sub() lstState.Items.Remove(state))
     End Sub
 
     Private Sub txtCommand_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtCommand.KeyPress

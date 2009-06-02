@@ -5,7 +5,8 @@
         Private ReadOnly module_handler As New Warden_Module_Lib.ModuleHandler
         Private ReadOnly logger As Logger
         Private ReadOnly ref As ICallQueue
-        Private ReadOnly eref As New ThreadedCallQueue(Me.GetType.Name)
+        Private ReadOnly eref As ICallQueue = New ThreadPooledCallQueue
+        Private ReadOnly memCheckCache As New Dictionary(Of String, Byte())
 
         Private state As states = states.idle
         Private cur_module As ModuleMetaData
@@ -52,7 +53,7 @@
         Public Sub ReceiveData(ByVal raw_data As Byte())
             If raw_data Is Nothing Then Throw New ArgumentNullException("raw_data")
             raw_data = raw_data.ToArray() 'clone data to avoid modifying source
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     Try
                         'Extract
@@ -91,7 +92,7 @@
             logger.log(Function() "Warden Response (before encrypt): {0}".frmt(unpackHexString(data)), LogMessageTypes.DataRaw)
             Dim data_out = data.ToArray
             rc4_out.convert(data_out, data_out, data_out.Length, data_out.Length)
-            eref.enqueueAction(
+            eref.QueueAction(
                 Sub()
                     RaiseEvent Send(data_out)
                 End Sub
@@ -110,7 +111,7 @@
             Dim rc4_seed = CType(vals("module rc4 seed"), Byte())
             Dim module_id = CType(vals("module id"), Byte())
             Dim dl_size = CUInt(vals("dl size"))
-            cur_module = New ModuleMetaData(dl_size, module_folder & unpackHexString(module_id, , "") & ".warden")
+            cur_module = New ModuleMetaData(dl_size, module_folder & unpackHexString(module_id, separator:="") & ".warden")
 
             If Not IO.File.Exists(cur_module.path) Then
                 If cur_module.dl_size < 50 Or cur_module.dl_size > 5000000 Then Throw New IO.IOException("Unrealistic module size.")
@@ -290,24 +291,31 @@
                     Throw New IO.IOException("Unrecognized check id.")
             End Select
         End Function
-        Private Function PerformMemoryCheck(ByRef data As ImmutableArrayView(Of Byte),
-                                       ByVal filenames As IList(Of String),
-                                       ByRef out As Byte()) As Integer
+        Private Function PerformMemoryCheck(ByVal data As ImmutableArrayView(Of Byte),
+                                            ByVal filenames As IList(Of String),
+                                            ByRef out As Byte()) As Integer
             If data.length < 6 Then Throw New IO.IOException("Not enough memcheck data.")
             If data(0) > filenames.Count Then Throw New IO.IOException("Invalid memcheck file index: {0}.".frmt(data(0)))
 
             Dim filename = filenames(data(0))
             Dim position = data.SubView(1, 4).ToUInteger(ByteOrder.LittleEndian)
             Dim length = data(5)
-
-            If Not IO.File.Exists(My.Settings.war3path + filename) Then Throw New IO.IOException("Memcheck file '{0}' doesn't exist.".frmt(filename))
-            Using f As New IO.FileStream(My.Settings.war3path + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-                If position + length >= f.Length Then Throw New IO.IOException("Memcheck runs past end of file.")
-                f.Seek(position, IO.SeekOrigin.Begin)
-                Using br As New IO.BinaryReader(f)
-                    out = concat(out, {0}, br.ReadBytes(length))
+            Dim key = "{0}:{1}".frmt(position, length)
+            If memCheckCache.Count > 100 Then
+                logger.log("Warning: The number of unique warden checks has become quite large (>100), which is not expected behavior.", LogMessageTypes.Negative)
+                memCheckCache.Clear()
+            End If
+            If Not memCheckCache.ContainsKey(key) Then
+                If Not IO.File.Exists(My.Settings.war3path + filename) Then Throw New IO.IOException("Memcheck file '{0}' doesn't exist.".frmt(filename))
+                Using f As New IO.FileStream(My.Settings.war3path + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
+                    If position + length >= f.Length Then Throw New IO.IOException("Memcheck runs past end of file.")
+                    f.Seek(position, IO.SeekOrigin.Begin)
+                    Using br As New IO.BinaryReader(f)
+                        memCheckCache(key) = br.ReadBytes(length)
+                    End Using
                 End Using
-            End Using
+            End If
+            out = concat(out, {0}, memCheckCache(key))
 
             Return 7
         End Function

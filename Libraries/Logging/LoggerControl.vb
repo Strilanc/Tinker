@@ -163,7 +163,7 @@ Public Class LoggerControl
         End SyncLock
 
         If Not file_only Then
-            uiRef.enqueueAction(AddressOf emptyQueue_UI)
+            uiRef.QueueAction(AddressOf emptyQueue_UI)
         End If
     End Sub
 
@@ -234,17 +234,19 @@ Public Class LoggerControl
             Logging.logUnexpectedException("Exception rose post LoggerControl.emptyQueue", e)
         End Try
     End Sub
-    Private Sub logFutureMessage(ByVal placeholder As String, ByVal out As IFuture(Of Outcome))
+    Private Sub logFutureMessage(ByVal placeholder As String, ByVal fout As IFuture(Of Outcome))
         SyncLock lock
             Dim m = New QueuedMessage(placeholder, Color.DarkGoldenrod)
             logMessage(m)
-            FutureSub.frun(AddressOf logFutureMessage2, futurize(m), out)
-        End SyncLock
-    End Sub
-    Private Sub logFutureMessage2(ByVal line As QueuedMessage, ByVal out As Outcome)
-        SyncLock lock
-            Dim color = callback_colors(If(out.succeeded, LogMessageTypes.Positive, LogMessageTypes.Problem))
-            logMessage(New QueuedMessage(out.message, color, line))
+            FutureSub.Call(
+                fout,
+                Sub(out)
+                    SyncLock lock
+                        Dim color = callback_colors(If(out.succeeded, LogMessageTypes.Positive, LogMessageTypes.Problem))
+                        logMessage(New QueuedMessage(out.message, color, m))
+                    End SyncLock
+                End Sub
+            )
         End SyncLock
     End Sub
 #End Region
@@ -257,7 +259,7 @@ Public Class LoggerControl
         End SyncLock
     End Sub
     Private Sub catch_log_future(ByVal placeholder As String, ByVal out As IFuture(Of Outcome)) Handles logger.LoggedFutureMessage
-        uiRef.enqueueAction(Sub() logFutureMessage(placeholder, out))
+        uiRef.QueueAction(Sub() logFutureMessage(placeholder, out))
     End Sub
     Private Sub catch_logerror(ByVal context As String, ByVal e As Exception)
         logMessage(GenerateUnexpectedExceptionDescription(context, e), Color.Red)
@@ -325,7 +327,7 @@ Public Class LoggerControl
             lblNumBuffered.Visible = False
             SyncLock lock
                 If num_queued_message > 0 Then
-                    uiRef.enqueueAction(AddressOf emptyQueue_UI)
+                    uiRef.QueueAction(AddressOf emptyQueue_UI)
                 End If
             End SyncLock
         End If

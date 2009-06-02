@@ -114,7 +114,7 @@ Namespace Links
         Private ReadOnly master As IDependencyLinkMaster
         Private ReadOnly servant As IDependencyLinkServant
         Private broken As Boolean = False
-        Private ReadOnly ref As New ThreadedCallQueue(Me.GetType.Name)
+        Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
         Private Sub New(ByVal master As IDependencyLinkMaster, ByVal servant As IDependencyLinkServant)
             If Not (master IsNot Nothing) Then Throw New ArgumentException()
             If Not (servant IsNot Nothing) Then Throw New ArgumentException()
@@ -135,7 +135,7 @@ Namespace Links
         End Sub
 
         Public Function break_R(ByVal kill_servant As Boolean) As IFuture(Of Boolean)
-            Return ref.enqueueFunc(Function() break_L(kill_servant))
+            Return ref.QueueFunc(Function() break_L(kill_servant))
         End Function
         Private Function break_L(ByVal kill_servant As Boolean) As Boolean
             If broken Then Return False

@@ -15,18 +15,18 @@ Namespace Logging
         Private ReadOnly ref As ICallQueue
 
         Public Sub New(Optional ByVal ref As ICallQueue = Nothing)
-            Me.ref = If(ref, New ThreadPoolCallQueue())
+            Me.ref = If(ref, New ThreadPooledCallQueue())
         End Sub
 
         Public Sub futurelog(ByVal placeholder As String, ByVal message As IFuture(Of Outcome))
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     RaiseEvent LoggedFutureMessage(placeholder, message)
                 End Sub
             )
         End Sub
         Public Sub log(ByVal message As Func(Of String), ByVal t As LogMessageTypes)
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     RaiseEvent LoggedMessage(t, message)
                 End Sub
@@ -41,7 +41,7 @@ Namespace Logging
     '''<remarks>One of those rare cases where a global is appropriate.</remarks>
     Public Module UnexpectedExceptionLogging
         Public Event CaughtUnexpectedException(ByVal context As String, ByVal e As Exception)
-        Private ReadOnly ref As New ThreadedCallQueue("Unexpected Exceptions")
+        Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
 
         Public Function GenerateUnexpectedExceptionDescription(ByVal context As String, ByVal e As Exception) As String
             If context Is Nothing Then Throw New ArgumentNullException("context")
@@ -71,10 +71,10 @@ Namespace Logging
         Public Sub LogUnexpectedException(ByVal context As String, ByVal e As Exception)
             If context Is Nothing Then Throw New ArgumentNullException("context")
             If e Is Nothing Then Throw New ArgumentNullException("e")
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
-                    RaiseEvent CaughtUnexpectedException(context, e)
-                End Sub
+                                RaiseEvent CaughtUnexpectedException(context, e)
+                            End Sub
             )
         End Sub
     End Module

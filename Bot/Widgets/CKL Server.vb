@@ -68,7 +68,7 @@ Namespace CKL
     Public Class CKLClient
         Private WithEvents socket As BnetSocket
         Private ReadOnly f As New Future(Of Outcome(Of CKLBorrowedKeyVals))
-        Private ReadOnly ref As New ThreadedCallQueue(Me.GetType.name)
+        Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly payload As Byte()
         Private WithEvents timeout As New Timers.Timer()
         '''<summary>Returns a future of the outcome of borrowing keys from the server.</summary>
@@ -84,13 +84,13 @@ Namespace CKL
                        ByVal client_cd_key_salt As Byte(),
                        ByVal server_cd_key_salt As Byte())
             payload = concat({CKLServer.PACKET_ID, CKLPackets.keys, 0, 0}, client_cd_key_salt, server_cd_key_salt)
-            FutureSub.frun(FutureConnectTo(remote_host, remote_port), AddressOf r_connected)
+            FutureSub.Call(FutureConnectTo(remote_host, remote_port), AddressOf r_connected)
             timeout.Interval = 10000
             timeout.Start()
         End Sub
 
         Private Sub r_connected(ByVal out As Outcome(Of TcpClient))
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     If f.isReady Then
                         If out.succeeded Then
@@ -100,7 +100,7 @@ Namespace CKL
                     End If
 
                     If Not out.succeeded Then
-                        f.setValue(CType(out, Outcome))
+                        f.SetValue(CType(out, Outcome))
                         Return
                     End If
 
@@ -112,21 +112,21 @@ Namespace CKL
         End Sub
 
         Private Sub c_timeout() Handles timeout.Elapsed
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     timeout.Stop()
 
                     If f.isReady Then  Return
 
                     If socket IsNot Nothing Then  socket.disconnect()
-                    f.setValue(failure("CKL request timed out."))
+                    f.SetValue(failure("CKL request timed out."))
                 End Sub
             )
         End Sub
 
         '''<summary>Finishes connecting to the server and requests keys.</summary>
         Private Sub c_ReceivedPacket(ByVal sender As BnetSocket, ByVal flag As Byte, ByVal id As Byte, ByVal data As ImmutableArrayView(Of Byte)) Handles socket.receivedPacket
-            ref.enqueueAction(
+            ref.QueueAction(
                 Sub()
                     Try
                         If f.isReady Then  Return
@@ -134,27 +134,27 @@ Namespace CKL
                         socket.disconnect()
 
                         If flag <> CKLServer.PACKET_ID Then
-                            f.setValue(failure("Incorrect header id in data returned from CKL server."))
+                            f.SetValue(failure("Incorrect header id in data returned from CKL server."))
                             Return
                         End If
                         Select Case CType(id, CKLPackets)
                             Case CKLPackets.error
                                 'error
-                                f.setValue(failure("CKL server returned an error: {0}.".frmt(toChrString(data))))
+                                f.SetValue(failure("CKL server returned an error: {0}.".frmt(toChrString(data))))
                             Case CKLPackets.keys
                                 'success
                                 Dim key_len = data.length \ 2
                                 Dim roc_data = data.SubView(0, key_len).ToArray
                                 Dim tft_data = data.SubView(key_len, key_len).ToArray
                                 Dim kv = New CKLBorrowedKeyVals(Bnet.BnetPacket.CDKeyJar.packBorrowedCdKey(roc_data), Bnet.BnetPacket.CDKeyJar.packBorrowedCdKey(tft_data))
-                                f.setValue(successVal(kv, "Succesfully borrowed keys from CKL server."))
+                                f.SetValue(successVal(kv, "Succesfully borrowed keys from CKL server."))
                             Case Else
                                 'unknown
-                                f.setValue(failure("Incorrect packet id in data returned from CKL server."))
+                                f.SetValue(failure("Incorrect packet id in data returned from CKL server."))
                         End Select
 
                     Catch e As Exception
-                        f.setValue(failure("Error borrowing keys from CKL server: {0}.".frmt(e.Message)))
+                        f.SetValue(failure("Error borrowing keys from CKL server: {0}.".frmt(e.Message)))
                     End Try
                 End Sub
             )

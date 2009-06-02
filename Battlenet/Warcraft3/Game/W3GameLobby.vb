@@ -146,15 +146,11 @@
 
                 game.change_state(W3GameStates.PreCounting)
                 'Give people a few seconds to realize the game is full before continuing
-                FutureSub.schedule( _
-                        AddressOf r_TryContinueAutoStart1,
-                        futurewait(New TimeSpan(0, 0, 3)))
+                FutureSub.Call({FutureWait(New TimeSpan(0, 0, 3))},
+                               Sub() game.ref.QueueAction(Sub() _TryContinueAutoStart1()))
                 Return success("Autostart has begun")
             End Function
-            Private Sub r_TryContinueAutoStart1()
-                game.ref.enqueueAction(AddressOf _r_TryContinueAutoStart1)
-            End Sub
-            Private Sub _r_TryContinueAutoStart1()
+            Private Sub _TryContinueAutoStart1()
                 If game.state <> W3GameStates.PreCounting Then Return
                 If Not game.parent.settings.autostarted Then
                     game.change_state(W3GameStates.AcceptingPlayers)
@@ -172,14 +168,10 @@
                 game.BroadcastMessage("Game is Full. Waiting 5 seconds for stability.")
 
                 'Give jittery players a few seconds to leave
-                FutureSub.schedule( _
-                        AddressOf r_TryContinueAutoStart2,
-                        futurewait(New TimeSpan(0, 0, 5)))
+                FutureSub.Call({FutureWait(New TimeSpan(0, 0, 5))},
+                               Sub() game.ref.QueueAction(Sub() _TryContinueAutoStart2))
             End Sub
-            Private Sub r_TryContinueAutoStart2()
-                game.ref.enqueueAction(AddressOf _r_TryContinueAutoStart2)
-            End Sub
-            Private Sub _r_TryContinueAutoStart2()
+            Private Sub _TryContinueAutoStart2()
                 If game.state <> W3GameStates.PreCounting Then Return
                 If Not game.parent.settings.autostarted Then
                     game.change_state(W3GameStates.AcceptingPlayers)
@@ -214,15 +206,11 @@
                     player.lobby.f_StartCountdown()
                 Next player
 
-                FutureSub.schedule( _
-                            Sub() r_ContinueCountdown(5),
-                            futurewait(New TimeSpan(0, 0, 1)))
+                FutureSub.Call({FutureWait(New TimeSpan(0, 0, 1))},
+                               Sub() game.ref.QueueAction(Sub() _TryContinueCountdown(5)))
                 Return success("Countdown started.")
             End Function
-            Private Sub r_ContinueCountdown(ByVal ticks_left As Integer)
-                game.ref.enqueueAction(Sub() _r_ContinueCountdown(ticks_left))
-            End Sub
-            Private Sub _r_ContinueCountdown(ByVal ticks_left As Integer)
+            Private Sub _TryContinueCountdown(ByVal ticks_left As Integer)
                 If game.state <> W3GameStates.CountingDown Then
                     Return
                 End If
@@ -244,14 +232,13 @@
 
                 If ticks_left > 0 Then
                     'Next tick
-                    game.logger.log("Game starting in " + ticks_left.ToString(), LogMessageTypes.Positive)
+                    game.logger.log("Game starting in {0}".frmt(ticks_left), LogMessageTypes.Positive)
                     For Each player In (From p In game.players Where p.lobby.overcounted)
-                        game.SendMessageTo("Game starting in {0}...".frmt(ticks_left), player)
+                        game.SendMessageTo("Game starting in {0}...".frmt(ticks_left), player, display:=False)
                     Next player
 
-                    FutureSub.schedule( _
-                                Sub() r_ContinueCountdown(ticks_left - 1),
-                                futurewait(New TimeSpan(0, 0, 1)))
+                    FutureSub.Call({FutureWait(New TimeSpan(0, 0, 1))},
+                                   Sub() game.ref.QueueAction(Sub() _TryContinueCountdown(ticks_left - 1)))
                     Return
                 End If
 
@@ -424,7 +411,7 @@
 
 #Region "Events"
             Private Sub e_ThrowPlayerEntered(ByVal new_player As IW3PlayerLobby)
-                game.eventRef.enqueueAction(
+                game.eventRef.QueueAction(
                     Sub()
                         RaiseEvent player_entered(Me, new_player)
                     End Sub
@@ -433,7 +420,7 @@
 
             Private Sub c_DownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndPoint),
                                                    ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndPoint)) Handles download_scheduler.actions
-                game.ref.enqueueAction(
+                game.ref.QueueAction(
                     Sub()
                         'Start transfers
                         For Each e In started
@@ -491,7 +478,7 @@
             End Sub
 
             Private Sub c_ChangedSlotState() Handles slot_layout_timer.Elapsed
-                game.ref.enqueueAction(AddressOf ChangedSlotState)
+                game.ref.QueueAction(AddressOf ChangedSlotState)
             End Sub
 #End Region
 
@@ -818,55 +805,55 @@
             End Property
 
             Private Function _f_UpdatedGameState() As IFuture Implements IW3GameLobby.f_UpdatedGameState
-                Return game.ref.enqueueAction(AddressOf ChangedSlotState)
+                Return game.ref.QueueAction(AddressOf ChangedSlotState)
             End Function
 
             Private Function _f_OpenSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3GameLobby.f_OpenSlot
-                Return game.ref.enqueueFunc(Function() OpenSlot(query))
+                Return game.ref.QueueFunc(Function() OpenSlot(query))
             End Function
             Private Function _f_CloseSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3GameLobby.f_CloseSlot
-                Return game.ref.enqueueFunc(Function() CloseSlot(query))
+                Return game.ref.QueueFunc(Function() CloseSlot(query))
             End Function
             Private Function _f_ReserveSlot(ByVal query As String, ByVal username As String) As IFuture(Of Outcome) Implements IW3GameLobby.f_ReserveSlot
-                Return game.ref.enqueueFunc(Function() ReserveSlot(query, username))
+                Return game.ref.QueueFunc(Function() ReserveSlot(query, username))
             End Function
             Private Function _f_SwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture(Of Outcome) Implements IW3GameLobby.f_SwapSlotContents
-                Return game.ref.enqueueFunc(Function() SwapSlotContents(query1, query2))
+                Return game.ref.QueueFunc(Function() SwapSlotContents(query1, query2))
             End Function
 
             Private Function _f_SetSlotCpu(ByVal query As String, ByVal c As W3Slot.ComputerLevel) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotCpu
-                Return game.ref.enqueueFunc(Function() ComputerizeSlot(query, c))
+                Return game.ref.QueueFunc(Function() ComputerizeSlot(query, c))
             End Function
             Private Function _f_SetSlotLocked(ByVal query As String, ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotLocked
-                Return game.ref.enqueueFunc(Function() SetSlotLocked(query, new_lock_state))
+                Return game.ref.QueueFunc(Function() SetSlotLocked(query, new_lock_state))
             End Function
             Private Function _f_SetAllSlotsLocked(ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetAllSlotsLocked
-                Return game.ref.enqueueFunc(Function() SetAllSlotsLocked(new_lock_state))
+                Return game.ref.QueueFunc(Function() SetAllSlotsLocked(new_lock_state))
             End Function
             Private Function _f_SetSlotHandicap(ByVal query As String, ByVal new_handicap As Byte) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotHandicap
-                Return game.ref.enqueueFunc(Function() SetSlotHandicap(query, new_handicap))
+                Return game.ref.QueueFunc(Function() SetSlotHandicap(query, new_handicap))
             End Function
             Private Function _f_SetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotTeam
-                Return game.ref.enqueueFunc(Function() SetSlotTeam(query, new_team))
+                Return game.ref.QueueFunc(Function() SetSlotTeam(query, new_team))
             End Function
             Private Function _f_SetSlotRace(ByVal query As String, ByVal new_race As W3Slot.RaceFlags) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotRace
-                Return game.ref.enqueueFunc(Function() SetSlotRace(query, new_race))
+                Return game.ref.QueueFunc(Function() SetSlotRace(query, new_race))
             End Function
             Private Function _f_SetSlotColor(ByVal query As String, ByVal new_color As W3Slot.PlayerColor) As IFuture(Of Outcome) Implements IW3GameLobby.f_SetSlotColor
-                Return game.ref.enqueueFunc(Function() SetSlotColor(query, new_color))
+                Return game.ref.QueueFunc(Function() SetSlotColor(query, new_color))
             End Function
 
             Private Function _f_TryAddPlayer(ByVal new_player As W3ConnectingPlayer) As IFuture(Of Outcome) Implements IW3GameLobby.f_TryAddPlayer
-                Return game.ref.enqueueFunc(Function() TryAddPlayer(new_player))
+                Return game.ref.QueueFunc(Function() TryAddPlayer(new_player))
             End Function
             Private Function _f_PlayerVoteToStart(ByVal name As String, ByVal val As Boolean) As IFuture(Of Outcome) Implements IW3GameLobby.f_PlayerVoteToStart
-                Return game.ref.enqueueFunc(Function() player_vote_to_start_L(name, val))
+                Return game.ref.QueueFunc(Function() player_vote_to_start_L(name, val))
             End Function
             Private Function _f_StartCountdown() As IFuture(Of Outcome) Implements IW3GameLobby.f_StartCountdown
-                Return game.ref.enqueueFunc(Function() TryStartCountdown())
+                Return game.ref.QueueFunc(Function() TryStartCountdown())
             End Function
             Private Function _f_TrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture(Of Outcome) Implements IW3GameLobby.f_TrySetTeamSizes
-                Return game.ref.enqueueFunc(Function() TrySetTeamSizes(sizes))
+                Return game.ref.QueueFunc(Function() TrySetTeamSizes(sizes))
             End Function
 #End Region
         End Class

@@ -45,7 +45,7 @@ Namespace Functional
                 Sub()
                     Try
                         Call action()
-                        f.setReady()
+                        Call f.SetReady()
                     Catch ex As Exception
                         Logging.LogUnexpectedException("Exception rose past ThreadedAction ({0}).".frmt(threadName), ex)
                     End Try
@@ -57,17 +57,27 @@ Namespace Functional
         End Function
         Public Function ThreadedFunc(Of R)(ByVal func As Func(Of R), Optional ByVal threadName As String = Nothing) As IFuture(Of R)
             Dim f As New Future(Of R)
-            Dim t = New Threading.Thread(
+            ThreadedAction(Sub() f.SetValue(func()), threadName)
+            Return f
+        End Function
+
+        Public Function ThreadPooledAction(ByVal action As Action) As IFuture
+            Dim f As New Future
+            Threading.ThreadPool.QueueUserWorkItem(
                 Sub()
                     Try
-                        f.setValue(func())
+                        Call action()
+                        call f.SetReady()
                     Catch ex As Exception
-                        Logging.LogUnexpectedException("Exception rose past ThreadedFunc ({0}).".frmt(threadName), ex)
+                        Logging.LogUnexpectedException("Exception rose past ThreadPooledAction.", ex)
                     End Try
                 End Sub
             )
-            t.Name = If(threadName, "ThreadedFunc")
-            t.Start()
+            Return f
+        End Function
+        Public Function ThreadPooledFunc(Of R)(ByVal func As Func(Of R)) As IFuture(Of R)
+            Dim f As New Future(Of R)
+            ThreadPooledAction(Sub() f.SetValue(func()))
             Return f
         End Function
 #End Region
@@ -93,12 +103,12 @@ Namespace Functional
         '''<typeparam name="C">The child type.</typeparam>
         '''<param name="f">The future to cast.</param>
         Public Function CTypeFuture(Of P, C As P)(ByVal f As IFuture(Of C)) As IFuture(Of P)
-            Return FutureFunc.schedule(Function() CType(f.getValue(), P), {f})
+            Return FutureFunc.Call(Function() CType(f.GetValue(), P), {f})
         End Function
         '''<summary>Casts a future of an outcome with a value  to a future of an outcome without a value.</summary>
         '''<typeparam name="R">The type returned by the outcome with value.</typeparam>
         Public Function stripFutureOutcome(Of R)(ByVal f As IFuture(Of Outcome(Of R))) As IFuture(Of Outcome)
-            Return FutureFunc.schedule(Function() CType(f.getValue(), Outcome), {f})
+            Return FutureFunc.Call(Function() CType(f.GetValue(), Outcome), {f})
         End Function
 #End Region
     End Module

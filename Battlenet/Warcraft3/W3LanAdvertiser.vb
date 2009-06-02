@@ -60,7 +60,7 @@ Public Class W3LanAdvertiser
             RaiseEvent started_advertising(Me, server, name, map, options)
             If server IsNot Nothing Then
                 Dim listened = server.f_OpenPort(parent.server_listen_port)
-                FutureSub.frun(listened, AddressOf server_listened_result)
+                FutureSub.Call(listened, AddressOf server_listened_result)
             End If
         End Sub
         Private Sub server_listened_result(ByVal listened As Outcome)

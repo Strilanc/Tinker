@@ -2,7 +2,7 @@
 Public Class TransferScheduler(Of K)
     Private ReadOnly typical_rate As Double
     Private ReadOnly clients As New Dictionary(Of K, ClientState)
-    Private ReadOnly ref As ICallQueue = New ThreadedCallQueue(Me.GetType.Name)
+    Private ReadOnly ref As ICallQueue = New ThreadpooledCallQueue
 
     Public Event actions(ByVal started As List(Of TransferEndPoint), ByVal stopped As List(Of TransferEndPoint))
 
@@ -21,7 +21,7 @@ Public Class TransferScheduler(Of K)
 
     '''<summary>Adds a new client to the pool.</summary>
     Public Function add(ByVal client_key As K, ByVal completed As Boolean, Optional ByVal expected_rate As Double = 0) As IFuture(Of Outcome)
-        Return ref.enqueueFunc(
+        Return ref.QueueFunc(
             Function()
                 If clients.ContainsKey(client_key) Then  Return failure("client key already exists")
                 clients(client_key) = New ClientState(client_key, completed, If(expected_rate = 0, typical_rate, expected_rate))
@@ -32,7 +32,7 @@ Public Class TransferScheduler(Of K)
 
     '''<summary>Adds a link between two clients.</summary>
     Public Function set_link(ByVal client_key_1 As K, ByVal client_key_2 As K, ByVal linked As Boolean) As IFuture(Of Outcome)
-        Return ref.enqueueFunc(
+        Return ref.QueueFunc(
             Function()
                 If Not clients.ContainsKey(client_key_1) Then  Return failure("No such client key")
                 If Not clients.ContainsKey(client_key_2) Then  Return failure("No such client key")
@@ -56,7 +56,7 @@ Public Class TransferScheduler(Of K)
 
     '''<summary>Removes a client from the pool.</summary>
     Public Function remove(ByVal client_key As K) As IFuture(Of Outcome)
-        Return ref.enqueueFunc(
+        Return ref.QueueFunc(
             Function()
                 If Not clients.ContainsKey(client_key) Then  Return failure("No such client.")
                 stop_transfer(client_key, False)
@@ -93,7 +93,7 @@ Public Class TransferScheduler(Of K)
 
     '''<summary>Updates the progress of a transfer to or from the given client.</summary>
     Public Function update_progress(ByVal client_key As K, ByVal progress As Double) As IFuture(Of Outcome)
-        Return ref.enqueueFunc(
+        Return ref.QueueFunc(
             Function()
                 If Not clients.ContainsKey(client_key) Then  Return failure("No such client key.")
                 Dim client = clients(client_key)
@@ -107,7 +107,7 @@ Public Class TransferScheduler(Of K)
 
     '''<summary>Stops any transfers to or from the given client.</summary>
     Public Sub stop_transfer(ByVal client_key As K, ByVal complete As Boolean)
-        ref.enqueueAction(
+        ref.QueueAction(
             Sub()
                 If Not clients.ContainsKey(client_key) Then  Return
 
@@ -125,7 +125,7 @@ Public Class TransferScheduler(Of K)
     End Sub
 
     Public Sub update()
-        ref.enqueueAction(
+        ref.QueueAction(
             Sub()
                 Dim transfers = New List(Of TransferEndPoint)
                 Dim breaks = New List(Of TransferEndPoint)
@@ -139,7 +139,7 @@ Public Class TransferScheduler(Of K)
                     Dim best_uploader = available_uploaders.Max(Function(e1, e2)
                                                                     Dim n = Math.Sign(e1.get_max_rate_estimate - e2.get_max_rate_estimate)
                                                                     If n <> 0 Then  Return n
-                                                                    Return Math.Sign(e1.links.Count - e2.links.Count)
+                                                                    Return Math.Sign(e2.links.Count - e1.links.Count)
                                                                 End Function)
 
                     If cur_uploader Is Nothing Then
