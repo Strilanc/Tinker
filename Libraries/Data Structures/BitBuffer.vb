@@ -1,117 +1,143 @@
 '''<summary>Stores up to maxBits bits and provides methods to add and extract bits for common types.</summary>
 Public Class BitBuffer
-    Public Const MAX_OP_BITS As Integer = 64
+    Public Const MaxBits As Integer = 64
     Private buf As ULong 'bit storage
-    Private num As Integer 'number of stored bits
-    Public ReadOnly Property numBits() As Integer
+    Private _numBufferedBits As Integer 'number of stored bits
+    Public ReadOnly Property NumBufferedBits() As Integer
         Get
-            Return num
+            Return _numBufferedBits
         End Get
     End Property
-    Public ReadOnly Property numBytes() As Integer
+    Public ReadOnly Property NumBufferedBytes() As Integer
         Get
-            Return num \ 8
+            Return _numBufferedBits \ 8
         End Get
     End Property
 
 #Region "Base Operations"
-    Public Sub queue(ByVal u As ULong, ByVal n As Integer)
-        If n < 0 Or num + n > MAX_OP_BITS Then Throw New ArgumentOutOfRangeException()
-        buf = buf Or (u << num)
-        num += n
+    Public Sub Queue(ByVal bits As ULong, ByVal numBits As Integer)
+        If numBits < 0 Or numBits > MaxBits Then Throw New ArgumentOutOfRangeException("numBits")
+        If numBits > MaxBits - NumBufferedBits Then Throw New InvalidOperationException("Not enough capacity available.")
+        buf = buf Or (bits << _numBufferedBits)
+        _numBufferedBits += numBits
     End Sub
-    Public Sub stack(ByVal u As ULong, ByVal n As Integer)
-        If n < 0 Or num + n > MAX_OP_BITS Then Throw New ArgumentOutOfRangeException()
-        buf <<= n
-        buf = buf Or u
-        num += n
+    Public Sub Stack(ByVal bits As ULong, ByVal numBits As Integer)
+        If numBits < 0 Or numBits > MaxBits Then Throw New ArgumentOutOfRangeException("numBits")
+        If numBits > MaxBits - NumBufferedBits Then Throw New InvalidOperationException("Not enough capacity available.")
+        buf <<= numBits
+        buf = buf Or bits
+        _numBufferedBits += numBits
     End Sub
-    Public Function take(ByVal n As Integer) As ULong
-        take = peek(n)
-        buf >>= n
-        num -= n
+    Public Function Take(ByVal numBits As Integer) As ULong
+        Take = Peek(numBits)
+        buf >>= numBits
+        _numBufferedBits -= numBits
     End Function
-    Public Function peek(ByVal n As Integer) As ULong
-        If n > num Or n > MAX_OP_BITS Then Throw New ArgumentOutOfRangeException()
-        If n < 0 Then Throw New ArgumentOutOfRangeException()
-        peek = CULng(buf And ((CULng(1) << n) - CULng(1)))
+    Public Function Peek(ByVal numBits As Integer) As ULong
+        If numBits < 0 Or numBits > MaxBits Then Throw New ArgumentOutOfRangeException("numBits")
+        If numBits > NumBufferedBits Then Throw New InvalidOperationException("Not enough buffered buffered bits available.")
+        Peek = CULng(buf And ((CULng(1) << numBits) - CULng(1)))
     End Function
 
-    Public Sub clear()
-        num = 0
+    Public Sub Clear()
+        _numBufferedBits = 0
         buf = 0
     End Sub
 #End Region
 
 #Region "Stack Types"
-    Public Sub stackBit(ByVal b As Boolean)
-        stack(If(b, CULng(1), CULng(0)), 1)
+    Public Sub StackBit(ByVal value As Boolean)
+        Stack(If(value, CULng(1), CULng(0)), 1)
     End Sub
-    Public Sub stackByte(ByVal b As Byte)
-        stack(b, 8)
+    Public Sub StackByte(ByVal value As Byte)
+        Stack(value, 8)
     End Sub
-    Public Sub stackUShort(ByVal s As UShort)
-        stack(s, 16)
+    Public Sub StackUShort(ByVal value As UShort)
+        Stack(value, 16)
     End Sub
-    Public Sub stackUInteger(ByVal u As UInteger)
-        stack(u, 32)
+    Public Sub StackUInteger(ByVal value As UInteger)
+        Stack(value, 32)
     End Sub
 #End Region
 
 #Region "Queue Types"
-    Public Sub queueBit(ByVal b As Boolean)
-        queue(If(b, CULng(1), CULng(0)), 1)
+    Public Sub QueueBit(ByVal value As Boolean)
+        Queue(If(value, CULng(1), CULng(0)), 1)
     End Sub
-    Public Sub queueByte(ByVal b As Byte)
-        queue(b, 8)
+    Public Sub QueueByte(ByVal value As Byte)
+        Queue(value, 8)
     End Sub
-    Public Sub queueUShort(ByVal s As UShort)
-        queue(s, 16)
+    Public Sub QueueUInt16(ByVal value As UInt16)
+        Queue(value, 16)
     End Sub
-    Public Sub queueUInteger(ByVal u As UInteger)
-        queue(u, 32)
+    Public Sub QueueUInt32(ByVal value As UInt32)
+        Queue(value, 32)
     End Sub
 #End Region
 
 #Region "Take Types"
-    Public Function takeBit() As Boolean
-        Return take(1) <> 0
+    Public Function TakeBit() As Boolean
+        Return Take(1) <> 0
     End Function
-    Public Function takeByte() As Byte
-        Return CByte(take(8))
+    Public Function TakeByte() As Byte
+        Return CByte(Take(8))
     End Function
-    Public Function takeUShort() As UShort
-        Return CUShort(take(16))
+    Public Function TakeUInt16() As UInt16
+        Return CUShort(Take(16))
     End Function
-    Public Function takeUInteger() As UInteger
-        Return CUInt(take(32))
+    Public Function TakeUInt32() As UInt32
+        Return CUInt(Take(32))
     End Function
 #End Region
 
 #Region "Peek Types"
-    Public Function peekBit() As Boolean
-        Return peek(1) <> 0
+    Public Function PeekBit() As Boolean
+        Return Peek(1) <> 0
     End Function
-    Public Function peekByte() As Byte
-        Return CByte(peek(8))
+    Public Function PeekByte() As Byte
+        Return CByte(Peek(8))
     End Function
-    Public Function peekUShort() As UShort
-        Return CUShort(peek(16))
+    Public Function PeekUInt16() As UInt16
+        Return CUShort(Peek(16))
     End Function
-    Public Function peekUInteger() As UInteger
-        Return CUInt(peek(32))
+    Public Function PeekUInt32() As UInt32
+        Return CUInt(Peek(32))
     End Function
 #End Region
+End Class
 
-#Region "UShort to Short"
-    Public Sub stackShort(ByVal s As Short)
-        stackUShort(uCUShort(s))
+Public Class ByteSequenceBitBuffer
+    Private ReadOnly buf As New BitBuffer
+    Private ReadOnly sequence As IEnumerator(Of Byte)
+    Public Sub New(ByVal sequence As IEnumerator(Of Byte))
+        Me.sequence = sequence
     End Sub
-    Public Sub queueShort(ByVal s As Short)
-        queueUShort(uCUShort(s))
-    End Sub
-    Public Function takeShort() As Short
-        Return uCShort(takeUShort())
+    Public ReadOnly Property NumBufferedBits As Integer
+        Get
+            Return buf.NumBufferedBits
+        End Get
+    End Property
+    Public Function TryBufferBits(ByVal n As Integer) As Boolean
+        While buf.NumBufferedBits < n
+            If Not sequence.MoveNext Then Return False
+            buf.QueueByte(sequence.Current())
+        End While
+        Return True
     End Function
-#End Region
+    Public Function Take(ByVal n As Integer) As ULong
+        If Not TryBufferBits(n) Then Throw New InvalidOperationException("Ran past end of sequence.")
+        Return buf.Take(n)
+    End Function
+    Public Function TakeBit() As Boolean
+        Return Take(1) <> 0
+    End Function
+    Public Function TakeByte() As Byte
+        Return CByte(Take(8))
+    End Function
+    Public Function TakeUShort() As UShort
+        Return CUShort(Take(16))
+    End Function
+    Public Function TakeUInteger() As UInteger
+        Return CUInt(Take(32))
+    End Function
 End Class

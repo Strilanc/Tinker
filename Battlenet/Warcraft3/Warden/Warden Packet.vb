@@ -11,50 +11,44 @@ Namespace Warcraft3.Warden
     End Enum
 
     Public Class WardenPacket
-#Region "Members"
-        Public ReadOnly payload As IPickle
+        Public ReadOnly payload As IPickle(Of Object)
         Public ReadOnly id As WardenPacketId
-        Private Shared ReadOnly packet_jar As ManualSwitchJar = MakeWardenPacketJar()
-#End Region
+        Private Shared ReadOnly packetJar As ManualSwitchJar = MakeWardenPacketJar()
 
-#Region "New"
-        Private Sub New(ByVal id As WardenPacketId, ByVal payload As IPickle)
-            If Not (payload IsNot Nothing) Then Throw New ArgumentException()
-
+        Private Sub New(ByVal id As WardenPacketId, ByVal payload As IPickle(Of Object))
+            Contract.Requires(payload IsNot Nothing)
             Me.payload = payload
             Me.id = id
         End Sub
         Private Sub New(ByVal id As WardenPacketId, ByVal val As Object)
-            Me.New(id, packet_jar.pack(id, val))
+            Me.New(id, packetJar.pack(id, val))
         End Sub
-#End Region
 
 #Region "Jar"
-        Private Shared Sub regPack(ByVal jar As ManualSwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IJar)
-            jar.regPacker(id, New TupleJar(id.ToString(), subjars))
+        Private Shared Sub regPack(ByVal jar As ManualSwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IPackJar(Of Object))
+            jar.regPacker(id, New TuplePackJar(id.ToString(), "No Info", subjars))
         End Sub
-        Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IJar)
-            jar.regParser(id, New TupleJar(id.ToString(), subjars))
+        Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IParseJar(Of Object))
+            jar.regParser(id, New TupleParseJar(id.ToString(), subjars))
         End Sub
         Public Shared Function MakeWardenPacketJar() As ManualSwitchJar
+            Contract.Ensures(Contract.Result(Of ManualSwitchJar)() IsNot Nothing)
             Dim g = New ManualSwitchJar()
             regParse(g, LoadModule,
-                                New ArrayJar("module id", 16),
-                                New ArrayJar("module rc4 seed", 16),
-                                New ValueJar("dl size", 4))
-            regParse(g, DownloadModule, New ArrayJar("dl data", , 2))
-            regParse(g, PerformCheck, New ArrayJar("unknown0", , , True))
-            regParse(g, RunModule, New ArrayJar("module input data", , , True))
+                                New ArrayJar("module id", expectedSize:=16).Weaken,
+                                New ArrayJar("module rc4 seed", expectedSize:=16).Weaken,
+                                New ValueJar("dl size", 4).Weaken)
+            regParse(g, DownloadModule, New ArrayJar("dl data", sizePrefixSize:=2).Weaken)
+            regParse(g, PerformCheck, New ArrayJar("unknown0", takeRest:=True).Weaken)
+            regParse(g, RunModule, New ArrayJar("module input data", takeRest:=True).Weaken)
             Return g
         End Function
 #End Region
 
-#Region "Parsing"
-        Public Shared Function FromData(ByVal id As WardenPacketId, ByVal data As ImmutableArrayView(Of Byte)) As WardenPacket
-            If Not (data IsNot Nothing) Then Throw New ArgumentException()
-
-            Return New WardenPacket(id, packet_jar.parse(id, data))
+        Public Shared Function FromData(ByVal id As WardenPacketId, ByVal data As IViewableList(Of Byte)) As WardenPacket
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of WardenPacket)() IsNot Nothing)
+            Return New WardenPacket(id, packetJar.parse(id, data))
         End Function
-#End Region
     End Class
 End Namespace

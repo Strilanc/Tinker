@@ -7,6 +7,7 @@
 
     Public Sub New(ByVal substream As IO.Stream, Optional ByVal min_memory As Integer = 4096)
         MyBase.New(substream)
+        Contract.Requires(substream IsNot Nothing)
         Me.memLimit = min_memory
     End Sub
 

@@ -2,91 +2,33 @@ Imports System.Runtime.CompilerServices
 
 Namespace Functional.Queueing
     '''<summary>Describes a thread-safe call queue for non-blocking calls.</summary>
+    <ContractClass(GetType(ContractClassForICallQueue))>
     Public Interface ICallQueue
-        '''<summary>Queues a subroutine to be run and returns a future for the subroutine's eventual completion.</summary>
+        '''<summary>Queues an action to be run and returns a future for the action's eventual completion.</summary>
         Function QueueAction(ByVal action As Action) As IFuture
     End Interface
+    <ContractClassFor(GetType(ICallQueue))>
+    Public Class ContractClassForICallQueue
+        Implements ICallQueue
+        Public Function QueueAction(ByVal action As Action) As Futures.IFuture Implements ICallQueue.QueueAction
+            Contract.Requires(action IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return Nothing
+        End Function
+    End Class
 
-    Public Module QueueExtension
+    Public Module ExtensionsForICallQueue
         '''<summary>Queues a function to be run and returns a future for the function's eventual output.</summary>
         <Extension()> Public Function QueueFunc(Of R)(ByVal queue As ICallQueue, ByVal func As Func(Of R)) As IFuture(Of R)
-            If queue Is Nothing Then Throw New ArgumentNullException("queue")
-            If func Is Nothing Then Throw New ArgumentNullException("func")
+            Contract.Requires(queue IsNot Nothing)
+            Contract.Requires(func IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of R))() IsNot Nothing)
+            Dim func_ = func
             Dim f As New Future(Of R)
-            queue.QueueAction(Sub() f.SetValue(func()))
+            queue.QueueAction(Sub() f.SetValue(func_()))
             Return f
         End Function
     End Module
-
-    ''' <summary>
-    ''' Runs queued calls in order.
-    ''' Logs unexpected exceptions from queued calls.
-    ''' </summary>
-    Public MustInherit Class BaseCallQueue
-        Implements ICallQueue
-        Private ReadOnly lock As New Object() 'Synchronizes access to all variables
-        Private ReadOnly calls As New Queue(Of CallQueueCall) 'Queue of calls to run
-        Private running As Boolean 'Indicates if calls are running
-
-        Private Class CallQueueCall
-            Public ReadOnly [call] As Action
-            Public ReadOnly future As Future
-            Public Sub New(ByVal [call] As Action, ByVal f As Future)
-                Me.call = [call]
-                Me.future = f
-            End Sub
-        End Class
-
-        '''<summary>
-        '''Queues a subroutine to be run and returns a future for the subroutine's eventual completion.
-        '''Starts running calls from the queue if they were not already being run.
-        '''</summary>
-        Public Function QueueAction(ByVal action As Action) As IFuture Implements ICallQueue.QueueAction
-            If action Is Nothing Then Throw New ArgumentNullException("action")
-            Dim f As New Future
-            SyncLock lock
-                calls.Enqueue(New CallQueueCall(action, f))
-                If running Then Return f
-                running = True
-            End SyncLock
-            StartRunning()
-            Return f
-        End Function
-
-        '''<summary>Must call Run to start emptying the queue, and must not block the calling thread (eg. call Run on a new thread).</summary>
-        Protected MustOverride Sub StartRunning()
-
-        '''<summary>Runs queued calls until there are none left.</summary>
-        Protected Sub Run()
-            Dim bq = New Queue(Of CallQueueCall) 'buffer queue
-            Do
-                'Buffer calls
-                SyncLock lock
-                    'Stop running if queue empty
-                    If calls.Count <= 0 Then
-                        running = False
-                        Return
-                    End If
-                    'Copy queued calls to non-synced buffer queue
-                    Do
-                        bq.Enqueue(calls.Dequeue)
-                    Loop While calls.Count() > 0
-                End SyncLock
-
-                'Run buffered calls
-                Do
-                    With bq.Dequeue()
-                        Try
-                            Call .call()
-                        Catch ex As Exception
-                            Logging.LogUnexpectedException("Exception rose past Call Queue Run ({0}, {1})".frmt(Me.GetType.Name), ex)
-                        End Try
-                        .future.SetReady()
-                    End With
-                Loop While bq.Count() > 0
-            Loop
-        End Sub
-    End Class
 
     ''' <summary>
     ''' A multiple-producer, single-consumer queue for running actions in order.
@@ -97,7 +39,7 @@ Namespace Functional.Queueing
     ''' The queue should never end up non-empty and potentially permanently non-consumed.
     ''' </remarks>
     Public MustInherit Class BaseLockFreeCallQueue
-        Inherits BaseConsumingLockFreeCallQueue(Of Node)
+        Inherits BaseLockFreeConsumer(Of Node)
         Implements ICallQueue
         Public Class Node
             Public ReadOnly action As Action
@@ -107,14 +49,14 @@ Namespace Functional.Queueing
             End Sub
         End Class
 
-        '''<summary>
-        '''Queues a subroutine to be run and returns a future for the subroutine's eventual completion.
-        '''Starts running calls from the queue if they were not already being run.
+        ''' <summary>
+        ''' Queues an action to be run and returns a future for the action's eventual completion.
+        ''' Starts running calls from the if they were not already being run.
         '''</summary>
         Public Function QueueAction(ByVal action As Action) As IFuture Implements ICallQueue.QueueAction
-            Dim n = New Node(action)
-            EnqueueConsume(n)
-            Return n.future
+            Dim item = New Node(action)
+            EnqueueConsume(item)
+            Return item.future
         End Function
 
         '''<summary>Runs queued calls until there are none left.</summary>
@@ -133,7 +75,8 @@ Namespace Functional.Queueing
         Inherits BaseLockFreeCallQueue
         Private ReadOnly control As Control
         Public Sub New(ByVal control As Control)
-            Me.control = ContractNotNull(control, "control")
+            Contract.Requires(control IsNot Nothing)
+            Me.control = control
         End Sub
         Protected Overrides Sub StartRunning()
             Try

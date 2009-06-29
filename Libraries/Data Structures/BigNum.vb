@@ -2,8 +2,15 @@
 
 '''<summary>Immutable BigNum</summary>
 Public Class BigNum
-#Region "Members"
-    Private ReadOnly words As ImmutableArrayView(Of UInteger)
+    Implements IComparable(Of BigNum)
+
+    Private ReadOnly _words As UInteger()
+    Private ReadOnly Property words As UInteger()
+        Get
+            Contract.Ensures(Contract.Result(Of UInteger())() IsNot Nothing)
+            Return _words
+        End Get
+    End Property
     Private ReadOnly neg As Boolean
 
     Private Const WORD_SIZE As Integer = 32
@@ -11,10 +18,14 @@ Public Class BigNum
 
     Public Shared ReadOnly Zero As New BigNum(0)
     Public Shared ReadOnly Unit As New BigNum(1)
-#End Region
+
+    <ContractInvariantMethod()> Protected Sub Invariant()
+        Contract.Invariant(_words IsNot Nothing)
+    End Sub
 
 #Region "New"
-    Private Shared Function new_ulong_helper(ByVal n As ULong) As IList(Of UInteger)
+    Private Shared Function GetULongWords(ByVal n As ULong) As List(Of UInteger)
+        Contract.Ensures(Contract.Result(Of List(Of UInteger))() IsNot Nothing)
         Dim m = 64 \ WORD_SIZE + 1
         Dim L = New List(Of UInteger)(m)
         For i = 0 To m
@@ -25,11 +36,10 @@ Public Class BigNum
     End Function
 
     Private Sub New(ByVal n As ULong)
-        Me.New(new_ulong_helper(n), False)
+        Me.New(GetULongWords(n), False)
     End Sub
-    Private Sub New(ByVal words As IList(Of UInteger), ByVal negative As Boolean)
-        If Not (words IsNot Nothing) Then Throw New ArgumentException()
-
+    Private Sub New(ByVal words As List(Of UInteger), ByVal negative As Boolean)
+        Contract.Requires(words IsNot Nothing)
         Me.neg = negative
 
         Dim m As Integer
@@ -37,13 +47,11 @@ Public Class BigNum
             If words(m) <> 0 Then Exit For
         Next m
         If m < 0 Then Me.neg = False
-
-        Me.words = New ImmutableArrayView(Of UInteger)(words.Take(m + 1))
+        Me._words = words.SubToArray(0, m + 1)
     End Sub
-    Private Sub New(ByVal words As ImmutableArrayView(Of UInteger), ByVal negative As Boolean)
-        If Not (words IsNot Nothing) Then Throw New ArgumentException()
-
-        Me.words = words
+    Private Sub New(ByVal words As UInteger(), ByVal negative As Boolean)
+        Contract.Requires(words IsNot Nothing)
+        Me._words = words
         Me.neg = negative And words.Count > 0
     End Sub
 #End Region
@@ -53,95 +61,92 @@ Public Class BigNum
     Private ReadOnly Property wordValue(ByVal index As Integer) As UInteger
         Get
             If index < 0 Then Return 0
-            If index >= words.length Then Return 0
+            If index >= words.Length Then Return 0
             Return words(index)
         End Get
     End Property
 
     Public ReadOnly Property Abs() As BigNum
         Get
-
+            Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
             Return If(Me < 0, -Me, Me)
         End Get
     End Property
-    Public ReadOnly Property Bit(ByVal i As Integer) As Boolean
+    Public ReadOnly Property Sign() As Integer
         Get
-            If i < 0 Then Return False
-            Return CBool(wordValue(i \ WORD_SIZE) And (CUInt(1) << (i Mod WORD_SIZE)))
+            If words.Count = 0 Then Return 0
+            Return If(neg, -1, 1)
+        End Get
+    End Property
+    Public ReadOnly Property Bit(ByVal index As Integer) As Boolean
+        Get
+            If index < 0 Then Return False
+            Return CBool(wordValue(index \ WORD_SIZE) And (CUInt(1) << (index Mod WORD_SIZE)))
         End Get
     End Property
 
-    '''<summary>Returns the minimum number of bits required to store this BigNum</summary>
-    Public ReadOnly Property lg() As UInteger
+    '''<summary>Returns the BigNum's highest set bit position.</summary>
+    Public ReadOnly Property MaxBit() As Integer
         Get
-            If neg Then Throw New InvalidOperationException("Negative lg")
-            Dim n = (words.length - 1) * WORD_SIZE
-            Dim u = wordValue(words.length - 1)
+            Dim n = (words.Length - 1) * WORD_SIZE
+            Dim u = wordValue(words.Length - 1)
             While u <> 0
                 u >>= 1
                 n += 1
             End While
             If n < 0 Then Return 0
-            Return CUInt(n)
+            Return n
         End Get
     End Property
 
-    Public Shared Function gcd(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-
-        If b2 = 0 Then Return b1
-        Return gcd(b2, b1 Mod b2)
+    Public Shared Function Gcd(ByVal a As BigNum, ByVal b As BigNum) As BigNum
+        Contract.Requires(a IsNot Nothing)
+        Contract.Requires(b IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        If b = 0 Then Return a
+        Return Gcd(b, a Mod b)
     End Function
-    Public Shared Function lcm(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-
-        lcm = (b1 * b2) \ gcd(b1, b2)
+    Public Shared Function Lcm(ByVal a As BigNum, ByVal b As BigNum) As BigNum
+        Contract.Requires(a IsNot Nothing)
+        Contract.Requires(b IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Lcm = (a * b) \ Gcd(a, b)
     End Function
-    Public Shared Function gcdex(ByVal a As BigNum, ByVal b As BigNum) As Pair(Of BigNum, BigNum)
-        If Not (a IsNot Nothing) Then Throw New ArgumentException()
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
+    Public Shared Function GcdEx(ByVal a As BigNum, ByVal b As BigNum) As GcdExResult
+        Contract.Requires(a IsNot Nothing)
+        Contract.Requires(b IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of GcdExResult)() IsNot Nothing)
 
-        Dim a_over_b_quot As BigNum
-        Dim a_over_b_rem As BigNum
-        With DivMod(a, b)
-            a_over_b_quot = .quotient
-            a_over_b_rem = .remainder
-        End With
-        If a_over_b_rem = 0 Then
-            Return New Pair(Of BigNum, BigNum)(0, 1)
-        Else
-            Dim x As BigNum, y As BigNum
-            With gcdex(b, a_over_b_rem)
-                x = .v1
-                y = .v2
-            End With
-            Return New Pair(Of BigNum, BigNum)(y, x - (y * a_over_b_quot))
-        End If
+        Dim division = DivMod(a, b)
+        If division.remainder = 0 Then Return New GcdExResult(0, 1)
+
+        Dim recursion = GcdEx(b, division.remainder)
+        Return New GcdExResult(recursion.Y, recursion.X - (recursion.Y * division.quotient))
     End Function
-    Public Function inverseMod(ByVal n As BigNum) As BigNum
-        If Not (n IsNot Nothing) Then Throw New ArgumentException()
-        inverseMod = gcdex(Me, n).v1
-        If (inverseMod * Me) Mod n <> 1 Then Throw New OperationFailedException("Failed to computed modular inverse")
+    Public Function InverseMod(ByVal n As BigNum) As BigNum
+        Contract.Requires(n IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        InverseMod = GcdEx(Me, n).X
+        If (InverseMod * Me) Mod n <> 1 Then Throw New OperationFailedException("Failed to compute modular inverse")
     End Function
-    Public Function randomUniformUpTo(Optional ByVal rand As Random = Nothing, Optional ByVal allowEqual As Boolean = False, Optional ByVal allowZero As Boolean = True) As BigNum
+    Public Function RandomUniformUpTo(Optional ByVal rand As Random = Nothing,
+                                      Optional ByVal allowEqual As Boolean = False,
+                                      Optional ByVal allowZero As Boolean = True) As BigNum
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
         If (Not allowZero Or Not allowEqual) And Me = 0 Then Throw New ArgumentException("Invalid Range")
         If (Not allowZero And Not allowEqual) And Me = 1 Then Throw New ArgumentException("Invalid Range")
-        If Not allowZero Then Return (Me - 1).randomUniformUpTo(rand, allowEqual, True) + 1
-        If Not allowEqual Then Return (Me - 1).randomUniformUpTo(rand, True, allowZero)
+        If Not allowZero Then Return (Me - 1).RandomUniformUpTo(rand, allowEqual, True) + 1
+        If Not allowEqual Then Return (Me - 1).RandomUniformUpTo(rand, True, allowZero)
         If rand Is Nothing Then rand = New Random()
         If Me = 0 Then Return 0
 
         Dim n = Zero
-        Dim strictly_less_than = False
-        For i = CInt(Me.lg()) To 0 Step -1
-            If strictly_less_than Or Me.Bit(i) Then
+        Dim isStrictlyLessThan = False
+        For i = Me.MaxBit() To 0 Step -1
+            If isStrictlyLessThan Or Me.Bit(i) Then
                 Dim r = rand.Next(2)
                 If r = 0 Then
-                    strictly_less_than = True
+                    isStrictlyLessThan = True
                 Else
                     n = n Or (Unit << i)
                 End If
@@ -152,128 +157,146 @@ Public Class BigNum
 #End Region
 
 #Region "CType Operators"
-    Public Shared Widening Operator CType(ByVal n As ULong) As BigNum
-        If n = 0 Then Return Zero
-        If n = 1 Then Return Unit
-        Return New BigNum(n)
+    Public Shared Widening Operator CType(ByVal value As ULong) As BigNum
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        If value = 0 Then Return Zero
+        If value = 1 Then Return Unit
+        Return New BigNum(value)
     End Operator
-    Public Shared Narrowing Operator CType(ByVal b As BigNum) As ULong
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
+    Public Shared Narrowing Operator CType(ByVal value As BigNum) As ULong
+        Contract.Requires(value IsNot Nothing)
 
-        If b < ULong.MinValue OrElse b > ULong.MaxValue Then
-            Throw New ArgumentOutOfRangeException("b", "Value is outside of range of ULong")
+        If value < ULong.MinValue OrElse value > ULong.MaxValue Then
+            Throw New ArgumentOutOfRangeException("value", "Value is outside of range of ULong")
         End If
 
         Dim n = CULng(0)
-        For Each word In b.words.Reverse()
+        For Each word In value.words.Reverse()
             n = (n << WORD_SIZE) + word
         Next word
         Return n
     End Operator
 
-    Public Shared Widening Operator CType(ByVal n As Long) As BigNum
-        If n < 0 Then Return -New BigNum(CULng(-n))
-        Return CULng(n)
+    Public Shared Widening Operator CType(ByVal value As Long) As BigNum
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        If value < 0 Then Return -New BigNum(CULng(-value))
+        Return CULng(value)
     End Operator
-    Public Shared Narrowing Operator CType(ByVal b As BigNum) As Long
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
+    Public Shared Narrowing Operator CType(ByVal value As BigNum) As Long
+        Contract.Requires(value IsNot Nothing)
 
-        If b = Long.MinValue Then Return Long.MinValue
-        If b < Long.MinValue OrElse b > Long.MaxValue Then
-            Throw New ArgumentOutOfRangeException("b", "Value is outside of range of Long")
+        If value = Long.MinValue Then Return Long.MinValue
+        If value < Long.MinValue OrElse value > Long.MaxValue Then
+            Throw New ArgumentOutOfRangeException("value", "Value is outside of range of Long")
         End If
-        Dim n = CLng(CULng(b.Abs()))
-        Return If(b.neg, -n, n)
+        Dim n = CLng(CULng(value.Abs()))
+        Return If(value.neg, -n, n)
     End Operator
 
-    Public Shared Widening Operator CType(ByVal u As UInteger) As BigNum
-        Return CULng(u)
+    Public Shared Widening Operator CType(ByVal value As UInteger) As BigNum
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Return CULng(value)
     End Operator
-    Public Shared Widening Operator CType(ByVal i As Integer) As BigNum
-        Return CLng(i)
+    Public Shared Widening Operator CType(ByVal value As Integer) As BigNum
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Return CLng(value)
     End Operator
-    Public Shared Narrowing Operator CType(ByVal b As BigNum) As UInteger
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
-        Return CUInt(CULng(b))
+    Public Shared Narrowing Operator CType(ByVal value As BigNum) As UInteger
+        Contract.Requires(value IsNot Nothing)
+        Return CUInt(CULng(value))
     End Operator
-    Public Shared Narrowing Operator CType(ByVal b As BigNum) As Integer
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
-        Return CInt(CLng(b))
+    Public Shared Narrowing Operator CType(ByVal value As BigNum) As Integer
+        Contract.Requires(value IsNot Nothing)
+        Return CInt(CLng(value))
     End Operator
 #End Region
 
 #Region "Comparisons"
-    Public Shared Operator <(ByVal b1 As BigNum, ByVal b2 As BigNum) As Boolean
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
+    Public Function CompareTo(ByVal other As BigNum) As Integer Implements IComparable(Of BigNum).CompareTo
+        Contract.Assume(other IsNot Nothing)
 
-        If b1.neg And Not b2.neg Then Return True
-        If b2.neg And Not b1.neg Then Return False
-        If b1.words.length > b2.words.length Then Return b1.neg
-        If b1.words.length < b2.words.length Then Return Not b1.neg
-        For i = b1.words.length - 1 To 0 Step -1
-            If b1.words(i) > b2.words(i) Then Return b1.neg
-            If b1.words(i) < b2.words(i) Then Return Not b1.neg
+        If Me.neg Then Return -((-Me).CompareTo(-other))
+        If other.neg Then Return 1
+        If Me.words.Length <> other.words.Length Then
+            Return Me.words.Length - other.words.Length
+        End If
+        For i = Me.words.Length - 1 To 0 Step -1
+            If Me.words(i) <> other.words(i) Then
+                Return Math.Sign(CLng(Me.words(i)) - CLng(other.words(i)))
+            End If
         Next i
-        Return False
-    End Operator
-    Public Shared Operator =(ByVal b1 As BigNum, ByVal b2 As BigNum) As Boolean
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-        If b1.neg <> b2.neg Then Return False
-        If b1.words.length <> b2.words.length Then Return False
-        For i = 0 To b1.words.length - 1
-            If b1.words(i) <> b2.words(i) Then Return False
-        Next i
-        Return True
-    End Operator
+        Return 0
+    End Function
     Public Overrides Function Equals(ByVal obj As Object) As Boolean
         If obj Is Nothing Then Return False
         If TypeOf obj Is BigNum Then Return CType(obj, BigNum) = Me
         Return False
     End Function
+    Public Overrides Function GetHashCode() As Integer
+        Dim x = 0
+        For Each word In words
+            x = x Xor word.GetHashCode()
+        Next
+        Return x
+    End Function
 
-    Public Shared Operator <>(ByVal b1 As BigNum, ByVal b2 As BigNum) As Boolean
-        Return Not b1 = b2
+    Public Shared Operator =(ByVal value1 As BigNum, ByVal value2 As BigNum) As Boolean
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Return value1.CompareTo(value2) = 0
     End Operator
-    Public Shared Operator <=(ByVal b1 As BigNum, ByVal b2 As BigNum) As Boolean
-        Return Not b2 < b1
+    Public Shared Operator <>(ByVal value1 As BigNum, ByVal value2 As BigNum) As Boolean
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Return value1.CompareTo(value2) <> 0
     End Operator
-    Public Shared Operator >=(ByVal b1 As BigNum, ByVal b2 As BigNum) As Boolean
-        Return Not b1 < b2
+    Public Shared Operator <(ByVal value1 As BigNum, ByVal value2 As BigNum) As Boolean
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Return value1.CompareTo(value2) < 0
     End Operator
-    Public Shared Operator >(ByVal b1 As BigNum, ByVal b2 As BigNum) As Boolean
-        Return b2 < b1
+    Public Shared Operator <=(ByVal value1 As BigNum, ByVal value2 As BigNum) As Boolean
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Return value1.CompareTo(value2) <= 0
+    End Operator
+    Public Shared Operator >=(ByVal value1 As BigNum, ByVal value2 As BigNum) As Boolean
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Return value1.CompareTo(value2) >= 0
+    End Operator
+    Public Shared Operator >(ByVal value1 As BigNum, ByVal value2 As BigNum) As Boolean
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Return value1.CompareTo(value2) > 0
     End Operator
 #End Region
 
 #Region "Operators"
     '''<summary>Returns the negation of a bignum.</summary>
-    Public Shared Operator -(ByVal b As BigNum) As BigNum
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
-
-        Return New BigNum(b.words, Not b.neg)
+    Public Shared Operator -(ByVal value As BigNum) As BigNum
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Return New BigNum(value.words, Not value.neg)
     End Operator
 
     '''<summary>Returns the sum of two BigNums,</summary>
-    Public Shared Operator +(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
+    Public Shared Operator +(ByVal value1 As BigNum, ByVal value2 As BigNum) As BigNum
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        If value1 = 0 Then Return value2
+        If value2 = 0 Then Return value1
+        If value1.neg <> value2.neg Then Return value1 - -value2
 
-
-        If b1 = 0 Then Return b2
-        If b2 = 0 Then Return b1
-        If b1.neg <> b2.neg Then Return b1 - -b2
-
-        Dim neg = b1.neg
+        Dim neg = value1.neg
         Dim words As New List(Of UInteger)
 
         Dim carry = CULng(0)
-        Dim max = Math.Max(b1.words.length, b2.words.length)
+        Dim max = Math.Max(value1.words.Length, value2.words.Length)
         Dim i = 0
         Do Until carry = 0 AndAlso i >= max
-            Dim sum = CULng(b1.wordValue(i)) + CULng(b2.wordValue(i)) + carry
+            Dim sum = CULng(value1.wordValue(i)) + CULng(value2.wordValue(i)) + carry
             carry = sum >> WORD_SIZE
             words.Add(CUInt(sum And WORD_MASK))
             i += 1
@@ -281,23 +304,22 @@ Public Class BigNum
         Return New BigNum(words, neg)
     End Operator
     '''<summary>Returns the difference between two BigNums</summary>
-    Public Shared Operator -(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
+    Public Shared Operator -(ByVal value1 As BigNum, ByVal value2 As BigNum) As BigNum
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        If value1 = 0 Then Return -value2
+        If value2 = 0 Then Return value1
+        If value1.Abs < value2.Abs Then Return -(value2 + -value1)
+        If value1.neg <> value2.neg Then Return value1 + -value2
 
-
-        If b1 = 0 Then Return -b2
-        If b2 = 0 Then Return b1
-        If b1.Abs < b2.Abs Then Return -(b2 + -b1)
-        If b1.neg <> b2.neg Then Return b1 + -b2
-
-        Dim neg = b1.neg
-        Dim words As New List(Of UInteger)(b1.words.length - 1) 'b1.maxWord >= b2.maxWord
+        Dim neg = value1.neg
+        Dim words As New List(Of UInteger)(value1.words.Length - 1) 'b1.maxWord >= b2.maxWord
 
         Dim carry = CLng(0)
         Dim i = 0
-        Do Until carry = 0 AndAlso i >= b1.words.length
-            Dim dif = CLng(b1.wordValue(i)) - CLng(b2.wordValue(i)) - carry
+        Do Until carry = 0 AndAlso i >= value1.words.Length
+            Dim dif = CLng(value1.wordValue(i)) - CLng(value2.wordValue(i)) - carry
             carry = If(dif < 0, 1, 0)
             words.Add(CUInt(dif And WORD_MASK))
             i += 1
@@ -306,104 +328,81 @@ Public Class BigNum
     End Operator
 
     '''<summary>Returns the product of two BigNums</summary>
-    Public Shared Operator *(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-
-        Dim neg = b1.neg Xor b2.neg
-        b1 = b1.Abs()
-        b2 = b2.Abs()
+    Public Shared Operator *(ByVal value1 As BigNum, ByVal value2 As BigNum) As BigNum
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Dim neg = value1.neg Xor value2.neg
+        value1 = value1.Abs()
+        value2 = value2.Abs()
         Dim p = Zero
-        For Each word In b1.words
-            p += b2 * word
-            b2 <<= WORD_SIZE
+        For Each word In value1.words
+            p += value2 * word
+            value2 <<= WORD_SIZE
         Next word
         Return If(neg, -p, p)
     End Operator
     '''<summary>Multiplies this bignum by the given word</summary>
-    Public Shared Operator *(ByVal b As BigNum, ByVal u As UInteger) As BigNum
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
-
-
+    Public Shared Operator *(ByVal value1 As BigNum, ByVal value2 As UInteger) As BigNum
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
         Dim carry = CULng(0)
         Dim i = 0
-        Dim ul = CULng(u)
+        Dim ul = CULng(value2)
         Dim words = New List(Of UInteger)
-        Do Until carry = 0 AndAlso i >= b.words.length
-            Dim product = CULng(b.wordValue(i)) * ul + carry
+        Do Until carry = 0 AndAlso i >= value1.words.Length
+            Dim product = CULng(value1.wordValue(i)) * ul + carry
             carry = product >> WORD_SIZE
             words.Add(CUInt(product And WORD_MASK))
             i += 1
         Loop
-        Return New BigNum(words, b.neg)
+        Return New BigNum(words, value1.neg)
     End Operator
     '''<summary>Returns the AND of two BigNums</summary>
-    Public Shared Operator And(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-        Dim words = New List(Of UInteger)()
-        Dim neg = b1.neg And b2.neg
-        Dim i = 0
-        Do Until i >= b1.words.length Or i >= b2.words.length
-            words.Add(b1.words(i) And b2.words(i))
-            i += 1
-        Loop
+    Public Shared Operator And(ByVal value1 As BigNum, ByVal value2 As BigNum) As BigNum
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Dim n = Math.Min(value1.words.Length, value2.words.Length)
+        Dim words(0 To n - 1) As UInteger
+        Dim neg = value1.neg And value2.neg
+        For i = 0 To n - 1
+            words(i) = value1.words(i) And value2.words(i)
+        Next i
         Return New BigNum(words, neg)
     End Operator
     '''<summary>Returns the OR of two BigNums</summary>
-    Public Shared Operator Or(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-        Dim words = New List(Of UInteger)()
-        Dim neg = b1.neg Or b2.neg
-        Dim i = 0
-        Do Until i >= b1.words.length Or i >= b2.words.length
-            words.Add(b1.words(i) Or b2.words(i))
-            i += 1
-        Loop
-        Do Until i >= b1.words.length
-            words.Add(b1.wordValue(i))
-            i += 1
-        Loop
-        Do Until i >= b2.words.length
-            words.Add(b2.wordValue(i))
-            i += 1
-        Loop
+    Public Shared Operator Or(ByVal value1 As BigNum, ByVal value2 As BigNum) As BigNum
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Dim n = Math.Max(value1.words.Length, value2.words.Length)
+        Dim words(0 To n - 1) As UInteger
+        Dim neg = value1.neg Or value2.neg
+        For i = 0 To n - 1
+            words(i) = value1.wordValue(i) Or value2.wordValue(i)
+        Next i
         Return New BigNum(words, neg)
     End Operator
     '''<summary>Returns the XOR of two BigNums</summary>
-    Public Shared Operator Xor(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-
-        Dim words = New List(Of UInteger)()
-        Dim neg = b1.neg Or b2.neg
-        Dim i = 0
-        Do Until i >= b1.words.length Or i >= b2.words.length
-            words.Add(b1.words(i) Xor b2.words(i))
-            i += 1
-        Loop
-        Do Until i >= b1.words.length
-            words.Add(b1.wordValue(i))
-            i += 1
-        Loop
-        Do Until i >= b2.words.length
-            words.Add(b2.wordValue(i))
-            i += 1
-        Loop
+    Public Shared Operator Xor(ByVal value1 As BigNum, ByVal value2 As BigNum) As BigNum
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Dim n = Math.Max(value1.words.Length, value2.words.Length)
+        Dim words(0 To n - 1) As UInteger
+        Dim neg = value1.neg Or value2.neg
+        For i = 0 To n - 1
+            words(i) = value1.wordValue(i) Xor value2.wordValue(i)
+        Next i
         Return New BigNum(words, neg)
     End Operator
     '''<summary>Returns the given BigNum left-shifted by 'offset' bits</summary>
-    Public Shared Operator <<(ByVal b As BigNum, ByVal offset As Integer) As BigNum
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
-
-
-        If offset = 0 Then Return b
-        If offset < 0 Then Return b >> -offset
+    Public Shared Operator <<(ByVal value As BigNum, ByVal offset As Integer) As BigNum
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        If offset = 0 Then Return value
+        If offset < 0 Then Return value >> -offset
 
         Dim wordDif = offset \ WORD_SIZE
         Dim bitDif = offset Mod WORD_SIZE
@@ -414,21 +413,21 @@ Public Class BigNum
         For i = 0 To wordDif - 1
             words.Add(0)
         Next i
-        For i = wordDif To b.words.length + wordDif
-            Dim low = (b.wordValue(i - wordDif) And lowMask) << bitDif
-            Dim high = (b.wordValue(i - wordDif - 1) And highMask) >> (WORD_SIZE - bitDif)
+        For i = wordDif To value.words.Length + wordDif
+            Dim low = (value.wordValue(i - wordDif) And lowMask) << bitDif
+            Dim high = (value.wordValue(i - wordDif - 1) And highMask) >> (WORD_SIZE - bitDif)
             words.Add(high Or low)
         Next i
-        Return New BigNum(words, b.neg)
+        Return New BigNum(words, value.neg)
     End Operator
     '''<summary>Returns the given BigNum right-shifted by 'offset' bits</summary>
-    Public Shared Operator >>(ByVal b As BigNum, ByVal offset As Integer) As BigNum
-        If Not (b IsNot Nothing) Then Throw New ArgumentException()
+    Public Shared Operator >>(ByVal value As BigNum, ByVal offset As Integer) As BigNum
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
 
-
-        If offset = 0 Then Return b
-        If offset < 0 Then Return b << -offset
-        If offset > b.lg Then Return Zero
+        If offset = 0 Then Return value
+        If offset < 0 Then Return value << -offset
+        If offset > value.MaxBit Then Return Zero
 
         Dim wordDif = offset \ WORD_SIZE
         Dim bitDif = offset Mod WORD_SIZE
@@ -436,47 +435,92 @@ Public Class BigNum
         Dim highMask = Not lowMask
 
         Dim words = New List(Of UInteger)
-        For i = 0 To b.words.length - 1
-            Dim low = (b.wordValue(i + wordDif + 1) And lowMask) << (WORD_SIZE - bitDif)
-            Dim high = (b.wordValue(i + wordDif) And highMask) >> bitDif
+        For i = 0 To value.words.Length - 1
+            Dim low = (value.wordValue(i + wordDif + 1) And lowMask) << (WORD_SIZE - bitDif)
+            Dim high = (value.wordValue(i + wordDif) And highMask) >> bitDif
             words.Add(low Or high)
         Next i
-        Return New BigNum(words, b.neg)
+        Return New BigNum(words, value.neg)
     End Operator
     '''<summary>Returns the quotient of b1\b2</summary>
-    Public Shared Operator \(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-        Return DivMod(b1, b2).quotient
+    Public Shared Operator \(ByVal value As BigNum, ByVal divisor As BigNum) As BigNum
+        Contract.Requires(value IsNot Nothing)
+        Contract.Requires(divisor IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Return DivMod(value, divisor).quotient
     End Operator
     '''<summary>Returns the remainder of b1\b2</summary>
-    Public Shared Operator Mod(ByVal b1 As BigNum, ByVal b2 As BigNum) As BigNum
-        If b1 Is Nothing Then Throw New ArgumentException()
-        If b2 Is Nothing Then Throw New ArgumentException()
-
-
-        Return DivMod(b1, b2).remainder
+    Public Shared Operator Mod(ByVal value As BigNum, ByVal divisor As BigNum) As BigNum
+        Contract.Requires(value IsNot Nothing)
+        Contract.Requires(divisor IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Return DivMod(value, divisor).remainder
     End Operator
 #End Region
 
 #Region "Mod Ops"
     Public Class DivModResult
-        Public ReadOnly quotient As BigNum
-        Public ReadOnly remainder As BigNum
+        Private ReadOnly _quotient As BigNum
+        Private ReadOnly _remainder As BigNum
+        Public ReadOnly Property quotient As BigNum
+            Get
+                Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+                Return _quotient
+            End Get
+        End Property
+        Public ReadOnly Property remainder As BigNum
+            Get
+                Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+                Return _remainder
+            End Get
+        End Property
+
+        <ContractInvariantMethod()> Protected Sub Invariant()
+            Contract.Invariant(_quotient IsNot Nothing)
+            Contract.Invariant(_remainder IsNot Nothing)
+        End Sub
 
         Public Sub New(ByVal quotient As BigNum, ByVal remainder As BigNum)
-            If Not (quotient IsNot Nothing) Then Throw New ArgumentException()
-            If Not (remainder IsNot Nothing) Then Throw New ArgumentException()
-
-            Me.quotient = quotient
-            Me.remainder = remainder
+            Contract.Requires(quotient IsNot Nothing)
+            Contract.Requires(remainder IsNot Nothing)
+            Me._quotient = quotient
+            Me._remainder = remainder
         End Sub
     End Class
+    Public Class GcdExResult
+        Private ReadOnly _x As BigNum
+        Private ReadOnly _y As BigNum
+        Public ReadOnly Property X As BigNum
+            Get
+                Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+                Return _x
+            End Get
+        End Property
+        Public ReadOnly Property Y As BigNum
+            Get
+                Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+                Return _y
+            End Get
+        End Property
+
+        <ContractInvariantMethod()> Protected Sub Invariant()
+            Contract.Invariant(_x IsNot Nothing)
+            Contract.Invariant(_y IsNot Nothing)
+        End Sub
+
+        Public Sub New(ByVal x As BigNum, ByVal y As BigNum)
+            Contract.Requires(x IsNot Nothing)
+            Contract.Requires(y IsNot Nothing)
+            Me._x = x
+            Me._y = y
+        End Sub
+    End Class
+
     '''<summary>Returns the quotient and remainder for the given numerator and denominator.</summary>
     Public Shared Function DivMod(ByVal numerator As BigNum, ByVal denominator As BigNum) As DivModResult
-        If numerator Is Nothing Then Throw New ArgumentNullException("numerator")
-        If denominator Is Nothing Then Throw New ArgumentNullException("denominator")
+        Contract.Requires(numerator IsNot Nothing)
+        Contract.Requires(denominator IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of DivModResult)() IsNot Nothing)
         If denominator = 0 Then Throw New DivideByZeroException()
 
         If denominator = 1 Then Return New DivModResult(numerator, 0)
@@ -499,7 +543,7 @@ Public Class BigNum
 
         Dim quotient = Zero
         Dim remainder = numerator
-        Dim m = denominator << CInt(numerator.lg() - denominator.lg())
+        Dim m = denominator << (numerator.MaxBit() - denominator.MaxBit())
         If m > numerator Then m >>= 1
 
         While remainder >= denominator
@@ -514,19 +558,18 @@ Public Class BigNum
     End Function
 
     '''<summary>Returns a BigNum equal to this BigNum raised to the power p, mod m.</summary>
-    Public Function powerMod(ByVal p As BigNum, ByVal m As BigNum) As BigNum
-        If Not (p IsNot Nothing) Then Throw New ArgumentException()
-        If Not (m IsNot Nothing) Then Throw New ArgumentException()
-
-
-        If Me.neg Or p.neg Or m.neg Then Throw New ArgumentException("All arguments to powerMod must be non-negative.")
+    Public Function PowerMod(ByVal p As BigNum, ByVal m As BigNum) As BigNum
+        Contract.Requires(p IsNot Nothing)
+        Contract.Requires(m IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        If Me.neg Or p.neg Or m.neg Then Throw New ArgumentException("All arguments to PowerMod must be non-negative.")
         If m = 0 Then Throw New DivideByZeroException()
         If m = 1 Then Return 0
         If p = 0 Then Return 1
 
         Dim factor = Me Mod m
         Dim total = Unit
-        For i = 0 To CInt(p.lg()) - 1
+        For i = 0 To p.MaxBit() - 1
             If p.Bit(i) Then total = (total * factor) Mod m
             factor = (factor * factor) Mod m
         Next i
@@ -536,98 +579,111 @@ Public Class BigNum
 #End Region
 
 #Region "Base Conversions"
-    Public Shared Function fromBase(ByVal L As IEnumerable(Of UInteger),
+    Public Shared Function FromBase(ByVal digits As IEnumerable(Of UInteger),
                                     ByVal base As UInteger,
-                                    Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
-        If L Is Nothing Then Throw New ArgumentNullException("L")
-        If base < 2 Then Throw New ArgumentOutOfRangeException("base")
-
+                                    ByVal byteOrder As ByteOrder) As BigNum
+        Contract.Requires(digits IsNot Nothing)
+        Contract.Requires(base >= 2)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
         Dim n = Zero
-        If byte_order = ByteOrder.LittleEndian Then L = L.Reverse()
-        For Each e In L
+        If byteOrder = byteOrder.LittleEndian Then digits = digits.Reverse()
+        For Each e In digits
             n *= base
             If e >= base Then Throw New ArgumentException("A digit was larger than the base")
             n += e
         Next e
         Return n
     End Function
-    Public Shared Function fromBaseBytes(ByVal L As IEnumerable(Of Byte), ByVal base As UInteger,
-                                         Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
-        If Not (L IsNot Nothing) Then Throw New ArgumentException()
-        If Not (base >= 2) Then Throw New ArgumentException()
-
-
-        Dim Lu As New List(Of UInteger)
-        For Each e In L
-            Lu.Add(e)
-        Next e
-        Return fromBase(Lu, base, byte_order)
-    End Function
-    Public Shared Function fromBytes(ByVal L As IEnumerable(Of Byte),
-                                     Optional ByVal byte_order As ByteOrder = ByteOrder.LittleEndian) As BigNum
-        If Not (L IsNot Nothing) Then Throw New ArgumentException()
-
-
-        Return fromBaseBytes(L, 256, byte_order)
+    Public Shared Function FromBaseBytes(ByVal digits As IEnumerable(Of Byte),
+                                         ByVal base As UInteger,
+                                         ByVal byteOrder As ByteOrder) As BigNum
+        Contract.Requires(digits IsNot Nothing)
+        Contract.Requires(base >= 2)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Dim digits_ = (From d In digits Select CUInt(d))
+        Contract.Assume(digits_ IsNot Nothing)
+        Dim x = FromBase(digits_, base, byteOrder)
+        Contract.Assume(x IsNot Nothing)
+        Return x
     End Function
 
-    Public Function toBase(ByVal base As UInteger, Optional ByVal BigEndian As Boolean = False) As IEnumerable(Of UInteger)
-        If Not (base >= 2) Then Throw New ArgumentException()
+    Public Shared Function FromBytes(ByVal digits As IEnumerable(Of Byte),
+                                     ByVal byteOrder As ByteOrder) As BigNum
+        Contract.Requires(digits IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
+        Return FromBaseBytes(digits, 256, byteOrder)
+    End Function
 
+    Public Function ToBase(ByVal base As UInteger,
+                           ByVal byteOrder As ByteOrder) As IList(Of UInteger)
+        Contract.Requires(base >= 2)
+        Contract.Ensures(Contract.Result(Of IList(Of UInteger))() IsNot Nothing)
 
-        Dim L As New List(Of UInteger)
-        Dim d As New DivModResult(Me.Abs(), 0)
+        Dim L = New List(Of UInteger)
+        Dim d = New DivModResult(Me.Abs(), 0)
         While d.quotient > 0
             d = BigNum.DivMod(d.quotient, base)
             L.Add(CUInt(d.remainder))
         End While
-        Dim Li = CType(L, IEnumerable(Of UInteger))
-        If BigEndian Then Li = Li.Reverse()
-        Return Li
+
+        Select Case byteOrder
+            Case HostBot.ByteOrder.LittleEndian
+                Return L
+            Case HostBot.ByteOrder.BigEndian
+                L.Reverse()
+                Return L
+            Case Else
+                Throw New UnreachableException()
+        End Select
     End Function
-    Public Function toBaseBytes(ByVal base As UInteger, Optional ByVal BigEndian As Boolean = False) As List(Of Byte)
-
-        If Not (base >= 2) Then Throw New ArgumentException()
-
-        If base > 256 Then Throw New ArgumentOutOfRangeException("base")
-        Dim L = toBase(base, BigEndian)
-        Dim Lb As New List(Of Byte)
-        For Each u In L
-            Lb.Add(CByte(u))
-        Next u
-        Return Lb
+    Public Function ToBaseBytes(ByVal base As UInteger,
+                                ByVal byteOrder As ByteOrder) As IList(Of Byte)
+        Contract.Requires(base >= 2)
+        Contract.Requires(base <= 256)
+        Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+        Dim x = (From u In ToBase(base, byteOrder) Select CByte(u))
+        Contract.Assume(x IsNot Nothing)
+        Dim y = x.ToList()
+        Contract.Assume(y IsNot Nothing)
+        Return y
     End Function
-    Public Function toBytes(Optional ByVal BigEndian As Boolean = False) As List(Of Byte)
-
-
-        Return toBaseBytes(256, BigEndian)
+    Public Function ToBytes(ByVal byteOrder As ByteOrder) As IList(Of Byte)
+        Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+        Return ToBaseBytes(256, byteOrder)
     End Function
 
     '''<summary>Returns a decimal representation of this number</summary>
-    Public ReadOnly Property toDecimal() As String
+    Public ReadOnly Property ToDecimal() As String
         Get
-            Return toString(10)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return ToString(10, ByteOrder.BigEndian)
         End Get
     End Property
     '''<summary>Returns a binary representation of this number</summary>
-    Public ReadOnly Property toBinary() As String
+    Public ReadOnly Property ToBinary() As String
         Get
-            Return toString(2)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return ToString(2, ByteOrder.BigEndian)
         End Get
     End Property
     '''<summary>Returns a hexadecimal representation of this number</summary>
-    Public ReadOnly Property toHex() As String
+    Public ReadOnly Property ToHex() As String
         Get
-            Return toString(16)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return ToString(16, ByteOrder.BigEndian)
         End Get
     End Property
 
     '''<summary>Returns a string representation of this number.</summary>
-    Public Shadows Function toString(ByVal base As UInteger, Optional ByVal BigEndian As Boolean = True) As String
+    Public Shadows Function ToString(ByVal base As UInteger,
+                                     ByVal byteOrder As ByteOrder) As String
+        Contract.Requires(base >= 2)
+        Contract.Requires(base <= 36)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         If base < 2 Or base > 36 Then Throw New ArgumentOutOfRangeException("base", "base must be in [2,36]")
         If Me = 0 Then Return "0"
-        If Me < 0 Then Return "-" + Me.Abs().toString(base)
-        Dim digits = toBase(base, BigEndian)
+        If Me < 0 Then Return "-" + Me.Abs().ToString(base, byteOrder)
+        Dim digits = ToBase(base, byteOrder)
         Dim s As New System.Text.StringBuilder()
         For i = 0 To digits.Count - 1
             Select Case digits(i)
@@ -641,14 +697,20 @@ Public Class BigNum
         Next i
         Return s.ToString
     End Function
-    Public Shared Function fromString(ByVal s As String, ByVal base As UInteger,
-                                      Optional ByVal byte_order As ByteOrder = ByteOrder.BigEndian) As BigNum
-        If base < 2 Or base > 36 Then Throw New ArgumentOutOfRangeException("base", "base must be in [2,36]")
+    Public Shared Function FromString(ByVal number As String,
+                                      ByVal base As UInteger,
+                                      ByVal byteOrder As ByteOrder) As BigNum
+        Contract.Requires(number IsNot Nothing)
+        Contract.Requires(base >= 2)
+        Contract.Requires(base <= 36)
+        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
         Dim L As New List(Of UInteger)
-        For Each c In s
+        For Each c In number
             Select Case c
                 Case "0"c To "9"c
-                    L.Add(Byte.Parse(c))
+                    Dim s = CStr(c)
+                    Contract.Assume(s IsNot Nothing)
+                    L.Add(Byte.Parse(s))
                 Case "A"c To "Z"c
                     L.Add(CUInt(Asc(c) - Asc("A") + 10))
                 Case "a"c To "z"c
@@ -657,19 +719,19 @@ Public Class BigNum
                     Throw New ArgumentException("Invalid string.")
             End Select
         Next c
-        Return fromBase(L, base, byte_order)
+        Return FromBase(L, base, byteOrder)
     End Function
 #End Region
 
 #Region "Testing"
-    Friend Shared Sub run_tests(ByVal rand As Random)
+    Friend Shared Sub RunTests(ByVal rand As Random)
         Debug.Print("Testing BigNum")
-        Dim b = BigNum.fromString("B3500005D3AF30059ED523B65CCE3C442710DA2C566985346AD4835F1E122338", 16)
-        Dim p = BigNum.fromString("BEE2CA68607F273D7C5A53196CB0B8E5E4A92CA677E6841D1ECBAF0CB0A85F15", 16)
-        Dim m = BigNum.fromString("F8FF1A8B619918032186B68CA092B5557E976C78C73212D91216F6658523C787", 16)
-        Dim r = BigNum.fromString("A0B0FBE45B9679E962D87055524385E122C70011D6D4636624A690741A381171", 16)
+        Dim b = BigNum.FromString("B3500005D3AF30059ED523B65CCE3C442710DA2C566985346AD4835F1E122338", 16, ByteOrder.BigEndian)
+        Dim p = BigNum.FromString("BEE2CA68607F273D7C5A53196CB0B8E5E4A92CA677E6841D1ECBAF0CB0A85F15", 16, ByteOrder.BigEndian)
+        Dim m = BigNum.FromString("F8FF1A8B619918032186B68CA092B5557E976C78C73212D91216F6658523C787", 16, ByteOrder.BigEndian)
+        Dim r = BigNum.FromString("A0B0FBE45B9679E962D87055524385E122C70011D6D4636624A690741A381171", 16, ByteOrder.BigEndian)
         If b <> b Then Throw New Exception("Incorrect result.")
-        If b.powerMod(p, m) <> r Then Throw New Exception("Incorrect result.")
+        If b.PowerMod(p, m) <> r Then Throw New Exception("Incorrect result.")
         If b + r <> r + b Then Throw New Exception("Incorrect result.")
         If b * r <> r * b Then Throw New Exception("Incorrect result.")
         If -(-b) <> b Then Throw New Exception("Incorrect result.")

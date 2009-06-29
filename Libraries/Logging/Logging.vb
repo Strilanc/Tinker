@@ -10,7 +10,7 @@ Namespace Logging
     End Enum
 
     Public Class Logger
-        Public Event LoggedMessage(ByVal type As LogMessageTypes, ByVal message As Func(Of String))
+        Public Event LoggedMessage(ByVal type As LogMessageTypes, ByVal message As ExpensiveValue(Of String))
         Public Event LoggedFutureMessage(ByVal placeholder As String, ByVal message As IFuture(Of Outcome))
         Private ReadOnly ref As ICallQueue
 
@@ -25,15 +25,15 @@ Namespace Logging
                 End Sub
             )
         End Sub
-        Public Sub log(ByVal message As Func(Of String), ByVal t As LogMessageTypes)
+        Public Sub log(ByVal message As ExpensiveValue(Of String), ByVal t As LogMessageTypes)
             ref.QueueAction(
                 Sub()
                     RaiseEvent LoggedMessage(t, message)
                 End Sub
             )
         End Sub
-        Public Sub log(ByVal message As String, ByVal t As LogMessageTypes)
-            log(Function() message, t)
+        Public Sub log(ByVal message As Func(Of String), ByVal t As LogMessageTypes)
+            log(New ExpensiveValue(Of String)(message), t)
         End Sub
     End Class
 

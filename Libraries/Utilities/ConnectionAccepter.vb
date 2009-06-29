@@ -2,29 +2,53 @@
 
 '''<summary>A thread-safe class which accepts connections on multiple ports, and returns accepted TcpClients using events.</summary>
 Public Class ConnectionAccepter
-    Private ReadOnly listeners As New List(Of TcpListener)
-    Private ReadOnly lock As New Object()
+    Private ReadOnly listeners As New HashSet(Of TcpListener)
+    Private ReadOnly lock As New Object
 
-    Public Event accepted_connection(ByVal sender As ConnectionAccepter, ByVal accepted_client As TcpClient)
+    Public Event AcceptedConnection(ByVal sender As ConnectionAccepter, ByVal acceptedClient As TcpClient)
 
     '''<summary>Tries to start listening for connections on the given port.</summary>
     Public Function OpenPort(ByVal port As UShort) As Outcome
         Try
             SyncLock lock
                 'already listening?
-                Dim out = get_listener_on_port(port)
+                Dim out = GetListenerOnPort(port)
                 If out.succeeded Then Return success("Already listening on port {0}.".frmt(port))
 
-                'listen
+                'listen and accept connections
                 Dim listener = New TcpListener(Net.IPAddress.Any, port)
                 listener.Start()
                 listeners.Add(listener)
-                listener.BeginAcceptTcpClient(AddressOf finish_accept_connection, listener)
+                listener.FutureAcceptConnection().CallWhenValueReady(YCombinator(Of Outcome(Of TcpClient))(
+                    Function(self) Sub(acceptedClient)
+                                       Dim client = acceptedClient.val
+
+                                       SyncLock lock
+                                           'succeeded?
+                                           If Not acceptedClient.succeeded Then
+                                               listener.Stop()
+                                               listeners.Remove(listener)
+                                               Return
+                                           End If
+
+                                           'still supposed to be listening?
+                                           If Not listeners.Contains(listener) Then
+                                               client.Close()
+                                               Return
+                                           End If
+
+                                           'continue listening
+                                           listener.FutureAcceptConnection().CallWhenValueReady(self)
+                                       End SyncLock
+
+                                       'report
+                                       RaiseEvent AcceptedConnection(Me, client)
+                                   End Sub))
             End SyncLock
 
             Return success("Started listening for connections on port {0}.".frmt(port))
         Catch e As Exception
-            Return failure("Failed to listen for connections on port {0}. {1}".frmt(port, e.Message))
+            Return failure("Failed to listen for connections on port {0}: {1}".frmt(port, e.Message))
         End Try
     End Function
 
@@ -43,7 +67,7 @@ Public Class ConnectionAccepter
     Public Function ClosePort(ByVal port As UShort) As Outcome
         SyncLock lock
             'already not listening?
-            Dim out = get_listener_on_port(port)
+            Dim out = GetListenerOnPort(port)
             If Not out.succeeded Then Return success("Already not listening on port {0}.".frmt(port))
 
             'stop listening
@@ -74,7 +98,7 @@ Public Class ConnectionAccepter
     End Function
 
     '''<summary>Returns the listener on the given port.</summary>
-    Private Function get_listener_on_port(ByVal port As UShort) As Outcome(Of TcpListener)
+    Private Function GetListenerOnPort(ByVal port As UShort) As Outcome(Of TcpListener)
         SyncLock lock
             For Each listener In listeners
                 If CType(listener.LocalEndpoint, Net.IPEndPoint).Port = port Then
@@ -84,27 +108,4 @@ Public Class ConnectionAccepter
         End SyncLock
         Return failure("No listener on port {0}.".frmt(port))
     End Function
-
-    '''<summary>Finishes accepting a client, and continues listening.</summary>
-    Private Sub finish_accept_connection(ByVal ar As System.IAsyncResult)
-        Dim client As TcpClient
-        Dim listener = CType(ar.AsyncState, TcpListener)
-        SyncLock lock
-            'still supposed to be listening?
-            If Not listeners.Contains(listener) Then Return
-            'accept
-            Try
-                client = listener.EndAcceptTcpClient(ar)
-            Catch e As Exception
-                client = Nothing
-            End Try
-            'keep listening
-            listener.BeginAcceptTcpClient(AddressOf finish_accept_connection, listener)
-        End SyncLock
-
-        'report
-        If client IsNot Nothing Then
-            RaiseEvent accepted_connection(Me, client)
-        End If
-    End Sub
 End Class

@@ -1,150 +1,116 @@
-Namespace MPQ.Compression.Huffman
-#Region "Encoder"
-    '''<summary>Implements a Block Converter for huffman compression</summary>
+Namespace Mpq.Compression.Huffman
     Public Class Encoder
-        Implements IBlockConverter
-        Private ReadOnly tree As HuffmanTree = Nothing
-        Private ReadOnly isZeroTree As Boolean = False
-        Private ReadOnly encodedBitBuffer As New BitBuffer()
-        Private ReadOnly pathBitBuffer As New BitBuffer()
+        Implements IConverter(Of Byte)
+        Private ReadOnly treeIndex As Byte
 
-        Public Sub New(ByVal frequencyTableIndex As Byte)
-            If frequencyTableIndex >= frequencyTables.Length Then Throw New ArgumentOutOfRangeException("Invalid huffman frequency table index")
-            isZeroTree = frequencyTableIndex = 0
-            tree = New HuffmanTree(frequencyTables(frequencyTableIndex))
-            encodedBitBuffer.queueByte(frequencyTableIndex)
+        Public Sub New(ByVal treeIndex As Byte)
+            If treeIndex >= frequencyTables.Length Then Throw New ArgumentOutOfRangeException("Invalid huffman tree index", "treeIndex")
+            Me.treeIndex = treeIndex
         End Sub
 
-        Public Function needs(ByVal outputSize As Integer) As Integer Implements IBlockConverter.needs
-            needs = CInt(outputSize / 0.8) + 1
-            If tree Is Nothing Then needs -= 1
-        End Function
+        Public Function Convert(ByVal sequence As IEnumerator(Of Byte)) As IEnumerator(Of Byte) Implements IConverter(Of Byte).Convert
+            Dim doneReading = False
+            Dim tree As HuffmanTree = Nothing
+            Dim outBuf = New BitBuffer()
 
-        Public Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte),
-                           ByVal WriteView As ArrayView(Of Byte),
-                           ByRef OutReadCount As Integer,
-                           ByRef OutWriteCount As Integer) _
-                           Implements IBlockConverter.convert
-            OutWriteCount = 0
-            OutReadCount = 0
-
-            Do
-                'Empty encoded bit buffer into write buffer
-                While OutWriteCount < WriteView.length AndAlso encodedBitBuffer.numBits >= 8
-                    WriteView(OutWriteCount) = encodedBitBuffer.takeByte()
-                    OutWriteCount += 1
-                End While
-
-                'Stop when no more work can be done
-                If OutWriteCount >= WriteView.length Then Exit Do
-                If OutReadCount >= ReadView.length Then Exit Do
-
-                'Encode next value
-                'read value
-                Dim b = ReadView(OutReadCount)
-                OutReadCount += 1
-                'start from leaf
-                Dim hasVal = tree.leafMap.ContainsKey(b)
-                Dim n = tree.leafMap(If(hasVal, b, &H101)) '[&H101 for adding to tree]
-                'climb the tree
-                While n.parent IsNot Nothing
-                    pathBitBuffer.stackBit(n Is n.parent.rightChild)
-                    n = n.parent
-                End While
-                While pathBitBuffer.numBits > 0
-                    encodedBitBuffer.queueBit(pathBitBuffer.takeBit())
-                End While
-                'update tree
-                If Not hasVal Then
-                    encodedBitBuffer.queueByte(b)
-                    tree.increase(b)
-                End If
-                If hasVal = isZeroTree Then tree.increase(b)
-            Loop
-        End Sub
-    End Class
-#End Region
-
-#Region "Decoder"
-    '''<summary>Implements a Block Converter for huffman decompression</summary>
-    Public Class Decoder
-        Implements IBlockConverter
-        Private tree As HuffmanTree = Nothing
-        Private isZeroTree As Boolean = False
-        Private hitEnd As Boolean = False
-        Private curNode As HuffmanNode = Nothing
-        Private ReadOnly encodedBitBuffer As New BitBuffer()
-        Private ReadOnly decodedBitBuffer As New BitBuffer()
-
-        Public Function needs(ByVal outputSize As Integer) As Integer Implements IBlockConverter.needs
-            needs = CInt(outputSize * 0.8) + 1
-            If tree Is Nothing Then needs += 1
-        End Function
-
-        Public Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte), ByVal WriteView As ArrayView(Of Byte),
-                           ByRef OutReadCount As Integer, ByRef OutWriteCount As Integer) _
-                           Implements IBlockConverter.convert
-            OutWriteCount = 0
-            OutReadCount = 0
-            If hitEnd Then Return
-
-            'first byte is the index of the frequency table used to build the tree
-            If tree Is Nothing Then
-                If OutReadCount >= ReadView.length Then Return
-                Dim frequencyTableIndex = ReadView(OutReadCount)
-                OutReadCount += 1
-                isZeroTree = frequencyTableIndex = 0
-                If frequencyTableIndex >= frequencyTables.Length Then Throw New IO.IOException("Invalid huffman frequency table index")
-                tree = New HuffmanTree(frequencyTables(frequencyTableIndex))
-            End If
-
-            'decompress
-            While OutWriteCount < WriteView.length
-                Do While decodedBitBuffer.numBits >= 8
-                    WriteView(OutWriteCount) = decodedBitBuffer.takeByte()
-                    OutWriteCount += 1
-                    If OutWriteCount >= WriteView.length Then Exit While
-                Loop
-
-                'travel to leaf node
-                If curNode Is Nothing Then curNode = tree.nodes(0) 'root
-                Do While curNode.val = -1
-                    If encodedBitBuffer.numBits <= 0 Then
-                        If OutReadCount >= ReadView.length Then Exit While
-                        encodedBitBuffer.queueByte(ReadView(OutReadCount))
-                        OutReadCount += 1
+            Return New Enumerator(Of Byte)(
+                Function(controller)
+                    If tree Is Nothing Then
+                        tree = New HuffmanTree(frequencyTables(treeIndex))
+                        Return treeIndex
                     End If
-                    curNode = If(encodedBitBuffer.takeBit(), curNode.rightChild, curNode.leftChild)
-                Loop
 
-                'interpret leaf value
-                Select Case curNode.val
-                    Case &H100 'end of stream
-                        hitEnd = True
-                        Exit While
-                    Case &H101 'new value
-                        If OutReadCount >= ReadView.length Then Exit While
-                        encodedBitBuffer.queueByte(ReadView(OutReadCount))
-                        OutReadCount += 1
-                        Dim b = encodedBitBuffer.takeByte()
-                        decodedBitBuffer.queueByte(b)
-                        tree.increase(b)
-                        If Not isZeroTree Then tree.increase(b)
-                    Case Else
-                        decodedBitBuffer.queueByte(CByte(curNode.val))
-                        If isZeroTree Then tree.increase(curNode.val)
-                End Select
-                curNode = Nothing
-            End While
-        End Sub
+                    Do
+                        'Empty encoded bit buffer into write buffer
+                        If outBuf.NumBufferedBits >= 8 Then  Return outBuf.TakeByte()
+                        If doneReading Then  Return controller.Break()
+
+                        'Read next byte to encode
+                        Dim v As Integer
+                        Dim b As Byte
+                        If Not sequence.MoveNext() Then
+                            doneReading = True
+                            v = &H100 '[end of stream]
+                        Else
+                            b = sequence.Current()
+                            v = b
+                            If Not tree.leafMap.ContainsKey(b) Then
+                                v = &H101  '[new value]
+                            End If
+                        End If
+
+                        'Encode the byte
+                        Dim n = tree.leafMap(v)
+                        Dim pathBuf As New BitBuffer()
+                        While n.parent IsNot Nothing
+                            pathBuf.StackBit(n Is n.parent.rightChild)
+                            n = n.parent
+                        End While
+                        While pathBuf.NumBufferedBits > 0
+                            outBuf.QueueBit(pathBuf.TakeBit())
+                        End While
+
+                        'Update the tree and finish the encoded byte
+                        Select Case v
+                            Case &H100
+                                If outBuf.NumBufferedBits Mod 8 <> 0 Then
+                                    'pad last byte with 0s
+                                    outBuf.QueueByte(0)
+                                End If
+                            Case &H101
+                                outBuf.QueueByte(b)
+                                tree.increase(b)
+                                If treeIndex <> 0 Then  tree.increase(b)
+                            Case Else
+                                If treeIndex = 0 Then  tree.increase(b)
+                        End Select
+                    Loop
+                End Function
+            )
+        End Function
     End Class
-#End Region
+
+    Public Class Decoder
+        Implements IConverter(Of Byte)
+        Public Function Convert(ByVal sequence As IEnumerator(Of Byte)) As IEnumerator(Of Byte) Implements IConverter(Of Byte).Convert
+            Dim treeIndex = sequence.MoveNextAndReturn()
+            If treeIndex >= frequencyTables.Length Then Throw New IO.IOException("Invalid huffman tree index.")
+            Dim tree = New HuffmanTree(frequencyTables(treeIndex))
+
+            Return New Enumerator(Of Byte)(
+                Function(controller)
+                    'Fall to a leaf
+                    Dim buf = New BitBuffer()
+                    Dim curNode = tree.nodes(0)  'root
+                    Do While curNode.val = -1
+                        If buf.NumBufferedBits <= 0 Then  buf.QueueByte(sequence.MoveNextAndReturn())
+                        curNode = If(buf.TakeBit(), curNode.rightChild, curNode.leftChild)
+                    Loop
+
+                    'Interpret the leaf
+                    Select Case curNode.val
+                        Case &H100 'end of stream
+                            Return controller.Break()
+                        Case &H101 'new value
+                            buf.QueueByte(sequence.MoveNextAndReturn())
+                            Dim newValue = buf.TakeByte()
+                            tree.increase(newValue)
+                            If treeIndex <> 0 Then  tree.increase(newValue)
+                            Return newValue
+                        Case Else
+                            If treeIndex = 0 Then  tree.increase(curNode.val)
+                            Return CByte(curNode.val)
+                    End Select
+                End Function
+            )
+        End Function
+    End Class
 
 #Region "Huffman"
-    Friend Module Common
+    Friend Module Data
         '''<summary>The frequency tables used to construct the initial huffman trees</summary>
-        Friend ReadOnly frequencyTables()() As UInteger = { _
-            New UInteger() { _
+        Friend ReadOnly frequencyTables()() As UInteger = {
+            New UInteger() {
                 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

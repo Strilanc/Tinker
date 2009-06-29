@@ -1,5 +1,14 @@
 ﻿Namespace Warcraft3
     Public Class W3Slot
+        Public ReadOnly index As Byte
+        Public ReadOnly game As IW3Game
+        Public color As PlayerColor
+        Public team As Byte
+        Public handicap As Byte = 100
+        Public race As RaceFlags = RaceFlags.Random
+        Public contents As W3SlotContents
+        Public locked As Lock
+
 #Region "Enums"
         Public Const OBS_TEAM As Byte = 12
         Public Enum ComputerLevel As Byte
@@ -36,20 +45,10 @@
         End Enum
 #End Region
 
-#Region "Variables"
-        Public ReadOnly index As Byte
-        Public ReadOnly game As IW3Game
-        Public color As PlayerColor
-        Public team As Byte
-        Public handicap As Byte = 100
-        Public race As RaceFlags = RaceFlags.Random
-        Public contents As W3SlotContents
-        Public locked As Lock
-#End Region
-
         Public Sub New(ByVal game As IW3Game, ByVal index As Byte)
             Me.game = game
             Me.index = index
+            Me.contents = New W3SlotContentsOpen(Me)
         End Sub
         Public Enum Match
             None = 0
@@ -96,9 +95,14 @@
     End Class
 
     Public MustInherit Class W3SlotContents
-        Public ReadOnly parent As W3Slot
+        Private ReadOnly _parent As W3Slot
+        <ContractInvariantMethod()> Protected Sub Invariant()
+            Contract.Invariant(_parent IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal parent As W3Slot)
-            Me.parent = parent
+            Contract.Requires(parent IsNot Nothing)
+            Me._parent = parent
         End Sub
 
 #Region "Properties"
@@ -110,6 +114,12 @@
         Public Overridable ReadOnly Property Type() As ContentType
             Get
                 Return ContentType.Empty
+            End Get
+        End Property
+        Public ReadOnly Property Parent As W3Slot
+            Get
+                Contract.Ensures(Contract.Result(Of W3Slot)() IsNot Nothing)
+                Return _parent
             End Get
         End Property
         Public Overridable ReadOnly Property Moveable() As Boolean
@@ -154,28 +164,33 @@
         Public Enum WantPlayerPriority
             Reject = 0
             Reluctant = 1
-            Accept_low = 2
-            Accept_medium = 3
-            Accept_high = 4
-            Accept_reservation = 5
+            Accept = 2
+            AcceptReservation = 3
         End Enum
         Public Overridable Function WantPlayer(ByVal name As String) As WantPlayerPriority
             Return WantPlayerPriority.Reject
         End Function
         Public Overridable Function TakePlayer(ByVal player As IW3Player) As W3SlotContents
+            Contract.Requires(player IsNot Nothing)
             Throw New InvalidOperationException()
         End Function
         Public Overridable Function RemovePlayer(ByVal player As IW3Player) As W3SlotContents
+            Contract.Requires(player IsNot Nothing)
             Throw New InvalidOperationException()
         End Function
         Public Overridable Function EnumPlayers() As IEnumerable(Of IW3Player)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of IW3Player))() IsNot Nothing)
             Return New IW3Player() {}
         End Function
 #End Region
 
 #Region "Misc Methods"
         Public MustOverride Overrides Function ToString() As String
-        Public MustOverride Function Clone(ByVal parent As W3Slot) As W3SlotContents
+        Public Overridable Function Clone(ByVal parent As W3Slot) As W3SlotContents
+            Contract.Requires(parent IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of W3SlotContents)() IsNot Nothing)
+            Throw New NotSupportedException()
+        End Function
         Public Overridable Function Matches(ByVal query As String) As Boolean
             Return False
         End Function
@@ -186,12 +201,13 @@
         Inherits W3SlotContents
         Public Sub New(ByVal parent As W3Slot)
             MyBase.New(parent)
+            Contract.Requires(parent IsNot Nothing)
         End Sub
         Public Overrides Function TakePlayer(ByVal player As IW3Player) As W3SlotContents
             Return New W3SlotContentsPlayer(parent, player)
         End Function
         Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
-            Return WantPlayerPriority.Accept_medium
+            Return WantPlayerPriority.Accept
         End Function
         Public Overrides Function ToString() As String
             Return "Open"
@@ -205,6 +221,7 @@
         Inherits W3SlotContentsOpen
         Public Sub New(ByVal parent As W3Slot)
             MyBase.New(parent)
+            Contract.Requires(parent IsNot Nothing)
         End Sub
         Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
             Return WantPlayerPriority.Reluctant
@@ -227,6 +244,7 @@
         Private ReadOnly level As W3Slot.ComputerLevel
         Public Sub New(ByVal parent As W3Slot, ByVal level As W3Slot.ComputerLevel)
             MyBase.New(parent)
+            Contract.Requires(parent IsNot Nothing)
             Me.level = level
         End Sub
         Public Overrides Function ToString() As String
@@ -257,14 +275,15 @@
         Protected ReadOnly player As IW3Player
         Public Sub New(ByVal parent As W3Slot, ByVal player As IW3Player)
             MyBase.New(parent)
-            If player Is Nothing Then Throw New ArgumentNullException("player")
+            Contract.Requires(parent IsNot Nothing)
+            Contract.Requires(player IsNot Nothing)
             Me.player = player
         End Sub
         Public Overrides Function EnumPlayers() As IEnumerable(Of IW3Player)
             Return New IW3Player() {player}
         End Function
         Public Overrides Function ToString() As String
-            Return If(player.is_fake, "(Fake)" + player.name, player.soul.Description)
+            Return If(player.IsFake, "(Fake)" + player.name, player.Description)
         End Function
         Public Overrides ReadOnly Property PlayerIndex() As Byte
             Get
@@ -272,8 +291,8 @@
             End Get
         End Property
         Public Overrides Function WantPlayer(ByVal name As String) As W3SlotContents.WantPlayerPriority
-            If player IsNot Nothing AndAlso name IsNot Nothing AndAlso player.is_fake AndAlso player.name.ToLower = name.ToLower Then
-                Return WantPlayerPriority.Accept_reservation
+            If player IsNot Nothing AndAlso name IsNot Nothing AndAlso player.IsFake AndAlso player.name.ToLower = name.ToLower Then
+                Return WantPlayerPriority.AcceptReservation
             Else
                 Return WantPlayerPriority.Reject
             End If
@@ -303,7 +322,7 @@
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As IW3Player) As Byte
             Get
-                Return player.soul.get_percent_dl
+                Return player.GetDownloadPercent
             End Get
         End Property
         Public Overrides ReadOnly Property DataState(ByVal receiver As IW3Player) As State
@@ -315,23 +334,26 @@
 
     Public Class W3SlotContentsCovering
         Inherits W3SlotContentsPlayer
-        Public ReadOnly covered_slot As W3Slot
-        Public Sub New(ByVal parent As W3Slot, ByVal covered_slot As W3Slot, ByVal player As IW3Player)
+        Public ReadOnly coveredSlot As W3Slot
+        Public Sub New(ByVal parent As W3Slot, ByVal coveredSlot As W3Slot, ByVal player As IW3Player)
             MyBase.New(parent, player)
-            Me.covered_slot = covered_slot
+            Contract.Requires(parent IsNot Nothing)
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(coveredSlot IsNot Nothing)
+            Me.coveredSlot = coveredSlot
         End Sub
         Public Overrides Function ToString() As String
-            Return "[Covering {0}] {1}".frmt(covered_slot.color, MyBase.ToString)
+            Return "[Covering {0}] {1}".frmt(coveredSlot.color, MyBase.ToString)
         End Function
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
-            Return New W3SlotContentsCovering(parent, covered_slot, player)
+            Return New W3SlotContentsCovering(parent, coveredSlot, player)
         End Function
         Public Overrides Function RemovePlayer(ByVal player As IW3Player) As W3SlotContents
             Throw New InvalidOperationException()
         End Function
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As IW3Player) As Byte
             Get
-                Return CByte(covered_slot.contents.EnumPlayers.Count)
+                Return CByte(coveredSlot.contents.EnumPlayers.Count)
             End Get
         End Property
         Public Overrides ReadOnly Property Moveable() As Boolean
@@ -343,28 +365,30 @@
 
     Public Class W3SlotContentsCovered
         Inherits W3SlotContents
-        Public ReadOnly covering_slot As W3Slot
-        Public ReadOnly player_index As Byte
+        Public ReadOnly coveringSlot As W3Slot
+        Private ReadOnly _playerIndex As Byte
         Protected ReadOnly players As List(Of IW3Player)
-        Public Sub New(ByVal parent As W3Slot, ByVal covering_slot As W3Slot, ByVal player_index As Byte, ByVal players As IEnumerable(Of IW3Player))
+        Public Sub New(ByVal parent As W3Slot, ByVal coveringSlot As W3Slot, ByVal playerIndex As Byte, ByVal players As IEnumerable(Of IW3Player))
             MyBase.New(parent)
-            Me.covering_slot = covering_slot
+            Contract.Requires(parent IsNot Nothing)
+            Contract.Requires(players IsNot Nothing)
+            Me.coveringSlot = coveringSlot
             Me.players = players.ToList
-            Me.player_index = player_index
+            Me._playerIndex = playerIndex
         End Sub
         Public Overrides Function ToString() As String
-            Return "[Covered by {0}] Players: {1}".frmt(covering_slot.color, String.Join(", ", (From player In players Select player.name).ToArray()))
+            Return "[Covered by {0}] Players: {1}".frmt(coveringSlot.color, String.Join(", ", (From player In players Select player.name).ToArray()))
         End Function
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
-            Return New W3SlotContentsCovered(parent, covering_slot, player_index, players)
+            Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, players)
         End Function
         Public Overrides Function RemovePlayer(ByVal player As IW3Player) As W3SlotContents
             If Not players.Contains(player) Then Throw New InvalidOperationException()
-            Return New W3SlotContentsCovered(parent, covering_slot, player_index, (From p In players Where p IsNot player))
+            Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, (From p In players Where p IsNot player))
         End Function
         Public Overrides Function TakePlayer(ByVal player As IW3Player) As W3SlotContents
             If players.Contains(player) Then Throw New InvalidOperationException()
-            Return New W3SlotContentsCovered(parent, covering_slot, player_index, players.Concat(New IW3Player() {player}))
+            Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, players.Concat(New IW3Player() {player}))
         End Function
         Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As IW3Player) As Byte
             Get
@@ -373,13 +397,13 @@
         End Property
         Public Overrides ReadOnly Property PlayerIndex() As Byte
             Get
-                Return player_index
+                Return _playerIndex
             End Get
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As IW3Player) As Byte
             Get
                 If players.Contains(receiver) Then
-                    Return CType(receiver, IW3PlayerLobby).get_percent_dl
+                    Return receiver.GetDownloadPercent
                 Else
                     Return 100
                 End If

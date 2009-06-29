@@ -178,7 +178,7 @@ Namespace My.Resources
         End Property
         
         '''<summary>
-        '''  Looks up a localized string similar to [--CreateCKL name listen_port roc_key tft_key] Starts a CD Key Lending server that others can connect to and use to logon to bnet. This will NOT allow others to learn your cd keys, but WILL allow them to logon with your keys ONCE..
+        '''  Looks up a localized string similar to [--CreateCKL name listen_port=pooled] Starts a CD Key Lending server that others can connect to and use to logon to bnet. This will NOT allow others to learn your cd keys, but WILL allow them to logon with your keys ONCE..
         '''</summary>
         Friend ReadOnly Property Command_Bot_CreateCKL_Help() As String
             Get

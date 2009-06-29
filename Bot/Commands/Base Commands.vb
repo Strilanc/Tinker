@@ -10,26 +10,81 @@ Namespace Commands
 
     '''<summary>Represents a simple command-line command.</summary>
     '''<typeparam name="T">The type of the target argument included when running the command.</typeparam>
+    <ContractClass(GetType(ContractClassICommand(Of )))>
     Public Interface ICommand(Of T)
         '''<summary>The name of the command.</summary>
-        Function name() As String
+        ReadOnly Property name() As String
         '''<summary>Help for using the command.</summary>
-        Function help() As String
+        ReadOnly Property Help() As String
         '''<summary>Determines if the command's arguments are appropriate for logging.</summary>
-        Function hide_arguments() As Boolean
+        ReadOnly Property ShouldHideArguments() As Boolean
         '''<summary>Used for pre-checks on number of arguments. Applied based on argument limit type.</summary>
-        Function argument_limit_value() As Integer
+        ReadOnly Property ArgumentLimit() As Integer
         '''<summary>Determines how the argument limit is applied.</summary>
-        Function argument_limit_type() As ArgumentLimits
+        ReadOnly Property ArgumentLimitType() As ArgumentLimits
         '''<summary>Runs the command.</summary>
         '''<param name="target">The object the command is being run from.</param>
         '''<param name="user">The user running the command. Local user is nothing.</param>
         '''<param name="argument">The argument text passed to the command</param>
-        Function process(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of Outcome)
+        Function Process(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of Outcome)
         '''<summary>Determines if a user is allowed to use the command.</summary>
-        Function user_allowed(ByVal user As BotUser) As Boolean
-        Function extra_help() As Dictionary(Of String, String)
+        Function IsUserAllowed(ByVal user As BotUser) As Boolean
+        ReadOnly Property ExtraHelp() As Dictionary(Of String, String)
     End Interface
+    <ContractClassFor(GetType(ICommand(Of )))>
+    Public Class ContractClassICommand(Of T)
+        Implements ICommand(Of T)
+
+        Public Function Process(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of Outcome) Implements ICommand(Of T).Process
+            Contract.Requires(target IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+
+        Public Function IsUserAllowed(ByVal user As BotUser) As Boolean Implements ICommand(Of T).IsUserAllowed
+            Throw New NotSupportedException
+        End Function
+
+        Public ReadOnly Property ArgumentLimitType As ArgumentLimits Implements ICommand(Of T).ArgumentLimitType
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property ArgumentLimit As Integer Implements ICommand(Of T).ArgumentLimit
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property ExtraHelp As Dictionary(Of String, String) Implements ICommand(Of T).ExtraHelp
+            Get
+                Contract.Ensures(Contract.Result(Of Dictionary(Of String, String))() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property Help As String Implements ICommand(Of T).Help
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property ShouldHideArguments As Boolean Implements ICommand(Of T).ShouldHideArguments
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property Name As String Implements ICommand(Of T).name
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+    End Class
 #End Region
 
 #Region "Base Classes"
@@ -38,73 +93,81 @@ Namespace Commands
         Implements ICommand(Of T)
         Public ReadOnly name As String
         Public ReadOnly help As String
-        Public ReadOnly argument_limit_value As Integer
-        Public ReadOnly argument_limit_type As ArgumentLimits
-        Public ReadOnly required_permissions As Dictionary(Of String, UInteger)
-        Public ReadOnly extra_help As Dictionary(Of String, String)
-        Public ReadOnly hide_arguments As Boolean = False
+        Public ReadOnly argumentLimit As Integer
+        Public ReadOnly argumentLimitType As ArgumentLimits
+        Public ReadOnly requiredPermissions As Dictionary(Of String, UInteger)
+        Public ReadOnly extraHelp As Dictionary(Of String, String)
+        Public ReadOnly shouldHideArguments As Boolean = False
 
-        Public Sub New( _
-                    ByVal name As String,
-                    ByVal argument_limit_value As Integer,
-                    ByVal argument_limit_type As ArgumentLimits,
-                    ByVal help As String,
-                    ByVal required_permissions As String,
-                    ByVal extra_help As String,
-                    Optional ByVal hide_arguments As Boolean = False _
-                    )
-            Me.New(name, argument_limit_value, argument_limit_type, help, DictStrUInt(required_permissions), DictStrStr(extra_help, vbNewLine), hide_arguments)
+        Public Sub New(ByVal name As String,
+                       ByVal argumentLimit As Integer,
+                       ByVal argumentLimitType As ArgumentLimits,
+                       ByVal help As String,
+                       ByVal requiredPermissions As String,
+                       ByVal extraHelp As String,
+                       Optional ByVal shouldHideArguments As Boolean = False)
+            Me.New(name, argumentLimit, argumentLimitType, help, DictStrUInt(requiredPermissions), DictStrStr(extraHelp, vbNewLine), shouldHideArguments)
         End Sub
-        Public Sub New( _
-                    ByVal name As String,
-                    ByVal argument_limit_value As Integer,
-                    ByVal argument_limit_type As ArgumentLimits,
-                    ByVal help As String,
-                    Optional ByVal required_permissions As Dictionary(Of String, UInteger) = Nothing,
-                    Optional ByVal extra_help As Dictionary(Of String, String) = Nothing,
-                    Optional ByVal hide_arguments As Boolean = False _
-                    )
-            If extra_help Is Nothing Then extra_help = New Dictionary(Of String, String)
-            If required_permissions Is Nothing Then required_permissions = New Dictionary(Of String, UInteger)
-
+        Public Sub New(ByVal name As String,
+                       ByVal argumentLimit As Integer,
+                       ByVal argumentLimitType As ArgumentLimits,
+                       ByVal help As String,
+                       Optional ByVal requiredPermissions As Dictionary(Of String, UInteger) = Nothing,
+                       Optional ByVal extraHelp As Dictionary(Of String, String) = Nothing,
+                       Optional ByVal shouldHideArguments As Boolean = False)
             Me.name = name
             Me.help = help
-            If required_permissions.Count > 0 Then
+            Me.extraHelp = If(extraHelp, New Dictionary(Of String, String))
+            Me.argumentLimit = argumentLimit
+            Me.argumentLimitType = argumentLimitType
+            Me.shouldHideArguments = shouldHideArguments
+            Me.requiredPermissions = If(requiredPermissions, New Dictionary(Of String, UInteger))
+            If Me.requiredPermissions.Count > 0 Then
                 Me.help += " {"
-                For Each permission As String In required_permissions.Keys
-                    Me.help += " " + permission + "=" + required_permissions(permission).ToString()
+                For Each permission As String In Me.requiredPermissions.Keys
+                    Me.help += " {0}={1}".frmt(permission, Me.requiredPermissions(permission))
                 Next permission
                 Me.help += " }"
             End If
-            Me.extra_help = extra_help
-            Me.argument_limit_value = argument_limit_value
-            Me.argument_limit_type = argument_limit_type
-            Me.hide_arguments = hide_arguments
-            Me.required_permissions = required_permissions
         End Sub
 
-        Private Function get_name() As String Implements ICommand(Of T).name
-            Return name
-        End Function
-        Private Function get_help() As String Implements ICommand(Of T).help
-            Return help
-        End Function
-        Private Function get_extra_help() As Dictionary(Of String, String) Implements ICommand(Of T).extra_help
-            Return extra_help
-        End Function
-        Private Function get_hide_arguments() As Boolean Implements ICommand(Of T).hide_arguments
-            Return hide_arguments
-        End Function
-        Private Function get_argument_limit_type() As ArgumentLimits Implements ICommand(Of T).argument_limit_type
-            Return argument_limit_type
-        End Function
-        Private Function get_argument_limit_value() As Integer Implements ICommand(Of T).argument_limit_value
-            Return argument_limit_value
-        End Function
-        Public Function user_allowed(ByVal user As BotUser) As Boolean Implements ICommand(Of T).user_allowed
+#Region "Private Interface"
+        Private ReadOnly Property _Name() As String Implements ICommand(Of T).name
+            Get
+                Return name
+            End Get
+        End Property
+        Private ReadOnly Property _Help() As String Implements ICommand(Of T).Help
+            Get
+                Return help
+            End Get
+        End Property
+        Private ReadOnly Property _ExtraHelp() As Dictionary(Of String, String) Implements ICommand(Of T).ExtraHelp
+            Get
+                Return extraHelp
+            End Get
+        End Property
+        Private ReadOnly Property _ShouldHideArguments() As Boolean Implements ICommand(Of T).ShouldHideArguments
+            Get
+                Return shouldHideArguments
+            End Get
+        End Property
+        Private ReadOnly Property _ArgumentLimit() As Integer Implements ICommand(Of T).ArgumentLimit
+            Get
+                Return argumentLimit
+            End Get
+        End Property
+        Private ReadOnly Property _ArgumentLimitType() As ArgumentLimits Implements ICommand(Of T).ArgumentLimitType
+            Get
+                Return argumentLimitType
+            End Get
+        End Property
+#End Region
+
+        Public Function IsUserAllowed(ByVal user As BotUser) As Boolean Implements ICommand(Of T).IsUserAllowed
             If user Is Nothing Then Return True
-            For Each key As String In required_permissions.Keys
-                If user.permission(key) < required_permissions(key) Then
+            For Each key As String In requiredPermissions.Keys
+                If user.permission(key) < requiredPermissions(key) Then
                     Return False
                 End If
             Next key
@@ -112,28 +175,28 @@ Namespace Commands
         End Function
 
         '''<summary>Checks user permissions, number of arguments, and delegates processing to child implementation.</summary>
-        Public Function processText(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of Outcome) Implements ICommand(Of T).process
+        Public Function ProcessText(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of Outcome) Implements ICommand(Of T).Process
             'Check permissions
-            If Not user_allowed(user) Then
-                Return futurize(failure("You do not have sufficient permissions to use that command."))
+            If Not IsUserAllowed(user) Then
+                Return failure("You do not have sufficient permissions to use that command.").Futurize()
             End If
 
             'Check arguments
             Dim arguments As IList(Of String) = breakQuotedWords(argument)
-            Select Case argument_limit_type
+            Select Case argumentLimitType
                 Case ArgumentLimits.exact
-                    If arguments.Count > argument_limit_value Then
-                        Return futurize(failure("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".frmt(argument_limit_value)))
-                    ElseIf arguments.Count < argument_limit_value Then
-                        Return futurize(failure("Not enough arguments, expected at least {0}.".frmt(argument_limit_value)))
+                    If arguments.Count > argumentLimit Then
+                        Return failure("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".frmt(argumentLimit)).Futurize()
+                    ElseIf arguments.Count < argumentLimit Then
+                        Return failure("Not enough arguments, expected at least {0}.".frmt(argumentLimit)).Futurize()
                     End If
                 Case ArgumentLimits.max
-                    If arguments.Count > argument_limit_value Then
-                        Return futurize(failure("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".frmt(argument_limit_value)))
+                    If arguments.Count > argumentLimit Then
+                        Return failure("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".frmt(argumentLimit)).Futurize()
                     End If
                 Case ArgumentLimits.min
-                    If arguments.Count < argument_limit_value Then
-                        Return futurize(failure("Not enough arguments, expected at least {0}.".frmt(argument_limit_value)))
+                    If arguments.Count < argumentLimit Then
+                        Return failure("Not enough arguments, expected at least {0}.".frmt(argumentLimit)).Futurize()
                     End If
             End Select
 
@@ -142,11 +205,16 @@ Namespace Commands
                 Return Process(target, user, arguments)
             Catch e As Exception
                 Logging.LogUnexpectedException("Processing text for command.", e)
-                Return futurize(failure("Unexpected exception encountered ({0}).".frmt(e.Message)))
+                Return failure("Unexpected exception encountered ({0}).".frmt(e.Message)).Futurize()
             End Try
         End Function
 
-        Public MustOverride Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public Overridable Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Contract.Requires(target IsNot Nothing)
+            Contract.Requires(arguments IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException()
+        End Function
     End Class
 #End Region
 
@@ -164,12 +232,12 @@ Namespace Commands
         End Sub
 
         '''<summary>Adds a command to the list of commands and specific help.</summary>
-        Public Sub add_command(ByVal command As ICommand(Of T))
-            help_map(command.name.ToLower()) = command.help
+        Public Sub AddCommand(ByVal command As ICommand(Of T))
+            help_map(command.name.ToLower()) = command.Help
             commands.Add(command)
             Dim all_extra = ""
             Dim all_extra_vals As New List(Of String)
-            For Each pair In command.extra_help
+            For Each pair In command.ExtraHelp
                 If pair.Value = "[*]" Then
                     all_extra_vals.Add(pair.Key)
                 Else
@@ -182,11 +250,11 @@ Namespace Commands
             Next s
         End Sub
 
-        Public Sub remove_command(ByVal command As ICommand(Of T))
+        Public Sub RemoveCommand(ByVal command As ICommand(Of T))
             If Not commands.Contains(command) Then Return
             commands.Remove(command)
             help_map.Remove(command.name.ToLower())
-            For Each key In command.extra_help.Keys
+            For Each key In command.ExtraHelp.Keys
                 help_map.Remove(command.name.ToLower + " " + key.ToLower)
             Next key
         End Sub
@@ -199,18 +267,18 @@ Namespace Commands
                 '[list of commands]
                 Dim command_list As String = ""
                 For Each c In commands
-                    If c.user_allowed(user) Then
+                    If c.IsUserAllowed(user) Then
                         If command_list <> "" Then command_list += " "
                         command_list += c.name
                     End If
                 Next c
-                Return futurize(success(command_list))
+                Return success(command_list).Futurize()
             ElseIf help_map.ContainsKey(arg.ToLower()) Then
                 '[specific command help]
-                Return futurize(success(help_map(arg.ToLower())))
+                Return success(help_map(arg.ToLower())).Futurize()
             Else
                 '[no matching command]
-                Return futurize(failure("{0} is not a recognized help topic.".frmt(arg)))
+                Return failure("{0} is not a recognized help topic.".frmt(arg)).Futurize()
             End If
         End Function
     End Class
@@ -218,49 +286,45 @@ Namespace Commands
     '''<summary>Implements a command which uses the first argument to match a subcommand, then runs that subcommand with the remaining arguments.</summary>
     Public Class CommandSet(Of T)
         Inherits BaseCommand(Of T)
-        Public ReadOnly subcommand_map As New Dictionary(Of String, ICommand(Of T))
-        Private help_command As New CommandHelp(Of T)
+        Public ReadOnly commandMap As New Dictionary(Of String, ICommand(Of T))
+        Private helpCommand As New CommandHelp(Of T)
 
         Public Sub New(Optional ByVal name As String = "", Optional ByVal help As String = "")
             MyBase.New(name, 1, ArgumentLimits.min, help)
-            add_subcommand(help_command)
+            AddCommand(helpCommand)
         End Sub
 
         '''<summary>Returns a list of the names of all subcommands.</summary>
-        Public Function getSubCommandList() As List(Of String)
-            Dim L As New List(Of String)
-            For Each key As String In subcommand_map.Keys
-                L.Add(key)
-            Next key
-            Return L
+        Public Function GetCommandList() As List(Of String)
+            Return commandMap.Keys.ToList
         End Function
 
         '''<summary>Adds a potential subcommand to forward calls to. Automatically includes the new subcommand in the help subcommand.</summary>
-        Public Sub add_subcommand(ByVal subcommand As ICommand(Of T))
-            If Not (subcommand IsNot Nothing) Then Throw New ArgumentException()
-            If subcommand_map.ContainsKey(subcommand.name.ToLower()) Then Throw New InvalidOperationException("Command already registered to " + subcommand.name)
-            subcommand_map(subcommand.name.ToLower()) = subcommand
-            help_command.add_command(subcommand)
+        Public Sub AddCommand(ByVal command As ICommand(Of T))
+            Contract.Requires(command IsNot Nothing)
+            If commandMap.ContainsKey(command.name.ToLower()) Then Throw New InvalidOperationException("Command already registered to " + command.name)
+            commandMap(command.name.ToLower()) = command
+            helpCommand.AddCommand(command)
         End Sub
 
-        Public Sub remove_subcommand(ByVal subcommand As ICommand(Of T))
-            If subcommand Is Nothing Then Return
-            If Not subcommand_map.ContainsKey(subcommand.name.ToLower()) Then Return
-            subcommand_map.Remove(subcommand.name.ToLower())
-            help_command.remove_command(subcommand)
+        Public Sub RemoveCommand(ByVal command As ICommand(Of T))
+            Contract.Requires(command IsNot Nothing)
+            If Not commandMap.ContainsKey(command.name.ToLower()) Then Return
+            commandMap.Remove(command.name.ToLower())
+            helpCommand.RemoveCommand(command)
         End Sub
 
         Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             'Get subcommand
             Dim name As String = arguments(0).ToLower()
-            If Not subcommand_map.ContainsKey(name) Then
-                Return futurize(failure("Unrecognized Command: " + name))
+            If Not commandMap.ContainsKey(name) Then
+                Return failure("Unrecognized Command: " + name).Futurize()
             End If
-            Dim subcommand As ICommand(Of T) = subcommand_map(name)
+            Dim subcommand As ICommand(Of T) = commandMap(name)
 
             'Run subcommand
             arguments.RemoveAt(0)
-            Return subcommand.process(target, user, mendQuotedWords(arguments))
+            Return subcommand.Process(target, user, mendQuotedWords(arguments))
         End Function
     End Class
 
@@ -269,37 +333,43 @@ Namespace Commands
 
         Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Dim f As New Future(Of Outcome)
-            Return futurefuture(ThreadPooledFunc(
+            Return ThreadPooledFunc(
                 Function()
                     Try
                         Return MyBase.Process(target, user, arguments)
                     Catch e As Exception
-                        Return futurize(failure("Error processing command: " + e.Message))
+                        LogUnexpectedException("Exception rose past {0}.Process".frmt(Me.GetType.Name), e)
+                        Return failure("Error processing command: " + e.Message).Futurize()
                     End Try
                 End Function
-            ))
+            ).Defuturize
         End Function
     End Class
 
     Public Class UICommandSet(Of T)
         Inherits ThreadedCommandSet(Of T)
 
-        Public Overridable Sub processLocalText(ByVal target As T, ByVal text As String, ByVal logger As Logger)
+        Public Overridable Sub ProcessLocalText(ByVal target As T, ByVal text As String, ByVal logger As Logger)
+            Contract.Requires(target IsNot Nothing)
+            Contract.Requires(text IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
             Try
-                Dim name = breakQuotedWords(text)(0).ToLower()
-                If Not subcommand_map.ContainsKey(name) Then
+                Dim words = breakQuotedWords(text)
+                Contract.Assume(words.Count > 0)
+                Dim name = words(0).ToLower()
+                If Not commandMap.ContainsKey(name) Then
                     logger.log("Unrecognized Command: " + name, LogMessageTypes.Problem)
                     Return
                 End If
-                Dim hide_args = subcommand_map(name).hide_arguments
+                Dim hide_args = commandMap(name).ShouldHideArguments
                 If hide_args Then
-                    logger.log("Command [arguments hidden]: " + name, LogMessageTypes.Typical)
+                    logger.log("Command [arguments hidden]: {0}".frmt(name), LogMessageTypes.Typical)
                 Else
-                    logger.log("Command: " + text, LogMessageTypes.Typical)
+                    logger.log("Command: {0}".frmt(text), LogMessageTypes.Typical)
                 End If
 
                 logger.futurelog("[running command '{0}'...]".frmt(name),
-                                 FutureFunc.Call(processText(target, Nothing, text),
+                                 ProcessText(target, Nothing, text).EvalWhenValueReady(
                                                              AddressOf output_of_command))
             Catch e As Exception
                 Logging.LogUnexpectedException("Exception rose past " + Me.GetType.Name + "[" + Me.name + "].processLocalText", e)

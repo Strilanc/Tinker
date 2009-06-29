@@ -1,4 +1,4 @@
-Imports HostBot.MPQ
+Imports HostBot.Mpq
 
 ''''<summary>
 ''''Encapsulates the decryption process used in MPQ files.
@@ -25,132 +25,116 @@ Imports HostBot.MPQ
 ''''along with this program; if not, write to the Free Software
 ''''Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 ''''</copyright>
-Namespace MPQ.Crypt
-    '''<summary>Implements a Block Converter for MPQ encryption and decryption</summary>
+Namespace Mpq.Crypt
+    '''<summary>Implements a Converter for MPQ encryption and decryption</summary>
     Public Class Cypherer
-        Implements IBlockConverter
-
+        Implements IConverter(Of Byte)
+        Private ReadOnly decrypt As Boolean
+        Private ReadOnly initialKey1 As ModInt32
+        Private Shared ReadOnly initialKey2 As ModInt32 = &HEEEEEEEE
+        Private ReadOnly bytes(0 To 3) As Byte
         Public Enum modes
             encrypt
             decrypt
         End Enum
 
-        Private ReadOnly inBitBuffer As New BitBuffer
-        Private ReadOnly outBitBuffer As New BitBuffer
-        Private ReadOnly decrypt As Boolean
-        Private k1 As UInt64 'cypher state [outside key initializes k1]
-        Private k2 As UInt64 = &HEEEEEEEEL 'cypher state [the ks are UInt32s, but stored in UInt64s to make dealing with overflows easier]
-
-        Public Sub New(ByVal key As UInt32, ByVal mode As modes)
-            Me.k1 = key
+        Public Sub New(ByVal key As ModInt32, ByVal mode As modes)
+            Me.initialKey1 = key
             Select Case mode
                 Case modes.encrypt
                     Me.decrypt = False
                 Case modes.decrypt
                     Me.decrypt = True
                 Case Else
-                    Throw New ArgumentException("Unreconized mode.", "mode")
+                    Throw New UnreachableException
             End Select
         End Sub
 
-        Public Function needs(ByVal outputSize As Integer) As Integer Implements IBlockConverter.needs
-            Return alignedReadCount(outputSize, inBitBuffer.numBits \ 8, outBitBuffer.numBits \ 8, 4)
-        End Function
+        Public Function Convert(ByVal sequence As IEnumerator(Of Byte)) As IEnumerator(Of Byte) Implements IConverter(Of Byte).Convert
+            Dim k1 = initialKey1
+            Dim k2 = initialKey2
+            Dim T = cryptTable(HashType.ENCRYPT)
+            Return New Enumerator(Of Byte)(
+                Function(controller)
+                    If Not sequence.MoveNext Then  Return controller.Break()
+                    bytes(0) = sequence.Current
+                    For i = 1 To 3
+                        If Not sequence.MoveNext Then  Return controller.Multiple(bytes.SubArray(0, i))
+                        bytes(i) = sequence.Current
+                    Next i
 
-        Public Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte),
-                           ByVal WriteView As ArrayView(Of Byte),
-                           ByRef OutReadCount As Integer,
-                           ByRef OutWriteCount As Integer) _
-                           Implements IBlockConverter.convert
-            OutWriteCount = 0
-            OutReadCount = 0
+                    Dim v As ModInt32 = bytes.ToUInteger(ByteOrder.LittleEndian)
+                    Dim s = T(k1 And &HFF)
+                    Dim c = v Xor (k1 + k2 + s)
 
-            Do
-                'Write word
-                For i = 1 To outBitBuffer.numBytes
-                    If OutWriteCount >= WriteView.length Then Exit Do
-                    WriteView(OutWriteCount) = outBitBuffer.takeByte()
-                    OutWriteCount += 1
-                Next i
+                    k1 = (k1 >> 11) Or (((Not k1) << 21) + &H11111111) '[vulnerability: causes k1 to lose entropy via bits being forced set]
+                    k2 = If(decrypt, c, v) + (k2 + s) * 33 + 3
 
-                'Read word
-                For i = inBitBuffer.numBytes To 4 - 1
-                    If OutReadCount >= ReadView.length Then Exit Do
-                    inBitBuffer.queueByte(ReadView(OutReadCount))
-                    OutReadCount += 1
-                Next i
-
-                'Cypher word
-                outBitBuffer.queueUInteger(cypher(inBitBuffer.takeUInteger()))
-            Loop
-        End Sub
-
-        Private Function cypher(ByVal v As UInteger) As UInteger
-            k2 = uCUInt(k2 + cryptTable(HashType.ENCRYPT * &H100 + CInt(k1 And CByte(&HFF)))) '[give k2 entropy from k1]
-            cypher = v Xor uCUInt(k1 + k2) '[give v entropy from k1 and k2]
-            k1 = uCUInt((((Not CUInt(k1)) << 21) + CULng(&H11111111)) Or (k1 >> 11)) '[cycle k1, loses entropy because some bits get forced set]
-            k2 = uCUInt(If(decrypt, cypher, v) + k2 * CULng(33) + CULng(3)) '[give k2 entropy from v]
+                    Return controller.Multiple(CUInt(c).bytes(ByteOrder.LittleEndian))
+                End Function)
         End Function
     End Class
 
     Module Common
-        Friend ReadOnly cryptTable() As UInt32 = computeCryptTable()
-
-        '''<summary>Creates the encryption table used for MPQ data</summary>
-        Private Function computeCryptTable() As UInt32()
-            Const N As Integer = 256 * 5 'table size
-            Dim T(0 To N - 1) As UInt32 'table
-            Dim k As UInt32 = &H100001 'key generator
-            Dim p = 0 'position
-
-            While T(p) = 0 '[every value in the table will have been initialized when this condition is no longer met]
-                For repeat = 1 To 2
-                    k = CUInt((k * 125 + 3) Mod 2796203)
-                    T(p) <<= 16 '[don't overwrite value from first iteration]
-                    T(p) = T(p) Or CUInt(k And &HFFFF)
-                Next repeat
-
-                p += 256
-                If p > N - 1 Then p -= N - 1
-            End While
-
-            Return T
-        End Function
-
-        Public Enum HashType As Byte
+        Public Enum HashType As Integer
             HASH_TABLE_OFFSET = 0
             NAME_A = 1
             NAME_B = 2
             FILE_KEY = 3
             ENCRYPT = 4
         End Enum
+        Friend ReadOnly cryptTable As Dictionary(Of HashType, ModInt32()) = computeCryptTable()
+
+        '''<summary>Creates the encryption table used for MPQ data</summary>
+        Private Function computeCryptTable() As Dictionary(Of HashType, ModInt32())
+            Const N As Integer = 256 * 5 'table size
+            Dim T(0 To N - 1) As ModInt32 'table
+            Dim k As ModInt32 = &H100001 'key generator
+            Dim p = 0 'position
+
+            While T(p) = 0 '[every value in the table will have been initialized when this condition is no longer met]
+                For word = 1 To 2
+                    k = CUInt(k * 125 + 3) Mod CUInt(2796203)
+                    T(p) <<= 16 '[don't overwrite value from first iteration]
+                    T(p) = T(p) Or (k And &HFFFF)
+                Next word
+
+                p += 256
+                If p > N - 1 Then p -= N - 1
+            End While
+
+            Dim d = New Dictionary(Of HashType, ModInt32())
+            For Each h In EnumValues(Of HashType)()
+                d(h) = T.SubArray(CInt(h) * 256, 256)
+            Next h
+            Return d
+        End Function
 
         '''<summary>Hashes a string into a key</summary>
-        Public Function HashString(ByVal s As String, ByVal hashType As HashType) As UInt32
-            Dim k1 As UInt64 = &H7FED7FEDL
-            Dim k2 As UInt64 = &HEEEEEEEEL
-
-            For Each c In s.ToUpper()
-                Dim b = CByte(Asc(c))
-                k1 = uCUInt(k1 + k2) Xor cryptTable(hashType * &H100 + b)
-                k2 = uCUInt(b + k1 + k2 * CByte(33) + CByte(3))
-            Next c
-            Return CUInt(k1)
+        Public Function HashString(ByVal s As String, ByVal hashType As HashType) As ModInt32
+            Dim k1 As ModInt32 = &H7FED7FED
+            Dim k2 As ModInt32 = &HEEEEEEEE
+            Dim T = cryptTable(hashType)
+            For Each b In (From c In s.ToUpper() Select CByte(Asc(c)))
+                k1 = (k1 + k2) Xor T(b)
+                k2 = b + k1 + k2 * 33 + 3
+            Next b
+            Return k1
         End Function
 
         '''<summary>Computes the hash of a file name</summary>
         '''<remarks>Used to determine where a file is stored in the hash table</remarks>
         Public Function HashFileName(ByVal s As String) As UInt64
-            Return HashString(s, HashType.NAME_A) Or (CULng(HashString(s, HashType.NAME_B)) << 32)
+            Return CULng(HashString(s, HashType.NAME_A)) Or CULng(HashString(s, HashType.NAME_B)) << 32
         End Function
 
         '''<summary>Computes the decryption key of a file with known filename</summary>
-        Public Function getFileDecryptionKey(ByVal fileName As String, ByVal fileTableEntry As MPQFileTable.FileEntry, ByVal mpqa As MPQArchive) As UInt32
+        Public Function GetFileDecryptionKey(ByVal fileName As String, ByVal fileTableEntry As MpqFileTable.FileEntry, ByVal mpqa As MpqArchive) As ModInt32
             Dim key = HashString(getFileNameSlash(fileName), HashType.FILE_KEY) 'key from hashed file name [without folders]
 
             'adjusted keys are offset by the file position
-            If (fileTableEntry.flags And MPQFileTable.FileEntry.FILE_FLAGS.ADJUSTED_KEY) <> 0 Then
-                key = uCUInt((key + CULng(fileTableEntry.filePosition) - mpqa.filePosition) Xor fileTableEntry.actualSize)
+            If (fileTableEntry.flags And MpqFileTable.FileEntry.FILE_FLAGS.ADJUSTED_KEY) <> 0 Then
+                key = fileTableEntry.actualSize Xor key + fileTableEntry.filePosition - mpqa.filePosition
             End If
 
             Return key
@@ -161,21 +145,22 @@ Namespace MPQ.Crypt
         '''Encryption:
         '''   seed1 = *VALUE_TO_FIND*
         '''   seed2 = 0xEEEEEEEEL
-        '''   seed2b = seed2 + cryptTable[0x400 + (seed1 and 0xFF)]
+        '''   seed2b = seed2 + T[seed1 and 0xFF]
         '''   encryptedByte1 = targetByte1 Xor (seed1 + seed2b)
         '''Decryption:
         '''   Let s = encryptedByte1 xor targetByte1
         '''   Notice s = seed1 + seed2b
-        '''   Notice s = seed1 + seed2 + cryptTable[0x400 + (seed1 and 0xFF)]
+        '''   Notice s = seed1 + seed2 + T[seed1 and 0xFF]
         '''   Let n = s - seed2
-        '''   Notice n = seed1 + cryptTable[0x400 + (seed1 and 0xFF)]
-        '''   Notice seed1 = n - cryptTable[0x400 + (seed1 and 0xFF)]
+        '''   Notice n = seed1 + T[seed1 and 0xFF]
+        '''   Notice seed1 = n - T[seed1 and 0xFF]
         '''   Notice the right side has only 256 possible values because seed1 is AND-ed with 0xFF
         '''   Brute force seed1 by trying every possible value of (seed1 and 0xHFF) in the right side
         '''</remarks>
-        Public Function getFileDecryptionKey(ByVal encryptedStream As IO.Stream, ByVal target1Value As UInt32) As UInt32
+        Public Function BreakFileDecryptionKey(ByVal encryptedStream As IO.Stream, ByVal target1Value As UInt32) As ModInt32
             'Prep
-            Dim e1 As UInt32, e2 As UInt32
+            Dim T = cryptTable(HashType.ENCRYPT)
+            Dim e1 As ModInt32, e2 As ModInt32
             With New IO.BinaryReader(encryptedStream)
                 e1 = .ReadUInt32()
                 e2 = .ReadUInt32()
@@ -186,34 +171,34 @@ Namespace MPQ.Crypt
                 .Write(e2)
             End With
             'Initial values
-            Dim k2 As UInt32 = &HEEEEEEEEL
+            Dim k2 As ModInt32 = &HEEEEEEEE
             Dim s = e1 Xor target1Value 'undo xor
-            Dim n = uCUInt(CLng(s) - k2) 'undo addition
+            Dim n = s - k2 'undo addition
 
             'Brute force value of k1 by trying all possible values of (k1 & 0xFF)
             Dim found_min = False
-            Dim min_key = CUInt(0)
-            Dim min_val = CUInt(0)
+            Dim minKey As ModInt32
+            Dim minVal As ModInt32
             For possible_byte = 0 To &HFF
-                Dim k1 = uCUInt(CLng(n) - cryptTable(&H400 + possible_byte))
+                Dim k1 = n - T(possible_byte)
                 If (k1 And &HFF) <> possible_byte Then Continue For 'doesn't satisfy basic constraint
 
                 m.Seek(0, IO.SeekOrigin.Begin)
-                With New IO.BinaryReader(New Cypherer(k1, Cypherer.modes.decrypt).streamThroughFrom(m))
+                With New IO.BinaryReader(New Cypherer(k1, Cypherer.modes.decrypt).ConvertReadOnlyStream(m))
                     'check decryption for correctness
                     If .ReadUInt32() <> target1Value Then Continue For 'doesn't match plaintext
                     'keep track of key with lowest second value [lower values are more likely plaintexts]
                     Dim u = .ReadUInt32()
-                    If Not found_min OrElse u < min_val Then
-                        min_key = k1
-                        min_val = u
+                    If Not found_min OrElse CUInt(u) < CUInt(minVal) Then
+                        minKey = k1
+                        minVal = u
                         found_min = True
                     End If
                 End With
             Next possible_byte
 
             If Not found_min Then Throw New IO.InvalidDataException("No possible decryption key for provided plaintext.")
-            Return CUInt(min_key)
+            Return minKey
         End Function
     End Module
 End Namespace

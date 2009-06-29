@@ -20,7 +20,7 @@
             SyncLock lock
                 accepter.CloseAllPorts()
                 For Each socket In sockets
-                    socket.disconnect()
+                    socket.disconnect("Accepter Reset")
                 Next socket
                 sockets.Clear()
             End SyncLock
@@ -34,18 +34,20 @@
         End Property
 
         '''<summary>Handles new connections.</summary>
-        Private Sub catch_connection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient) Handles _accepter.accepted_connection
+        Private Sub catch_connection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
+            Contract.Requires(sender IsNot Nothing)
+            Contract.Requires(client IsNot Nothing)
             Try
-                Dim socket = New W3Socket(New BnetSocket(client, logger))
+                Dim socket = New W3Socket(New BnetSocket(client, New TimeSpan(0, 1, 0), logger))
                 logger.log("New player connecting from {0}.".frmt(socket.name), LogMessageTypes.Positive)
 
                 SyncLock lock
                     sockets.Add(socket)
                 End SyncLock
-                AddHandler socket.ReceivedPacket, AddressOf catch_knocked
-                FutureSub.Call({FutureWait(EXPIRY_PERIOD)}, Sub() catch_expired(socket))
+                AddHandler socket.ReceivedPacket, AddressOf c_Knocked
+                FutureWait(EXPIRY_PERIOD).CallWhenReady(Sub() c_Expired(socket))
 
-                socket.set_reading(True)
+                socket.SetReading(True)
             Catch e As Exception
                 logger.log("Error accepting connection: " + e.Message, LogMessageTypes.Problem)
             End Try
@@ -57,24 +59,25 @@
                 If Not sockets.Contains(socket) Then Return False
                 sockets.Remove(socket)
             End SyncLock
-            RemoveHandler socket.ReceivedPacket, AddressOf catch_knocked
+            RemoveHandler socket.ReceivedPacket, AddressOf c_Knocked
             Return True
         End Function
 
         '''<summary>Disconnects sockets which do not send any initial data.</summary>
-        Private Sub catch_expired(ByVal socket As W3Socket)
+        Private Sub c_Expired(ByVal socket As W3Socket)
             If Not TryRemoveSocket(socket) Then Return
-            socket.disconnect()
+            socket.disconnect("Idle")
         End Sub
 
         '''<summary>Accepts connecting warcraft 3 players.</summary>
-        Private Sub catch_knocked(ByVal socket As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
+        Private Sub c_Knocked(ByVal socket As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
             If Not TryRemoveSocket(socket) Then Return
             Try
                 GetConnectingPlayer(socket, id, vals)
             Catch e As Exception
-                logger.log("Error receiving {0} from {1}: {2}".frmt(id, socket.name, e.Message), LogMessageTypes.Problem)
-                socket.disconnect()
+                Dim msg = "Error receiving {0} from {1}: {2}".frmt(id, socket.name, e.Message)
+                logger.log(msg, LogMessageTypes.Problem)
+                socket.disconnect(msg)
             End Try
         End Sub
 
@@ -91,21 +94,25 @@
         End Sub
 
         Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
-            If id <> W3PacketId.KNOCK Then
+            If id <> W3PacketId.Knock Then
                 Throw New IO.IOException("{0} was not a warcraft 3 player.".frmt(socket.name))
             End If
 
-            Dim addr = CType(vals("internal address"), Dictionary(Of String, Object))
-            Dim player = New W3ConnectingPlayer( _
-                                CStr(vals("name")),
-                                CUInt(vals("connection key")),
-                                CUShort(vals("listen port")),
-                                CUShort(addr("port")),
-                                CType(addr("ip"), Byte()),
-                                socket)
+            Dim name = CStr(vals("name"))
+            Dim internalAddress = CType(vals("internal address"), Dictionary(Of String, Object))
+            Contract.Assume(name IsNot Nothing)
+            Contract.Assume(internalAddress IsNot Nothing)
+            Contract.Assume(socket IsNot Nothing)
+            Dim player = New W3ConnectingPlayer(name,
+                                                CUInt(vals("game id")),
+                                                CUInt(vals("entry key")),
+                                                CUInt(vals("peer key")),
+                                                CUShort(vals("listen port")),
+                                                AddressJar.ExtractIPEndpoint(internalAddress),
+                                                socket)
 
-            socket.name = player.name
-            socket.set_reading(False)
+            socket.name = player.Name
+            socket.SetReading(False)
             RaiseEvent Connection(Me, player)
         End Sub
     End Class
@@ -120,14 +127,14 @@
         End Sub
 
         Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
-            If id <> W3PacketId.P2P_KNOCK Then
+            If id <> W3PacketId.P2pKnock Then
                 Throw New IO.IOException("{0} was not a p2p warcraft 3 player connection.".frmt(socket.name))
             End If
             Dim player = New W3P2PConnectingPlayer(socket,
                                               CByte(vals("receiver p2p key")),
                                               CByte(vals("sender player id")),
                                               CUShort(vals("sender p2p flags")))
-            socket.set_reading(False)
+            socket.SetReading(False)
             RaiseEvent Connection(Me, player)
         End Sub
     End Class

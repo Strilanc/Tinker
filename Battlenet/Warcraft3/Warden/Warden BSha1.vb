@@ -22,6 +22,7 @@
 
         Public Sub New(ByVal substream As IO.Stream)
             MyBase.New(substream)
+            Contract.Requires(substream IsNot Nothing)
             buffered = RawRead(buffered_byte, 0, 1) = 1
             If Not buffered Then mode = modes.done
         End Sub
@@ -72,7 +73,7 @@
                         b = 0
 
                     Case modes.pad_length 'Finally, the data's original length is appended as a little-endian UInt64
-                        Dim u = ReverseByteEndian(total_read)
+                        Dim u = total_read.ReversedByteOrder()
                         b = CByte((u >> length_count) And CByte(&HFF))
                         length_count += 8
                         If length_count >= 64 Then mode = modes.done
@@ -99,13 +100,14 @@
     '''<summary>Implements methods for computing the BSha1 hash.</summary>
     Public Class BSha1Processor
         Public Shared Function process(ByVal data_ As IO.Stream) As Byte()
+            Contract.Requires(data_ IsNot Nothing)
+
             'Prep initial state
-            Dim S(0 To 4) As UInteger
-            S(0) = &H67452301L
-            S(1) = &HEFCDAB89L
-            S(2) = &H98BADCFEL
-            S(3) = &H10325476L
-            S(4) = &HC3D2E1F0L
+            Dim S() As ModInt32 = {&H67452301,
+                                   &HEFCDAB89,
+                                   &H98BADCFE,
+                                   &H10325476,
+                                   &HC3D2E1F0}
 
             'Process data stream
             Dim data = New BSha1DataStream(data_)
@@ -120,23 +122,21 @@
 
             'Return final state
             For i = 0 To 4
-                S(i) = ReverseByteEndian(S(i))
+                S(i) = CUInt(S(i)).ReversedByteOrder()
             Next i
-            Return concat(S(0).bytes(ByteOrder.LittleEndian),
-                          S(1).bytes(ByteOrder.LittleEndian),
-                          S(2).bytes(ByteOrder.LittleEndian),
-                          S(3).bytes(ByteOrder.LittleEndian),
-                          S(4).bytes(ByteOrder.LittleEndian))
+            Dim x = From e In S Select CUInt(e).bytes(ByteOrder.LittleEndian)
+            Contract.Assume(x IsNot Nothing) 'can be removed once static verifier understands linq statement are no null
+            Return Concat(x)
         End Function
 
-        Private Shared Function iterate(ByVal data() As UInteger, ByVal state() As UInteger) As UInteger()
-            Dim h(0 To 79) As UInteger
+        Private Shared Function iterate(ByVal data() As UInteger, ByVal state() As ModInt32) As ModInt32()
+            Dim h(0 To 79) As ModInt32
             For i = 0 To 15
-                h(i) = ReverseByteEndian(data(i))
+                h(i) = data(i).ReversedByteOrder()
             Next i
             For i = 16 To 79
                 Dim x = h(i - 3) Xor h(i - 8) Xor h(i - 14) Xor h(i - 16)
-                h(i) = ShiftRotateLeft(x, 1)
+                h(i) = x.ShiftRotateLeft(1)
             Next i
 
             Dim a = state(0)
@@ -145,8 +145,8 @@
             Dim d = state(3)
             Dim e = state(4)
             For i = 0 To 79
-                Dim f As UInteger
-                Dim k As UInteger
+                Dim f As ModInt32
+                Dim k As ModInt32
                 Select Case i
                     Case 0 To 19
                         f = (b And c) Or (d And Not b)
@@ -156,26 +156,24 @@
                         k = &H6ED9EBA1
                     Case 40 To 59
                         f = (c And b) Or (d And c) Or (d And b)
-                        k = &H8F1BBCDCL
+                        k = &H8F1BBCDC
                     Case 60 To 79
                         f = d Xor c Xor b
-                        k = &HCA62C1D6L
+                        k = &HCA62C1D6
                 End Select
-                Dim T = uSum(ShiftRotateLeft(a, 5), f, e, k, h(i))
+                Dim t = a.ShiftRotateLeft(5) + f + e + k + h(i)
                 e = d
                 d = c
-                c = ShiftRotateLeft(b, 30)
+                c = b.ShiftRotateLeft(30)
                 b = a
-                a = T
+                a = t
             Next i
 
-            Dim new_state(0 To 4) As UInteger
-            new_state(0) = uAdd(state(0), a)
-            new_state(1) = uAdd(state(1), b)
-            new_state(2) = uAdd(state(2), c)
-            new_state(3) = uAdd(state(3), d)
-            new_state(4) = uAdd(state(4), e)
-            Return new_state
+            Return {state(0) + a,
+                    state(1) + b,
+                    state(2) + c,
+                    state(3) + d,
+                    state(4) + e}
         End Function
     End Class
 End Namespace

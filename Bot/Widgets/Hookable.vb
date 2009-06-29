@@ -1,5 +1,5 @@
 ﻿Public Interface IHookable(Of T)
-    Function f_hook(ByVal child As T) As IFuture
+    Function f_Hook(ByVal child As T) As IFuture
     Function f_caption() As IFuture(Of String)
 End Interface
 
@@ -7,21 +7,21 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
     Private ReadOnly tabs As New Dictionary(Of T, TabPage)
     Private ReadOnly controls As New Dictionary(Of T, C)
     Private ReadOnly elements As New List(Of T)
-    Private ReadOnly tab_collection As TabControl.TabPageCollection
-    Private ReadOnly uiref As ICallQueue
+    Private ReadOnly tabCollection As TabControl.TabPageCollection
+    Private ReadOnly ref As ICallQueue
 
-    Public Sub New(ByVal tab_control As TabControl)
-        Me.tab_collection = tab_control.TabPages
-        Me.uiref = New InvokedCallQueue(tab_control)
+    Public Sub New(ByVal tabControl As TabControl)
+        Me.tabCollection = tabControl.TabPages
+        Me.ref = New InvokedCallQueue(tabControl)
     End Sub
 
-    Public Sub add(ByVal element As T)
+    Public Sub Add(ByVal element As T)
         If tabs.ContainsKey(element) Then Throw New InvalidOperationException("Already have a control added for element.")
 
         'create
         Dim page = New TabPage()
         Dim control = New C()
-        tab_collection.Add(page)
+        tabCollection.Add(page)
         page.Controls.Add(control)
 
         'add
@@ -33,45 +33,44 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         control.Width = page.Width
         control.Height = page.Height
         control.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Top
-        control.f_hook(element)
+        control.f_Hook(element)
         page.Text = "..."
-        update_text(element)
+        UpdateText(element)
     End Sub
 
-    Private Sub update_text(ByVal element As T)
+    Private Sub UpdateText(ByVal element As T)
         Dim control = controls(element)
         Dim page = tabs(element)
-        Call FutureSub.Call(
-            control.f_caption,
+        control.f_caption.CallWhenValueReady(
             Sub(text)
-                uiref.QueueAction(
-                    Sub()
-                        Try
-                            page.Text = text
-                        Catch e As Exception
-                        End Try
-                    End Sub
-                )
-            End Sub
+                                                 ref.QueueAction(
+                                                     Sub()
+                                                         Try
+                                                             page.Text = text
+                                                         Catch e As Exception
+                                                         End Try
+                                                     End Sub
+                                                 )
+                                             End Sub
         )
     End Sub
-    Public Function update(ByVal element As T) As Outcome
+    Public Function Update(ByVal element As T) As Outcome
         If Not tabs.ContainsKey(element) Then Return failure("Don't have a control to update for element.")
-        update_text(element)
+        UpdateText(element)
         Return success("Element updated.")
     End Function
 
-    Public Function contains(ByVal element As T) As Boolean
+    Public Function Contains(ByVal element As T) As Boolean
         Return tabs.ContainsKey(element)
     End Function
 
-    Public Sub replace(ByVal old_element As T, ByVal new_element As T)
+    Public Sub Replace(ByVal old_element As T, ByVal new_element As T)
         If Not tabs.ContainsKey(old_element) Then Throw New InvalidOperationException("Don't have a control to replace for element.")
         Dim control = controls(old_element)
-        control.f_hook(new_element)
+        control.f_Hook(new_element)
     End Sub
 
-    Public Sub remove(ByVal element As T)
+    Public Sub Remove(ByVal element As T)
         If Not tabs.ContainsKey(element) Then Throw New InvalidOperationException("Don't have a control to remove for element.")
 
         'retrieve
@@ -79,9 +78,9 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         Dim control = controls(element)
 
         'cleanup
-        control.f_hook(Nothing)
+        control.f_Hook(Nothing)
         page.Controls.Remove(control)
-        tab_collection.Remove(page)
+        tabCollection.Remove(page)
         Try
             control.Dispose()
             page.Dispose()
@@ -94,23 +93,23 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         elements.Remove(element)
     End Sub
 
-    Public Sub clear()
+    Public Sub Clear()
         For Each element In elements.ToList
-            remove(element)
+            Remove(element)
         Next element
     End Sub
 End Class
 
 Public Interface IBotWidget
-    Event add_state_string(ByVal state As String, ByVal insert_at_top As Boolean)
-    Event remove_state_string(ByVal state As String)
-    Event clear_state_strings()
+    Event AddStateString(ByVal state As String, ByVal insert_at_top As Boolean)
+    Event RemoveStateString(ByVal state As String)
+    Event ClearStateStrings()
 
-    Function name() As String
-    Function type_name() As String
-    Function logger() As Logger
+    ReadOnly Property Name() As String
+    ReadOnly Property TypeName() As String
+    ReadOnly Property Logger() As Logger
 
-    Sub [stop]()
-    Sub hooked()
-    Sub command(ByVal text As String)
+    Sub [Stop]()
+    Sub Hooked()
+    Sub ProcessCommand(ByVal text As String)
 End Interface

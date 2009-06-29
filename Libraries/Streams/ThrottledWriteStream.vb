@@ -13,6 +13,12 @@ Public Class ThrottledWriteStream
                    Optional ByVal costLimit As Double = 0,
                    Optional ByVal costRecoveredPerSecond As Double = 1)
         MyBase.New(substream)
+        Contract.Requires(substream IsNot Nothing)
+        Contract.Requires(initialSlack >= 0)
+        Contract.Requires(costPerWrite >= 0)
+        Contract.Requires(costPerCharacter >= 0)
+        Contract.Requires(costLimit >= 0)
+        Contract.Requires(costRecoveredPerSecond > 0)
         writer = New ThrottledWriter(substream, initialSlack, costPerWrite, costPerCharacter, costLimit, costRecoveredPerSecond)
     End Sub
 
@@ -38,12 +44,12 @@ Public Class ThrottledWriteStream
 
     '''<summary>Queues a write to the substream. Doesn't block.</summary>
     Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
-        writer.QueueWrite(subArray(buffer, offset, count))
+        writer.QueueWrite(SubArray(buffer, offset, count))
     End Sub
 End Class
 
 Public Class ThrottledWriter
-    Inherits BaseConsumingLockFreeCallQueue(Of Byte())
+    Inherits BaseLockFreeConsumer(Of Byte())
 
     Private ReadOnly destinationStream As IO.Stream
     Private ReadOnly consumptionQueue As New Queue(Of Byte())
@@ -65,14 +71,19 @@ Public Class ThrottledWriter
                    Optional ByVal costPerCharacter As Double = 0,
                    Optional ByVal costLimit As Double = 0,
                    Optional ByVal costRecoveredPerSecond As Double = 1)
-        Me.destinationStream = ContractNotNull(destinationStream, "destinationStream")
+        Contract.Requires(destinationStream IsNot Nothing)
+        Contract.Requires(initialSlack >= 0)
+        Contract.Requires(costPerWrite >= 0)
+        Contract.Requires(costPerCharacter >= 0)
+        Contract.Requires(costLimit >= 0)
+        Contract.Requires(costRecoveredPerSecond > 0)
+
+        Me.destinationStream = destinationStream
         Me.availableSlack = initialSlack
         Me.costPerWrite = costPerWrite
         Me.costPerCharacter = costPerCharacter
         Me.costLimit = costLimit
         Me.recoveryRate = costRecoveredPerSecond / TimeSpan.TicksPerSecond
-        If Me.recoveryRate <= 0 Then Throw New ArgumentOutOfRangeException("recoveryRate must be positive.")
-        If Me.costLimit < 0 Then Throw New ArgumentOutOfRangeException("costLimit must be non-negative.")
     End Sub
 
     Public Sub QueueWrite(ByVal data As Byte())
@@ -99,7 +110,7 @@ Public Class ThrottledWriter
 
             'Wait
             If usedCost > costLimit + availableSlack Then
-                FutureSub.Call({FutureWait(New TimeSpan(CLng((usedCost - costLimit) / recoveryRate)))},
+                FutureWait(New TimeSpan(CLng((usedCost - costLimit) / recoveryRate))).CallWhenReady(
                                Sub() ref.QueueAction(Sub() ContinueConsume(Nothing)))
                 Return
             End If

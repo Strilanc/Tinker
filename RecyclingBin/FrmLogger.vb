@@ -7,6 +7,6 @@ Public Class FrmLogger
         MyBase.New()
         InitializeComponent()
         Text = "Logger: " + name
-        logMain.setLogger(logger, name, showDataEvents, showDataParsed, showDataRaw)
+        logMain.SetLogger(logger, name, showDataEvents, showDataParsed, showDataRaw)
     End Sub
 End Class

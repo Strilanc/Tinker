@@ -1,8 +1,8 @@
-Imports HostBot.MPQ
-Imports HostBot.MPQ.Crypt
+Imports HostBot.Mpq
+Imports HostBot.Mpq.Crypt
 
-Namespace MPQ.Common
-    Module Common
+Namespace Mpq.Common
+    Public Module Common
         Public Sub readStreamMPQListFile(ByVal s As IO.Stream, ByVal map As Dictionary(Of UInt64, String))
             Try
                 With New IO.StreamReader(s)
@@ -16,21 +16,21 @@ Namespace MPQ.Common
             End Try
         End Sub
 
-        Public Sub readMPQListFile(ByVal mpqa As MPQArchive, ByVal map As Dictionary(Of UInt64, String))
+        Public Sub readMPQListFile(ByVal mpqa As MpqArchive, ByVal map As Dictionary(Of UInt64, String))
             map(HashFileName("(listfile)")) = "(listfile)"
             Try
-                readStreamMPQListFile(New MPQFileStream(mpqa, "(listfile)"), map)
+                readStreamMPQListFile(mpqa.OpenFile("(listfile)"), map)
             Catch e As Exception
                 'no list file
             End Try
         End Sub
 
-        Public Function listMPQ(ByVal mpqa As MPQArchive, ByVal map As Dictionary(Of UInt64, String)) As List(Of String)
+        Public Function listMPQ(ByVal mpqa As MpqArchive, ByVal map As Dictionary(Of UInt64, String)) As List(Of String)
             Dim L As New List(Of String)
             readMPQListFile(mpqa, map)
-            For Each h As MPQHashTable.HashEntry In mpqa.hashTable.hashes
-                If h.fileIndex = MPQHashTable.HashEntry.FILE_INDEX_DELETED Then Continue For
-                If h.fileIndex = MPQHashTable.HashEntry.FILE_INDEX_EMPTY Then Continue For
+            For Each h As MpqHashTable.HashEntry In mpqa.hashTable.hashes
+                If h.fileIndex = MpqHashTable.HashEntry.FILE_INDEX_DELETED Then Continue For
+                If h.fileIndex = MpqHashTable.HashEntry.FILE_INDEX_EMPTY Then Continue For
                 If map.ContainsKey(h.key) Then
                     L.Add(map(h.key))
                 Else
@@ -51,47 +51,43 @@ Namespace MPQ.Common
             End Using
         End Sub
 
-        Public Sub extractMPQ(ByVal targetpath As String, ByVal mpqa As MPQArchive, ByVal map As Dictionary(Of UInt64, String))
-            readMPQListFile(mpqa, map)
-            For Each h As MPQHashTable.HashEntry In mpqa.hashTable.hashes
-                If h.fileIndex = MPQHashTable.HashEntry.FILE_INDEX_DELETED Then Continue For
-                If h.fileIndex = MPQHashTable.HashEntry.FILE_INDEX_EMPTY Then Continue For
-                Dim s As String = ""
-                Dim m As MPQFileStream = Nothing
-                Dim f As IO.FileStream = Nothing
+        Public Sub extractMPQ(ByVal targetpath As String, ByVal archive As MpqArchive, ByVal map As Dictionary(Of UInt64, String))
+            targetpath = targetpath.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
+            If targetpath(targetpath.Length - 1) <> IO.Path.AltDirectorySeparatorChar Then
+                targetpath += IO.Path.AltDirectorySeparatorChar
+            End If
+            readMPQListFile(archive, map)
+            For Each h As MpqHashTable.HashEntry In archive.hashTable.hashes
+                If h.fileIndex = MpqHashTable.HashEntry.FILE_INDEX_DELETED Then Continue For
+                If h.fileIndex = MpqHashTable.HashEntry.FILE_INDEX_EMPTY Then Continue For
+                Dim filename = ""
+                Dim m As IO.Stream = Nothing
                 Try
                     'Open file
                     If map.ContainsKey(h.key) Then
-                        s = map(h.key)
-                        m = New MPQFileStream(mpqa, s)
+                        filename = map(h.key)
+                        m = archive.OpenFile(filename)
                     Else
-                        s = "Unknown" + CStr(h.key)
-                        m = New MPQFileStream(mpqa, h.fileIndex)
+                        filename = "Unknown" + CStr(h.key)
+                        m = archive.OpenFile(h.fileIndex)
                     End If
                     'Create sub directories
-                    Dim ss() As String = s.Split("\"c, "/"c)
+                    Dim ss() As String = filename.Split("\"c, "/"c)
                     Dim curpath As String = targetpath
-                    For i As Integer = 0 To ss.Length - 2
+                    For i = 0 To ss.Length - 2
                         curpath += ss(i) + "\"
                         If Not IO.Directory.Exists(curpath) Then IO.Directory.CreateDirectory(curpath)
                     Next i
                     'Write to file
                     Dim buffer(0 To 511) As Byte
-                    f = New IO.FileStream(targetpath + s, IO.FileMode.CreateNew, IO.FileAccess.Write)
-                    For i As Integer = 0 To CInt(m.Length - 1)
-                        f.Write(buffer, 0, m.Read(buffer, 0, buffer.Length))
-                    Next i
-                    'cleanup
-                    f.Close()
+                    write_stream_to_disk(m, targetpath + filename)
                     m.Close()
-                    Debug.Print("Extracted " + s)
+                    Debug.Print("Extracted " + filename)
                 Catch e As IO.InvalidDataException
-                    Debug.Print("Error extracting " + s + ": " + e.Message)
-                    If f IsNot Nothing Then f.Close() : IO.File.Delete(targetpath + s)
+                    Debug.Print("Error extracting " + filename + ": " + e.Message)
                     If m IsNot Nothing Then m.Close()
                 Catch e As IO.IOException
-                    Debug.Print("Error extracting " + s + ": " + e.Message)
-                    If f IsNot Nothing Then f.Close() : IO.File.Delete(targetpath + s)
+                    Debug.Print("Error extracting " + filename + ": " + e.Message)
                     If m IsNot Nothing Then m.Close()
                 End Try
             Next h

@@ -3,10 +3,12 @@ Imports System.Net.Sockets
 Imports HostBot.Links
 
 Public Class W3LanAdvertiser
+    Inherits NotifyingDisposable
     Implements IBotWidget
-    Implements IDependencyLinkServant
 
-    Private ReadOnly games As New Dictionary(Of UInteger, LanGame)
+    Private ReadOnly games1 As New HashSet(Of LanGame)
+    Private ReadOnly idmap As New Dictionary(Of UInteger, LanGame)
+    Private ReadOnly headermap As New Dictionary(Of W3GameHeader, LanGame)
     Private ReadOnly socket As UdpClient
     Public Const TYPE_NAME As String = "LanAdvertiser"
 
@@ -23,63 +25,61 @@ Public Class W3LanAdvertiser
     Private create_count As UInteger = 0
     Private WithEvents refresh_timer As New System.Timers.Timer(3000)
 
-    Public Event killed() Implements IDependencyLinkServant.Closed
-
 #Region "Inner"
     Private Class LanGame
         Public ReadOnly id As UInteger
-        Public ReadOnly map As W3Map
-        Public ReadOnly name As String
         Public ReadOnly creation_time As Integer
-        Public ReadOnly map_settings As W3Map.MapSettings
-        Public Sub New(ByVal name As String, ByVal id As UInteger, ByVal map As W3Map, ByVal map_settings As W3Map.MapSettings)
+        Public ReadOnly header As W3GameHeader
+        Public Sub New(ByVal id As UInteger, ByVal header As W3GameHeader)
             Me.id = id
-            Me.name = name
-            Me.map = map
             Me.creation_time = Environment.TickCount
-            Me.map_settings = map_settings
+            Me.header = header
         End Sub
     End Class
     Private Class AdvertisingLinkMember
-        Implements IAdvertisingLinkMember
+        Inherits NotifyingDisposable
+        Implements IGameSourceSink
 
-        Private WithEvents parent As W3LanAdvertiser
-        Private gameid As UInteger = 0
+        Private ReadOnly parent As W3LanAdvertiser
+        Private ReadOnly games As New HashSet(Of W3GameHeader)
+
+        Private Event DisposedLink(ByVal sender As Links.IGameSource, ByVal partner As IGameSink) Implements IGameSource.DisposedLink
+        Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As IW3Server) Implements IGameSource.AddedGame
+        Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSource.RemovedGame
 
         Public Sub New(ByVal parent As W3LanAdvertiser)
+            Contract.Requires(parent IsNot Nothing)
             Me.parent = parent
+            DisposeLink.CreateOneWayLink(parent, Me)
         End Sub
 
-        Private Event break(ByVal sender As Links.IAdvertisingLinkMember, ByVal partner As Links.IAdvertisingLinkMember) Implements Links.IAdvertisingLinkMember.break
-        Private Event started_advertising(ByVal sender As Links.IAdvertisingLinkMember, ByVal server As IW3Server, ByVal name As String, ByVal map As Warcraft3.W3Map, ByVal options As System.Collections.Generic.IList(Of String)) Implements Links.IAdvertisingLinkMember.started_advertising
-        Private Event stopped_advertising(ByVal sender As Links.IAdvertisingLinkMember, ByVal reason As String) Implements Links.IAdvertisingLinkMember.stopped_advertising
-
-        Public Sub start_advertising(ByVal server As IW3Server, ByVal name As String, ByVal map As Warcraft3.W3Map, ByVal options As IList(Of String)) Implements Links.IAdvertisingLinkMember.start_advertising
-            If gameid <> 0 Then Return
-            gameid = parent.add_game(name, map, New W3Map.MapSettings(options))
-            RaiseEvent started_advertising(Me, server, name, map, options)
+        Public Sub AddGame(ByVal game As W3GameHeader, ByVal server As IW3Server) Implements IGameSourceSink.AddGame
+            If games.Contains(game) Then Return
+            games.Add(game)
+            parent.AddGame(game)
+            RaiseEvent AddedGame(Me, game, server)
             If server IsNot Nothing Then
-                Dim listened = server.f_OpenPort(parent.server_listen_port)
-                FutureSub.Call(listened, AddressOf server_listened_result)
+                server.f_OpenPort(parent.server_listen_port).CallWhenValueReady(
+                    Sub(listened)
+                                                                                    If Not listened.succeeded Then
+                                                                                        RemoveGame(game, listened.Message)
+                                                                                    End If
+                                                                                End Sub
+                )
             End If
         End Sub
-        Private Sub server_listened_result(ByVal listened As Outcome)
-            If Not listened.succeeded Then
-                stop_advertising(listened.message)
-            End If
+        Public Sub RemoveGame(ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSourceSink.RemoveGame
+            If Not games.Contains(game) Then Return
+            games.Remove(game)
+            parent.RemoveGame(game)
+            RaiseEvent RemovedGame(Me, game, reason)
         End Sub
-        Public Sub stop_advertising(ByVal reason As String) Implements Links.IAdvertisingLinkMember.stop_advertising
-            If gameid = 0 Then Return
-            parent.remove_game(gameid)
-            gameid = 0
-            RaiseEvent stopped_advertising(Me, reason)
-        End Sub
-        Public Sub set_advertising_options(ByVal [private] As Boolean) Implements Links.IAdvertisingLinkMember.set_advertising_options
+        Public Sub SetAdvertisingOptions(ByVal [private] As Boolean) Implements IGameSourceSink.SetAdvertisingOptions
             'no distinction between public/private on lan
         End Sub
 
-        Private Sub parent_killed() Handles parent.killed
-            RaiseEvent break(Me, Nothing)
+        Protected Overrides Sub PerformDispose()
+            RaiseEvent DisposedLink(Me, Nothing)
         End Sub
     End Class
 #End Region
@@ -111,9 +111,12 @@ Public Class W3LanAdvertiser
         Me.refresh_timer.Start()
     End Sub
 
-    Public Sub Kill() Implements IBotWidget.stop, IDependencyLinkServant.close
+    Private Sub _Stop() Implements IBotWidget.[Stop]
+        Dispose()
+    End Sub
+    Protected Overrides Sub PerformDispose()
         SyncLock lock
-            clear_games()
+            ClearGames()
 
             'stop sending data
             refresh_timer.Stop()
@@ -121,7 +124,7 @@ Public Class W3LanAdvertiser
         End SyncLock
 
         'break links with other components
-        parent.remove_widget_R(TYPE_NAME, name)
+        parent.f_RemoveWidget(TYPE_NAME, name)
 
         If Me.pool_port IsNot Nothing Then
             logger.log("Returned port {0} to the pool.".frmt(Me.server_listen_port), LogMessageTypes.Positive)
@@ -132,60 +135,76 @@ Public Class W3LanAdvertiser
         'Log
         logger.log("Shutdown Advertiser", LogMessageTypes.Negative)
         RaiseEvent clear_state_strings()
-        RaiseEvent killed()
     End Sub
 #End Region
 
 #Region "State"
-    Public Function make_advertising_link_member() As IAdvertisingLinkMember
+    Public Function MakeAdvertisingLinkMember() As IGameSourceSink
+        Contract.Ensures(Contract.Result(Of IGameSourceSink)() IsNot Nothing)
         Return New AdvertisingLinkMember(Me)
     End Function
 
     '''<summary>Adds a game to be advertised</summary>
-    Public Function add_game(ByVal name As String, ByVal map As W3Map, ByVal map_settings As W3Map.MapSettings) As UInteger
+    Public Function AddGame(ByVal gameHeader As W3GameHeader) As UInteger
         Dim id As UInteger
         Dim game As LanGame
 
         'Create
         SyncLock lock
+            If headermap.ContainsKey(gameHeader) Then Return headermap(gameHeader).id
             create_count += CByte(1)
             id = create_count
-            game = New LanGame(name, id, map, map_settings)
-            games(id) = game
+            game = New LanGame(id, gameHeader)
+            idmap(id) = game
+            headermap(gameHeader) = game
+            games1.Add(game)
         End SyncLock
 
         'Log
-        logger.log("Added game " + game.name, LogMessageTypes.Positive)
-        RaiseEvent add_state_string(id.ToString + "=" + name, False)
+        logger.log("Added game " + game.header.name, LogMessageTypes.Positive)
+        RaiseEvent add_state_string(id.ToString + "=" + gameHeader.name, False)
 
         Return id
     End Function
 
     '''<summary>Removes a game to be advertised.</summary>
-    Public Function remove_game(ByVal id As UInteger) As Boolean
+    Public Function RemoveGame(ByVal id As UInteger) As Boolean
         Dim game As LanGame
 
         SyncLock lock
             'Remove
-            If Not games.ContainsKey(id) Then Return False
-            game = games(id)
-            games.Remove(id)
+            If Not idmap.ContainsKey(id) Then Return False
+            game = idmap(id)
+            games1.Remove(game)
+            idmap.Remove(id)
+            headermap.Remove(game.header)
 
             'Notify
-            Dim pk = W3Packet.MakePacket_LAN_DESTROY_GAME(id)
+            Dim pk = W3Packet.MakeLanDestroyGame(id)
             send(pk, remote_host, remote_port)
         End SyncLock
 
         'Log
-        logger.log("Removed game " + game.name, LogMessageTypes.Negative)
-        RaiseEvent remove_state_string(game.id.ToString + "=" + game.name)
+        logger.log("Removed game " + game.header.name, LogMessageTypes.Negative)
+        RaiseEvent remove_state_string(game.id.ToString + "=" + game.header.name)
         Return True
     End Function
+    Public Function RemoveGame(ByVal header As W3GameHeader) As Boolean
+        Dim game As LanGame
 
-    Public Sub clear_games()
         SyncLock lock
-            For Each game In games.Values.ToList
-                remove_game(game.id)
+            'Remove
+            If Not headermap.ContainsKey(header) Then Return False
+            game = headermap(header)
+        End SyncLock
+
+        Return RemoveGame(game.id)
+    End Function
+
+    Public Sub ClearGames()
+        SyncLock lock
+            For Each game In games1.ToList
+                RemoveGame(game.id)
             Next game
         End SyncLock
     End Sub
@@ -195,16 +214,13 @@ Public Class W3LanAdvertiser
     '''<summary>Resends game data to the target address.</summary>
     Public Sub refresh() Handles refresh_timer.Elapsed
         SyncLock lock
-            For Each game In games.Values
-                Dim pk = W3Packet.MakePacket_LAN_DESCRIBE_GAME( _
-                                server_listen_port,
+            For Each game In games1
+                Dim pk = W3Packet.MakeLanDescribeGame(
                                 game.creation_time,
-                                game.name,
-                                My.Resources.ProgramName,
                                 MainBot.Wc3MajorVersion,
                                 game.id,
-                                game.map,
-                                game.map_settings)
+                                game.header,
+                                server_listen_port)
                 send(pk, remote_host, remote_port)
             Next game
         End SyncLock
@@ -214,13 +230,13 @@ Public Class W3LanAdvertiser
     Private Sub send(ByVal pk As W3Packet, ByVal remote_host As String, ByVal remote_port As UShort)
         Try
             'pack
-            Dim data = pk.payload.getData.ToArray()
-            data = concat({W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).bytes(ByteOrder.LittleEndian), data)
+            Dim data = pk.payload.Data.ToArray()
+            data = Concat({New Byte() {W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).bytes(ByteOrder.LittleEndian), data})
 
             'Log
             logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageTypes.DataEvent)
-            logger.log(Function() pk.payload.toString(), LogMessageTypes.DataParsed)
-            logger.log(Function() "Sending {0} to {1}: {2}".frmt(unpackHexString(data), remote_host, remote_port), LogMessageTypes.DataRaw)
+            logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+            logger.log(Function() "Sending {0} to {1}: {2}".frmt(data.ToHexString, remote_host, remote_port), LogMessageTypes.DataRaw)
 
             'Send
             socket.Send(data, data.Length, remote_host, remote_port)
@@ -231,35 +247,41 @@ Public Class W3LanAdvertiser
         Catch e As Exception
             'Fail
             logger.log("Error sending {0}: {1}".frmt(pk.id, e.Message()), LogMessageTypes.Problem)
-            Logging.logUnexpectedException("Exception rose past {0}.send".frmt(Me.GetType.Name), e)
+            Logging.LogUnexpectedException("Exception rose past {0}.send".frmt(Me.GetType.Name), e)
         End Try
     End Sub
 #End Region
 
 #Region "IBotWidget"
-    Private Event add_state_string(ByVal state As String, ByVal insert_at_top As Boolean) Implements IBotWidget.add_state_string
-    Private Event remove_state_string(ByVal state As String) Implements IBotWidget.remove_state_string
-    Private Event clear_state_strings() Implements IBotWidget.clear_state_strings
-    Private Sub command(ByVal text As String) Implements IBotWidget.command
-        parent.lan_commands.processLocalText(Me, text, logger)
+    Private Event add_state_string(ByVal state As String, ByVal insert_at_top As Boolean) Implements IBotWidget.AddStateString
+    Private Event remove_state_string(ByVal state As String) Implements IBotWidget.RemoveStateString
+    Private Event clear_state_strings() Implements IBotWidget.ClearStateStrings
+    Private Sub command(ByVal text As String) Implements IBotWidget.ProcessCommand
+        parent.LanCommands.ProcessLocalText(Me, text, logger)
     End Sub
-    Private Sub hooked() Implements IBotWidget.hooked
+    Private Sub hooked() Implements IBotWidget.Hooked
         Dim game_names As List(Of String)
         SyncLock lock
-            game_names = (From game In games.Values Select "{0}={1}".frmt(game.id, game.name)).ToList
+            game_names = (From game In games1 Select "{0}={1}".frmt(game.id, game.header.name)).ToList
         End SyncLock
         For Each game_name In game_names
             RaiseEvent add_state_string(game_name, False)
         Next game_name
     End Sub
-    Private Function get_logger() As Logger Implements IBotWidget.logger
-        Return logger
-    End Function
-    Private Function get_name() As String Implements IBotWidget.name
-        Return name
-    End Function
-    Private Function get_type_name() As String Implements IBotWidget.type_name
-        Return TYPE_NAME
-    End Function
+    Private ReadOnly Property _logger() As Logger Implements IBotWidget.Logger
+        Get
+            Return logger
+        End Get
+    End Property
+    Private ReadOnly Property _name() As String Implements IBotWidget.Name
+        Get
+            Return name
+        End Get
+    End Property
+    Private ReadOnly Property _typeName() As String Implements IBotWidget.TypeName
+        Get
+            Return TYPE_NAME
+        End Get
+    End Property
 #End Region
 End Class

@@ -14,13 +14,13 @@ Public Class W3GameServerControl
         Return uiRef.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".frmt(server.name, server.suffix)))
     End Function
 
-    Public Function f_hook(ByVal server As IW3Server) As IFuture Implements IHookable(Of IW3Server).f_hook
+    Public Function f_hook(ByVal server As IW3Server) As IFuture Implements IHookable(Of IW3Server).f_Hook
         Return uiRef.QueueAction(
             Sub()
                 If Me.server Is server Then  Return
                 Me.server = Nothing
                 If games IsNot Nothing Then
-                    games.clear()
+                    games.Clear()
                 Else
                     games = New TabControlIHookableSet(Of IW3Game, W3GameControl)(tabsServer)
                 End If
@@ -28,22 +28,21 @@ Public Class W3GameServerControl
 
                 Me.txtInfo.Text = ""
                 If server Is Nothing Then
-                    logServer.setLogger(Nothing, Nothing)
+                    logServer.SetLogger(Nothing, Nothing)
                 Else
-                    logServer.setLogger(server.logger, "Server")
-                    FutureSub.Call( _
-                            server.f_EnumGames(),
-                            Sub(games)
-                                uiRef.QueueAction(
-                                    Sub()
-                                        If server IsNot Me.server Then  Return
-                                        For Each game In games
-                                            If Me.games.contains(game) Then  Continue For
-                                            Me.games.add(game)
-                                        Next game
-                                    End Sub
-                                )
-                            End Sub
+                    logServer.SetLogger(server.logger, "Server")
+                    server.f_EnumGames().CallWhenValueReady(
+                        Sub(games)
+                            uiRef.QueueAction(
+                                Sub()
+                                    If server IsNot Me.server Then  Return
+                                    For Each game In games
+                                        If Me.games.Contains(game) Then  Continue For
+                                        Me.games.Add(game)
+                                    Next game
+                                End Sub
+                            )
+                        End Sub
                     )
                     Dim map = server.settings.map
 
@@ -58,15 +57,15 @@ Public Class W3GameServerControl
                                       "Map Checksum (xoro){0}{11}{0}{0}" +
                                       "Map Checksum (sha1){0}{10}{0}").frmt(Environment.NewLine,
                                                                             map.name,
-                                                                            map.relative_path,
-                                                                            map.fileSize,
+                                                                            map.RelativePath,
+                                                                            map.FileSize,
                                                                             If(map.isMelee, "Melee", "Custom"),
-                                                                            map.numPlayerSlots,
+                                                                            map.NumPlayerSlots,
                                                                             map.numForces,
                                                                             map.playableWidth, map.playableHeight,
-                                                                            unpackHexString(map.crc32),
-                                                                            unpackHexString(map.checksum_sha1),
-                                                                            unpackHexString(map.checksum_xoro))
+                                                                            map.Crc32.ToHexString,
+                                                                            map.ChecksumSha1.ToHexString,
+                                                                            map.ChecksumXoro.ToHexString)
                 End If
             End Sub
         )
@@ -78,8 +77,8 @@ Public Class W3GameServerControl
         uiRef.QueueAction(
             Sub()
                 If sender IsNot server Then  Return
-                If Not games.contains(instance) Then
-                    games.add(instance)
+                If Not games.Contains(instance) Then
+                    games.Add(instance)
                 End If
             End Sub
         )
@@ -89,8 +88,8 @@ Public Class W3GameServerControl
         uiRef.QueueAction(
             Sub()
                 If sender IsNot server Then  Return
-                If games.contains(instance) Then
-                    games.remove(instance)
+                If games.Contains(instance) Then
+                    games.Remove(instance)
                 End If
             End Sub
         )
@@ -100,7 +99,7 @@ Public Class W3GameServerControl
         If e.KeyChar <> ChrW(Keys.Enter) Then Return
         If txtCommand.Text = "" Then Return
         e.Handled = True
-        server.parent.server_commands.processLocalText(server, txtCommand.Text, logServer.getLogger())
+        server.parent.ServerCommands.ProcessLocalText(server, txtCommand.Text, logServer.Logger())
         txtCommand.Text = ""
     End Sub
 #End Region

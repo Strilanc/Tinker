@@ -30,7 +30,7 @@
                     Else
                         For Each word In line.Split(" "c)
                             If word Like "0x??*" Then
-                                bb.Add(CByte(dehex(word.Substring(2, 2))))
+                                bb.Add(CByte(dehex(word.Substring(2, 2), ByteOrder.BigEndian)))
                             End If
                         Next word
                     End If
@@ -45,14 +45,14 @@
                             If P(i).Length >= plen Then
                                 Dim payload(0 To plen - 1) As Byte
                                 P(i).Read(payload, 0, plen)
-                                If header(i)(1) = Bnet.BnetPacketID.WARDEN Then
+                                If header(i)(1) = Bnet.BnetPacketID.Warden Then
                                     If i = 0 Then
                                         p_wc3.Add(payload)
                                     Else
                                         P_bnet.Add(payload)
                                     End If
-                                ElseIf header(i)(1) = Bnet.BnetPacketID.AUTHENTICATION_FINISH And i = 0 Then
-                                    seed = payload.subArray(36, 4).ToUInteger(ByteOrder.LittleEndian)
+                                ElseIf header(i)(1) = Bnet.BnetPacketID.AuthenticationFinish And i = 0 Then
+                                    seed = payload.SubArray(36, 4).ToUInteger(ByteOrder.LittleEndian)
                                 End If
                                 header(i) = Nothing
                                 i -= 1
@@ -63,7 +63,7 @@
                 Loop
             End Using
 
-            handler = New WardenPacketHandler(seed, New ThreadPooledCallQueue, module_folder:=GetTestingPath("Modules"))
+            handler = New WardenPacketHandler(seed, New ThreadPooledCallQueue, moduleFolder:=GetTestingPath("Modules"))
         End Sub
 
         Private Shared Function GetTestingPath(ByVal sub_folder As String) As String

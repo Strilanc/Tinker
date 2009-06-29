@@ -12,11 +12,11 @@ Public Class FrmSettings
 
     Public Sub load_from_bot(ByVal bot As MainBot)
         Me.bot = bot
-        Me.profiles = bot.client_profiles.ToList
+        Me.profiles = bot.clientProfiles.ToList
         For Each profile In profiles
             add_profile_tab(profile)
         Next profile
-        For Each profile In bot.plugin_profiles
+        For Each profile In bot.pluginProfiles
             gridPlugins.Rows.Add(profile.name, profile.location, profile.argument)
         Next profile
 
@@ -114,11 +114,11 @@ Public Class FrmSettings
     End Sub
 
     Private Sub btnSave_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSave.Click
-        bot.client_profiles.Clear()
+        bot.clientProfiles.Clear()
         For Each profile In profiles
-            bot.client_profiles.Add(profile)
+            bot.clientProfiles.Add(profile)
         Next profile
-        bot.plugin_profiles.Clear()
+        bot.pluginProfiles.Clear()
         For Each row As DataGridViewRow In gridPlugins.Rows
             If row.Cells(0).Value Is Nothing Then Continue For
             Dim name = If(row.Cells(0).Value, "").ToString
@@ -126,7 +126,7 @@ Public Class FrmSettings
             Dim arg = If(row.Cells(2).Value, "").ToString
             If name.Trim = "" Then Continue For
             If path.Trim = "" Then Continue For
-            bot.plugin_profiles.Add(New Plugins.PluginProfile(name, path, arg))
+            bot.pluginProfiles.Add(New Plugins.PluginProfile(name, path, arg))
         Next row
 
         For Each tab As TabPage In tabsSettings.TabPages
@@ -141,13 +141,13 @@ Public Class FrmSettings
         'Sync desired port pool with bot port pool
         Dim port_pool_text = txtPortPool.Text
         Dim ports = parse_port_list(port_pool_text, port_pool_text)
-        For Each port In bot.port_pool.EnumPorts
+        For Each port In bot.portPool.EnumPorts
             If Not ports.Contains(port) Then
-                bot.port_pool.TryRemovePort(port)
+                bot.portPool.TryRemovePort(port)
             End If
         Next port
         For Each port In ports
-            bot.port_pool.TryAddPort(port)
+            bot.portPool.TryAddPort(port)
         Next port
 
         My.Settings.war3path = txtProgramPath.Text
@@ -164,9 +164,9 @@ Public Class FrmSettings
 
         Using m As New IO.MemoryStream()
             Using w As New IO.BinaryWriter(m)
-                bot.save(w)
+                bot.Save(w)
             End Using
-            My.Settings.botstore = toChrString(m.ToArray(), False)
+            My.Settings.botstore = m.ToArray().ParseChrString(nullTerminated:=False)
         End Using
 
         My.Settings.Save()

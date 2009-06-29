@@ -1,13 +1,13 @@
-﻿Imports HostBot.MPQ.Crypt
+﻿Imports HostBot.Mpq.Crypt
 
-Namespace MPQ
+Namespace Mpq
     '''<summary>
     '''The file table from an MPQ Archive.
     '''Each entry in the file table tells you where some file is and how to access it.
     '''</summary>
-    Public Class MPQFileTable
+    Public Class MpqFileTable
         Public ReadOnly fileEntries As New List(Of FileEntry)
-        Public ReadOnly parent As MPQ.MPQArchive
+        Public ReadOnly parent As Mpq.MpqArchive
 
         Public Class FileEntry
             Public filePosition As UInteger 'Absolute position of the file within the parent file of the archive
@@ -25,15 +25,15 @@ Namespace MPQ
         End Class
 
         '''<summary>Reads the file table from an MPQ archive</summary>
-        Public Sub New(ByVal mpqa As MPQArchive)
+        Public Sub New(ByVal mpqa As MpqArchive)
             Me.parent = mpqa
 
             'Read (with decryption)
-            Using stream = mpqa.streamFactory.make()
+            Using stream = mpqa.streamFactory()
                 stream.Seek(mpqa.fileTablePosition, IO.SeekOrigin.Begin)
                 Using br = New IO.BinaryReader( _
                             New IO.BufferedStream( _
-                             New Cypherer(HashString("(block table)", HashType.FILE_KEY), Cypherer.modes.decrypt).streamThroughFrom(stream)))
+                             New Cypherer(HashString("(block table)", HashType.FILE_KEY), Cypherer.modes.decrypt).ConvertReadOnlyStream(stream)))
                     For i = 0 To CInt(mpqa.numFileTableEntries) - 1
                         Dim f = New FileEntry()
                         f.filePosition = br.ReadUInt32()

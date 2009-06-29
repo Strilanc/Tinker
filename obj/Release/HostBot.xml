@@ -12,17 +12,9 @@ HostBot
  WARNING: Doesn't guarantee no more players entering the server!
  For example find_game_for_player might be half-finished, resulting in a player joining a game after the reset.
  </summary>
-</member><member name="T:HostBot.Warcraft3.Warden.RC4Converter">
-	<summary>Encrypts and decrypts data using RC4.</summary>
-</member><member name="M:HostBot.Warcraft3.Warden.RC4XorStream.ReadByte">
-	<summary>Generates the next XOR byte.</summary>
-</member><member name="M:HostBot.Warcraft3.Warden.RC4XorStream.Read(System.Byte[],System.Int32,System.Int32)">
-	<summary>Reads a block of XOR bytes.</summary>
-</member><member name="T:HostBot.Warcraft3.Warden.RC4XorStream">
-	<summary>Generates the stream of bytes which data is XORed against to encrypt and decrypt via RC4.</summary>
-</member><member name="M:HostBot.W3LanAdvertiser.add_game(System.String,HostBot.Warcraft3.W3Map,HostBot.Warcraft3.W3Map.MapSettings)">
+</member><member name="M:HostBot.W3LanAdvertiser.AddGame(HostBot.Warcraft3.W3GameHeader)">
 	<summary>Adds a game to be advertised</summary>
-</member><member name="M:HostBot.W3LanAdvertiser.remove_game(System.UInt32)">
+</member><member name="M:HostBot.W3LanAdvertiser.RemoveGame(System.UInt32)">
 	<summary>Removes a game to be advertised.</summary>
 </member><member name="M:HostBot.W3LanAdvertiser.refresh">
 	<summary>Resends game data to the target address.</summary>
@@ -96,7 +88,7 @@ HostBot
 </summary>
 </member><member name="P:HostBot.My.Resources.Resources.Command_Bot_CreateCKL_Help">
 	<summary>
-  Looks up a localized string similar to [--CreateCKL name listen_port roc_key tft_key] Starts a CD Key Lending server that others can connect to and use to logon to bnet. This will NOT allow others to learn your cd keys, but WILL allow them to logon with your keys ONCE..
+  Looks up a localized string similar to [--CreateCKL name listen_port=pooled] Starts a CD Key Lending server that others can connect to and use to logon to bnet. This will NOT allow others to learn your cd keys, but WILL allow them to logon with your keys ONCE..
 </summary>
 </member><member name="P:HostBot.My.Resources.Resources.Command_Bot_CreateClient">
 	<summary>
@@ -766,44 +758,44 @@ LoadInGame=-LoadInGame, -lig: Players wait for loaders in the game. Nicer than s
 	<summary>Compares handler output to the trace file output.</summary>
 </member><member name="T:HostBot.Warcraft3.Warden.WardenTester">
 	<summary>Uses wireshark traces of warcraft 3 handling warden challenges to test WardenPacketHandler.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.PING">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Ping">
 	<summary>
  Sent periodically by server to clients as a keep-alive packet.
  Clients should respond with an equivalent PONG.
  Clients which do not receive a PING or TICK for ~60s will disconnect.
  If the server does not receive PONG or GAME_TICK_GUEST from a client for ~60s, it will disconnect the client.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.GREET">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Greet">
 	<summary>
  Sent by server in response to KNOCK to indicate the client has entered the game.
  This packet has two forms: one includes the data from the SLOT_LAYOUT packet, and the other doesn't.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.REJECT_ENTRY">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.RejectEntry">
 	<summary>Sent by server in response to KNOCK to indicate the client did not enter the game.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.OTHER_PLAYER_JOINED">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.OtherPlayerJoined">
 	<summary>Broadcast by server to other clients when a client enters the game.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.OTHER_PLAYER_LEFT">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.OtherPlayerLeft">
 	<summary>Broadcast server to other clients when a client leaves the game.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.OTHER_PLAYER_READY">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.OtherPlayerReady">
 	<summary>
  Broadcast by server to all clients in response to a client sending READY.
  Clients start playing as soon as they have received this packet for each client.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.SLOT_LAYOUT">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.LobbyState">
 	<summary>Broadcast by server to all clients when the lobby state changes.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.START_COUNTDOWN">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.StartCountdown">
 	<summary>
  Broadcast by server to all clients to start the countdown.
  Clients will disconnect if they receive this packet more than once.
  START_COUNTDOWN can be sent without sending START_LOADING afterwards (wc3 will wait at 0 seconds indefinitely).
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.START_LOADING">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.StartLoading">
 	<summary>
  Broadcast by server to all clients to tell them to start loading the map.
  Clients will disconnect if they receive this packet more than once.
  START_LOADING does not require START_COUNTDOWN to have been sent.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.TICK">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Tick">
 	<summary>
  Broadcast by server to all clients periodically during game play.
  Contains client actions received by the server, which will be applied at the current game time.
@@ -819,74 +811,74 @@ LoadInGame=-LoadInGame, -lig: Players wait for loaders in the game. Nicer than s
    3 BYTE subpacket id
    ... [depends on subpacket] ...
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.TEXT">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Text">
 	<summary>
  Relayed by server to clients not connected directly to the sender.
  Different formats in game and in lobby.
  Clients will only request relay to clients who should receive the message (eg. only allies for ally chat).
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.KNOCK">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Knock">
 	<summary>First thing sent by clients upon connection. Requests entry into the game.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.LEAVING">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Leaving">
 	<summary>Sent by clients before they intentionally disconnect.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.READY">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Ready">
 	<summary>Sent by clients once they have finished loading the map and are ready to start playing.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.GAME_ACTION">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.GameAction">
 	<summary>
  Sent by clients when they perform game actions such as orders, alliance changes, trigger events, etc.
- The server includes this data in its next TICK packet, broadcast to all the clients.
- Clients don't perform an action until it shows up in the TICK packet.
+ The server includes this data in its next Tick packet, broadcast to all the clients.
+ Clients don't perform an action until it shows up in the Tick packet.
  If the TICK packet's actions disagree with the client's actions, the client will disconnect.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.TOCK">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Tock">
 	<summary>
- Sent by clients in response to TICK.
+ Sent by clients in response to Tick.
  Contains a checksum of the client's game state, which is used to detect desyncs.
  The lag screen is shown if a client takes too long to send a response TOCK.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.LAN_REQUEST_GAME">
-	<summary>Response to LAN_REFRESH_GAME or LAN_CREATE_GAME when clients want to know game info.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.LAN_DESCRIBE_GAME">
-	<summary>Response to LAN_REQUEST_GAME containing detailed game information.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.LAN_CREATE_GAME">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.LanRequestGame">
+	<summary>Response to LanRefreshGame or LanCreateGame when clients want to know game info.</summary>
+</member><member name="F:HostBot.Warcraft3.W3PacketId.LanDescribeGame">
+	<summary>Response to LanRequestGame containing detailed game information.</summary>
+</member><member name="F:HostBot.Warcraft3.W3PacketId.LanCreateGame">
 	<summary>Broadcast on lan when a game is created.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.LAN_REFRESH_GAME">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.LanRefreshGame">
 	<summary>
  Broadcast on lan periodically to inform new listening wc3 clients a game exists.
  Contains only very basic information about the game [no map, name, etc].
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.LAN_DESTROY_GAME">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.LanDestroyGame">
 	<summary>Broadcast on lan when a game is cancelled.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.PLAYERS_CONNECTED">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.ConnectedPlayerInfo">
 	<summary>Sent by clients to the server to inform the server when the set of other clients they are interconnected with changes.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.MAP_INFO">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.HostMapInfo">
 	<summary>
  Sent by the server to new clients after they have entered the game.
  Contains information about the map they must have to play the game.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.UL_START">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.SetUploadTarget">
 	<summary>
  Sent by the server to tell a client to start uploading to another client.
- DL_START must be sent to the other client for the transfer to work.
+ SetDownloadSource must be sent to the other client for the transfer to work.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.DL_START">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.SetDownloadSource">
 	<summary>
  Sent by the server to tell a client to start downloading the map from the server or from another client.
- UL_START must be sent to the other client for the p2p transfer to work.
+ SetUploadTarget must be sent to the other client for the p2p transfer to work.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.DL_STATE">
-	<summary>Sent by clients to the server in response to MAP_INFO and when the client has received more of the map file.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.DL_MAP_CHUNK">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.ClientMapInfo">
+	<summary>Sent by clients to the server in response to HostMapInfo and when the client has received more of the map file.</summary>
+</member><member name="F:HostBot.Warcraft3.W3PacketId.MapFileData">
 	<summary>Sent to to downloaders during map transfer. Contains map file data.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.DL_RECEIVED_CHUNK">
-	<summary>Positive response to DL_MAP_CHUNK.</summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.DL_CHUNK_PROBLEM">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.MapFileDataReceived">
+	<summary>Positive response to MapFileData.</summary>
+</member><member name="F:HostBot.Warcraft3.W3PacketId.MapFileDataProblem">
 	<summary>
- Negative response to DL_MAP_CHUNK.
- This can be caused by corrupted data or by sending DL_MAP_CHUNK before DL_START is sent.
- Even though wc3 clients send this packet if data is sent before DL_START, they still accept and use the data.
+ Negative response to MapFileData.
+ This can be caused by corrupted data or by sending MapFileData before SetDownloadSource is sent.
+ Even though wc3 clients send this packet if data is sent before SetDownloadSource, they still accept and use the data.
  </summary>
-</member><member name="F:HostBot.Warcraft3.W3PacketId.PONG">
+</member><member name="F:HostBot.Warcraft3.W3PacketId.Pong">
 	<summary>Sent by clients in response to PING.</summary>
 </member><member name="T:HostBot.Warcraft3.W3PacketId">
 	<summary>Identifies a warcraft 3 packet type.</summary>
@@ -898,27 +890,32 @@ LoadInGame=-LoadInGame, -lig: Players wait for loaders in the game. Nicer than s
 </data>
 </member><member name="E:HostBot.Functional.Futures.IFuture.Readied">
 	<summary>Raised when the future becomes ready.</summary>
-</member><member name="P:HostBot.Functional.Futures.IFuture.isReady">
+</member><member name="P:HostBot.Functional.Futures.IFuture.IsReady">
 	<summary>Returns true if the future is ready.</summary>
 </member><member name="T:HostBot.Functional.Futures.IFuture">
 	<summary>Represents a thread-safe read-only class that fires an event when it becomes ready.</summary>
 </member><member name="M:HostBot.Functional.Futures.IFuture`1.GetValue">
 	<summary>
-Returns the future's value.
-Throws an InvalidOperationException if the value isn't ready yet.
-</summary>
+ Returns the future's value.
+ Throws an InvalidOperationException if the value isn't ready yet.
+ </summary>
 </member><member name="T:HostBot.Functional.Futures.IFuture`1">
 	<summary>Represents a thread-safe read-only class that fires an event when its value becomes ready.</summary>
-</member><member name="P:HostBot.Functional.Futures.Future.isReady">
+</member><member name="P:HostBot.Functional.Futures.Future.IsReady">
 	<summary>Returns true if the future is ready.</summary>
 </member><member name="M:HostBot.Functional.Futures.Future.SetReady">
 	<summary>
-Makes the future ready.
-Throws an InvalidOperationException if run twice.
-</summary>
+ Makes the future ready.
+ Throws an InvalidOperationException if the future was already ready.
+ </summary>
+</member><member name="M:HostBot.Functional.Futures.Future.TrySetReady">
+	<summary>
+ Makes the future ready.
+ Returns false if the future was already ready.
+ </summary>
 </member><member name="T:HostBot.Functional.Futures.Future">
 	<summary>A thread-safe class that fires an event when it becomes ready.</summary>
-</member><member name="P:HostBot.Functional.Futures.Future`1.isReady">
+</member><member name="P:HostBot.Functional.Futures.Future`1.IsReady">
 	<summary>Returns true if the future is ready.</summary>
 </member><member name="M:HostBot.Functional.Futures.Future`1.GetValue">
 	<summary>
@@ -927,9 +924,14 @@ Throws an InvalidOperationException if the value isn't ready yet.
 </summary>
 </member><member name="M:HostBot.Functional.Futures.Future`1.SetValue(`0)">
 	<summary>
-Sets the future's value and makes the future ready.
-Throws a InvalidOperationException if the future was already ready.
-</summary>
+ Sets the future's value and makes the future ready.
+ Throws a InvalidOperationException if the future was already ready.
+ </summary>
+</member><member name="M:HostBot.Functional.Futures.Future`1.TrySetValue(`0)">
+	<summary>
+ Sets the future's value and makes the future ready.
+ Returns false if the future was already ready.
+ </summary>
 </member><member name="T:HostBot.Functional.Futures.Future`1">
 	<summary>A thread-safe class that fires an event when its value becomes ready.</summary>
 </member><member name="M:HostBot.Functional.Futures.FutureSub.Call(System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture},System.Action)">
@@ -942,7 +944,7 @@ Throws a InvalidOperationException if the future was already ready.
 	<summary>Runs the given subroutine once its arguments are ready, and returns a future for its completion.</summary>
 </member><member name="T:HostBot.Functional.Futures.FutureSub">
 	<summary>Runs a subroutine once a set of futures is ready. Makes the completion available as a future.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.Call``1(System.Func{``0},System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture})">
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.Call``1(System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture},System.Func{``0})">
 	<summary>Runs a function once the given futures are ready, and returns a future for its return value.</summary>
 </member><member name="M:HostBot.Functional.Futures.FutureFunc.Call``2(HostBot.Functional.Futures.IFuture{``0},System.Func{``0,``1})">
 	<summary>Runs a function once its arguments are ready, and returns a future for its return value.</summary>
@@ -950,11 +952,11 @@ Throws a InvalidOperationException if the future was already ready.
 	<summary>Runs a function once its arguments are ready, and returns a future for its return value.</summary>
 </member><member name="M:HostBot.Functional.Futures.FutureFunc.Call``4(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},System.Func{``0,``1,``2,``3})">
 	<summary>Runs a function once its arguments are ready, and returns a future for its return value.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``2(HostBot.Functional.Futures.IFuture{``1},System.Func{``1,HostBot.Functional.Futures.IFuture{``0}})">
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``2(HostBot.Functional.Futures.IFuture{``0},System.Func{``0,HostBot.Functional.Futures.IFuture{``1}})">
 	<summary>Runs a function once its arguments are ready, and returns a future for its final return value.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``3(HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},System.Func{``1,``2,HostBot.Functional.Futures.IFuture{``0}})">
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``3(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},System.Func{``0,``1,HostBot.Functional.Futures.IFuture{``2}})">
 	<summary>Runs a function once its arguments are ready, and returns a future for its final return value.</summary>
-</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``4(HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},HostBot.Functional.Futures.IFuture{``3},System.Func{``1,``2,``3,HostBot.Functional.Futures.IFuture{``0}})">
+</member><member name="M:HostBot.Functional.Futures.FutureFunc.FCall``4(HostBot.Functional.Futures.IFuture{``0},HostBot.Functional.Futures.IFuture{``1},HostBot.Functional.Futures.IFuture{``2},System.Func{``0,``1,``2,HostBot.Functional.Futures.IFuture{``3}})">
 	<summary>Runs a function once its arguments are ready, and returns a future for its final return value.</summary>
 </member><member name="T:HostBot.Functional.Futures.FutureFunc">
 	<summary>Runs a function once a set of futures is ready. Makes the return value available as a future.</summary>
@@ -1008,10 +1010,6 @@ Throws a InvalidOperationException if the future was already ready.
 	<summary>A command which boots players from a slot.</summary>
 </member><member name="T:HostBot.Commands.Specializations.InstanceBaseCommands`1.com_Ping">
 	<summary>A command which disconnects the bot from the instance.</summary>
-</member><member name="M:HostBot.Common.uCUInt(System.Int64)">
-	<summary>Unsafe CUInt. Ignores overflows and underflows.</summary>
-</member><member name="M:HostBot.Common.uCUInt(System.UInt64)">
-	<summary>Unsafe CUInt. Ignores overflows and underflows.</summary>
 </member><member name="M:HostBot.Common.modCeiling(System.Int32,System.Int32)">
 	<summary>Returns the smallest multiple of n that is not less than i. Formally: min {x in Z | x = 0 (mod n), x &gt;= i}</summary>
 </member><member name="M:HostBot.Common.None``1(System.Collections.Generic.IEnumerable{``0})">
@@ -1022,31 +1020,17 @@ Throws a InvalidOperationException if the future was already ready.
 	<summary>Processes packets coming from the remote computer.</summary>
 </member><member name="M:HostBot.Warcraft3.W3Player.W3PlayerPart.ReduceBetterHost(HostBot.Warcraft3.IW3Player,HostBot.Warcraft3.IW3Player)">
 	<summary>Returns the player who is a better host.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Map.computeMapSha1Checksum(HostBot.MPQ.MPQArchive,HostBot.MPQ.MPQArchive)">
+</member><member name="M:HostBot.Warcraft3.W3Map.ComputeMapSha1Checksum(HostBot.MPQ.MPQArchive,HostBot.MPQ.MPQArchive)">
 	<summary>Computes one of the checksums used to uniquely identify maps.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Map.computeStreamXoro(System.IO.Stream)">
+</member><member name="M:HostBot.Warcraft3.W3Map.ComputeStreamXoro(System.IO.Stream)">
 	<summary>Computes parts of the Xoro checksum.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Map.computeMapXoro(HostBot.MPQ.MPQArchive,HostBot.MPQ.MPQArchive)">
+</member><member name="M:HostBot.Warcraft3.W3Map.ComputeMapXoro(HostBot.MPQ.MPQArchive,HostBot.MPQ.MPQArchive)">
 	<summary>Computes one of the checksums used to uniquely identify maps.</summary>
 </member><member name="M:HostBot.Warcraft3.W3Map.GetMapString(HostBot.MPQ.MPQArchive,System.String)">
 	<summary>Finds a string in the war3map.wts file.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Map.readFileInfo(HostBot.MPQ.MPQArchive)">
+</member><member name="M:HostBot.Warcraft3.W3Map.ReadMapInfo(HostBot.MPQ.MPQArchive)">
 	<summary>Reads the map information from war3map.w3i</summary>
 	<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
-</member><member name="M:HostBot.Warcraft3.W3Map.generateStatStringVals(System.String,HostBot.Warcraft3.W3Map.MapSettings)">
-	<summary>Encodes game parameters, properties, etc.</summary>
-	<returns>The encoded string</returns>
-	<remarks>
-   0 BYTE #slots-1 (text-hex)
-   1 BYTE[8] host counter (text-hex)
-   encoded:
-      2 DWORD settings
-      3 BYTE[5] map size and other?
-      4 DWORD xoro key
-      5 STRING map name
-      6 STRING user name
-      7 STRING unknown("")
- </remarks>
 </member><member name="T:HostBot.Commands.Specializations.BaseClientCommands.com_Bot">
 	<summary>A command which forwards sub-commands to the main bot command set</summary>
 </member><member name="T:HostBot.Commands.Specializations.BaseClientCommands.com_GetPort">
@@ -1103,29 +1087,15 @@ Throws a InvalidOperationException if the future was already ready.
 </member><member name="T:HostBot.Commands.Specializations.BotCommands.com_Connect">
 	<summary>A command which creates a battle.net client and logs on to a battle.net server.</summary>
 </member><member name="M:HostBot.Functional.Queueing.ICallQueue.QueueAction(System.Action)">
-	<summary>Queues a subroutine to be run and returns a future for the subroutine's eventual completion.</summary>
+	<summary>Queues an action to be run and returns a future for the action's eventual completion.</summary>
 </member><member name="T:HostBot.Functional.Queueing.ICallQueue">
 	<summary>Describes a thread-safe call queue for non-blocking calls.</summary>
 </member><member name="M:HostBot.Functional.Queueing.QueueExtension.QueueFunc``1(HostBot.Functional.Queueing.ICallQueue,System.Func{``0})">
 	<summary>Queues a function to be run and returns a future for the function's eventual output.</summary>
-</member><member name="M:HostBot.Functional.Queueing.BaseCallQueue.QueueAction(System.Action)">
-	<summary>
-Queues a subroutine to be run and returns a future for the subroutine's eventual completion.
-Starts running calls from the queue if they were not already being run.
-</summary>
-</member><member name="M:HostBot.Functional.Queueing.BaseCallQueue.StartRunning">
-	<summary>Must call Run to start emptying the queue, and must not block the calling thread (eg. call Run on a new thread).</summary>
-</member><member name="M:HostBot.Functional.Queueing.BaseCallQueue.Run">
-	<summary>Runs queued calls until there are none left.</summary>
-</member><member name="T:HostBot.Functional.Queueing.BaseCallQueue">
-	<summary>
- Runs queued calls in order.
- Logs unexpected exceptions from queued calls.
- </summary>
 </member><member name="M:HostBot.Functional.Queueing.BaseLockFreeCallQueue.QueueAction(System.Action)">
 	<summary>
-Queues a subroutine to be run and returns a future for the subroutine's eventual completion.
-Starts running calls from the queue if they were not already being run.
+ Queues an action to be run and returns a future for the action's eventual completion.
+ Starts running calls from the if they were not already being run.
 </summary>
 </member><member name="M:HostBot.Functional.Queueing.BaseLockFreeCallQueue.Consume(HostBot.Functional.Queueing.BaseLockFreeCallQueue.Node)">
 	<summary>Runs queued calls until there are none left.</summary>
@@ -1156,9 +1126,9 @@ Starts running calls from the queue if they were not already being run.
 	<summary>Handles new connections.</summary>
 </member><member name="M:HostBot.Warcraft3.W3ConnectionAccepterBase.TryRemoveSocket(HostBot.Warcraft3.W3Socket)">
 	<summary>Atomically checks if a socket has already been processed, and removes it if not.</summary>
-</member><member name="M:HostBot.Warcraft3.W3ConnectionAccepterBase.catch_expired(HostBot.Warcraft3.W3Socket)">
+</member><member name="M:HostBot.Warcraft3.W3ConnectionAccepterBase.c_Expired(HostBot.Warcraft3.W3Socket)">
 	<summary>Disconnects sockets which do not send any initial data.</summary>
-</member><member name="M:HostBot.Warcraft3.W3ConnectionAccepterBase.catch_knocked(HostBot.Warcraft3.W3Socket,HostBot.Warcraft3.W3PacketId,System.Collections.Generic.Dictionary{System.String,System.Object})">
+</member><member name="M:HostBot.Warcraft3.W3ConnectionAccepterBase.c_Knocked(HostBot.Warcraft3.W3Socket,HostBot.Warcraft3.W3PacketId,System.Collections.Generic.Dictionary{System.String,System.Object})">
 	<summary>Accepts connecting warcraft 3 players.</summary>
 </member><member name="M:HostBot.MPQ.MPQFileTable.#ctor(HostBot.MPQ.MPQArchive)">
 	<summary>Reads the file table from an MPQ archive</summary>
@@ -1169,10 +1139,6 @@ Starts running calls from the queue if they were not already being run.
 The file table from an MPQ Archive.
 Each entry in the file table tells you where some file is and how to access it.
 </summary>
-</member><member name="T:HostBot.BaseEnumerator`1">
-	<summary>Implements some of the mundane work for enumeration. I wish we could yield.</summary>
-</member><member name="T:HostBot.BaseIterator`1">
-	<summary>Implements some of the mundane work for enumeration. I wish we could yield.</summary>
 </member><member name="M:HostBot.Bnet.Crypt.common.crc32(System.IO.Stream,System.Int64,System.UInt32,System.Boolean)">
 	<summary>Computes the crc32 value for a stream of data.</summary>
 	<param name="s">The stream to read data from.</param>
@@ -1185,29 +1151,6 @@ Each entry in the file table tells you where some file is and how to access it.
 </member><member name="M:HostBot.Bnet.Crypt.CDKey.swapBits11Mod120(System.Byte[])">
 	<summary>Swap the bits with their *11 counterpart mod 120</summary>
 	<remarks>This transformation is its own inverse: x*11*11 = x*121 = x*1 = x (mod 120)</remarks>
-</member><member name="M:HostBot.IBlockConverter.needs(System.Int32)">
-	<summary>Returns an estimate of the input size required for a given output size, in bytes.</summary>
-</member><member name="M:HostBot.IBlockConverter.convert(HostBot.DataStructures.ReadOnlyArrayView{System.Byte},HostBot.DataStructures.ArrayView{System.Byte},System.Int32@,System.Int32@)">
-	<summary>
- Converts data in the read buffer and writes it to the write buffer.
- Returns read and write count set to 0 to indicate no more data can be accepted.
-</summary>
-	<remarks>
- If more input data is needed before producing any output, be sure to buffer some of the input.
- Otherwise you will return read and write count set to 0, and the outside user will assume no more data can be accepted.
-</remarks>
-	<param name="OutReadCount">Number of bytes consumed from start of read view.</param>
-	<param name="OutWriteCount">Number of bytes produced from start of write view.</param>
-</member><member name="T:HostBot.IBlockConverter">
-	<summary>A stateful converter for blocks of data.</summary>
-</member><member name="M:HostBot.BlockConverterExtensions.streamThroughFrom(HostBot.IBlockConverter,System.IO.Stream)">
-	<summary>Returns a stream which feeds through the converter from the source stream.</summary>
-</member><member name="M:HostBot.BlockConverterExtensions.streamThroughTo(HostBot.IBlockConverter,System.IO.Stream)">
-	<summary>Returns a stream which feeds through the converter to the destination stream.</summary>
-</member><member name="T:HostBot.BlockConverterExtensions.BlockConverterStreamWriter">
-	<summary>A stream which feeds from a converter and feeds the converter from a source stream.</summary>
-</member><member name="T:HostBot.BlockConverterExtensions.BlockConverterStreamReader">
-	<summary>A stream which feeds to a converter and feeds the converter to a destination stream.</summary>
 </member><member name="T:HostBot.StreamWrapper">
 	<summary>Forwards all IO.Stream calls to a substream by default</summary>
 </member><member name="T:HostBot.ConversionStream">
@@ -1224,28 +1167,39 @@ Each entry in the file table tells you where some file is and how to access it.
 	<summary>Stops listening for connections on the given port.</summary>
 </member><member name="M:HostBot.ConnectionAccepter.CloseAllPorts">
 	<summary>Stops listening for connections on all ports.</summary>
-</member><member name="M:HostBot.ConnectionAccepter.get_listener_on_port(System.UInt16)">
+</member><member name="M:HostBot.ConnectionAccepter.GetListenerOnPort(System.UInt16)">
 	<summary>Returns the listener on the given port.</summary>
-</member><member name="M:HostBot.ConnectionAccepter.finish_accept_connection(System.IAsyncResult)">
+</member><member name="M:HostBot.ConnectionAccepter.r_AcceptConnection(System.Net.Sockets.TcpListener,HostBot.Functional.Outcome{System.Net.Sockets.TcpClient})">
 	<summary>Finishes accepting a client, and continues listening.</summary>
 </member><member name="T:HostBot.ConnectionAccepter">
 	<summary>A thread-safe class which accepts connections on multiple ports, and returns accepted TcpClients using events.</summary>
+</member><member name="T:HostBot.Functional.Enumerator`1">
+	<summary>
+ Uses a lambda expression to enumerate elements.
+ </summary>
+</member><member name="T:HostBot.Functional.Enumerable`1">
+	<summary>
+ Uses a lambda expression to create enumerators.
+ </summary>
+</member><member name="M:HostBot.Functional.PushEnumerator`1.Push(System.Collections.Generic.IEnumerator{`0})">
+	<summary>Adds more elements for the consumer, and blocks until they have been consumed.</summary>
+</member><member name="M:HostBot.Functional.PushEnumerator`1.PushDone">
+	<summary>Notifies the consumer that there are no elements, and blocks until the consumer finishes.</summary>
+</member><member name="T:HostBot.Functional.PushEnumerator`1">
+	<summary>
+ Reverses the direction of an enumerator, allowing you to push values instead of pulling them.
+ </summary>
 </member><member name="T:HostBot.PacketStream">
 	<summary>
 A stream wrapper which causes reads to return data in the same chunks it was written with.
 Adds a size parameter to data when writing, includes size parameter in data when reading.
 </summary>
-</member><member name="M:HostBot.MPQ.Compression.PkWare.Decoder.CodeTree.#ctor(System.UInt16[],System.Byte[])">
-	<summary>Generates a code-tree with each character code(i) at level lengths(i)</summary>
-</member><member name="T:HostBot.MPQ.Compression.PkWare.Decoder.CodeTree">
-	<summary>Maps sequences of bits to characters.</summary>
-</member><member name="M:HostBot.MPQ.Compression.PkWare.Decoder.tree_unbuffer(HostBot.MPQ.Compression.PkWare.Decoder.CodeTree)">
+</member><member name="M:HostBot.MPQ.Compression.PkWare.Decoder.ReadTreeNodeFrom(HostBot.MPQ.Compression.PkWare.Common.CodeTree,HostBot.ByteSequenceBitBuffer)">
 	<summary>Travels down to the leaf of a coding tree, unbuffering bits for direction.</summary>
-</member><member name="M:HostBot.MPQ.Compression.PkWare.Decoder.unbuffer(System.Int32)">
-	<summary>
-Takes some bits from the bit buffer, backs them up, and stores them in last_val.
-If there are not enough bits, restores the backup and returns false.
-</summary>
+</member><member name="M:HostBot.MPQ.Compression.PkWare.Common.CodeTree.#ctor(System.UInt16[],System.Byte[])">
+	<summary>Generates a code-tree with each character code(i) at level lengths(i)</summary>
+</member><member name="T:HostBot.MPQ.Compression.PkWare.Common.CodeTree">
+	<summary>Maps sequences of bits to characters.</summary>
 </member><member name="T:HostBot.W3SlotControl">
 	<summary>The UI for a player slot in a w3game</summary>
 </member><member name="M:HostBot.Warcraft3.W3Game.W3GamePlay.QueueGameData(HostBot.Warcraft3.IW3PlayerGameplay,System.Byte[])">
@@ -1296,61 +1250,102 @@ If there are not enough bits, restores the backup and returns false.
 	<summary>Returns a string representation of this number.</summary>
 </member><member name="T:HostBot.BigNum">
 	<summary>Immutable BigNum</summary>
-</member><member name="M:HostBot.Functional.Futures.Utilities.FutureKeeper.#ctor(System.Action,System.Collections.Generic.IEnumerable{HostBot.Functional.Futures.IFuture})">
-	<summary>
-Adds the BaseFutureKeeper as a parent to all its child futures.
-Runs notify in case all children were already ready.
-Throws an InvalidOperationException if called twice.
-Should only be run after child has finished initializing, because 'run' may be called before init finishes.
-</summary>
-</member><member name="M:HostBot.Functional.Futures.Utilities.FutureKeeper.notify">
-	<summary>
-Runs the abstract 'run' method if all child futures are ready for the first time.
-Instance future becomes ready after the 'run' method has finished.
-Called by child futures when they become ready.
-</summary>
 </member><member name="T:HostBot.Functional.Futures.Utilities.FutureKeeper">
-	<summary>Becomes ready once a set of futures is ready. Runs an overridable call just before becoming ready.</summary>
+	<summary>Runs an action and becomes ready once a set of futures is ready.</summary>
 </member><member name="T:HostBot.Functional.Futures.Utilities.FutureLooper`3">
 	<summary>Abstract class for applying functions to a list of data in the future.</summary>
 	<typeparam name="DOM">Domain. The type of data being looped over.</typeparam>
 	<typeparam name="IMG">Image. The output type of the function being applied to the data.</typeparam>
 	<typeparam name="RET">Return. The type returned by the loop.</typeparam>
-</member><member name="T:HostBot.MPQ.Compression.Huffman.Encoder">
-	<summary>Implements a Block Converter for huffman compression</summary>
-</member><member name="T:HostBot.MPQ.Compression.Huffman.Decoder">
-	<summary>Implements a Block Converter for huffman decompression</summary>
-</member><member name="F:HostBot.MPQ.Compression.Huffman.Common.frequencyTables">
+</member><member name="F:HostBot.MPQ.Compression.Huffman.Data.frequencyTables">
 	<summary>The frequency tables used to construct the initial huffman trees</summary>
-</member><member name="M:HostBot.MPQ.Compression.Huffman.Common.HuffmanTree.#ctor(System.UInt32[])">
+</member><member name="M:HostBot.MPQ.Compression.Huffman.Data.HuffmanTree.#ctor(System.UInt32[])">
 	<summary>Constructs the initial tree using the given frequency table</summary>
-</member><member name="M:HostBot.MPQ.Compression.Huffman.Common.HuffmanTree.insert(HostBot.MPQ.Compression.Huffman.Common.HuffmanNode)">
+</member><member name="M:HostBot.MPQ.Compression.Huffman.Data.HuffmanTree.insert(HostBot.MPQ.Compression.Huffman.Data.HuffmanNode)">
 	<summary>Adds the node to the sorted list of nodes, and adds leafs to the value map</summary>
-</member><member name="M:HostBot.MPQ.Compression.Huffman.Common.HuffmanTree.increase(System.Int32)">
+</member><member name="M:HostBot.MPQ.Compression.Huffman.Data.HuffmanTree.increase(System.Int32)">
 	<summary>Increases the frequency of the given value, and updates the tree to maintain optimality</summary>
-</member><member name="T:HostBot.MPQ.Compression.Huffman.Common.HuffmanTree">
+</member><member name="T:HostBot.MPQ.Compression.Huffman.Data.HuffmanTree">
 	<summary>A binary tree with the property that the sum over the leafs of depth*frequency is minimized</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.TryBeginAutoStart">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.TryBeginAutoStart">
 	<summary>Autostarts the countdown if the game stays full for awhile.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.TryStartCountdown">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.TryStartCountdown">
 	<summary>Starts the countdown to launch.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.StartLoading">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.StartLoading">
 	<summary>Launches the game, sending players to the loading screen.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.ChangedSlotState">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.ChangedSlotState">
 	<summary>Broadcasts new game state to players, and throws the updated event.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.TrySetTeamSizes(System.Collections.Generic.IList{System.Int32})">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.TrySetTeamSizes(System.Collections.Generic.IList{System.Int32})">
 	<summary>Opens slots, closes slots and moves players around to try to match the desired team sizes.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.OpenSlot(System.String)">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.OpenSlot(System.String)">
 	<summary>Opens the slot with the given index, unless the slot contains a player.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.ComputerizeSlot(System.String,HostBot.Warcraft3.W3Slot.ComputerLevel)">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.ComputerizeSlot(System.String,HostBot.Warcraft3.W3Slot.ComputerLevel)">
 	<summary>Places a computer with the given difficulty in the slot with the given index, unless the slot contains a player.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.CloseSlot(System.String)">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.CloseSlot(System.String)">
 	<summary>Closes the slot with the given index, unless the slot contains a player.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.W3GameSoul_Lobby.ReserveSlot(System.String,System.String)">
+</member><member name="M:HostBot.Warcraft3.W3Game.W3GamePart_Lobby.ReserveSlot(System.String,System.String)">
 	<summary>Reserves a slot for a player.</summary>
-</member><member name="M:HostBot.SingleConsumerLockFreeQueue`1.Enqueue(`0)">
+</member><member name="F:HostBot.SingleConsumerLockFreeQueue`1.head">
 	<summary>
- Adds a new item to the queue.
+ Owned by the consumer.
+ This node is the end marker of the consumed nodes.
+ The node's next is the next node to be consumed.
+ </summary>
+</member><member name="F:HostBot.SingleConsumerLockFreeQueue`1.tail">
+	<summary>
+ Owned by producers.
+ This node is the insertion point, and is not guaranteed to be in the queue at all times. 
+ For example while an item is partially enqueued the tail is not in the queue until prev.next is set.
+ </summary>
+</member><member name="T:HostBot.SingleConsumerLockFreeQueue`1.Node">
+	<summary>
+ Singly linked list node containing queue items.
+ </summary>
+</member><member name="M:HostBot.SingleConsumerLockFreeQueue`1.BeginEnqueue(System.Collections.Generic.IEnumerable{`0})">
+	<summary>
+ Begins adding new items to the queue.
+ The items may not be dequeueable when this method finishes, but eventually it will be.
+ The items are guaranteed to end up adjacent in the queue and in the correct order.
+ </summary>
+	<remarks>
+ An example of what can occur when two items are queued simultaneously:
+ Inital state:
+   head=tail -&gt; null
+   [queue is empty]
+ Step 1: First item is created and exchanged with tail.
+   head=prev1 -&gt; null
+   tail=node1 -&gt; null
+   [queue is empty]
+ Step 2: Second thread preempts and second item is created and exchanged with tail.
+   head=prev1 -&gt; null
+   node1=prev2 -&gt; null
+   tail=node2 -&gt; null
+   [queue is empty]
+ Step 3: Second thread finishes setting prev.next.
+   head=prev1 -&gt; null
+   node1=prev2 -&gt; tail=node2 -&gt; null
+   [queue is empty]
+ Step 4: First thread comes back and finishes setting prev.next.
+   head=prev1 -&gt; node1=prev2 -&gt; tail=node2 -&gt; null
+   [queue contains 2 elements]
+ </remarks>
+	<implementation>
+ Each producer creates a new chain, and exchanges the shared tail for the tail of the new chain.
+ The producer then links the tail of the previous chain to the head of the new chain.
+ A new chain might not be in the main chain when the function exits, but it will be in a chain that will eventually be in the main chain.
+ </implementation>
+</member><member name="M:HostBot.SingleConsumerLockFreeQueue`1.BeginEnqueue(`0)">
+	<summary>
+ Begins adding a new item to the queue.
+ The item may not be dequeueable when this method finishes, but eventually it will be.
+ </summary>
+	<implementation>
+ Just an inlined and simplified version of BeginEnqueue(IEnumerable(Of T))
+ </implementation>
+</member><member name="P:HostBot.SingleConsumerLockFreeQueue`1.WasEmpty">
+	<summary>
+ Returns true if there were any items in the queue.
+ The return value of this function is only stable if the queue is non-empty and you are calling from the consumer thread.
  </summary>
 </member><member name="M:HostBot.SingleConsumerLockFreeQueue`1.Peek">
 	<summary>
@@ -1362,17 +1357,49 @@ Called by child futures when they become ready.
  Removes and returns an item from the queue.
  This function must only be called from the consumer thread.
  </summary>
-</member><member name="P:HostBot.SingleConsumerLockFreeQueue`1.IsEmpty">
+</member><member name="T:HostBot.SingleConsumerLockFreeQueue`1">
 	<summary>
- Returns true if there any items in the queue.
- The return value of this function is only stable if the queue is non-empty and you are calling from the consumer thread.
+ A multiple-producer, single-consumer lock-free queue.
+ Does NOT guarantee an item be have been enqueued when BeginEnqueue finishes.
+ Does guarantee an item will eventually be queued after BeginEnqueue finishes.
+ Does guarantee that for calls simultaneously in BeginEnqueue, at least one will finish with its item having been enqueued.
+ Does guarantee that if BeginEnqueue(Y) is called after BeginEnqueue(X) finishes, Y will follow X in the queue.
  </summary>
-</member><member name="M:HostBot.BaseConsumingLockFreeCallQueue`1.StartRunning">
+</member><member name="M:HostBot.BaseLockFreeConsumer`1.EnqueueConsume(`0)">
+	<summary>
+ Enqueues an item to be consumed by the consumer.
+ Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
+ </summary>
+</member><member name="M:HostBot.BaseLockFreeConsumer`1.EnqueueConsume(System.Collections.Generic.IEnumerable{`0})">
+	<summary>
+ Enqueues a sequence of items to be consumed by the consumer.
+ The items are guaranteed to end up adjacent in the queue.
+ Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
+ </summary>
+</member><member name="M:HostBot.BaseLockFreeConsumer`1.TryAcquireConsumer">
+	<summary>
+ Returns true if consumer responsibilities were acquired by this thread.
+ Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
+ </summary>
+</member><member name="M:HostBot.BaseLockFreeConsumer`1.TryReleaseConsumer">
+	<summary>
+ Returns true if consumer responsibilities were released by this thread.
+ Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
+ </summary>
+</member><member name="M:HostBot.BaseLockFreeConsumer`1.StartRunning">
 	<summary>Used to start the Run method using the child class' desired method (eg. on a new thread).</summary>
-</member><member name="M:HostBot.BaseConsumingLockFreeCallQueue`1.Consume(`0)">
+</member><member name="M:HostBot.BaseLockFreeConsumer`1.Consume(`0)">
 	<summary>Consumes an item.</summary>
-</member><member name="M:HostBot.BaseConsumingLockFreeCallQueue`1.Run">
-	<summary>Runs queued calls until there are none left.</summary>
+</member><member name="M:HostBot.BaseLockFreeConsumer`1.Run">
+	<summary>
+ Runs queued calls until there are none left.
+ Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
+ </summary>
+</member><member name="T:HostBot.BaseLockFreeConsumer`1">
+	<summary>
+ Consumes items produced by multiple producers.
+ Ensures at all exit points that either the consumption queue is empty or exactly one consumer will exist.
+ </summary>
 </member><member name="T:HostBot.Commands.Specializations.ServerCommands.com_StartListening">
 	<summary>A command which tells the server to stop listening on a port.</summary>
 </member><member name="T:HostBot.Commands.Specializations.ServerCommands.com_StopListening">
@@ -1389,52 +1416,44 @@ Called by child futures when they become ready.
 	<summary>Finds a player with the given name in any of the server's games.</summary>
 </member><member name="M:HostBot.Warcraft3.W3Server.f_FindPlayerGame(System.String)">
 	<summary>Finds a game containing a player with the given name.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Server.RemoveGame(System.String)">
+</member><member name="M:HostBot.Warcraft3.W3Server.RemoveGame(System.String,System.Boolean)">
 	<summary>Removes a game with the given name.</summary>
 </member><member name="T:HostBot.Bnet.BnetPacketID">
 	<summary>Header values for packets to/from BNET</summary>
 	<source>BNETDocs.org</source>
-</member><member name="M:HostBot.TransferScheduler`1.add(`0,System.Boolean,System.Double)">
+</member><member name="T:HostBot.Commands.Specializations.CKLCommands.com_AddKey">
+	<summary>Starts advertising a game.</summary>
+</member><member name="T:HostBot.Commands.Specializations.CKLCommands.com_RemoveKey">
+	<summary>Stops advertising a game.</summary>
+</member><member name="M:HostBot.TransferScheduler`1.AddClient(`0,System.Boolean,System.Double)">
 	<summary>Adds a new client to the pool.</summary>
-</member><member name="M:HostBot.TransferScheduler`1.set_link(`0,`0,System.Boolean)">
+</member><member name="M:HostBot.TransferScheduler`1.SetLink(`0,`0,System.Boolean)">
 	<summary>Adds a link between two clients.</summary>
-</member><member name="M:HostBot.TransferScheduler`1.remove(`0)">
+</member><member name="M:HostBot.TransferScheduler`1.RemoveClient(`0)">
 	<summary>Removes a client from the pool.</summary>
-</member><member name="M:HostBot.TransferScheduler`1.update_progress(`0,System.Double)">
+</member><member name="M:HostBot.TransferScheduler`1.UpdateProgress(`0,System.Double)">
 	<summary>Updates the progress of a transfer to or from the given client.</summary>
-</member><member name="M:HostBot.TransferScheduler`1.stop_transfer(`0,System.Boolean)">
+</member><member name="M:HostBot.TransferScheduler`1.StopTransfer(`0,System.Boolean)">
 	<summary>Stops any transfers to or from the given client.</summary>
 </member><member name="T:HostBot.TransferScheduler`1">
 	<summary>Schedules transfers for sharing a copyable resource among multiple clients.</summary>
-</member><member name="P:HostBot.CKL.CKLClient.future">
-	<summary>Returns a future of the outcome of borrowing keys from the server.</summary>
-</member><member name="M:HostBot.CKL.CKLClient.#ctor(System.String,System.UInt16,System.Byte[],System.Byte[])">
-	<summary>Begins connecting to the specified server to answer the given challenge.</summary>
-</member><member name="M:HostBot.CKL.CKLClient.c_ReceivedPacket(HostBot.BnetSocket,System.Byte,System.Byte,HostBot.DataStructures.ImmutableArrayView{System.Byte})">
-	<summary>Finishes connecting to the server and requests keys.</summary>
-</member><member name="T:HostBot.CKL.CKLClient">
-	<summary>Connects to a CKLServer and requests a response to a cd key authentication challenge from bnet.</summary>
-</member><member name="T:HostBot.CKL.CKLServer">
+</member><member name="T:HostBot.CKL.CklServer">
 	<summary>Provides answers to bnet cd key authentication challenges, allowing clients to login to bnet once with the server's keys.</summary>
 </member><member name="T:HostBot.Functional.Outcome">
 	<summary>Stores the outcome of an operation that doesn't produce a value.</summary>
 </member><member name="T:HostBot.Functional.Outcome`1">
 	<summary>Stores the outcome of an operation that produces a value.</summary>
 	<typeparam name="R">The type of value produced by the operation</typeparam>
-</member><member name="M:HostBot.Functional.Common.CTypeFuture``2(HostBot.Functional.Futures.IFuture{``1})">
-	<summary>Casts a future's return type from a child type to a parent type.</summary>
-	<typeparam name="P">The parent type.</typeparam>
-	<typeparam name="C">The child type.</typeparam>
-	<param name="f">The future to cast.</param>
+	<remarks>Doesn't inherit from Outcome to allow implicit conversions from Outcome to Outcome(Of R), using CType.</remarks>
 </member><member name="M:HostBot.Functional.Common.stripFutureOutcome``1(HostBot.Functional.Futures.IFuture{HostBot.Functional.Outcome{``0}})">
 	<summary>Casts a future of an outcome with a value  to a future of an outcome without a value.</summary>
 	<typeparam name="R">The type returned by the outcome with value.</typeparam>
-</member><member name="M:HostBot.Warcraft3.W3Player.#ctor(HostBot.Functional.Queueing.ICallQueue,System.Byte,HostBot.Warcraft3.IW3Game,System.String,HostBot.Logging.Logger)">
+</member><member name="M:HostBot.Warcraft3.W3Player.#ctor(System.Byte,HostBot.Warcraft3.IW3Game,System.String,HostBot.Logging.Logger)">
 	<summary>Creates a fake player.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Player.#ctor(HostBot.Functional.Queueing.ICallQueue,System.Byte,HostBot.Warcraft3.IW3Game,HostBot.Warcraft3.W3ConnectingPlayer,HostBot.Logging.Logger)">
+</member><member name="M:HostBot.Warcraft3.W3Player.#ctor(System.Byte,HostBot.Warcraft3.IW3Game,HostBot.Warcraft3.W3ConnectingPlayer,HostBot.Logging.Logger)">
 	<summary>Creates a real player.</summary>
 	<remarks>Real players are assigned a game by the lobby.</remarks>
-</member><member name="M:HostBot.Warcraft3.W3Player.disconnect_L(System.Boolean,HostBot.Warcraft3.W3PlayerLeaveTypes)">
+</member><member name="M:HostBot.Warcraft3.W3Player.Disconnect(System.Boolean,HostBot.Warcraft3.W3PlayerLeaveTypes,System.String)">
 	<summary>Disconnects this player and removes them from the system.</summary>
 </member><member name="M:HostBot.Warcraft3.Warden.BSha1DataStream.Read(System.Byte[],System.Int32,System.Int32)">
 	<summary>
@@ -1495,7 +1514,7 @@ Stops the substream from being written to too quickly by queueing write calls.
 Doesn't block the caller.
 </summary>
 </member><member name="T:HostBot.MPQ.Crypt.Cypherer">
-	<summary>Implements a Block Converter for MPQ encryption and decryption</summary>
+	<summary>Implements a Converter for MPQ encryption and decryption</summary>
 </member><member name="M:HostBot.MPQ.Crypt.Common.computeCryptTable">
 	<summary>Creates the encryption table used for MPQ data</summary>
 </member><member name="M:HostBot.MPQ.Crypt.Common.HashString(System.String,HostBot.MPQ.Crypt.Common.HashType)">
@@ -1503,23 +1522,23 @@ Doesn't block the caller.
 </member><member name="M:HostBot.MPQ.Crypt.Common.HashFileName(System.String)">
 	<summary>Computes the hash of a file name</summary>
 	<remarks>Used to determine where a file is stored in the hash table</remarks>
-</member><member name="M:HostBot.MPQ.Crypt.Common.getFileDecryptionKey(System.String,HostBot.MPQ.MPQFileTable.FileEntry,HostBot.MPQ.MPQArchive)">
+</member><member name="M:HostBot.MPQ.Crypt.Common.GetFileDecryptionKey(System.String,HostBot.MPQ.MPQFileTable.FileEntry,HostBot.MPQ.MPQArchive)">
 	<summary>Computes the decryption key of a file with known filename</summary>
-</member><member name="M:HostBot.MPQ.Crypt.Common.getFileDecryptionKey(System.IO.Stream,System.UInt32)">
+</member><member name="M:HostBot.MPQ.Crypt.Common.BreakFileDecryptionKey(System.IO.Stream,System.UInt32)">
 	<summary>Attempts to recover the decryption key of a file using a known plaintext attack</summary>
 	<remarks>
 Encryption:
    seed1 = *VALUE_TO_FIND*
    seed2 = 0xEEEEEEEEL
-   seed2b = seed2 + cryptTable[0x400 + (seed1 and 0xFF)]
+   seed2b = seed2 + T[seed1 and 0xFF]
    encryptedByte1 = targetByte1 Xor (seed1 + seed2b)
 Decryption:
    Let s = encryptedByte1 xor targetByte1
    Notice s = seed1 + seed2b
-   Notice s = seed1 + seed2 + cryptTable[0x400 + (seed1 and 0xFF)]
+   Notice s = seed1 + seed2 + T[seed1 and 0xFF]
    Let n = s - seed2
-   Notice n = seed1 + cryptTable[0x400 + (seed1 and 0xFF)]
-   Notice seed1 = n - cryptTable[0x400 + (seed1 and 0xFF)]
+   Notice n = seed1 + T[seed1 and 0xFF]
+   Notice seed1 = n - T[seed1 and 0xFF]
    Notice the right side has only 256 possible values because seed1 is AND-ed with 0xFF
    Brute force seed1 by trying every possible value of (seed1 and 0xHFF) in the right side
 </remarks>
@@ -1541,10 +1560,14 @@ Decryption:
 	<summary>Sends text to all players. Uses spoof chat if necessary.</summary>
 </member><member name="M:HostBot.Warcraft3.W3Game.SendMessageTo(System.String,HostBot.Warcraft3.IW3Player,System.Boolean)">
 	<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
-</member><member name="M:HostBot.Warcraft3.W3Game.RemovePlayer(HostBot.Warcraft3.IW3Player,System.Boolean,HostBot.Warcraft3.W3PlayerLeaveTypes)">
+</member><member name="M:HostBot.Warcraft3.W3Game.RemovePlayer(HostBot.Warcraft3.IW3Player,System.Boolean,HostBot.Warcraft3.W3PlayerLeaveTypes,System.String)">
 	<summary>Removes the given player from the instance</summary>
 </member><member name="M:HostBot.Warcraft3.W3Game.Boot(System.String)">
 	<summary>Boots players in the slot with the given index.</summary>
+</member><member name="M:HostBot.CKL.CklClient.c_ReceivedPacket(HostBot.BnetSocket,System.Byte,System.Byte,HostBot.DataStructures.ImmutableArrayView{System.Byte})">
+	<summary>Finishes connecting to the server and requests keys.</summary>
+</member><member name="T:HostBot.CKL.CklClient">
+	<summary>Connects to a CKLServer and requests a response to a cd key authentication challenge from bnet.</summary>
 </member><member name="F:HostBot.DataStructures.BaseArrayView`1.items">
 	<summary>The view's backing store.</summary>
 </member><member name="F:HostBot.DataStructures.BaseArrayView`1.offset">

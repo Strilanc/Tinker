@@ -21,103 +21,54 @@ Namespace Immutable
             Me.size = [next].size + 1
         End Sub
 
-        Public Function peek() As T
+        Public Function Peek() As T
             If size = 0 Then Throw New InvalidOperationException("Empty Stack")
             Return val
         End Function
-        Public Function popped() As MStack(Of T)
+        Public Function Popped() As MStack(Of T)
             If size = 0 Then Throw New InvalidOperationException("Empty Stack")
             Return Me.next
         End Function
-        Public Function pushed(ByVal val As T) As MStack(Of T)
+        Public Function Pushed(ByVal val As T) As MStack(Of T)
             Return New MStack(Of T)(val, Me)
         End Function
     End Class
 
     Public Module MStackExtensions
-#Region "Enumeration Classes"
-        Private MustInherit Class BaseEnumerator(Of T, R)
-            Inherits BaseIterator(Of R)
+        <Extension()> Public Function EnumStack(Of T)(ByVal stack As MStack(Of T)) As IEnumerable(Of MStack(Of T))
+            If stack Is Nothing Then Throw New ArgumentNullException("stack")
+            Return New Enumerable(Of MStack(Of T))(
+                Function()
+                    Dim nextStack = stack
+                    Return New Enumerator(Of MStack(Of T))(
+                        Function(controller)
+                            If nextStack.size = 0 Then  Return controller.Break()
 
-            Protected ReadOnly start As MStack(Of T)
-            Private cur As MStack(Of T)
-
-            Protected MustOverride Function get_stack_val(ByVal cur As MStack(Of T)) As R
-
-            Public Sub New(ByVal stack As MStack(Of T))
-                If Not (stack IsNot Nothing) Then Throw New ArgumentException()
-                Me.start = stack
-            End Sub
-
-            Public Overrides ReadOnly Property Current() As R
-                Get
-                    Return get_stack_val(cur)
-                End Get
-            End Property
-            Public Overrides Sub Reset()
-                cur = Nothing
-            End Sub
-            Public Overrides Function MoveNext() As Boolean
-                If cur Is Nothing Then
-                    If start.size = 0 Then Return False
-                    cur = start
-                Else
-                    If cur.size <= 1 Then Return False
-                    cur = cur.popped
-                End If
-                Return True
-            End Function
-        End Class
-        Private Class ValueEnumerator(Of T)
-            Inherits BaseEnumerator(Of T, T)
-            Public Sub New(ByVal stack As MStack(Of T))
-                MyBase.New(stack)
-            End Sub
-            Protected Overrides Function get_stack_val(ByVal cur As MStack(Of T)) As T
-                Return cur.peek()
-            End Function
-            Public Overrides Function GetEnumerator() As IEnumerator(Of T)
-                Return New ValueEnumerator(Of T)(start)
-            End Function
-        End Class
-        Private Class StackEnumerator(Of T)
-            Inherits BaseEnumerator(Of T, MStack(Of T))
-            Public Sub New(ByVal stack As MStack(Of T))
-                MyBase.New(stack)
-            End Sub
-            Protected Overrides Function get_stack_val(ByVal cur As MStack(Of T)) As MStack(Of T)
-                Return cur
-            End Function
-            Public Overrides Function GetEnumerator() As IEnumerator(Of MStack(Of T))
-                Return New StackEnumerator(Of T)(start)
-            End Function
-        End Class
-#End Region
-
-        <Extension()> Public Function stacks(Of T)(ByVal stack As MStack(Of T)) As IEnumerable(Of MStack(Of T))
-            If Not (stack IsNot Nothing) Then Throw New ArgumentException()
-            Return New StackEnumerator(Of T)(stack)
+                            Dim s = nextStack
+                            nextStack = nextStack.Popped()
+                            Return s
+                        End Function)
+                End Function)
         End Function
 
-        <Extension()> Public Function values(Of T)(ByVal stack As MStack(Of T)) As IEnumerable(Of T)
-            If Not (stack IsNot Nothing) Then Throw New ArgumentException()
-            Return New ValueEnumerator(Of T)(stack)
+        <Extension()> Public Function EnumValues(Of T)(ByVal stack As MStack(Of T)) As IEnumerable(Of T)
+            Return From e In stack.EnumStack() Select e.Peek()
         End Function
 
-        <Extension()> Public Function pushed(Of T)(ByVal stack As MStack(Of T), ByVal values As IEnumerable(Of T)) As MStack(Of T)
-            If Not (stack IsNot Nothing) Then Throw New ArgumentException()
-            If Not (values IsNot Nothing) Then Throw New ArgumentException()
+        <Extension()> Public Function Pushed(Of T)(ByVal stack As MStack(Of T), ByVal values As IEnumerable(Of T)) As MStack(Of T)
+            If stack Is Nothing Then Throw New ArgumentNullException("stack")
+            If values Is Nothing Then Throw New ArgumentNullException("values")
             For Each e In values
-                stack = stack.pushed(e)
+                stack = stack.Pushed(e)
             Next e
             Return stack
         End Function
 
-        <Extension()> Public Function reversed(Of T)(ByVal stack As MStack(Of T)) As MStack(Of T)
-            If Not (stack IsNot Nothing) Then Throw New ArgumentException()
+        <Extension()> Public Function Reversed(Of T)(ByVal stack As MStack(Of T)) As MStack(Of T)
+            If stack Is Nothing Then Throw New ArgumentNullException("stack")
             Dim r = MStack(Of T).Empty
-            For Each e In stack.values
-                r = r.pushed(e)
+            For Each e In stack.EnumValues
+                r = r.Pushed(e)
             Next e
             Return r
         End Function

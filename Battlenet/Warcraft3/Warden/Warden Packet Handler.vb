@@ -1,17 +1,17 @@
 ﻿Namespace Warcraft3.Warden
     Public Class WardenPacketHandler
-        Private ReadOnly original_seed As UInteger
-        Private ReadOnly module_folder As String
-        Private ReadOnly module_handler As New Warden_Module_Lib.ModuleHandler
+        Private ReadOnly originalSeed As ModInt32
+        Private ReadOnly moduleFolder As String
+        Private ReadOnly moduleHandler As New Warden_Module_Lib.ModuleHandler
         Private ReadOnly logger As Logger
         Private ReadOnly ref As ICallQueue
         Private ReadOnly eref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly memCheckCache As New Dictionary(Of String, Byte())
 
         Private state As states = states.idle
-        Private cur_module As ModuleMetaData
-        Private rc4_out As RC4Converter
-        Private rc4_in As RC4Converter
+        Private curModule As ModuleMetaData
+        Private rc4OutXor As IEnumerator(Of Byte)
+        Private rc4InXor As IEnumerator(Of Byte)
 
         Public Event Send(ByVal data As Byte())
         Public Event Fail(ByVal e As Exception)
@@ -24,32 +24,38 @@
 
         Private Class ModuleMetaData
             Public ReadOnly path As String
-            Public ReadOnly dl_size As UInteger
-            Public dl_pos As UInteger
-            Public dl_stream As IO.Stream
+            Public ReadOnly dlSize As UInteger
+            Public dlPosition As UInteger
+            Public dlStream As IO.Stream
             Public Sub New(ByVal size As UInteger, ByVal path As String)
-                Me.dl_size = size
+                Me.dlSize = size
                 Me.path = path
             End Sub
         End Class
 
 #Region "Life"
-        Public Sub New(ByVal seed As UInteger,
+        Public Sub New(ByVal seed As ModInt32,
                        ByVal ref As ICallQueue,
                        Optional ByVal logger As Logger = Nothing,
-                       Optional ByVal module_folder As String = Nothing)
-            Me.ref = ContractNotNull(ref, "ref")
+                       Optional ByVal moduleFolder As String = Nothing)
+            Contract.Requires(ref IsNot Nothing)
+            Me.ref = ref
             Me.logger = If(logger, New Logger)
-            Me.original_seed = seed
-            Me.module_folder = If(module_folder, GetDataFolderPath("Warden"))
-            With New WardenPRNG(seed)
-                Me.rc4_out = New RC4Converter(.readBlock(16))
-                Me.rc4_in = New RC4Converter(.readBlock(16))
+            Me.originalSeed = seed
+            Me.moduleFolder = If(moduleFolder, GetDataFolderPath("Warden"))
+            With New WardenPseudoRandomNumberStream(seed)
+                Me.rc4OutXor = RC4Converter.XorSequence(.ReadBlock(16))
+                Me.rc4InXor = RC4Converter.XorSequence(.ReadBlock(16))
             End With
         End Sub
 #End Region
 
 #Region "Input Output"
+        Private Sub CypherBlock(ByVal xs As IEnumerator(Of Byte), ByVal data() As Byte)
+            For i = 0 To data.Length - 1
+                data(i) = data(i) Xor xs.MoveNextAndReturn()
+            Next i
+        End Sub
         Public Sub ReceiveData(ByVal raw_data As Byte())
             If raw_data Is Nothing Then Throw New ArgumentNullException("raw_data")
             raw_data = raw_data.ToArray() 'clone data to avoid modifying source
@@ -57,17 +63,17 @@
                 Sub()
                     Try
                         'Extract
-                        rc4_in.convert(raw_data, raw_data, raw_data.Length, raw_data.Length)
+                        CypherBlock(rc4InXor, raw_data)
                         Dim id = CType(raw_data(0), WardenPacketId)
-                        Dim data = New ImmutableArrayView(Of Byte)(raw_data, 1, raw_data.Length - 1)
+                        Dim data = raw_data.ToView().SubView(1, raw_data.Length - 1)
                         logger.log(Function() "Decrypted Warden Packet: {0}".frmt(id), LogMessageTypes.DataEvent)
-                        logger.log(Function() "Warden Data (after decrypt): {0}".frmt(unpackHexString(raw_data)), LogMessageTypes.DataRaw)
+                        logger.log(Function() "Warden Data (after decrypt): {0}".frmt(raw_data.ToHexString), LogMessageTypes.DataRaw)
 
                         'Parse
                         Dim p = WardenPacket.FromData(id, data)
-                        If p.payload.getData.length <> data.length Then  Throw New Pickling.PicklingException("Didn't parse entire Warden packet.")
-                        Dim d = CType(p.payload.getVal(), Dictionary(Of String, Object))
-                        logger.log(Function() p.payload.toString(), LogMessageTypes.DataParsed)
+                        If p.payload.Data.Length <> data.Length Then  Throw New Pickling.PicklingException("Didn't parse entire Warden packet.")
+                        Dim d = CType(p.payload.Value, Dictionary(Of String, Object))
+                        logger.log(p.payload.Description, LogMessageTypes.DataParsed)
                         Select Case id
                             Case WardenPacketId.LoadModule
                                 Call ReceiveCheckModule(d)
@@ -89,14 +95,13 @@
 
         Private Sub SendData(ByVal data() As Byte)
             If data Is Nothing Then Throw New ArgumentNullException()
-            logger.log(Function() "Warden Response (before encrypt): {0}".frmt(unpackHexString(data)), LogMessageTypes.DataRaw)
+            logger.log(Function() "Warden Response (before encrypt): {0}".frmt(data.ToHexString), LogMessageTypes.DataRaw)
             Dim data_out = data.ToArray
-            rc4_out.convert(data_out, data_out, data_out.Length, data_out.Length)
+            CypherBlock(rc4OutXor, data_out)
             eref.QueueAction(
                 Sub()
                     RaiseEvent Send(data_out)
-                End Sub
-            )
+                End Sub)
         End Sub
         Private Sub SendSuccess()
             Call SendData(New Byte() {1})
@@ -108,20 +113,20 @@
 
 #Region "Parse"
         Private Sub ReceiveCheckModule(ByVal vals As Dictionary(Of String, Object))
-            Dim rc4_seed = CType(vals("module rc4 seed"), Byte())
+            Dim rc4Seed = CType(vals("module rc4 seed"), Byte())
             Dim module_id = CType(vals("module id"), Byte())
             Dim dl_size = CUInt(vals("dl size"))
-            cur_module = New ModuleMetaData(dl_size, module_folder & unpackHexString(module_id, separator:="") & ".warden")
+            curModule = New ModuleMetaData(dl_size, moduleFolder & module_id.ToHexString(separator:="") & ".warden")
 
-            If Not IO.File.Exists(cur_module.path) Then
-                If cur_module.dl_size < 50 Or cur_module.dl_size > 5000000 Then Throw New IO.IOException("Unrealistic module size.")
-                cur_module.dl_stream = New RC4Converter(rc4_seed).streamThroughTo( _
-                                            New IO.BufferedStream( _
-                                            New IO.FileStream(cur_module.path & ".dl", IO.FileMode.OpenOrCreate, IO.FileAccess.Write, IO.FileShare.None)))
+            If Not IO.File.Exists(curModule.path) Then
+                If curModule.dlSize < 50 Or curModule.dlSize > 5000000 Then Throw New IO.IOException("Unrealistic module size.")
+                curModule.dlStream = New RC4Converter(rc4Seed).ConvertWriteOnlyStream(
+                                            New IO.BufferedStream(
+                                            New IO.FileStream(curModule.path & ".dl", IO.FileMode.OpenOrCreate, IO.FileAccess.Write, IO.FileShare.None)))
                 state = states.downloading
                 SendFailure()
             Else
-                If Not module_handler.LoadModule(cur_module.path) Then
+                If Not moduleHandler.LoadModule(curModule.path) Then
                     Throw New OperationFailedException("Unable to load module.")
                 End If
                 state = states.module_loaded
@@ -131,33 +136,28 @@
         Private Sub ReceiveDownloadModule(ByVal vals As Dictionary(Of String, Object))
             If state <> states.downloading Then Throw New InvalidOperationException("Incorrect state for downloading a module.")
             Dim dl_data = CType(vals("dl data"), Byte())
-            cur_module.dl_stream.Write(dl_data, 0, dl_data.Length)
-            cur_module.dl_pos += CUInt(dl_data.Length)
+            curModule.dlStream.Write(dl_data, 0, dl_data.Length)
+            curModule.dlPosition += CUInt(dl_data.Length)
 
-            If cur_module.dl_pos >= cur_module.dl_size Then
+            If curModule.dlPosition >= curModule.dlSize Then
                 state = states.module_loaded
-                cur_module.dl_stream.Close()
-                cur_module.dl_stream = Nothing
-                Using rs As New IO.BufferedStream( _
-                                New IO.FileStream(cur_module.path & ".dl", IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
-
+                curModule.dlStream.Close()
+                curModule.dlStream = Nothing
+                Using rs As New IO.BufferedStream(New IO.FileStream(curModule.path & ".dl", IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
                     Dim br = New IO.BinaryReader(rs)
-                    Dim decompressed_size = br.ReadUInt32()
-                    If decompressed_size < &H120 Or decompressed_size > 5000000 Then Throw New IO.IOException("Unrealistic module size.")
-                    rs.ReadByte()
-                    rs.ReadByte()
-                    Using ds As New IO.Compression.DeflateStream(rs, IO.Compression.CompressionMode.Decompress)
-                        Using f As New IO.BufferedStream( _
-                                    New IO.FileStream(cur_module.path, IO.FileMode.Create, IO.FileAccess.Write, IO.FileShare.None))
+                    Dim decompressed_size = br.ReadInt32()
+                    If decompressed_size < 288 Or decompressed_size > 5000000 Then Throw New IO.IOException("Unrealistic module size.")
+                    Using ds As New ZLibStream(rs, IO.Compression.CompressionMode.Decompress)
+                        Using f As New IO.BufferedStream(New IO.FileStream(curModule.path, IO.FileMode.Create, IO.FileAccess.Write, IO.FileShare.None))
                             For j = 0 To decompressed_size - 1
                                 f.WriteByte(CByte(ds.ReadByte()))
                             Next j
                         End Using
                     End Using
                 End Using
-                IO.File.Delete(cur_module.path & ".dl")
+                IO.File.Delete(curModule.path & ".dl")
 
-                If Not module_handler.LoadModule(cur_module.path) Then
+                If Not moduleHandler.LoadModule(curModule.path) Then
                     Throw New OperationFailedException("Unable to load module.")
                 End If
                 state = states.module_loaded
@@ -166,42 +166,40 @@
         End Sub
         Private Sub ReceiveExecuteModule(ByVal vals As Dictionary(Of String, Object))
             'Get cypher state from warden
-            Dim out1 = module_handler.ExecuteModule1(uCInt(original_seed))
+            Dim out1 = moduleHandler.ExecuteModule1(originalSeed)
             If out1 Is Nothing Then
                 Throw New OperationFailedException("Failed to execute module step 1.")
             End If
 
             'Decrypt module input
-            Dim module_input_data = concat({WardenPacketId.RunModule}, CType(vals("module input data"), Byte()))
-            Call New RC4Converter(out1.rc4_in).convert(module_input_data, module_input_data, module_input_data.Length, module_input_data.Length)
-            logger.log(Function() "Warden Module Input (after decrypt): {0}".frmt(unpackHexString(module_input_data)), LogMessageTypes.DataRaw)
+            Dim inputData = Concat({New Byte() {WardenPacketId.RunModule}, CType(vals("module input data"), Byte())})
+            Call CypherBlock(RC4Converter.XorSequence(out1.rc4_in), inputData)
+            logger.log(Function() "Warden Module Input (after decrypt): {0}".frmt(inputData.ToHexString), LogMessageTypes.DataRaw)
 
             'Pass control to warden
-            Dim out2 = module_handler.ExecuteModule2((module_input_data))
+            Dim out2 = moduleHandler.ExecuteModule2((inputData))
             If out2 Is Nothing Then
                 Throw New OperationFailedException("Failed to execute module step 2.")
             ElseIf out2.packet_length = 0 Then
                 logger.log("Warden response contained no data. Probably means bnet will force disc withinin 2 minutes.", LogMessageTypes.Problem)
             End If
-            Dim packet_data(0 To out2.packet_length - 1) As Byte
-            For i = 0 To packet_data.Length - 1
-                packet_data(i) = out2.packet_data(i)
-            Next i
 
             'Encrypt module output
-            logger.log(Function() "Warden Module Output (before encrypt): {0}".frmt(unpackHexString(packet_data)), LogMessageTypes.DataRaw)
-            Call New RC4Converter(out1.rc4_out).convert(packet_data, packet_data, packet_data.Length, packet_data.Length)
-            Call rc4_out.convert(packet_data, packet_data, packet_data.Length, packet_data.Length)
+            Dim decryptedOutput = (From i In Enumerable.Range(0, out2.packet_length) Select out2.packet_data(i))
+            logger.log(Function() "Warden Module Output (before encrypt): {0}".frmt(decryptedOutput.ToHexString), LogMessageTypes.DataRaw)
+            Dim outputData = decryptedOutput.ToArray()
+            Call CypherBlock(RC4Converter.XorSequence(out1.rc4_out), outputData)
+            Call CypherBlock(rc4OutXor, outputData)
 
             'Update cypher state
-            rc4_in = New RC4Converter(out2.rc4_in)
-            rc4_out = New RC4Converter(out2.rc4_out)
+            rc4InXor = RC4Converter.XorSequence(out2.rc4_in)
+            rc4OutXor = RC4Converter.XorSequence(out2.rc4_out)
 
-            RaiseEvent Send(packet_data)
+            RaiseEvent Send(outputData)
         End Sub
 
         Private Sub ReceivePerformCheck(ByVal vals As Dictionary(Of String, Object))
-            Dim payload As ImmutableArrayView(Of Byte) = CType(vals("unknown0"), Byte())
+            Dim payload = CType(vals("unknown0"), Byte()).ToView()
             If state <> states.module_loaded Then Throw New InvalidOperationException("Incorrect state for MemCheck")
             If payload.length <= 0 Then Throw New IO.IOException("No data.")
 
@@ -212,7 +210,7 @@
                 Dim str_len = payload(0)
                 payload = payload.SubView(1)
                 If str_len <= 0 Then Exit While
-                filenames.Add(payload.SubView(0, str_len).toChrString())
+                filenames.Add(payload.SubView(0, str_len).ParseChrString(nullTerminated:=True))
                 payload = payload.SubView(str_len)
             End While
 
@@ -247,18 +245,18 @@
             Next tries
 
             'Respond
-            Call SendData(concat({WardenPacketId.PerformCheck},
-                                 CUShort(out.Length).bytes(ByteOrder.LittleEndian),
-                                 WardenChecksum(out),
-                                 out))
+            Call SendData(Concat({New Byte() {WardenPacketId.PerformCheck},
+                                  CUShort(out.Length).bytes(ByteOrder.LittleEndian),
+                                  WardenChecksum(out),
+                                  out}))
         End Sub
-        Private Function ProcessCheckCommand(ByVal data As ImmutableArrayView(Of Byte),
+        Private Function ProcessCheckCommand(ByVal data As IViewableList(Of Byte),
                                              ByVal filenames As IList(Of String),
                                              ByRef id_MemCheck As Integer,
                                              ByRef id_PageCheck As Integer,
                                              ByVal id_end As Integer,
                                              ByRef out As Byte()) As Integer
-            If data.length <= 0 Then Throw New IO.IOException("Ran out of data.")
+            If data.Length <= 0 Then Throw New IO.IOException("Ran out of data.")
             Dim id As Integer = data(0)
             data = data.SubView(1)
 
@@ -279,22 +277,22 @@
                     Return PerformMemoryCheck(data, filenames, out)
 
                 Case id_PageCheck
-                    If data.length < 29 Then Throw New IO.IOException("Not enough pagecheck data.")
-                    out = concat(out, {0})
+                    If data.Length < 29 Then Throw New IO.IOException("Not enough pagecheck data.")
+                    out = Concat({out, New Byte() {0}})
                     Return 30
 
                 Case id_end
-                    If data.length > 0 Then Throw New IO.IOException("Leftover data.")
+                    If data.Length > 0 Then Throw New IO.IOException("Leftover data.")
                     Return 0
 
                 Case Else
                     Throw New IO.IOException("Unrecognized check id.")
             End Select
         End Function
-        Private Function PerformMemoryCheck(ByVal data As ImmutableArrayView(Of Byte),
+        Private Function PerformMemoryCheck(ByVal data As IViewableList(Of Byte),
                                             ByVal filenames As IList(Of String),
                                             ByRef out As Byte()) As Integer
-            If data.length < 6 Then Throw New IO.IOException("Not enough memcheck data.")
+            If data.Length < 6 Then Throw New IO.IOException("Not enough memcheck data.")
             If data(0) > filenames.Count Then Throw New IO.IOException("Invalid memcheck file index: {0}.".frmt(data(0)))
 
             Dim filename = filenames(data(0))
@@ -315,7 +313,7 @@
                     End Using
                 End Using
             End If
-            out = concat(out, {0}, memCheckCache(key))
+            out = Concat({out, New Byte() {0}, memCheckCache(key)})
 
             Return 7
         End Function

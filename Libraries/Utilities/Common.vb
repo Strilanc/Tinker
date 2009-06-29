@@ -6,50 +6,17 @@ Imports System.Net
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module Common
-#Region "UIntegers"
-    '''<summary>Unsafe CUInt. Ignores overflows and underflows.</summary>
-    Public Function uCUInt(ByVal n As Long) As UInteger
-        Return CUInt(n And UInteger.MaxValue)
-    End Function
-    '''<summary>Unsafe CUInt. Ignores overflows and underflows.</summary>
-    Public Function uCUInt(ByVal n As ULong) As UInteger
-        Return CUInt(n And UInteger.MaxValue)
-    End Function
-    Public Function uCInt(ByVal u As UInteger) As Integer
-        If u <= Integer.MaxValue Then Return CInt(u)
-        Return CInt(u - &H100000000)
-    End Function
-    Public Function uCByte(ByVal n As Integer) As Byte
-        Return CByte(n And Byte.MaxValue)
-    End Function
-    Public Function ShiftRotateLeft(ByVal i As Integer, ByVal s As Integer) As Integer
-        Return uCInt(ShiftRotateLeft(uCUInt(i), s))
-    End Function
-    Public Function ShiftRotateRight(ByVal i As Integer, ByVal s As Integer) As Integer
-        Return ShiftRotateLeft(i, -s)
-    End Function
-    Public Function ShiftRotateLeft(ByVal u As UInteger, ByVal s As Integer) As UInteger
-        s = s And &H1F
-        Return (u << s) Or (u >> (32 - s))
-    End Function
-    Public Function ShiftRotateRight(ByVal u As UInteger, ByVal s As Integer) As UInteger
-        Return ShiftRotateLeft(u, -s)
-    End Function
-    Public Function ReverseByteEndian(ByVal val As UInteger) As UInteger
+#Region "Numbers"
+    <Extension()> Public Function ReversedByteOrder(ByVal u As UInteger) As UInteger
         Dim u2 As UInteger
         For i = 0 To 3
             u2 <<= 8
-            u2 = u2 Or (val And CUInt(&HFF))
-            val >>= 8
+            u2 = u2 Or (u And CUInt(&HFF))
+            u >>= 8
         Next i
         Return u2
     End Function
-    Public Function ReverseByteEndian(ByVal i As Integer) As Integer
-        Dim u = CLng(ReverseByteEndian(uCUInt(i)))
-        If u > Integer.MaxValue Then u -= &H100000000
-        Return CInt(u)
-    End Function
-    Public Function ReverseByteEndian(ByVal u As ULong) As ULong
+    <Extension()> Public Function ReversedByteOrder(ByVal u As ULong) As ULong
         Dim u2 As ULong
         For i = 0 To 7
             u2 <<= 8
@@ -59,41 +26,6 @@ Public Module Common
         Return u2
     End Function
 
-    Public Function uSum(ByVal ParamArray nn() As Integer) As Integer
-        Dim n = 0
-        For Each u In nn
-            n = uAdd(n, u)
-        Next u
-        Return n
-    End Function
-    Public Function uAdd(ByVal N1 As Integer, ByVal N2 As Integer) As Integer
-        Dim N = CLng(N1) + CLng(N2)
-        If N > Integer.MaxValue Then N -= &H100000000
-        If N < Integer.MinValue Then N += &H100000000
-        Return CInt(N)
-    End Function
-    Public Function uSum(ByVal ParamArray nn() As UInteger) As UInteger
-        Dim n = CUInt(0)
-        For Each u In nn
-            n = uAdd(n, u)
-        Next u
-        Return n
-    End Function
-    Public Function uAdd(ByVal N1 As UInteger, ByVal N2 As UInteger) As UInteger
-        Dim N = CULng(N1) + CULng(N2)
-        If N > UInteger.MaxValue Then N -= CULng(&H100000000)
-        Return CUInt(N)
-    End Function
-
-    Public Function uCUShort(ByVal s As Short) As UShort
-        Return CUShort(If(s >= 0, s, s + &H10000))
-    End Function
-    Public Function uCShort(ByVal s As UShort) As Short
-        Return CShort(If(s > Short.MaxValue, s, s - &H10000))
-    End Function
-#End Region
-
-#Region "Numbers"
     '''<summary>Returns the smallest multiple of n that is not less than i. Formally: min {x in Z | x = 0 (mod n), x >= i}</summary>
     Public Function modCeiling(ByVal i As Integer, ByVal n As Integer) As Integer
         If i Mod n = 0 Then Return i
@@ -103,10 +35,6 @@ Public Module Common
 
     Public Function alignedReadCount(ByVal count As Integer, ByVal numBufferedIn As Integer, ByVal numBufferedOut As Integer, ByVal alignModulo As Integer) As Integer
         Return Math.Max(0, modCeiling(count - numBufferedOut, alignModulo) - numBufferedIn)
-    End Function
-
-    Public Function TickCountDelta(ByVal t_now As Long, ByVal t_then As Long) As UInteger
-        Return uCUInt(t_now - t_then)
     End Function
 
     <Extension()> Public Function between(Of N As IComparable)(ByVal v1 As N, ByVal v2 As N, ByVal v3 As N) As N
@@ -119,67 +47,43 @@ Public Module Common
 #End Region
 
 #Region "Strings"
-    Public Function padded(ByVal s As String, ByVal min_chars As Integer, Optional ByVal pad_char As Char = " "c) As String
-        If s.Length < min_chars Then
-            s += New String(pad_char, min_chars - s.Length)
+    Public Function padded(ByVal text As String, ByVal min_chars As Integer, Optional ByVal pad_char As Char = " "c) As String
+        Contract.Requires(text IsNot Nothing)
+        If text.Length < min_chars Then
+            text += New String(pad_char, min_chars - text.Length)
         End If
-        Return s
+        Return text
     End Function
     Public Function indent(ByVal paragraph As String, Optional ByVal prefix As String = vbTab) As String
-        If Not (paragraph IsNot Nothing) Then Throw New ArgumentException()
-        If Not (prefix IsNot Nothing) Then Throw New ArgumentException()
-
+        Contract.Requires(paragraph IsNot Nothing)
+        Contract.Requires(prefix IsNot Nothing)
         Return prefix + paragraph.Replace(Environment.NewLine, Environment.NewLine + prefix)
     End Function
-    <Extension()> Public Function frmt(ByVal s As String, ByVal ParamArray args() As Object) As String
-        If Not (s IsNot Nothing) Then Throw New ArgumentException()
-        If Not (args IsNot Nothing) Then Throw New ArgumentException()
-
-        Return String.Format(s, args)
-    End Function
-    Public Function Assign(Of T)(ByRef x As T, ByVal v As T) As Boolean
-        x = v
-        Return True
+    <Extension()> Public Function frmt(ByVal format As String, ByVal ParamArray args() As Object) As String
+        Contract.Requires(format IsNot Nothing)
+        Contract.Requires(args IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return String.Format(format, args)
     End Function
 #End Region
 
-    Public Function MakePair(Of T1, T2)(ByVal arg1 As T1, ByVal arg2 As T2) As Pair(Of T1, T2)
-        Return New Pair(Of T1, T2)(arg1, arg2)
-    End Function
-
-    Public Function FutureConnectTo(ByVal host As String, ByVal port As UShort) As IFuture(Of Outcome(Of Sockets.TcpClient))
-        Dim f = New Future(Of Outcome(Of Sockets.TcpClient))
-        Try
-            Dim client = New Sockets.TcpClient
-            client.BeginConnect(host,
-                                port,
-                                Sub(ar)
-                                    Try
-                                        client.EndConnect(ar)
-                                        f.SetValue(successVal(client, "Connected"))
-                                    Catch e As Exception
-                                        f.SetValue(failure("Failed to connect: {0}".frmt(e.Message)))
-                                    End Try
-                                End Sub,
-                                Nothing)
-        Catch e As Exception
-            f.SetValue(failure("Failed to connect: {0}".frmt(e.Message)))
-        End Try
-        Return f
-    End Function
-
 #Region "Strings Extra"
     Public Function breakQuotedWords(ByVal text As String) As List(Of String)
+        Contract.Requires(text IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of List(Of String))() IsNot Nothing)
+
         Dim quoted_words As New List(Of String)
         If text = "" Then Return quoted_words
         Dim cur_quoted_word As String = Nothing
-        For Each word As String In text.Split(" "c)
+        For Each word In text.Split(" "c)
             If word = "" Then Continue For
             If cur_quoted_word Is Nothing Then
                 If word(0) = """"c Then
                     If word(word.Length - 1) = """"c Then '[start and end of quoted word]
+                        Contract.Assume(word.Length >= 2)
                         quoted_words.Add(word.Substring(1, word.Length - 2))
                     Else '[start of quoted word]
+                        Contract.Assume(word.Length >= 1)
                         cur_quoted_word = word.Substring(1) + " "
                     End If
                 Else '[normal word]
@@ -223,18 +127,12 @@ Public Module Common
 
 #Region "Enums"
     Public Function EnumValues(Of T)() As IEnumerable(Of T)
-
-        Dim out = CType([Enum].GetValues(GetType(T)), IEnumerable(Of T))
-        Return out
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
+        Return CType([Enum].GetValues(GetType(T)), IEnumerable(Of T))
     End Function
-    Public Function EnumNames(Of T)() As IEnumerable(Of String)
-
-        Dim out = From x In EnumValues(Of T)() Select (x.ToString())
-        Return out
-    End Function
-    Public Function EnumTryParse(Of T)(ByVal value As String, ByVal ignore_case As Boolean, ByRef ret As T) As Boolean
+    Public Function EnumTryParse(Of T)(ByVal value As String, ByVal ignoreCase As Boolean, ByRef ret As T) As Boolean
         For Each e In EnumValues(Of T)()
-            If String.Compare(value, e.ToString(), ignore_case) = 0 Then
+            If String.Compare(value, e.ToString(), ignoreCase) = 0 Then
                 ret = e
                 Return True
             End If
@@ -248,94 +146,53 @@ Public Module Common
 
 #Region "Arrays"
     Public Function ArraysEqual(Of T As IComparable(Of T))(ByVal array1() As T, ByVal array2() As T) As Boolean
-        If Not (array1 IsNot Nothing) Then Throw New ArgumentException()
-        If Not (array2 IsNot Nothing) Then Throw New ArgumentException()
+        Contract.Requires(array1 IsNot Nothing)
+        Contract.Requires(array2 IsNot Nothing)
         If array1.Length <> array2.Length Then Return False
         For i = 0 To array1.Length - 1
             If array1(i).CompareTo(array2(i)) <> 0 Then Return False
         Next i
         Return True
     End Function
-    <Extension()> Public Function subArray(Of T)(ByVal baseArray As T(), ByVal startIndex As Integer, Optional ByVal max_length As Integer = Integer.MaxValue) As T()
-        If Not (baseArray IsNot Nothing) Then Throw New ArgumentException()
-        If Not (startIndex >= 0) Then Throw New ArgumentException()
-        If Not (max_length >= 0) Then Throw New ArgumentException()
+    <Extension()> Public Function SubArray(Of T)(ByVal array As T(), ByVal offset As Integer) As T()
+        Contract.Requires(array IsNot Nothing)
+        Contract.Requires(offset >= 0)
+        Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
+        If offset > array.Length Then Throw New ArgumentOutOfRangeException("offset")
 
-
-        Dim subArrayData() As T = New T() {}
-
-        If max_length > baseArray.Length - startIndex Then max_length = baseArray.Length - startIndex
-        If max_length = 0 Then Return subArrayData
-
-        ReDim subArrayData(0 To max_length - 1)
-        For i As Integer = 0 To subArrayData.Length - 1
-            subArrayData(i) = baseArray(i + startIndex)
-        Next i
-        Return subArrayData
+        Dim new_array(0 To array.Length - offset - 1) As T
+        System.Array.Copy(array, offset, new_array, 0, new_array.Length)
+        Return new_array
     End Function
-    Public Function concat(Of T)(ByVal arrays As IEnumerable(Of T())) As T()
-        If arrays Is Nothing Then Throw New ArgumentNullException("arrays")
+    <Extension()> Public Function SubArray(Of T)(ByVal array As T(), ByVal offset As Integer, ByVal length As Integer) As T()
+        Contract.Requires(array IsNot Nothing)
+        Contract.Requires(offset >= 0)
+        Contract.Requires(length >= 0)
+        Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
+        If offset + length > array.Length Then Throw New ArgumentOutOfRangeException("offset + length")
 
-        Dim n = 0
+        Dim new_array(0 To length - 1) As T
+        System.Array.Copy(array, offset, new_array, 0, new_array.Length)
+        Return new_array
+    End Function
+    Public Function Concat(Of T)(ByVal arrays As IEnumerable(Of T())) As T()
+        Contract.Requires(arrays IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
+        If (From array In arrays Where array Is Nothing).Any Then Throw New ArgumentNullException("array is null", "arrays")
+
+        Dim totalLength = 0
         For Each array In arrays
-            If array Is Nothing Then Continue For
-            n += array.Length
+            totalLength += array.Length
         Next array
 
-        Dim flattened_array(0 To n - 1) As T
-        Dim i = 0
+        Dim flattenedArray(0 To totalLength - 1) As T
+        Dim processingOffset = 0
         For Each array In arrays
-            If array Is Nothing Then Continue For
-            System.Array.Copy(array, 0, flattened_array, i, array.Length)
-            i += array.Length
+            System.Array.Copy(array, 0, flattenedArray, processingOffset, array.Length)
+            processingOffset += array.Length
         Next array
 
-        Return flattened_array
-    End Function
-    Public Function concat(Of T)(ByVal ParamArray baseArrays As T()()) As T()
-        Return concat(CType(baseArrays, IEnumerable(Of T())))
-    End Function
-    <Extension()> Public Function reversed(Of T)(ByVal baseArray As T()) As T()
-        If Not (baseArray IsNot Nothing) Then Throw New ArgumentException()
-
-        Return CType(baseArray, IEnumerable(Of T)).Reverse().ToArray()
-    End Function
-
-    Public Function cut(Of T)(ByVal baseArray As T(), ByVal ParamArray cutLengths As Integer()) As T()()
-        'Integrate
-        For i As Integer = 1 To cutLengths.Length - 1
-            cutLengths(i) += cutLengths(i - 1)
-        Next i
-        'Delegate
-        Return divide(baseArray, cutLengths)
-    End Function
-
-    Public Function divide(Of T)(ByVal baseArray As T(), ByVal ParamArray partitionIndices As Integer()) As T()()
-        Dim subArrays As T()()
-        Dim n As Integer = 0
-        Dim lastIndex As Integer = 0
-
-        ReDim subArrays(0 To partitionIndices.Length)
-        For i As Integer = 0 To partitionIndices.Length
-            'Move to next partition
-            lastIndex += n
-            If i < partitionIndices.Length Then
-                n = partitionIndices(i) - lastIndex
-            Else
-                n = baseArray.Length - lastIndex
-            End If
-            If lastIndex + n > baseArray.Length Then Throw New ArgumentOutOfRangeException("Partition index past end of array.")
-            If n < 0 Then Throw New ArgumentOutOfRangeException("Negative partition length.")
-            If n = 0 Then subArrays(i) = New T() {} : Continue For
-
-            'Populate partition
-            ReDim subArrays(i)(0 To n - 1)
-            For j As Integer = 0 To n - 1
-                subArrays(i)(j) = baseArray(lastIndex + j)
-            Next j
-        Next i
-
-        Return subArrays
+        Return flattenedArray
     End Function
 #End Region
 
@@ -389,120 +246,12 @@ Public Module Common
             Return failureVal(matches, "Matched {0} files before hitting error: {1}.".frmt(matches.Count, e.Message))
         End Try
     End Function
-#End Region
-
-#Region "Linq"
-    '''<summary>Determines if a sequence has no elements.</summary>
-    <Extension()> Public Function None(Of T)(ByVal e As IEnumerable(Of T)) As Boolean
-        Return Not e.Any()
-    End Function
-#End Region
-
-#Region "Contracts"
-    Public Sub ContractPositive(ByVal i As Integer, Optional ByVal param_name As String = Nothing)
-        If i <= 0 Then
-            Throw New ArgumentOutOfRangeException(param_name, "Value must be positive.")
-        End If
-    End Sub
-    Public Sub ContractNonNegative(ByVal i As Integer, Optional ByVal param_name As String = Nothing)
-        If i < 0 Then
-            Throw New ArgumentOutOfRangeException(param_name, "Value must be non-negative.")
-        End If
-    End Sub
-    Public Function ContractNotNull(Of T)(ByVal e As T, Optional ByVal name As String = Nothing) As T
-        If e Is Nothing Then Throw New ArgumentNullException(name)
-        Return e
-    End Function
-#End Region
-
-
-    Public Sub Swap(Of T)(ByRef v1 As T, ByRef v2 As T)
-        Dim vt = v1
-        v1 = v2
-        v2 = vt
-    End Sub
-
-    <Extension()> Public Function readBlock(ByVal this As IO.Stream, ByRef length As Integer) As Byte()
-        Dim buffer(0 To length - 1) As Byte
-        length = this.Read(buffer, 0, length)
-        Return buffer
-    End Function
-
-    <Extension()> Public Function list_range(Of T)(ByVal L As IList(Of T), Optional ByVal start As Integer = 0, Optional ByVal [step] As Integer = 1) As IEnumerable(Of Integer)
-        Return int_range(start, L.Count - 1, [step])
-    End Function
-    Public Function int_range(ByVal start As Integer, ByVal [end] As Integer, ByVal [step] As Integer) As IEnumerable(Of Integer)
-        If [step] < 0 Then Return From x In int_range(-start, -[end], -[step]) Select -x
-        Return From x In Enumerable.Range(0, ([end] - start) \ [step]) Select start + x * [step]
-    End Function
-
-    Private cached_external_ip As Byte() = Nothing
-    Private cached_internal_ip As Byte() = Nothing
-    Public Sub CacheIPAddresses()
-        'Internal IP
-        Dim addr = (From nic In NetworkInterface.GetAllNetworkInterfaces
-                         Where nic.Supports(NetworkInterfaceComponent.IPv4)
-                         Select a = (From address In nic.GetIPProperties.UnicastAddresses
-                                     Where address.Address.AddressFamily = Net.Sockets.AddressFamily.InterNetwork
-                                     Where address.Address.ToString <> "127.0.0.1").FirstOrDefault()
-                         Where a IsNot Nothing).FirstOrDefault()
-        If addr IsNot Nothing Then
-            cached_internal_ip = addr.Address.GetAddressBytes
-        Else
-            cached_internal_ip = New Byte() {127, 0, 0, 1}
-        End If
-
-        'External IP
-        ThreadedAction(
-            Sub()
-                Dim utf8 = New UTF8Encoding()
-                Dim webClient = New WebClient()
-                Dim externalIp = utf8.GetString(webClient.DownloadData("http://whatismyip.com/automation/n09230945.asp"))
-                If externalIp.Length < 7 OrElse externalIp.Length > 15 Then  Return  'not correct length for style (#.#.#.# to ###.###.###.###)
-                Dim words = externalIp.Split("."c)
-                If words.Length <> 4 OrElse (From word In words Where Not Byte.TryParse(word, 0)).Any Then  Return
-                cached_external_ip = (From word In words Select Byte.Parse(word)).ToArray()
-            End Sub,
-            "CacheExternalIP"
-        )
-    End Sub
-
-    Public Function GetIpAddressBytes(ByVal external As Boolean) As Byte()
-        If external AndAlso cached_external_ip IsNot Nothing Then
-            Return cached_external_ip
-        Else
-            Return cached_internal_ip
-        End If
-    End Function
-
-    Public Function streamBytes(ByVal s As IO.Stream) As Byte()
-        Dim m = 1024
-        Dim bb(0 To m - 1) As Byte
-        Dim c = 0
-        Do
-            Dim n = s.Read(bb, c, m - c)
-            c += n
-            If c <> m Then Exit Do
-            m *= 2
-            ReDim Preserve bb(0 To m - 1)
-        Loop
-        ReDim Preserve bb(0 To c - 1)
-        Return bb
-    End Function
-    Public Function reduce(Of T)(ByVal L As IEnumerable(Of T), ByVal reduction As Func(Of T, T, T)) As T
-        Dim acc As T = Nothing
-        For Each e In L
-            acc = reduction(acc, e)
-        Next e
-        Return acc
-    End Function
     Public Function setting_war3path() As String
         Return My.Settings.war3path
     End Function
     Public Function setting_mappath() As String
         Return My.Settings.mapPath
     End Function
-
     Public Function GetDataFolderPath(ByVal sub_folder As String) As String
         Dim folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
         Try
@@ -513,15 +262,24 @@ Public Module Common
             folder += IO.Path.DirectorySeparatorChar
             Return folder
         Catch e As Exception
-            Logging.logUnexpectedException("Error getting folder My Documents\HostBot\{0}.".frmt(sub_folder), e)
+            Logging.LogUnexpectedException("Error getting folder My Documents\HostBot\{0}.".frmt(sub_folder), e)
             Throw
         End Try
     End Function
+#End Region
 
-    <Extension()> Public Function MaxPair(Of T, C As IComparable)(ByVal sequence As IEnumerable(Of T),
-                                                                  ByVal transformation As Func(Of T, C),
-                                                                  ByRef out_element As T,
-                                                                  ByRef out_transformation As C) As Boolean
+#Region "Linq"
+    '''<summary>Determines if a sequence has no elements.</summary>
+    <Extension()>
+    Public Function None(Of T)(ByVal sequence As IEnumerable(Of T)) As Boolean
+        Return Not sequence.Any()
+    End Function
+
+    <Extension()>
+    Public Function MaxPair(Of T, C As IComparable)(ByVal sequence As IEnumerable(Of T),
+                                                    ByVal transformation As Func(Of T, C),
+                                                    ByRef out_element As T,
+                                                    ByRef out_transformation As C) As Boolean
         Dim any = False
         Dim max_element = out_element
         Dim max_transformation = out_transformation
@@ -541,8 +299,9 @@ Public Module Common
         End If
         Return any
     End Function
-    <Extension()> Public Function Max(Of T)(ByVal sequence As IEnumerable(Of T),
-                                            ByVal comparator As Func(Of T, T, Integer)) As T
+    <Extension()>
+    Public Function Max(Of T)(ByVal sequence As IEnumerable(Of T),
+                              ByVal comparator As Func(Of T, T, Integer)) As T
         Dim any = False
         Dim max_element As T = Nothing
 
@@ -555,90 +314,272 @@ Public Module Common
 
         Return max_element
     End Function
+
+    <Extension()>
+    Public Function ReduceUsing(Of TSource, TResult)(ByVal sequence As IEnumerable(Of TSource),
+                                                     ByVal reduction As Func(Of TResult, TSource, TResult),
+                                                     Optional ByVal initialValue As TResult = Nothing) As TResult
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(reduction IsNot Nothing)
+        Dim accumulator = initialValue
+        For Each item In sequence
+            accumulator = reduction(accumulator, item)
+        Next item
+        Return accumulator
+    End Function
+    <Extension()>
+    Public Function ReduceUsing(Of T)(ByVal sequence As IEnumerable(Of T),
+                                      ByVal reduction As Func(Of T, T, T),
+                                      Optional ByVal initialValue As T = Nothing) As T
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(reduction IsNot Nothing)
+        Return ReduceUsing(Of T, T)(sequence, reduction, initialValue)
+    End Function
+
+    <Extension()>
+    Public Function EnumBlocks(Of T)(ByVal sequence As IEnumerator(Of T),
+                                     ByVal blockSize As Integer) As IEnumerator(Of IList(Of T))
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(blockSize > 0)
+        Contract.Ensures(Contract.Result(Of IEnumerator(Of IList(Of T)))() IsNot Nothing)
+        Return New Enumerator(Of IList(Of T))(
+            Function(controller)
+                If Not sequence.MoveNext Then  Return controller.Break()
+
+                Dim block = New List(Of T)(blockSize)
+                block.Add(sequence.Current())
+                While block.Count < blockSize AndAlso sequence.MoveNext
+                    block.Add(sequence.Current)
+                End While
+                Return block
+            End Function
+        )
+    End Function
+    <Extension()>
+    Public Function EnumBlocks(Of T)(ByVal sequence As IEnumerable(Of T),
+                                     ByVal blockSize As Integer) As IEnumerable(Of IList(Of T))
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(blockSize > 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of IList(Of T)))() IsNot Nothing)
+        Return sequence.Transform(Function(enumerator) EnumBlocks(enumerator, blockSize))
+    End Function
+    <Extension()>
+    Public Function Transform(Of T, D)(ByVal sequence As IEnumerable(Of T),
+                                       ByVal transformation As Func(Of IEnumerator(Of T), IEnumerator(Of D))) As IEnumerable(Of D)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(transformation IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of D))() IsNot Nothing)
+        Return New Enumerable(Of D)(Function() transformation(sequence.GetEnumerator()))
+    End Function
+#End Region
+
+    Public Sub Swap(Of T)(ByRef v1 As T, ByRef v2 As T)
+        Dim vt = v1
+        v1 = v2
+        v2 = vt
+    End Sub
+
+    <Extension()>
+    Public Function ReadBlock(ByVal stream As IO.Stream, ByRef length As Integer) As Byte()
+        Dim buffer(0 To length - 1) As Byte
+        length = stream.Read(buffer, 0, length)
+        Return buffer
+    End Function
+
+    <Extension()>
+    Public Function CountUpTo(Of T)(ByVal sequence As IEnumerable(Of T), ByVal maxCount As Integer) As Integer
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(maxCount >= 0)
+        Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+        Contract.Ensures(Contract.Result(Of Integer)() <= maxCount)
+        Dim count = 0
+        For Each item In sequence
+            count += 1
+            If count >= maxCount Then Exit For
+        Next item
+        Return count
+    End Function
+
+    Public Function streamBytes(ByVal stream As IO.Stream) As Byte()
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Dim m = 1024
+        Dim bb(0 To m - 1) As Byte
+        Dim c = 0
+        Do
+            Dim n = stream.Read(bb, c, m - c)
+            c += n
+            If c <> m Then Exit Do
+            m *= 2
+            ReDim Preserve bb(0 To m - 1)
+        Loop
+        ReDim Preserve bb(0 To c - 1)
+        Contract.Assume(bb IsNot Nothing)
+        Return bb
+    End Function
+
+    <Extension()> Public Function ToList(Of T)(ByVal list As IList(Of T)) As List(Of T)
+        Contract.Requires(list IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of List(Of T))() IsNot Nothing)
+        Dim ret As New List(Of T)(list.Count)
+        For i = 0 To list.Count - 1
+            ret.Add(list(i))
+        Next i
+        Return ret
+    End Function
+    <Extension()> Public Function ToArray(Of T)(ByVal list As IList(Of T)) As T()
+        Contract.Requires(list IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
+        Dim ret(0 To list.Count - 1) As T
+        For i = 0 To list.Count - 1
+            ret(i) = list(i)
+        Next i
+        Return ret
+    End Function
+    <Extension()> Public Function SubToArray(Of T)(ByVal list As IList(Of T), ByVal offset As Integer, ByVal count As Integer) As T()
+        Contract.Requires(list IsNot Nothing)
+        Contract.Requires(offset >= 0)
+        Contract.Requires(count >= 0)
+        Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
+        If offset + count > list.Count Then Throw New ArgumentOutOfRangeException("count")
+        Dim ret(0 To count - 1) As T
+        For i = 0 To count - 1
+            ret(i) = list(i + offset)
+        Next i
+        Return ret
+    End Function
+    <Extension()> Public Function ToView(Of T)(ByVal list As IList(Of T)) As IViewableList(Of T)
+        Contract.Requires(list IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IViewableList(Of T))() IsNot Nothing)
+        Return New ViewableList(Of T)(list)
+    End Function
+    <Extension()> Public Function Reverse(Of T)(ByVal list As IList(Of T)) As IList(Of T)
+        Contract.Requires(list IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IList(Of T))() IsNot Nothing)
+        Dim n = list.Count
+        Dim ret(0 To n - 1) As T
+        For i = 0 To n - 1
+            ret(i) = list(n - i - 1)
+        Next i
+        Return ret
+    End Function
+
+    Private Delegate Function RecursiveFunction(Of A1, R)(ByVal self As RecursiveFunction(Of A1, R)) As Func(Of A1, R)
+    Public Function YCombinator(Of A1, R)(ByVal recursor As Func(Of Func(Of A1, R), Func(Of A1, R))) As Func(Of A1, R)
+        Contract.Requires(recursor IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Func(Of A1, R))() IsNot Nothing)
+        Dim rec As RecursiveFunction(Of A1, R) = Function(self) Function(arg1) recursor(self(self))(arg1)
+        Return rec(rec)
+    End Function
+    Private Delegate Function RecursiveAction(ByVal self As RecursiveAction) As Action
+    Public Function YCombinator(ByVal recursor As Func(Of Action, Action)) As Action
+        Contract.Requires(recursor IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Action)() IsNot Nothing)
+        Dim rec As RecursiveAction = Function(self) Sub() recursor(self(self))()
+        Return rec(rec)
+    End Function
+    Private Delegate Function RecursiveAction(Of A1)(ByVal self As RecursiveAction(Of A1)) As Action(Of A1)
+    Public Function YCombinator(Of A1)(ByVal recursor As Func(Of Action(Of A1), Action(Of A1))) As Action(Of A1)
+        Contract.Requires(recursor IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Action(Of A1))() IsNot Nothing)
+        Dim rec As RecursiveAction(Of A1) = Function(self) Sub(arg1) recursor(self(self))(arg1)
+        Return rec(rec)
+    End Function
 End Module
 
-Public Class OperationFailedException
-    Inherits Exception
-    Public Sub New(Optional ByVal message As String = Nothing, Optional ByVal inner_exception As Exception = Nothing)
-        MyBase.New(message, inner_exception)
+Public Class ExpensiveValue(Of T)
+    Private func As Func(Of T)
+    Private val As T
+    Private computed As Boolean
+    Public Sub New(ByVal func As Func(Of T))
+        Me.func = func
     End Sub
-End Class
-Public Class UnreachableStateException
-    Inherits Exception
-    Public Sub New(Optional ByVal message As String = Nothing, Optional ByVal inner_exception As Exception = Nothing)
-        MyBase.New(message, inner_exception)
+    Public Sub New(ByVal val As T)
+        Me.val = val
+        Me.computed = True
     End Sub
-End Class
-Public Class Pair(Of T1, T2)
-    Public ReadOnly v1 As T1
-    Public ReadOnly v2 As T2
-    Public Sub New(ByVal v1 As T1, ByVal v2 As T2)
-        Me.v1 = v1
-        Me.v2 = v2
-    End Sub
-    Public Overrides Function Equals(ByVal obj As Object) As Boolean
-        If TypeOf obj Is Pair(Of T1, T2) Then
-            Dim t = CType(obj, Pair(Of T1, T2))
-            Return t.v1.Equals(v1) AndAlso t.v2.Equals(v2)
-        End If
-        Return False
-    End Function
-    Public Overrides Function GetHashCode() As Integer
-        Return v1.GetHashCode Xor v2.GetHashCode
-    End Function
-End Class
-Public Class Triplet(Of T1, T2, T3)
-    Public ReadOnly v1 As T1
-    Public ReadOnly v2 As T2
-    Public ReadOnly v3 As T3
-    Public Sub New(ByVal v1 As T1, ByVal v2 As T2, ByVal v3 As T3)
-        Me.v1 = v1
-        Me.v2 = v2
-        Me.v3 = v3
-    End Sub
-    Public Overrides Function Equals(ByVal obj As Object) As Boolean
-        If TypeOf obj Is Triplet(Of T1, T2, T3) Then
-            Dim t = CType(obj, Triplet(Of T1, T2, T3))
-            Return t.v1.Equals(v1) AndAlso t.v2.Equals(v2) AndAlso t.v3.equals(v3)
-        End If
-        Return False
-    End Function
-    Public Overrides Function GetHashCode() As Integer
-        Return v1.GetHashCode Xor v2.GetHashCode Xor v3.GetHashCode
-    End Function
+    Public ReadOnly Property Value As T
+        Get
+            If Not computed Then
+                computed = True
+                val = func()
+            End If
+            Return val
+        End Get
+    End Property
+    Public Shared Widening Operator CType(ByVal func As Func(Of T)) As ExpensiveValue(Of T)
+        Return New ExpensiveValue(Of T)(func)
+    End Operator
+    Public Shared Widening Operator CType(ByVal val As T) As ExpensiveValue(Of T)
+        Return New ExpensiveValue(Of T)(val)
+    End Operator
 End Class
 
-'Public Class DeadManSwitch(Of T)
-'    Implements IDisposable
+Public Class KeyPair
+    Private ReadOnly _value1 As Byte()
+    Private ReadOnly _value2 As Byte()
+    Public ReadOnly Property Value1 As Byte()
+        Get
+            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Return _value1
+        End Get
+    End Property
+    Public ReadOnly Property Value2 As Byte()
+        Get
+            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Return _value2
+        End Get
+    End Property
 
-'    Private WithEvents timer As Timers.Timer
-'    Private ReadOnly lock As New Object()
-'    Public ReadOnly arg As T
-'    Public Event Fired(ByVal sender As DeadManSwitch(Of T))
+    <ContractInvariantMethod()> Protected Sub Invariant()
+        Contract.Invariant(_value1 IsNot Nothing)
+        Contract.Invariant(_value2 IsNot Nothing)
+    End Sub
 
-'    Public Sub New(ByVal period As TimeSpan, ByVal arg As T)
-'        Me.timer = New Timers.Timer(period.TotalMilliseconds)
-'        Me.arg = arg
-'    End Sub
+    Public Sub New(ByVal value1 As Byte(), ByVal value2 As Byte())
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Me._value1 = value1
+        Me._value2 = value2
+    End Sub
+End Class
 
-'    Public Sub Reset()
-'        SyncLock lock
-'            timer.Stop()
-'            timer.Start()
-'        End SyncLock
-'    End Sub
-'    Public Sub Disarm()
-'        SyncLock lock
-'            timer.Stop()
-'        End SyncLock
-'    End Sub
-'    Private Sub Fire() Handles timer.Elapsed
-'        Disarm()
-'        RaiseEvent Fired(Me)
-'    End Sub
+Public Class LazyList(Of T)
+    Private ReadOnly _value As T
+    Private ReadOnly _next As Func(Of LazyList(Of T))
+    Public Sub New(ByVal value As T, ByVal [next] As Func(Of LazyList(Of T)))
+        Me._value = value
+        Me._next = If([next], Function() Nothing)
+    End Sub
+    Public ReadOnly Property Value As T
+        Get
+            Return _value
+        End Get
+    End Property
+    Public ReadOnly Property [Next] As LazyList(Of T)
+        Get
+            Return _next()
+        End Get
+    End Property
 
-'    Public Sub Dispose() Implements IDisposable.Dispose
-'        timer.Dispose()
-'        GC.SuppressFinalize(Me)
-'    End Sub
-'End Class
+    Public ReadOnly Property Nodes() As IEnumerable(Of LazyList(Of T))
+        Get
+            Return New Enumerable(Of LazyList(Of T))(
+                Function()
+                    Dim cur = Me
+                    Return New Enumerator(Of LazyList(Of T))(
+                        Function(controller)
+                            cur = cur.Next
+                            Return If(cur, controller.Break())
+                        End Function
+                    )
+                End Function
+            )
+        End Get
+    End Property
+    Public ReadOnly Property Values() As IEnumerable(Of T)
+        Get
+            Return From node In Nodes() Select node.Value
+        End Get
+    End Property
+End Class

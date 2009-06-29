@@ -5,22 +5,22 @@
 
 #Region "Hook"
     Private Function f_caption() As IFuture(Of String) Implements IHookable(Of IBotWidget).f_caption
-        Return uiRef.QueueFunc(Function() If(widget Is Nothing, "[No Widget]", "{0} {1}".frmt(widget.type_name, widget.name)))
+        Return uiRef.QueueFunc(Function() If(widget Is Nothing, "[No Widget]", "{0} {1}".frmt(widget.TypeName, widget.Name)))
     End Function
 
-    Public Function f_hook(ByVal widget As IBotWidget) As IFuture Implements IHookable(Of IBotWidget).f_hook
+    Public Function f_hook(ByVal widget As IBotWidget) As IFuture Implements IHookable(Of IBotWidget).f_Hook
         Return uiRef.QueueAction(
             Sub()
                 If Me.widget Is widget Then  Return
 
                 Me.widget = Nothing
-                Me.logControl.setLogger(Nothing, Nothing)
+                Me.logControl.SetLogger(Nothing, Nothing)
                 lstState.Items.Clear()
 
                 Me.widget = widget
                 If widget IsNot Nothing Then
-                    Me.logControl.setLogger(widget.logger(), widget.type_name)
-                    widget.hooked()
+                    Me.logControl.SetLogger(widget.Logger(), widget.TypeName)
+                    widget.Hooked()
                 End If
             End Sub
         )
@@ -28,7 +28,7 @@
 #End Region
 
 #Region "Events"
-    Private Sub c_WidgetAddedStateString(ByVal state As String, ByVal insert_at_top As Boolean) Handles widget.add_state_string
+    Private Sub c_WidgetAddedStateString(ByVal state As String, ByVal insert_at_top As Boolean) Handles widget.AddStateString
         uiRef.QueueAction(
             Sub()
                 If insert_at_top Then
@@ -40,11 +40,11 @@
         )
     End Sub
 
-    Private Sub c_WidgetClearedStateStrings() Handles widget.clear_state_strings
+    Private Sub c_WidgetClearedStateStrings() Handles widget.ClearStateStrings
         uiRef.QueueAction(Sub() lstState.Items.Clear())
     End Sub
 
-    Private Sub c_WidgetRemovedStateString(ByVal state As String) Handles widget.remove_state_string
+    Private Sub c_WidgetRemovedStateString(ByVal state As String) Handles widget.RemoveStateString
         uiRef.QueueAction(Sub() lstState.Items.Remove(state))
     End Sub
 
@@ -52,7 +52,7 @@
         If e.KeyChar <> ChrW(Keys.Enter) Then Return
         If txtCommand.Text = "" Then Return
         e.Handled = True
-        widget.command(txtCommand.Text)
+        widget.ProcessCommand(txtCommand.Text)
         txtCommand.Text = ""
     End Sub
 #End Region

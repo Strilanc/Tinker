@@ -2,25 +2,26 @@ Imports HostBot.Logging
 Imports HostBot.Logging.Logger
 
 Public Class LoggerControl
-    Private callback_mode As New Dictionary(Of LogMessageTypes, CallbackMode)
-    Private callback_colors As New Dictionary(Of LogMessageTypes, Color)
-    Private WithEvents logger As Logger
-    Private blockEvents As Boolean = False
+    Private callbackModeMap As New Dictionary(Of LogMessageTypes, CallbackMode)
+    Private callbackColorMap As New Dictionary(Of LogMessageTypes, Color)
+    Private WithEvents _logger As Logger
+    Private blockEvents As Boolean
     Private ReadOnly uiRef As New InvokedCallQueue(Me)
-    Private last_queued_message As New QueuedMessage(Nothing, Color.Black)
-    Private next_queued_message As QueuedMessage
-    Private num_queued_message As Integer
+    Private lastQueuedMessage As New QueuedMessage(Nothing, Color.Black)
+    Private nextQueuedMessage As QueuedMessage
+    Private numQueuedMessages As Integer
     Private lock As New Object()
-    Private filename As String = Nothing
-    Private filestream As IO.Stream = Nothing
+    Private filename As String
+    Private filestream As IO.Stream
+    Private isLoggingUnexpectedExceptions As Boolean
 
 #Region "Inner"
     Private Class QueuedMessage
         Public ReadOnly message As String
         Public ReadOnly color As Color
         Public ReadOnly replacement As QueuedMessage
-        Public next_message As QueuedMessage
-        Public inserted_char As Integer = 0
+        Public nextMessage As QueuedMessage
+        Public insertPosition As Integer
         Public Sub New(ByVal message As String, ByVal color As Color)
             Me.message = message
             Me.color = color
@@ -42,45 +43,44 @@ Public Class LoggerControl
 #Region "Life"
     Public Sub New()
         InitializeComponent()
-        callback_mode(LogMessageTypes.Typical) = CallbackMode.On
-        callback_mode(LogMessageTypes.Problem) = CallbackMode.On
-        callback_mode(LogMessageTypes.Negative) = CallbackMode.On
-        callback_mode(LogMessageTypes.Positive) = CallbackMode.On
-        callback_mode(LogMessageTypes.DataEvent) = CallbackMode.Off
-        callback_mode(LogMessageTypes.DataParsed) = CallbackMode.Off
-        callback_mode(LogMessageTypes.DataRaw) = CallbackMode.Off
-        callback_colors(LogMessageTypes.Typical) = Color.Black
-        callback_colors(LogMessageTypes.DataEvent) = Color.DarkBlue
-        callback_colors(LogMessageTypes.DataParsed) = Color.DarkBlue
-        callback_colors(LogMessageTypes.DataRaw) = Color.DarkBlue
-        callback_colors(LogMessageTypes.Problem) = Color.Red
-        callback_colors(LogMessageTypes.Positive) = Color.DarkGreen
-        callback_colors(LogMessageTypes.Negative) = Color.DarkOrange
+        callbackModeMap(LogMessageTypes.Typical) = CallbackMode.On
+        callbackModeMap(LogMessageTypes.Problem) = CallbackMode.On
+        callbackModeMap(LogMessageTypes.Negative) = CallbackMode.On
+        callbackModeMap(LogMessageTypes.Positive) = CallbackMode.On
+        callbackModeMap(LogMessageTypes.DataEvent) = CallbackMode.Off
+        callbackModeMap(LogMessageTypes.DataParsed) = CallbackMode.Off
+        callbackModeMap(LogMessageTypes.DataRaw) = CallbackMode.Off
+        callbackColorMap(LogMessageTypes.Typical) = Color.Black
+        callbackColorMap(LogMessageTypes.DataEvent) = Color.DarkBlue
+        callbackColorMap(LogMessageTypes.DataParsed) = Color.DarkBlue
+        callbackColorMap(LogMessageTypes.DataRaw) = Color.DarkBlue
+        callbackColorMap(LogMessageTypes.Problem) = Color.Red
+        callbackColorMap(LogMessageTypes.Positive) = Color.DarkGreen
+        callbackColorMap(LogMessageTypes.Negative) = Color.DarkOrange
     End Sub
 #End Region
 
 #Region "State"
-    Private unex_reged As Boolean = False
-    Public Sub setLogUnexpected(ByVal b As Boolean)
+    Public Sub SetLogUnexpected(ByVal b As Boolean)
         SyncLock lock
-            If b = unex_reged Then Return
-            unex_reged = b
-            If unex_reged Then
-                AddHandler Logging.CaughtUnexpectedException, AddressOf catch_logerror
+            If b = isLoggingUnexpectedExceptions Then Return
+            isLoggingUnexpectedExceptions = b
+            If isLoggingUnexpectedExceptions Then
+                AddHandler Logging.CaughtUnexpectedException, AddressOf c_LoggedUnexpectedException
             Else
-                RemoveHandler Logging.CaughtUnexpectedException, AddressOf catch_logerror
+                RemoveHandler Logging.CaughtUnexpectedException, AddressOf c_LoggedUnexpectedException
             End If
         End SyncLock
     End Sub
 
-    Public Sub setLogger(ByVal logger As Logger,
+    Public Sub SetLogger(ByVal logger As Logger,
                          ByVal name As String,
-                         Optional ByVal log_data_events As CallbackMode = CallbackMode.Unspecified,
-                         Optional ByVal log_data_parsed As CallbackMode = CallbackMode.Unspecified,
-                         Optional ByVal log_data_raw As CallbackMode = CallbackMode.Unspecified)
+                         Optional ByVal dataEventsMode As CallbackMode = CallbackMode.Unspecified,
+                         Optional ByVal parsedDataMode As CallbackMode = CallbackMode.Unspecified,
+                         Optional ByVal rawDataMode As CallbackMode = CallbackMode.Unspecified)
         SyncLock lock
             blockEvents = True
-            If Me.logger IsNot Nothing Then
+            If Me._logger IsNot Nothing Then
                 If filestream IsNot Nothing Then
                     filestream.Dispose()
                     filestream = Nothing
@@ -88,30 +88,30 @@ Public Class LoggerControl
                     tips.SetToolTip(chkSaveFile, "Determines if data is logged to a file.")
                 End If
             End If
-            Me.logger = logger
+            Me._logger = logger
             If logger IsNot Nothing Then
                 filename = name + " " + DateTime.Now().ToString("MMM d, yyyy, HH-mm-ss") + ".txt"
                 tips.SetToolTip(chkSaveFile, "Outputs logged messages to a file." + vbNewLine + _
                                              "Unchecking does not remove messages from the file." + vbNewLine + _
                                              "Current Target File: '(My Documents)\HostBot\Logs\" + filename + "'")
             End If
-            If log_data_events <> CallbackMode.Unspecified Then
-                callback_mode(LogMessageTypes.DataEvent) = log_data_events
+            If dataEventsMode <> CallbackMode.Unspecified Then
+                callbackModeMap(LogMessageTypes.DataEvent) = dataEventsMode
                 sync_to_checkbox(chkDataEvents, LogMessageTypes.DataEvent)
             End If
-            If log_data_parsed <> CallbackMode.Unspecified Then
-                callback_mode(LogMessageTypes.DataParsed) = log_data_parsed
+            If parsedDataMode <> CallbackMode.Unspecified Then
+                callbackModeMap(LogMessageTypes.DataParsed) = parsedDataMode
                 sync_to_checkbox(chkParsedData, LogMessageTypes.DataParsed)
             End If
-            If log_data_raw <> CallbackMode.Unspecified Then
-                callback_mode(LogMessageTypes.DataRaw) = log_data_raw
+            If rawDataMode <> CallbackMode.Unspecified Then
+                callbackModeMap(LogMessageTypes.DataRaw) = rawDataMode
                 sync_to_checkbox(chkRawData, LogMessageTypes.DataRaw)
             End If
             blockEvents = False
         End SyncLock
     End Sub
 
-    Private Function open_save_file() As Boolean
+    Private Function OpenSaveFile() As Boolean
         SyncLock lock
             If filestream IsNot Nothing Then
                 filestream.Dispose()
@@ -120,7 +120,7 @@ Public Class LoggerControl
 
             Dim folder = GetDataFolderPath("Logs")
             If folder Is Nothing Then
-                logMessage("Error opening log folder.", Color.Red)
+                LogMessage("Error opening log folder.", Color.Red)
                 Return False
             End If
 
@@ -128,50 +128,55 @@ Public Class LoggerControl
                 filestream = New IO.FileStream(folder + IO.Path.DirectorySeparatorChar + filename, IO.FileMode.Append, IO.FileAccess.Write, IO.FileShare.Read)
             Catch e As Exception
                 Logging.logUnexpectedException("Error opening log file '" + filename + "' in My Documents\HostBot Logs.", e)
-                logMessage("Error opening log file '" + filename + "' in My Documents\HostBot Logs.", Color.Red)
+                LogMessage("Error opening log file '" + filename + "' in My Documents\HostBot Logs.", Color.Red)
                 Return False
             End Try
-            Dim bb = packString("-------------------------" + Environment.NewLine)
+            Dim bb = ("-------------------------" + Environment.NewLine).ToAscBytes
             filestream.Write(bb, 0, bb.Length)
             Return True
         End SyncLock
     End Function
-    Public Function getLogger() As Logger
-        Return Me.logger
-    End Function
+    Public ReadOnly Property Logger() As Logger
+        Get
+            Return Me._logger
+        End Get
+    End Property
 
-    Public Sub logMessage(ByVal sf As Func(Of String), ByVal c As Color, Optional ByVal file_only As Boolean = False)
-        logMessage(sf(), c, file_only)
+    Public Sub LogMessage(ByVal message As ExpensiveValue(Of String),
+                          ByVal color As Color,
+                          Optional ByVal fileOnly As Boolean = False)
+        LogMessage(message.Value, color, fileOnly)
     End Sub
-    Public Sub logMessage(ByVal s As String, ByVal c As Color, Optional ByVal file_only As Boolean = False)
-        logMessage(New QueuedMessage(s, c), file_only)
+    Public Sub LogMessage(ByVal message As String,
+                          ByVal color As Color,
+                          Optional ByVal fileOnly As Boolean = False)
+        LogMessage(New QueuedMessage(message, color), fileOnly)
     End Sub
-    Private Sub logMessage(ByVal m As QueuedMessage, Optional ByVal file_only As Boolean = False)
+    Private Sub LogMessage(ByVal message As QueuedMessage,
+                           Optional ByVal fileOnly As Boolean = False)
         SyncLock lock
-            If Not file_only Then
-                last_queued_message.next_message = m
-                last_queued_message = m
-                If next_queued_message Is Nothing Then
-                    next_queued_message = m
-                End If
-                num_queued_message += 1
+            If Not fileOnly Then
+                lastQueuedMessage.nextMessage = message
+                lastQueuedMessage = message
+                nextQueuedMessage = If(nextQueuedMessage, message)
+                numQueuedMessages += 1
             End If
             If filestream IsNot Nothing Then
-                Dim bb = packString(("[{0}]: {1}" + Environment.NewLine).frmt(DateTime.Now().ToString("dd/MM/yy HH:mm:ss.ffff"), m.message))
-                filestream.Write(bb, 0, bb.Length)
+                Dim data = (("[{0}]: {1}{2}").frmt(DateTime.Now().ToString("dd/MM/yy HH:mm:ss.ffff"), message.message, Environment.NewLine)).ToAscBytes
+                filestream.Write(data, 0, data.Length)
             End If
         End SyncLock
 
-        If Not file_only Then
-            uiRef.QueueAction(AddressOf emptyQueue_UI)
+        If Not fileOnly Then
+            uiRef.QueueAction(AddressOf EmptyQueue)
         End If
     End Sub
 
-    Private Sub emptyQueue_UI()
+    Private Sub EmptyQueue()
         Try
             If txtLog.SelectionStart <> txtLog.TextLength Then
                 SyncLock lock
-                    lblNumBuffered.Text = "({0} messages buffered)".frmt(num_queued_message)
+                    lblNumBuffered.Text = "({0} messages buffered)".frmt(numQueuedMessages)
                     lblNumBuffered.Visible = True
                     lblBuffering.Visible = True
                 End SyncLock
@@ -181,12 +186,12 @@ Public Class LoggerControl
             'Buffer currently queued messages
             Dim bq As New Queue(Of QueuedMessage)
             SyncLock lock
-                If next_queued_message Is Nothing Then Return
+                If nextQueuedMessage Is Nothing Then Return
                 Do
-                    bq.Enqueue(next_queued_message)
-                    next_queued_message = next_queued_message.next_message
-                    num_queued_message -= 1
-                Loop While next_queued_message IsNot Nothing
+                    bq.Enqueue(nextQueuedMessage)
+                    nextQueuedMessage = nextQueuedMessage.nextMessage
+                    numQueuedMessages -= 1
+                Loop While nextQueuedMessage IsNot Nothing
             End SyncLock
 
             'Log buffered messages
@@ -195,13 +200,13 @@ Public Class LoggerControl
                 Dim n = txtLog.Text.Length
                 Dim e = bq.Dequeue()
                 Dim msg = e.message + Environment.NewLine
-                e.inserted_char = n
+                e.insertPosition = n
 
                 'Combine messages if possible [operations on txtLog are very expensive because they cause redraws, this minimizes that]
                 If e.replacement Is Nothing Then
                     While bq.Count > 0 AndAlso bq.Peek().color = e.color AndAlso bq.Peek.replacement Is Nothing
                         n += e.message.Length + Environment.NewLine.Length
-                        e.inserted_char = n
+                        e.insertPosition = n
                         e = bq.Dequeue()
                         msg += e.message + Environment.NewLine
                     End While
@@ -210,13 +215,13 @@ Public Class LoggerControl
                 'Log message
                 If e.replacement IsNot Nothing Then
                     Dim dn = e.message.Length - e.replacement.message.Length
-                    Dim f = e.replacement.next_message
+                    Dim f = e.replacement.nextMessage
                     While f IsNot Nothing
-                        f.inserted_char += dn
-                        f = f.next_message
+                        f.insertPosition += dn
+                        f = f.nextMessage
                     End While
-                    e.inserted_char = e.replacement.inserted_char
-                    txtLog.Select(e.replacement.inserted_char, e.replacement.message.Length)
+                    e.insertPosition = e.replacement.insertPosition
+                    txtLog.Select(e.replacement.insertPosition, e.replacement.message.Length)
                     txtLog.SelectionColor = e.color
                     txtLog.SelectedText = e.message
                 Else
@@ -231,38 +236,40 @@ Public Class LoggerControl
         Catch e As ObjectDisposedException
             'happens sometimes when control disposed
         Catch e As Exception
-            Logging.logUnexpectedException("Exception rose post LoggerControl.emptyQueue", e)
+            Logging.LogUnexpectedException("Exception rose post LoggerControl.emptyQueue", e)
         End Try
     End Sub
-    Private Sub logFutureMessage(ByVal placeholder As String, ByVal fout As IFuture(Of Outcome))
-        SyncLock lock
-            Dim m = New QueuedMessage(placeholder, Color.DarkGoldenrod)
-            logMessage(m)
-            FutureSub.Call(
-                fout,
-                Sub(out)
-                    SyncLock lock
-                        Dim color = callback_colors(If(out.succeeded, LogMessageTypes.Positive, LogMessageTypes.Problem))
-                        logMessage(New QueuedMessage(out.message, color, m))
-                    End SyncLock
-                End Sub
-            )
-        End SyncLock
+    Private Sub LogFutureMessage(ByVal placeholder As String,
+                                 ByVal message As IFuture(Of Outcome))
+        Dim m = New QueuedMessage(placeholder, Color.DarkGoldenrod)
+        LogMessage(m)
+        message.CallWhenValueReady(
+            Sub(out)
+                                       SyncLock lock
+                                           Dim color = callbackColorMap(If(out.succeeded, LogMessageTypes.Positive, LogMessageTypes.Problem))
+                                           LogMessage(New QueuedMessage(out.Message, color, m))
+                                       End SyncLock
+                                   End Sub
+        )
     End Sub
 #End Region
 
 #Region "Log Events"
-    Private Sub catch_log(ByVal type As LogMessageTypes, ByVal message As Func(Of String)) Handles logger.LoggedMessage
+    Private Sub c_LoggedMessage(ByVal type As LogMessageTypes, ByVal message As ExpensiveValue(Of String)) Handles _logger.LoggedMessage
+        Dim color As Color
+        Dim fileOnly As Boolean
         SyncLock lock
-            If callback_mode(type) = CallbackMode.Off Then Return
-            logMessage(message, callback_colors(type), callback_mode(type) = CallbackMode.File)
+            If callbackModeMap(type) = CallbackMode.Off Then Return
+            color = callbackColorMap(type)
+            fileOnly = callbackModeMap(type) = CallbackMode.File
         End SyncLock
+        LogMessage(message, color, fileOnly)
     End Sub
-    Private Sub catch_log_future(ByVal placeholder As String, ByVal out As IFuture(Of Outcome)) Handles logger.LoggedFutureMessage
-        uiRef.QueueAction(Sub() logFutureMessage(placeholder, out))
+    Private Sub c_LoggedFutureMessage(ByVal placeholder As String, ByVal out As IFuture(Of Outcome)) Handles _logger.LoggedFutureMessage
+        uiRef.QueueAction(Sub() LogFutureMessage(placeholder, out))
     End Sub
-    Private Sub catch_logerror(ByVal context As String, ByVal e As Exception)
-        logMessage(GenerateUnexpectedExceptionDescription(context, e), Color.Red)
+    Private Sub c_LoggedUnexpectedException(ByVal context As String, ByVal e As Exception)
+        LogMessage(GenerateUnexpectedExceptionDescription(context, e), Color.Red)
     End Sub
 #End Region
 
@@ -280,15 +287,15 @@ Public Class LoggerControl
     Private Sub sync_from_checkbox(ByVal c As CheckBox, ByVal e As LogMessageTypes)
         SyncLock lock
             Select Case c.CheckState
-                Case CheckState.Checked : callback_mode(e) = CallbackMode.On
-                Case CheckState.Indeterminate : callback_mode(e) = CallbackMode.File
-                Case CheckState.Unchecked : callback_mode(e) = CallbackMode.Off
+                Case CheckState.Checked : callbackModeMap(e) = CallbackMode.On
+                Case CheckState.Indeterminate : callbackModeMap(e) = CallbackMode.File
+                Case CheckState.Unchecked : callbackModeMap(e) = CallbackMode.Off
             End Select
         End SyncLock
     End Sub
     Private Sub sync_to_checkbox(ByVal c As CheckBox, ByVal e As LogMessageTypes)
         SyncLock lock
-            Select Case callback_mode(e)
+            Select Case callbackModeMap(e)
                 Case CallbackMode.On : c.CheckState = CheckState.Checked
                 Case CallbackMode.File : c.CheckState = CheckState.Indeterminate
                 Case CallbackMode.Off : c.CheckState = CheckState.Unchecked
@@ -299,7 +306,7 @@ Public Class LoggerControl
     Private Sub chkSaveFile_CheckStateChanged() Handles chkSaveFile.CheckStateChanged
         SyncLock lock
             If chkSaveFile.Checked Then
-                If Not open_save_file() Then
+                If Not OpenSaveFile() Then
                     chkSaveFile.Checked = False
                     Return
                 End If
@@ -317,8 +324,8 @@ Public Class LoggerControl
     End Sub
 
     Private Sub LoggerControl_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
-        setLogger(Nothing, Nothing)
-        setLogUnexpected(False)
+        SetLogger(Nothing, Nothing)
+        SetLogUnexpected(False)
     End Sub
 
     Private Sub txtLog_SelectionChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles txtLog.SelectionChanged
@@ -326,8 +333,8 @@ Public Class LoggerControl
             lblBuffering.Visible = False
             lblNumBuffered.Visible = False
             SyncLock lock
-                If num_queued_message > 0 Then
-                    uiRef.QueueAction(AddressOf emptyQueue_UI)
+                If numQueuedMessages > 0 Then
+                    uiRef.QueueAction(AddressOf EmptyQueue)
                 End If
             End SyncLock
         End If

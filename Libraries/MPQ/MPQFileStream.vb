@@ -1,8 +1,8 @@
-﻿Imports HostBot.MPQ.Crypt
-Imports HostBot.MPQ.MPQFileTable
-Imports HostBot.MPQ.MPQFileTable.FileEntry
+﻿Imports HostBot.Mpq.Crypt
+Imports HostBot.Mpq.MpqFileTable
+Imports HostBot.Mpq.MpqFileTable.FileEntry
 
-Namespace MPQ
+Namespace Mpq
     ''' <summary>
     ''' Exposes an IO.Stream around a file stored in an MPQ Archive.
     ''' </summary>
@@ -29,14 +29,14 @@ Namespace MPQ
     ''' along with this program; if not, write to the Free Software
     ''' Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
     ''' </copyright>
-    Public Class MPQFileStream
+    Public Class MpqFileStream
         Inherits IO.Stream
 
         'Init State
-        Public ReadOnly mpqa As MPQArchive 'The MPQ archive storing this file
+        Public ReadOnly archive As MpqArchive 'The MPQ archive storing this file
         Public ReadOnly fileTableEntry As FileEntry 'The file's entry in the MPQ archive's file table
         Public ReadOnly numBlocks As UInteger 'The number of blocks the file is made up of
-        Public ReadOnly decryptionKey As UInteger 'Computed from the filename or extracted from known block offset table value
+        Public ReadOnly decryptionKey As ModInt32 'Computed from the filename or extracted from known block offset table value
         Public ReadOnly canDecrypt As Boolean = False 'Indicates whether or not the decryptionKey is known
         Private ReadOnly blockOffsetTable() As Integer = Nothing 'Starts/ends of the file blocks (stored in offset table if encrypted or compressed)
         Private ReadOnly baseStream As IO.Stream 'stream from mpq file
@@ -50,38 +50,29 @@ Namespace MPQ
             'listed in order of compression if multiple compressions applied
             IMA_ADPCM_MONO = &H40
             IMA_ADPCM_STEREO = &H80
-            HUFFMAN_ENCODED = &H1
-            ZLIB_DEFLATED = &H2
-            PKWARE_IMPLODED = &H8
-            BZIP2 = &H10
+            Huffman = &H1
+            ZLibDeflate = &H2
+            PkWareImplode = &H8
+            BZip2 = &H10
         End Enum
 
-#Region "Life"
-        '''<summary>Creates a stream for the file with the given name stored in the given archive.</summary>
-        Public Sub New(ByVal parent As MPQArchive, ByVal fileName As String)
-            Me.new(parent, parent.hashTable.hash(fileName).fileIndex, fileName)
-        End Sub
-        '''<summary>Creates a stream for the file with the given index stored in the given archive.</summary>
-        Public Sub New(ByVal parent As MPQArchive, ByVal fileIndex As UInteger)
-            Me.new(parent, fileIndex, Nothing)
-        End Sub
         '''<summary>Creates a stream for the file with the given index, and uses the given name for decryption.</summary>
         '''<remarks>Can still compute the decryption key if the blockOffsetTable is stored in the file.</remarks>
-        Private Sub New(ByVal mpqa As MPQArchive, ByVal fileIndex As UInteger, ByVal filename As String)
-            If fileIndex >= mpqa.fileTable.fileEntries.Count Then Throw New IO.IOException("File ID not in File Table")
-
-            Me.mpqa = mpqa
-            Me.baseStream = New IO.BufferedStream(mpqa.streamFactory.make())
-            fileTableEntry = mpqa.fileTable.fileEntries(CInt(fileIndex))
-            numBlocks = CUInt(Math.Ceiling(fileTableEntry.actualSize / mpqa.fileBlockSize))
+        Public Sub New(ByVal archive As MpqArchive,
+                       ByVal fileTableEntry As MpqFileTable.FileEntry,
+                       Optional ByVal knownFilename As String = Nothing)
+            Me.fileTableEntry = fileTableEntry
+            Me.archive = archive
+            Me.baseStream = New IO.BufferedStream(archive.streamFactory())
+            numBlocks = CUInt(Math.Ceiling(fileTableEntry.actualSize / archive.fileBlockSize))
             Dim might_be_past_file = False
 
             'Sanity check
             If (fileTableEntry.flags And FILE_FLAGS.EXISTS) = 0 Then
                 Throw New IO.IOException("File ID is in File Table, but is flagged as does not exist.")
-            ElseIf fileTableEntry.filePosition > mpqa.archiveSize + mpqa.filePosition Then
+            ElseIf fileTableEntry.filePosition > archive.archiveSize + archive.filePosition Then
                 Throw New IO.IOException("File starts past the end of MPQ Archive")
-            ElseIf fileTableEntry.filePosition + fileTableEntry.compressedSize > mpqa.archiveSize + mpqa.filePosition Then
+            ElseIf fileTableEntry.filePosition + fileTableEntry.compressedSize > archive.archiveSize + archive.filePosition Then
                 '[File seems to end past end of mpq archive, but it may have a negative offset table]
                 If (fileTableEntry.flags And FILE_FLAGS.CONTINUOUS) <> 0 Or (fileTableEntry.flags And (FILE_FLAGS.COMPRESSED Or FILE_FLAGS.ENCRYPTED)) = 0 Then
                     '[No offset table]
@@ -93,9 +84,9 @@ Namespace MPQ
             End If
 
             'Check if filename supplied
-            If filename IsNot Nothing Then
+            If knownFilename IsNot Nothing Then
                 canDecrypt = True
-                decryptionKey = getFileDecryptionKey(filename, fileTableEntry, mpqa)
+                decryptionKey = GetFileDecryptionKey(knownFilename, fileTableEntry, archive)
             End If
 
             'Read offset table
@@ -121,12 +112,12 @@ Namespace MPQ
                     If (fileTableEntry.flags And FILE_FLAGS.ENCRYPTED) <> 0 Then
                         If Not canDecrypt Then
                             'try to decrypt using known plaintext attack
-                            decryptionKey = getFileDecryptionKey(baseStream, tableSize)
+                            decryptionKey = BreakFileDecryptionKey(baseStream, tableSize)
                             canDecrypt = True
-                            decryptionKey += CByte(1) 'the key for a block is offset by the block number (offset table is considered block -1)
+                            decryptionKey += 1 'the key for a block is offset by the block number (offset table is considered block -1)
                         End If
                         'wrap
-                        blockStream = New Cypherer(decryptionKey - CUInt(1), Cypherer.modes.decrypt).streamThroughFrom(blockStream)
+                        blockStream = New Cypherer(decryptionKey - 1, Cypherer.modes.decrypt).ConvertReadOnlyStream(blockStream)
                     End If
 
                     'Read
@@ -135,7 +126,7 @@ Namespace MPQ
                         For block_index = 0 To blockOffsetTable.Length - 1
                             blockOffsetTable(block_index) = .ReadInt32()
                             If might_be_past_file Then
-                                If CLng(fileTableEntry.filePosition) + blockOffsetTable(block_index) > mpqa.archiveSize Then
+                                If CLng(fileTableEntry.filePosition) + blockOffsetTable(block_index) > archive.archiveSize Then
                                     Throw New IO.InvalidDataException("File passes the end of MPQ Archive")
                                 End If
                             End If
@@ -144,13 +135,11 @@ Namespace MPQ
                 End If
             End If
         End Sub
-#End Region
 
-#Region "Stream"
         '''<summary>Seeks to the start of a block and preps for reading it</summary>
         Private Sub gotoBlock(ByVal blockIndex As UInteger)
             'Seek
-            logical_position = blockIndex * mpqa.fileBlockSize
+            logical_position = blockIndex * archive.fileBlockSize
             Dim block_position_offset As Long
             If (fileTableEntry.flags And FILE_FLAGS.CONTINUOUS) <> 0 Then
                 If blockIndex > 0 Then Throw New IO.IOException("Attempted to read a second block of a continuous file (should only have 1 block).")
@@ -158,16 +147,16 @@ Namespace MPQ
             ElseIf blockOffsetTable IsNot Nothing Then
                 block_position_offset = blockOffsetTable(CInt(blockIndex))
             Else
-                block_position_offset = blockIndex * mpqa.fileBlockSize
+                block_position_offset = blockIndex * archive.fileBlockSize
             End If
             baseStream.Seek(block_position_offset + fileTableEntry.filePosition, IO.SeekOrigin.Begin)
             blockStream = baseStream
-            numBlockBytesLeft = mpqa.fileBlockSize
+            numBlockBytesLeft = archive.fileBlockSize
 
             'Decryption layer
             If (fileTableEntry.flags And FILE_FLAGS.ENCRYPTED) <> 0 Then
                 If Not canDecrypt Then Throw New IO.IOException("Couldn't decrypt MPQ block data.")
-                blockStream = New MPQ.Crypt.Cypherer(decryptionKey + blockIndex, Cypherer.modes.decrypt).streamThroughFrom(blockStream)
+                blockStream = New Mpq.Crypt.Cypherer(decryptionKey + blockIndex, Cypherer.modes.decrypt).ConvertReadOnlyStream(blockStream)
             End If
 
             'Decompression layer
@@ -176,41 +165,37 @@ Namespace MPQ
                     Dim header = CType(blockStream.ReadByte(), COMPRESSION_TYPES)
 
                     'BZIP2
-                    If (header And COMPRESSION_TYPES.BZIP2) <> 0 Then
+                    If (header And COMPRESSION_TYPES.BZip2) <> 0 Then
                         Throw New NotSupportedException("Don't know how to decompress BZIP2.")
                     End If
 
                     'PKWARE_IMPLODED
-                    If (header And COMPRESSION_TYPES.PKWARE_IMPLODED) <> 0 Then
-                        blockStream = New MPQ.Compression.PkWare.Decoder().streamThroughFrom(blockStream)
-                        header = header And Not COMPRESSION_TYPES.PKWARE_IMPLODED
+                    If (header And COMPRESSION_TYPES.PkWareImplode) <> 0 Then
+                        blockStream = New Mpq.Compression.PkWare.Decoder().ConvertReadOnlyStream(blockStream)
+                        header = header And Not COMPRESSION_TYPES.PkWareImplode
                     End If
 
                     'DEFLATE
-                    If (header And COMPRESSION_TYPES.ZLIB_DEFLATED) <> 0 Then
-                        '[skip header from old zlib format]
-                        blockStream.ReadByte()
-                        blockStream.ReadByte()
-
-                        blockStream = New IO.Compression.DeflateStream(blockStream, IO.Compression.CompressionMode.Decompress)
-                        header = header And Not COMPRESSION_TYPES.ZLIB_DEFLATED
+                    If (header And COMPRESSION_TYPES.ZLibDeflate) <> 0 Then
+                        blockStream = New ZLibStream(blockStream, IO.Compression.CompressionMode.Decompress)
+                        header = header And Not COMPRESSION_TYPES.ZLibDeflate
                     End If
 
                     'HUFFMAN
-                    If (header And COMPRESSION_TYPES.HUFFMAN_ENCODED) <> 0 Then
-                        blockStream = New MPQ.Compression.Huffman.Decoder().streamThroughFrom(blockStream)
-                        header = header And Not COMPRESSION_TYPES.HUFFMAN_ENCODED
+                    If (header And COMPRESSION_TYPES.Huffman) <> 0 Then
+                        blockStream = New Mpq.Compression.Huffman.Decoder().ConvertReadOnlyStream(blockStream)
+                        header = header And Not COMPRESSION_TYPES.Huffman
                     End If
 
                     'STEREO WAVE
                     If (header And COMPRESSION_TYPES.IMA_ADPCM_STEREO) <> 0 Then
-                        blockStream = New MPQ.Compression.Wave.Decoder(2).streamThroughFrom(blockStream)
+                        blockStream = New Mpq.Compression.Wave.Decoder(2).ConvertReadOnlyStream(blockStream)
                         header = header And Not COMPRESSION_TYPES.IMA_ADPCM_STEREO
                     End If
 
                     'MONO WAVE
                     If (header And COMPRESSION_TYPES.IMA_ADPCM_MONO) <> 0 Then
-                        blockStream = New MPQ.Compression.Wave.Decoder(1).streamThroughFrom(blockStream)
+                        blockStream = New Mpq.Compression.Wave.Decoder(1).ConvertReadOnlyStream(blockStream)
                         header = header And Not COMPRESSION_TYPES.IMA_ADPCM_MONO
                     End If
 
@@ -238,8 +223,8 @@ Namespace MPQ
                 If value < 0 Then Throw New InvalidOperationException("Position can't go before beginning of stream.")
                 If value > Length Then Throw New InvalidOperationException("Position can't go past end of stream.")
                 'Go to position within block
-                gotoBlock(CUInt(value \ mpqa.fileBlockSize))
-                Dim offset = CInt(value Mod mpqa.fileBlockSize)
+                gotoBlock(CUInt(value \ archive.fileBlockSize))
+                Dim offset = CInt(value Mod archive.fileBlockSize)
                 If offset <> 0 Then
                     If blockStream.CanSeek Then
                         blockStream.Seek(offset, IO.SeekOrigin.Current)
@@ -262,7 +247,7 @@ Namespace MPQ
             While numCopied < count And Position < Length
                 'Go to next block when the current one finishes
                 If numBlockBytesLeft <= 0 Then
-                    gotoBlock(CUInt(Position \ mpqa.fileBlockSize))
+                    gotoBlock(CUInt(Position \ archive.fileBlockSize))
                     If (fileTableEntry.flags And FILE_FLAGS.CONTINUOUS) <> 0 Then numBlockBytesLeft = CUInt(Length - Position)
                 End If
 
@@ -292,6 +277,8 @@ Namespace MPQ
                 Return True
             End Get
         End Property
+
+#Region "Not Supported"
         Public Overrides ReadOnly Property CanWrite() As Boolean
             Get
                 Return False

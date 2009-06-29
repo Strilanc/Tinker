@@ -3,7 +3,7 @@ Public MustInherit Class StreamWrapper
     Inherits IO.Stream
     Protected ReadOnly substream As IO.Stream
     Public Sub New(ByVal substream As IO.Stream)
-        If Not (substream IsNot Nothing) Then Throw New ArgumentException()
+        Contract.Requires(substream IsNot Nothing)
         Me.substream = substream
     End Sub
     Public Overrides ReadOnly Property CanRead() As Boolean
@@ -87,6 +87,7 @@ Public MustInherit Class WrappedConversionStream
     Inherits StreamWrapper
     Public Sub New(ByVal substream As IO.Stream)
         MyBase.New(substream)
+        Contract.Requires(substream IsNot Nothing)
     End Sub
     Public NotOverridable Overrides Function Seek(ByVal offset As Long, ByVal origin As System.IO.SeekOrigin) As Long
         Throw New InvalidOperationException(Me.GetType.Name + " doesn't allow seeking.")
@@ -138,6 +139,7 @@ Public MustInherit Class WrappedReadOnlyConversionStream
     Inherits WrappedConversionStream
     Public Sub New(ByVal substream As IO.Stream)
         MyBase.New(substream)
+        Contract.Requires(substream IsNot Nothing)
     End Sub
     Public NotOverridable Overrides ReadOnly Property CanWrite() As Boolean
         Get
@@ -162,6 +164,7 @@ Public MustInherit Class WrappedWriteOnlyConversionStream
     Inherits WrappedConversionStream
     Public Sub New(ByVal substream As IO.Stream)
         MyBase.New(substream)
+        Contract.Requires(substream IsNot Nothing)
     End Sub
     Public NotOverridable Overrides ReadOnly Property CanRead() As Boolean
         Get
@@ -263,4 +266,32 @@ Public Class ProducerConsumerStream
         Throw New NotSupportedException()
     End Function
 #End Region
+End Class
+
+Public Class ZLibStream
+    Inherits StreamWrapper
+
+    Private Shared Function wrap(ByVal stream As IO.Stream,
+                                 ByVal mode As IO.Compression.CompressionMode,
+                                 ByVal leaveOpen As Boolean) As IO.Stream
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IO.Stream)() IsNot Nothing)
+        Select Case mode
+            Case IO.Compression.CompressionMode.Decompress
+                stream.ReadByte()
+                stream.ReadByte()
+            Case IO.Compression.CompressionMode.Compress
+                stream.WriteByte(120)
+                stream.WriteByte(156)
+            Case Else
+                Throw New UnreachableException()
+        End Select
+        Return New IO.Compression.DeflateStream(stream, mode, leaveOpen)
+    End Function
+    Public Sub New(ByVal substream As IO.Stream,
+                   ByVal mode As IO.Compression.CompressionMode,
+                   Optional ByVal leaveOpen As Boolean = False)
+        MyBase.New(wrap(substream, mode, leaveOpen))
+        Contract.Requires(substream IsNot Nothing)
+    End Sub
 End Class

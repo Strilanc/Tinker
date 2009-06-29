@@ -19,7 +19,7 @@ Partial Class BnetClientControl
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.lstUsers = New System.Windows.Forms.ListBox
+        Me.lstState = New System.Windows.Forms.ListBox
         Me.txtCommand = New System.Windows.Forms.TextBox
         Me.txtTalk = New System.Windows.Forms.TextBox
         Me.logClient = New HostBot.LoggerControl
@@ -27,14 +27,14 @@ Partial Class BnetClientControl
         '
         'lstUsers
         '
-        Me.lstUsers.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+        Me.lstState.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
                     Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.lstUsers.FormattingEnabled = True
-        Me.lstUsers.IntegralHeight = False
-        Me.lstUsers.Location = New System.Drawing.Point(593, 0)
-        Me.lstUsers.Name = "lstUsers"
-        Me.lstUsers.Size = New System.Drawing.Size(147, 389)
-        Me.lstUsers.TabIndex = 2
+        Me.lstState.FormattingEnabled = True
+        Me.lstState.IntegralHeight = False
+        Me.lstState.Location = New System.Drawing.Point(593, 0)
+        Me.lstState.Name = "lstUsers"
+        Me.lstState.Size = New System.Drawing.Size(147, 389)
+        Me.lstState.TabIndex = 2
         '
         'txtCommand
         '
@@ -72,14 +72,14 @@ Partial Class BnetClientControl
         Me.Controls.Add(Me.txtTalk)
         Me.Controls.Add(Me.txtCommand)
         Me.Controls.Add(Me.logClient)
-        Me.Controls.Add(Me.lstUsers)
+        Me.Controls.Add(Me.lstState)
         Me.Name = "BnetClientControl"
         Me.Size = New System.Drawing.Size(740, 415)
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
     End Sub
-    Friend WithEvents lstUsers As System.Windows.Forms.ListBox
+    Friend WithEvents lstState As System.Windows.Forms.ListBox
     Friend WithEvents txtCommand As System.Windows.Forms.TextBox
     Friend WithEvents logClient As HostBot.LoggerControl
     Friend WithEvents txtTalk As System.Windows.Forms.TextBox

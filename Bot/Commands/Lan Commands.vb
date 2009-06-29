@@ -8,8 +8,8 @@ Namespace Commands.Specializations
         Inherits UICommandSet(Of W3LanAdvertiser)
 
         Public Sub New()
-            add_subcommand(New com_Add)
-            add_subcommand(New com_Remove)
+            AddCommand(New com_Add)
+            AddCommand(New com_Remove)
         End Sub
 
         '''<summary>Starts advertising a game.</summary>
@@ -22,11 +22,14 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim map_out = W3Map.FromArgument(arguments(1))
-                If Not map_out.succeeded Then Return futurize(Of Outcome)(map_out)
+                If Not map_out.succeeded Then Return map_out.Outcome.Futurize
                 Dim map = map_out.val
                 Dim name = arguments(0)
-                Dim id = target.add_game(name, map, New W3Map.MapSettings(arguments))
-                Return futurize(success("Started advertising game '{0}' for map '{1}'.".frmt(name, map.relative_path, id)))
+                Dim id = target.AddGame(New W3GameHeader(arguments(0),
+                                                         My.Resources.ProgramName,
+                                                         New W3MapSettings(arguments, map),
+                                                         0, 0, 0, arguments, map.numPlayerSlots))
+                Return success("Started advertising game '{0}' for map '{1}'.".frmt(name, map.RelativePath, id)).Futurize
             End Function
         End Class
 
@@ -41,12 +44,12 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim id As UInteger
                 If Not UInteger.TryParse(arguments(0), id) Then
-                    Return futurize(failure("Invalid game id."))
+                    Return failure("Invalid game id.").Futurize
                 End If
-                If target.remove_game(id) Then
-                    Return futurize(success("Removed game with id " + id.ToString))
+                If target.RemoveGame(id) Then
+                    Return success("Removed game with id " + id.ToString).Futurize
                 Else
-                    Return futurize(failure("Invalid game id."))
+                    Return failure("Invalid game id.").Futurize
                 End If
             End Function
         End Class

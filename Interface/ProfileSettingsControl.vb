@@ -18,7 +18,7 @@
         numLocalPort.Value = p.listen_port
         txtInitialChannel.Text = p.initial_channel
         txtCKLServer.Text = p.CKL_server
-        cboLanHost.Text = p.lan_host
+        cboLanHost.Text = p.lanHost
 
         gridUsers.Rows.Clear()
         For Each user As BotUser In p.users.users
@@ -41,7 +41,7 @@
         p.listen_port = CUShort(numLocalPort.Value)
         p.initial_channel = txtInitialChannel.Text
         p.CKL_server = txtCKLServer.Text
-        p.lan_host = cboLanHost.Text
+        p.lanHost = cboLanHost.Text
 
         Dim existing_users As New List(Of String)
         For i = 0 To gridUsers.RowCount - 1
@@ -49,13 +49,13 @@
                 If .Cells(0).Value Is Nothing Then Continue For
                 Dim s = CStr(.Cells(0).Value)
                 existing_users.Add(s)
-                p.users.update_user(New BotUser( _
+                p.users.UpdateUser(New BotUser( _
                             s,
                             CStr(.Cells(1).Value),
                             CStr(.Cells(2).Value)))
             End With
         Next i
-        p.users.remove_other_users(existing_users)
+        p.users.RemoveOtherUsers(existing_users)
     End Sub
 
     Private Sub btnDeleteProfile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnDeleteProfile.Click

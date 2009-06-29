@@ -9,101 +9,115 @@ End Enum
 
 Public Module Pack
     <Extension()> Public Function ToULong(ByVal data As IEnumerable(Of Byte),
-                                          ByVal byte_order As ByteOrder) As ULong
-        If data Is Nothing Then Throw New ArgumentNullException("data")
+                                          ByVal byteOrder As ByteOrder) As ULong
+        Contract.Requires(data IsNot Nothing)
         Dim val As ULong
-        For Each b In If(byte_order = ByteOrder.LittleEndian, data.Reverse, data)
+        Select Case byteOrder
+            Case ByteOrder.LittleEndian
+                data = data.Reverse
+            Case ByteOrder.BigEndian
+                'no change required
+            Case Else
+                Throw New ArgumentException("Unrecognized byte order.")
+        End Select
+        For Each b In data
             val <<= 8
             val = val Or b
         Next b
         Return val
     End Function
     <Extension()> Public Function ToUInteger(ByVal data As IEnumerable(Of Byte),
-                                             ByVal byte_order As ByteOrder) As UInteger
-        Return CUInt(ToULong(data, byte_order))
+                                             ByVal byteOrder As ByteOrder) As UInteger
+        Contract.Requires(data IsNot Nothing)
+        Return CUInt(ToULong(data, byteOrder))
     End Function
     <Extension()> Public Function bytes(ByVal n As UShort,
-                                        ByVal byte_order As ByteOrder,
-                                        Optional ByVal min_size As Integer = 2) As Byte()
-        Return CULng(n).bytes(byte_order, min_size)
+                                        ByVal byteOrder As ByteOrder,
+                                        Optional ByVal size As Integer = 2) As Byte()
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Return CULng(n).bytes(byteOrder, size)
     End Function
     <Extension()> Public Function bytes(ByVal n As UInteger,
                                         ByVal byte_order As ByteOrder,
-                                        Optional ByVal min_size As Integer = 4) As Byte()
-        Return CULng(n).bytes(byte_order, min_size)
+                                        Optional ByVal size As Integer = 4) As Byte()
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Return CULng(n).bytes(byte_order, size)
     End Function
     <Extension()> Public Function bytes(ByVal n As ULong,
-                                        ByVal byte_order As ByteOrder,
-                                        Optional ByVal min_size As Integer = 8) As Byte()
-        Dim data As New List(Of Byte)
-        Do Until n = 0 And data.Count >= min_size
-            data.Add(CByte(n And CULng(&HFF)))
+                                        ByVal byteOrder As ByteOrder,
+                                        Optional ByVal size As Integer = 8) As Byte()
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Dim data(0 To size - 1) As Byte
+        For i = 0 To size - 1
+            data(i) = CByte(n And CULng(&HFF))
             n >>= 8
-        Loop
-        Select Case byte_order
+        Next i
+        Select Case byteOrder
             Case ByteOrder.BigEndian
-                Return data.ToArray.reversed
+                Return data.Reverse.ToArray
             Case ByteOrder.LittleEndian
-                Return data.ToArray
+                Return data
             Case Else
-                Throw New ArgumentException("Unreocgnized byte order.")
+                Throw New ArgumentException("Unrecognized byte order.")
         End Select
     End Function
 
-    Public Function packString(ByVal s As String,
-                               Optional ByVal nullTerminate As Boolean = False) As Byte()
-        If Not (s IsNot Nothing) Then Throw New ArgumentException()
-
-
-        Dim size = s.Length + If(nullTerminate, 1, 0)
-        Dim buffer(0 To size - 1) As Byte
-        For i = 0 To s.Length - 1
-            buffer(i) = CByte(Asc(s(i)))
-        Next i
-        Return buffer
+    <Extension()> Public Function ToAscBytes(ByVal data As String,
+                                             Optional ByVal nullTerminate As Boolean = False) As Byte()
+        Contract.Requires(data IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Dim bytes As New List(Of Byte)(data.Length + 1)
+        For Each c In data
+            bytes.Add(CByte(Asc(c)))
+        Next
+        If nullTerminate Then bytes.Add(0)
+        Return bytes.ToArray()
     End Function
-    <Extension()> Public Function toChrString(ByVal data As IEnumerable(Of Byte),
-                                 Optional ByVal null_terminated As Boolean = True) As String
-        If data Is Nothing Then Return ""
-
-        Dim chars As New List(Of Char)
-        For Each b In data
-            If b = 0 AndAlso null_terminated Then Exit For
-            chars.Add(Chr(b))
-        Next b
-
-        Return chars.ToArray
-    End Function
-
-    Public Function unpackHexString(ByVal data As IEnumerable(Of Byte),
-                                    Optional ByVal minByteLength As Byte = 2,
-                                    Optional ByVal separator As String = " ") As String
-
-        If data Is Nothing Then Return ""
+    <Extension()> Public Function ParseChrString(ByVal data As IEnumerable(Of Byte),
+                                                 ByVal nullTerminated As Boolean) As String
+        Contract.Requires(data IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
 
         Dim s As New System.Text.StringBuilder()
         For Each b In data
-            s.Append(separator)
+            If b = 0 AndAlso nullTerminated Then Exit For
+            s.Append(Chr(b))
+        Next b
+
+        Return s.ToString
+    End Function
+
+    <Extension()> Public Function ToHexString(ByVal data As IEnumerable(Of Byte),
+                                              Optional ByVal minByteLength As Byte = 2,
+                                              Optional ByVal separator As String = " ") As String
+        Contract.Requires(data IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+
+        Dim s As New System.Text.StringBuilder()
+        For Each b In data
+            If s.Length > 0 Then s.Append(separator)
             Dim h = Hex(b)
             For i = 1 To minByteLength - h.Length
                 s.Append("0"c)
             Next i
             s.Append(h)
         Next b
-        If s.Length = 0 Then Return ""
-        Return s.ToString(1, s.Length - 1)
+        Return s.ToString()
     End Function
-    Public Function packHexString(ByVal s As String) As Byte()
-        If Not (s IsNot Nothing) Then Throw New ArgumentException()
-        Dim words = s.Split(" "c)
+    <Extension()> Public Function FromHexStringToBytes(ByVal data As String) As Byte()
+        Contract.Requires(data IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+
+        Dim words = data.Split(" "c)
         Dim bb(0 To words.Length - 1) As Byte
         For i = 0 To words.Length - 1
-            bb(i) = CByte(dehex(words(i)))
+            bb(i) = CByte(dehex(words(i), ByteOrder.BigEndian))
         Next i
         Return bb
     End Function
 
-    Public Function bin(ByVal i As UInteger, Optional ByVal minLength As Integer = 8) As String
+    Public Function bin(ByVal i As ULong, Optional ByVal minLength As Integer = 8) As String
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         bin = ""
         While i > 0 Or minLength > 0
             bin = (i Mod 2).ToString() + bin
@@ -111,18 +125,56 @@ Public Module Pack
             minLength -= 1
         End While
     End Function
-    Public Function dehex(ByVal s As String) As Long
-        Dim c As String
-        If s.Length = 0 Then Return 0
-        If s.Chars(0) = "-" Then Return -dehex(s.Substring(1))
-        For i As Integer = 0 To s.Length - 1
-            c = s.Substring(i, 1).ToUpper()
+    Public Function udehex(ByVal chars As IEnumerable(Of Char), ByVal byteOrder As ByteOrder) As ULong
+        Contract.Requires(chars IsNot Nothing)
+        Select Case byteOrder
+            Case HostBot.ByteOrder.LittleEndian
+                chars = chars.Reverse()
+            Case HostBot.ByteOrder.BigEndian
+            Case Else
+                Throw New UnreachableException()
+        End Select
+
+        Dim val As ULong = 0
+        For Each c In chars
+            c = Char.ToUpper(c)
+            val <<= 4
             Select Case c
-                Case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"
-                    dehex = dehex * 16 + Asc(c) - Asc("0")
-                Case "A", "B", "C", "D", "E", "F"
-                    dehex = dehex * 16 + Asc(c) - Asc("A") + 10
+                Case "0"c, "1"c, "2"c, "3"c, "4"c, "5"c, "6"c, "7"c, "8"c, "9"c
+                    val += CULng(Asc(c) - Asc("0"c))
+                Case "A"c, "B"c, "C"c, "D"c, "E"c, "F"c
+                    val += CULng(Asc(c) - Asc("A"c) + 10)
+                Case Else
+                    Throw New ArgumentException("Invalid character.")
             End Select
-        Next i
+        Next c
+        Return val
+    End Function
+    Public Function dehex(ByVal chars As IEnumerable(Of Char), ByVal byteOrder As ByteOrder) As Long
+        Contract.Requires(chars IsNot Nothing)
+        If chars.None Then Return 0
+        If chars.First = "-" Then Return -dehex(chars.Skip(1), byteOrder)
+
+        Select Case ByteOrder
+            Case HostBot.ByteOrder.LittleEndian
+                chars = chars.Reverse()
+            Case HostBot.ByteOrder.BigEndian
+            Case Else
+                Throw New UnreachableException()
+        End Select
+        Dim val As Long = 0
+        For Each c In chars
+            c = Char.ToUpper(c)
+            val <<= 4
+            Select Case c
+                Case "0"c, "1"c, "2"c, "3"c, "4"c, "5"c, "6"c, "7"c, "8"c, "9"c
+                    val += CLng(Asc(c) - Asc("0"))
+                Case "A"c, "B"c, "C"c, "D"c, "E"c, "F"c
+                    val += CLng(Asc(c) - Asc("A") + 10)
+                Case Else
+                    Throw New ArgumentException("Invalid character.")
+            End Select
+        Next c
+        Return val
     End Function
 End Module

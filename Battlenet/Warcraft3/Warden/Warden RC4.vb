@@ -1,74 +1,48 @@
 ﻿Namespace Warcraft3.Warden
-    '''<summary>Encrypts and decrypts data using RC4.</summary>
     Public Class RC4Converter
-        Implements IBlockConverter
-        Private ReadOnly rc4 As RC4XorStream
+        Implements IConverter(Of Byte)
+        Private ReadOnly xorSequenceGenerator As Func(Of IEnumerator(Of Byte))
         Public Sub New(ByVal seed() As Byte)
-            Me.rc4 = New RC4XorStream(seed)
+            Me.xorSequenceGenerator = Function() XorSequence(seed)
         End Sub
         Public Sub New(ByVal state As Warden_Module_Lib.RC4State)
-            Me.rc4 = New RC4XorStream(state)
+            Me.xorSequenceGenerator = Function() XorSequence(state)
         End Sub
 
-        Public Sub convert(ByVal ReadView As ReadOnlyArrayView(Of Byte),
-                           ByVal WriteView As ArrayView(Of Byte),
-                           ByRef OutReadCount As Integer,
-                           ByRef OutWriteCount As Integer) _
-                           Implements IBlockConverter.convert
-            Dim n = Math.Min(ReadView.length, WriteView.length)
-            For i = 0 To n - 1
-                WriteView(i) = ReadView(i) Xor rc4.ReadByte()
-            Next i
-            OutReadCount = n
-            OutWriteCount = n
-        End Sub
-
-        Public Function needs(ByVal outputSize As Integer) As Integer Implements IBlockConverter.needs
-            Return outputSize
+        Public Shared Function XorSequence(ByVal state As Warden_Module_Lib.RC4State) As IEnumerator(Of Byte)
+            Dim key = (From i In Enumerable.Range(0, 256) Select CType(state.state(CByte(i)), ModByte)).ToArray
+            Return XorSequence(key, state.k1, state.k2)
         End Function
-    End Class
-
-    '''<summary>Generates the stream of bytes which data is XORed against to encrypt and decrypt via RC4.</summary>
-    Public Class RC4XorStream
-        Inherits ReadOnlyConversionStream
-        Private key(0 To Byte.MaxValue) As Byte
-        Private k1 As Byte
-        Private k2 As Byte
-
-        Public Sub New(ByVal seed As Byte())
-            'prep key
-            For i = 0 To Byte.MaxValue
-                key(i) = CByte(i)
-            Next i
-            'shuffle key
+        Public Shared Function XorSequence(ByVal seed() As Byte) As IEnumerator(Of Byte)
+            Dim ints = Enumerable.Range(0, 256)
+            Contract.Assume(ints IsNot Nothing)
+            Dim bytes = From i In ints Select CType(i, ModByte)
+            Contract.Assume(bytes IsNot Nothing)
+            Dim key = (bytes).ToArray
             Dim p = 0
             For i = 0 To Byte.MaxValue
-                p = (p + key(i) + seed(i Mod seed.Length)) And &HFF
+                p = (p + CInt(key(i)) + seed(i Mod seed.Length)) And &HFF
                 Swap(key(i), key(p))
             Next i
-        End Sub
-        Public Sub New(ByVal state As Warden_Module_Lib.RC4State)
-            k1 = state.k1
-            k2 = state.k2
-            For i = 0 To Byte.MaxValue
-                key(i) = state.state(CByte(i))
-            Next i
-        End Sub
-
-        '''<summary>Generates the next XOR byte.</summary>
-        Public Shadows Function ReadByte() As Byte
-            k1 = uCByte(k1 + 1)
-            k2 = uCByte(CInt(k2) + CInt(key(k1)))
-            Swap(key(k1), key(k2))
-            Return key(uCByte(CInt(key(k1)) + CInt(key(k2))))
+            Return XorSequence(key, CType(0, ModByte), CType(0, ModByte))
+        End Function
+        Private Shared Function XorSequence(ByVal key() As ModByte, ByVal k1 As ModByte, ByVal k2 As ModByte) As IEnumerator(Of Byte)
+            Return New Enumerator(Of Byte)(
+                Function(controller)
+                    k1 += CType(1, ModByte)
+                    k2 += key(k1)
+                    Swap(key(k1), key(k2))
+                    Return key(key(k1) + key(k2))
+                End Function)
         End Function
 
-        '''<summary>Reads a block of XOR bytes.</summary>
-        Public Overrides Function Read(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
-            For i = offset To offset + count - 1
-                buffer(i) = Me.ReadByte()
-            Next i
-            Return count
+        Public Function Convert(ByVal sequence As IEnumerator(Of Byte)) As IEnumerator(Of Byte) Implements IConverter(Of Byte).Convert
+            Dim xs = xorSequenceGenerator()
+            Return New Enumerator(Of Byte)(
+                Function(controller)
+                    If Not sequence.MoveNext Then  Return controller.Break()
+                    Return sequence.Current Xor xs.MoveNextAndReturn()
+                End Function)
         End Function
     End Class
 End Namespace

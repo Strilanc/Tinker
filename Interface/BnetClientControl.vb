@@ -3,30 +3,29 @@ Imports HostBot.Bnet.BnetClient
 Imports HostBot.Bnet.BnetPacket
 
 Public Class BnetClientControl
-    Implements IHookable(Of BnetClient)
-    Private WithEvents client As BnetClient
+    Implements IHookable(Of IBnetClient)
+    Private WithEvents client As IBnetClient
     Private ReadOnly uiRef As New InvokedCallQueue(Me)
 
 #Region "Hook"
-    Private Function f_caption() As IFuture(Of String) Implements IHookable(Of Bnet.BnetClient).f_caption
-        Return uiRef.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.name)))
+    Private Function f_caption() As IFuture(Of String) Implements IHookable(Of IBnetClient).f_caption
+        Return uiRef.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.Name)))
     End Function
 
-    Public Function f_hook(ByVal client As BnetClient) As IFuture Implements IHookable(Of Bnet.BnetClient).f_hook
+    Public Function f_hook(ByVal client As IBnetClient) As IFuture Implements IHookable(Of IBnetClient).f_Hook
         Return uiRef.QueueAction(
             Sub()
                 If Me.client Is client Then  Return
                 Me.client = client
-                lstUsers.Items.Clear()
+                lstState.Items.Clear()
 
                 If client Is Nothing Then
-                    logClient.setLogger(Nothing, Nothing)
-                    lstUsers.Enabled = False
+                    logClient.SetLogger(Nothing, Nothing)
+                    lstState.Enabled = False
                     txtTalk.Enabled = False
                 Else
-                    logClient.setLogger(client.logger, "Client")
-                    Dim cur_state = client.state_P
-                    c_ClientStateChanged(client, cur_state, cur_state)
+                    logClient.SetLogger(client.logger, "Client")
+                    client.f_GetState.CallWhenValueReady(Sub(state) c_ClientStateChanged(client, state, state))
                 End If
             End Sub
         )
@@ -34,46 +33,46 @@ Public Class BnetClientControl
 #End Region
 
 #Region "Events"
-    Private Sub c_ChatEvent(ByVal sender As BnetClient, ByVal id As CHAT_EVENT_ID, ByVal user As String, ByVal text As String) Handles client.chat_event
+    Private Sub c_ChatEvent(ByVal sender As IBnetClient, ByVal id As ChatEventId, ByVal user As String, ByVal text As String) Handles client.ReceivedChatEvent
         uiRef.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
                 Select Case id
-                    Case CHAT_EVENT_ID.SHOW_USER, CHAT_EVENT_ID.USER_JOINED
-                        If Not lstUsers.Items.Contains(user) Then
-                            lstUsers.Items.Add(user)
+                    Case ChatEventId.ShowUser, ChatEventId.UserJoined
+                        If Not lstState.Items.Contains(user) Then
+                            lstState.Items.Add(user)
                         End If
-                        logClient.logMessage(user + " entered the channel", Color.LightGray)
-                    Case CHAT_EVENT_ID.USER_LEFT
-                        lstUsers.Items.Remove(user)
-                        logClient.logMessage(user + " left the channel", Color.LightGray)
-                    Case CHAT_EVENT_ID.CHANNEL
-                        logClient.logMessage("--- Entered Channel: " + text, Color.DarkGray)
-                        lstUsers.Items.Clear()
-                        lstUsers.Items.Add("Channel " + text)
-                        lstUsers.Items.Add(New String("-"c, 50))
-                    Case CHAT_EVENT_ID.WHISPER
-                        logClient.logMessage(user + " whispers: " + text, Color.DarkGreen)
-                    Case CHAT_EVENT_ID.TALK
-                        logClient.logMessage(user + ": " + text, Color.Black)
-                    Case CHAT_EVENT_ID.BROADCAST
-                        logClient.logMessage("(server broadcast) " + user + ": " + text, Color.Red)
-                    Case CHAT_EVENT_ID.CHANNEL
-                        logClient.logMessage("Entered channel " + text, Color.DarkGray)
-                    Case CHAT_EVENT_ID.WHISPER_SENT
-                        logClient.logMessage("You whisper to " + user + ": " + text, Color.DarkGreen)
-                    Case CHAT_EVENT_ID.CHANNEL_FULL
-                        logClient.logMessage("Channel was full", Color.Red)
-                    Case CHAT_EVENT_ID.CHANNEL_DOES_NOT_EXIST
-                        logClient.logMessage("Channel didn't exist", Color.Red)
-                    Case CHAT_EVENT_ID.CHANNEL_RESTRICTED
-                        logClient.logMessage("Channel was restricted", Color.Red)
-                    Case CHAT_EVENT_ID.INFO
-                        logClient.logMessage(text, Color.Gray)
-                    Case CHAT_EVENT_ID.ERRORS
-                        logClient.logMessage(text, Color.Red)
-                    Case CHAT_EVENT_ID.EMOTE
-                        logClient.logMessage(user + " " + text, Color.DarkGray)
+                        logClient.LogMessage("{0} entered the channel".frmt(user), Color.LightGray)
+                    Case ChatEventId.UserLeft
+                        lstState.Items.Remove(user)
+                        logClient.LogMessage("{0} left the channel".frmt(user), Color.LightGray)
+                    Case ChatEventId.Channel
+                        logClient.LogMessage("--- Entered Channel: " + text, Color.DarkGray)
+                        lstState.Items.Clear()
+                        lstState.Items.Add("Channel " + text)
+                        lstState.Items.Add(New String("-"c, 50))
+                    Case ChatEventId.Whisper
+                        logClient.LogMessage("{0} whispers: {1}".frmt(user, text), Color.DarkGreen)
+                    Case ChatEventId.Talk
+                        logClient.LogMessage("{0}: {1}".frmt(user, text), Color.Black)
+                    Case ChatEventId.Broadcast
+                        logClient.LogMessage("(server broadcast) {0}: {1}".frmt(user, text), Color.Red)
+                    Case ChatEventId.Channel
+                        logClient.LogMessage("Entered channel {0}".frmt(text), Color.DarkGray)
+                    Case ChatEventId.WhisperSent
+                        logClient.LogMessage("You whisper to {0}: {1}".frmt(user, text), Color.DarkGreen)
+                    Case ChatEventId.ChannelFull
+                        logClient.LogMessage("Channel was full", Color.Red)
+                    Case ChatEventId.ChannelDoesNotExist
+                        logClient.LogMessage("Channel didn't exist", Color.Red)
+                    Case ChatEventId.ChannelRestricted
+                        logClient.LogMessage("Channel was restricted", Color.Red)
+                    Case ChatEventId.Info
+                        logClient.LogMessage(text, Color.Gray)
+                    Case ChatEventId.Errors
+                        logClient.LogMessage(text, Color.Red)
+                    Case ChatEventId.Emote
+                        logClient.LogMessage("{0} {1}".frmt(user, text), Color.DarkGray)
                 End Select
             End Sub
         )
@@ -84,7 +83,7 @@ Public Class BnetClientControl
         If txtCommand.Text = "" Then Return
         If client Is Nothing Then Return
         e.Handled = True
-        client.parent.client_commands.processLocalText(client, txtCommand.Text, logClient.getLogger())
+        client.Parent.ClientCommands.ProcessLocalText(client, txtCommand.Text, logClient.Logger())
         txtCommand.Text = ""
     End Sub
 
@@ -93,23 +92,37 @@ Public Class BnetClientControl
         If txtTalk.Text = "" Then Return
         If client Is Nothing Then Return
         e.Handled = True
-        client.send_text_R(txtTalk.Text)
-        logClient.logMessage(client.username_P + ": " + txtTalk.Text, Color.DarkBlue)
+        client.f_SendText(txtTalk.Text)
+        logClient.LogMessage(client.username + ": " + txtTalk.Text, Color.DarkBlue)
         txtTalk.Text = ""
     End Sub
 
-    Private Sub c_ClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States) Handles client.state_changed
+    Private Sub c_ClientStateChanged(ByVal sender As IBnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States) Handles client.StateChanged
         uiRef.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
-                Dim cur_state = client.state_P
-                Dim in_channel = cur_state = States.channel OrElse cur_state = States.creating_game
-                txtTalk.Enabled = in_channel
-                lstUsers.Enabled = in_channel
-                lstUsers.BackColor = If(in_channel, SystemColors.Window, SystemColors.ButtonFace)
-                If old_state <> States.creating_game AndAlso new_state <> States.creating_game Then
-                    lstUsers.Items.Clear()
-                End If
+                txtTalk.Enabled = False
+                lstState.Enabled = True
+                lstState.BackColor = SystemColors.Window
+                Select Case new_state
+                    Case States.Channel, States.CreatingGame
+                        If old_state = States.Game Then  lstState.Items.Clear()
+                        txtTalk.Enabled = True
+                    Case States.Game
+                        lstState.Items.Clear()
+                        lstState.Items.Add("Game")
+                        Dim g = client.CurGame
+                        If g IsNot Nothing Then
+                            lstState.Items.Add(g.header.name)
+                            lstState.Items.Add(g.header.map.relativePath)
+                            lstState.Items.Add(If(g.private, "Private", "Public"))
+                            lstState.Items.Add("Refreshed: {0}".frmt(Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
+                        End If
+                    Case Else
+                        lstState.Items.Clear()
+                        lstState.Enabled = False
+                        lstState.BackColor = SystemColors.ButtonFace
+                End Select
             End Sub
         )
     End Sub

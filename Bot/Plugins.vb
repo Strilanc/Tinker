@@ -37,7 +37,7 @@ Namespace Plugins
         Public ReadOnly bot As MainBot
         Public ReadOnly loaded_plugs As New List(Of Socket.Plug)
         Private ReadOnly sockets As New Dictionary(Of String, Socket)
-        Public Event Unloaded_Plugin(ByVal name As String, ByVal plugin As IPlugin, ByVal reason As String)
+        Public Event UnloadedPlugin(ByVal name As String, ByVal plugin As IPlugin, ByVal reason As String)
 
         Public Sub New(ByVal bot As MainBot)
             Me.bot = bot
@@ -111,7 +111,7 @@ Namespace Plugins
             End Class
         End Class
 
-        Public Function load_plugin(ByVal name As String, ByVal path As String) As Outcome(Of IPlugin)
+        Public Function LoadPlugin(ByVal name As String, ByVal path As String) As Outcome(Of IPlugin)
             Try
                 If Not IO.File.Exists(path) Then
                     path = Application.StartupPath + IO.Path.DirectorySeparatorChar + path
@@ -133,7 +133,7 @@ Namespace Plugins
         Private Function unload_plugin(ByVal plug As Socket.Plug, ByVal reason As String) As Outcome
             If Not loaded_plugs.Contains(plug) Then Return failure("That plugin is not loaded.")
             plug.Dispose()
-            RaiseEvent Unloaded_Plugin(plug.socket.name, plug.plugin, reason)
+            RaiseEvent UnloadedPlugin(plug.socket.name, plug.plugin, reason)
             Return success("Unloaded plugin.")
         End Function
         Public Function unload_plugin(ByVal name As String, ByVal reason As String) As Outcome

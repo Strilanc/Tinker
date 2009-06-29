@@ -10,7 +10,7 @@ Public Class ClientProfile
     'Public lan_admin_port As UShort = 6114
     'Public lan_admin_host As String = " (None)"
     'Public lan_admin_password As String = ""
-    Public lan_host As String = " (None)"
+    Public lanHost As String = " (None)"
     Public initial_channel As String = My.Resources.ProgramName
     Public CKL_server As String = ""
     Private Const version As UInt16 = 1
@@ -25,7 +25,7 @@ Public Class ClientProfile
     Public Sub load(ByVal r As IO.BinaryReader)
         Dim version = r.ReadUInt16()
         name = r.ReadString()
-        users.load(r)
+        users.Load(r)
         roc_cd_key = r.ReadString()
         tft_cd_key = r.ReadString()
         username = r.ReadString()
@@ -37,7 +37,7 @@ Public Class ClientProfile
         If version >= 1 Then
             r.ReadString() 'lan_admin_host
             r.ReadUInt16() 'lan_admin_port
-            lan_host = r.ReadString()
+            lanHost = r.ReadString()
             r.ReadString() 'lan_admin_password
         End If
     End Sub
@@ -45,7 +45,7 @@ Public Class ClientProfile
     Public Sub save(ByVal w As IO.BinaryWriter)
         w.Write(version)
         w.Write(name)
-        users.save(w)
+        users.Save(w)
         w.Write(roc_cd_key)
         w.Write(tft_cd_key)
         w.Write(username)
@@ -57,7 +57,7 @@ Public Class ClientProfile
         If version >= 1 Then
             w.Write(" (None)") 'old default lan_admin_host
             w.Write(CUShort(6114)) 'old default lan_admin_port
-            w.Write(lan_host)
+            w.Write(lanHost)
             w.Write("") 'old default lan_admin_password
         End If
     End Sub
@@ -66,7 +66,7 @@ Public Class ClientProfile
         Dim new_profile As New ClientProfile
         If name Is Nothing Then name = Me.name
         With new_profile
-            .users = users.clone()
+            .users = users.Clone()
             .roc_cd_key = roc_cd_key
             .tft_cd_key = tft_cd_key
             .username = username

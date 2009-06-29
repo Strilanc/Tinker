@@ -16,152 +16,161 @@
 Imports HostBot.Bnet
 Imports HostBot.Warcraft3
 Imports HostBot.Links
+Imports HostBot.Commands.Specializations
 
 '''<summary>The heart and soul of the bot. Handles all of the other pieces.</summary>
 Public NotInheritable Class MainBot
 #Region "Variables"
-    Public ReadOnly client_profiles As New List(Of ClientProfile)
-    Public ReadOnly plugin_profiles As New List(Of Plugins.PluginProfile)
-    Private WithEvents plugin_manager As Plugins.PluginManager
-    Public ReadOnly bot_commands As New Commands.Specializations.BotCommands
-    Public ReadOnly client_commands As New Commands.Specializations.ClientCommands
-    Public ReadOnly server_commands As New Commands.Specializations.ServerCommands()
-    Public ReadOnly lan_commands As New Commands.Specializations.LanCommands()
-    Public ReadOnly instance_commands_load As New Commands.UICommandSet(Of IW3GameLoadScreen)
-    Public ReadOnly instance_commands_guest_setup As New Commands.Specializations.InstanceGuestSetupCommands
-    Public ReadOnly instance_commands_guest_load As New Commands.Specializations.InstanceGuestLoadCommands
-    Public ReadOnly instance_commands_guest_play As New Commands.Specializations.InstanceGuestPlayCommands
-    Public ReadOnly instance_commands_play As New Commands.Specializations.InstancePlayCommands
-    Public ReadOnly instance_commands_setup As New Commands.Specializations.InstanceSetupCommands
-    Public ReadOnly instance_commands_admin As New Commands.Specializations.InstanceAdminCommands
+    Public ReadOnly portPool As New PortPool
+    Public ReadOnly clientProfiles As New HashSet(Of ClientProfile)
+    Public ReadOnly pluginProfiles As New HashSet(Of Plugins.PluginProfile)
+    Private WithEvents pluginManager As Plugins.PluginManager
+    Public ReadOnly BotCommands As New BotCommands
+    Public ReadOnly ClientCommands As New ClientCommands
+    Public ReadOnly ServerCommands As New ServerCommands()
+    Public ReadOnly LanCommands As New LanCommands()
+    Public ReadOnly GameCommandsLoadScreen As New Commands.UICommandSet(Of IW3Game)
+    Public ReadOnly GameGuestCommandsLobby As New InstanceGuestSetupCommands
+    Public ReadOnly GameGuestCommandsLoadScreen As New InstanceGuestLoadCommands
+    Public ReadOnly GameGuestCommandsGamePlay As New InstanceGuestPlayCommands
+    Public ReadOnly GameCommandsGamePlay As New InstancePlayCommands
+    Public ReadOnly GameCommandsLobby As New InstanceSetupCommands
+    Public ReadOnly GameCommandsAdmin As New InstanceAdminCommands
     Public ReadOnly logger As Logger
 
     Private ReadOnly ref As ICallQueue
-    Private ReadOnly eventRef As ICallQueue
-    Private ReadOnly warden_ref As ICallQueue
-    Private intentionalDisconnectFlag As Boolean = False
+    Private ReadOnly eref As ICallQueue
+    Private ReadOnly wardenRef As ICallQueue
+    Private intentionalDisconnectFlag As Boolean
 
-    Private ReadOnly clients As New List(Of BnetClient)
+    Private ReadOnly clients As New List(Of IBnetClient)
     Private ReadOnly servers As New List(Of IW3Server)
     Private ReadOnly widgets As New List(Of IBotWidget)
 
-    Public Event added_widget(ByVal widget As IBotWidget)
-    Public Event removed_widget(ByVal widget As IBotWidget)
-    Public Event server_state_changed(ByVal server As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
-    Public Event added_server(ByVal server As IW3Server)
-    Public Event removed_server(ByVal server As IW3Server)
-    Public Event client_state_changed(ByVal client As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
-    Public Event added_client(ByVal client As BnetClient)
-    Public Event removed_client(ByVal client As BnetClient)
+    Public Event AddedWidget(ByVal widget As IBotWidget)
+    Public Event RemovedWidget(ByVal widget As IBotWidget)
+    Public Event ServerStateChanged(ByVal server As IW3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates)
+    Public Event AddedServer(ByVal server As IW3Server)
+    Public Event RemovedServer(ByVal server As IW3Server)
+    Public Event ClientStateChanged(ByVal client As IBnetClient, ByVal oldState As BnetClient.States, ByVal newState As BnetClient.States)
+    Public Event AddedClient(ByVal client As IBnetClient)
+    Public Event RemovedClient(ByVal client As IBnetClient)
 #End Region
 
 #Region "New"
-    Public Sub New(ByVal warden_ref As ICallQueue, Optional ByVal logger As Logger = Nothing)
-        Me.warden_ref = ContractNotNull(warden_ref, "warden_ref")
+    Public Sub New(ByVal wardenRef As ICallQueue,
+                   Optional ByVal logger As Logger = Nothing)
+        Contract.Requires(wardenRef IsNot Nothing)
+        Me.wardenRef = wardenRef
         Me.logger = If(logger, New Logger)
-        Me.eventRef = New ThreadPooledCallQueue
+        Me.eref = New ThreadPooledCallQueue
         Me.ref = New ThreadPooledCallQueue
         If My.Settings.botstore <> "" Then
             Try
-                Using m As New IO.MemoryStream(packString(My.Settings.botstore))
+                Using m As New IO.MemoryStream(My.Settings.botstore.ToAscBytes)
                     Using r As New IO.BinaryReader(m)
-                        load(r)
+                        Load(r)
                     End Using
                 End Using
             Catch e As Exception
-                client_profiles.Clear()
-                client_profiles.Add(New ClientProfile())
-                Logging.logUnexpectedException("Error loading profiles.", e)
+                clientProfiles.Clear()
+                clientProfiles.Add(New ClientProfile())
+                Logging.LogUnexpectedException("Error loading profiles.", e)
             End Try
         Else
-            client_profiles.Clear()
+            clientProfiles.Clear()
             Dim p = New ClientProfile()
             Dim u = New BotUser(BotUserSet.NAME_NEW_USER, "games=1")
-            client_profiles.Add(p)
-            p.users.add_user(u)
-            plugin_profiles.Clear()
+            clientProfiles.Add(p)
+            p.users.AddUser(u)
+            pluginProfiles.Clear()
         End If
 
-        plugin_manager = New Plugins.PluginManager(Me)
+        pluginManager = New Plugins.PluginManager(Me)
     End Sub
 #End Region
 
+    <ContractInvariantMethod()> Protected Sub Invariant()
+        Contract.Invariant(ref IsNot Nothing)
+        Contract.Invariant(eref IsNot Nothing)
+        Contract.Invariant(wardenRef IsNot Nothing)
+    End Sub
+
 #Region "State"
-    Private Const format_version As UInteger = 0
-    Public Sub save(ByVal w As IO.BinaryWriter)
+    Private Const FormatVersion As UInteger = 0
+    Public Sub Save(ByVal w As IO.BinaryWriter)
         w.Write(UShort.MaxValue) 'indicate we are not the old version without the format flag
-        w.Write(format_version)
-        w.Write(CUInt(client_profiles.Count))
-        For Each profile In client_profiles
+        w.Write(FormatVersion)
+        w.Write(CUInt(clientProfiles.Count))
+        For Each profile In clientProfiles
             profile.save(w)
         Next profile
-        w.Write(CUInt(plugin_profiles.Count))
-        For Each profile In plugin_profiles
+        w.Write(CUInt(pluginProfiles.Count))
+        For Each profile In pluginProfiles
             profile.save(w)
         Next profile
     End Sub
-    Public Sub load(ByVal r As IO.BinaryReader)
+    Public Sub Load(ByVal r As IO.BinaryReader)
         Dim first_version = True
         Dim n As UInteger = r.ReadUInt16()
         If n = UInt16.MaxValue Then 'not the old version without the format flag
             Dim ver = r.ReadUInt32()
-            If ver > format_version Then Throw New IO.IOException("Unrecognized bot data format version.")
+            If ver > FormatVersion Then Throw New IO.IOException("Unrecognized bot data format version.")
             n = r.ReadUInt32()
             first_version = False
         End If
 
-        client_profiles.Clear()
+        clientProfiles.Clear()
         For repeat = CUInt(1) To n
-            client_profiles.Add(New ClientProfile(r))
+            clientProfiles.Add(New ClientProfile(r))
         Next repeat
         If first_version Then
-            plugin_profiles.Clear()
+            pluginProfiles.Clear()
             Return
         End If
 
-        plugin_profiles.Clear()
+        pluginProfiles.Clear()
         For repeat = CUInt(1) To r.ReadUInt32()
-            plugin_profiles.Add(New Plugins.PluginProfile(r))
+            pluginProfiles.Add(New Plugins.PluginProfile(r))
         Next repeat
     End Sub
 
-    Private Function create_server_L(ByVal name As String,
-                                     ByVal default_settings As ServerSettings,
-                                     Optional ByVal suffix As String = "",
-                                     Optional ByVal avoid_name_collision As Boolean = False) _
-                                     As Outcome(Of IW3Server)
+    Private Function CreateServer(ByVal name As String,
+                                  ByVal serverSettings As ServerSettings,
+                                  Optional ByVal suffix As String = "",
+                                  Optional ByVal avoidNameCollision As Boolean = False) As Outcome(Of IW3Server)
         Try
             If name.Trim = "" Then
                 Return failure("Invalid server name.")
-            ElseIf has_server_L(name) Then
-                If Not avoid_name_collision Then
-                    Return failureVal(find_server_L(name), "Server with name '{0}' already exists.".frmt(name))
+            ElseIf HaveServer(name) Then
+                If Not avoidNameCollision Then
+                    Return failureVal(FindServer(name), "Server with name '{0}' already exists.".frmt(name))
                 End If
                 Dim i = 2
-                While has_server_L(name + i.ToString())
+                While HaveServer(name + i.ToString())
                     i += 1
                 End While
                 name += i.ToString()
             End If
 
-            Dim server As IW3Server = New W3Server(name, Me, default_settings, suffix)
-            AddHandler server.PlayerTalked, AddressOf catch_server_player_talked_R
+            Dim server As IW3Server = New W3Server(name, Me, serverSettings, suffix)
+            AddHandler server.PlayerTalked, AddressOf c_ServerPlayerTalked
             AddHandler server.ChangedState, AddressOf c_ServerStateChanged
             servers.Add(server)
             e_ThrowAddedServer(server)
 
-            Return successVal(server, "Created server with name '{0}'. Admin password is {1}.".frmt(name, server.settings.admin_password))
+            Return successVal(server, "Created server with name '{0}'. Admin password is {1}.".frmt(name, server.settings.adminPassword))
         Catch e As Exception
             Return failure("Failed to create server: " + e.Message)
         End Try
     End Function
-    Private Function remove_server_L(ByVal name As String) As Outcome
-        Dim server = find_server_L(name)
+    Private Function KillServer(ByVal name As String) As Outcome
+        Dim server = FindServer(name)
         If server Is Nothing Then
             Return failure("No server with name {0}.".frmt(name))
         End If
 
-        RemoveHandler server.PlayerTalked, AddressOf catch_server_player_talked_R
+        RemoveHandler server.PlayerTalked, AddressOf c_ServerPlayerTalked
         RemoveHandler server.ChangedState, AddressOf c_ServerStateChanged
         servers.Remove(server)
         server.f_Kill()
@@ -169,111 +178,108 @@ Public NotInheritable Class MainBot
         Return success("Removed server with name {0}.".frmt(name))
     End Function
 
-    Private Function add_widget_L(ByVal widget As IBotWidget) As Outcome
-        If find_widget_L(widget.type_name, widget.name) IsNot Nothing Then
-            Return success("{0} with name {1} already exists.".frmt(widget.type_name, widget.name))
+    Private Function AddWidget(ByVal widget As IBotWidget) As Outcome
+        If FindWidget(widget.TypeName, widget.Name) IsNot Nothing Then
+            Return success("{0} with name {1} already exists.".frmt(widget.TypeName, widget.Name))
         End If
         widgets.Add(widget)
         e_ThrowAddedWidget(widget)
-        Return success("Added {0} with name {1}.".frmt(widget.type_name, widget.name))
+        Return success("Added {0} with name {1}.".frmt(widget.TypeName, widget.Name))
     End Function
-    Private Function remove_widget_L(ByVal type_name As String, ByVal name As String) As Outcome
-        Dim widget = find_widget_L(name, type_name)
-        If widget Is Nothing Then Return failure("No {0} with name {1}.".frmt(type_name, name))
+    Private Function RemoveWidget(ByVal typeName As String, ByVal name As String) As Outcome
+        Dim widget = FindWidget(name, typeName)
+        If widget Is Nothing Then Return failure("No {0} with name {1}.".frmt(typeName, name))
         widgets.Remove(widget)
-        widget.stop()
+        widget.[Stop]()
         e_ThrowRemovedWidget(widget)
-        Return success("Removed {0} with name {1}.".frmt(type_name, name))
+        Return success("Removed {0} with name {1}.".frmt(typeName, name))
     End Function
 
-    Private Function create_client_L(ByVal name As String, Optional ByVal profile_name As String = "Default") As Outcome(Of BnetClient)
+    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As Outcome(Of IBnetClient)
         If name.Trim = "" Then
             Return failure("Invalid client name.")
-        ElseIf has_client_L(name) Then
-            Return failureVal(find_client_L(name), "Client with name '{0}' already exists.".frmt(name))
-        ElseIf find_client_profile_L(profile_name) Is Nothing Then
+        ElseIf HaveClient(name) Then
+            Return failureVal(FindClient(name), "Client with name '{0}' already exists.".frmt(name))
+        ElseIf FindClientProfile(profileName) Is Nothing Then
             Return failure("Invalid profile.")
         End If
 
-        Dim client = New BnetClient(Me, find_client_profile_L(profile_name), name, warden_ref)
-        AddHandler client.chat_event, AddressOf c_ClientChatEvent
-        AddHandler client.state_changed, AddressOf c_ClientStateChanged
+        Dim client As IBnetClient = New BnetClient(Me, FindClientProfile(profileName), name, wardenRef)
+        AddHandler client.ReceivedChatEvent, AddressOf c_ClientChatEvent
+        AddHandler client.StateChanged, AddressOf c_ClientStateChanged
         clients.Add(client)
 
         e_ThrowAddedClient(client)
         Return successVal(client, "Created client with name '{0}'.".frmt(name))
     End Function
-    Private Function remove_client_L(ByVal name As String) As Outcome
-        Dim client = find_client_L(name)
+    Private Function KillClient(ByVal name As String) As Outcome
+        Dim client = FindClient(name)
         If client Is Nothing Then
             Return failure("No client with name {0}.".frmt(name))
         End If
 
-        RemoveHandler client.chat_event, AddressOf c_ClientChatEvent
-        RemoveHandler client.state_changed, AddressOf c_ClientStateChanged
-        client.disconnect_R()
+        RemoveHandler client.ReceivedChatEvent, AddressOf c_ClientChatEvent
+        RemoveHandler client.StateChanged, AddressOf c_ClientStateChanged
+        client.f_Disconnect("Killed by MainBot")
         clients.Remove(client)
         e_ThrowRemovedClient(client)
         Return success("Removed client with name {0}.".frmt(name))
     End Function
 
-    Private Function has_client_L(ByVal name As String) As Boolean
-        Return find_client_L(name) IsNot Nothing
+    Private Function HaveClient(ByVal name As String) As Boolean
+        Return FindClient(name) IsNot Nothing
     End Function
-    Private Function has_server_L(ByVal name As String) As Boolean
-        Return find_server_L(name) IsNot Nothing
+    Private Function HaveServer(ByVal name As String) As Boolean
+        Return FindServer(name) IsNot Nothing
     End Function
 
-    Private Function find_client_L(ByVal name As String) As BnetClient
-        Return (From x In clients Where x.name.ToLower = name.ToLower).FirstOrDefault()
+    Private Function FindClient(ByVal name As String) As IBnetClient
+        Return (From x In clients Where x.Name.ToLower = name.ToLower).FirstOrDefault()
     End Function
-    Private Function find_server_L(ByVal name As String) As IW3Server
+    Private Function FindServer(ByVal name As String) As IW3Server
         Return (From x In servers Where x.name.ToLower = name.ToLower).FirstOrDefault()
     End Function
-    Private Function find_widget_L(ByVal name As String, ByVal type_name As String) As IBotWidget
-        Return (From x In widgets Where x.name.ToLower = name.ToLower AndAlso x.type_name.ToLower = type_name.ToLower).FirstOrDefault()
+    Private Function FindWidget(ByVal name As String, ByVal typeName As String) As IBotWidget
+        Return (From x In widgets Where x.Name.ToLower = name.ToLower AndAlso x.TypeName.ToLower = typeName.ToLower).FirstOrDefault()
     End Function
-    Public Function find_client_profile_L(ByVal name As String) As ClientProfile
-        Return (From x In client_profiles Where x.name.ToLower = name.ToLower).FirstOrDefault
+    Public Function FindClientProfile(ByVal name As String) As ClientProfile
+        Return (From x In clientProfiles Where x.name.ToLower = name.ToLower).FirstOrDefault
     End Function
-    Public Function find_plugin_profile_L(ByVal name As String) As Plugins.PluginProfile
-        Return (From x In plugin_profiles Where x.name.ToLower = name.ToLower).FirstOrDefault
+    Public Function FindPluginProfile(ByVal name As String) As Plugins.PluginProfile
+        Return (From x In pluginProfiles Where x.name.ToLower = name.ToLower).FirstOrDefault
     End Function
 
-    Private Function kill_L() As Outcome
+    Private Function Kill() As Outcome
         'Kill clients
         For Each client In clients.ToList
-            remove_client_L(client.name)
+            KillClient(client.Name)
         Next client
 
         'Kill servers
         For Each server In servers.ToList
-            remove_server_L(server.name)
+            KillServer(server.name)
         Next server
 
         'Kill widgets
         For Each widget In widgets.ToList
-            remove_widget_L(widget.type_name, widget.name)
+            RemoveWidget(widget.TypeName, widget.Name)
         Next widget
 
         Return success("Killed bot")
     End Function
 
-    Private ReadOnly loaded_plugin_names As New List(Of String)
-    Private Function pluginLoaded_L(ByVal name As String) As Boolean
-        Return loaded_plugin_names.Contains(name)
-    End Function
-    Private Function loadPlugin_L(ByVal name As String) As Outcome
-        If loaded_plugin_names.Contains(name) Then Return success("Plugin '{0}' is already loaded.".frmt(name))
+    Private ReadOnly loadedPluginNames As New HashSet(Of String)
+    Private Function LoadPlugin(ByVal name As String) As Outcome
+        If loadedPluginNames.Contains(name) Then Return success("Plugin '{0}' is already loaded.".frmt(name))
 
-        Dim profile = find_plugin_profile_L(name)
+        Dim profile = FindPluginProfile(name)
         If profile Is Nothing Then Return failure("No plugin matches the name '{0}'.".frmt(name))
 
-        Dim loaded = plugin_manager.load_plugin(profile.name, profile.location)
-        If loaded.succeeded Then loaded_plugin_names.Add(name)
+        Dim loaded = pluginManager.LoadPlugin(profile.name, profile.location)
+        If loaded.succeeded Then loadedPluginNames.Add(name)
         Return loaded
     End Function
-    Private Sub plugin_manager_Unloaded_Plugin(ByVal name As String, ByVal plugin As Plugins.IPlugin, ByVal reason As String) Handles plugin_manager.Unloaded_Plugin
+    Private Sub c_UnloadedPlugin(ByVal name As String, ByVal plugin As Plugins.IPlugin, ByVal reason As String) Handles pluginManager.UnloadedPlugin
         logger.log("Plugin '{0}' was unloaded ({1})".frmt(name, reason), LogMessageTypes.Negative)
     End Sub
 #End Region
@@ -283,10 +289,11 @@ Public NotInheritable Class MainBot
         Return Wc3Version(2)
     End Function
     Public Shared Function Wc3Version() As Byte()
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
         Dim exeV(0 To 3) As Byte
-        Dim ss() As String = My.Settings.exeVersion.Split("."c)
+        Dim ss() = My.Settings.exeVersion.Split("."c)
         If ss.Length <> 4 Then Throw New ArgumentException("Invalid version specified in settings. Must have #.#.#.# form.")
-        For i As Integer = 0 To 3
+        For i = 0 To 3
             If Not Integer.TryParse(ss(i), 0) Or ss(i).Length > 8 Then
                 Throw New ArgumentException("Invalid version specified in settings. Must have #.#.#.# form.")
             End If
@@ -295,58 +302,64 @@ Public NotInheritable Class MainBot
         Return exeV
     End Function
 
-    Private Function create_lan_admin_L(ByVal name As String,
-                                          ByVal password As String,
-                                          Optional ByVal remote_host As String = "localhost",
-                                          Optional ByVal listen_port As UShort = 0) As IFuture(Of Outcome)
+    Private Function CreateLanAdmin(ByVal name As String,
+                                    ByVal password As String,
+                                    Optional ByVal remoteHost As String = "localhost",
+                                    Optional ByVal listenPort As UShort = 0) As IFuture(Of Outcome)
         Dim map = New W3Map("Maps\",
                             "AdminGame.w3x",
-                            1,
-                            (From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
-                            (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
-                            (From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
-                            2)
+                            filesize:=1,
+                            crc32:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
+                            sha1Checksum:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
+                            xoroChecksum:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
+                            numSlots:=2)
         map.slots(1).contents = New W3SlotContentsComputer(map.slots(1), W3Slot.ComputerLevel.Normal)
+        Dim header = New W3GameHeader("Admin Game",
+                                      My.Resources.ProgramName,
+                                      New W3MapSettings(Nothing, map),
+                                      0,
+                                      0,
+                                      0,
+                                      options:=New String() {"-permanent"},
+                                      numplayerslots:=map.NumPlayerSlots)
         Dim settings = New ServerSettings(map:=map,
-                                          username:=Nothing,
+                                          header:=header,
                                           allowUpload:=False,
                                           defaultSlotLockState:=W3Slot.Lock.frozen,
                                           instances:=0,
                                           password:=password,
-                                          arguments:=New String() {"-permanent"},
                                           is_admin_game:=True)
-        Dim server_out = create_server_L(name, settings)
+        Dim server_out = CreateServer(name, settings)
         If Not server_out.succeeded Then
-            Return futurize(failure("Failed to create server."))
+            Return failure("Failed to create server.").Futurize
         End If
         Dim server = server_out.val
 
         Dim lan As W3LanAdvertiser
         Try
-            lan = New W3LanAdvertiser(Me, name, listen_port, remote_host)
+            lan = New W3LanAdvertiser(Me, name, listenPort, remoteHost)
         Catch e As Exception
-            Return futurize(failure("Error creating lan advertiser: {0}".frmt(e.Message)))
+            Return failure("Error creating lan advertiser: {0}".frmt(e.Message)).Futurize
         End Try
-        Dim added = add_widget_L(lan)
+        Dim added = AddWidget(lan)
         If Not added.succeeded Then
-            Return futurize(failure("Failed to create LAN advertizer."))
+            Return failure("Failed to create lan advertiser.").Futurize
         End If
-        lan.add_game("Admin Game", map, server.settings.map_settings)
+        lan.AddGame(header)
 
         Dim f = New Future(Of Outcome)
-        FutureSub.Call(
-            server.f_OpenPort(listen_port),
+        server.f_OpenPort(listenPort).CallWhenValueReady(
             Sub(listened)
                 If Not listened.succeeded Then
                     server.f_Kill()
-                    lan.Kill()
+                    lan.Dispose()
                     f.SetValue(failure("Failed to listen on tcp port."))
                     Return
                 End If
 
-                DependencyLink.link(lan, server)
-                DependencyLink.link(server, lan)
-                f.SetValue(success("Created LAN Admin Game"))
+                DisposeLink.CreateOneWayLink(lan, server)
+                DisposeLink.CreateOneWayLink(server, lan)
+                f.SetValue(success("Created lan Admin Game"))
             End Sub
         )
         Return f
@@ -355,51 +368,51 @@ Public NotInheritable Class MainBot
 
 #Region "Events"
     Private Sub e_ThrowAddedWidget(ByVal widget As IBotWidget)
-        eventRef.QueueAction(
+        eref.QueueAction(
             Sub()
-                RaiseEvent added_widget(widget)
+                RaiseEvent AddedWidget(widget)
             End Sub
         )
     End Sub
     Private Sub e_ThrowRemovedWidget(ByVal widget As IBotWidget)
-        eventRef.QueueAction(
+        eref.QueueAction(
             Sub()
-                RaiseEvent removed_widget(widget)
+                RaiseEvent RemovedWidget(widget)
             End Sub
         )
     End Sub
     Private Sub e_ThrowAddedServer(ByVal server As IW3Server)
-        eventRef.QueueAction(
+        eref.QueueAction(
             Sub()
-                RaiseEvent added_server(server)
+                RaiseEvent AddedServer(server)
             End Sub
         )
     End Sub
     Private Sub e_ThrowRemovedServer(ByVal server As IW3Server)
-        eventRef.QueueAction(
+        eref.QueueAction(
             Sub()
-                RaiseEvent removed_server(server)
+                RaiseEvent RemovedServer(server)
             End Sub
         )
     End Sub
-    Private Sub e_ThrowAddedClient(ByVal client As BnetClient)
-        eventRef.QueueAction(
+    Private Sub e_ThrowAddedClient(ByVal client As IBnetClient)
+        eref.QueueAction(
             Sub()
-                RaiseEvent added_client(client)
+                RaiseEvent AddedClient(client)
             End Sub
         )
     End Sub
-    Private Sub e_ThrowRemovedClient(ByVal client As BnetClient)
-        eventRef.QueueAction(
+    Private Sub e_ThrowRemovedClient(ByVal client As IBnetClient)
+        eref.QueueAction(
             Sub()
-                RaiseEvent removed_client(client)
+                RaiseEvent RemovedClient(client)
             End Sub
         )
     End Sub
 
-    Private Sub c_ClientChatEvent(ByVal client As BnetClient, ByVal id As Bnet.BnetPacket.CHAT_EVENT_ID, ByVal username As String, ByVal text As String)
+    Private Sub c_ClientChatEvent(ByVal client As IBnetClient, ByVal id As Bnet.BnetPacket.ChatEventId, ByVal username As String, ByVal text As String)
         'Exit if this is not a command
-        If id <> Bnet.BnetPacket.CHAT_EVENT_ID.TALK And id <> Bnet.BnetPacket.CHAT_EVENT_ID.WHISPER Then
+        If id <> Bnet.BnetPacket.ChatEventId.Talk And id <> Bnet.BnetPacket.ChatEventId.Whisper Then
             Return
         ElseIf text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
             If text.ToLower() <> "?trigger" Then
@@ -413,31 +426,31 @@ Public NotInheritable Class MainBot
 
         'Process ?Trigger command
         If text.ToLower() = "?trigger" Then
-            client.sendWhisper_R(username, "Command prefix is '{0}'".frmt(My.Settings.commandPrefix))
+            client.f_SendWhisper(username, "Command prefix is '{0}'".frmt(My.Settings.commandPrefix))
             Return
         End If
 
         'Process prefixed commands
         Dim command_text = text.Substring(My.Settings.commandPrefix.Length)
-        Dim f = client_commands.processText(client, user, command_text)
-        FutureSub.Call(f,
-            Sub(output) client.sendWhisper_R(user.name, If(output.succeeded, "", "(Failed) ") + output.message)
+        Dim f = ClientCommands.ProcessText(client, user, command_text)
+        f.CallWhenValueReady(
+            Sub(output) client.f_SendWhisper(user.name, If(output.succeeded, "", "(Failed) ") + output.Message)
         )
-        If Not f.isReady Then
-            FutureSub.Call({FutureWait(New TimeSpan(0, 0, 2))},
+        If Not f.IsReady Then
+            FutureWait(New TimeSpan(0, 0, 2)).CallWhenReady(
                 Sub()
-                    If Not f.isReady Then
-                        client.sendWhisper_R(user.name, "Command '{0}' is running... You will be informed when it finishes.".frmt(text))
+                    If Not f.IsReady Then
+                        client.f_SendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".frmt(text))
                     End If
                 End Sub
             )
         End If
     End Sub
 
-    Private Sub catch_server_player_talked_R(ByVal sender As IW3Server,
-                                             ByVal game As IW3Game,
-                                             ByVal player As IW3Player,
-                                             ByVal text As String)
+    Private Sub c_ServerPlayerTalked(ByVal sender As IW3Server,
+                                     ByVal game As IW3Game,
+                                     ByVal player As IW3Player,
+                                     ByVal text As String)
         If text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
             If text.ToLower() <> "?trigger" Then
                 Return
@@ -452,82 +465,73 @@ Public NotInheritable Class MainBot
 
         'Process prefixed commands
         Dim command_text = text.Substring(My.Settings.commandPrefix.Length)
-        FutureSub.Call(game.f_CommandProcessText(player, command_text), Function(out) finish_instance_command(out, player, game))
+        game.f_CommandProcessText(player, command_text).CallWhenValueReady(
+            Sub(out)
+                Dim msg = If(out.succeeded, "", "Failed: ") + out.Message
+                game.f_SendMessageTo(msg, player)
+            End Sub
+        )
     End Sub
-    Private Function finish_instance_command(ByVal out As outcome, ByVal player As IW3Player, ByVal game As IW3Game) As Boolean
-        If player Is Nothing Then Return False
-        Dim msg = If(out.succeeded, "", "Failed: ") + out.message
-        game.f_SendMessageTo(msg, player)
-        Return True
-    End Function
 
-    Private Sub c_ClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
-        RaiseEvent client_state_changed(sender, old_state, new_state)
+    Private Sub c_ClientStateChanged(ByVal sender As IBnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
+        RaiseEvent ClientStateChanged(sender, old_state, new_state)
     End Sub
     Private Sub c_ServerStateChanged(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
-        RaiseEvent server_state_changed(sender, old_state, new_state)
+        RaiseEvent ServerStateChanged(sender, old_state, new_state)
     End Sub
 #End Region
 
 #Region "Remote Calls"
-    Public Function find_server_R(ByVal name As String) As IFuture(Of IW3Server)
-        Return ref.QueueFunc(Function() find_server_L(name))
+    Public Function f_FindServer(ByVal name As String) As IFuture(Of IW3Server)
+        Return ref.QueueFunc(Function() FindServer(name))
     End Function
-    Public Function kill_R() As IFuture(Of Outcome)
-        Return ref.QueueFunc(AddressOf kill_L)
+    Public Function f_Kill() As IFuture(Of Outcome)
+        Return ref.QueueFunc(AddressOf Kill)
     End Function
-    Public Function create_lan_admin_R(ByVal name As String,
+    Public Function f_CreateLanAdmin(ByVal name As String,
                                        ByVal password As String,
                                        Optional ByVal remote_host As String = "localhost",
                                        Optional ByVal listen_port As UShort = 0) As IFuture(Of Outcome)
-        Return futurefuture(ref.QueueFunc(Function() create_lan_admin_L(name, password, remote_host, listen_port)))
+        Return ref.QueueFunc(Function() CreateLanAdmin(name, password, remote_host, listen_port)).Defuturize
     End Function
-    Public Function add_widget_R(ByVal widget As IBotWidget) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() add_widget_L(widget))
+    Public Function f_AddWidget(ByVal widget As IBotWidget) As IFuture(Of Outcome)
+        Return ref.QueueFunc(Function() AddWidget(widget))
     End Function
-    Public Function remove_widget_R(ByVal type_name As String, ByVal name As String) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() remove_widget_L(type_name, name))
+    Public Function f_RemoveWidget(ByVal type_name As String, ByVal name As String) As IFuture(Of Outcome)
+        Return ref.QueueFunc(Function() RemoveWidget(type_name, name))
     End Function
-    Public Function has_server_R(ByVal name As String) As IFuture(Of Boolean)
-        Return ref.QueueFunc(Function() has_server_L(name))
+    Public Function f_RemoveServer(ByVal name As String) As IFuture(Of Outcome)
+        Return ref.QueueFunc(Function() KillServer(name))
     End Function
-    Public Function remove_server_R(ByVal name As String) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() remove_server_L(name))
-    End Function
-    Public Function create_server_R(ByVal name As String,
+    Public Function f_CreateServer(ByVal name As String,
                                     ByVal default_settings As ServerSettings,
                                     Optional ByVal suffix As String = "",
                                     Optional ByVal avoid_name_collision As Boolean = False) _
                                     As IFuture(Of Outcome(Of IW3Server))
-        Return ref.QueueFunc(Function() create_server_L(name, default_settings, suffix, avoid_name_collision))
+        Return ref.QueueFunc(Function() CreateServer(name, default_settings, suffix, avoid_name_collision))
     End Function
-    Public Function f_FindClient(ByVal name As String) As IFuture(Of BnetClient)
-        Return ref.QueueFunc(Function() find_client_L(name))
-    End Function
-    Public Function has_client_R(ByVal name As String) As IFuture(Of Boolean)
-        Return ref.QueueFunc(Function() has_client_L(name))
+    Public Function f_FindClient(ByVal name As String) As IFuture(Of IBnetClient)
+        Return ref.QueueFunc(Function() FindClient(name))
     End Function
     Public Function f_RemoveClient(ByVal name As String) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() remove_client_L(name))
+        Return ref.QueueFunc(Function() KillClient(name))
     End Function
-    Public Function f_CreateClient(ByVal name As String, Optional ByVal profile_name As String = "Default") As IFuture(Of Outcome(Of BnetClient))
-        Return ref.QueueFunc(Function() create_client_L(name, profile_name))
+    Public Function f_CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of Outcome(Of IBnetClient))
+        Return ref.QueueFunc(Function() CreateClient(name, profileName))
     End Function
-    Public Function shallow_copy_servers_R() As IFuture(Of List(Of IW3Server))
+    Public Function f_EnumServers() As IFuture(Of List(Of IW3Server))
         Return ref.QueueFunc(Function() servers.ToList)
     End Function
-    Public Function shallow_copy_clients_R() As IFuture(Of List(Of BnetClient))
+    Public Function f_EnumClients() As IFuture(Of List(Of IBnetClient))
         Return ref.QueueFunc(Function() clients.ToList)
     End Function
-    Public Function shallow_copy_widgets_R() As IFuture(Of List(Of IBotWidget))
+    Public Function f_EnumWidgets() As IFuture(Of List(Of IBotWidget))
         Return ref.QueueFunc(Function() widgets.ToList)
     End Function
-    Public Function loadPlugin_R(ByVal name As String) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() loadPlugin_L(name))
+    Public Function f_LoadPlugin(ByVal name As String) As IFuture(Of Outcome)
+        Return ref.QueueFunc(Function() LoadPlugin(name))
     End Function
 #End Region
-
-    Public ReadOnly port_pool As New PortPool
 End Class
 
 Public Class PortPool
@@ -535,6 +539,12 @@ Public Class PortPool
     Private ReadOnly OutPorts As New HashSet(Of UShort)
     Private ReadOnly PortPool As New HashSet(Of UShort)
     Private ReadOnly lock As New Object()
+
+    <ContractInvariantMethod()> Protected Sub Invariant()
+        Contract.Invariant(InPorts IsNot Nothing)
+        Contract.Invariant(OutPorts IsNot Nothing)
+        Contract.Invariant(PortPool IsNot Nothing)
+    End Sub
 
     Public Function EnumPorts() As IEnumerable(Of UShort)
         SyncLock lock

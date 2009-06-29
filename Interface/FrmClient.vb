@@ -15,9 +15,9 @@ Public Class FrmClient
             CacheIPAddresses()
             bot = New MainBot(New InvokedCallQueue(Me))
             For Each port In FrmSettings.parse_port_list(My.Settings.port_pool, "")
-                bot.port_pool.TryAddPort(port)
+                bot.portPool.TryAddPort(port)
             Next port
-            botcMain.logBot.setLogUnexpected(True)
+            botcMain.logBot.SetLogUnexpected(True)
             botcMain.f_hook(bot)
 
             Me.Show()
@@ -26,17 +26,17 @@ Public Class FrmClient
                 Dim x = New Warden_Module_Lib.ModuleHandler
                 x.UnloadModule()
             Catch ex As Exception
-                botcMain.logBot.logMessage("Error loading warden module library:{0}{1}".frmt(vbNewLine, ex), Color.Red)
+                botcMain.logBot.LogMessage("Error loading warden module library:{0}{1}".frmt(vbNewLine, ex), Color.Red)
             End Try
 
             'load initial plugins
-            Dim plugin_names = (From x In My.Settings.initial_plugins.Split(";"c) Where x <> "").ToList
-            Dim future_plugin_loads = (From x In plugin_names Select bot.loadPlugin_R(x)).ToList
-            BlockOnFutures(future_plugin_loads)
-            Dim plugin_loads = (From x In future_plugin_loads Select x.GetValue()).ToList
-            For i = 0 To plugin_names.Count - 1
-                Dim plugin = plugin_names(i)
-                Dim loaded = plugin_loads(i)
+            Dim pluginNames = (From x In My.Settings.initial_plugins.Split(";"c) Where x <> "").ToList
+            Dim futureLoadedPlugins = (From x In pluginNames Select bot.f_LoadPlugin(x)).ToList
+            BlockOnFuture(FutureCompress(futureLoadedPlugins))
+            Dim pluginLoadOutcomes = (From x In futureLoadedPlugins Select x.GetValue()).ToList
+            For i = 0 To pluginNames.Count - 1
+                Dim plugin = pluginNames(i)
+                Dim loaded = pluginLoadOutcomes(i)
 
                 If loaded.succeeded Then
                     bot.logger.log("Loaded plugin '" + plugin + "'.", LogMessageTypes.Positive)
@@ -46,9 +46,9 @@ Public Class FrmClient
             Next i
 
             'show ready
-            botcMain.logBot.logMessage("---", Color.Black)
-            botcMain.logBot.logMessage("Use the 'help' command for a list of commands.", Color.DarkGreen)
-            botcMain.logBot.logMessage("---", Color.Black)
+            botcMain.logBot.LogMessage("---", Color.Black)
+            botcMain.logBot.LogMessage("Use the 'help' command for a list of commands.", Color.DarkGreen)
+            botcMain.logBot.LogMessage("---", Color.Black)
 
             'show settings on first run
             If My.Settings.war3path = "" Then
@@ -61,7 +61,7 @@ Public Class FrmClient
                 uiBtnSettings(Nothing, Nothing)
             End If
         Catch ex As Exception
-            MessageBox.Show("Error loading " + My.Resources.ProgramName + Environment.NewLine + ex.ToString())
+            MessageBox.Show(GenerateUnexpectedExceptionDescription("Error loading " + My.Resources.ProgramName, ex))
             Me.Close()
         End Try
     End Sub
@@ -86,7 +86,7 @@ Public Class FrmClient
         With bot
             bot = Nothing
             client = Nothing
-            .kill_R()
+            .f_Kill()
         End With
         My.Settings.Save()
     End Sub

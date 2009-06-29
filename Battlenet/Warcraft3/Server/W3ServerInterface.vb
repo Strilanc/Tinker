@@ -1,8 +1,9 @@
 ﻿Imports HostBot.Links
 
 Namespace Warcraft3
+    <ContractClass(GetType(ContractClassIW3Server))>
     Public Interface IW3Server
-        Inherits Links.IDependencyLinkServant
+        Inherits INotifyingDisposable
 
         ReadOnly Property parent() As MainBot
         ReadOnly Property name() As String
@@ -14,25 +15,127 @@ Namespace Warcraft3
         Event AddedGame(ByVal sender As IW3Server, ByVal game As IW3Game)
         Event RemovedGame(ByVal sender As IW3Server, ByVal game As IW3Game)
         Event PlayerTalked(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player, ByVal text As String)
-        Event PlayerLeft(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal reason As W3PlayerLeaveTypes)
-        Event PlayerSentData(ByVal sender As IW3Server, ByVal game As IW3GamePlay, ByVal player As IW3PlayerGameplay, ByVal data As Byte())
-        Event PlayerEntered(ByVal sender As IW3Server, ByVal game As IW3GameLobby, ByVal player As IW3PlayerLobby)
+        Event PlayerLeft(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
+        Event PlayerSentData(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player, ByVal data As Byte())
+        Event PlayerEntered(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player)
 
         Function f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player)
-        Function f_FindPlayerGame(ByVal username As String) As IFuture(Of IW3Game)
-        Function f_FindGame(ByVal game_name As String) As IFuture(Of IW3Game)
+        Function f_FindPlayerGame(ByVal username As String) As IFuture(Of Outcome(Of IW3Game))
+        Function f_FindGame(ByVal gameName As String) As IFuture(Of IW3Game)
         Function f_EnumGames() As IFuture(Of IEnumerable(Of IW3Game))
-        Function f_CreateGame(Optional ByVal game_name As String = Nothing) As IFuture(Of Outcome(Of IW3Game))
-        Function f_RemoveGame(ByVal game_name As String) As IFuture(Of Outcome)
+        Function f_CreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of Outcome(Of IW3Game))
+        Function f_RemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture(Of Outcome)
         Function f_ClosePort(ByVal port As UShort) As IFuture(Of Outcome)
         Function f_OpenPort(ByVal port As UShort) As IFuture(Of Outcome)
         Function f_CloseAllPorts() As IFuture(Of Outcome)
         Function f_StopAcceptingPlayers() As IFuture(Of Outcome)
         Function f_Kill() As IFuture(Of Outcome)
-        Function f_AddAvertiser(ByVal m As IAdvertisingLinkMember) As IFuture(Of outcome)
+        Function f_AddAvertiser(ByVal m As IGameSourceSink) As IFuture(Of outcome)
 
-        Function advertising_dep() As IDependencyLinkServant
+        Function CreateAdvertisingDependency() As INotifyingDisposable
     End Interface
+    <ContractClassFor(GetType(IW3Server))>
+    Public Class ContractClassIW3Server
+        Implements IW3Server
+        Public Event Disposed() Implements INotifyingDisposable.Disposed
+        Public Event PlayerEntered(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player) Implements IW3Server.PlayerEntered
+        Public Event PlayerLeft(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Server.PlayerLeft
+        Public Event PlayerSentData(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player, ByVal data() As Byte) Implements IW3Server.PlayerSentData
+        Public Event PlayerTalked(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player, ByVal text As String) Implements IW3Server.PlayerTalked
+        Public Event RemovedGame(ByVal sender As IW3Server, ByVal game As IW3Game) Implements IW3Server.RemovedGame
+        Public Event AddedGame(ByVal sender As IW3Server, ByVal game As IW3Game) Implements IW3Server.AddedGame
+        Public Event ChangedState(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates) Implements IW3Server.ChangedState
+        Public ReadOnly Property logger As Logging.Logger Implements IW3Server.logger
+            Get
+                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public ReadOnly Property name As String Implements IW3Server.name
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public ReadOnly Property parent As MainBot Implements IW3Server.parent
+            Get
+                Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public ReadOnly Property settings As ServerSettings Implements IW3Server.settings
+            Get
+                Contract.Ensures(Contract.Result(Of ServerSettings)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public ReadOnly Property suffix As String Implements IW3Server.suffix
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public ReadOnly Property IsDisposed As Boolean Implements INotifyingDisposable.IsDisposed
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public Function CreateAdvertisingDependency() As INotifyingDisposable Implements IW3Server.CreateAdvertisingDependency
+            Contract.Ensures(Contract.Result(Of INotifyingDisposable)() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_AddAvertiser(ByVal m As Links.IGameSourceSink) As IFuture(Of Functional.Outcome) Implements IW3Server.f_AddAvertiser
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_CloseAllPorts() As IFuture(Of Functional.Outcome) Implements IW3Server.f_CloseAllPorts
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_ClosePort(ByVal port As UShort) As IFuture(Of Functional.Outcome) Implements IW3Server.f_ClosePort
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_CreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of Functional.Outcome(Of IW3Game)) Implements IW3Server.f_CreateGame
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of IW3Game)))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_EnumGames() As IFuture(Of System.Collections.Generic.IEnumerable(Of IW3Game)) Implements IW3Server.f_EnumGames
+            Contract.Ensures(Contract.Result(Of IFuture(Of IEnumerable(Of IW3Game)))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_FindGame(ByVal gameName As String) As IFuture(Of IW3Game) Implements IW3Server.f_FindGame
+            Contract.Ensures(Contract.Result(Of IFuture(Of IW3Game))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Server.f_FindPlayer
+            Contract.Ensures(Contract.Result(Of IFuture(Of IW3Player))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_FindPlayerGame(ByVal username As String) As IFuture(Of Outcome(Of IW3Game)) Implements IW3Server.f_FindPlayerGame
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of IW3Game)))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_Kill() As IFuture(Of Functional.Outcome) Implements IW3Server.f_Kill
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_OpenPort(ByVal port As UShort) As IFuture(Of Functional.Outcome) Implements IW3Server.f_OpenPort
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_RemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture(Of Functional.Outcome) Implements IW3Server.f_RemoveGame
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Function f_StopAcceptingPlayers() As IFuture(Of Functional.Outcome) Implements IW3Server.f_StopAcceptingPlayers
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Sub Dispose() Implements IDisposable.Dispose
+            Throw New NotSupportedException
+        End Sub
+    End Class
 
     Public Enum W3ServerStates As Byte
         only_accepting = 0
@@ -41,65 +144,40 @@ Namespace Warcraft3
         killed = 3
     End Enum
 
-    Public Class W3ConnectingPlayer
-        Public ReadOnly name As String
-        Public ReadOnly p2p_key As UInteger
-        Public ReadOnly listen_port As UShort
-        Public ReadOnly remote_port As UShort
-        Public ReadOnly remote_ip As Byte()
-        Public ReadOnly socket As W3Socket
-        Public Sub New(ByVal name As String,
-                       ByVal connection_key As UInteger,
-                       ByVal listen_port As UShort,
-                       ByVal remote_port As UShort,
-                       ByVal remote_ip As Byte(),
-                       ByVal socket As W3Socket)
-            Me.name = name
-            Me.p2p_key = connection_key
-            Me.listen_port = listen_port
-            Me.remote_ip = remote_ip
-            Me.remote_port = remote_port
-            Me.socket = socket
-        End Sub
-    End Class
-
     Public Class ServerSettings
         Public ReadOnly map As W3Map
-        Public ReadOnly map_settings As W3Map.MapSettings
+        Public ReadOnly header As W3GameHeader
         Public ReadOnly creationTime As Date = DateTime.Now()
-        Public ReadOnly is_admin_game As Boolean
+        Public ReadOnly isAdminGame As Boolean
         Public allowDownloads As Boolean
         Public allowUpload As Boolean
         Public instances As Integer
         Public autostarted As Boolean
-        Public admin_password As String
+        Public adminPassword As String
         Public managed_lifecycle As Boolean
         Public permanent As Boolean
         Public defaultSlotLockState As W3Slot.Lock
         Public auto_elevate_username As String
-        Public grab_map As Boolean
+        Public grabMap As Boolean
         Public default_listen_ports As New List(Of UShort)
-        Public arguments As IList(Of String)
         Public load_in_game As Boolean
 
         Public Sub New(ByVal map As W3Map,
-                       ByVal username As String,
+                       ByVal header As W3GameHeader,
                        Optional ByVal allowDownloads As Boolean = True,
                        Optional ByVal allowUpload As Boolean = True,
                        Optional ByVal autostarted As Boolean = False,
                        Optional ByVal defaultSlotLockState As W3Slot.Lock = W3Slot.Lock.unlocked,
                        Optional ByVal instances As Integer = 1,
                        Optional ByVal password As String = Nothing,
-                       Optional ByVal arguments As IList(Of String) = Nothing,
                        Optional ByVal auto_elevate_user As String = Nothing,
                        Optional ByVal managed_lifecycle As Boolean = True,
                        Optional ByVal is_admin_game As Boolean = False,
                        Optional ByVal grab_map As Boolean = False,
                        Optional ByVal default_listen_ports As IEnumerable(Of UShort) = Nothing)
             If Not (map IsNot Nothing) Then Throw New ArgumentException()
-            If arguments Is Nothing Then arguments = New List(Of String)
             Me.map = map
-            Me.map_settings = New W3Map.MapSettings(arguments)
+            Me.header = header
             Me.creationTime = DateTime.Now()
             Me.allowDownloads = allowDownloads
             Me.allowUpload = allowUpload
@@ -107,14 +185,13 @@ Namespace Warcraft3
             Me.autostarted = autostarted
             Me.defaultSlotLockState = defaultSlotLockState
             If password Is Nothing Then password = New Random().Next(0, 1000).ToString("000")
-            Me.admin_password = password
-            Me.arguments = arguments
+            Me.adminPassword = password
             Me.auto_elevate_username = auto_elevate_user
-            Me.is_admin_game = is_admin_game
-            Me.grab_map = grab_map
+            Me.isAdminGame = is_admin_game
+            Me.grabMap = grab_map
             Me.default_listen_ports = If(default_listen_ports, New List(Of UShort)).ToList()
 
-            For Each arg In arguments
+            For Each arg In header.Options
                 Dim arg2 = ""
                 If arg.Contains("="c) Then
                     Dim n = arg.IndexOf("="c)
@@ -141,9 +218,9 @@ Namespace Warcraft3
                     Case "-admin=", "-a="
                         Me.auto_elevate_username = arg2
                     Case "-admin", "-a"
-                        Me.auto_elevate_username = username
+                        Me.auto_elevate_username = header.hostUserName
                     Case "-grab"
-                        Me.grab_map = True
+                        Me.grabMap = True
                     Case "-port="
                         Dim port As UShort
                         If UShort.TryParse(arg2, port) Then

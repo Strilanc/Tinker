@@ -193,17 +193,17 @@ Public Class BotUserSet
             Throw New InvalidOperationException("User already exists")
         ElseIf userMap.ContainsKey(NAME_NEW_USER) Then
             Dim user As BotUser = userMap(NAME_NEW_USER).clone(name)
-            add_user(user)
+            AddUser(user)
             Return user
         Else
             Dim user As BotUser = New BotUser(name)
-            add_user(user)
+            AddUser(user)
             Return user
         End If
     End Function
 
-    Public Sub remove_user(ByVal name As String)
-        If Not containsUser(name) Then Throw New InvalidOperationException("That user doesn't exist")
+    Public Sub RemoveUser(ByVal name As String)
+        If Not ContainsUser(name) Then Throw New InvalidOperationException("That user doesn't exist")
         userMap.Remove(name.ToLower)
     End Sub
     Default Public ReadOnly Property user(ByVal name As String) As BotUser
@@ -223,12 +223,12 @@ Public Class BotUserSet
         End Get
     End Property
 
-    Public Function containsUser(ByVal name As String) As Boolean
+    Public Function ContainsUser(ByVal name As String) As Boolean
         If name Is Nothing Then Return False
         Return userMap.ContainsKey(name.ToLower())
     End Function
 
-    Public Sub remove_other_users(ByVal usernames As IList(Of String))
+    Public Sub RemoveOtherUsers(ByVal usernames As IList(Of String))
         'Find users not in the usernames list
         Dim removed_users = New List(Of String)
         For Each existing_name In userMap.Keys
@@ -244,42 +244,42 @@ Public Class BotUserSet
 
         'Remove those users
         For Each name In removed_users
-            remove_user(name)
+            RemoveUser(name)
         Next name
     End Sub
-    Public Sub update_user(ByVal user As BotUser)
-        If containsUser(user.name) Then
+    Public Sub UpdateUser(ByVal user As BotUser)
+        If ContainsUser(user.name) Then
             Dim old_user = Me(user.name)
             old_user.updatePermissions(user.packPermissions)
             old_user.updateSettings(user.packSettings)
         Else
-            add_user(user)
+            AddUser(user)
         End If
     End Sub
 
-    Public Sub add_user(ByVal user As BotUser)
-        If containsUser(user.name) Then Throw New InvalidOperationException("That user already exists")
+    Public Sub AddUser(ByVal user As BotUser)
+        If ContainsUser(user.name) Then Throw New InvalidOperationException("That user already exists")
         userMap(user.name.ToLower) = user
     End Sub
 
-    Public Sub load(ByVal r As IO.BinaryReader)
+    Public Sub Load(ByVal r As IO.BinaryReader)
         For i As Integer = 1 To r.ReadUInt16()
             Dim new_user As New BotUser(r)
-            add_user(new_user)
+            AddUser(new_user)
         Next i
     End Sub
-    Public Sub save(ByVal w As IO.BinaryWriter)
+    Public Sub Save(ByVal w As IO.BinaryWriter)
         w.Write(CUShort(userMap.Keys.Count))
         For Each user As BotUser In userMap.Values
             user.save(w)
         Next user
     End Sub
 
-    Public Function clone() As BotUserSet
+    Public Function Clone() As BotUserSet
         Dim new_user_set As New BotUserSet
         With new_user_set
             For Each user As BotUser In userMap.Values
-                new_user_set.add_user(user.clone())
+                new_user_set.AddUser(user.clone())
             Next user
         End With
         Return new_user_set

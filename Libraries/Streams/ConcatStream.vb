@@ -3,15 +3,11 @@ Public Class ConcatStream
     Private ReadOnly streams As IEnumerator(Of IO.Stream)
     Private emptied As Boolean
 
-    Public Sub New(ByVal ParamArray streams() As IO.Stream)
-        Me.New(CType(streams, IEnumerable(Of IO.Stream)))
-        If Not (streams IsNot Nothing) Then Throw New ArgumentException()
-    End Sub
     Public Sub New(ByVal streams As IEnumerable(Of IO.Stream))
-        If Not (streams IsNot Nothing) Then Throw New ArgumentException()
-
+        Contract.Requires(streams IsNot Nothing)
         If (From stream In streams Where stream Is Nothing).Any Then Throw New ArgumentException("streams contains a null member.")
         If (From stream In streams Where Not stream.CanRead).Any Then Throw New ArgumentException("streams contains a non-readable member.")
+
         Me.streams = streams.GetEnumerator()
         emptied = Not Me.streams.MoveNext()
     End Sub

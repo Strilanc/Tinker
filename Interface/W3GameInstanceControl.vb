@@ -10,7 +10,7 @@ Public Class W3GameControl
         Return uiRef.QueueFunc(Function() If(game Is Nothing, "[No Instance]", game.name))
     End Function
 
-    Public Function f_hook(ByVal game As IW3Game) As IFuture Implements IHookable(Of Warcraft3.IW3Game).f_hook
+    Public Function f_hook(ByVal game As IW3Game) As IFuture Implements IHookable(Of Warcraft3.IW3Game).f_Hook
         Return uiRef.QueueAction(
             Sub()
                 For i As Integer = 0 To lstSlots.Items.Count - 1
@@ -18,9 +18,9 @@ Public Class W3GameControl
                 Next i
                 Me.game = game
                 If game Is Nothing Then
-                    logInstance.setLogger(Nothing, Nothing)
+                    logInstance.SetLogger(Nothing, Nothing)
                 Else
-                    logInstance.setLogger(game.logger, "Instance")
+                    logInstance.SetLogger(game.logger, "Instance")
                     game.f_ThrowUpdated()
                 End If
             End Sub
@@ -43,7 +43,7 @@ Public Class W3GameControl
         If txtCommand.Text = "" Then Return
         If game Is Nothing Then Return
         e.Handled = True
-        game.f_CommandProcessLocalText(txtCommand.Text, logInstance.getLogger())
+        game.f_CommandProcessLocalText(txtCommand.Text, logInstance.Logger())
         txtCommand.Text = ""
     End Sub
 

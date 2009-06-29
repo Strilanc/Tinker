@@ -21,11 +21,11 @@ Namespace Commands.Specializations
         Inherits UICommandSet(Of IW3Server)
 
         Public Sub New()
-            add_subcommand(New com_OpenInstance)
-            add_subcommand(New com_StartListening)
-            add_subcommand(New com_StopListening)
-            add_subcommand(New com_CloseInstance)
-            add_subcommand(New com_Bot)
+            AddCommand(New com_OpenInstance)
+            AddCommand(New com_StartListening)
+            AddCommand(New com_StopListening)
+            AddCommand(New com_CloseInstance)
+            AddCommand(New com_Bot)
         End Sub
 
         Private Class com_Bot
@@ -36,7 +36,7 @@ Namespace Commands.Specializations
                             "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.")
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.parent.bot_commands.processText(target.parent, user, mendQuotedWords(arguments))
+                Return target.parent.BotCommands.ProcessText(target.parent, user, mendQuotedWords(arguments))
             End Function
         End Class
 
@@ -63,7 +63,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim port As UShort
-                If Not UShort.TryParse(arguments(0), port) Then Return futurize(failure("Invalid port"))
+                If Not UShort.TryParse(arguments(0), port) Then Return failure("Invalid port").Futurize
                 Return target.f_OpenPort(port)
             End Function
         End Class
@@ -83,7 +83,7 @@ Namespace Commands.Specializations
                 Else
                     Dim port As UShort
                     If Not UShort.TryParse(arguments(0), port) Then
-                        Return futurize(failure("Invalid port"))
+                        Return failure("Invalid port").Futurize
                     End If
                     Return target.f_ClosePort(port)
                 End If
@@ -111,7 +111,7 @@ Namespace Commands.Specializations
                             DictStrUInt("root=4;games=4"))
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_RemoveGame(arguments(0))
+                Return target.f_RemoveGame(arguments(0), ignorePermanent:=True)
             End Function
         End Class
     End Class

@@ -62,7 +62,7 @@
     </CodeContractsCustomRewriterAssembly>
     <CodeContractsCustomRewriterClass>
     </CodeContractsCustomRewriterClass>
-    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsRuntimeCheckingLevel>Preconditions</CodeContractsRuntimeCheckingLevel>
     <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
     <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
     <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
@@ -75,13 +75,14 @@
     </CodeContractsPlatformPath>
     <CodeContractsExtraAnalysisOptions>
     </CodeContractsExtraAnalysisOptions>
-    <CodeContractsBaseLineFile>
-    </CodeContractsBaseLineFile>
+    <CodeContractsBaseLineFile>baseline.xml</CodeContractsBaseLineFile>
     <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
-    <CodeContractsRunInBackground>False</CodeContractsRunInBackground>
+    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
     <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
+    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -115,7 +116,7 @@
     <CodeContractsRunInBackground>False</CodeContractsRunInBackground>
     <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
     <PlatformTarget>x86</PlatformTarget>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>SecurityRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -129,7 +130,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Import Include="HostBot.DataStructures" />
     <Import Include="HostBot.Functional" />
     <Import Include="HostBot.Functional.Futures" />
     <Import Include="HostBot.Functional.Queueing" />
@@ -138,6 +138,7 @@
     <Import Include="System" />
     <Import Include="System.Collections.Generic" />
     <Import Include="System.Data" />
+    <Import Include="System.Diagnostics.Contracts" />
     <Import Include="System.Drawing" />
     <Import Include="System.Diagnostics" />
     <Import Include="System.Linq" />
@@ -145,10 +146,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
-    <Compile Include="Battlenet\Warcraft3\Dummy Player\W3P2PPlayer.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameHeader.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3RemotePlayer.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3MapDownload.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GameInterface.vb" />
-    <Compile Include="Battlenet\Warcraft3\Game\W3GamePart.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GameLoadScreen.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GameLobby.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GamePlay.vb" />
@@ -160,6 +161,7 @@
     <Compile Include="Battlenet\Warcraft3\Server\W3ServerDoor.vb" />
     <Compile Include="Battlenet\Warcraft3\Server\W3ServerInterface.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3ConnectionAccepter.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3MapSettings.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Slot.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Socket.vb" />
     <Compile Include="Battlenet\Warcraft3\Warden\Warden BSha1.vb" />
@@ -167,7 +169,10 @@
     <Compile Include="Battlenet\Warcraft3\Warden\Warden RC4.vb" />
     <Compile Include="Battlenet\Warcraft3\Warden\Warden PRNG.vb" />
     <Compile Include="Battlenet\Warcraft3\Warden\Warden Tester.vb" />
+    <Compile Include="Bot\Commands\CKL Commands.vb" />
     <Compile Include="Bot\Commands\Lan Commands.vb" />
+    <Compile Include="Bot\Widgets\CKL Client.vb" />
+    <Compile Include="Bot\Widgets\CKL Interface.vb" />
     <Compile Include="Interface\ProfileSettingsControl.Designer.vb">
       <DependentUpon>ProfileSettingsControl.vb</DependentUpon>
     </Compile>
@@ -176,16 +181,21 @@
     </Compile>
     <Compile Include="Libraries\Data Structures\ArrayView.vb" />
     <Compile Include="Libraries\Data Structures\BigNum.vb" />
+    <Compile Include="Libraries\Data Structures\DeadManSwitch.vb" />
+    <Compile Include="Libraries\Data Structures\Locks.vb" />
+    <Compile Include="Libraries\Data Structures\ModInt.vb" />
     <Compile Include="Libraries\Data Structures\MStack.vb" />
     <Compile Include="Libraries\Data Structures\LockFreeQueue.vb" />
-    <Compile Include="Libraries\Functional\FutureUtilities.vb" />
-    <Compile Include="Libraries\MPQ\MPQHashTable.vb" />
-    <Compile Include="Libraries\MPQ\MPQFileTable.vb" />
-    <Compile Include="Libraries\MPQ\MPQFileStream.vb" />
+    <Compile Include="Libraries\Mpq\MpqHashTable.vb" />
+    <Compile Include="Libraries\Mpq\MpqFileTable.vb" />
+    <Compile Include="Libraries\Mpq\MpqFileStream.vb" />
     <Compile Include="Libraries\Utilities\ConnectionAccepter.vb" />
     <Compile Include="Libraries\Streams\SeekableStream.vb" />
-    <Compile Include="Libraries\Utilities\Iterator.vb" />
-    <Compile Include="Battlenet\Warcraft3\Dummy Player\W3DummyPlayer.vb" />
+    <Compile Include="Libraries\Functional\Coroutine.vb" />
+    <Compile Include="Libraries\Utilities\Disposable.vb" />
+    <Compile Include="Libraries\Utilities\Exceptions.vb" />
+    <Compile Include="Libraries\Functional\Iterator.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3DummyPlayer.vb" />
     <Compile Include="Battlenet\Warcraft3\W3LanAdvertiser.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\TransferScheduler.vb" />
     <Compile Include="Bot\Commands\Base Commands.vb" />
@@ -207,7 +217,8 @@
     <Compile Include="Interface\BotWidgetControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Libraries\MPQ\Compression\MPQPkWare.vb" />
+    <Compile Include="Libraries\Mpq\Compression\MpqPkWare.vb" />
+    <Compile Include="Libraries\Utilities\Networking.vb" />
     <Compile Include="RecyclingBin\Settings.vb" />
     <Compile Include="RecyclingBin\SettingsList.Designer.vb">
       <DependentUpon>SettingsList.vb</DependentUpon>
@@ -218,7 +229,6 @@
     <Compile Include="Bot\Plugins.vb" />
     <Compile Include="Battlenet\Warcraft3\Warden\Warden Packet Handler.vb" />
     <Compile Include="Bot\Widgets\CKL Server.vb" />
-    <Compile Include="Test\Test2.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Packet.vb" />
     <Compile Include="RecyclingBin\BotCommander.vb" />
     <Compile Include="Bot\BotUser.vb" />
@@ -239,9 +249,9 @@
     <Compile Include="Libraries\Functional\FunctionalCommon.vb" />
     <Compile Include="Libraries\Logging\Logging.vb" />
     <Compile Include="Libraries\PackParse\Pickling.vb" />
-    <Compile Include="Libraries\Utilities\BlockConverter.vb" />
-    <Compile Include="Libraries\MPQ\MPQCommon.vb" />
-    <Compile Include="Libraries\MPQ\Compression\MPQHuffman.vb" />
+    <Compile Include="Libraries\Utilities\Converter.vb" />
+    <Compile Include="Libraries\Mpq\MpqCommon.vb" />
+    <Compile Include="Libraries\Mpq\Compression\MpqHuffman.vb" />
     <Compile Include="RecyclingBin\RateList.vb" />
     <Compile Include="RecyclingBin\TimeGraphControl.Designer.vb">
       <DependentUpon>TimeGraphControl.vb</DependentUpon>
@@ -270,17 +280,16 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Bot\MainBot.vb" />
-    <Compile Include="Libraries\MPQ\MPQArchive.vb" />
-    <Compile Include="Libraries\MPQ\MPQCrypt.vb" />
+    <Compile Include="Libraries\Mpq\MpqArchive.vb" />
+    <Compile Include="Libraries\Mpq\MpqCrypt.vb" />
     <Compile Include="Libraries\Streams\PacketStream.vb" />
-    <Compile Include="Libraries\Utilities\IFactory.vb" />
     <Compile Include="Libraries\Streams\StreamWrapper.vb" />
     <Compile Include="Battlenet\BnetClient.vb" />
     <Compile Include="Libraries\Utilities\Common.vb" />
     <Compile Include="Battlenet\BnetCrypt.vb" />
     <Compile Include="Libraries\PackParse\Pack.vb" />
     <Compile Include="Battlenet\BnetSocket.vb" />
-    <Compile Include="Libraries\MPQ\Compression\MPQWave.vb" />
+    <Compile Include="Libraries\Mpq\Compression\MpqWave.vb" />
     <Compile Include="Libraries\Streams\ConcatStream.vb" />
     <Compile Include="RecyclingBin\W3SlotControl.Designer.vb">
       <DependentUpon>W3SlotControl.vb</DependentUpon>

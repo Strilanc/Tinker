@@ -22,14 +22,14 @@ Namespace Warcraft3
         Private ReadOnly ref As ICallQueue
         Private ReadOnly eref As ICallQueue
 
-        Private Event ChangedState(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates) Implements IW3Server.ChangedState
+        Private Event ChangedState(ByVal sender As IW3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates) Implements IW3Server.ChangedState
         Private Event AddedGame(ByVal sender As IW3Server, ByVal game As IW3Game) Implements IW3Server.AddedGame
         Private Event RemovedGame(ByVal sender As IW3Server, ByVal game As IW3Game) Implements IW3Server.RemovedGame
         Private Event PlayerTalked(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player, ByVal text As String) Implements IW3Server.PlayerTalked
-        Private Event PlayerLeft(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal reason As W3PlayerLeaveTypes) Implements IW3Server.PlayerLeft
-        Private Event PlayerSentData(ByVal sever As IW3Server, ByVal game As IW3GamePlay, ByVal player As IW3PlayerGameplay, ByVal data As Byte()) Implements IW3Server.PlayerSentData
-        Private Event PlayerEntered(ByVal sender As IW3Server, ByVal game As IW3GameLobby, ByVal player As IW3PlayerLobby) Implements IW3Server.PlayerEntered
-        Private Event Closed() Implements Links.IDependencyLinkMaster.Closed
+        Private Event PlayerLeft(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Server.PlayerLeft
+        Private Event PlayerSentData(ByVal sever As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player, ByVal data As Byte()) Implements IW3Server.PlayerSentData
+        Private Event PlayerEntered(ByVal sender As IW3Server, ByVal game As IW3Game, ByVal player As IW3Player) Implements IW3Server.PlayerEntered
+        Private Event Closed() Implements INotifyingDisposable.Disposed
 
         Private total_instances_created_P As Integer = 0
         Private suffix As String
@@ -47,16 +47,32 @@ Namespace Warcraft3
         End Sub
 #End Region
 
-#Region "New"
+        <ContractInvariantMethod()> Protected Sub Invariant()
+            Contract.Invariant(parent IsNot Nothing)
+            Contract.Invariant(name IsNot Nothing)
+            Contract.Invariant(settings IsNot Nothing)
+            Contract.Invariant(games_all IsNot Nothing)
+            Contract.Invariant(games_lobby IsNot Nothing)
+            Contract.Invariant(games_load_screen IsNot Nothing)
+            Contract.Invariant(games_gameplay IsNot Nothing)
+            Contract.Invariant(door IsNot Nothing)
+            Contract.Invariant(logger IsNot Nothing)
+            Contract.Invariant(ref IsNot Nothing)
+            Contract.Invariant(eref IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal name As String,
                        ByVal parent As MainBot,
                        ByVal settings As ServerSettings,
                        Optional ByVal suffix As String = "",
                        Optional ByVal logger As Logger = Nothing)
+            Contract.Requires(name IsNot Nothing)
+            Contract.Requires(parent IsNot Nothing)
+            Contract.Requires(settings IsNot Nothing)
             Try
-                Me.settings = ContractNotNull(settings, "settings")
-                Me.parent = ContractNotNull(parent, "parent")
-                Me.name = ContractNotNull(name, "name")
+                Me.settings = settings
+                Me.parent = parent
+                Me.name = name
                 Me.suffix = suffix
                 Me.logger = If(logger, New Logger)
                 Me.door = New W3ServerDoor(Me, Me.logger)
@@ -65,18 +81,17 @@ Namespace Warcraft3
 
                 For Each port In settings.default_listen_ports
                     Dim out = door.accepter.accepter.OpenPort(port)
-                    If Not out.succeeded Then Throw New InvalidOperationException(out.message)
+                    If Not out.succeeded Then Throw New InvalidOperationException(out.Message)
                 Next port
                 For i = 1 To settings.instances
                     CreateGame()
                 Next i
-                parent.logger.log("Server started for map {0}.".frmt(settings.map.relative_path), LogMessageTypes.Positive)
+                parent.logger.log("Server started for map {0}.".frmt(settings.map.RelativePath), LogMessageTypes.Positive)
             Catch e As Exception
                 door.Reset()
                 Throw
             End Try
         End Sub
-#End Region
 
 #Region "Events"
         Private Sub e_ThrowStateChanged(ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
@@ -104,14 +119,14 @@ Namespace Warcraft3
         Private Sub c_PlayerTalked(ByVal game As IW3Game, ByVal player As IW3Player, ByVal text As String)
             RaiseEvent PlayerTalked(Me, game, player, text)
         End Sub
-        Private Sub c_PlayerSentData(ByVal game As IW3GamePlay, ByVal player As IW3PlayerGameplay, ByVal data As Byte())
+        Private Sub c_PlayerSentData(ByVal game As IW3Game, ByVal player As IW3Player, ByVal data As Byte())
             RaiseEvent PlayerSentData(Me, game, player, data)
         End Sub
-        Private Sub c_PlayerLeft(ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal reason As W3PlayerLeaveTypes)
-            logger.log("{0} left game {1}".frmt(player.name, game.name), LogMessageTypes.Negative)
-            RaiseEvent PlayerLeft(Me, game, game_state, player, reason)
+        Private Sub c_PlayerLeft(ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
+            logger.log("{0} left game {1}. ({2})".frmt(player.name, game.name, reason), LogMessageTypes.Negative)
+            RaiseEvent PlayerLeft(Me, game, game_state, player, leaveType, reason)
         End Sub
-        Private Sub c_PlayerEntered(ByVal game As IW3GameLobby, ByVal player As IW3PlayerLobby)
+        Private Sub c_PlayerEntered(ByVal game As IW3Game, ByVal player As IW3Player)
             RaiseEvent PlayerEntered(Me, game, player)
         End Sub
         Private Sub c_GameStateChanged(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
@@ -144,7 +159,7 @@ Namespace Warcraft3
                     If state = W3ServerStates.accepting_and_playing AndAlso settings.instances > 0 Then
                         If games_lobby.Count = 0 Then
                             If settings.permanent Then
-                                set_advertiser_options(True)
+                                SetAdvertiserOptions(True)
                             Else
                                 StopAcceptingPlayers()
                             End If
@@ -174,8 +189,8 @@ Namespace Warcraft3
             Next game
 
             If games_all.Any Then
-                For Each adv In link_advertisers
-                    adv.stop_advertising("Server no longer accepting players.")
+                For Each adv In linkedAdvertisers
+                    adv.RemoveGame(Me.settings.header, "Server no longer accepting players.")
                 Next adv
                 Return success("No longer accepting players.")
             Else
@@ -195,23 +210,27 @@ Namespace Warcraft3
             games_all.Clear()
             door.Reset()
 
-            For Each adv In link_advertisers
-                adv.stop_advertising("Server killed.")
+            For Each adv In linkedAdvertisers
+                adv.RemoveGame(Me.settings.header, "Server killed.")
             Next adv
 
             change_state(W3ServerStates.killed)
             RaiseEvent Closed()
-            parent.remove_server_R(Me.name)
+            parent.f_RemoveServer(Me.name)
             Return success("Server killed.")
         End Function
+        Public ReadOnly Property IsDisposed As Boolean Implements INotifyingDisposable.IsDisposed
+            Get
+                Return state >= W3ServerStates.killed
+            End Get
+        End Property
 #End Region
 
 #Region "Games"
         '''<summary>Adds a game to the server.</summary>
         Private Function CreateGame(Optional ByVal game_name As String = Nothing,
                                     Optional ByVal arguments As IEnumerable(Of String) = Nothing) As Outcome(Of IW3Game)
-            If game_name Is Nothing Then game_name = total_instances_created_P.ToString()
-            If arguments Is Nothing Then arguments = settings.arguments
+            game_name = If(game_name, total_instances_created_P.ToString())
             If state > W3ServerStates.accepting_and_playing Then
                 Return failure("No longer accepting players. Can't create new instances.")
             End If
@@ -220,7 +239,7 @@ Namespace Warcraft3
                 Return failure("A game called '{0}' already exists.".frmt(game_name))
             End If
 
-            game = New W3Game(Me, game_name, settings.map, arguments)
+            game = New W3Game(Me, game_name, settings.map, If(arguments, settings.header.options))
             logger.log(game.name + " opened.", LogMessageTypes.Positive)
             total_instances_created_P += 1
             games_all.Add(game)
@@ -229,9 +248,10 @@ Namespace Warcraft3
             AddHandler game.PlayerTalked, AddressOf c_PlayerTalked
             AddHandler game.PlayerLeft, AddressOf c_PlayerLeft
             AddHandler game.ChangedState, AddressOf c_GameStateChanged
-            AddHandler game.lobby.PlayerEntered, AddressOf c_PlayerEntered
-            AddHandler game.gameplay.PlayerSentData, AddressOf c_PlayerSentData
+            AddHandler game.PlayerEntered, AddressOf c_PlayerEntered
+            AddHandler game.PlayerSentData, AddressOf c_PlayerSentData
 
+            SetAdvertiserOptions(private:=False)
             e_ThrowAddedGame(game)
             Return successVal(game, "Succesfully created instance '{0}'.".frmt(game_name))
         End Function
@@ -243,28 +263,27 @@ Namespace Warcraft3
 
         '''<summary>Finds a player with the given name in any of the server's games.</summary>
         Private Function f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player)
-            Return FutureSelect(FutureMap(futurize(games_all.ToList),
-                                          Function(game) game.f_FindPlayer(username)),
-                                Function(player) futurize(player IsNot Nothing))
+            Return games_all.ToList.FutureMap(Function(game) game.f_FindPlayer(username)).EvalWhenValueReady(
+                                   Function(players) players.FirstOrDefault)
         End Function
 
         '''<summary>Finds a game containing a player with the given name.</summary>
-        Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of IW3Game)
-            Return FutureSelect(futurize(games_all.ToList),
-                                Function(game) FutureFunc.Call(game.f_FindPlayer(username),
-                                                                           Function(player) player IsNot Nothing))
+        Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of Outcome(Of IW3Game))
+            Return FutureSelect(games_lobby.ToList,
+                                Function(game) game.f_FindPlayer(username).EvalWhenValueReady(
+                                                               Function(player) player IsNot Nothing))
         End Function
 
         '''<summary>Removes a game with the given name.</summary>
-        Private Function RemoveGame(ByVal game_name As String) As Outcome
+        Private Function RemoveGame(ByVal game_name As String, Optional ByVal ignorePermanent As Boolean = False) As Outcome
             Dim game = FindGame(game_name)
             If game Is Nothing Then Return failure("No game with that name.")
 
             RemoveHandler game.PlayerTalked, AddressOf c_PlayerTalked
             RemoveHandler game.PlayerLeft, AddressOf c_PlayerLeft
             RemoveHandler game.ChangedState, AddressOf c_GameStateChanged
-            RemoveHandler game.lobby.PlayerEntered, AddressOf c_PlayerEntered
-            RemoveHandler game.gameplay.PlayerSentData, AddressOf c_PlayerSentData
+            RemoveHandler game.PlayerEntered, AddressOf c_PlayerEntered
+            RemoveHandler game.PlayerSentData, AddressOf c_PlayerSentData
 
             games_all.Remove(game)
             games_lobby.Remove(game)
@@ -273,9 +292,10 @@ Namespace Warcraft3
             game.f_Close()
             e_ThrowRemovedGame(game)
 
-            If settings.permanent And settings.instances > 0 And state < W3ServerStates.only_playing_out Then
+            If Not ignorePermanent AndAlso settings.permanent AndAlso
+                                           settings.instances > 0 AndAlso
+                                           state < W3ServerStates.only_playing_out Then
                 CreateGame()
-                set_advertiser_options(False)
             End If
 
             Return success("Game '{0}' removed from server '{1}'.".frmt(game.name, game_name))
@@ -283,76 +303,73 @@ Namespace Warcraft3
 #End Region
 
 #Region "Link"
-        Private link_advertisers As New List(Of IAdvertisingLinkMember)
-        Private Function add_advertiser_L(ByVal m As IAdvertisingLinkMember) As outcome
+        Private ReadOnly linkedAdvertisers As New HashSet(Of IGameSourceSink)
+        Private Function AddAdvertiser(ByVal m As IGameSourceSink) As outcome
             If state > W3ServerStates.accepting_and_playing Then Return failure("Not accepting players anymore.")
-            If link_advertisers.Contains(m) Then Return success("Already have that advertiser.")
-            AddHandler m.stopped_advertising, AddressOf remove_stalled_advertised_R
-            link_advertisers.Add(m)
+            If linkedAdvertisers.Contains(m) Then Return success("Already have that advertiser.")
+            AddHandler m.RemovedGame, AddressOf c_AdvertiserRemovedGame
+            linkedAdvertisers.Add(m)
             Return success("Added advertiser.")
         End Function
-        Private Sub set_advertiser_options(ByVal [private] As Boolean)
-            For Each m In link_advertisers
-                m.set_advertising_options([private])
+        Private Sub SetAdvertiserOptions(ByVal [private] As Boolean)
+            For Each m In linkedAdvertisers
+                m.SetAdvertisingOptions([private])
             Next m
         End Sub
 
-        Private Sub remove_stalled_advertised_R(ByVal m As IAdvertisingLinkMember, ByVal reason As String)
-            ref.QueueAction(Sub() remove_stalled_advertised_L(m, reason))
-        End Sub
-        Private Sub remove_stalled_advertised_L(ByVal m As IAdvertisingLinkMember, ByVal reason As String)
-            If Not link_advertisers.Contains(m) Then Return
-            RemoveHandler m.stopped_advertising, AddressOf remove_stalled_advertised_R
-            link_advertisers.Remove(m)
+        Private Sub c_AdvertiserRemovedGame(ByVal _m As IGameSource, ByVal header As W3GameHeader, ByVal reason As String)
+            If header IsNot settings.header Then Return
+            Dim m = CType(_m, IGameSourceSink)
+            ref.QueueAction(
+                Sub()
+                    If Not linkedAdvertisers.Contains(m) Then  Return
+                    RemoveHandler m.RemovedGame, AddressOf c_AdvertiserRemovedGame
+                    linkedAdvertisers.Remove(m)
+                End Sub
+            )
         End Sub
         Private Class AdvertisingDependency
-            Implements IDependencyLinkServant
+            Inherits NotifyingDisposable
             Private WithEvents server As IW3Server
-            Private cleaned As Boolean = False
-            Private ReadOnly lock As New Object()
-            Public Event closed() Implements Links.IDependencyLinkMaster.Closed
 
             Public Sub New(ByVal server As IW3Server)
-                Me.server = ContractNotNull(server, "server")
+                Contract.Requires(server IsNot Nothing)
+                Me.server = server
             End Sub
 
-            Public Sub close() Implements Links.IDependencyLinkServant.close
-                SyncLock lock
-                    If cleaned Then Return
-                    cleaned = True
-                End SyncLock
-
+            Protected Overrides Sub PerformDispose()
                 server.f_StopAcceptingPlayers()
                 server = Nothing
-                RaiseEvent closed()
             End Sub
 
-            Private Sub server_state_changed(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates) Handles server.ChangedState
-                If old_state <= W3ServerStates.accepting_and_playing And new_state > W3ServerStates.accepting_and_playing Then
-                    close()
+            Private Sub c_ServerStateChanged(ByVal sender As IW3Server,
+                                             ByVal oldState As W3ServerStates,
+                                             ByVal newState As W3ServerStates) Handles server.ChangedState
+                If oldState <= W3ServerStates.accepting_and_playing And newState > W3ServerStates.accepting_and_playing Then
+                    Dispose()
                 End If
             End Sub
         End Class
 #End Region
 
 #Region "Interface"
-        Private Function _f_FindGame(ByVal game_name As String) As IFuture(Of IW3Game) Implements IW3Server.f_FindGame
-            Return ref.QueueFunc(Function() FindGame(game_name))
+        Private Function _f_FindGame(ByVal gameName As String) As IFuture(Of IW3Game) Implements IW3Server.f_FindGame
+            Return ref.QueueFunc(Function() FindGame(gameName))
         End Function
         Private Function _f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Server.f_FindPlayer
-            Return futurefuture(ref.QueueFunc(Function() f_FindPlayer(username)))
+            Return ref.QueueFunc(Function() f_FindPlayer(username)).Defuturize
         End Function
-        Private Function _f_FindPlayerGame(ByVal username As String) As IFuture(Of IW3Game) Implements IW3Server.f_FindPlayerGame
-            Return futurefuture(ref.QueueFunc(Function() f_FindPlayerGame(username)))
+        Private Function _f_FindPlayerGame(ByVal username As String) As IFuture(Of Outcome(Of IW3Game)) Implements IW3Server.f_FindPlayerGame
+            Return ref.QueueFunc(Function() f_FindPlayerGame(username)).Defuturize
         End Function
         Private Function _f_EnumGames() As IFuture(Of IEnumerable(Of IW3Game)) Implements IW3Server.f_EnumGames
             Return ref.QueueFunc(Function() CType(games_all.ToList, IEnumerable(Of IW3Game)))
         End Function
-        Private Function _f_CreateGame(Optional ByVal instance_name As String = Nothing) As IFuture(Of Outcome(Of IW3Game)) Implements IW3Server.f_CreateGame
-            Return ref.QueueFunc(Function() CreateGame(instance_name))
+        Private Function _f_CreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of Outcome(Of IW3Game)) Implements IW3Server.f_CreateGame
+            Return ref.QueueFunc(Function() CreateGame(gameName))
         End Function
-        Private Function _f_RemoveGame(ByVal instance_name As String) As IFuture(Of Outcome) Implements IW3Server.f_RemoveGame
-            Return ref.QueueFunc(Function() RemoveGame(instance_name))
+        Private Function _f_RemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture(Of Outcome) Implements IW3Server.f_RemoveGame
+            Return ref.QueueFunc(Function() RemoveGame(gameName, ignorePermanent))
         End Function
         Private Function _f_ClosePort(ByVal port As UShort) As IFuture(Of Outcome) Implements IW3Server.f_ClosePort
             Return ref.QueueFunc(Function() door.accepter.accepter.ClosePort(port))
@@ -366,16 +383,16 @@ Namespace Warcraft3
         Private Function _f_StopAcceptingPlayers() As IFuture(Of Outcome) Implements IW3Server.f_StopAcceptingPlayers
             Return ref.QueueFunc(Function() StopAcceptingPlayers())
         End Function
-        Private Sub _servant_close() Implements Links.IDependencyLinkServant.close
+        Private Sub _servant_close() Implements INotifyingDisposable.Dispose
             ref.QueueAction(Function() Kill())
         End Sub
         Private Function _f_Kill() As IFuture(Of Outcome) Implements IW3Server.f_Kill
             Return ref.QueueFunc(Function() Kill())
         End Function
-        Private Function _add_advertiser_R(ByVal m As IAdvertisingLinkMember) As IFuture(Of outcome) Implements IW3Server.f_AddAvertiser
-            Return ref.QueueFunc(Function() add_advertiser_L(m))
+        Private Function _add_advertiser_R(ByVal m As IGameSourceSink) As IFuture(Of outcome) Implements IW3Server.f_AddAvertiser
+            Return ref.QueueFunc(Function() AddAdvertiser(m))
         End Function
-        Private Function _advertising_dep() As IDependencyLinkServant Implements IW3Server.advertising_dep
+        Private Function _advertising_dep() As INotifyingDisposable Implements IW3Server.CreateAdvertisingDependency
             Return New AdvertisingDependency(Me)
         End Function
         Private ReadOnly Property _logger() As Logger Implements IW3Server.logger

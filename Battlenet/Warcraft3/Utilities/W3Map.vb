@@ -1,106 +1,136 @@
-Imports HostBot.Pickling.Jars
-
 Namespace Warcraft3
     Public Class W3Map
-#Region "Inner"
-        Public Enum SPD
-            SLOW
-            MEDIUM
-            FAST
-        End Enum
-        Public Enum OBS
-            NO_OBSERVERS
-            OBSERVERS_ON_DEFEAT
-            FULL_OBSERVERS
-            REFEREES
-        End Enum
-        Public Enum VIS
-            MAP_DEFAULT
-            ALWAYS_VISIBLE
-            EXPLORED
-            HIDE_TERRAIN
-        End Enum
-        Public Class MapSettings
-            Public ReadOnly randomHero As Boolean = False
-            Public ReadOnly randomRace As Boolean = False
-            Public ReadOnly allowFullSharedControl As Boolean = False
-            Public ReadOnly lockTeams As Boolean = True
-            Public ReadOnly teamsTogether As Boolean = True
-            Public ReadOnly observers As W3Map.OBS = W3Map.OBS.NO_OBSERVERS
-            Public ReadOnly visibility As W3Map.VIS = W3Map.VIS.MAP_DEFAULT
-            Public ReadOnly speed As W3Map.SPD = W3Map.SPD.FAST
-            Public Sub New(ByVal arguments As IList(Of String))
-                For Each arg In arguments
-                    Dim arg2 = ""
-                    If arg.Contains("="c) Then
-                        Dim n = arg.IndexOf("="c)
-                        arg2 = arg.Substring(n + 1)
-                        arg = arg.Substring(0, n + 1)
-                    End If
-                    arg = arg.ToLower.Trim()
-                    arg2 = arg2.ToLower.Trim()
-
-                    Select Case arg
-                        Case "-obs", "-multiobs", "-mo", "-o"
-                            observers = W3Map.OBS.FULL_OBSERVERS
-                        Case "-referees", "-ref"
-                            observers = W3Map.OBS.REFEREES
-                        Case "-obsondefeat", "-od"
-                            observers = W3Map.OBS.OBSERVERS_ON_DEFEAT
-                        Case "-rh", "-randomhero"
-                            randomHero = True
-                        Case "-rr", "-randomrace"
-                            randomRace = True
-                        Case "-unlockteams"
-                            lockTeams = False
-                        Case "-fullshared", "-fullshare", "-allowfullshared", "-allowfullshare", "-fullsharedcontrol", "-allowfullsharedcontrol"
-                            allowFullSharedControl = True
-                        Case "-teamsapart"
-                            teamsTogether = False
-                        Case "-speed="
-                            Select Case arg2
-                                Case "medium"
-                                    speed = W3Map.SPD.MEDIUM
-                                Case "slow"
-                                    speed = W3Map.SPD.SLOW
-                            End Select
-                        Case "-visibility=", "-vis="
-                            Select Case arg2
-                                Case "all", "always visible", "visible", "alwaysvisible"
-                                    visibility = W3Map.VIS.ALWAYS_VISIBLE
-                                Case "explored"
-                                    visibility = W3Map.VIS.EXPLORED
-                                Case "none", "hide", "hideterrain"
-                                    visibility = W3Map.VIS.HIDE_TERRAIN
-                            End Select
-                    End Select
-                Next arg
-            End Sub
-        End Class
-#End Region
-
-#Region "Members"
         Public playableWidth As Integer
         Public playableHeight As Integer
         Public isMelee As Boolean
         Public name As String
         Public numForces As Integer
-        Public numPlayerSlots As Integer
-        Public ReadOnly crc32 As Byte()
-        Public ReadOnly fileSize As UInteger
-        Public ReadOnly checksum_sha1 As Byte() = Nothing
-        Public ReadOnly checksum_xoro As Byte() = Nothing
-        Public ReadOnly folder As String
-        Public ReadOnly relative_path As String
-        Public ReadOnly full_path As String
-        Public downloaded_size As Integer
-        Public file_available As Boolean
+        Private _numPlayerSlots As Integer
+        Private ReadOnly _crc32 As Byte()
+        Private ReadOnly _fileSize As UInteger
+        Private ReadOnly _checksumSha1 As Byte()
+        Private ReadOnly _checksumXoro As Byte()
+        Private ReadOnly _folder As String
+        Private ReadOnly _relativePath As String
+        Private ReadOnly _fullPath As String
+        Public fileAvailable As Boolean
         Public slots As New List(Of W3Slot)
 
-        Public ReadOnly Property numPlayerAndObsSlots(ByVal map_settings As W3Map.MapSettings) As Integer
+        <ContractInvariantMethod()> Protected Sub Invariant()
+            Contract.Invariant(_fileSize > 0)
+            Contract.Invariant(_checksumSha1 IsNot Nothing)
+            Contract.Invariant(_checksumSha1.Length = 20)
+            Contract.Invariant(_checksumXoro IsNot Nothing)
+            Contract.Invariant(_checksumXoro.Length = 4)
+            Contract.Invariant(_crc32 IsNot Nothing)
+            Contract.Invariant(_crc32.Length = 4)
+            Contract.Invariant(_folder IsNot Nothing)
+            Contract.Invariant(_relativePath IsNot Nothing)
+            Contract.Invariant(_fullPath IsNot Nothing)
+            Contract.Invariant(_numPlayerSlots > 0)
+            Contract.Invariant(_numPlayerSlots <= 12)
+        End Sub
+        Public ReadOnly Property NumPlayerSlots As Integer
+            Get
+                Contract.Ensures(Contract.Result(Of Integer)() > 0)
+                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
+                Return _numPlayerSlots
+            End Get
+        End Property
+        Public ReadOnly Property FileSize As UInteger
+            Get
+                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
+                Return _fileSize
+            End Get
+        End Property
+        Public ReadOnly Property ChecksumSha1 As Byte()
+            Get
+                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
+                Return _checksumSha1
+            End Get
+        End Property
+        Public ReadOnly Property Crc32 As Byte()
+            Get
+                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Byte())().Length = 4)
+                Return _crc32
+            End Get
+        End Property
+        Public ReadOnly Property ChecksumXoro As Byte()
+            Get
+                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Byte())().Length = 4)
+                Return _checksumXoro
+            End Get
+        End Property
+        Public ReadOnly Property Folder As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _folder
+            End Get
+        End Property
+        Public ReadOnly Property RelativePath As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _relativePath
+            End Get
+        End Property
+        Public ReadOnly Property FullPath As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _fullPath
+            End Get
+        End Property
+
+        Public Enum SizeDescription
+            Huge
+            Large
+            Medium
+            Small
+            Tiny
+        End Enum
+        Public ReadOnly Property sizeType As SizeDescription
+            Get
+                Select Case playableWidth * playableHeight
+                    Case Is <= 64 * 64
+                        Return SizeDescription.Tiny
+                    Case Is <= 128 * 128
+                        Return SizeDescription.Small
+                    Case Is <= 160 * 160
+                        Return SizeDescription.Medium
+                    Case Is <= 192 * 192
+                        Return SizeDescription.Large
+                    Case Else
+                        Return SizeDescription.Huge
+                End Select
+            End Get
+        End Property
+        Public ReadOnly Property gameType As GameTypeFlags
+            Get
+                Dim f = GameTypeFlags.MakerUser
+                Select Case sizeType
+                    Case SizeDescription.Tiny, SizeDescription.Small
+                        f = f Or GameTypeFlags.SizeSmall
+                    Case SizeDescription.Medium
+                        f = f Or GameTypeFlags.SizeMedium
+                    Case SizeDescription.Large, SizeDescription.Huge
+                        f = f Or GameTypeFlags.SizeLarge
+                End Select
+                If isMelee Then
+                    f = f Or GameTypeFlags.TypeMelee
+                Else
+                    f = f Or GameTypeFlags.TypeScenario
+                End If
+                Return f
+            End Get
+        End Property
+
+#Region "Properties"
+        Public ReadOnly Property numPlayerAndObsSlots(ByVal map_settings As W3MapSettings) As Integer
             Get
                 Select Case map_settings.observers
-                    Case OBS.FULL_OBSERVERS, OBS.REFEREES
+                    Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         Return 12
                     Case Else
                         Return numPlayerSlots
@@ -120,12 +150,13 @@ Namespace Warcraft3
 
                 Dim vals As Dictionary(Of String, Object)
                 Try
-                    Dim packet_data(0 To arg.Length \ 2 - 1 - 1) As Byte
-                    For i = 0 To packet_data.Length - 1
-                        packet_data(i) = CByte(dehex(arg.Substring(i * 2 + 2, 2)))
+                    Dim hexData(0 To arg.Length \ 2 - 1 - 1) As Byte
+                    For i = 0 To hexData.Length - 1
+                        hexData(i) = CByte(dehex(arg.Substring(i * 2 + 2, 2), ByteOrder.BigEndian))
                     Next i
-                    Dim packet = W3Packet.FromData(W3PacketId.MAP_INFO, packet_data)
-                    vals = CType(packet.payload.getVal, Dictionary(Of String, Object))
+
+                    Dim packet = W3Packet.FromData(W3PacketId.HostMapInfo, hexData.ToView())
+                    vals = CType(packet.payload.Value, Dictionary(Of String, Object))
                 Catch e As Exception
                     Return out_fail
                 End Try
@@ -143,26 +174,38 @@ Namespace Warcraft3
             End If
         End Function
         Public Sub New(ByVal folder As String,
-                       ByVal rel_path As String,
+                       ByVal relPath As String,
                        ByVal fileSize As UInteger,
                        ByVal crc32 As Byte(),
-                       ByVal sha1_checksum As Byte(),
-                       ByVal xoro_checksum As Byte(),
-                       ByVal num_slots As Integer)
-            Me.file_available = False
-            Me.full_path = folder + rel_path.Substring(5)
-            Me.relative_path = rel_path
-            Me.folder = folder
+                       ByVal sha1Checksum As Byte(),
+                       ByVal xoroChecksum As Byte(),
+                       ByVal numSlots As Integer)
+            Contract.Requires(folder IsNot Nothing)
+            Contract.Requires(relPath IsNot Nothing)
+            Contract.Requires(sha1Checksum IsNot Nothing)
+            Contract.Requires(sha1Checksum.Length = 20)
+            Contract.Requires(crc32 IsNot Nothing)
+            Contract.Requires(xoroChecksum IsNot Nothing)
+            Contract.Requires(xoroChecksum.Length = 4)
+            Contract.Requires(crc32 IsNot Nothing)
+            Contract.Requires(crc32.Length = 4)
+            Contract.Requires(numSlots > 0)
+            Contract.Requires(numSlots <= 12)
+            Contract.Requires(fileSize > 0)
+            Me.fileAvailable = False
+            Me._fullPath = folder + relPath.Substring(5)
+            Me._relativePath = relPath
+            Me._folder = folder
             Me.playableHeight = 256
             Me.playableWidth = 256
             Me.isMelee = True
-            Me.name = getFileNameSlash(rel_path)
-            Me.numPlayerSlots = num_slots
-            Me.fileSize = fileSize
-            Me.crc32 = crc32
-            Me.checksum_sha1 = sha1_checksum
-            Me.checksum_xoro = xoro_checksum
-            For i = 1 To num_slots
+            Me.name = getFileNameSlash(relPath)
+            Me._numPlayerSlots = numSlots
+            Me._fileSize = fileSize
+            Me._crc32 = crc32
+            Me._checksumSha1 = sha1Checksum
+            Me._checksumXoro = xoroChecksum
+            For i = 1 To numSlots
                 Dim slot = New W3Slot(Nothing, CByte(i))
                 slot.color = CType(i - 1, W3Slot.PlayerColor)
                 slot.contents = New W3SlotContentsOpen(slot)
@@ -172,20 +215,20 @@ Namespace Warcraft3
         Public Sub New(ByVal folder As String,
                        ByVal rel_path As String,
                        ByVal w3patch_folder As String)
-            Me.file_available = True
-            Me.relative_path = rel_path
-            Me.full_path = folder + rel_path
-            Me.folder = folder
-            Using f = New IO.BufferedStream(New IO.FileStream(full_path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
-                Me.fileSize = CUInt(f.Length)
-                Me.crc32 = Bnet.Crypt.crc32(f).bytes(ByteOrder.LittleEndian)
+            Me.fileAvailable = True
+            Me._relativePath = rel_path
+            Me._fullPath = folder + rel_path
+            Me._folder = folder
+            Using f = New IO.BufferedStream(New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
+                Me._fileSize = CUInt(f.Length)
+                Me._crc32 = Bnet.Crypt.crc32(f).bytes(ByteOrder.LittleEndian)
             End Using
-            Dim mpqa = New MPQ.MPQArchive(full_path)
-            Dim mpq_war3path = OpenWar3PatchMpq(w3patch_folder)
-            Me.checksum_sha1 = computeMapSha1Checksum(mpqa, mpq_war3path)
-            Me.checksum_xoro = computeMapXoro(mpqa, mpq_war3path).bytes(ByteOrder.LittleEndian)
+            Dim mpqa = New Mpq.MpqArchive(fullPath)
+            Dim mpq_war3path = OpenWar3PatchArchive(w3patch_folder)
+            Me._checksumSha1 = ComputeMapSha1Checksum(mpqa, mpq_war3path)
+            Me._checksumXoro = CUInt(ComputeMapXoro(mpqa, mpq_war3path)).bytes(ByteOrder.LittleEndian)
 
-            readFileInfo(mpqa)
+            ReadMapInfo(mpqa)
 
             If isMelee Then
                 For i = 0 To slots.Count - 1
@@ -197,33 +240,32 @@ Namespace Warcraft3
 #End Region
 
 #Region "Read"
-        Public Function getChunk(ByVal pos As Integer, Optional ByVal maxLength As Integer = 1442) As Byte()
-            If Not file_available Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
+        Public Function getChunk(ByVal pos As Integer,
+                                 Optional ByVal maxLength As Integer = 1442) As Byte()
+            If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
+            If Not fileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
+
             Dim buffer(0 To maxLength - 1) As Byte
-            Using f = New IO.FileStream(full_path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
-                If pos < f.Length Then
-                    f.Seek(pos, IO.SeekOrigin.Begin)
-                    Dim n = f.Read(buffer, 0, maxLength)
-                    If n < buffer.Length Then ReDim Preserve buffer(0 To n - 1)
-                    Return buffer
-                Else
-                    Return Nothing
-                End If
+            Using f = New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+                f.Seek(pos, IO.SeekOrigin.Begin)
+                Dim n = f.Read(buffer, 0, maxLength)
+                If n < buffer.Length Then ReDim Preserve buffer(0 To n - 1)
+                Return buffer
             End Using
         End Function
 
-        Private Function OpenWar3PatchMpq(ByVal w3patch_folder As String) As MPQ.MPQArchive
-            Dim backupMPQA As MPQ.MPQArchive = Nothing
-            Dim normal_path = w3patch_folder + "War3Patch.mpq"
-            Dim copy_path = w3patch_folder + "HostBotTempCopyWar3Patch" + My.Settings.exeVersion + ".mpq"
+        Private Function OpenWar3PatchArchive(ByVal war3PatchFolder As String) As Mpq.MpqArchive
+            Dim backupMPQA As Mpq.MpqArchive = Nothing
+            Dim normal_path = war3PatchFolder + "War3Patch.mpq"
+            Dim copy_path = war3PatchFolder + "HostBotTempCopyWar3Patch" + My.Settings.exeVersion + ".mpq"
             If IO.File.Exists(copy_path) Then
-                Return New MPQ.MPQArchive(copy_path)
+                Return New Mpq.MpqArchive(copy_path)
             ElseIf IO.File.Exists(normal_path) Then
                 Try
-                    Return New MPQ.MPQArchive(normal_path)
+                    Return New Mpq.MpqArchive(normal_path)
                 Catch e As IO.IOException
                     IO.File.Copy(normal_path, copy_path)
-                    Return New MPQ.MPQArchive(copy_path)
+                    Return New Mpq.MpqArchive(copy_path)
                 End Try
             Else
                 Throw New IO.IOException("Couldn't find War3Patch.mpq")
@@ -231,37 +273,37 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
-        Private Function computeMapSha1Checksum(ByVal mpqa As MPQ.MPQArchive, ByVal mpq_war3path As MPQ.MPQArchive) As Byte()
+        Private Function ComputeMapSha1Checksum(ByVal mapArchive As Mpq.MpqArchive,
+                                                ByVal war3PatchArchive As Mpq.MpqArchive) As Byte()
             Dim streams As New List(Of IO.Stream)
 
             'Overridable map files from war3patch.mpq
-            For Each filename In New String() { _
-                        "scripts\common.j",
-                        "scripts\blizzard.j"}
-                Dim mpq_to_use = If(mpqa.hashTable.contains(filename), mpqa, mpq_war3path)
-                streams.Add(New MPQ.MPQFileStream(mpq_to_use, filename))
+            For Each filename In {"scripts\common.j",
+                                  "scripts\blizzard.j"}
+                Dim mpqToUse = If(mapArchive.hashTable.contains(filename),
+                                  mapArchive,
+                                  war3PatchArchive)
+                streams.Add(mpqToUse.OpenFile(filename))
             Next filename
 
             'Magic value
             streams.Add(New IO.MemoryStream(New Byte() {&H9E, &H37, &HF1, &H3}))
 
             'Important map files
-            For Each fileset In New String() { _
-                        "war3map.j|scripts\war3map.j",
-                        "war3map.w3e",
-                        "war3map.wpm",
-                        "war3map.doo",
-                        "war3map.w3u",
-                        "war3map.w3b",
-                        "war3map.w3d",
-                        "war3map.w3a",
-                        "war3map.w3q"}
-                For Each filename In fileset.Split("|"c)
-                    If mpqa.hashTable.contains(filename) Then
-                        streams.Add(New MPQ.MPQFileStream(mpqa, filename))
-                        Exit For
-                    End If
-                Next filename
+            For Each fileset In {"war3map.j|scripts\war3map.j",
+                                 "war3map.w3e",
+                                 "war3map.wpm",
+                                 "war3map.doo",
+                                 "war3map.w3u",
+                                 "war3map.w3b",
+                                 "war3map.w3d",
+                                 "war3map.w3a",
+                                 "war3map.w3q"}
+                Dim filenameToUse = (From filename In fileset.Split("|"c)
+                                     Where mapArchive.hashTable.contains(filename)).FirstOrDefault
+                If filenameToUse IsNot Nothing Then
+                    streams.Add(mapArchive.OpenFile(filenameToUse))
+                End If
             Next fileset
 
             Using f = New IO.BufferedStream(New ConcatStream(streams))
@@ -270,18 +312,18 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Computes parts of the Xoro checksum.</summary>
-        Private Function computeStreamXoro(ByVal stream As IO.Stream) As UInteger
-            Dim val As UInteger = 0
+        Private Function ComputeStreamXoro(ByVal stream As IO.Stream) As ModInt32
+            Dim val As ModInt32 = 0
 
             With New IO.BinaryReader(New IO.BufferedStream(stream))
                 'Process complete dwords
                 For repeat = 1 To stream.Length \ 4
-                    val = ShiftRotateLeft(val Xor .ReadUInt32(), 3)
+                    val = (val Xor .ReadUInt32()).ShiftRotateLeft(3)
                 Next repeat
 
                 'Process bytes not in a complete dword
                 For repeat = 1 To stream.Length Mod 4
-                    val = ShiftRotateLeft(val Xor CUInt(.ReadByte()), 3)
+                    val = (val Xor .ReadByte()).ShiftRotateLeft(3)
                 Next repeat
             End With
 
@@ -289,53 +331,53 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
-        Private Function computeMapXoro(ByVal mpqa As MPQ.MPQArchive, ByVal mpq_war3path As MPQ.MPQArchive) As UInteger
-            Dim val = CUInt(0)
+        Private Function ComputeMapXoro(ByVal mapArchive As Mpq.MpqArchive,
+                                        ByVal war3PatchArchive As Mpq.MpqArchive) As ModInt32
+            Dim val As ModInt32 = 0
 
             'Overridable map files from war3patch.mpq
-            For Each filename In New String() { _
-                        "Scripts\common.j",
-                        "Scripts\blizzard.j"}
-                Dim mpq_to_use = If(mpqa.hashTable.contains(filename), mpqa, mpq_war3path)
-                Using f = New MPQ.MPQFileStream(mpq_to_use, filename)
-                    val = val Xor computeStreamXoro(f)
+            For Each filename In {"scripts\common.j",
+                                  "scripts\blizzard.j"}
+                Dim mpqToUse = If(mapArchive.hashTable.contains(filename),
+                                  mapArchive,
+                                  war3PatchArchive)
+                Using f = mpqToUse.OpenFile(filename)
+                    val = val Xor ComputeStreamXoro(f)
                 End Using
             Next filename
 
             'Magic value
-            val = ShiftRotateLeft(val, 3)
-            val = ShiftRotateLeft(val Xor CUInt(&H3F1379E), 3)
+            val = val.ShiftRotateLeft(3)
+            val = (val Xor &H3F1379E).ShiftRotateLeft(3)
 
             'Important map files
-            For Each fileset In New String() { _
-                        "war3map.j|scripts\war3map.j",
-                        "war3map.w3e",
-                        "war3map.wpm",
-                        "war3map.doo",
-                        "war3map.w3u",
-                        "war3map.w3b",
-                        "war3map.w3d",
-                        "war3map.w3a",
-                        "war3map.w3q"}
-                For Each filename In fileset.Split("|"c)
-                    If mpqa.hashTable.contains(filename) Then
-                        Using f = New MPQ.MPQFileStream(mpqa, filename)
-                            val = ShiftRotateLeft(val Xor computeStreamXoro(f), 3)
-                        End Using
-                        Exit For
-                    End If
-                Next filename
+            For Each fileset In {"war3map.j|scripts\war3map.j",
+                                 "war3map.w3e",
+                                 "war3map.wpm",
+                                 "war3map.doo",
+                                 "war3map.w3u",
+                                 "war3map.w3b",
+                                 "war3map.w3d",
+                                 "war3map.w3a",
+                                 "war3map.w3q"}
+                Dim filenameToUse = (From filename In fileset.Split("|"c)
+                                     Where mapArchive.hashTable.contains(filename)).FirstOrDefault
+                If filenameToUse IsNot Nothing Then
+                    Using f = mapArchive.OpenFile(filenameToUse)
+                        val = (val Xor ComputeStreamXoro(f)).ShiftRotateLeft(3)
+                    End Using
+                End If
             Next fileset
 
             Return val
         End Function
 
         '''<summary>Finds a string in the war3map.wts file.</summary>
-        Public Shared Function GetMapString(ByVal mpqa As MPQ.MPQArchive, ByVal key As String) As String
-            Using sr As New IO.StreamReader(New IO.BufferedStream(New MPQ.MPQFileStream(mpqa, "war3map.wts")))
+        Public Shared Function GetMapString(ByVal mapArchive As Mpq.MpqArchive, ByVal key As String) As String
+            Using sr As New IO.StreamReader(New IO.BufferedStream(mapArchive.OpenFile("war3map.wts")))
                 Do Until sr.EndOfStream
                     Dim cur_key = sr.ReadLine()
-                    If sr.ReadLine <> "{" Then Throw New IO.IOException("Invalid strings file")
+                    If sr.ReadLine <> "{" Then Continue Do
                     Dim cur_val As New System.Text.StringBuilder()
                     Do
                         If sr.EndOfStream Then Throw New IO.IOException("Invalid strings file")
@@ -354,8 +396,8 @@ Namespace Warcraft3
 
         '''<summary>Reads the map information from war3map.w3i</summary>
         '''<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
-        Public Sub readFileInfo(ByVal mpqa As MPQ.MPQArchive)
-            Using br = New IO.BinaryReader(New IO.BufferedStream(New MPQ.MPQFileStream(mpqa, "war3map.w3i")))
+        Public Sub ReadMapInfo(ByVal mapArchive As Mpq.MpqArchive)
+            Using br = New IO.BinaryReader(New IO.BufferedStream(mapArchive.OpenFile("war3map.w3i")))
                 Dim fileFormat = br.ReadInt32()
                 If fileFormat <> 18 And fileFormat <> 25 Then Throw New IO.IOException("Unrecognized war3map.w3i format.")
 
@@ -375,7 +417,7 @@ Namespace Warcraft3
                             key = "STRING {0}".frmt(key_id)
                         End If
                     End If
-                    Me.name = GetMapString(mpqa, key)
+                    Me.name = GetMapString(mapArchive, key)
                 Catch e As Exception
                     Me.name = "{0} (error reading strings file: {1})".frmt(name_key, e.Message)
                 End Try
@@ -440,11 +482,11 @@ Namespace Warcraft3
                         Case 1
                             slot.contents = New W3SlotContentsOpen(slot)
                             slots.Add(slot)
-                            numPlayerSlots += 1
+                            _numPlayerSlots += 1
                         Case 2
                             slot.contents = New W3SlotContentsComputer(slot, W3Slot.ComputerLevel.Normal)
                             slots.Add(slot)
-                            numPlayerSlots += 1
+                            _numPlayerSlots += 1
                         Case 3
                             slot.contents = New W3SlotContentsClosed(slot)
                         Case Else
@@ -488,129 +530,6 @@ Namespace Warcraft3
                 '... more data in the file but it isn't needed ...
             End Using
         End Sub
-#End Region
-
-#Region "StatString"
-        Public Shared Function makeStatStringParser() As TupleJar
-            Return New TupleJar("statstring",
-                New PrecodeJar("encoded", New TupleJar("encoded",
-                    New ArrayJar("settings", 4),
-                    New ValueJar("unknown1", 1),
-                    New ValueJar("playable width", 2),
-                    New ValueJar("playable height", 2),
-                    New ArrayJar("xoro checksum", 4),
-                    New StringJar("relative path"),
-                    New StringJar("username"),
-                    New StringJar("unknown2"))),
-                New ValueJar("terminator", 1))
-        End Function
-
-        ''' <summary>Encodes game parameters, properties, etc.</summary>
-        ''' <returns>The encoded string</returns>
-        ''' <remarks>
-        '''   0 BYTE #slots-1 (text-hex)
-        '''   1 BYTE[8] host counter (text-hex)
-        '''   encoded:
-        '''      2 DWORD settings
-        '''      3 BYTE[5] map size and other?
-        '''      4 DWORD xoro key
-        '''      5 STRING map name
-        '''      6 STRING user name
-        '''      7 STRING unknown("")
-        ''' </remarks>
-        Public Function generateStatStringVals(ByVal username As String, ByVal map_settings As W3Map.MapSettings) As Dictionary(Of String, Object)
-            Dim vals As New Dictionary(Of String, Object)
-            Dim valsEncoded As New Dictionary(Of String, Object)
-
-            'settings
-            Dim b As Byte
-            Dim bbSettings(0 To 3) As Byte
-            b = 0
-            'If False Then b = b Or CByte(&H80) 'unknown
-            'If False Then b = b Or CByte(&H40) 'unknown
-            'If False Then b = b Or CByte(&H20) 'unknown (set for the melee map "divide and conquer")
-            'If False Then b = b Or CByte(&H10) 'unknown
-            'If False Then b = b Or CByte(&H8) 'unknown
-            'If False Then b = b Or CByte(&H4) 'unknown
-            If map_settings.speed = SPD.FAST Then b = b Or CByte(&H2)
-            If map_settings.speed = SPD.MEDIUM Then b = b Or CByte(&H1)
-            bbSettings(0) = b
-            b = 0
-            'If False Then b = b Or CByte(&H80) 'unknown
-            If map_settings.teamsTogether Then b = b Or CByte(&H40)
-            If map_settings.observers = OBS.FULL_OBSERVERS Or map_settings.observers = OBS.OBSERVERS_ON_DEFEAT Then b = b Or CByte(&H20)
-            If map_settings.observers = OBS.FULL_OBSERVERS Then b = b Or CByte(&H10)
-            If map_settings.visibility = VIS.MAP_DEFAULT Then b = b Or CByte(&H8)
-            If map_settings.visibility = VIS.ALWAYS_VISIBLE Then b = b Or CByte(&H4)
-            If map_settings.visibility = VIS.EXPLORED Then b = b Or CByte(&H2)
-            If map_settings.visibility = VIS.HIDE_TERRAIN Then b = b Or CByte(&H1)
-            bbSettings(1) = b
-            b = 0
-            'If False Then b = b Or CByte(&H80) 'unknown
-            'If False Then b = b Or CByte(&H40) 'unknown
-            'If False Then b = b Or CByte(&H20) 'unknown
-            'If False Then b = b Or CByte(&H10) 'unknown
-            'If False Then b = b Or CByte(&H8) 'unknown
-            If map_settings.lockTeams Then b = b Or CByte(&H4)
-            If map_settings.lockTeams Then b = b Or CByte(&H2) 'why lock teams again?
-            'If False Then b = b Or CByte(&H1) 'unknown
-            bbSettings(2) = b
-            b = 0
-            'If False Then b = b Or CByte(&H80) 'unknown
-            If map_settings.observers = OBS.REFEREES Then b = b Or CByte(&H40)
-            'If False Then b = b Or CByte(&H20) 'unknown
-            'If False Then b = b Or CByte(&H10) 'unknown
-            'If False Then b = b Or CByte(&H8) 'unknown
-            If map_settings.randomHero Then b = b Or CByte(&H4)
-            If map_settings.randomRace Then b = b Or CByte(&H2)
-            If map_settings.allowFullSharedControl Then b = b Or CByte(&H1)
-            bbSettings(3) = b
-
-            'values
-            valsEncoded("playable width") = playableWidth
-            valsEncoded("playable height") = playableHeight
-            valsEncoded("settings") = bbSettings
-            valsEncoded("xoro checksum") = checksum_xoro
-            valsEncoded("relative path") = "Maps\" + relative_path
-            valsEncoded("username") = username
-            valsEncoded("unknown1") = CUInt(0)
-            valsEncoded("unknown2") = ""
-            vals("encoded") = valsEncoded
-            vals("terminator") = 0
-            Return vals
-        End Function
-
-        Public Class PrecodeJar
-            Inherits Pickling.Jars.Jar
-            Private ReadOnly subjar As Pickling.IJar
-
-            Public Sub New(ByVal name As String, ByVal subjar As Pickling.IJar)
-                MyBase.New(name)
-                Me.subjar = subjar
-            End Sub
-
-            Private Class EncodedPickle
-                Inherits Pickling.Pickles.Pickle
-                Private subpickle As Pickling.IPickle
-                Public Sub New(ByVal parent As Pickling.IJar, ByVal val As Object, ByVal view As ImmutableArrayView(Of Byte), ByVal subpickle As Pickling.IPickle)
-                    MyBase.New(parent, val, view)
-                    Me.subpickle = subpickle
-                End Sub
-                Public Overrides Function toString() As String
-                    Return "{" + Environment.NewLine + indent(subpickle.toString()) + Environment.NewLine + "}"
-                End Function
-            End Class
-
-            Public Overrides Function pack(ByVal o As Object) As Pickling.IPickle
-                Dim p = subjar.pack(o)
-                Dim bb = Bnet.Crypt.encodePreMaskedByteArray(p.getData)
-                Return New EncodedPickle(Me, o, bb, p)
-            End Function
-
-            Public Overrides Function parse(ByVal view As ImmutableArrayView(Of Byte)) As Pickling.IPickle
-                Throw New Pickling.PicklingException("Parsing not supported for precode jar")
-            End Function
-        End Class
 #End Region
     End Class
 End Namespace

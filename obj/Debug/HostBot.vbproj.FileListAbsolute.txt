@@ -108,3 +108,32 @@ C:\Users\Craig\Desktop\BNET\HostBot\obj\Debug\HostBot.vbproj.GenerateResource.Ca
 C:\Users\Craig\Desktop\BNET\HostBot\obj\Debug\HostBot.exe.manifest
 C:\Users\Craig\Desktop\BNET\HostBot\obj\Debug\HostBot.application
 C:\Users\Craig\Desktop\BNET\HostBot\bin\Debug\Warden Module Lib.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.exe.manifest
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.application
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.exe
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.pdb
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.xml
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\Interop.Warden_Module_Lib.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\Warden Module Lib.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.BotControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.BotWidgetControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.ProfileSettingsControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.FrmLogger.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.LoggerControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.TimeGraphControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.BnetClientControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.W3GameServerControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.W3SlotControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.W3GameControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.FrmClient.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.FrmSettings.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.W3TextControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.SettingsList.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.Resources.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.W3StatsControl.resources
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.vbproj.GenerateResource.Cache
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.exe.manifest
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.application
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.Contracts.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.Contracts.pdb
