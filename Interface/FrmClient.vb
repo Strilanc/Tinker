@@ -4,7 +4,7 @@ Public Class FrmClient
     Private WithEvents bot As MainBot
     Private WithEvents client As BnetClient
 
-    Private Sub load_form(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+    Private Sub c_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         Try
             'prep form
             Threading.Thread.CurrentThread.Name = "UI Thread"
@@ -58,7 +58,7 @@ Public Class FrmClient
                 My.Settings.mapPath = My.Settings.war3path + "Maps" + IO.Path.DirectorySeparatorChar
             End If
             If My.Settings.botstore = "" Then
-                uiBtnSettings(Nothing, Nothing)
+                btnSettings_Click(Nothing, Nothing)
             End If
         Catch ex As Exception
             MessageBox.Show(GenerateUnexpectedExceptionDescription("Error loading " + My.Resources.ProgramName, ex))
@@ -66,7 +66,7 @@ Public Class FrmClient
         End Try
     End Sub
 
-    Private Sub uiForm_Closing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
+    Private Sub c_Closing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
         If bot Is Nothing Then Return
 
         If e.CloseReason = CloseReason.UserClosing Then
@@ -91,7 +91,7 @@ Public Class FrmClient
         My.Settings.Save()
     End Sub
 
-    Private Sub uiBtnSettings(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSettings.Click
+    Private Sub btnSettings_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSettings.Click
         FrmSettings.showBotSettings(bot)
     End Sub
 
@@ -118,9 +118,5 @@ Public Class FrmClient
 
     Private Sub mnuClose_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuClose.Click
         Me.Close()
-    End Sub
-
-    Private Sub btnConnectDefault_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
-
     End Sub
 End Class
