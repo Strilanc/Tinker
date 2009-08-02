@@ -38,12 +38,6 @@ C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Debug\HostB
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Debug\HostBot.exe
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Debug\HostBot.xml
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Debug\HostBot.pdb
-C:\Users\Craig\Desktop\Hostbot\HostBot\bin\Debug\HostBot.exe.config
-C:\Users\Craig\Desktop\Hostbot\HostBot\obj\Debug\HostBot.vbproj.ResolveComReference.cache
-C:\Users\Craig\Desktop\Hostbot\HostBot\obj\Debug\HostBot.exe
-C:\Users\Craig\Desktop\Hostbot\HostBot\obj\Debug\HostBot.xml
-C:\Users\Craig\Desktop\Hostbot\HostBot\obj\Debug\HostBot.pdb
-C:\Users\Craig\Desktop\Hostbot\HostBot\obj\Debug\Interop.Warden_Module_Lib.dll
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\obj\Debug\Interop.Warden_Module_Lib.dll
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\bin\Debug\HostBot.Contracts.dll
 C:\Users\Public\Archive\Visual Studio 2005\Projects\BNET\HostBot\bin\Debug\HostBot.Contracts.pdb
@@ -108,14 +102,20 @@ C:\Users\Craig\Desktop\BNET\HostBot\obj\Debug\HostBot.vbproj.GenerateResource.Ca
 C:\Users\Craig\Desktop\BNET\HostBot\obj\Debug\HostBot.exe.manifest
 C:\Users\Craig\Desktop\BNET\HostBot\obj\Debug\HostBot.application
 C:\Users\Craig\Desktop\BNET\HostBot\bin\Debug\Warden Module Lib.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.Contracts.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.Contracts.pdb
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.exe.config
 C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.exe.manifest
 C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.application
 C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.exe
 C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.pdb
 C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.xml
+C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\ICSharpCode.SharpZipLib.dll
 C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\Interop.Warden_Module_Lib.dll
 C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\Warden Module Lib.dll
 C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\ResolveAssemblyReference.cache
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\Interop.Warden_Module_Lib.dll
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.vbproj.ResolveComReference.cache
 C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.BotControl.resources
 C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.BotWidgetControl.resources
 C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.ProfileSettingsControl.resources
@@ -135,5 +135,6 @@ C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.W3StatsControl.resource
 C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.vbproj.GenerateResource.Cache
 C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.exe.manifest
 C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.application
-C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.Contracts.dll
-C:\Users\Craig\Desktop\HostBot\HostBot\bin\Debug\HostBot.Contracts.pdb
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.exe
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.xml
+C:\Users\Craig\Desktop\HostBot\HostBot\obj\Debug\HostBot.pdb

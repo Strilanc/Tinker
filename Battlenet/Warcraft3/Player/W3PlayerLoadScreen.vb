@@ -14,13 +14,20 @@
         End Sub
 
         Private Sub ReceiveReady(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             ready = True
+            If game.server.settings.loadInGame Then
+                handlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
+            End If
             logger.log(name + " is ready", LogMessageTypes.Positive)
-            game.f_ReceiveReady(Me, vals)
+            'queued because otherwise the static verifier whines about invariants due to passing out 'me'
+            eref.QueueAction(Sub()
+                                 Contract.Assume(vals IsNot Nothing)
+                                 game.QueueReceiveReady(Me, vals)
+                             End Sub)
         End Sub
 
-
-        Private Function _f_start() As IFuture Implements IW3Player.f_StartLoading
+        Private Function _f_start() As IFuture Implements IW3Player.QueueStartLoading
             Return ref.QueueAction(AddressOf LoadScreenStart)
         End Function
     End Class

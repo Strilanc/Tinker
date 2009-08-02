@@ -1,66 +1,45 @@
-﻿Public Interface ISized
-    ReadOnly Property Length As Integer
-End Interface
+﻿<ContractClass(GetType(ContractClassForIReadableList(Of )))>
 Public Interface IReadableList(Of Out T)
     Inherits IEnumerable(Of T)
-    Inherits ISized
+    ReadOnly Property Length As Integer
     Default ReadOnly Property Item(ByVal index As Integer) As T
 End Interface
-Public Interface IWritableList(Of In T)
-    Inherits ISized
-    Default WriteOnly Property Item(ByVal index As Integer) As T
-End Interface
-<ContractClass(GetType(ContractClassIViewableList(Of )))>
-Public Interface IViewableList(Of Out T)
-    Inherits IReadableList(Of T)
-    <Pure()> Function SubView(ByVal relOffset As Integer) As IViewableList(Of T)
-    <Pure()> Function SubView(ByVal relOffset As Integer, ByVal relLength As Integer) As IViewableList(Of T)
-End Interface
-
-<ContractClassFor(GetType(IViewableList(Of )))>
-Public Class ContractClassIViewableList(Of T)
-    Implements IViewableList(Of T)
+<ContractClassFor(GetType(IReadableList(Of )))>
+Public Class ContractClassForIReadableList(Of T)
+    Implements IReadableList(Of T)
     Default Public ReadOnly Property Item(ByVal index As Integer) As T Implements IReadableList(Of T).Item
         Get
+            Contract.Requires(index >= 0)
+            Contract.Requires(index < CType(Me, IReadableList(Of T)).Length)
             Throw New NotSupportedException()
         End Get
     End Property
-
-    Public ReadOnly Property Length As Integer Implements ISized.Length
+    Public ReadOnly Property Length As Integer Implements IReadableList(Of T).Length
         Get
             Contract.Ensures(Contract.Result(Of Integer)() >= 0)
             Throw New NotSupportedException()
         End Get
     End Property
-
-    <Pure()> Public Function SubView(ByVal relOffset As Integer) As IViewableList(Of T) Implements IViewableList(Of T).SubView
-        Contract.Requires(relOffset >= 0)
-        Contract.Ensures(Contract.Result(Of IViewableList(Of T))() IsNot Nothing)
+    Public Function GetEnumerator() As System.Collections.Generic.IEnumerator(Of T) Implements System.Collections.Generic.IEnumerable(Of T).GetEnumerator
         Throw New NotSupportedException()
     End Function
-
-    <Pure()> Public Function SubView(ByVal relOffset As Integer, ByVal relLength As Integer) As IViewableList(Of T) Implements IViewableList(Of T).SubView
-        Contract.Requires(relOffset >= 0)
-        Contract.Requires(relLength >= 0)
-        Contract.Requires(relLength <= Me.Length)
-        Contract.Ensures(Contract.Result(Of IViewableList(Of T))() IsNot Nothing)
-        Throw New NotSupportedException()
-    End Function
-
-    Public Function GetEnumerator() As IEnumerator(Of T) Implements IEnumerable(Of T).GetEnumerator
-        Throw New NotSupportedException()
-    End Function
-    Public Function GetEnumeratorObj() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
+    Public Function GetEnumerator1() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
         Throw New NotSupportedException()
     End Function
 End Class
 
 Public Class ViewableList(Of T)
-    Implements IViewableList(Of T)
+    Implements IReadableList(Of T)
+    Implements IEnumerable(Of T)
     Protected ReadOnly items As IList(Of T)
     Protected ReadOnly offset As Integer
     Protected ReadOnly _length As Integer
 
+    <ContractInvariantMethod()> Protected Sub Invariant()
+        Contract.Invariant(offset >= 0)
+        Contract.Invariant(_length >= 0)
+        Contract.Invariant(offset + _length <= items.Count)
+    End Sub
     Public Sub New(ByVal items As IList(Of T))
         Me.New(items, 0, items.Count, 0, items.Count)
         Contract.Requires(items IsNot Nothing)
@@ -86,7 +65,6 @@ Public Class ViewableList(Of T)
 
     Default Public ReadOnly Property Item(ByVal index As Integer) As T Implements IReadableList(Of T).Item
         Get
-            If index < 0 Or index >= _length Then Throw New ArgumentOutOfRangeException("index")
             Return items(index + offset)
         End Get
     End Property
@@ -96,6 +74,22 @@ Public Class ViewableList(Of T)
             Return _length
         End Get
     End Property
+
+    <Pure()>
+    Public Function SubView(ByVal relOffset As Integer) As ViewableList(Of T)
+        Contract.Requires(relOffset >= 0)
+        Contract.Requires(relOffset <= Length)
+        Contract.Ensures(Contract.Result(Of ViewableList(Of T))() IsNot Nothing)
+        Return SubView(relOffset, Length - relOffset)
+    End Function
+    <Pure()>
+    Public Function SubView(ByVal relOffset As Integer, ByVal relLength As Integer) As ViewableList(Of T)
+        Contract.Requires(relOffset >= 0)
+        Contract.Requires(relLength >= 0)
+        Contract.Requires(relOffset + relLength <= Me.Length)
+        Contract.Ensures(Contract.Result(Of ViewableList(Of T))() IsNot Nothing)
+        Return New ViewableList(Of T)(items, relOffset, relLength, offset, Length)
+    End Function
 
     Private Function GetEnumerator() As IEnumerator(Of T) Implements IEnumerable(Of T).GetEnumerator
         Dim nextIndex = 0
@@ -107,12 +101,5 @@ Public Class ViewableList(Of T)
     End Function
     Private Function GetEnumeratorObj() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
         Return GetEnumerator()
-    End Function
-
-    <Pure()> Private Function SubView(ByVal offset As Integer) As IViewableList(Of T) Implements IViewableList(Of T).SubView
-        Return SubView(offset, Length - offset)
-    End Function
-    <Pure()> Private Function SubView(ByVal offset As Integer, ByVal length As Integer) As IViewableList(Of T) Implements IViewableList(Of T).SubView
-        Return New ViewableList(Of T)(items, offset, length, Me.offset, Me.Length)
     End Function
 End Class

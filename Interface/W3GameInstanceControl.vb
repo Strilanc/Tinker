@@ -21,7 +21,7 @@ Public Class W3GameControl
                     logInstance.SetLogger(Nothing, Nothing)
                 Else
                     logInstance.SetLogger(game.logger, "Instance")
-                    game.f_ThrowUpdated()
+                    game.QueueThrowUpdated()
                 End If
             End Sub
         )
@@ -33,7 +33,7 @@ Public Class W3GameControl
         If e.KeyChar <> ChrW(Keys.Enter) Then Return
         If txtInput.Text = "" Then Return
         If game Is Nothing Then Return
-        game.f_BroadcastMessage(txtInput.Text)
+        game.QueueBroadcastMessage(txtInput.Text)
         txtInput.Text = ""
         e.Handled = True
     End Sub
@@ -43,7 +43,7 @@ Public Class W3GameControl
         If txtCommand.Text = "" Then Return
         If game Is Nothing Then Return
         e.Handled = True
-        game.f_CommandProcessLocalText(txtCommand.Text, logInstance.Logger())
+        game.QueueCommandProcessLocalText(txtCommand.Text, logInstance.Logger())
         txtCommand.Text = ""
     End Sub
 

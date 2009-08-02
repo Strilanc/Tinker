@@ -1,218 +1,239 @@
+Imports System.Net
 Imports System.Net.Sockets
 
 Public Class BnetSocket
-    Private isReading As Boolean
-    Private wantReading As Boolean
-    Private expectConnected As Boolean
-    Private ReadOnly client As TcpClient
-    Public logger As Logger
-    Private ReadOnly lock As New Object()
-    Private ReadOnly stream As SafeReadPacketStream
-    Private ReadOnly _remoteEndPoint As Net.IPEndPoint
-    Public ReadOnly Property RemoteEndPoint As Net.IPEndPoint
+    Private WithEvents socket As PacketSocket
+    Public Event Disconnected(ByVal sender As BnetSocket, ByVal reason As String)
+
+    Public Sub New(ByVal socket As PacketSocket)
+        Contract.Assume(socket IsNot Nothing)
+        Me.socket = socket
+    End Sub
+
+    Public Property Logger() As Logger
         Get
-            Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address IsNot Nothing)
-            Return _remoteEndPoint
+            Return socket.logger
+        End Get
+        Set(ByVal value As Logger)
+            socket.logger = value
+        End Set
+    End Property
+    Public Property Name() As String
+        Get
+            Return socket.Name
+        End Get
+        Set(ByVal value As String)
+            socket.Name = value
+        End Set
+    End Property
+
+    Public ReadOnly Property LocalEndPoint As IPEndPoint
+        Get
+            Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
+            Return socket.LocalEndPoint
         End Get
     End Property
+    Public ReadOnly Property RemoteEndPoint As IPEndPoint
+        Get
+            Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
+            Return socket.RemoteEndPoint
+        End Get
+    End Property
+    Public Function connected() As Boolean
+        Return socket.IsConnected
+    End Function
+
+    Private Sub CatchDisconnected(ByVal sender As PacketSocket, ByVal reason As String) Handles socket.Disconnected
+        RaiseEvent Disconnected(Me, reason)
+    End Sub
+    Public Sub disconnect(ByVal reason As String)
+        Contract.Requires(reason IsNot Nothing)
+        socket.Disconnect(reason)
+    End Sub
+
+    Public Function SendPacket(ByVal pk As Bnet.BnetPacket) As Outcome
+        Contract.Requires(pk IsNot Nothing)
+
+        Try
+            'Validate
+            If socket Is Nothing OrElse Not socket.IsConnected OrElse pk Is Nothing Then
+                Return failure("Socket is not connected")
+            End If
+
+            'Log
+            Dim pk_ = pk
+            Logger.log(Function() "Sending {0} to {1}".frmt(pk_.id, Name), LogMessageTypes.DataEvent)
+            Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+
+            'Send
+            socket.WritePacket(Concat({New Byte() {Bnet.BnetPacket.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray}))
+            Return success("Sent")
+
+        Catch e As Pickling.PicklingException
+            Dim msg = "Error packing {0} for {1}: {2}".frmt(pk.id, Name, e)
+            Logger.log(msg, LogMessageTypes.Problem)
+            Return failure(msg)
+        Catch e As Exception
+            Dim msg = "Error sending {0} to {1}: {2}".frmt(pk.id, Name, e)
+            Logging.LogUnexpectedException(msg, e)
+            Logger.log(msg, LogMessageTypes.Problem)
+            Return failure(msg)
+        End Try
+    End Function
+
+    Public Function FutureReadPacket() As IFuture(Of PossibleException(Of Bnet.BnetPacket, Exception))
+        Dim f = New Future(Of PossibleException(Of Bnet.BnetPacket, Exception))
+        socket.FutureReadPacket().CallWhenValueReady(
+            Sub(result)
+                If result.Exception IsNot Nothing Then
+                    f.SetValue(result.Exception)
+                    Return
+                End If
+
+                Dim data = result.Value
+                If data(0) <> Bnet.BnetPacket.PACKET_PREFIX Then
+                    disconnect("Invalid packet prefix")
+                    Throw New IO.IOException("Invalid packet prefix")
+                End If
+                Dim id = CType(data(1), Bnet.BnetPacketID)
+                data = data.SubView(4)
+
+                Try
+                    'Handle
+                    Logger.log(Function() "Received {0} from {1}".frmt(id, Name), LogMessageTypes.DataEvent)
+                    Dim pk = Bnet.BnetPacket.FromData(id, data)
+                    If pk.payload.Data.Length <> data.Length Then
+                        Throw New Pickling.PicklingException("Data left over after parsing.")
+                    End If
+                    Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+                    f.SetValue(pk)
+
+                Catch e As Pickling.PicklingException
+                    Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".frmt(id, Name, e)
+                    Logger.log(msg, LogMessageTypes.Negative)
+                    f.SetValue(e)
+
+                Catch e As Exception
+                    Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".frmt(id, Name, e)
+                    Logger.log(msg, LogMessageTypes.Problem)
+                    Logging.LogUnexpectedException(msg, e)
+                    f.SetValue(e)
+                End Try
+            End Sub
+        )
+        Return f
+    End Function
+End Class
+
+Public Class PacketSocket
+    Private expectConnected As Boolean
+    Private ReadOnly client As TcpClient
+    Private ReadOnly substream As IO.Stream
+    Private ReadOnly packetStreamer As PacketStreamer
+    Private ReadOnly _remoteEndPoint As IPEndPoint
+    Public Property logger As Logger
+    Public Property Name() As String
 
     Public Const DefaultBufferSize As Integer = 1460 '[sending more data in a packet causes wc3 clients to disc; happens to be maximum ethernet header size]
     Public ReadOnly bufferSize As Integer
-    Private ReadOnly readBuffer() As Byte
-    Public Event ReceivedPacket(ByVal sender As BnetSocket, ByVal flag As Byte, ByVal id As Byte, ByVal data As IViewableList(Of Byte))
-    Public Event Disconnected(ByVal sender As BnetSocket, ByVal reason As String)
+    Public Event Disconnected(ByVal sender As PacketSocket, ByVal reason As String)
     Private WithEvents deadManSwitch As DeadManSwitch
 
     <ContractInvariantMethod()> Protected Sub Invariant()
-        Contract.Invariant(stream IsNot Nothing)
-        Contract.Invariant(readBuffer IsNot Nothing)
+        Contract.Invariant(substream IsNot Nothing)
+        Contract.Invariant(packetStreamer IsNot Nothing)
         Contract.Invariant(_remoteEndPoint IsNot Nothing)
         Contract.Invariant(_remoteEndPoint.Address IsNot Nothing)
     End Sub
 
-#Region "Inner"
-    Public Property Name() As String
-        Get
-            Return stream.logDestination
-        End Get
-        Set(ByVal value As String)
-            stream.logDestination = value
-        End Set
-    End Property
-    Private Class SafeReadPacketStream
-        Inherits PacketStream
-        Private read_exception As Exception
-        Public Sub New(ByVal substream As IO.Stream,
-                       ByVal numBytesBeforeSize As Integer,
-                       ByVal numSizeBytes As Integer,
-                       ByVal mode As InterfaceModes,
-                       ByVal logger As Logger,
-                       ByVal log_destination As String)
-            MyBase.New(substream, numBytesBeforeSize, numSizeBytes, mode, logger, log_destination)
-            Contract.Requires(substream IsNot Nothing)
-            Contract.Requires(numBytesBeforeSize >= 0)
-            Contract.Requires(numSizeBytes > 0)
-        End Sub
-        Public Overrides Function Read(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
-            Try
-                read_exception = Nothing
-                Return MyBase.Read(buffer, offset, count)
-            Catch e As Exception
-                read_exception = e
-                Return 0
-            End Try
-        End Function
-        Public Overrides Function EndRead(ByVal asyncResult As System.IAsyncResult) As Integer
-            If read_exception IsNot Nothing Then Throw read_exception
-            Return MyBase.EndRead(asyncResult)
-        End Function
-    End Class
-#End Region
-
-#Region "New"
     Public Sub New(ByVal client As TcpClient,
                    ByVal timeout As TimeSpan,
                    Optional ByVal logger As Logger = Nothing,
                    Optional ByVal streamWrapper As Func(Of IO.Stream, IO.Stream) = Nothing,
                    Optional ByVal bufferSize As Integer = DefaultBufferSize)
-        Contract.Requires(client IsNot Nothing)
+        'contract bug wrt interface event implementation requires this:
+        'Contract.Requires(client IsNot Nothing)
+        Contract.Assume(client IsNot Nothing)
 
-        Dim stream As IO.Stream = client.GetStream
-        If streamWrapper IsNot Nothing Then stream = streamWrapper(stream)
+        Me.substream = client.GetStream
+        If streamWrapper IsNot Nothing Then Me.substream = streamWrapper(Me.substream)
         Me.bufferSize = bufferSize
-        ReDim readBuffer(0 To BufferSize - 1)
         Me.deadManSwitch = New DeadManSwitch(timeout, initiallyArmed:=True)
         Me.logger = If(logger, New Logger)
-        Me.stream = New SafeReadPacketStream(stream, 2, 2, PacketStream.InterfaceModes.IncludeSizeBytes, Me.logger, "")
         Me.client = client
-        Name = CType(client.Client.RemoteEndPoint, Net.IPEndPoint).ToString()
-        expectConnected = client.Connected
+        Me.packetStreamer = New PacketStreamer(Me.substream, numBytesBeforeSize:=2, numSizeBytes:=2, maxPacketSize:=bufferSize)
+        Me.expectConnected = client.Connected
         _remoteEndPoint = CType(client.Client.RemoteEndPoint, Net.IPEndPoint)
         If ArraysEqual(RemoteEndPoint.Address.GetAddressBytes(), GetCachedIpAddressBytes(external:=False)) OrElse
-                    ArraysEqual(RemoteEndPoint.Address.GetAddressBytes(), {127, 0, 0, 1}) Then
+           ArraysEqual(RemoteEndPoint.Address.GetAddressBytes(), {127, 0, 0, 1}) Then
             _remoteEndPoint = New Net.IPEndPoint(New Net.IPAddress(GetCachedIpAddressBytes(external:=True)), RemoteEndPoint.Port)
         End If
         Contract.Assume(_remoteEndPoint IsNot Nothing)
         Contract.Assume(_remoteEndPoint.Address IsNot Nothing)
+        Me.Name = Me.RemoteEndPoint.ToString
     End Sub
-#End Region
 
-#Region "Access"
-    Public Function GetLocalPort() As UShort
-        Return CUShort(CType(client.Client.LocalEndPoint, Net.IPEndPoint).Port)
-    End Function
-    Public Function GetLocalIP() As Byte()
-        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-        Dim bytes = CType(client.Client.LocalEndPoint, Net.IPEndPoint).Address.GetAddressBytes()
-        Contract.Assume(bytes IsNot Nothing)
-        Return bytes
-    End Function
+    Public ReadOnly Property RemoteEndPoint As IPEndPoint
+        Get
+            Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
+            Return _remoteEndPoint
+        End Get
+    End Property
+    Public ReadOnly Property LocalEndPoint As IPEndPoint
+        Get
+            Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
+            Return CType(client.Client.LocalEndPoint, Net.IPEndPoint)
+        End Get
+    End Property
     Public Function IsConnected() As Boolean
         Return client.Connected
     End Function
     Public Sub Disconnect(ByVal reason As String)
         Contract.Requires(reason IsNot Nothing)
-        SyncLock lock
-            If Not expectConnected Then Return
-            expectConnected = False
-            client.Close()
-            deadManSwitch.Dispose()
-            stream.Close()
-            isReading = False
-            wantReading = False
-            ThreadPooledAction(
-                Sub()
-                    RaiseEvent Disconnected(Me, reason)
-                End Sub
-            )
-        End SyncLock
+        Dim _reason = reason  'avoid problems with contract verification on hoisted arguments
+        If Not expectConnected Then Return
+        expectConnected = False
+        client.Close()
+        deadManSwitch.Dispose()
+        substream.Close()
+        ThreadPooledAction(
+            Sub()
+                RaiseEvent Disconnected(Me, _reason)
+            End Sub
+        )
     End Sub
     Private Sub DeadManSwitch_Triggered(ByVal sender As DeadManSwitch) Handles deadManSwitch.Triggered
         Disconnect("Connection went idle.")
     End Sub
-#End Region
 
-#Region "Read"
-    Public Sub SetReading(ByVal value As Boolean)
-        SyncLock lock
-            If wantReading = value Then Return 'no change needed
-            wantReading = value
-
-            If Not wantReading Then Return 'don't want to be reading, no need to start
-            If isReading Then Return 'already reading, no need to start
-            isReading = True
-        End SyncLock
-
-        Try
-            stream.BeginRead(readBuffer, 0, readBuffer.Length, AddressOf ReadComplete, Nothing)
-        Catch e As NotSupportedException
-            isReading = False
-        End Try
-    End Sub
-
-    Private Sub ReadComplete(ByVal ar As IAsyncResult)
-        Contract.Requires(ar IsNot Nothing)
-
-        Try
-            'read
-            If Not stream.CanRead Then
-                logger.log("Socket '{0}' Closed.".frmt(Name), LogMessageTypes.DataRaw)
-                Disconnect("stream closed")
-                Return
-            End If
-            Dim n = stream.EndRead(ar)
-            If n = 0 Then
-                logger.log("Socket '{0}' Ended.".frmt(Name), LogMessageTypes.DataRaw)
-                Disconnect("stream ended")
-                Return
-            End If
-            If n < 4 Then Throw New InvalidOperationException("Socket's substream did not divide reads into valid packets.")
-
-            'report
-            Dim header = readBuffer(0)
-            Dim packet_id = readBuffer(1)
-            Dim data = readBuffer.SubArray(4, n - 4).ToView()
-            deadManSwitch.Reset()
-            RaiseEvent ReceivedPacket(Me, header, packet_id, data)
-
-            'keep reading
-            Dim continueReading As Boolean
-            SyncLock lock
-                isReading = wantReading
-                continueReading = wantReading
-            End SyncLock
-            If continueReading Then
-                stream.BeginRead(readBuffer, 0, readBuffer.Length, AddressOf ReadComplete, Nothing)
-            End If
-
-        Catch e As Exception
-            Disconnect("Error receiving data from {0}: {1}".frmt(Name, e.Message))
-        End Try
-    End Sub
-#End Region
-
-#Region "Write"
-    Public Function Write(ByVal header() As Byte, ByVal body() As Byte) As Outcome
-        Contract.Requires(header IsNot Nothing)
-        Contract.Requires(body IsNot Nothing)
-        Return WriteWithMode(Concat({header, New Byte() {0, 0}, body}), PacketStream.InterfaceModes.IncludeSizeBytes)
+    Public Function FutureReadPacket() As IFuture(Of PossibleException(Of ViewableList(Of Byte), Exception))
+        Dim f = packetStreamer.FutureReadPacket()
+        f.CallWhenValueReady(Sub(result)
+                                 deadManSwitch.Reset()
+                                 If result.Exception IsNot Nothing Then
+                                     Disconnect(result.Exception.ToString)
+                                 ElseIf result.Value IsNot Nothing Then
+                                     logger.log(Function() "Received from {0}: {1}".frmt(Name, result.Value.ToHexString), LogMessageTypes.DataRaw)
+                                 End If
+                             End Sub)
+        Return f
     End Function
 
-    Public Function WriteWithMode(ByVal data() As Byte, ByVal mode As PacketStream.InterfaceModes) As Outcome
+    Public Sub WritePacket(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
+        packetStreamer.WritePacket(data)
+        Dim data_ = data
+        logger.log(Function() "Sending to {0}: {1}".frmt(Name, data_.ToHexString), LogMessageTypes.DataRaw)
+    End Sub
 
-        SyncLock lock
-            Try
-                If data.Length > bufferSize Then Throw New ArgumentException("Data exceeded buffer size.")
-                stream.WriteWithMode(data, 0, data.Length, mode)
-                Return success("Sent data.")
-            Catch e As Exception
-                Dim msg = "Error sending data to {0}: {1}".frmt(Name, e.Message)
-                Disconnect(msg)
-                Return failure(msg)
-            End Try
-        End SyncLock
-    End Function
-#End Region
+    Public Sub WriteRawData(ByVal data() As Byte)
+        Contract.Requires(data IsNot Nothing)
+        substream.Write(data, 0, data.Length)
+        Dim data_ = data
+        logger.log(Function() "Sending to {0}: {1}".frmt(Name, data_.ToHexString), LogMessageTypes.DataRaw)
+    End Sub
 End Class

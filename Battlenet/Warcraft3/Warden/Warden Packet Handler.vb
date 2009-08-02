@@ -38,7 +38,9 @@
                        ByVal ref As ICallQueue,
                        Optional ByVal logger As Logger = Nothing,
                        Optional ByVal moduleFolder As String = Nothing)
-            Contract.Requires(ref IsNot Nothing)
+            'contract bug wrt interface event implementation requires this:
+            'Contract.Requires(ref IsNot Nothing)
+            Contract.Assume(ref IsNot Nothing)
             Me.ref = ref
             Me.logger = If(logger, New Logger)
             Me.originalSeed = seed
@@ -250,7 +252,7 @@
                                   WardenChecksum(out),
                                   out}))
         End Sub
-        Private Function ProcessCheckCommand(ByVal data As IViewableList(Of Byte),
+        Private Function ProcessCheckCommand(ByVal data As ViewableList(Of Byte),
                                              ByVal filenames As IList(Of String),
                                              ByRef id_MemCheck As Integer,
                                              ByRef id_PageCheck As Integer,
@@ -289,7 +291,7 @@
                     Throw New IO.IOException("Unrecognized check id.")
             End Select
         End Function
-        Private Function PerformMemoryCheck(ByVal data As IViewableList(Of Byte),
+        Private Function PerformMemoryCheck(ByVal data As ViewableList(Of Byte),
                                             ByVal filenames As IList(Of String),
                                             ByRef out As Byte()) As Integer
             If data.Length < 6 Then Throw New IO.IOException("Not enough memcheck data.")

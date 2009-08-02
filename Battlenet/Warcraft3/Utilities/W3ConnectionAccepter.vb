@@ -1,14 +1,54 @@
 ﻿Namespace Warcraft3
     Public MustInherit Class W3ConnectionAccepterBase
-        Private Shared ReadOnly EXPIRY_PERIOD As New TimeSpan(0, 0, 10)
+        Private Shared ReadOnly EXPIRY_PERIOD As TimeSpan = 10.Seconds
 
-        Private WithEvents _accepter As New ConnectionAccepter
+        Private ReadOnly _accepter As New ConnectionAccepter
         Private ReadOnly logger As Logger
         Private ReadOnly sockets As New HashSet(Of W3Socket)
         Private ReadOnly lock As New Object()
+        Private ReadOnly costPerPacket As Double
+        Private ReadOnly costPerPacketData As Double
+        Private ReadOnly costPerNonGameAction As Double
+        Private ReadOnly costPerNonGameActionData As Double
+        Private ReadOnly costLimit As Double
+        Private ReadOnly costRecoveredPerSecond As Double
+        Private ReadOnly initialSlack As Double
 
-        Public Sub New(Optional ByVal logger As Logger = Nothing)
+        <ContractInvariantMethod()> Protected Sub Invariant()
+            Contract.Invariant(initialSlack >= 0)
+            Contract.Invariant(costPerPacket >= 0)
+            Contract.Invariant(costPerPacketData >= 0)
+            Contract.Invariant(costPerNonGameAction >= 0)
+            Contract.Invariant(costPerNonGameActionData >= 0)
+            Contract.Invariant(costLimit >= 0)
+            Contract.Invariant(costRecoveredPerSecond > 0)
+            Contract.Invariant(_accepter IsNot Nothing)
+        End Sub
+
+        Public Sub New(Optional ByVal logger As Logger = Nothing,
+                       Optional ByVal initialSlack As Double = 0,
+                       Optional ByVal costPerPacket As Double = 0,
+                       Optional ByVal costPerPacketData As Double = 0,
+                       Optional ByVal costPerNonGameAction As Double = 0,
+                       Optional ByVal costPerNonGameActionData As Double = 0,
+                       Optional ByVal costLimit As Double = 0,
+                       Optional ByVal costRecoveredPerSecond As Double = 1)
+            Contract.Requires(initialSlack >= 0)
+            Contract.Requires(costPerPacket >= 0)
+            Contract.Requires(costPerPacketData >= 0)
+            Contract.Requires(costPerNonGameAction >= 0)
+            Contract.Requires(costPerNonGameActionData >= 0)
+            Contract.Requires(costLimit >= 0)
+            Contract.Requires(costRecoveredPerSecond > 0)
             Me.logger = If(logger, New Logger)
+            Me.initialSlack = initialSlack
+            Me.costPerNonGameAction = costPerNonGameActionData
+            Me.costPerNonGameActionData = costPerNonGameActionData
+            Me.costPerPacket = costPerPacket
+            Me.costPerPacketData = costPerPacketData
+            Me.costLimit = costLimit
+            Me.costRecoveredPerSecond = costRecoveredPerSecond
+            AddHandler _accepter.AcceptedConnection, AddressOf c_Connection
         End Sub
 
         ''' <summary>
@@ -18,7 +58,7 @@
         ''' </summary>
         Public Sub Reset()
             SyncLock lock
-                accepter.CloseAllPorts()
+                Accepter.CloseAllPorts()
                 For Each socket In sockets
                     socket.disconnect("Accepter Reset")
                 Next socket
@@ -27,29 +67,57 @@
         End Sub
 
         '''<summary>Provides public access to the underlying accepter.</summary>
-        Public ReadOnly Property accepter() As ConnectionAccepter
+        Public ReadOnly Property Accepter() As ConnectionAccepter
             Get
-                accepter = _accepter
+                Contract.Ensures(Contract.Result(Of ConnectionAccepter)() IsNot Nothing)
+                Return _accepter
             End Get
         End Property
 
         '''<summary>Handles new connections.</summary>
-        Private Sub catch_connection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
+        Private Sub c_Connection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
             Try
-                Dim socket = New W3Socket(New BnetSocket(client, New TimeSpan(0, 1, 0), logger))
-                logger.log("New player connecting from {0}.".frmt(socket.name), LogMessageTypes.Positive)
+                Dim socket = New W3Socket(New PacketSocket(client, 60.Seconds, logger),
+                                          initialSlack,
+                                          costPerPacket,
+                                          costPerPacketData,
+                                          costPerNonGameAction,
+                                          costPerNonGameActionData,
+                                          costLimit,
+                                          costRecoveredPerSecond)
+                logger.log("New player connecting from {0}.".frmt(socket.Name), LogMessageTypes.Positive)
 
                 SyncLock lock
                     sockets.Add(socket)
                 End SyncLock
-                AddHandler socket.ReceivedPacket, AddressOf c_Knocked
-                FutureWait(EXPIRY_PERIOD).CallWhenReady(Sub() c_Expired(socket))
+                socket.FutureReadPacket().CallWhenValueReady(
+                    Sub(result)
+                        If Not TryRemoveSocket(socket) Then  Return
+                        If result.Exception IsNot Nothing Then
+                            socket.disconnect(result.Exception.ToString)
+                            logger.log(result.Exception.ToString, LogMessageTypes.Problem)
+                            Return
+                        End If
 
-                socket.SetReading(True)
+                        Try
+                            GetConnectingPlayer(socket, result.Value)
+                        Catch e As Exception
+                            Dim msg = "Error receiving {0} from {1}: {2}".frmt(result.Value.id, socket.Name, e)
+                            logger.log(msg, LogMessageTypes.Problem)
+                            socket.disconnect(msg)
+                        End Try
+                    End Sub
+                )
+                FutureWait(EXPIRY_PERIOD).CallWhenReady(
+                    Sub()
+                        If Not TryRemoveSocket(socket) Then  Return
+                        socket.disconnect("Idle")
+                    End Sub
+                )
             Catch e As Exception
-                logger.log("Error accepting connection: " + e.Message, LogMessageTypes.Problem)
+                logger.log("Error accepting connection: " + e.ToString, LogMessageTypes.Problem)
             End Try
         End Sub
 
@@ -59,29 +127,10 @@
                 If Not sockets.Contains(socket) Then Return False
                 sockets.Remove(socket)
             End SyncLock
-            RemoveHandler socket.ReceivedPacket, AddressOf c_Knocked
             Return True
         End Function
 
-        '''<summary>Disconnects sockets which do not send any initial data.</summary>
-        Private Sub c_Expired(ByVal socket As W3Socket)
-            If Not TryRemoveSocket(socket) Then Return
-            socket.disconnect("Idle")
-        End Sub
-
-        '''<summary>Accepts connecting warcraft 3 players.</summary>
-        Private Sub c_Knocked(ByVal socket As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
-            If Not TryRemoveSocket(socket) Then Return
-            Try
-                GetConnectingPlayer(socket, id, vals)
-            Catch e As Exception
-                Dim msg = "Error receiving {0} from {1}: {2}".frmt(id, socket.name, e.Message)
-                logger.log(msg, LogMessageTypes.Problem)
-                socket.disconnect(msg)
-            End Try
-        End Sub
-
-        Protected MustOverride Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
+        Protected MustOverride Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)
     End Class
 
     Public Class W3ConnectionAccepter
@@ -90,14 +139,22 @@
         Public Event Connection(ByVal sender As W3ConnectionAccepter, ByVal player As W3ConnectingPlayer)
 
         Public Sub New(Optional ByVal logger As Logger = Nothing)
-            MyBase.New(logger)
+            MyBase.New(logger,
+                       costLimit:=100,
+                       costRecoveredPerSecond:=20,
+                       costPerNonGameAction:=1,
+                       costPerNonGameActionData:=0.1,
+                       costPerPacket:=0,
+                       costperpacketdata:=0,
+                       initialSlack:=0)
         End Sub
 
-        Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
-            If id <> W3PacketId.Knock Then
-                Throw New IO.IOException("{0} was not a warcraft 3 player.".frmt(socket.name))
+        Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)
+            If packet.id <> W3PacketId.Knock Then
+                Throw New IO.IOException("{0} was not a warcraft 3 player.".frmt(socket.Name))
             End If
 
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             Dim name = CStr(vals("name"))
             Dim internalAddress = CType(vals("internal address"), Dictionary(Of String, Object))
             Contract.Assume(name IsNot Nothing)
@@ -111,30 +168,29 @@
                                                 AddressJar.ExtractIPEndpoint(internalAddress),
                                                 socket)
 
-            socket.name = player.Name
-            socket.SetReading(False)
+            socket.Name = player.Name
             RaiseEvent Connection(Me, player)
         End Sub
     End Class
 
-    Public Class W3P2PConnectionAccepter
+    Public Class W3PeerConnectionAccepter
         Inherits W3ConnectionAccepterBase
 
-        Public Event Connection(ByVal sender As W3P2PConnectionAccepter, ByVal player As W3P2PConnectingPlayer)
+        Public Event Connection(ByVal sender As W3PeerConnectionAccepter, ByVal player As W3ConnectingPeer)
 
         Public Sub New(Optional ByVal logger As Logger = Nothing)
             MyBase.New(logger)
         End Sub
 
-        Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
-            If id <> W3PacketId.P2pKnock Then
-                Throw New IO.IOException("{0} was not a p2p warcraft 3 player connection.".frmt(socket.name))
+        Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)
+            If packet.id <> W3PacketId.PeerKnock Then
+                Throw New IO.IOException("{0} was not a warcraft 3 peer connection.".frmt(socket.Name))
             End If
-            Dim player = New W3P2PConnectingPlayer(socket,
-                                              CByte(vals("receiver p2p key")),
+            Dim vals = CType(packet.payload, Dictionary(Of String, Object))
+            Dim player = New W3ConnectingPeer(socket,
+                                              CByte(vals("receiver peer key")),
                                               CByte(vals("sender player id")),
-                                              CUShort(vals("sender p2p flags")))
-            socket.SetReading(False)
+                                              CUShort(vals("sender peer connection flags")))
             RaiseEvent Connection(Me, player)
         End Sub
     End Class

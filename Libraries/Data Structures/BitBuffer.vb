@@ -16,27 +16,32 @@ Public Class BitBuffer
 
 #Region "Base Operations"
     Public Sub Queue(ByVal bits As ULong, ByVal numBits As Integer)
-        If numBits < 0 Or numBits > MaxBits Then Throw New ArgumentOutOfRangeException("numBits")
+        Contract.Requires(numBits >= 0)
+        Contract.Requires(numBits <= MaxBits)
         If numBits > MaxBits - NumBufferedBits Then Throw New InvalidOperationException("Not enough capacity available.")
         buf = buf Or (bits << _numBufferedBits)
         _numBufferedBits += numBits
     End Sub
     Public Sub Stack(ByVal bits As ULong, ByVal numBits As Integer)
-        If numBits < 0 Or numBits > MaxBits Then Throw New ArgumentOutOfRangeException("numBits")
+        Contract.Requires(numBits >= 0)
+        Contract.Requires(numBits <= MaxBits)
         If numBits > MaxBits - NumBufferedBits Then Throw New InvalidOperationException("Not enough capacity available.")
         buf <<= numBits
         buf = buf Or bits
         _numBufferedBits += numBits
     End Sub
     Public Function Take(ByVal numBits As Integer) As ULong
+        Contract.Requires(numBits >= 0)
+        Contract.Requires(numBits <= MaxBits)
         Take = Peek(numBits)
         buf >>= numBits
         _numBufferedBits -= numBits
     End Function
     Public Function Peek(ByVal numBits As Integer) As ULong
-        If numBits < 0 Or numBits > MaxBits Then Throw New ArgumentOutOfRangeException("numBits")
+        Contract.Requires(numBits >= 0)
+        Contract.Requires(numBits <= MaxBits)
         If numBits > NumBufferedBits Then Throw New InvalidOperationException("Not enough buffered buffered bits available.")
-        Peek = CULng(buf And ((CULng(1) << numBits) - CULng(1)))
+        Peek = CULng(buf And ((1UL << numBits) - 1UL))
     End Function
 
     Public Sub Clear()
@@ -47,7 +52,7 @@ Public Class BitBuffer
 
 #Region "Stack Types"
     Public Sub StackBit(ByVal value As Boolean)
-        Stack(If(value, CULng(1), CULng(0)), 1)
+        Stack(If(value, 1UL, 0UL), 1)
     End Sub
     Public Sub StackByte(ByVal value As Byte)
         Stack(value, 8)
@@ -62,7 +67,7 @@ Public Class BitBuffer
 
 #Region "Queue Types"
     Public Sub QueueBit(ByVal value As Boolean)
-        Queue(If(value, CULng(1), CULng(0)), 1)
+        Queue(If(value, 1UL, 0UL), 1)
     End Sub
     Public Sub QueueByte(ByVal value As Byte)
         Queue(value, 8)
@@ -110,6 +115,7 @@ Public Class ByteSequenceBitBuffer
     Private ReadOnly buf As New BitBuffer
     Private ReadOnly sequence As IEnumerator(Of Byte)
     Public Sub New(ByVal sequence As IEnumerator(Of Byte))
+        Contract.Requires(sequence IsNot Nothing)
         Me.sequence = sequence
     End Sub
     Public ReadOnly Property NumBufferedBits As Integer

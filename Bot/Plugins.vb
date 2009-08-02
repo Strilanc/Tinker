@@ -1,6 +1,7 @@
 Imports System.Reflection
 
 Namespace Plugins
+    <Serializable()>
     Public Class PluginException
         Inherits Exception
         Public Sub New(ByVal message As String, Optional ByVal innerException As Exception = Nothing)
@@ -80,7 +81,7 @@ Namespace Plugins
                         plugin = CType(Activator.CreateInstance(socket.class_type), IPlugin)
                         plugin.init(Me)
                     Catch e As Exception
-                        Throw New PluginException("Error creating instance of plugin class: " + e.Message, e)
+                        Throw New PluginException("Error creating instance of plugin class: " + e.ToString, e)
                     End Try
                 End Sub
 
@@ -127,7 +128,7 @@ Namespace Plugins
                 loaded_plugs.Add(plug)
                 Return successVal(plug.plugin, "Loaded plugin succesfully. Plugin Description is: '" + plug.plugin.description + "'")
             Catch e As Exception
-                Return failure("Error loading plugin: " + e.Message)
+                Return failure("Error loading plugin: " + e.ToString)
             End Try
         End Function
         Private Function unload_plugin(ByVal plug As Socket.Plug, ByVal reason As String) As Outcome

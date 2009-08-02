@@ -233,7 +233,7 @@
 '    End Sub
 
 '    Private Sub accepter_accepted_connection(ByVal sender As ConnectionAccepter, ByVal accepted_client As System.Net.Sockets.TcpClient)
-'        connection_index += CUInt(1)
+'        connection_index += 1ui
 '        amap1(accepted_client) = connection_index
 '        amap2(connection_index) = accepted_client
 '        reader.writeChunk(New Byte() {0, IDS.open_connection}, packUInteger(connection_index))

@@ -48,6 +48,49 @@ Public Class ThrottledWriteStream
     End Sub
 End Class
 
+Public Class ThrottledReader
+    Inherits StreamWrapper
+
+    Private ReadOnly costPerRead As Double
+    Private ReadOnly costPerCharacter As Double
+    Private ReadOnly costLimit As Double
+    Private ReadOnly recoveryRate As Double
+
+    Private availableSlack As Double
+    Private usedCost As Double
+    Private lastReadTime As Date = DateTime.Now()
+
+    Public Sub New(ByVal substream As IO.Stream,
+                   Optional ByVal initialSlack As Double = 0,
+                   Optional ByVal costPerRead As Double = 0,
+                   Optional ByVal costPerCharacter As Double = 0,
+                   Optional ByVal costLimit As Double = 0,
+                   Optional ByVal costRecoveredPerSecond As Double = 1)
+        MyBase.New(substream)
+        Contract.Requires(substream IsNot Nothing)
+        Contract.Requires(initialSlack >= 0)
+        Contract.Requires(costPerRead >= 0)
+        Contract.Requires(costPerCharacter >= 0)
+        Contract.Requires(costLimit >= 0)
+        Contract.Requires(costRecoveredPerSecond > 0)
+
+        Me.availableSlack = initialSlack
+        Me.costPerRead = costPerRead
+        Me.costPerCharacter = costPerCharacter
+        Me.costLimit = costLimit
+        Me.recoveryRate = costRecoveredPerSecond / TimeSpan.TicksPerSecond
+    End Sub
+
+    Public Overrides Function Read(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
+        Dim n = MyBase.Read(buffer, offset, count)
+        usedCost += costPerRead
+        usedCost += costPerCharacter * n
+        Dim t = Now()
+        Dim dt = t - lastReadTime
+        lastReadTime = t
+        usedCost -= dt.Ticks * recoveryRate
+    End Function
+End Class
 Public Class ThrottledWriter
     Inherits BaseLockFreeConsumer(Of Byte())
 
@@ -110,8 +153,8 @@ Public Class ThrottledWriter
 
             'Wait
             If usedCost > costLimit + availableSlack Then
-                FutureWait(New TimeSpan(CLng((usedCost - costLimit) / recoveryRate))).CallWhenReady(
-                               Sub() ref.QueueAction(Sub() ContinueConsume(Nothing)))
+                FutureWait(New TimeSpan(CLng((usedCost - costLimit) / recoveryRate))).
+                                CallWhenReady(Sub() ref.QueueAction(Sub() ContinueConsume(Nothing)))
                 Return
             End If
 

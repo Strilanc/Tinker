@@ -1,16 +1,16 @@
 ﻿Namespace Warcraft3
     Public Class TickRecord
         Public ReadOnly length As UShort
-        Public ReadOnly start_time As Integer
-        Public ReadOnly Property end_time() As Integer
+        Public ReadOnly startTime As Integer
+        Public ReadOnly Property EndTime() As Integer
             Get
-                Return length + start_time
+                Return length + startTime
             End Get
         End Property
 
         Public Sub New(ByVal length As UShort, ByVal start_time As Integer)
             Me.length = length
-            Me.start_time = start_time
+            Me.startTime = start_time
         End Sub
 
         'Private checksum As Byte() = Nothing
@@ -30,7 +30,7 @@
         Implements IW3Player
 
         Private ReadOnly tickQueue As New Queue(Of TickRecord)
-        Private totalTockTime As Integer = 0
+        Private totalTockTime As Integer
 
         Public Sub GamePlayStart()
             loadscreenStop()
@@ -47,24 +47,34 @@
             handlers(W3PacketId.ClientDropLagger) = Nothing
         End Sub
 
-        Private Sub QueueTick(ByVal record As TickRecord)
+        Private Sub SendTick(ByVal record As TickRecord, ByVal data As Byte())
+            Contract.Requires(record IsNot Nothing)
             If isFake Then Return
             tickQueue.Enqueue(record)
+            SendPacket(W3Packet.MakeTick(record.length, data))
         End Sub
 
 #Region "Networking"
         Private Sub ReceiveDropLagger(ByVal vals As Dictionary(Of String, Object))
-            game.f_DropLagger()
+            Contract.Requires(vals IsNot Nothing)
+            game.QueueDropLagger()
         End Sub
         Private Sub ReceiveAcceptHost(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             SendPacket(W3Packet.MakeConfirmHost())
         End Sub
         Private Sub ReceiveGameAction(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             Dim id = CByte(vals("id"))
             Dim data = CType(vals("data"), Byte())
-            game.f_QueueGameData(Me, Concat({New Byte() {id}, data}))
+            Contract.Assume(data IsNot Nothing)
+            'queued because otherwise the static verifier whines about invariants due to passing out 'me'
+            eref.QueueAction(Sub()
+                                 game.QueueSendGameData(Me, Concat({New Byte() {id}, data}))
+                             End Sub)
         End Sub
         Private Sub ReceiveTock(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             If tickQueue.Count <= 0 Then
                 logger.log("Banned behavior: {0} responded to a tick which wasn't sent.".frmt(name), LogMessageTypes.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "overticked")
@@ -90,16 +100,18 @@
                 Return totalTockTime
             End Get
         End Property
-        Private Function _f_QueueTick(ByVal record As TickRecord) As IFuture Implements IW3Player.f_QueueTick
-            Return ref.QueueAction(Sub() QueueTick(record))
+        Private Function _QueueSendTick(ByVal record As TickRecord, ByVal data As Byte()) As IFuture Implements IW3Player.QueueSendTick
+            Return ref.QueueAction(Sub()
+                                       Contract.Assume(record IsNot Nothing)
+                                       SendTick(record, data)
+                                   End Sub)
         End Function
-#End Region
-
-        Private Function _f_StartPlaying() As IFuture Implements IW3Player.f_StartPlaying
+        Private Function _QueueStartPlaying() As IFuture Implements IW3Player.QueueStartPlaying
             Return ref.QueueAction(AddressOf GamePlayStart)
         End Function
-        Private Function _f_StopPlaying() As IFuture Implements IW3Player.f_StopPlaying
+        Private Function _QueueStopPlaying() As IFuture Implements IW3Player.QueueStopPlaying
             Return ref.QueueAction(AddressOf GamePlayStop)
         End Function
+#End Region
     End Class
 End Namespace

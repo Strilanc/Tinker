@@ -264,7 +264,7 @@ Namespace My.Resources
         '''Autostart=-Autostart, -as: Instances will start automatically when they fill up.
         '''Instances=-Instances=X, -i=X: Sets the initial number of instances. Use =0 for unlimited instances.
         '''FullShare=-FullShare: Turns on wc3&apos;s &apos;full shared control&apos; option.
-        '''MultiObs=-MultiObs,-mo: Turns on observers, and creates a special slot which can accept large amounts of players. The map must have two availabl [rest of string was truncated]&quot;;.
+        '''Mode=-Mode=arg: Passes a small string into the map by encoding it into player handicaps. Only works with supporting maps. At most one char per p [rest of string was truncated]&quot;;.
         '''</summary>
         Friend ReadOnly Property Command_Bot_CreateServer_ExtraHelp() As String
             Get

@@ -59,7 +59,7 @@
         ReadOnly Property NumFreeSlots As Integer
     End Interface
 
-    Public Class W3GameHeaderAndState
+    Public NotInheritable Class W3GameHeaderAndState
         Inherits W3GameHeader
         Implements IW3GameStateDescription
         Public state As Bnet.BnetPacket.GameStateFlags
@@ -180,22 +180,22 @@
         End Property
 
 #Region "Interface"
-        Private ReadOnly Property _CreationTime As Date Implements IW3GameDescription.CreationTime
+        Protected ReadOnly Property _CreationTime As Date Implements IW3GameDescription.CreationTime
             Get
                 Return creationTime
             End Get
         End Property
-        Private ReadOnly Property _BnetId As UInteger Implements IW3GameDescription.BnetId
+        Protected ReadOnly Property _BnetId As UInteger Implements IW3GameDescription.BnetId
             Get
                 Return gameId
             End Get
         End Property
-        Private ReadOnly Property _Settings As W3MapSettings Implements IW3GameDescription.Settings
+        Protected ReadOnly Property _Settings As W3MapSettings Implements IW3GameDescription.Settings
             Get
                 Return Map
             End Get
         End Property
-        Private ReadOnly Property _HostUserName As String Implements IW3GameDescription.HostUserName
+        Protected ReadOnly Property _HostUserName As String Implements IW3GameDescription.HostUserName
             Get
                 Return hostUserName
             End Get

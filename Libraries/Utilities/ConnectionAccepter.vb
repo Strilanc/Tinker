@@ -1,4 +1,5 @@
 ﻿Imports System.Net.Sockets
+Imports System.Net
 
 '''<summary>A thread-safe class which accepts connections on multiple ports, and returns accepted TcpClients using events.</summary>
 Public Class ConnectionAccepter
@@ -16,34 +17,33 @@ Public Class ConnectionAccepter
                 If out.succeeded Then Return success("Already listening on port {0}.".frmt(port))
 
                 'listen and accept connections
-                Dim listener = New TcpListener(Net.IPAddress.Any, port)
+                Dim listener = New TcpListener(IPAddress.Any, port)
                 listener.Start()
                 listeners.Add(listener)
-                listener.FutureAcceptConnection().CallWhenValueReady(YCombinator(Of Outcome(Of TcpClient))(
-                    Function(self) Sub(acceptedClient)
-                                       Dim client = acceptedClient.val
+                FutureIterate(AddressOf listener.FutureAcceptConnection,
+                    Function(result)
+                        Dim client = result.Value
 
-                                       SyncLock lock
-                                           'succeeded?
-                                           If Not acceptedClient.succeeded Then
-                                               listener.Stop()
-                                               listeners.Remove(listener)
-                                               Return
-                                           End If
+                        SyncLock lock
+                            'succeeded?
+                            If result.Exception IsNot Nothing Then
+                                listener.Stop()
+                                listeners.Remove(listener)
+                                Return False.Futurize
+                            End If
 
-                                           'still supposed to be listening?
-                                           If Not listeners.Contains(listener) Then
-                                               client.Close()
-                                               Return
-                                           End If
+                            'still supposed to be listening?
+                            If Not listeners.Contains(listener) Then
+                                client.Close()
+                                Return False.Futurize
+                            End If
+                        End SyncLock
 
-                                           'continue listening
-                                           listener.FutureAcceptConnection().CallWhenValueReady(self)
-                                       End SyncLock
-
-                                       'report
-                                       RaiseEvent AcceptedConnection(Me, client)
-                                   End Sub))
+                        'report
+                        RaiseEvent AcceptedConnection(Me, client)
+                        Return True.Futurize
+                    End Function
+                )
             End SyncLock
 
             Return success("Started listening for connections on port {0}.".frmt(port))

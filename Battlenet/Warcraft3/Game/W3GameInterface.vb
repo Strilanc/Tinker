@@ -15,60 +15,60 @@
         ReadOnly Property name() As String
         ReadOnly Property logger() As Logger
 
-        Function f_AdminPlayer() As IFuture(Of IW3Player)
-        Function f_FakeHostPlayer() As IFuture(Of IW3Player)
-        Function f_State() As IFuture(Of W3GameStates)
-        Function f_BroadcastMessage(ByVal message As String) As IFuture
-        Function f_SendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture
-        Function f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player)
-        Function f_Close() As IFuture(Of Outcome)
-        Function f_TryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture(Of Outcome)
-        Function f_EnumPlayers() As IFuture(Of List(Of IW3Player))
-        Function f_BootSlot(ByVal query As String) As IFuture(Of Outcome)
-        Function f_ThrowUpdated() As IFuture
-        Function f_RemovePlayer(ByVal p As IW3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome)
-        Function f_ReceiveNonGameAction(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
+        Function QueueGetAdminPlayer() As IFuture(Of IW3Player)
+        Function QueueGetFakeHostPlayer() As IFuture(Of IW3Player)
+        Function QueueGetState() As IFuture(Of W3GameStates)
+        Function QueueBroadcastMessage(ByVal message As String) As IFuture
+        Function QueueSendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture
+        Function QueueFindPlayer(ByVal username As String) As IFuture(Of IW3Player)
+        Function QueueClose() As IFuture(Of Outcome)
+        Function QueueTryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture(Of Outcome)
+        Function QueueGetPlayers() As IFuture(Of List(Of IW3Player))
+        Function QueueBootSlot(ByVal query As String) As IFuture(Of Outcome)
+        Function QueueThrowUpdated() As IFuture
+        Function QueueRemovePlayer(ByVal p As IW3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome)
+        Function QueueReceiveNonGameAction(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
 
         Event ChangedState(ByVal sender As IW3Game, ByVal oldState As W3GameStates, ByVal newState As W3GameStates)
         Event Updated(ByVal sender As IW3Game, ByVal slots As List(Of W3Slot))
         Event PlayerTalked(ByVal sender As IW3Game, ByVal player As IW3Player, ByVal text As String)
         Event PlayerLeft(ByVal sender As IW3Game, ByVal gameState As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
 
-        Function f_CommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture
-        Function f_CommandProcessText(ByVal player As IW3Player, ByVal text As String) As IFuture(Of Outcome)
+        Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture
+        Function QueueProcessCommand(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
 
 #Region "Lobby"
         ReadOnly Property DownloadScheduler() As TransferScheduler(Of Byte)
 
-        Function f_PlayerVoteToStart(ByVal name As String, ByVal val As Boolean) As IFuture(Of Outcome)
-        Function f_StartCountdown() As IFuture(Of Outcome)
-        Function f_TryAddPlayer(ByVal new_player As W3ConnectingPlayer) As IFuture(Of Outcome)
-        Function f_OpenSlot(ByVal query As String) As IFuture(Of Outcome)
-        Function f_CloseSlot(ByVal query As String) As IFuture(Of Outcome)
-        Function f_ReserveSlot(ByVal query As String, ByVal username As String) As IFuture(Of Outcome)
-        Function f_SwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture(Of Outcome)
-        Function f_SetSlotCpu(ByVal query As String, ByVal c As W3Slot.ComputerLevel) As IFuture(Of Outcome)
-        Function f_SetSlotLocked(ByVal query As String, ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome)
-        Function f_SetAllSlotsLocked(ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome)
-        Function f_SetSlotHandicap(ByVal query As String, ByVal new_handicap As Byte) As IFuture(Of Outcome)
-        Function f_SetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture(Of Outcome)
-        Function f_SetSlotRace(ByVal query As String, ByVal new_race As W3Slot.RaceFlags) As IFuture(Of Outcome)
-        Function f_SetSlotColor(ByVal query As String, ByVal new_color As W3Slot.PlayerColor) As IFuture(Of Outcome)
-        Function f_UpdatedGameState() As IFuture
-        Function f_TrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture(Of Outcome)
+        Function QueuePlayerVoteToStart(ByVal name As String, ByVal val As Boolean) As IFuture(Of Outcome)
+        Function QueueStartCountdown() As IFuture(Of Outcome)
+        Function QueueTryAddPlayer(ByVal new_player As W3ConnectingPlayer) As IFuture(Of Outcome)
+        Function QueueOpenSlot(ByVal query As String) As IFuture(Of Outcome)
+        Function QueueCloseSlot(ByVal query As String) As IFuture(Of Outcome)
+        Function QueueReserveSlot(ByVal query As String, ByVal username As String) As IFuture(Of Outcome)
+        Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture(Of Outcome)
+        Function QueueSetSlotCpu(ByVal query As String, ByVal c As W3Slot.ComputerLevel) As IFuture(Of Outcome)
+        Function QueueSetSlotLocked(ByVal query As String, ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome)
+        Function QueueSetAllSlotsLocked(ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome)
+        Function QueueSetSlotHandicap(ByVal query As String, ByVal new_handicap As Byte) As IFuture(Of Outcome)
+        Function QueueSetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture(Of Outcome)
+        Function QueueSetSlotRace(ByVal query As String, ByVal new_race As W3Slot.RaceFlags) As IFuture(Of Outcome)
+        Function QueueSetSlotColor(ByVal query As String, ByVal new_color As W3Slot.PlayerColor) As IFuture(Of Outcome)
+        Function QueueUpdatedGameState() As IFuture
+        Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture(Of Outcome)
 
         Event PlayerEntered(ByVal sender As IW3Game, ByVal player As IW3Player)
 #End Region
 
 #Region "Load Screen"
-        Function f_ReceiveReady(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
+        Function QueueReceiveReady(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
 #End Region
 
 #Region "Game Play"
         ReadOnly Property GameTime() As Integer
 
-        Function f_DropLagger() As IFuture
-        Function f_QueueGameData(ByVal sender As IW3Player, ByVal data() As Byte) As IFuture
+        Function QueueDropLagger() As IFuture
+        Function QueueSendGameData(ByVal sender As IW3Player, ByVal data() As Byte) As IFuture
 
         Property SettingGameRate As Double
         Property SettingLagLimit As Double
@@ -96,208 +96,208 @@
             End Get
         End Property
 
-        Public Function f_AdminPlayer() As IFuture(Of IW3Player) Implements IW3Game.f_AdminPlayer
+        Public Function QueueAdminPlayer() As IFuture(Of IW3Player) Implements IW3Game.QueueGetAdminPlayer
             Contract.Ensures(Contract.Result(Of IFuture(Of IW3Player))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_BootSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3Game.f_BootSlot
+        Public Function QueueBootSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3Game.QueueBootSlot
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_BroadcastMessage(ByVal message As String) As IFuture Implements IW3Game.f_BroadcastMessage
+        Public Function QueueBroadcastMessage(ByVal message As String) As IFuture Implements IW3Game.QueueBroadcastMessage
             Contract.Requires(message IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_Close() As IFuture(Of Outcome) Implements IW3Game.f_Close
+        Public Function QueueClose() As IFuture(Of Outcome) Implements IW3Game.QueueClose
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_CloseSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3Game.f_CloseSlot
+        Public Function QueueCloseSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3Game.QueueCloseSlot
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_CommandProcessLocalText(ByVal text As String, ByVal logger As Logging.Logger) As IFuture Implements IW3Game.f_CommandProcessLocalText
+        Public Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logging.Logger) As IFuture Implements IW3Game.QueueCommandProcessLocalText
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_CommandProcessText(ByVal player As IW3Player, ByVal text As String) As IFuture(Of Outcome) Implements IW3Game.f_CommandProcessText
+        Public Function QueueProcessCommand(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements IW3Game.QueueProcessCommand
             Contract.Requires(player IsNot Nothing)
-            Contract.Requires(text IsNot Nothing)
+            Contract.Requires(arguments IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_DropLagger() As IFuture Implements IW3Game.f_DropLagger
+        Public Function QueueDropLagger() As IFuture Implements IW3Game.QueueDropLagger
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_EnumPlayers() As IFuture(Of List(Of IW3Player)) Implements IW3Game.f_EnumPlayers
+        Public Function QueueEnumPlayers() As IFuture(Of List(Of IW3Player)) Implements IW3Game.QueueGetPlayers
             Contract.Ensures(Contract.Result(Of IFuture(Of List(Of IW3Player)))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_FakeHostPlayer() As IFuture(Of IW3Player) Implements IW3Game.f_FakeHostPlayer
+        Public Function QueueFakeHostPlayer() As IFuture(Of IW3Player) Implements IW3Game.QueueGetFakeHostPlayer
             Contract.Ensures(Contract.Result(Of IFuture(Of IW3Player))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Game.f_FindPlayer
+        Public Function QueueFindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Game.QueueFindPlayer
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IW3Player))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_OpenSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3Game.f_OpenSlot
+        Public Function QueueOpenSlot(ByVal query As String) As IFuture(Of Outcome) Implements IW3Game.QueueOpenSlot
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_PlayerVoteToStart(ByVal name As String,
-                                            ByVal val As Boolean) As IFuture(Of Outcome) Implements IW3Game.f_PlayerVoteToStart
+        Public Function QueuePlayerVoteToStart(ByVal name As String,
+                                            ByVal val As Boolean) As IFuture(Of Outcome) Implements IW3Game.QueuePlayerVoteToStart
             Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_QueueGameData(ByVal sender As IW3Player,
-                                        ByVal data() As Byte) As IFuture Implements IW3Game.f_QueueGameData
+        Public Function QueueQueueGameData(ByVal sender As IW3Player,
+                                        ByVal data() As Byte) As IFuture Implements IW3Game.QueueSendGameData
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_ReceiveNonGameAction(ByVal player As IW3Player,
-                                               ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.f_ReceiveNonGameAction
+        Public Function QueueReceiveNonGameAction(ByVal player As IW3Player,
+                                               ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveNonGameAction
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_ReceiveReady(ByVal player As IW3Player,
-                                       ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.f_ReceiveReady
+        Public Function QueueReceiveReady(ByVal player As IW3Player,
+                                       ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveReady
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_RemovePlayer(ByVal p As IW3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome) Implements IW3Game.f_RemovePlayer
+        Public Function QueueRemovePlayer(ByVal p As IW3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome) Implements IW3Game.QueueRemovePlayer
             Contract.Requires(p IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_ReserveSlot(ByVal query As String, ByVal username As String) As IFuture(Of Outcome) Implements IW3Game.f_ReserveSlot
+        Public Function QueueReserveSlot(ByVal query As String, ByVal username As String) As IFuture(Of Outcome) Implements IW3Game.QueueReserveSlot
             Contract.Requires(query IsNot Nothing)
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture Implements IW3Game.f_SendMessageTo
+        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture Implements IW3Game.QueueSendMessageTo
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SetAllSlotsLocked(ByVal newLockState As W3Slot.Lock) As IFuture(Of Outcome) Implements IW3Game.f_SetAllSlotsLocked
+        Public Function QueueSetAllSlotsLocked(ByVal newLockState As W3Slot.Lock) As IFuture(Of Outcome) Implements IW3Game.QueueSetAllSlotsLocked
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SetSlotColor(ByVal query As String, ByVal new_color As W3Slot.PlayerColor) As IFuture(Of Outcome) Implements IW3Game.f_SetSlotColor
+        Public Function QueueSetSlotColor(ByVal query As String, ByVal new_color As W3Slot.PlayerColor) As IFuture(Of Outcome) Implements IW3Game.QueueSetSlotColor
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SetSlotCpu(ByVal query As String, ByVal c As W3Slot.ComputerLevel) As IFuture(Of Outcome) Implements IW3Game.f_SetSlotCpu
+        Public Function QueueSetSlotCpu(ByVal query As String, ByVal c As W3Slot.ComputerLevel) As IFuture(Of Outcome) Implements IW3Game.QueueSetSlotCpu
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SetSlotHandicap(ByVal query As String, ByVal new_handicap As Byte) As IFuture(Of Outcome) Implements IW3Game.f_SetSlotHandicap
+        Public Function QueueSetSlotHandicap(ByVal query As String, ByVal new_handicap As Byte) As IFuture(Of Outcome) Implements IW3Game.QueueSetSlotHandicap
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SetSlotLocked(ByVal query As String, ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome) Implements IW3Game.f_SetSlotLocked
+        Public Function QueueSetSlotLocked(ByVal query As String, ByVal new_lock_state As W3Slot.Lock) As IFuture(Of Outcome) Implements IW3Game.QueueSetSlotLocked
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SetSlotRace(ByVal query As String, ByVal new_race As W3Slot.RaceFlags) As IFuture(Of Outcome) Implements IW3Game.f_SetSlotRace
+        Public Function QueueSetSlotRace(ByVal query As String, ByVal new_race As W3Slot.RaceFlags) As IFuture(Of Outcome) Implements IW3Game.QueueSetSlotRace
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture(Of Outcome) Implements IW3Game.f_SetSlotTeam
+        Public Function QueueSetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture(Of Outcome) Implements IW3Game.QueueSetSlotTeam
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_StartCountdown() As IFuture(Of Outcome) Implements IW3Game.f_StartCountdown
+        Public Function QueueStartCountdown() As IFuture(Of Outcome) Implements IW3Game.QueueStartCountdown
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_State() As IFuture(Of W3GameStates) Implements IW3Game.f_State
+        Public Function QueueState() As IFuture(Of W3GameStates) Implements IW3Game.QueueGetState
             Contract.Ensures(Contract.Result(Of IFuture(Of W3GameStates))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture(Of Outcome) Implements IW3Game.f_SwapSlotContents
+        Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture(Of Outcome) Implements IW3Game.QueueSwapSlotContents
             Contract.Requires(query1 IsNot Nothing)
             Contract.Requires(query2 IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_ThrowUpdated() As IFuture Implements IW3Game.f_ThrowUpdated
+        Public Function QueueThrowUpdated() As IFuture Implements IW3Game.QueueThrowUpdated
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_TryAddPlayer(ByVal new_player As W3ConnectingPlayer) As IFuture(Of Outcome) Implements IW3Game.f_TryAddPlayer
+        Public Function QueueTryAddPlayer(ByVal new_player As W3ConnectingPlayer) As IFuture(Of Outcome) Implements IW3Game.QueueTryAddPlayer
             Contract.Requires(new_player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_TryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture(Of Outcome) Implements IW3Game.f_TryElevatePlayer
+        Public Function QueueTryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture(Of Outcome) Implements IW3Game.QueueTryElevatePlayer
             Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_TrySetTeamSizes(ByVal sizes As System.Collections.Generic.IList(Of Integer)) As IFuture(Of Outcome) Implements IW3Game.f_TrySetTeamSizes
+        Public Function QueueTrySetTeamSizes(ByVal sizes As System.Collections.Generic.IList(Of Integer)) As IFuture(Of Outcome) Implements IW3Game.QueueTrySetTeamSizes
             Contract.Requires(sizes IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_UpdatedGameState() As IFuture Implements IW3Game.f_UpdatedGameState
+        Public Function QueueUpdatedGameState() As IFuture Implements IW3Game.QueueUpdatedGameState
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function

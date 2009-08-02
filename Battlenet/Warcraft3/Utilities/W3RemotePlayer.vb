@@ -76,7 +76,7 @@ Namespace Warcraft3
         End Sub
     End Class
 
-    Public Class W3P2PConnectingPlayer
+    Public Class W3ConnectingPeer
         Public ReadOnly socket As W3Socket
         Public ReadOnly receiverPeerKey As Byte
         Public ReadOnly index As Byte
@@ -92,30 +92,44 @@ Namespace Warcraft3
         End Sub
     End Class
 
-    Public Class W3P2PPlayer
+    Public Class W3Peer
         Public ReadOnly name As String
         Public ReadOnly index As Byte
         Public ReadOnly listenPort As UShort
-        Public ReadOnly ip As Byte()
-        Public ReadOnly p2pKey As UInteger
-        Public WithEvents socket As W3Socket
-        Public Event ReceivedPacket(ByVal sender As W3P2PPlayer, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
-        Public Event Disconnected(ByVal sender As W3P2PPlayer, ByVal reason As String)
+        Public ReadOnly ip As Net.IPAddress
+        Public ReadOnly peerKey As UInteger
+        Private WithEvents _socket As W3Socket
+        Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
+        Public Event Disconnected(ByVal sender As W3Peer, ByVal reason As String)
 
-        Public Sub New(ByVal name As String, ByVal index As Byte, ByVal listen_port As UShort, ByVal ip As Byte(), ByVal p2p_key As UInteger)
+        Public Sub New(ByVal name As String,
+                       ByVal index As Byte,
+                       ByVal listenPort As UShort,
+                       ByVal ip As Net.IPAddress, ByVal peerKey As UInteger)
             Me.name = name
             Me.index = index
-            Me.listenPort = listen_port
+            Me.listenPort = listenPort
             Me.ip = ip
-            Me.p2pKey = p2p_key
+            Me.peerKey = peerKey
         End Sub
 
-        Private Sub socket_Disconnected(ByVal sender As Warcraft3.W3Socket, ByVal reason As String) Handles socket.Disconnected
+        Public ReadOnly Property Socket As W3Socket
+            Get
+                Return _socket
+            End Get
+        End Property
+        Public Sub SetSocket(ByVal socket As W3Socket)
+            Me._socket = socket
+            If socket Is Nothing Then Return
+            FutureIterate(AddressOf socket.FutureReadPacket,
+                Function(result)
+                    RaiseEvent ReceivedPacket(Me, result.Value.id, CType(result.Value.payload, Dictionary(Of String, Object)))
+                    Return socket.connected.Futurize
+                End Function)
+        End Sub
+
+        Private Sub socket_Disconnected(ByVal sender As Warcraft3.W3Socket, ByVal reason As String) Handles _socket.Disconnected
             RaiseEvent Disconnected(Me, reason)
-        End Sub
-
-        Private Sub socket_ReceivedPacket(ByVal sender As Warcraft3.W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object)) Handles socket.ReceivedPacket
-            RaiseEvent ReceivedPacket(Me, id, vals)
         End Sub
     End Class
 End Namespace

@@ -25,13 +25,13 @@ Public Module NetworkingCommon
         'External IP
         ThreadedAction(
             Sub()
-                Dim utf8 = New UTF8Encoding()
-                Dim webClient = New WebClient()
-                Dim externalIp = utf8.GetString(webClient.DownloadData("http://whatismyip.com/automation/n09230945.asp"))
-                If externalIp.Length < 7 OrElse externalIp.Length > 15 Then  Return  'not correct length for style (#.#.#.# to ###.###.###.###)
-                Dim words = externalIp.Split("."c)
-                If words.Length <> 4 OrElse (From word In words Where Not Byte.TryParse(word, 0)).Any Then  Return
-                cachedExternalIP = (From word In words Select Byte.Parse(word)).ToArray()
+                Using webClient = New WebClient()
+                    Dim externalIp = New UTF8Encoding().GetString(webClient.DownloadData("http://whatismyip.com/automation/n09230945.asp"))
+                    If externalIp.Length < 7 OrElse externalIp.Length > 15 Then  Return  'not correct length for style (#.#.#.# to ###.###.###.###)
+                    Dim words = externalIp.Split("."c)
+                    If words.Length <> 4 OrElse (From word In words Where Not Byte.TryParse(word, 0)).Any Then  Return
+                    cachedExternalIP = (From word In words Select Byte.Parse(word)).ToArray()
+                End Using
             End Sub,
             "CacheExternalIP"
         )
@@ -53,37 +53,57 @@ Public Module NetworkingCommon
         Return String.Join(".", (From b In bytes Select CStr(b)).ToArray)
     End Function
 
-    Public Function FutureConnectTo(ByVal hostname As String, ByVal port As UShort) As IFuture(Of Outcome(Of TcpClient))
+    Public Function FutureConnectTo(ByVal address As IPAddress, ByVal port As UShort) As IFuture(Of PossibleException(Of TcpClient, SocketException))
+        Contract.Requires(address IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of PossibleException(Of TcpClient, SocketException)))() IsNot Nothing)
+        Dim f = New Future(Of PossibleException(Of TcpClient, SocketException))
+        Try
+            Dim client = New TcpClient
+            client.BeginConnect(address, port, Sub(ar)
+                                                   Try
+                                                       client.EndConnect(ar)
+                                                       f.SetValue(client)
+                                                   Catch e As SocketException
+                                                       f.SetValue(e)
+                                                   End Try
+                                               End Sub, Nothing)
+        Catch e As SocketException
+            f.SetValue(e)
+        End Try
+        Return f
+    End Function
+    Public Function FutureConnectTo(ByVal hostname As String, ByVal port As UShort) As IFuture(Of PossibleException(Of TcpClient, SocketException))
         Contract.Requires(hostname IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of TcpClient)))() IsNot Nothing)
-        Dim f = New Future(Of Outcome(Of TcpClient))
+        Contract.Ensures(Contract.Result(Of IFuture(Of PossibleException(Of TcpClient, SocketException)))() IsNot Nothing)
+        Dim f = New Future(Of PossibleException(Of TcpClient, SocketException))
         Try
             Dim client = New TcpClient
             client.BeginConnect(hostname, port, Sub(ar)
                                                     Try
                                                         client.EndConnect(ar)
-                                                        f.SetValue(successVal(client, "Connected"))
-                                                    Catch e As Exception
-                                                        f.SetValue(failure("Failed to connect: {0}".frmt(e.Message)))
+                                                        f.SetValue(client)
+                                                    Catch e As SocketException
+                                                        f.SetValue(e)
                                                     End Try
                                                 End Sub, Nothing)
-        Catch e As Exception
-            f.SetValue(failure("Failed to connect: {0}".frmt(e.Message)))
+        Catch e As SocketException
+            f.SetValue(e)
         End Try
         Return f
     End Function
-    <Extension()> Public Function FutureAcceptConnection(ByVal listener As TcpListener) As IFuture(Of Outcome(Of TcpClient))
+    <Extension()>
+    Public Function FutureAcceptConnection(ByVal listener As TcpListener) As IFuture(Of PossibleException(Of TcpClient, Exception))
         Contract.Requires(listener IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of TcpClient)))() IsNot Nothing)
-        Dim f As New Future(Of Outcome(Of TcpClient))
-        listener.BeginAcceptTcpClient(Sub(ar)
-                                          Try
-                                              f.SetValue(successVal(listener.EndAcceptTcpClient(ar), "Accepted client"))
-                                          Catch e As Exception
-                                              f.SetValue(failure("Failed to accept client: {0}".frmt(e.Message)))
-                                          End Try
-                                      End Sub,
-                                      Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of PossibleException(Of TcpClient, Exception)))() IsNot Nothing)
+        Dim listener_ = listener 'fixes contract verification issue with hoisted arguments
+        Dim f As New Future(Of PossibleException(Of TcpClient, Exception))
+        listener_.BeginAcceptTcpClient(Sub(ar)
+                                           Try
+                                               f.SetValue(listener_.EndAcceptTcpClient(ar))
+                                           Catch e As Exception
+                                               f.SetValue(e)
+                                           End Try
+                                       End Sub, Nothing)
         Return f
     End Function
 End Module

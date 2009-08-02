@@ -198,37 +198,37 @@ Public Class LoggerControl
             While bq.Count > 0
                 'Get message
                 Dim n = txtLog.Text.Length
-                Dim e = bq.Dequeue()
-                Dim msg = e.message + Environment.NewLine
-                e.insertPosition = n
+                Dim em = bq.Dequeue()
+                Dim msg = em.message + Environment.NewLine
+                em.insertPosition = n
 
                 'Combine messages if possible [operations on txtLog are very expensive because they cause redraws, this minimizes that]
-                If e.replacement Is Nothing Then
-                    While bq.Count > 0 AndAlso bq.Peek().color = e.color AndAlso bq.Peek.replacement Is Nothing
-                        n += e.message.Length + Environment.NewLine.Length
-                        e.insertPosition = n
-                        e = bq.Dequeue()
-                        msg += e.message + Environment.NewLine
+                If em.replacement Is Nothing Then
+                    While bq.Count > 0 AndAlso bq.Peek().color = em.color AndAlso bq.Peek.replacement Is Nothing
+                        n += em.message.Length + Environment.NewLine.Length
+                        em.insertPosition = n
+                        em = bq.Dequeue()
+                        msg += em.message + Environment.NewLine
                     End While
                 End If
 
                 'Log message
-                If e.replacement IsNot Nothing Then
-                    Dim dn = e.message.Length - e.replacement.message.Length
-                    Dim f = e.replacement.nextMessage
+                If em.replacement IsNot Nothing Then
+                    Dim dn = em.message.Length - em.replacement.message.Length
+                    Dim f = em.replacement.nextMessage
                     While f IsNot Nothing
                         f.insertPosition += dn
                         f = f.nextMessage
                     End While
-                    e.insertPosition = e.replacement.insertPosition
-                    txtLog.Select(e.replacement.insertPosition, e.replacement.message.Length)
-                    txtLog.SelectionColor = e.color
-                    txtLog.SelectedText = e.message
+                    em.insertPosition = em.replacement.insertPosition
+                    txtLog.Select(em.replacement.insertPosition, em.replacement.message.Length)
+                    txtLog.SelectionColor = em.color
+                    txtLog.SelectedText = em.message
                 Else
                     Dim prevLength = txtLog.TextLength
                     txtLog.AppendText(msg)
                     txtLog.Select(prevLength, txtLog.TextLength - prevLength)
-                    txtLog.SelectionColor() = e.color
+                    txtLog.SelectionColor() = em.color
                 End If
             End While
 

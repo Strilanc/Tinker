@@ -28,7 +28,7 @@
     <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
     <TargetFrameworkSubset>
     </TargetFrameworkSubset>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>HostBot_TemporaryKey.pfx</AssemblyOriginatorKeyFile>
     <TargetFrameworkProfile />
     <LangVersion />
@@ -80,7 +80,7 @@
     <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
     <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
     <PlatformTarget>x86</PlatformTarget>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
     <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
   </PropertyGroup>
@@ -119,6 +119,10 @@
     <CodeAnalysisRuleSet>SecurityRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.85.5.452, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Downloads\Software\Programming\SharpZipLib_0855_Bin\net-20\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -142,6 +146,7 @@
     <Import Include="System.Drawing" />
     <Import Include="System.Diagnostics" />
     <Import Include="System.Linq" />
+    <Import Include="System.Runtime.CompilerServices" />
     <Import Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
@@ -186,9 +191,12 @@
     <Compile Include="Libraries\Data Structures\ModInt.vb" />
     <Compile Include="Libraries\Data Structures\MStack.vb" />
     <Compile Include="Libraries\Data Structures\LockFreeQueue.vb" />
+    <Compile Include="Libraries\Functional\FuturesExtra.vb" />
     <Compile Include="Libraries\Mpq\MpqHashTable.vb" />
     <Compile Include="Libraries\Mpq\MpqFileTable.vb" />
     <Compile Include="Libraries\Mpq\MpqFileStream.vb" />
+    <Compile Include="Libraries\PackParse\PicklingBase.vb" />
+    <Compile Include="Libraries\PackParse\PicklingInterface.vb" />
     <Compile Include="Libraries\Utilities\ConnectionAccepter.vb" />
     <Compile Include="Libraries\Streams\SeekableStream.vb" />
     <Compile Include="Libraries\Functional\Coroutine.vb" />
@@ -218,6 +226,7 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Libraries\Mpq\Compression\MpqPkWare.vb" />
+    <Compile Include="Libraries\Utilities\Linqish.vb" />
     <Compile Include="Libraries\Utilities\Networking.vb" />
     <Compile Include="RecyclingBin\Settings.vb" />
     <Compile Include="RecyclingBin\SettingsList.Designer.vb">
@@ -230,7 +239,6 @@
     <Compile Include="Battlenet\Warcraft3\Warden\Warden Packet Handler.vb" />
     <Compile Include="Bot\Widgets\CKL Server.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Packet.vb" />
-    <Compile Include="RecyclingBin\BotCommander.vb" />
     <Compile Include="Bot\BotUser.vb" />
     <Compile Include="Libraries\Functional\Queueing.vb" />
     <Compile Include="RecyclingBin\FrmLogger.Designer.vb">
@@ -248,7 +256,7 @@
     <Compile Include="Libraries\Data Structures\BitBuffer.vb" />
     <Compile Include="Libraries\Functional\FunctionalCommon.vb" />
     <Compile Include="Libraries\Logging\Logging.vb" />
-    <Compile Include="Libraries\PackParse\Pickling.vb" />
+    <Compile Include="Libraries\PackParse\PicklingJars.vb" />
     <Compile Include="Libraries\Utilities\Converter.vb" />
     <Compile Include="Libraries\Mpq\MpqCommon.vb" />
     <Compile Include="Libraries\Mpq\Compression\MpqHuffman.vb" />

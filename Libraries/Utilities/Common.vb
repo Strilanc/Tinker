@@ -7,7 +7,9 @@ Imports System.Net
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module Common
 #Region "Numbers"
-    <Extension()> Public Function ReversedByteOrder(ByVal u As UInteger) As UInteger
+    <Extension()>
+    <Pure()>
+    Public Function ReversedByteOrder(ByVal u As UInteger) As UInteger
         Dim u2 As UInteger
         For i = 0 To 3
             u2 <<= 8
@@ -16,7 +18,9 @@ Public Module Common
         Next i
         Return u2
     End Function
-    <Extension()> Public Function ReversedByteOrder(ByVal u As ULong) As ULong
+    <Extension()>
+    <Pure()>
+    Public Function ReversedByteOrder(ByVal u As ULong) As ULong
         Dim u2 As ULong
         For i = 0 To 7
             u2 <<= 8
@@ -27,39 +31,60 @@ Public Module Common
     End Function
 
     '''<summary>Returns the smallest multiple of n that is not less than i. Formally: min {x in Z | x = 0 (mod n), x >= i}</summary>
-    Public Function modCeiling(ByVal i As Integer, ByVal n As Integer) As Integer
+    <Pure()>
+    Public Function ModCeiling(ByVal i As Integer, ByVal n As Integer) As Integer
+        Contract.Requires(n > 0)
         If i Mod n = 0 Then Return i
-        If i < 0 Then Return (i \ n) * n
-        Return (i \ n + 1) * n
+        Dim m = (i \ n) * n
+        If i < 0 Then Return m
+        If m > Integer.MaxValue - n Then
+            Throw New InvalidOperationException("The result will not fit into an Int32.")
+        End If
+        Return m + n
     End Function
 
-    Public Function alignedReadCount(ByVal count As Integer, ByVal numBufferedIn As Integer, ByVal numBufferedOut As Integer, ByVal alignModulo As Integer) As Integer
-        Return Math.Max(0, modCeiling(count - numBufferedOut, alignModulo) - numBufferedIn)
-    End Function
-
-    <Extension()> Public Function between(Of N As IComparable)(ByVal v1 As N, ByVal v2 As N, ByVal v3 As N) As N
+    <Pure()>
+    <Extension()>
+    Public Function Between(Of N As IComparable(Of N))(ByVal v1 As N,
+                                                       ByVal v2 As N,
+                                                       ByVal v3 As N) As N
+        Contract.Requires(v1.IsNotNullReferenceGeneric())
+        Contract.Requires(v2.IsNotNullReferenceGeneric())
+        Contract.Requires(v3.IsNotNullReferenceGeneric())
+        Contract.Ensures(Contract.Result(Of N).IsNotNullReferenceGeneric)
         'recursive sort
-        If v1.CompareTo(v2) < 0 Then Return between(v2, v1, v3)
-        If v2.CompareTo(v3) < 0 Then Return between(v1, v3, v2)
+        If v2.CompareTo(v1) > 0 Then Return Between(v2, v1, v3)
+        If v2.CompareTo(v3) < 0 Then Return Between(v1, v3, v2)
         'median
         Return v2
     End Function
 #End Region
 
 #Region "Strings"
-    Public Function padded(ByVal text As String, ByVal min_chars As Integer, Optional ByVal pad_char As Char = " "c) As String
+    <Pure()>
+    <Extension()>
+    Public Function Padded(ByVal text As String,
+                           ByVal minChars As Integer,
+                           Optional ByVal paddingChar As Char = " "c) As String
         Contract.Requires(text IsNot Nothing)
-        If text.Length < min_chars Then
-            text += New String(pad_char, min_chars - text.Length)
+        Contract.Requires(minChars >= 0)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        If text.Length < minChars Then
+            text += New String(paddingChar, minChars - text.Length)
         End If
         Return text
     End Function
-    Public Function indent(ByVal paragraph As String, Optional ByVal prefix As String = vbTab) As String
+    <Pure()>
+    Public Function indent(ByVal paragraph As String,
+                           Optional ByVal prefix As String = vbTab) As String
         Contract.Requires(paragraph IsNot Nothing)
         Contract.Requires(prefix IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Return prefix + paragraph.Replace(Environment.NewLine, Environment.NewLine + prefix)
     End Function
-    <Extension()> Public Function frmt(ByVal format As String, ByVal ParamArray args() As Object) As String
+    <Pure()>
+    <Extension()>
+    Public Function frmt(ByVal format As String, ByVal ParamArray args() As Object) As String
         Contract.Requires(format IsNot Nothing)
         Contract.Requires(args IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -68,6 +93,7 @@ Public Module Common
 #End Region
 
 #Region "Strings Extra"
+    <Pure()>
     Public Function breakQuotedWords(ByVal text As String) As List(Of String)
         Contract.Requires(text IsNot Nothing)
         Contract.Ensures(Contract.Result(Of List(Of String))() IsNot Nothing)
@@ -98,34 +124,30 @@ Public Module Common
         Next word
         Return quoted_words
     End Function
-    Public Function mendQuotedWords(ByVal words As IList(Of String), Optional ByVal skip As Integer = 0) As String
-        Dim sentence As String = ""
-        For Each word As String In words
-            If skip > 0 Then skip -= 1 : Continue For
-            sentence += """" + word + """ "
-        Next word
-        Return sentence.Trim()
-    End Function
-    Public Function DictStrUInt(ByVal text As String, Optional ByVal pair_divider As String = ";"c, Optional ByVal value_divider As String = "="c) As Dictionary(Of String, UInteger)
-        Return DictStrT(text, Function(x) UInteger.Parse(x), pair_divider, value_divider)
-    End Function
-    Public Function DictStrStr(ByVal text As String, Optional ByVal pair_divider As String = ";"c, Optional ByVal value_divider As String = "="c) As Dictionary(Of String, String)
-        Return DictStrT(text, Function(x) x, pair_divider, value_divider)
-    End Function
-    Private Function DictStrT(Of T)(ByVal text As String, ByVal f As Func(Of String, T), Optional ByVal pair_divider As String = ";"c, Optional ByVal value_divider As String = "="c) As Dictionary(Of String, T)
+    <Pure()>
+    Public Function DictStrT(Of T)(ByVal text As String,
+                                   ByVal parser As Func(Of String, T),
+                                   Optional ByVal pairDivider As String = ";"c,
+                                   Optional ByVal valueDivider As String = "="c) As Dictionary(Of String, T)
+        Contract.Requires(text IsNot Nothing)
+        Contract.Requires(parser IsNot Nothing)
+        Contract.Requires(pairDivider IsNot Nothing)
+        Contract.Requires(valueDivider IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Dictionary(Of String, T))() IsNot Nothing)
         Dim d As New Dictionary(Of String, T)
-        Dim pd = New String() {pair_divider}
-        Dim vd = New String() {value_divider}
+        Dim pd = New String() {pairDivider}
+        Dim vd = New String() {valueDivider}
         For Each pair In text.Split(pd, StringSplitOptions.RemoveEmptyEntries)
             Dim args = pair.Split(vd, StringSplitOptions.None)
             If args.Count < 2 Then Continue For
-            d(args(0)) = f(pair.Substring(args(0).Length + 1))
+            d(args(0)) = parser(pair.Substring(args(0).Length + 1))
         Next pair
         Return d
     End Function
 #End Region
 
 #Region "Enums"
+    <Pure()>
     Public Function EnumValues(Of T)() As IEnumerable(Of T)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
         Return CType([Enum].GetValues(GetType(T)), IEnumerable(Of T))
@@ -139,12 +161,14 @@ Public Module Common
         Next e
         Return False
     End Function
+    <Pure()>
     Public Function IsEnumValid(Of T)(ByVal val As T) As Boolean
         Return EnumValues(Of T).Contains(val)
     End Function
 #End Region
 
 #Region "Arrays"
+    <Pure()>
     Public Function ArraysEqual(Of T As IComparable(Of T))(ByVal array1() As T, ByVal array2() As T) As Boolean
         Contract.Requires(array1 IsNot Nothing)
         Contract.Requires(array2 IsNot Nothing)
@@ -154,7 +178,9 @@ Public Module Common
         Next i
         Return True
     End Function
-    <Extension()> Public Function SubArray(Of T)(ByVal array As T(), ByVal offset As Integer) As T()
+    <Extension()>
+    <Pure()>
+    Public Function SubArray(Of T)(ByVal array As T(), ByVal offset As Integer) As T()
         Contract.Requires(array IsNot Nothing)
         Contract.Requires(offset >= 0)
         Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
@@ -164,7 +190,9 @@ Public Module Common
         System.Array.Copy(array, offset, new_array, 0, new_array.Length)
         Return new_array
     End Function
-    <Extension()> Public Function SubArray(Of T)(ByVal array As T(), ByVal offset As Integer, ByVal length As Integer) As T()
+    <Extension()>
+    <Pure()>
+    Public Function SubArray(Of T)(ByVal array As T(), ByVal offset As Integer, ByVal length As Integer) As T()
         Contract.Requires(array IsNot Nothing)
         Contract.Requires(offset >= 0)
         Contract.Requires(length >= 0)
@@ -175,6 +203,7 @@ Public Module Common
         System.Array.Copy(array, offset, new_array, 0, new_array.Length)
         Return new_array
     End Function
+    <Pure()>
     Public Function Concat(Of T)(ByVal arrays As IEnumerable(Of T())) As T()
         Contract.Requires(arrays IsNot Nothing)
         Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
@@ -197,16 +226,22 @@ Public Module Common
 #End Region
 
 #Region "Filepaths"
-    Public Function getFileNameSlash(ByVal s As String) As String
-        Dim ss() As String = s.Split("\"c, "/"c)
-        Return ss(ss.Length - 1)
+    <Pure()>
+    Public Function GetFileNameSlash(ByVal path As String) As String
+        Contract.Requires(path IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Dim words = path.Split("\"c, "/"c)
+        Return words(words.Length - 1)
     End Function
-    Public Function findFileMatching(ByVal search_pattern As String, ByVal like_pattern As String, ByVal directory As String) As Outcome(Of String)
-        Dim out = findFilesMatching(search_pattern, like_pattern, directory, 1)
+    Public Function findFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As Outcome(Of String)
+        Contract.Requires(fileQuery IsNot Nothing)
+        Contract.Requires(likeQuery IsNot Nothing)
+        Contract.Requires(directory IsNot Nothing)
+        Dim out = findFilesMatching(fileQuery, likeQuery, directory, 1)
         If out.val.Count = 0 Then
-            Return failure(out.message)
+            Return failure(out.Message)
         End If
-        Return successVal(out.val(0), "{0} matched {1}".frmt(search_pattern, out.val(0)))
+        Return successVal(out.val(0), "{0} matched {1}".frmt(fileQuery, out.val(0)))
     End Function
     Public Function findFilesMatching(ByVal search_pattern As String, ByVal like_pattern As String, ByVal directory As String, ByVal max_results As Integer) As Outcome(Of List(Of String))
         Dim matches As New List(Of String)
@@ -243,7 +278,7 @@ Public Module Common
 
             Return successVal(matches, "Matched {0} files.".frmt(matches.Count))
         Catch e As Exception
-            Return failureVal(matches, "Matched {0} files before hitting error: {1}.".frmt(matches.Count, e.Message))
+            Return failureVal(matches, "Matched {0} files before hitting error: {1}.".frmt(matches.Count, e.ToString))
         End Try
     End Function
     Public Function setting_war3path() As String
@@ -268,115 +303,25 @@ Public Module Common
     End Function
 #End Region
 
-#Region "Linq"
-    '''<summary>Determines if a sequence has no elements.</summary>
-    <Extension()>
-    Public Function None(Of T)(ByVal sequence As IEnumerable(Of T)) As Boolean
-        Return Not sequence.Any()
-    End Function
-
-    <Extension()>
-    Public Function MaxPair(Of T, C As IComparable)(ByVal sequence As IEnumerable(Of T),
-                                                    ByVal transformation As Func(Of T, C),
-                                                    ByRef out_element As T,
-                                                    ByRef out_transformation As C) As Boolean
-        Dim any = False
-        Dim max_element = out_element
-        Dim max_transformation = out_transformation
-
-        For Each e In sequence
-            Dim f = transformation(e)
-            If Not any OrElse f.CompareTo(max_transformation) > 0 Then
-                max_element = e
-                max_transformation = f
-            End If
-            any = True
-        Next e
-
-        If any Then
-            out_element = max_element
-            out_transformation = max_transformation
-        End If
-        Return any
-    End Function
-    <Extension()>
-    Public Function Max(Of T)(ByVal sequence As IEnumerable(Of T),
-                              ByVal comparator As Func(Of T, T, Integer)) As T
-        Dim any = False
-        Dim max_element As T = Nothing
-
-        For Each e In sequence
-            If Not any OrElse comparator(max_element, e) < 0 Then
-                max_element = e
-            End If
-            any = True
-        Next e
-
-        Return max_element
-    End Function
-
-    <Extension()>
-    Public Function ReduceUsing(Of TSource, TResult)(ByVal sequence As IEnumerable(Of TSource),
-                                                     ByVal reduction As Func(Of TResult, TSource, TResult),
-                                                     Optional ByVal initialValue As TResult = Nothing) As TResult
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(reduction IsNot Nothing)
-        Dim accumulator = initialValue
-        For Each item In sequence
-            accumulator = reduction(accumulator, item)
-        Next item
-        Return accumulator
-    End Function
-    <Extension()>
-    Public Function ReduceUsing(Of T)(ByVal sequence As IEnumerable(Of T),
-                                      ByVal reduction As Func(Of T, T, T),
-                                      Optional ByVal initialValue As T = Nothing) As T
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(reduction IsNot Nothing)
-        Return ReduceUsing(Of T, T)(sequence, reduction, initialValue)
-    End Function
-
-    <Extension()>
-    Public Function EnumBlocks(Of T)(ByVal sequence As IEnumerator(Of T),
-                                     ByVal blockSize As Integer) As IEnumerator(Of IList(Of T))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(blockSize > 0)
-        Contract.Ensures(Contract.Result(Of IEnumerator(Of IList(Of T)))() IsNot Nothing)
-        Return New Enumerator(Of IList(Of T))(
-            Function(controller)
-                If Not sequence.MoveNext Then  Return controller.Break()
-
-                Dim block = New List(Of T)(blockSize)
-                block.Add(sequence.Current())
-                While block.Count < blockSize AndAlso sequence.MoveNext
-                    block.Add(sequence.Current)
-                End While
-                Return block
-            End Function
-        )
-    End Function
-    <Extension()>
-    Public Function EnumBlocks(Of T)(ByVal sequence As IEnumerable(Of T),
-                                     ByVal blockSize As Integer) As IEnumerable(Of IList(Of T))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(blockSize > 0)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of IList(Of T)))() IsNot Nothing)
-        Return sequence.Transform(Function(enumerator) EnumBlocks(enumerator, blockSize))
-    End Function
-    <Extension()>
-    Public Function Transform(Of T, D)(ByVal sequence As IEnumerable(Of T),
-                                       ByVal transformation As Func(Of IEnumerator(Of T), IEnumerator(Of D))) As IEnumerable(Of D)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(transformation IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of D))() IsNot Nothing)
-        Return New Enumerable(Of D)(Function() transformation(sequence.GetEnumerator()))
-    End Function
-#End Region
-
     Public Sub Swap(Of T)(ByRef v1 As T, ByRef v2 As T)
         Dim vt = v1
         v1 = v2
         v2 = vt
+    End Sub
+
+    Public Sub RunWithDebugTrap(ByVal action As Action, ByVal context As String)
+        Contract.Requires(action IsNot Nothing)
+        Contract.Requires(context IsNot Nothing)
+
+        If My.Settings.debugMode Then
+            Call action()
+        Else
+            Try
+                Call action()
+            Catch e As Exception
+                LogUnexpectedException("{0} threw an unhandled exception.".frmt(context), e)
+            End Try
+        End If
     End Sub
 
     <Extension()>
@@ -386,19 +331,6 @@ Public Module Common
         Return buffer
     End Function
 
-    <Extension()>
-    Public Function CountUpTo(Of T)(ByVal sequence As IEnumerable(Of T), ByVal maxCount As Integer) As Integer
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(maxCount >= 0)
-        Contract.Ensures(Contract.Result(Of Integer)() >= 0)
-        Contract.Ensures(Contract.Result(Of Integer)() <= maxCount)
-        Dim count = 0
-        For Each item In sequence
-            count += 1
-            If count >= maxCount Then Exit For
-        Next item
-        Return count
-    End Function
 
     Public Function streamBytes(ByVal stream As IO.Stream) As Byte()
         Contract.Requires(stream IsNot Nothing)
@@ -418,72 +350,112 @@ Public Module Common
         Return bb
     End Function
 
-    <Extension()> Public Function ToList(Of T)(ByVal list As IList(Of T)) As List(Of T)
-        Contract.Requires(list IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of List(Of T))() IsNot Nothing)
-        Dim ret As New List(Of T)(list.Count)
-        For i = 0 To list.Count - 1
-            ret.Add(list(i))
-        Next i
-        Return ret
+    <Extension()>
+    <Pure()>
+    Public Function Minutes(ByVal quantity As Integer) As TimeSpan
+        Return New TimeSpan(0, quantity, 0)
     End Function
-    <Extension()> Public Function ToArray(Of T)(ByVal list As IList(Of T)) As T()
-        Contract.Requires(list IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
-        Dim ret(0 To list.Count - 1) As T
-        For i = 0 To list.Count - 1
-            ret(i) = list(i)
-        Next i
-        Return ret
+    <Extension()>
+    <Pure()>
+    Public Function Seconds(ByVal quantity As Integer) As TimeSpan
+        Return New TimeSpan(0, 0, quantity)
     End Function
-    <Extension()> Public Function SubToArray(Of T)(ByVal list As IList(Of T), ByVal offset As Integer, ByVal count As Integer) As T()
-        Contract.Requires(list IsNot Nothing)
-        Contract.Requires(offset >= 0)
-        Contract.Requires(count >= 0)
-        Contract.Ensures(Contract.Result(Of T())() IsNot Nothing)
-        If offset + count > list.Count Then Throw New ArgumentOutOfRangeException("count")
-        Dim ret(0 To count - 1) As T
-        For i = 0 To count - 1
-            ret(i) = list(i + offset)
-        Next i
-        Return ret
+    <Extension()>
+    <Pure()>
+    Public Function MilliSeconds(ByVal quantity As Integer) As TimeSpan
+        Return New TimeSpan(0, 0, 0, 0, quantity)
     End Function
-    <Extension()> Public Function ToView(Of T)(ByVal list As IList(Of T)) As IViewableList(Of T)
+    <Extension()>
+    <Pure()>
+    Public Function ToView(Of T)(ByVal list As IList(Of T)) As ViewableList(Of T)
         Contract.Requires(list IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IViewableList(Of T))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of ViewableList(Of T))() IsNot Nothing)
         Return New ViewableList(Of T)(list)
-    End Function
-    <Extension()> Public Function Reverse(Of T)(ByVal list As IList(Of T)) As IList(Of T)
-        Contract.Requires(list IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of T))() IsNot Nothing)
-        Dim n = list.Count
-        Dim ret(0 To n - 1) As T
-        For i = 0 To n - 1
-            ret(i) = list(n - i - 1)
-        Next i
-        Return ret
     End Function
 
     Private Delegate Function RecursiveFunction(Of A1, R)(ByVal self As RecursiveFunction(Of A1, R)) As Func(Of A1, R)
+    <Pure()>
     Public Function YCombinator(Of A1, R)(ByVal recursor As Func(Of Func(Of A1, R), Func(Of A1, R))) As Func(Of A1, R)
         Contract.Requires(recursor IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Func(Of A1, R))() IsNot Nothing)
-        Dim rec As RecursiveFunction(Of A1, R) = Function(self) Function(arg1) recursor(self(self))(arg1)
-        Return rec(rec)
+        Dim recursor_ = recursor 'avoids hoisted argument contract verification flaw
+        Dim rec As RecursiveFunction(Of A1, R) = Function(self) Function(arg1) recursor_(self(self))(arg1)
+        Dim ret = rec(rec)
+        Contract.Assume(ret IsNot Nothing)
+        Return ret
     End Function
     Private Delegate Function RecursiveAction(ByVal self As RecursiveAction) As Action
+    <Pure()>
     Public Function YCombinator(ByVal recursor As Func(Of Action, Action)) As Action
         Contract.Requires(recursor IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Action)() IsNot Nothing)
-        Dim rec As RecursiveAction = Function(self) Sub() recursor(self(self))()
-        Return rec(rec)
+        Dim recursor_ = recursor 'avoids hoisted argument contract verification flaw
+        Dim rec As RecursiveAction = Function(self) Sub() recursor_(self(self))()
+        Dim ret = rec(rec)
+        Contract.Assume(ret IsNot Nothing)
+        Return ret
     End Function
     Private Delegate Function RecursiveAction(Of A1)(ByVal self As RecursiveAction(Of A1)) As Action(Of A1)
+    <Pure()>
     Public Function YCombinator(Of A1)(ByVal recursor As Func(Of Action(Of A1), Action(Of A1))) As Action(Of A1)
         Contract.Requires(recursor IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Action(Of A1))() IsNot Nothing)
-        Dim rec As RecursiveAction(Of A1) = Function(self) Sub(arg1) recursor(self(self))(arg1)
-        Return rec(rec)
+        Dim recursor_ = recursor 'avoids hoisted argument contract verification flaw
+        Dim rec As RecursiveAction(Of A1) = Function(self) Sub(arg1) recursor_(self(self))(arg1)
+        Dim ret = rec(rec)
+        Contract.Assume(ret IsNot Nothing)
+        Return ret
+    End Function
+
+    Public Sub FutureIterate(Of T)(ByVal producer As Func(Of IFuture(Of T)),
+                                   ByVal consumer As Func(Of T, IFuture(Of Boolean)))
+        producer().CallWhenValueReady(YCombinator(Of T)(
+            Function(self) Sub(result)
+                               consumer(result).CallWhenValueReady(
+                                   Sub([continue])
+                                       If [continue] Then
+                                           producer().CallWhenValueReady(self)
+                                       End If
+                                   End Sub)
+                           End Sub))
+    End Sub
+
+    '''<summary>Returns true if T is a class type and arg is nothing.</summary>
+    <Extension()>
+    <Pure()>
+    Public Function IsNullReferenceGeneric(Of T)(ByVal arg As T) As Boolean
+        Contract.Ensures(Contract.Result(Of Boolean)() = Object.ReferenceEquals(arg, Nothing))
+        Return Object.ReferenceEquals(arg, Nothing)
+    End Function
+    '''<summary>Returns true if T is a structure type or arg is not nothing.</summary>
+    <Extension()>
+    <Pure()>
+    Public Function IsNotNullReferenceGeneric(Of T)(ByVal arg As T) As Boolean
+        Contract.Ensures(Contract.Result(Of Boolean)() = Not Object.ReferenceEquals(arg, Nothing))
+        Return Not Object.ReferenceEquals(arg, Nothing)
+    End Function
+
+    <Extension()>
+    Public Function FutureRead(ByVal stream As IO.Stream,
+                               ByVal buffer() As Byte,
+                               ByVal offset As Integer,
+                               ByVal count As Integer) As IFuture(Of PossibleException(Of Integer, Exception))
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of PossibleException(Of Integer, Exception)))() IsNot Nothing)
+        Dim stream_ = stream
+        Dim f = New Future(Of PossibleException(Of Integer, Exception))
+        Try
+            stream.BeginRead(buffer, offset, count, Sub(ar)
+                                                        Try
+                                                            f.SetValue(stream_.EndRead(ar))
+                                                        Catch e As Exception
+                                                            f.SetValue(e)
+                                                        End Try
+                                                    End Sub, Nothing)
+        Catch e As Exception
+            f.SetValue(e)
+        End Try
+        Return f
     End Function
 End Module
 
@@ -542,44 +514,4 @@ Public Class KeyPair
         Me._value1 = value1
         Me._value2 = value2
     End Sub
-End Class
-
-Public Class LazyList(Of T)
-    Private ReadOnly _value As T
-    Private ReadOnly _next As Func(Of LazyList(Of T))
-    Public Sub New(ByVal value As T, ByVal [next] As Func(Of LazyList(Of T)))
-        Me._value = value
-        Me._next = If([next], Function() Nothing)
-    End Sub
-    Public ReadOnly Property Value As T
-        Get
-            Return _value
-        End Get
-    End Property
-    Public ReadOnly Property [Next] As LazyList(Of T)
-        Get
-            Return _next()
-        End Get
-    End Property
-
-    Public ReadOnly Property Nodes() As IEnumerable(Of LazyList(Of T))
-        Get
-            Return New Enumerable(Of LazyList(Of T))(
-                Function()
-                    Dim cur = Me
-                    Return New Enumerator(Of LazyList(Of T))(
-                        Function(controller)
-                            cur = cur.Next
-                            Return If(cur, controller.Break())
-                        End Function
-                    )
-                End Function
-            )
-        End Get
-    End Property
-    Public ReadOnly Property Values() As IEnumerable(Of T)
-        Get
-            Return From node In Nodes() Select node.Value
-        End Get
-    End Property
 End Class

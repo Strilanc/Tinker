@@ -8,7 +8,7 @@ Namespace Mpq
     '''</summary>
     Public Class MpqHashTable
         Public ReadOnly hashes As New List(Of HashEntry)
-        Public ReadOnly parent As Mpq.MpqArchive
+        Public ReadOnly archive As Mpq.MpqArchive
 
         Public Class HashEntry
             Public Const FILE_INDEX_EMPTY As UInteger = &HFFFFFFFFL
@@ -30,18 +30,19 @@ Namespace Mpq
 
 #Region "Life"
         '''<summary>Reads the hashtable from an MPQ archive</summary>
-        Public Sub New(ByVal mpqa As MpqArchive)
-            Me.parent = mpqa
+        Public Sub New(ByVal archive As MpqArchive)
+            Contract.Requires(archive IsNot Nothing)
+            Me.archive = archive
 
             'Prepare reader
-            Using stream = mpqa.streamFactory()
-                stream.Seek(mpqa.hashTablePosition, IO.SeekOrigin.Begin)
+            Using stream = archive.streamFactory()
+                stream.Seek(archive.hashTablePosition, IO.SeekOrigin.Begin)
                 Using br = New IO.BinaryReader(
                             New IO.BufferedStream(
                              New Cypherer(HashString("(hash table)", HashType.FILE_KEY), Cypherer.modes.decrypt).ConvertReadOnlyStream(stream)))
 
                     'Read values
-                    For repeat = CUInt(1) To mpqa.numHashTableEntries
+                    For repeat = 1UI To archive.numHashTableEntries
                         Dim h As New HashEntry()
                         h.key = br.ReadUInt64()
                         h.language = br.ReadUInt32()
@@ -71,7 +72,7 @@ Namespace Mpq
                         Continue For
                     End If
 
-                    If curEntry.fileIndex >= parent.numFileTableEntries AndAlso curEntry.Exists Then
+                    If curEntry.fileIndex >= archive.numFileTableEntries AndAlso curEntry.Exists Then
                         Throw New MPQException("Invalid MPQ hash table entry accessed. The entry's file index points outside the file table.")
                     End If
                     Return curEntry

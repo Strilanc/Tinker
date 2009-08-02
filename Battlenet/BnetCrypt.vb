@@ -16,19 +16,19 @@
 ''''Implements the various cryptographic checks and algorithms blizzard uses
 Namespace Bnet.Crypt
     Public Module common
-#Region "Constants"
         Private ReadOnly G As BigNum = 47
         Private ReadOnly N As BigNum = BigNum.FromString("112624315653284427036559548610503669920632123929604336254260115573677366691719", 10, ByteOrder.BigEndian)
-#End Region
 
-#Region "crc32"
         '''<summary>Computes the crc32 value for a stream of data.</summary>
         '''<param name="s">The stream to read data from.</param>
         '''<param name="length">The total amount of data to read. -1 means read entire stream.</param>
         '''<param name="poly">The polynomial to be used, specified in a bit pattern. (Default is CRC-32-IEEE 802.3).</param>
         '''<param name="polyAlreadyReversed">Indicates whether or not the bit pattern of the polynomial is already reversed.</param>
         '''<returns>crc32 value</returns>
-        Public Function crc32(ByVal s As IO.Stream, Optional ByVal length As Long = -1, Optional ByVal poly As UInteger = &H4C11DB7, Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+        Public Function crc32(ByVal s As IO.Stream,
+                              Optional ByVal length As Long = -1,
+                              Optional ByVal poly As UInteger = &H4C11DB7,
+                              Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
             Dim r = New IO.BinaryReader(s)
             Dim reg As UInteger
 
@@ -58,7 +58,7 @@ Namespace Bnet.Crypt
             Next i
 
             'Direct Table Algorithm
-            reg = Not CUInt(0)
+            reg = Not 0UI
             If length = -1 Then length = s.Length - s.Position
             For i As Long = 0 To length - 1
                 reg = (reg >> 8) Xor xorTable(r.ReadByte() Xor CByte(reg And &HFF))
@@ -66,9 +66,7 @@ Namespace Bnet.Crypt
 
             Return Not reg
         End Function
-#End Region
 
-#Region "Generate Keys"
         Public Function GeneratePublicPrivateKeyPair(ByVal r As System.Random) As KeyPair
             Contract.Requires(r IsNot Nothing)
             Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
@@ -86,9 +84,7 @@ Namespace Bnet.Crypt
 
             Return New KeyPair(publicKeyBytes, privateKeyBytes)
         End Function
-#End Region
 
-#Region "Password Proofs"
         Public Function GenerateClientServerPasswordProofs(ByVal username As String,
                                                            ByVal password As String,
                                                            ByVal accountSalt As Byte(),
@@ -154,34 +150,116 @@ Namespace Bnet.Crypt
             Dim serverProof = SHA1(Concat({clientPublicKeyBytes, clientProof, shared_secret}))
             Return New KeyPair(clientProof, serverProof)
         End Function
-#End Region
 
 #Region "MPQ Revision Check"
-        Public Function GenerateRevisionCheck(ByVal folder As String, ByVal mpq_number_string As String, ByVal mpq_hash_challenge As String) As UInteger
-            Dim revCheckFiles() As String = { _
-                    "War3.exe",
-                    "Storm.dll",
-                    "Game.dll" _
-                }
-            Dim hashcodes As UInteger() = { _
-                    &HE7F4CB62L,
-                    &HF6A14FFCL,
-                    &HAA5504AFL,
-                    &H871FCDC2L,
-                    &H11BF6A18L,
-                    &HC57292E6L,
-                    &H7927D27EL,
-                    &H2FEC8733L _
-                }
+        Private Structure RevisionCheckOperation
+            Public ReadOnly leftOperand As Char
+            Public ReadOnly rightOperand As Char
+            Public ReadOnly destinationOperand As Char
+            Public ReadOnly [operator] As Char
+            Public Sub New(ByVal leftOperand As Char, ByVal rightOperand As Char, ByVal destinationOperand As Char, ByVal [operator] As Char)
+                Me.leftOperand = leftOperand
+                Me.rightOperand = rightOperand
+                Me.destinationOperand = destinationOperand
+                Me.operator = [operator]
+            End Sub
+        End Structure
+        Private Function ParseRevisionCheckVariables(ByVal lines As IEnumerator(Of String)) As Dictionary(Of Char, ModInt32)
+            Contract.Requires(lines IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))().ContainsKey("A"c))
+            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))().ContainsKey("C"c))
+            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))().ContainsKey("S"c))
 
-            Dim vars(0 To 255) As ModInt32 'variable values
-            Dim opDst() As Integer = Nothing 'destination variable of operation
-            Dim opSrc1() As Integer = Nothing 'source variable 1 of operation
-            Dim opSrc2() As Integer = Nothing 'source variable 2 of operation
-            Dim opFunc() As Char = Nothing 'function applied by operation
-            Dim numOps = 0 'number of operations
+            Dim variables = New Dictionary(Of Char, ModInt32)
+            variables("S"c) = 0
+            variables("A"c) = 0
+            variables("C"c) = 0
+            Do
+                If Not lines.MoveNext Then
+                    Throw New ArgumentException("Instructions did not include any operations.")
+                End If
 
-            'Parse variables and operations
+                If Not lines.Current Like "?=*" Then Exit Do 'end of initialization block
+
+                Dim u As UInteger
+                If Not UInteger.TryParse(lines.Current.Substring(2), u) Then
+                    Throw New ArgumentException("Invalid variable initialization line: {0}".frmt(lines.Current))
+                End If
+                variables(lines.Current(0)) = u
+            Loop
+            Return variables
+        End Function
+        Private Function ParseRevisionCheckOperations(ByVal lines As IEnumerator(Of String),
+                                                      ByVal variables As Dictionary(Of Char, ModInt32)) As IEnumerable(Of RevisionCheckOperation)
+            Contract.Requires(lines IsNot Nothing)
+            Contract.Requires(variables IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of RevisionCheckOperation))() IsNot Nothing)
+
+            'Operation Count
+            Dim numOps As Byte 'number of operations
+            If Not Byte.TryParse(lines.Current, numOps) Then
+                Throw New ArgumentException("Instructions did not include a valid operation count: {0}".frmt(lines.Current))
+            End If
+
+            'Operations
+            Dim operations = New List(Of RevisionCheckOperation)(numOps)
+            For i = 0 To numOps - 1
+                If Not lines.MoveNext Then
+                    Throw New ArgumentException("Instructions did not include {0} operations as specified.".frmt(numOps))
+                ElseIf Not lines.Current Like "?=?[-+^|&]?" Then
+                    Throw New ArgumentException("Invalid operation specified: {0}".frmt(lines.Current))
+                End If
+
+                Dim op = New RevisionCheckOperation(destinationOperand:=lines.Current(0),
+                                                    leftOperand:=lines.Current(2),
+                                                    [operator]:=lines.Current(3),
+                                                    rightOperand:=lines.Current(4))
+                If Not variables.ContainsKey(op.leftOperand) OrElse
+                   Not variables.ContainsKey(op.rightOperand) OrElse
+                   Not variables.ContainsKey(op.destinationOperand) Then
+                    Throw New ArgumentException("Operation involved undefined variable.")
+                End If
+                operations.Add(op)
+            Next i
+
+            'End of instructions
+            If lines.MoveNext Then
+                Throw New ArgumentException("Instructions included more than {0} operations as specified.".frmt(numOps))
+            End If
+            Return operations
+        End Function
+        Private Sub RevisionCheckApplyOperation(ByVal value As UInteger,
+                                                ByVal variables As Dictionary(Of Char, ModInt32),
+                                                ByVal operations As IEnumerable(Of RevisionCheckOperation))
+            'Variable S = file dword
+            variables("S"c) = value
+
+            'Run Operations
+            For Each op In operations
+                Dim vL = variables(op.leftOperand)
+                Dim vR = variables(op.rightOperand)
+                Dim vD As ModInt32
+                Select Case op.operator
+                    Case "+"c : vD = vL + vR
+                    Case "-"c : vD = vL - vR
+                    Case "^"c : vD = vL Xor vR
+                    Case "&"c : vD = vL And vR
+                    Case "|"c : vD = vL Or vR
+                    Case Else
+                        Throw New UnreachableException("Unrecognized operator: {0}".frmt(op.operator))
+                End Select
+                variables(op.destinationOperand) = vD
+            Next op
+        End Sub
+        Public Function GenerateRevisionCheck(ByVal folder As String,
+                                              ByVal indexString As String,
+                                              ByVal instructions As String) As UInteger
+            Contract.Requires(folder IsNot Nothing)
+            Contract.Requires(indexString IsNot Nothing)
+            Contract.Requires(instructions IsNot Nothing)
+
+            'Parse
             'Example: [newlines actually spaces in data]
             '   A=443747131
             '   B=3328179921
@@ -191,81 +269,50 @@ Namespace Bnet.Crypt
             '   B=B-C
             '   C=C^A
             '   A=A+B
-            Dim lines() = mpq_hash_challenge.Split(" "c)
-            For line_index = 0 To lines.Length - 1
-                Dim cur_line = lines(line_index).ToUpper()
-                If cur_line Like "[A-Z]=#*" Then 'Variable Initialization
-                    Dim v0 = Asc(cur_line(0))
-                    vars(v0) = UInteger.Parse(cur_line.Substring(2))
-                ElseIf Integer.TryParse(cur_line, 0) Then 'Operation Count
-                    Dim n = Integer.Parse(cur_line)
-                    ReDim opDst(0 To n - 1)
-                    ReDim opSrc1(0 To n - 1)
-                    ReDim opSrc2(0 To n - 1)
-                    ReDim opFunc(0 To n - 1)
-                ElseIf cur_line Like "[A-Z]=[A-Z][-+^|&][A-Z]" Then 'Operation
-                    If opDst Is Nothing Then Throw New ArgumentException("Missing operation count", "mpq_hash_challenge")
-                    If numOps >= opDst.Length Then Throw New ArgumentException("Actual number of operations exceeds operation count", "mpq_hash_challenge")
-                    opDst(numOps) = Asc(cur_line(0))
-                    opSrc1(numOps) = Asc(cur_line(2))
-                    opSrc2(numOps) = Asc(cur_line(4))
-                    opFunc(numOps) = cur_line(3)
-                    numOps += 1
-                End If
-            Next line_index
+            Dim lines = CType(instructions.Split(" "c), IEnumerable(Of String)).GetEnumerator()
+            Dim variables = ParseRevisionCheckVariables(lines)
+            Dim operations = ParseRevisionCheckOperations(lines, variables)
 
             'Adjust Variable A using mpq number string [the point of this? obfuscation I guess]
-            Dim mpq_number As Integer
-            mpq_number_string = mpq_number_string.ToLower()
-            If Not mpq_number_string Like "ver-ix86-#.mpq" AndAlso Not mpq_number_string Like "ix86ver#.mpq" Then
-                Throw New ArgumentException("Unrecognized MPQ String", "mpq_number_string")
+            indexString = indexString.ToLower()
+            If Not indexString Like "ver-ix86-#.mpq" AndAlso Not indexString Like "ix86ver#.mpq" Then
+                Throw New ArgumentException("Unrecognized MPQ String: {0}".frmt(indexString), "mpqNumberString")
             End If
-            mpq_number = Asc(mpq_number_string(mpq_number_string.Length - 5)) - Asc("0"c)
-            vars(Asc("A"c)) = vars(Asc("A"c)) Xor hashcodes(mpq_number)
+            Dim table = {&HE7F4CB62UI,
+                         &HF6A14FFCUI,
+                         &HAA5504AFUI,
+                         &H871FCDC2UI,
+                         &H11BF6A18UI,
+                         &HC57292E6UI,
+                         &H7927D27EUI,
+                         &H2FEC8733UI}
+            variables("A"c) = variables("A"c) Xor table(Integer.Parse(indexString(indexString.Length - 5)))
 
             'Tail Buffer [rounds file data sizes to 1024]
-            Dim tail_buffer(0 To 1023) As Byte
-            For i = 0 To tail_buffer.Length - 1
-                tail_buffer(i) = CByte(255 - (i Mod 256))
+            Dim tailBuffer(0 To 1023) As Byte
+            For i = 0 To tailBuffer.Length - 1
+                tailBuffer(i) = CByte(255 - (i Mod 256))
             Next i
-            Dim tail_stream As New IO.MemoryStream(tail_buffer)
+            Dim tail_stream As New IO.MemoryStream(tailBuffer)
 
             'Parse Files
-            For Each filename In revCheckFiles
+            For Each filename In {"War3.exe", "Storm.dll", "Game.dll"}
                 'Open file
                 Dim f = New IO.FileStream(folder + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
-                Dim n = modCeiling(CInt(f.Length), 1024)
+                Dim n = ModCeiling(CInt(f.Length), 1024)
                 Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({f, tail_stream})))
 
                 'Apply operations using each dword in stream
-                For each_dword = 0 To n - 1 Step 4
-                    'Variable S = file dword
-                    vars(Asc("S"c)) = br.ReadUInt32()
-
-                    'Run Operations
-                    For op = 0 To numOps - 1
-                        Dim v1 = vars(opSrc1(op))
-                        Dim v2 = vars(opSrc2(op))
-                        Dim vr As ModInt32
-                        Select Case opFunc(op)
-                            Case "+"c : vr = v1 + v2
-                            Case "-"c : vr = v1 - v2
-                            Case "^"c : vr = v1 Xor v2
-                            Case "&"c : vr = v1 And v2
-                            Case "|"c : vr = v1 Or v2
-                            Case Else : Throw New ArgumentException("Unrecognized revision check operator: " + opFunc(op), "mpq_hash_challenge")
-                        End Select
-                        vars(opDst(op)) = vr
-                    Next op
-                Next each_dword
+                For repeat = 0 To n - 1 Step 4
+                    RevisionCheckApplyOperation(br.ReadUInt32(), variables, operations)
+                Next repeat
             Next filename
 
             'Return value of Variable C
-            Return vars(Asc("C"c))
+            Return variables("C"c)
         End Function
 #End Region
 
-#Region "SHA1"
         Public Function SHA1(ByVal data() As Byte) As Byte()
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
@@ -273,15 +320,13 @@ Namespace Bnet.Crypt
             Contract.Assume(hash IsNot Nothing)
             Return hash
         End Function
-#End Region
     End Module
 
-#Region "CDKey"
     Public Class CDKey
         Public ReadOnly key As String
-        Public ReadOnly productKey As Byte()
-        Public ReadOnly privateKey As Byte()
-        Public ReadOnly publicKey As Byte()
+        Public ReadOnly productKey As ViewableList(Of Byte)
+        Public ReadOnly privateKey As ViewableList(Of Byte)
+        Public ReadOnly publicKey As ViewableList(Of Byte)
 
         <ContractInvariantMethod()> Protected Sub Invariant()
             Contract.Invariant(key IsNot Nothing)
@@ -403,9 +448,24 @@ Namespace Bnet.Crypt
             Dim n_digitsBase256 = BigNum.FromBaseBytes(n_digitsBase2, 2, ByteOrder.LittleEndian).ToBytes(ByteOrder.LittleEndian).ToArray()
             ReDim Preserve n_digitsBase256(0 To 15)
             Contract.Assume(n_digitsBase256 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            Me.productKey = New Byte() {n_digitsBase256(13) >> &H2, 0, 0, 0}
-            Me.publicKey = New Byte() {n_digitsBase256(10), n_digitsBase256(11), n_digitsBase256(12), 0}
-            Me.privateKey = New Byte() {n_digitsBase256(8), n_digitsBase256(9), n_digitsBase256(4), n_digitsBase256(5), n_digitsBase256(6), n_digitsBase256(7), n_digitsBase256(0), n_digitsBase256(1), n_digitsBase256(2), n_digitsBase256(3)}
+            Me.productKey = {n_digitsBase256(13) >> &H2,
+                             CByte(0),
+                             CByte(0),
+                             CByte(0)}.ToView
+            Me.publicKey = {n_digitsBase256(10),
+                            n_digitsBase256(11),
+                            n_digitsBase256(12),
+                            CByte(0)}.ToView
+            Me.privateKey = {n_digitsBase256(8),
+                             n_digitsBase256(9),
+                             n_digitsBase256(4),
+                             n_digitsBase256(5),
+                             n_digitsBase256(6),
+                             n_digitsBase256(7),
+                             n_digitsBase256(0),
+                             n_digitsBase256(1),
+                             n_digitsBase256(2),
+                             n_digitsBase256(3)}.ToView()
         End Sub
 #End Region
 
@@ -484,5 +544,4 @@ Namespace Bnet.Crypt
         End Sub
 #End Region
     End Class
-#End Region
 End Namespace

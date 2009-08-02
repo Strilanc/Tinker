@@ -86,7 +86,7 @@
                 offset += 1
                 count -= 1
                 n += 1
-                total_output += CULng(1)
+                total_output += 1UL
             End While
             Return n
         End Function

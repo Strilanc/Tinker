@@ -6,6 +6,7 @@ Public Class BnetClientControl
     Implements IHookable(Of IBnetClient)
     Private WithEvents client As IBnetClient
     Private ReadOnly uiRef As New InvokedCallQueue(Me)
+    Private numStates1 As Integer
 
 #Region "Hook"
     Private Function f_caption() As IFuture(Of String) Implements IHookable(Of IBnetClient).f_caption
@@ -33,46 +34,73 @@ Public Class BnetClientControl
 #End Region
 
 #Region "Events"
-    Private Sub c_ChatEvent(ByVal sender As IBnetClient, ByVal id As ChatEventId, ByVal user As String, ByVal text As String) Handles client.ReceivedChatEvent
+    Private Sub c_ReceivedPacket(ByVal sender As IBnetClient, ByVal packet As BnetPacket) Handles client.ReceivedPacket
         uiRef.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
-                Select Case id
-                    Case ChatEventId.ShowUser, ChatEventId.UserJoined
-                        If Not lstState.Items.Contains(user) Then
-                            lstState.Items.Add(user)
-                        End If
-                        logClient.LogMessage("{0} entered the channel".frmt(user), Color.LightGray)
-                    Case ChatEventId.UserLeft
-                        lstState.Items.Remove(user)
-                        logClient.LogMessage("{0} left the channel".frmt(user), Color.LightGray)
-                    Case ChatEventId.Channel
-                        logClient.LogMessage("--- Entered Channel: " + text, Color.DarkGray)
-                        lstState.Items.Clear()
-                        lstState.Items.Add("Channel " + text)
-                        lstState.Items.Add(New String("-"c, 50))
-                    Case ChatEventId.Whisper
-                        logClient.LogMessage("{0} whispers: {1}".frmt(user, text), Color.DarkGreen)
-                    Case ChatEventId.Talk
-                        logClient.LogMessage("{0}: {1}".frmt(user, text), Color.Black)
-                    Case ChatEventId.Broadcast
-                        logClient.LogMessage("(server broadcast) {0}: {1}".frmt(user, text), Color.Red)
-                    Case ChatEventId.Channel
-                        logClient.LogMessage("Entered channel {0}".frmt(text), Color.DarkGray)
-                    Case ChatEventId.WhisperSent
-                        logClient.LogMessage("You whisper to {0}: {1}".frmt(user, text), Color.DarkGreen)
-                    Case ChatEventId.ChannelFull
-                        logClient.LogMessage("Channel was full", Color.Red)
-                    Case ChatEventId.ChannelDoesNotExist
-                        logClient.LogMessage("Channel didn't exist", Color.Red)
-                    Case ChatEventId.ChannelRestricted
-                        logClient.LogMessage("Channel was restricted", Color.Red)
-                    Case ChatEventId.Info
-                        logClient.LogMessage(text, Color.Gray)
-                    Case ChatEventId.Errors
-                        logClient.LogMessage(text, Color.Red)
-                    Case ChatEventId.Emote
-                        logClient.LogMessage("{0} {1}".frmt(user, text), Color.DarkGray)
+                Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+                Select Case packet.id
+                    Case BnetPacketID.ChatEvent
+                        Dim id = CType(vals("event id"), BnetPacket.ChatEventId)
+                        Dim user = CStr(vals("username"))
+                        Dim text = CStr(vals("text"))
+                        Select Case id
+                            Case ChatEventId.ShowUser, ChatEventId.UserJoined
+                                If Not lstState.Items.Contains(user) OrElse lstState.Items.IndexOf(user) >= numStates1 Then
+                                    lstState.Items.Insert(numStates1, user)
+                                    numStates1 += 1
+                                End If
+                                logClient.LogMessage("{0} entered the channel".frmt(user), Color.LightGray)
+                            Case ChatEventId.UserLeft
+                                If lstState.Items.Contains(user) AndAlso lstState.Items.IndexOf(user) < numStates1 Then
+                                    numStates1 -= 1
+                                    lstState.Items.Remove(user)
+                                End If
+                                logClient.LogMessage("{0} left the channel".frmt(user), Color.LightGray)
+                            Case ChatEventId.Channel
+                                logClient.LogMessage("--- Entered Channel: " + text, Color.DarkGray)
+                                lstState.Items.Clear()
+                                lstState.Items.Add("Channel " + text)
+                                lstState.Items.Add(New String("-"c, 50))
+                                numStates1 = 2
+                            Case ChatEventId.Whisper
+                                logClient.LogMessage("{0} whispers: {1}".frmt(user, text), Color.DarkGreen)
+                            Case ChatEventId.Talk
+                                logClient.LogMessage("{0}: {1}".frmt(user, text), Color.Black)
+                            Case ChatEventId.Broadcast
+                                logClient.LogMessage("(server broadcast) {0}: {1}".frmt(user, text), Color.Red)
+                            Case ChatEventId.Channel
+                                logClient.LogMessage("Entered channel {0}".frmt(text), Color.DarkGray)
+                            Case ChatEventId.WhisperSent
+                                logClient.LogMessage("You whisper to {0}: {1}".frmt(user, text), Color.DarkGreen)
+                            Case ChatEventId.ChannelFull
+                                logClient.LogMessage("Channel was full", Color.Red)
+                            Case ChatEventId.ChannelDoesNotExist
+                                logClient.LogMessage("Channel didn't exist", Color.Red)
+                            Case ChatEventId.ChannelRestricted
+                                logClient.LogMessage("Channel was restricted", Color.Red)
+                            Case ChatEventId.Info
+                                logClient.LogMessage(text, Color.Gray)
+                            Case ChatEventId.Errors
+                                logClient.LogMessage(text, Color.Red)
+                            Case ChatEventId.Emote
+                                logClient.LogMessage("{0} {1}".frmt(user, text), Color.DarkGray)
+                        End Select
+                    Case BnetPacketID.QueryGamesList
+                        While lstState.Items.Count > numStates1
+                            lstState.Items.RemoveAt(lstState.Items.Count - 1)
+                        End While
+                        lstState.Items.Add("--------")
+                        lstState.Items.Add("Games List")
+                        lstState.Items.Add(Date.Now().ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture))
+                        For Each game In CType(vals("games"), IEnumerable(Of Dictionary(Of String, Object)))
+                            lstState.Items.Add("---")
+                            Dim stats = CType(game("game statstring"), Dictionary(Of String, Object))
+                            Dim settings = CType(stats("settings"), Warcraft3.W3MapSettings)
+                            lstState.Items.Add(CStr(game("game name")))
+                            lstState.Items.Add(CStr(stats("username")))
+                            lstState.Items.Add(GetFileNameSlash(settings.relativePath))
+                        Next game
                 End Select
             End Sub
         )
@@ -113,11 +141,12 @@ Public Class BnetClientControl
                         lstState.Items.Add("Game")
                         Dim g = client.CurGame
                         If g IsNot Nothing Then
-                            lstState.Items.Add(g.header.name)
-                            lstState.Items.Add(g.header.map.relativePath)
+                            lstState.Items.Add(g.header.Name)
+                            lstState.Items.Add(g.header.Map.relativePath)
                             lstState.Items.Add(If(g.private, "Private", "Public"))
                             lstState.Items.Add("Refreshed: {0}".frmt(Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
                         End If
+                        numStates1 = lstState.Items.Count
                     Case Else
                         lstState.Items.Clear()
                         lstState.Enabled = False

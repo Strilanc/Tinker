@@ -199,7 +199,7 @@ Namespace Warcraft3
             Me.playableHeight = 256
             Me.playableWidth = 256
             Me.isMelee = True
-            Me.name = getFileNameSlash(relPath)
+            Me.name = GetFileNameSlash(relPath)
             Me._numPlayerSlots = numSlots
             Me._fileSize = fileSize
             Me._crc32 = crc32
@@ -419,7 +419,7 @@ Namespace Warcraft3
                     End If
                     Me.name = GetMapString(mapArchive, key)
                 Catch e As Exception
-                    Me.name = "{0} (error reading strings file: {1})".frmt(name_key, e.Message)
+                    Me.name = "{0} (error reading strings file: {1})".frmt(name_key, e)
                 End Try
                 While br.ReadByte() <> 0 : End While 'map author
                 While br.ReadByte() <> 0 : End While 'map description

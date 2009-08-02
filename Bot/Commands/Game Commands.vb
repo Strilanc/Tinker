@@ -18,7 +18,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Disconnect_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                target.f_Close()
+                target.QueueClose()
                 Return success("Disconnected").Futurize
             End Function
         End Class
@@ -53,7 +53,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Open_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_OpenSlot(arguments(0))
+                Return target.QueueOpenSlot(arguments(0))
             End Function
         End Class
 
@@ -66,7 +66,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Close_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_CloseSlot(arguments(0))
+                Return target.QueueCloseSlot(arguments(0))
             End Function
         End Class
 
@@ -85,7 +85,7 @@ Namespace Commands.Specializations
                 If Not Byte.TryParse(arg_team, val_team) Then
                     Return failure("Invalid team: '{0}'.".frmt(arg_team)).Futurize
                 End If
-                Return target.f_SetSlotTeam(arg_slot, val_team)
+                Return target.QueueSetSlotTeam(arg_slot, val_team)
             End Function
         End Class
 
@@ -100,7 +100,7 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim out = W3Game.XvX(arguments(0))
                 If Not out.succeeded Then Return out.Outcome.Futurize
-                Return target.f_TrySetTeamSizes(out.val)
+                Return target.QueueTrySetTeamSizes(out.val)
             End Function
         End Class
 
@@ -119,7 +119,7 @@ Namespace Commands.Specializations
                 Byte.TryParse(arg_handicap, val_handicap)
                 Select Case val_handicap
                     Case 50, 60, 70, 80, 90, 100
-                        Return target.f_SetSlotHandicap(arg_slot, val_handicap)
+                        Return target.QueueSetSlotHandicap(arg_slot, val_handicap)
                     Case Else
                         Return failure("Invalid handicap: '{0}'.".frmt(arg_handicap)).Futurize
                 End Select
@@ -139,7 +139,7 @@ Namespace Commands.Specializations
                 Dim arg_color = arguments(1)
                 Dim ret_color As W3Slot.PlayerColor
                 If EnumTryParse(Of W3Slot.PlayerColor)(arg_color, True, ret_color) Then
-                    Return target.f_SetSlotColor(arg_slot, ret_color)
+                    Return target.QueueSetSlotColor(arg_slot, ret_color)
                 End If
                 Return failure("Unrecognized color: '{0}'.".frmt(arg_color)).Futurize
             End Function
@@ -154,7 +154,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Swap_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_SwapSlotContents(arguments(0), arguments(1))
+                Return target.QueueSwapSlotContents(arguments(0), arguments(1))
             End Function
         End Class
 
@@ -171,7 +171,7 @@ Namespace Commands.Specializations
                 Dim arg_difficulty = arguments(1)
                 Dim ret_difficulty As W3Slot.ComputerLevel
                 If EnumTryParse(Of W3Slot.ComputerLevel)(arg_difficulty, True, ret_difficulty) Then
-                    Return target.f_SetSlotCpu(arg_slot, ret_difficulty)
+                    Return target.QueueSetSlotCpu(arg_slot, ret_difficulty)
                 End If
                 Return failure("Unrecognized difficulty: '{0}'.".frmt(arg_difficulty)).Futurize
             End Function
@@ -187,9 +187,9 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count = 0 Then
-                    Return target.f_SetAllSlotsLocked(W3Slot.Lock.sticky)
+                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.sticky)
                 Else
-                    Return target.f_SetSlotLocked(arguments(0), W3Slot.Lock.sticky)
+                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.sticky)
                 End If
             End Function
         End Class
@@ -204,9 +204,9 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count = 0 Then
-                    Return target.f_SetAllSlotsLocked(W3Slot.Lock.unlocked)
+                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.unlocked)
                 Else
-                    Return target.f_SetSlotLocked(arguments(0), W3Slot.Lock.unlocked)
+                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.unlocked)
                 End If
             End Function
         End Class
@@ -221,9 +221,9 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count = 0 Then
-                    Return target.f_SetAllSlotsLocked(W3Slot.Lock.frozen)
+                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.frozen)
                 Else
-                    Return target.f_SetSlotLocked(arguments(0), W3Slot.Lock.frozen)
+                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.frozen)
                 End If
             End Function
         End Class
@@ -237,7 +237,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Reserve_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_ReserveSlot(arguments(0), arguments(1))
+                Return target.QueueReserveSlot(arguments(0), arguments(1))
             End Function
         End Class
 
@@ -250,7 +250,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Start_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_StartCountdown()
+                Return target.QueueStartCountdown()
             End Function
         End Class
 
@@ -263,7 +263,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Cancel_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.server.f_Kill()
+                Return target.server.QueueKill()
             End Function
         End Class
     End Class
@@ -283,7 +283,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Bot_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.server.parent.BotCommands.ProcessText(target.server.parent, user, mendQuotedWords(arguments))
+                Return target.server.parent.BotCommands.ProcessCommand(target.server.parent, user, arguments)
             End Function
         End Class
     End Class
@@ -306,7 +306,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Boot_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_BootSlot(arguments(0))
+                Return target.QueueBootSlot(arguments(0))
             End Function
         End Class
 
@@ -379,15 +379,15 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Ping_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_EnumPlayers().EvalWhenValueReady(
+                Return target.QueueGetPlayers().EvalWhenValueReady(
                     Function(players)
-                        Dim msg = "Estimated RTT:"
-                        For Each player In players
-                            If player.IsFake Then  Continue For
-                            msg += " {0}={1}ms".frmt(player.name, player.latency.ToString("0"))
-                        Next player
-                        Return success(msg)
-                    End Function
+                                                                       Dim msg = "Estimated RTT:"
+                                                                       For Each player In players
+                                                                           If player.IsFake Then  Continue For
+                                                                           msg += " {0}={1}ms".frmt(player.name, player.latency.ToString("0"))
+                                                                       Next player
+                                                                       Return success(msg)
+                                                                   End Function
                 )
             End Function
         End Class
@@ -401,7 +401,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If user Is Nothing Then Return failure("You are not in the game.").Futurize
-                Return target.f_BootSlot(user.name)
+                Return target.QueueBootSlot(user.name)
             End Function
         End Class
     End Class
@@ -424,7 +424,7 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count = 1 AndAlso arguments(0).ToLower <> "cancel" Then Return failure("Incorrect argument.").Futurize
                 If user Is Nothing Then Return failure("User not specified.").Futurize
-                Return target.f_PlayerVoteToStart(user.name, arguments.Count = 0)
+                Return target.QueuePlayerVoteToStart(user.name, arguments.Count = 0)
             End Function
         End Class
 
@@ -437,7 +437,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If user Is Nothing Then Return failure("User not specified.").Futurize
-                Return target.f_TryElevatePlayer(user.name, arguments(0))
+                Return target.QueueTryElevatePlayer(user.name, arguments(0))
             End Function
         End Class
     End Class

@@ -8,7 +8,9 @@
 
         Public Sub New(ByVal server As IW3Server,
                        Optional ByVal logger As Logger = Nothing)
-            Contract.Requires(server IsNot Nothing)
+            'contract bug wrt interface event implementation requires this:
+            'Contract.Requires(server IsNot Nothing)
+            Contract.Assume(server IsNot Nothing)
             Me.logger = If(logger, New Logger())
             Me.server = server
             Me._accepter = New W3ConnectionAccepter(Me.logger)
@@ -45,20 +47,20 @@
 
         Private Sub FindGameForPlayer(ByVal player As W3ConnectingPlayer)
             Dim addedPlayerFilter = Function(game As IW3Game)
-                                        Return game.f_TryAddPlayer(player).EvalWhenValueReady(
+                                        Return game.QueueTryAddPlayer(player).EvalWhenValueReady(
                                             Function(added)
                                                 Return added.succeeded
                                             End Function
                                         )
                                     End Function
 
-            Dim futureSelectedGame = server.f_EnumGames.EvalWhenValueReady(
+            Dim futureSelectedGame = server.QueueGetGames.EvalWhenValueReady(
                                                      Function(games) FutureSelect(games, addedPlayerFilter)).Defuturize()
 
             futureSelectedGame.CallWhenValueReady(
                 Sub(gameSelected)
                     If server.settings.instances = 0 AndAlso Not gameSelected.succeeded Then
-                        server.f_CreateGame.CallWhenValueReady(
+                        server.QueueCreateGame.CallWhenValueReady(
                             Sub(created)
                                 If created.succeeded Then
                                     FindGameForPlayer(player)

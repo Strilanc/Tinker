@@ -79,11 +79,11 @@ Namespace Warcraft3
         _unseen_12 = &H12
         _unseen_13 = &H13
         SetHost = &H14 'unsure
-        _p2p_unknown_15 = &H15
-        _p2p_unknown_16 = &H16
+        _peer_unknown_15 = &H15
+        _peer_unknown_16 = &H16
         ConfirmHost = &H17 'unsure
         _unseen_18 = &H18
-        _p2p_unknown_19 = &H19
+        _peer_unknown_19 = &H19
         _unseen_1A = &H1A
         _unseen_1B = &H1B
         _unseen_1C = &H1C
@@ -115,7 +115,7 @@ Namespace Warcraft3
         NonGameAction = &H28
         ClientDropLagger = &H29
         _unseen_2A = &H2A
-        _p2p_unknown_2B = &H2B
+        _peer_unknown_2B = &H2B
         AcceptHost = &H2C 'unsure
         _unseen_2D = &H2D
         _unseen_2E = &H2E
@@ -132,12 +132,12 @@ Namespace Warcraft3
         LanRefreshGame = &H32
         '''<summary>Broadcast on lan when a game is cancelled.</summary>
         LanDestroyGame = &H33
-        P2pChat = &H34
-        P2pPing = &H35
-        P2pPong = &H36
-        P2pKnock = &H37
-        _p2p_unknown_38 = &H38
-        _p2p_unknown_39 = &H39
+        PeerChat = &H34
+        PeerPing = &H35
+        PeerPong = &H36 'No; I refuse to say it. It's a bad pun.
+        PeerKnock = &H37
+        _peer_unknown_38 = &H38
+        _peer_unknown_39 = &H39
         _unseen_3A = &H3A
         '''<summary>Sent by clients to the server to inform the server when the set of other clients they are interconnected with changes.</summary>
         PeerConnectionInfo = &H3B
@@ -154,7 +154,7 @@ Namespace Warcraft3
         SetUploadTarget = &H3E
         ''' <summary>
         ''' Sent by the server to tell a client to start downloading the map from the server or from another client.
-        ''' SetUploadTarget must be sent to the other client for the p2p transfer to work.
+        ''' SetUploadTarget must be sent to the other client for the peer to peer transfer to work.
         ''' </summary>
         SetDownloadSource = &H3F
         _unseen_40 = &H40
@@ -203,7 +203,7 @@ Namespace Warcraft3
             reg_lobby(jar)
             reg_play(jar)
             reg_lan(jar)
-            reg_p2p(jar)
+            RegPeer(jar)
             reg_dl(jar)
             Return jar
         End Function
@@ -337,7 +337,7 @@ Namespace Warcraft3
         End Sub
         Private Shared Sub reg_lan(ByVal jar As ManualSwitchJar)
             reg(jar, W3PacketId.LanRequestGame,
-                    New StringJar("product id", False, True, 4).Weaken,
+                    New StringJar("product id", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
                     New ValueJar("major version", 4).Weaken,
                     New ValueJar("unknown1", 4, "=0").Weaken)
 
@@ -369,23 +369,23 @@ Namespace Warcraft3
                     New ValueJar("age", 4).Weaken,
                     New ValueJar("listen port", 2).Weaken)
         End Sub
-        Private Shared Sub reg_p2p(ByVal jar As ManualSwitchJar)
+        Private Shared Sub RegPeer(ByVal jar As ManualSwitchJar)
             '[Peer introduction]
-            reg(jar, W3PacketId.P2pKnock,
-                    New ValueJar("receiver p2p key", 4, "As received from host in OTHER_PLAYER_JOINED").Weaken,
+            reg(jar, W3PacketId.PeerKnock,
+                    New ValueJar("receiver peer key", 4, "As received from host in OTHER_PLAYER_JOINED").Weaken,
                     New ValueJar("unknown1", 4, "=0").Weaken,
                     New ValueJar("sender player id", 1).Weaken,
                     New ValueJar("unknown3", 1, "=0xFF").Weaken,
-                    New ValueJar("sender p2p flags", 4, "connection bit flags").Weaken)
+                    New ValueJar("sender peer connection flags", 4, "connection bit flags").Weaken)
 
             '[Periodic update and keep-alive]
-            reg(jar, W3PacketId.P2pPing,
+            reg(jar, W3PacketId.PeerPing,
                     New ArrayJar("salt", 4).Weaken,
-                    New ValueJar("sender p2p flags", 4, "connection bit flags").Weaken,
+                    New ValueJar("sender peer connection flags", 4, "connection bit flags").Weaken,
                     New ValueJar("unknown2", 4, "=0").Weaken)
 
             '[Response to periodic keep-alive]
-            reg(jar, W3PacketId.P2pPong,
+            reg(jar, W3PacketId.PeerPong,
                     New ArrayJar("salt", 4).Weaken)
         End Sub
         Private Shared Sub reg_dl(ByVal jar As ManualSwitchJar)
@@ -425,7 +425,7 @@ Namespace Warcraft3
 #End Region
 
 #Region "Parsing"
-        Public Shared Function FromData(ByVal id As W3PacketId, ByVal data As IViewableList(Of Byte)) As W3Packet
+        Public Shared Function FromData(ByVal id As W3PacketId, ByVal data As ViewableList(Of Byte)) As W3Packet
             If data Is Nothing Then Throw New ArgumentException()
             Return New W3Packet(id, packetJar.parse(id, data))
         End Function
@@ -457,30 +457,27 @@ Namespace Warcraft3
 #End Region
 
 #Region "Packing: Misc Packets"
-        <Pure()> Public Shared Function MakeShowLagScreen(ByVal laggers As IEnumerable(Of IW3Player)) As W3Packet
+        <Pure()>
+        Public Shared Function MakeShowLagScreen(ByVal laggers As IEnumerable(Of IW3Player)) As W3Packet
             Contract.Requires(laggers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Dim vals As New Dictionary(Of String, Object)
-            Dim L As New List(Of Object)
-            For Each p In laggers
-                Dim d As New Dictionary(Of String, Object)
-                d("player index") = p.index
-                d("initial time used") = 2000
-                L.Add(d)
-            Next p
-            vals("laggers") = L
-            Return New W3Packet(W3PacketId.ShowLagScreen, vals)
+            Return New W3Packet(W3PacketId.ShowLagScreen, New Dictionary(Of String, Object) From {
+                    {"laggers", (From p In laggers
+                                 Select New Dictionary(Of String, Object) From {
+                                        {"player index", p.index},
+                                        {"initial time used", 2000}}).ToList()}})
         End Function
-        <Pure()> Public Shared Function MakeRemovePlayerFromLagScreen(ByVal player As IW3Player,
+        <Pure()>
+        Public Shared Function MakeRemovePlayerFromLagScreen(ByVal player As IW3Player,
                                                              ByVal lagTimeInMilliseconds As UInteger) As W3Packet
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Dim vals As New Dictionary(Of String, Object)
-            vals("player index") = player.index
-            vals("marginal time used") = lagTimeInMilliseconds
-            Return New W3Packet(W3PacketId.RemovePlayerFromLagScreen, vals)
+            Return New W3Packet(W3PacketId.RemovePlayerFromLagScreen, New Dictionary(Of String, Object) From {
+                    {"player index", player.index},
+                    {"marginal time used", lagTimeInMilliseconds}})
         End Function
-        <Pure()> Public Shared Function MakeText(ByVal text As String,
+        <Pure()>
+        Public Shared Function MakeText(ByVal text As String,
                                         ByVal flags() As Byte,
                                         ByVal receivingPlayers As IEnumerable(Of IW3Player),
                                         ByVal sender As IW3Player) As W3Packet
@@ -489,22 +486,20 @@ Namespace Warcraft3
             Contract.Requires(sender IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
-                    {"receiving player indexes", (From p In receivingPlayers Select CType(p.index, Object)).ToList},
+                    {"receiving player indexes", (From p In receivingPlayers Select CULng(p.index)).ToList},
                     {"sending player index", sender.index},
                     {"chat type", If(flags Is Nothing, ChatType.Lobby, ChatType.Game)},
                     {"chat", New Dictionary(Of String, Object) From {
                             {"message", text},
                             {"flags", flags}}}})
         End Function
-        <Pure()> Public Shared Function MakePacket_GREET(ByVal p As IW3Player,
-                                                ByVal assignedIndex As Byte,
-                                                ByVal map As W3Map,
-                                                ByVal slots As List(Of W3Slot)) As W3Packet
+        <Pure()>
+        Public Shared Function MakeGreet(ByVal p As IW3Player,
+                                         ByVal assignedIndex As Byte,
+                                         ByVal map As W3Map) As W3Packet
             Contract.Requires(p IsNot Nothing)
             Contract.Requires(map IsNot Nothing)
-            Contract.Requires(slots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            '{SLOT_LAYOUT.ToString(), packPacket_SLOT_LAYOUT_vals(p, map, slots)}
             Return New W3Packet(W3PacketId.Greet, New Dictionary(Of String, Object) From {
                     {"slot layout included", 0},
                     {"player index", assignedIndex},
@@ -512,23 +507,26 @@ Namespace Warcraft3
                                             AddressJar.packIPv4Address({0, 0, 0, 0}, 0),
                                             AddressJar.packIPv4Address(p.RemoteEndPoint))}})
         End Function
-        <Pure()> Public Shared Function MakeReject(ByVal reason As RejectReason) As W3Packet
+        <Pure()>
+        Public Shared Function MakeReject(ByVal reason As RejectReason) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.RejectEntry, New Dictionary(Of String, Object) From {
                     {"reason", reason}})
         End Function
-        <Pure()> Public Shared Function MakeHostMapInfo(ByVal map As W3Map) As W3Packet
+        <Pure()>
+        Public Shared Function MakeHostMapInfo(ByVal map As W3Map) As W3Packet
             Contract.Requires(map IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.HostMapInfo, New Dictionary(Of String, Object) From {
                     {"unknown", 1},
-                    {"path", "Maps\" + map.relativePath},
-                    {"size", map.fileSize},
-                    {"crc32", map.crc32},
-                    {"xoro checksum", map.checksumXoro},
-                    {"sha1 checksum", map.checksumSha1}})
+                    {"path", "Maps\" + map.RelativePath},
+                    {"size", map.FileSize},
+                    {"crc32", map.Crc32},
+                    {"xoro checksum", map.ChecksumXoro},
+                    {"sha1 checksum", map.ChecksumSha1}})
         End Function
-        <Pure()> Public Shared Function MakeOtherPlayerJoined(ByVal stranger As IW3Player,
+        <Pure()>
+        Public Shared Function MakeOtherPlayerJoined(ByVal stranger As IW3Player,
                                                      Optional ByVal overrideIndex As Byte = 0) As W3Packet
             Contract.Requires(stranger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
@@ -543,19 +541,22 @@ Namespace Warcraft3
                     {"external address", address},
                     {"internal address", address}})
         End Function
-        <Pure()> Public Shared Function MakePing(ByVal salt As UInteger) As W3Packet
+        <Pure()>
+        Public Shared Function MakePing(ByVal salt As UInteger) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.Ping, New Dictionary(Of String, Object) From {
                     {"salt", salt}})
         End Function
 
-        <Pure()> Public Shared Function MakeOtherPlayerReady(ByVal player As IW3Player) As W3Packet
+        <Pure()>
+        Public Shared Function MakeOtherPlayerReady(ByVal player As IW3Player) As W3Packet
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.OtherPlayerReady, New Dictionary(Of String, Object) From {
                     {"player index", player.index}})
         End Function
-        <Pure()> Public Shared Function MakeOtherPlayerLeft(ByVal player As IW3Player,
+        <Pure()>
+        Public Shared Function MakeOtherPlayerLeft(ByVal player As IW3Player,
                                                    ByVal leave_type As W3PlayerLeaveTypes) As W3Packet
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
@@ -563,7 +564,8 @@ Namespace Warcraft3
                                 {"player index", player.index},
                                 {"leave type", CByte(leave_type)}})
         End Function
-        <Pure()> Public Shared Function MakeLobbyState(ByVal receiver As IW3Player,
+        <Pure()>
+        Public Shared Function MakeLobbyState(ByVal receiver As IW3Player,
                                               ByVal map As W3Map,
                                               ByVal slots As List(Of W3Slot),
                                               ByVal time As ModInt32,
@@ -572,19 +574,22 @@ Namespace Warcraft3
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
+            Dim receiver_ = receiver 'avoid contract verification issue on hoisted arguments
             Return New W3Packet(W3PacketId.LobbyState, New Dictionary(Of String, Object) From {
                     {"state size", CUShort(slots.Count() * 9 + 7)},
-                    {"slots", (From slot In slots Select SlotJar.packSlot(slot, receiver)).ToList()},
+                    {"slots", (From slot In slots Select SlotJar.packSlot(slot, receiver_)).ToList()},
                     {"time", CUInt(time)},
                     {"layout style", If(map.isMelee, 0, 3)},
                     {"num player slots", If(Not hideSlots, map.NumPlayerSlots, If(map.NumPlayerSlots = 12, 11, 12))}})
         End Function
-        <Pure()> Public Shared Function MakeSetHost(ByVal new_host As Byte) As W3Packet
+        <Pure()>
+        Public Shared Function MakeSetHost(ByVal new_host As Byte) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.SetHost, New Dictionary(Of String, Object) From {
                     {"player index", new_host}})
         End Function
-        <Pure()> Public Shared Function MakeStartCountdown() As W3Packet
+        <Pure()>
+        Public Shared Function MakeStartCountdown() As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.StartCountdown, New Dictionary(Of String, Object))
         End Function
@@ -597,17 +602,16 @@ Namespace Warcraft3
             Return New W3Packet(W3PacketId.ConfirmHost, New Dictionary(Of String, Object))
         End Function
         <Pure()> Public Shared Function MakeTick(Optional ByVal delta As UShort = 250,
-                                        Optional ByVal subdata() As Byte = Nothing) As W3Packet
+                                                 Optional ByVal subdata() As Byte = Nothing) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Dim vals As New Dictionary(Of String, Object)
-            vals("time span") = delta
-            If subdata IsNot Nothing AndAlso subdata.Length > 0 Then
-                vals("subpacket") = Concat({Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(ByteOrder.LittleEndian).SubArray(0, 2), subdata})
-            Else
-                vals("subpacket") = New Byte() {}
+            subdata = If(subdata, {})
+            If subdata.Length > 0 Then
+                subdata = Concat({Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(ByteOrder.LittleEndian).SubArray(0, 2), subdata})
             End If
 
-            Return New W3Packet(W3PacketId.Tick, vals)
+            Return New W3Packet(W3PacketId.Tick, New Dictionary(Of String, Object) From {
+                    {"subpacket", subdata},
+                    {"time span", delta}})
         End Function
 #End Region
 
@@ -632,7 +636,7 @@ Namespace Warcraft3
             Return New W3Packet(W3PacketId.MapFileData, New Dictionary(Of String, Object) From {
                     {"receiving player index", receiverIndex},
                     {"sending player index", senderIndex},
-                    {"unknown", CUInt(1)},
+                    {"unknown", 1},
                     {"file position", filePosition},
                     {"crc32", Bnet.Crypt.crc32(New IO.MemoryStream(filedata)).bytes(ByteOrder.LittleEndian)},
                     {"file data", filedata}})
@@ -643,7 +647,7 @@ Namespace Warcraft3
             Contract.Requires(receiverIndex <= 12)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.SetUploadTarget, New Dictionary(Of String, Object) From {
-                    {"unknown1", CUInt(1)},
+                    {"unknown1", 1},
                     {"receiving player index", receiverIndex},
                     {"starting file pos", filePosition}})
         End Function
@@ -652,7 +656,7 @@ Namespace Warcraft3
             Contract.Requires(senderIndex <= 12)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.SetDownloadSource, New Dictionary(Of String, Object) From {
-                    {"unknown", CUInt(1)},
+                    {"unknown", 1},
                     {"sending player index", senderIndex}})
         End Function
         Public Shared Function MakeClientMapInfo(ByVal state As DownloadState,
@@ -707,7 +711,7 @@ Namespace Warcraft3
                     {"product id", "W3XP"},
                     {"major version", majorVersion},
                     {"game id", gameId},
-                    {"entry key", 42},
+                    {"entry key", 2642024974UI},
                     {"name", game.Name},
                     {"password", ""},
                     {"statstring", New Dictionary(Of String, Object) From {{"settings", game.Settings}, {"username", game.HostUserName}}},
@@ -727,18 +731,18 @@ Namespace Warcraft3
 
 #Region "Packing: Client Packets"
         Public Shared Function MakeKnock(ByVal name As String,
-                                         ByVal listen_port As UShort,
-                                         ByVal sending_port As UShort) As W3Packet
+                                         ByVal listenPort As UShort,
+                                         ByVal sendingPort As UShort) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.Knock, New Dictionary(Of String, Object) From {
                     {"game id", 0},
                     {"entry key", 0},
                     {"unknown2", 0},
-                    {"listen port", listen_port},
+                    {"listen port", listenPort},
                     {"peer key", 0},
                     {"name", name},
                     {"unknown3", 1},
-                    {"internal address", AddressJar.packIPv4Address(GetCachedIpAddressBytes(external:=True), sending_port)}})
+                    {"internal address", AddressJar.packIPv4Address(GetCachedIpAddressBytes(external:=True), sendingPort)}})
         End Function
         Public Shared Function MakeReady() As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
@@ -767,29 +771,29 @@ Namespace Warcraft3
         End Function
 #End Region
 
-#Region "Packing: P2P Packets"
-        Public Shared Function MakeP2pKnock(ByVal receiver_key As UInteger,
-                                            ByVal sender_id As Byte,
-                                            ByVal sender_flags As UInteger) As W3Packet
+#Region "Packing: Peer Packets"
+        Public Shared Function MakePeerKnock(ByVal receiverPeerKey As UInteger,
+                                             ByVal senderId As Byte,
+                                             ByVal senderPeerConnectionFlags As UInteger) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Return New W3Packet(W3PacketId.P2pKnock, New Dictionary(Of String, Object) From {
-                    {"receiver p2p key", receiver_key},
+            Return New W3Packet(W3PacketId.PeerKnock, New Dictionary(Of String, Object) From {
+                    {"receiver peer key", receiverPeerKey},
                     {"unknown1", 0},
-                    {"sender player id", sender_id},
+                    {"sender player id", senderId},
                     {"unknown3", &HFF},
-                    {"sender p2p flags", sender_flags}})
+                    {"sender peer connection flags", senderPeerConnectionFlags}})
         End Function
-        Public Shared Function MakeP2pPing(ByVal salt As Byte(),
-                                           ByVal sender_flags As UInteger) As W3Packet
+        Public Shared Function MakePeerPing(ByVal salt As Byte(),
+                                           ByVal senderFlags As UInteger) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Return New W3Packet(W3PacketId.P2pPing, New Dictionary(Of String, Object) From {
+            Return New W3Packet(W3PacketId.PeerPing, New Dictionary(Of String, Object) From {
                     {"salt", salt},
-                    {"sender p2p flags", sender_flags},
+                    {"sender peer connection flags", senderFlags},
                     {"unknown2", 0}})
         End Function
-        Public Shared Function MakeP2pPong(ByVal salt As Byte()) As W3Packet
+        Public Shared Function MakePeerPong(ByVal salt As Byte()) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Return New W3Packet(W3PacketId.P2pPong, New Dictionary(Of String, Object) From {
+            Return New W3Packet(W3PacketId.PeerPong, New Dictionary(Of String, Object) From {
                     {"salt", salt}})
         End Function
 #End Region
@@ -801,6 +805,7 @@ Namespace Warcraft3
         Public Sub New(ByVal name As String,
                        Optional ByVal info As String = "No Info")
             MyBase.New(name, expectedSize:=4, info:=info)
+            Contract.Requires(name IsNot Nothing)
         End Sub
         Protected Overrides Function DescribeValue(ByVal val As Byte()) As String
             Return GetReadableIpFromBytes(val)
@@ -816,6 +821,7 @@ Namespace Warcraft3
                     New ValueJar("port", 2, ByteOrder:=ByteOrder.BigEndian).Weaken,
                     New IpBytesJar("ip").Weaken,
                     New ArrayJar("unknown", 8).Weaken)
+            Contract.Requires(name IsNot Nothing)
         End Sub
 
         Public Shared Function ExtractIPEndpoint(ByVal vals As Dictionary(Of String, Object)) As Net.IPEndPoint
@@ -844,11 +850,11 @@ Namespace Warcraft3
             Dim d As New Dictionary(Of String, Object)
             d("unknown") = New Byte() {0, 0, 0, 0, 0, 0, 0, 0}
             If ip Is Nothing Then
-                d("protocol") = CUInt(0)
+                d("protocol") = 0
                 d("ip") = New Byte() {0, 0, 0, 0}
-                d("port") = CUShort(0)
+                d("port") = 0
             Else
-                d("protocol") = CUInt(2)
+                d("protocol") = 2
                 d("ip") = ip
                 d("port") = port
             End If
@@ -874,10 +880,10 @@ Namespace Warcraft3
             vals(sj.Name) = value
             vals(sj.Name + ":crc32") = SubArray(Bnet.Crypt.crc32(New IO.MemoryStream(sj.Pack(value).Data.ToArray)).bytes(ByteOrder.LittleEndian), 0, size)
             Dim p = tj.Pack(vals)
-            Return New Pickling.Pickles.Pickle(Of R)(value, p.Data, p.Description)
+            Return New Pickling.Pickle(Of R)(value, p.Data, p.Description)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IViewableList(Of Byte)) As Pickling.IPickle(Of T)
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of T)
             Dim p = tj.Parse(data)
             Dim vals = p.Value
 
@@ -889,7 +895,7 @@ Namespace Warcraft3
                 If Not ArraysEqual(crc, crc2) Then Throw New PicklingException("Incorrect CRC")
             End Using
 
-            Return New Pickling.Pickles.Pickle(Of T)(CType(vals(sj.Name), T), p.Data, p.Description)
+            Return New Pickling.Pickle(Of T)(CType(vals(sj.Name), T), p.Data, p.Description)
         End Function
     End Class
 

@@ -36,7 +36,7 @@ Namespace Commands.Specializations
                             "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.")
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.parent.BotCommands.ProcessText(target.parent, user, mendQuotedWords(arguments))
+                Return target.parent.BotCommands.ProcessCommand(target.parent, user, arguments)
             End Function
         End Class
 
@@ -59,12 +59,12 @@ Namespace Commands.Specializations
                 MyBase.New("StartListening",
                             1, ArgumentLimits.exact,
                             "[--StartListening port]",
-                            DictStrUInt("root=4"))
+                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim port As UShort
                 If Not UShort.TryParse(arguments(0), port) Then Return failure("Invalid port").Futurize
-                Return target.f_OpenPort(port)
+                Return target.QueueOpenPort(port)
             End Function
         End Class
 
@@ -75,17 +75,17 @@ Namespace Commands.Specializations
                 MyBase.New("StopListening",
                             1, ArgumentLimits.max,
                             "[--StopListening, --StopListening port] Tells the server to stop listening on a port or all ports.",
-                            DictStrUInt("root=4"))
+                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count = 0 Then
-                    Return target.f_CloseAllPorts()
+                    Return target.QueueCloseAllPorts()
                 Else
                     Dim port As UShort
                     If Not UShort.TryParse(arguments(0), port) Then
                         Return failure("Invalid port").Futurize
                     End If
-                    Return target.f_ClosePort(port)
+                    Return target.QueueClosePort(port)
                 End If
             End Function
         End Class
@@ -96,10 +96,10 @@ Namespace Commands.Specializations
                 MyBase.New("Open",
                             1, ArgumentLimits.max,
                             "[--Open name=generated_name]",
-                            DictStrUInt("root=4;games=4"))
+                            "root=4;games=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return stripFutureOutcome(target.f_CreateGame(arguments(0)))
+                Return stripFutureOutcome(target.QueueCreateGame(arguments(0)))
             End Function
         End Class
         Private Class com_CloseInstance
@@ -108,10 +108,10 @@ Namespace Commands.Specializations
                 MyBase.New("Close",
                             1, ArgumentLimits.exact,
                             "[--Close name]",
-                            DictStrUInt("root=4;games=4"))
+                            "root=4;games=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_RemoveGame(arguments(0), ignorePermanent:=True)
+                Return target.QueueRemoveGame(arguments(0), ignorePermanent:=True)
             End Function
         End Class
     End Class

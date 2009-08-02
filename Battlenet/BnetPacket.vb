@@ -148,7 +148,7 @@ Namespace Bnet
         Private Shared Sub regPack(ByVal jar As ManualSwitchJar,
                                    ByVal id As BnetPacketID,
                                    ByVal ParamArray subjars() As IPackJar(Of Object))
-            jar.regPacker(id, New TuplePackJar(id.ToString(), "No Info", subjars))
+            jar.regPacker(id, New TuplePackJar(id.ToString(), subjars))
         End Sub
         Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As BnetPacketID, ByVal ParamArray subjars() As IParseJar(Of Object))
             jar.regParser(id, New TupleParseJar(id.ToString(), subjars))
@@ -232,24 +232,23 @@ Namespace Bnet
         End Sub
         Private Shared Sub reg_state(ByVal jar As ManualSwitchJar)
             regPack(jar, BnetPacketID.QueryGamesList,
-                    New ValueJar("filter", 4).Weaken,
-                    New ValueJar("filter mask", 4).Weaken,
+                    New EnumJar(Of GameTypeFlags)("filter", 4).Weaken,
+                    New EnumJar(Of GameTypeFlags)("filter mask", 4).Weaken,
                     New ValueJar("unknown0", 4, "=0").Weaken,
                     New ValueJar("list count", 4).Weaken,
                     New StringJar("game name", True, , , "empty means list games").Weaken,
                     New StringJar("game password", True).Weaken,
                     New StringJar("game stats", True).Weaken)
-            regParse(jar, BnetPacketID.QueryGamesList, New ListParseJar(Of Dictionary(Of String, Object))("games", prefix_size:=4, subjar:=New TupleParseJar("game",
-                     New ValueJar("game type", 2).Weaken,
-                     New ValueJar("parameter", 2).Weaken,
+            regParse(jar, BnetPacketID.QueryGamesList, New ListParseJar(Of Dictionary(Of String, Object))("games", numSizePrefixBytes:=4, subjar:=New TupleParseJar("game",
+                     New EnumJar(Of GameTypeFlags)("game type", 4).Weaken,
                      New ValueJar("language id", 4).Weaken,
                      New AddressJar("host address"),
-                     New ValueJar("game state", 4).Weaken,
+                     New EnumJar(Of GameStateFlags)("game state", 4).Weaken,
                      New ValueJar("elapsed time", 4, "(seconds)").Weaken,
                      New StringJar("game name", True),
                      New StringJar("game password", True),
-                     New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian),
-                     New TextHexValueJar("game id", 8, ByteOrder.LittleEndian),
+                     New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian).Weaken,
+                     New TextHexValueJar("game id", 8, ByteOrder.LittleEndian).Weaken,
                      New W3MapSettingsJar("game statstring"))))
 
             'CREATE_GAME_3 [Request/response for listing a game]
@@ -262,8 +261,8 @@ Namespace Bnet
                     New ValueJar("ladder", 4, "0=false, 1=true)").Weaken,
                     New StringJar("name").Weaken,
                     New StringJar("password", , , , "="""" [unused]").Weaken,
-                    New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian),
-                    New TextHexValueJar("game id", 8, ByteOrder.LittleEndian),
+                    New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian).Weaken,
+                    New TextHexValueJar("game id", 8, ByteOrder.LittleEndian).Weaken,
                     New W3MapSettingsJar("statstring"))
             '[client receive]
             regParse(jar, BnetPacketID.CreateGame3,
@@ -387,15 +386,15 @@ Namespace Bnet
         Public Shared Function MakeAuthenticationBegin(ByVal version As UInteger, ByVal local_ip() As Byte) As BnetPacket
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Return New BnetPacket(BnetPacketID.AuthenticationBegin, New Dictionary(Of String, Object) From {
-                    {"protocol", CUInt(0)},
+                    {"protocol", 0},
                     {"platform", "IX86"},
                     {"product", "W3XP"},
                     {"product version", version},
                     {"product language", "SUne"},
                     {"internal ip", local_ip},
-                    {"time zone offset", CUInt(240)},
-                    {"location id", CUInt(1033)},
-                    {"language id", CUInt(1033)},
+                    {"time zone offset", 240},
+                    {"location id", 1033},
+                    {"language id", 1033},
                     {"country abrev", "USA"},
                     {"country name", "United States"}
                 })
@@ -430,8 +429,8 @@ Namespace Bnet
                     {"client cd key salt", clientCdKeySalt},
                     {"exe version", version},
                     {"mpq challenge response", Bnet.Crypt.GenerateRevisionCheck(mpqFolder, mpqNumberString, mpqHashChallenge).bytes(ByteOrder.LittleEndian)},
-                    {"# cd keys", CUInt(2)},
-                    {"spawn [unused]", CUInt(0)},
+                    {"# cd keys", 2},
+                    {"spawn [unused]", 0},
                     {"ROC cd key", CDKeyJar.packCDKey(rocKey, clientCdKeySalt.ToView, serverCdKeySalt.ToView)},
                     {"TFT cd key", CDKeyJar.packCDKey(tftKey, clientCdKeySalt.ToView, serverCdKeySalt.ToView)},
                     {"exe info", exeInformation},
@@ -471,7 +470,7 @@ Namespace Bnet
             Return New BnetPacket(BnetPacketID.NetGamePort, vals)
         End Function
         Public Shared Function MakeQueryGamesList(Optional ByVal specificGameName As String = "",
-                                                       Optional ByVal listCount As Integer = 20) As BnetPacket
+                                                  Optional ByVal listCount As Integer = 20) As BnetPacket
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Return New BnetPacket(BnetPacketID.QueryGamesList, New Dictionary(Of String, Object) From {
                     {"filter", GameTypeFlags.MaskFilterable},
@@ -483,12 +482,12 @@ Namespace Bnet
                     {"game stats", ""}})
         End Function
         Public Shared Function MakeJoinChannel(ByVal flags As JoinChannelType,
-                                                       ByVal channel As String) As BnetPacket
+                                               ByVal channel As String) As BnetPacket
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Dim vals As New Dictionary(Of String, Object)
-            vals("flags") = CUInt(flags).bytes(ByteOrder.LittleEndian)
-            vals("channel") = channel
-            Return New BnetPacket(BnetPacketID.JoinChannel, vals)
+            Return New BnetPacket(BnetPacketID.JoinChannel, New Dictionary(Of String, Object) From {
+                    {"flags", CUInt(flags).bytes(ByteOrder.LittleEndian)},
+                    {"channel", channel}})
         End Function
         Public Shared Function MakeCreateGame3(ByVal game As IW3GameStateDescription,
                                                ByVal gameId As Integer) As BnetPacket
@@ -502,8 +501,8 @@ Namespace Bnet
                     {"game state", game.GameState},
                     {"time", CUInt((DateTime.Now() - game.CreationTime).TotalSeconds)},
                     {"game type", game.GameType},
-                    {"unknown1", CUInt(1023)},
-                    {"ladder", CUInt(0)},
+                    {"unknown1", 1023},
+                    {"ladder", 0},
                     {"name", game.Name},
                     {"password", ""},
                     {"num free slots", game.NumFreeSlots},
@@ -512,8 +511,7 @@ Namespace Bnet
         End Function
         Public Shared Function MakeCloseGame3() As BnetPacket
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
-            Dim vals As New Dictionary(Of String, Object)
-            Return New BnetPacket(BnetPacketID.CloseGame3, vals)
+            Return New BnetPacket(BnetPacketID.CloseGame3, New Dictionary(Of String, Object))
         End Function
 #End Region
 #Region "Packers: CKL"
@@ -545,8 +543,8 @@ Namespace Bnet
             vals("client cd key salt") = clientCdKeySalt
             vals("exe version") = Version
             vals("mpq challenge response") = Bnet.Crypt.GenerateRevisionCheck(MpqFolder, MpqNumberString, MpqHashChallenge).bytes(ByteOrder.LittleEndian)
-            vals("# cd keys") = CUInt(2)
-            vals("spawn [unused]") = CUInt(0)
+            vals("# cd keys") = 2
+            vals("spawn [unused]") = 0
             vals("exe info") = ExeInformation
             vals("owner") = CdKeyOwner
 
@@ -566,33 +564,30 @@ Namespace Bnet
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
 
-            Dim vals As New Dictionary(Of String, Object)
             Const MAX_TEXT_LENGTH As Integer = 222
             If text.Length > MAX_TEXT_LENGTH Then
                 text = text.Substring(0, MAX_TEXT_LENGTH)
                 'Throw New ArgumentException(String.Format("Text cannot exceed {0} characters.", MAX_TEXT_LENGTH), "text")
             End If
-            vals("text") = text
-            Return New BnetPacket(BnetPacketID.ChatCommand, vals)
+            Return New BnetPacket(BnetPacketID.ChatCommand, New Dictionary(Of String, Object) From {
+                    {"text", text}})
         End Function
         Public Shared Function MakePing(ByVal salt As UInteger) As BnetPacket
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
 
-            Dim vals As New Dictionary(Of String, Object)
-            vals("salt") = salt
-            Return New BnetPacket(BnetPacketID.Ping, vals)
+            Return New BnetPacket(BnetPacketID.Ping, New Dictionary(Of String, Object) From {
+                    {"salt", salt}})
         End Function
         Public Shared Function MakeWarden(ByVal encryptedData As Byte()) As BnetPacket
             Contract.Requires(encryptedData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
 
-            Dim vals As New Dictionary(Of String, Object)
-            vals("encrypted data") = encryptedData
-            Return New BnetPacket(BnetPacketID.Warden, vals)
+            Return New BnetPacket(BnetPacketID.Warden, New Dictionary(Of String, Object) From {
+                    {"encrypted data", encryptedData}})
         End Function
 #End Region
 
-        Public Shared Function FromData(ByVal id As BnetPacketID, ByVal data As IViewableList(Of Byte)) As BnetPacket
+        Public Shared Function FromData(ByVal id As BnetPacketID, ByVal data As ViewableList(Of Byte)) As BnetPacket
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Return New BnetPacket(id, packetJar.parse(id, data))
@@ -600,35 +595,35 @@ Namespace Bnet
 
 #Region "Jars"
         Public Class TextHexValueJar
-            Inherits Jar(Of Object)
+            Inherits Jar(Of ULong)
             Private ReadOnly numDigits As Integer
             Private ReadOnly byteOrder As ByteOrder
 
-            <ContractInvariantMethod()> Protected Sub Invariant()
+            <ContractInvariantMethod()> Protected Overrides Sub Invariant()
                 Contract.Invariant(numDigits > 0)
             End Sub
 
             Public Sub New(ByVal name As String,
                            ByVal numDigits As Integer,
-                           ByVal byteOrder As ByteOrder,
-                           Optional ByVal info As String = "No Info")
-                MyBase.New(name, info)
+                           ByVal byteOrder As ByteOrder)
+                MyBase.New(name)
+                Contract.Requires(name IsNot Nothing)
                 Contract.Requires(numDigits > 0)
-                If numDigits > 16 Then Throw New ArgumentOutOfRangeException("numDigits", "Number of digits can't exceed the size of a ULong (16 hex digits)")
+                Contract.Requires(numDigits <= 16)
                 Me.numDigits = numDigits
                 Me.byteOrder = byteOrder
             End Sub
 
-            Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
-                Dim u = CULng(CType(value, Object))
+            Public Overrides Function Pack(Of R As ULong)(ByVal value As R) As IPickle(Of R)
+                Dim u = CULng(value)
                 Dim digits(0 To numDigits - 1) As Char
                 Select Case byteOrder
-                    Case HostBot.ByteOrder.BigEndian
+                    Case byteOrder.BigEndian
                         For i = numDigits - 1 To 0 Step -1
                             digits(i) = Hex(u And CULng(&HF)).ToLower()(0)
                             u >>= 4
                         Next i
-                    Case HostBot.ByteOrder.LittleEndian
+                    Case byteOrder.LittleEndian
                         For i = 0 To numDigits - 1
                             digits(i) = Hex(u And CULng(&HF)).ToLower()(0)
                             u >>= 4
@@ -637,13 +632,13 @@ Namespace Bnet
                         Throw New UnreachableException()
                 End Select
 
-                Return New Pickling.Pickles.Pickle(Of R)(Me.Name, value, New String(digits).ToAscBytes().ToView())
+                Return New Pickling.Pickle(Of R)(Me.Name, value, New String(digits).ToAscBytes().ToView())
             End Function
 
-            Public Overrides Function Parse(ByVal data As IViewableList(Of Byte)) As IPickle(Of Object)
+            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
                 If data.Length < numDigits Then Throw New PicklingException("Not enough data")
                 data = data.SubView(0, numDigits)
-                Return New Pickling.Pickles.Pickle(Of Object)(Me.Name, udehex(data.ParseChrString(nullTerminated:=False), byteOrder), data)
+                Return New Pickling.Pickle(Of ULong)(Me.Name, udehex(data.ParseChrString(nullTerminated:=False), byteOrder), data)
             End Function
         End Class
 
@@ -657,37 +652,39 @@ Namespace Bnet
                         New ArrayJar("public key", 4).Weaken,
                         New ValueJar("unknown", 4, "=0").Weaken,
                         New ArrayJar("hash", 20).Weaken)
+                Contract.Requires(name IsNot Nothing)
             End Sub
 
             Public Shared Function packCDKey(ByVal key As String,
-                                             ByVal clientToken As IViewableList(Of Byte),
-                                             ByVal serverToken As IViewableList(Of Byte)) As Dictionary(Of String, Object)
-                If Not (key IsNot Nothing) Then Throw New ArgumentException()
-                If Not (clientToken IsNot Nothing) Then Throw New ArgumentException()
-                If Not (serverToken IsNot Nothing) Then Throw New ArgumentException()
+                                             ByVal clientToken As ViewableList(Of Byte),
+                                             ByVal serverToken As ViewableList(Of Byte)) As Dictionary(Of String, Object)
+                Contract.Requires(key IsNot Nothing)
+                Contract.Requires(clientToken IsNot Nothing)
+                Contract.Requires(serverToken IsNot Nothing)
 
-                Dim d As New Dictionary(Of String, Object)
-                With New Bnet.Crypt.CDKey(key)
-                    d("length") = CUInt(key.Length)
-                    d("product key") = .productKey
-                    d("public key") = .publicKey
-                    d("unknown") = CUInt(0)
-                    d("hash") = Bnet.Crypt.SHA1(Concat({clientToken.ToArray, serverToken.ToArray, .productKey, .publicKey, .privateKey}))
-                End With
-                Return d
+                Dim cdkey = New Bnet.Crypt.CDKey(key)
+                Return New Dictionary(Of String, Object) From {
+                        {"length", CUInt(key.Length)},
+                        {"product key", cdkey.productKey.ToArray()},
+                        {"public key", cdkey.publicKey.ToArray()},
+                        {"unknown", 0},
+                        {"hash", Bnet.Crypt.SHA1(Concat({clientToken.ToArray,
+                                                         serverToken.ToArray,
+                                                         cdkey.productKey.ToArray,
+                                                         cdkey.publicKey.ToArray,
+                                                         cdkey.privateKey.ToArray}))}}
             End Function
 
             Public Shared Function packBorrowedCdKey(ByVal data() As Byte) As Dictionary(Of String, Object)
-                If Not (data IsNot Nothing) Then Throw New ArgumentException()
+                Contract.Requires(data IsNot Nothing)
+                Contract.Requires(data.Length = 36)
 
-                If data.Length <> 36 Then Throw New ArgumentException("Incorrect amount of data for borrowed cd key.")
-                Dim d = New Dictionary(Of String, Object)
-                d("length") = data.SubArray(0, 4).ToUInteger(ByteOrder.LittleEndian)
-                d("product key") = data.SubArray(4, 4)
-                d("public key") = data.SubArray(8, 4)
-                d("unknown") = data.SubArray(12, 4).ToUInteger(ByteOrder.LittleEndian)
-                d("hash") = data.SubArray(16, 20)
-                Return d
+                Return New Dictionary(Of String, Object) From {
+                        {"length", data.SubArray(0, 4).ToUInteger(ByteOrder.LittleEndian)},
+                        {"product key", data.SubArray(4, 4)},
+                        {"public key", data.SubArray(8, 4)},
+                        {"unknown", data.SubArray(12, 4).ToUInteger(ByteOrder.LittleEndian)},
+                        {"hash", data.SubArray(16, 20)}}
             End Function
         End Class
 #End Region

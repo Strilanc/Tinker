@@ -7,7 +7,7 @@ Namespace Mpq
     '''</summary>
     Public Class MpqFileTable
         Public ReadOnly fileEntries As New List(Of FileEntry)
-        Public ReadOnly parent As Mpq.MpqArchive
+        Public ReadOnly archive As Mpq.MpqArchive
 
         Public Class FileEntry
             Public filePosition As UInteger 'Absolute position of the file within the parent file of the archive
@@ -25,16 +25,17 @@ Namespace Mpq
         End Class
 
         '''<summary>Reads the file table from an MPQ archive</summary>
-        Public Sub New(ByVal mpqa As MpqArchive)
-            Me.parent = mpqa
+        Public Sub New(ByVal archive As MpqArchive)
+            Contract.Requires(archive IsNot Nothing)
+            Me.archive = archive
 
             'Read (with decryption)
-            Using stream = mpqa.streamFactory()
-                stream.Seek(mpqa.fileTablePosition, IO.SeekOrigin.Begin)
+            Using stream = archive.streamFactory()
+                stream.Seek(archive.fileTablePosition, IO.SeekOrigin.Begin)
                 Using br = New IO.BinaryReader( _
                             New IO.BufferedStream( _
                              New Cypherer(HashString("(block table)", HashType.FILE_KEY), Cypherer.modes.decrypt).ConvertReadOnlyStream(stream)))
-                    For i = 0 To CInt(mpqa.numFileTableEntries) - 1
+                    For i = 0 To CInt(archive.numFileTableEntries) - 1
                         Dim f = New FileEntry()
                         f.filePosition = br.ReadUInt32()
                         f.compressedSize = br.ReadUInt32()
@@ -47,13 +48,13 @@ Namespace Mpq
 
             'Correct positions from relative to absolute
             For Each entry In fileEntries
-                entry.filePosition += mpqa.filePosition
+                entry.filePosition += archive.filePosition
             Next entry
         End Sub
 
         '''<summary>Throws an exception if the file table is invalid.</summary>
         Public Sub checkValidity()
-            Dim end_of_archive = parent.archiveSize + parent.filePosition
+            Dim end_of_archive = archive.archiveSize + archive.filePosition
             For Each entry In fileEntries
                 If entry.filePosition < 0 OrElse entry.filePosition >= end_of_archive Then
                     Throw New MPQException("Invalid file table. [file entry has header position outside of archive]")

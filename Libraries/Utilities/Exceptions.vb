@@ -1,4 +1,5 @@
-﻿Public Class OperationFailedException
+﻿<Serializable()>
+Public Class OperationFailedException
     Inherits Exception
     Public Sub New(Optional ByVal message As String = Nothing,
                    Optional ByVal inner_exception As Exception = Nothing)
@@ -6,6 +7,7 @@
     End Sub
 End Class
 
+<Serializable()>
 Public Class UnreachableException
     Inherits InvalidStateException
     Public Sub New(Optional ByVal message As String = Nothing,
@@ -14,6 +16,7 @@ Public Class UnreachableException
     End Sub
 End Class
 
+<Serializable()>
 Public Class InvalidStateException
     Inherits Exception
     Public Sub New(Optional ByVal message As String = Nothing,

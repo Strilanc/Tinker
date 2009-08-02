@@ -61,6 +61,9 @@ Namespace Mpq
         Public Sub New(ByVal archive As MpqArchive,
                        ByVal fileTableEntry As MpqFileTable.FileEntry,
                        Optional ByVal knownFilename As String = Nothing)
+            Contract.Requires(archive IsNot Nothing)
+            Contract.Requires(fileTableEntry IsNot Nothing)
+
             Me.fileTableEntry = fileTableEntry
             Me.archive = archive
             Me.baseStream = New IO.BufferedStream(archive.streamFactory())
@@ -151,7 +154,7 @@ Namespace Mpq
             End If
             baseStream.Seek(block_position_offset + fileTableEntry.filePosition, IO.SeekOrigin.Begin)
             blockStream = baseStream
-            numBlockBytesLeft = archive.fileBlockSize
+            numBlockBytesLeft = Math.Min(archive.fileBlockSize, CUInt(Length - Position))
 
             'Decryption layer
             If (fileTableEntry.flags And FILE_FLAGS.ENCRYPTED) <> 0 Then
@@ -160,49 +163,56 @@ Namespace Mpq
             End If
 
             'Decompression layer
-            If (fileTableEntry.flags And FILE_FLAGS.COMPRESSED) <> 0 Then
-                If fileTableEntry.compressedSize - If(blockOffsetTable Is Nothing, 0, blockOffsetTable.Length * 4) <> fileTableEntry.actualSize Then
-                    Dim header = CType(blockStream.ReadByte(), COMPRESSION_TYPES)
+            Dim compressed = (fileTableEntry.flags And FILE_FLAGS.COMPRESSED) <> 0
+            If fileTableEntry.compressedSize - If(blockOffsetTable Is Nothing, 0, blockOffsetTable.Length * 4) = fileTableEntry.actualSize Then
+                compressed = False 'no blocks are compressed if the filesize matches
+            ElseIf (fileTableEntry.flags And FILE_FLAGS.CONTINUOUS) = 0 Then
+                If blockOffsetTable(CInt(blockIndex + 1)) - blockOffsetTable(CInt(blockIndex)) = numBlockBytesLeft Then
+                    compressed = False 'this block isn't compressed if the blocksize matches
+                End If
+            End If
+            If compressed Then
+                Dim header = CType(blockStream.ReadByte(), COMPRESSION_TYPES)
 
-                    'BZIP2
-                    If (header And COMPRESSION_TYPES.BZip2) <> 0 Then
-                        Throw New NotSupportedException("Don't know how to decompress BZIP2.")
-                    End If
+                'BZIP2
+                If (header And COMPRESSION_TYPES.BZip2) <> 0 Then
+                    blockStream = New ICSharpCode.SharpZipLib.BZip2.BZip2InputStream(blockStream)
+                    header = header And Not COMPRESSION_TYPES.BZip2
+                End If
 
-                    'PKWARE_IMPLODED
-                    If (header And COMPRESSION_TYPES.PkWareImplode) <> 0 Then
-                        blockStream = New Mpq.Compression.PkWare.Decoder().ConvertReadOnlyStream(blockStream)
-                        header = header And Not COMPRESSION_TYPES.PkWareImplode
-                    End If
+                'PKWARE_IMPLODED
+                If (header And COMPRESSION_TYPES.PkWareImplode) <> 0 Then
+                    blockStream = New Mpq.Compression.PkWare.Decoder().ConvertReadOnlyStream(blockStream)
+                    header = header And Not COMPRESSION_TYPES.PkWareImplode
+                End If
 
-                    'DEFLATE
-                    If (header And COMPRESSION_TYPES.ZLibDeflate) <> 0 Then
-                        blockStream = New ZLibStream(blockStream, IO.Compression.CompressionMode.Decompress)
-                        header = header And Not COMPRESSION_TYPES.ZLibDeflate
-                    End If
+                'DEFLATE
+                If (header And COMPRESSION_TYPES.ZLibDeflate) <> 0 Then
+                    blockStream = New ZLibStream(blockStream, IO.Compression.CompressionMode.Decompress)
+                    header = header And Not COMPRESSION_TYPES.ZLibDeflate
+                End If
 
-                    'HUFFMAN
-                    If (header And COMPRESSION_TYPES.Huffman) <> 0 Then
-                        blockStream = New Mpq.Compression.Huffman.Decoder().ConvertReadOnlyStream(blockStream)
-                        header = header And Not COMPRESSION_TYPES.Huffman
-                    End If
+                'HUFFMAN
+                If (header And COMPRESSION_TYPES.Huffman) <> 0 Then
+                    blockStream = New Mpq.Compression.Huffman.Decoder().ConvertReadOnlyStream(blockStream)
+                    header = header And Not COMPRESSION_TYPES.Huffman
+                End If
 
-                    'STEREO WAVE
-                    If (header And COMPRESSION_TYPES.IMA_ADPCM_STEREO) <> 0 Then
-                        blockStream = New Mpq.Compression.Wave.Decoder(2).ConvertReadOnlyStream(blockStream)
-                        header = header And Not COMPRESSION_TYPES.IMA_ADPCM_STEREO
-                    End If
+                'STEREO WAVE
+                If (header And COMPRESSION_TYPES.IMA_ADPCM_STEREO) <> 0 Then
+                    blockStream = New Mpq.Compression.Wave.Decoder(2).ConvertReadOnlyStream(blockStream)
+                    header = header And Not COMPRESSION_TYPES.IMA_ADPCM_STEREO
+                End If
 
-                    'MONO WAVE
-                    If (header And COMPRESSION_TYPES.IMA_ADPCM_MONO) <> 0 Then
-                        blockStream = New Mpq.Compression.Wave.Decoder(1).ConvertReadOnlyStream(blockStream)
-                        header = header And Not COMPRESSION_TYPES.IMA_ADPCM_MONO
-                    End If
+                'MONO WAVE
+                If (header And COMPRESSION_TYPES.IMA_ADPCM_MONO) <> 0 Then
+                    blockStream = New Mpq.Compression.Wave.Decoder(1).ConvertReadOnlyStream(blockStream)
+                    header = header And Not COMPRESSION_TYPES.IMA_ADPCM_MONO
+                End If
 
-                    'Unknown Compression
-                    If header <> 0 Then
-                        Throw New IO.IOException("Don't know how to decompress Unknown Compression.")
-                    End If
+                'Unknown Compression
+                If header <> 0 Then
+                    Throw New IO.IOException("Don't know how to decompress Unknown Compression.")
                 End If
             End If
         End Sub

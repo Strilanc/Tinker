@@ -18,8 +18,8 @@ Namespace CKL
             Me.rocKey = rocKey
             Me.tftKey = tftKey
         End Sub
-        Public Function Pack(ByVal clientToken As IViewableList(Of Byte),
-                             ByVal serverToken As IViewableList(Of Byte)) As Byte()
+        Public Function Pack(ByVal clientToken As ViewableList(Of Byte),
+                             ByVal serverToken As ViewableList(Of Byte)) As Byte()
             Return Concat(From key In {rocKey, tftKey}
                           Select cdKeyJar.pack(cdKeyJar.packCDKey(key, clientToken, serverToken)).Data.ToArray)
         End Function
@@ -34,7 +34,7 @@ Namespace CKL
         End Sub
     End Class
 
-    Public Class BotCKLServer
+    Public NotInheritable Class BotCKLServer
         Inherits CKL.CklServer
         Implements IBotWidget
 
@@ -93,10 +93,10 @@ Namespace CKL
             RaiseEvent AddStateString("----------", False)
             ref.QueueFunc(Function() keys.ToList()).CallWhenValueReady(
                 Sub(keys)
-                                                                           For Each key In keys
-                                                                               RaiseEvent AddStateString(key.name, False)
-                                                                           Next key
-                                                                       End Sub
+                    For Each key In keys
+                        RaiseEvent AddStateString(key.name, False)
+                    Next key
+                End Sub
             )
             logger.log("Started.", LogMessageTypes.Negative)
         End Sub

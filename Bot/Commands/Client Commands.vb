@@ -115,7 +115,7 @@ Namespace Commands.Specializations
                            "root=1", "")
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.Parent.BotCommands.ProcessText(target.Parent, user, mendQuotedWords(arguments))
+                Return target.Parent.BotCommands.ProcessCommand(target.Parent, user, arguments)
             End Function
         End Class
 
@@ -127,7 +127,7 @@ Namespace Commands.Specializations
                 Me.parent_command = parent_command
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return parent_command.ProcessText(target.Parent, user, mendQuotedWords(arguments))
+                Return parent_command.ProcessCommand(target.Parent, user, arguments)
             End Function
         End Class
 
@@ -169,7 +169,7 @@ Namespace Commands.Specializations
                 MyBase.New("disconnect",
                             0, ArgumentLimits.exact,
                             "[--disconnect]",
-                            DictStrUInt("root=4"))
+                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 target.f_Disconnect("Client Command")
@@ -188,10 +188,10 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Try
-                    Dim new_user As BotUser = target.profile.users.create_new_user(arguments(0))
+                    Dim new_user As BotUser = target.profile.users.CreateNewUser(arguments(0))
                     Return success("Created " + new_user.name).Futurize
                 Catch e As InvalidOperationException
-                    Return failure(e.Message).Futurize
+                    Return failure(e.ToString).Futurize
                 End Try
             End Function
         End Class
@@ -224,7 +224,7 @@ Namespace Commands.Specializations
                 MyBase.New("Promote",
                             2, ArgumentLimits.min,
                             "[--Promote username permission level] Increases a permissions level for a user.",
-                            DictStrUInt("users=1"))
+                            "users=1", "")
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'get target user
@@ -262,7 +262,7 @@ Namespace Commands.Specializations
                 MyBase.New("Demote",
                             2, ArgumentLimits.min,
                             "[--Demote username permission level] Decreases a permissions level for a user.",
-                            DictStrUInt("users=3"))
+                            "users=3", "")
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'get target user
@@ -353,6 +353,7 @@ Namespace Commands.Specializations
             AddCommand(New com_Say)
             AddCommand(New com_StartAdvertising)
             AddCommand(New com_StopAdvertising)
+            AddCommand(New com_RefreshGamesList)
         End Sub
 
         Public Class com_Host
@@ -408,7 +409,7 @@ Namespace Commands.Specializations
                                 If advertised.succeeded Then
                                     Return success("Game hosted succesfully. Admin code is '{0}'.".frmt(server.settings.adminPassword))
                                 Else
-                                    server.f_Kill()
+                                    server.QueueKill()
                                     Return advertised
                                 End If
                             End Function
@@ -418,12 +419,23 @@ Namespace Commands.Specializations
             End Function
         End Class
 
+        Public Class com_RefreshGamesList
+            Inherits BaseCommand(Of IBnetClient)
+            Public Sub New()
+                MyBase.New("RefreshGamesList",
+                        0, ArgumentLimits.exact,
+                        "[RefreshGamesList] Refreshes the bot's game list display. No useful effect from bnet.")
+            End Sub
+            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return target.f_SendPacket(BnetPacket.MakeQueryGamesList())
+            End Function
+        End Class
         Public Class com_Game
             Inherits BaseCommand(Of IBnetClient)
             Public Sub New()
                 MyBase.New("Game",
                         1, ArgumentLimits.min,
-                        "[Game name command..., Instance 0 boot red] Forwards commands to a game of your hosted server.")
+                        "[Game name command..., Game boot red] Forwards commands to a game of your hosted server.")
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'Find hosted server, then find game, then pass command
@@ -434,14 +446,14 @@ Namespace Commands.Specializations
                         End If
 
                         'Find game, then pass command
-                        Return server.f_FindGame(arguments(0)).EvalWhenValueReady(
+                        Return server.QueueFindGame(arguments(0)).EvalWhenValueReady(
                             Function(game)
                                 If game Is Nothing Then
                                     Return failure("No game with that name.").Futurize
                                 End If
 
                                 'Pass command
-                                Return game.f_CommandProcessText(Nothing, mendQuotedWords(arguments.Skip(1).ToList()))
+                                Return game.QueueProcessCommand(Nothing, arguments.SubToArray(1))
                             End Function
                         ).Defuturize()
                     End Function
@@ -463,7 +475,7 @@ Namespace Commands.Specializations
                             Return failure("You don't have a hosted game to cancel.")
                         End If
 
-                        server.f_Kill()
+                        server.QueueKill()
                         Return success("Cancelled hosting.")
                     End Function
                 )
@@ -569,14 +581,14 @@ Namespace Commands.Specializations
                         End If
 
                         'Find player's game, then elevate player
-                        Return server.f_FindPlayerGame(username).EvalWhenValueReady(
+                        Return server.QueueFindPlayerGame(username).EvalWhenValueReady(
                             Function(game)
                                 If game.val Is Nothing Then
                                     Return failure("No matching user found.").Futurize
                                 End If
 
                                 'Elevate player
-                                Return game.val.f_TryElevatePlayer(username)
+                                Return game.val.QueueTryElevatePlayer(username)
                             End Function
                         ).Defuturize()
                     End Function

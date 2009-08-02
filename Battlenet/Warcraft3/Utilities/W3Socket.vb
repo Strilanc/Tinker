@@ -1,19 +1,61 @@
 ﻿Imports HostBot.Warcraft3.W3PacketId
 Imports System.Runtime.CompilerServices
+Imports System.Net
+Imports System.Net.Sockets
 
 Namespace Warcraft3
     Public Class W3Socket
-        Private WithEvents socket As BnetSocket
-        Public Event ReceivedPacket(ByVal sender As W3Socket, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
+        Private WithEvents socket As PacketSocket
         Public Event Disconnected(ByVal sender As W3Socket, ByVal reason As String)
 
-        Public Sub New(ByVal socket As BnetSocket)
-            If socket Is Nothing Then Throw New ArgumentNullException("socket")
+        Private ReadOnly costPerPacket As Double
+        Private ReadOnly costPerPacketData As Double
+        Private ReadOnly costPerNonGameAction As Double
+        Private ReadOnly costPerNonGameActionData As Double
+        Private ReadOnly costLimit As Double
+        Private ReadOnly recoveryRate As Double
+
+        Private availableSlack As Double
+        Private usedCost As Double
+        Private lastReadTime As Date = DateTime.Now()
+
+        Public Sub New(ByVal socket As PacketSocket,
+                       Optional ByVal initialSlack As Double = 0,
+                       Optional ByVal costPerPacket As Double = 0,
+                       Optional ByVal costPerPacketData As Double = 0,
+                       Optional ByVal costPerNonGameAction As Double = 0,
+                       Optional ByVal costPerNonGameActionData As Double = 0,
+                       Optional ByVal costLimit As Double = 0,
+                       Optional ByVal costRecoveredPerSecond As Double = 1)
+            'contract bug wrt interface event implementation requires this:
+            'Contract.Requires(socket IsNot Nothing)
+            'Contract.Requires(initialSlack >= 0)
+            'Contract.Requires(costPerPacket >= 0)
+            'Contract.Requires(costPerPacketData >= 0)
+            'Contract.Requires(costPerNonGameAction >= 0)
+            'Contract.Requires(costPerNonGameActionData >= 0)
+            'Contract.Requires(costLimit >= 0)
+            'Contract.Requires(costRecoveredPerSecond > 0)
+            Contract.Assume(socket IsNot Nothing)
+            Contract.Assume(initialSlack >= 0)
+            Contract.Assume(costPerPacket >= 0)
+            Contract.Assume(costPerPacketData >= 0)
+            Contract.Assume(costPerNonGameAction >= 0)
+            Contract.Assume(costPerNonGameActionData >= 0)
+            Contract.Assume(costLimit >= 0)
+            Contract.Assume(costRecoveredPerSecond > 0)
+
             Me.socket = socket
+            Me.availableSlack = initialSlack
+            Me.costPerNonGameAction = costPerNonGameActionData
+            Me.costPerNonGameActionData = costPerNonGameActionData
+            Me.costPerPacket = costPerPacket
+            Me.costPerPacketData = costPerPacketData
+            Me.costLimit = costLimit
+            Me.recoveryRate = costRecoveredPerSecond / TimeSpan.TicksPerSecond
         End Sub
 
-#Region "Properties"
-        Public Property logger() As Logger
+        Public Property Logger() As Logger
             Get
                 Return socket.logger
             End Get
@@ -21,7 +63,7 @@ Namespace Warcraft3
                 socket.logger = value
             End Set
         End Property
-        Public Property name() As String
+        Public Property Name() As String
             Get
                 Return socket.Name
             End Get
@@ -29,31 +71,26 @@ Namespace Warcraft3
                 socket.Name = value
             End Set
         End Property
-#End Region
 
-#Region "Socket"
-        Public Sub SetReading(ByVal value As Boolean)
-            socket.SetReading(value)
-        End Sub
-        Public Function getLocalPort() As UShort
-            Return socket.GetLocalPort()
-        End Function
-        Public ReadOnly Property RemoteEndPoint As Net.IPEndPoint
+        Public ReadOnly Property LocalEndPoint As IPEndPoint
             Get
-                Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
+                Return socket.LocalEndPoint
+            End Get
+        End Property
+        Public ReadOnly Property RemoteEndPoint As IPEndPoint
+            Get
+                Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
                 Return socket.RemoteEndPoint
             End Get
         End Property
-        Public Function getLocalIp() As Byte()
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-            Return socket.GetLocalIP()
-        End Function
         Public Function connected() As Boolean
             Return socket.IsConnected
         End Function
 
-        Private Sub c_Disconnected(ByVal sender As BnetSocket, ByVal reason As String) Handles socket.Disconnected
+        Private Sub CatchDisconnected(ByVal sender As PacketSocket, ByVal reason As String) Handles socket.Disconnected
             RaiseEvent Disconnected(Me, reason)
         End Sub
         Public Sub disconnect(ByVal reason As String)
@@ -71,59 +108,94 @@ Namespace Warcraft3
                 End If
 
                 'Log
-                logger.log(Function() "Sending {0} to {1}".frmt(pk.id, name), LogMessageTypes.DataEvent)
-                logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+                Logger.log(Function() "Sending {0} to {1}".frmt(pk.id, Name), LogMessageTypes.DataEvent)
+                Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
 
                 'Send
-                Return socket.Write(New Byte() {W3Packet.PACKET_PREFIX, pk.id}, pk.payload.Data.ToArray)
+                socket.WritePacket(Concat({New Byte() {W3Packet.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray}))
+                Return success("Sent")
 
             Catch e As Pickling.PicklingException
-                Dim msg = "Error packing {0} for {1}: {2}".frmt(pk.id, name, e.Message)
-                logger.log(msg, LogMessageTypes.Problem)
+                Dim msg = "Error packing {0} for {1}: {2}".frmt(pk.id, Name, e)
+                Logger.log(msg, LogMessageTypes.Problem)
                 Return failure(msg)
+
             Catch e As Exception
-                Dim msg = "Error sending {0} to {1}: {2}".frmt(pk.id, name, e.Message)
-                Logging.LogUnexpectedException(msg, e)
-                logger.log(msg, LogMessageTypes.Problem)
+                If Not (TypeOf e Is SocketException OrElse
+                        TypeOf e Is ObjectDisposedException) Then
+                    Logging.LogUnexpectedException("Error sending {0} to {1}.".frmt(pk.id, Name), e)
+                End If
+                Dim msg = "Error sending {0} to {1}: {2}".frmt(pk.id, Name, e)
+                socket.Disconnect(reason:=msg)
                 Return failure(msg)
             End Try
         End Function
 
-        Private Sub receivePacket(ByVal sender As BnetSocket, ByVal flag As Byte, ByVal id_ As Byte, ByVal data As IViewableList(Of Byte)) Handles socket.ReceivedPacket
-            Dim id = CType(id_, W3PacketId)
-            Try
-                'Validate
-                If flag <> W3Packet.PACKET_PREFIX Then
-                    disconnect("Invalid packet prefix")
-                    Throw New IO.IOException("Invalid packet prefix")
-                End If
+        Public Function FutureReadPacket() As IFuture(Of PossibleException(Of W3Packet, Exception))
+            Dim f = New Future(Of PossibleException(Of W3Packet, Exception))
+            socket.FutureReadPacket().CallWhenValueReady(
+                Sub(result)
+                    If result.Exception IsNot Nothing Then
+                        f.SetValue(result.Exception)
+                        Return
+                    End If
 
-                'Log Event
-                logger.log(Function() "Received {0} from {1}".frmt(id, name), LogMessageTypes.DataEvent)
+                    Dim data = result.Value
+                    If data(0) <> W3Packet.PACKET_PREFIX OrElse data.Length < 4 Then
+                        disconnect("Invalid packet prefix")
+                        f.SetValue(New IO.IOException("Invalid packet prefix"))
+                        Return
+                    End If
+                    Dim id = CType(data(1), W3PacketId)
+                    data = data.SubView(4)
 
-                'Parse
-                Dim p = W3Packet.FromData(id, data).payload
-                If p.Data.Length <> data.Length Then
-                    Throw New Pickling.PicklingException("Data left over after parsing.")
-                End If
-                Dim d = CType(p.Value, Dictionary(Of String, Object))
+                    Try
+                        'Anti-flood
+                        If id = NonGameAction Then
+                            usedCost += costPerNonGameAction
+                            usedCost += costPerNonGameActionData * data.Length
+                        Else
+                            usedCost += costPerPacket
+                            usedCost += costPerPacketData * data.Length
+                        End If
+                        Dim t = Now()
+                        Dim dt = t - lastReadTime
+                        lastReadTime = t
+                        usedCost -= dt.Ticks * recoveryRate
+                        If usedCost < 0 Then  usedCost = 0
+                        If availableSlack > 0 Then
+                            Dim x = Math.Min(availableSlack, usedCost)
+                            usedCost -= x
+                            availableSlack -= x
+                        End If
 
-                'Log Parsed Data
-                logger.log(p.Description, LogMessageTypes.DataParsed)
+                        'Handle
+                        Logger.log(Function() "Received {0} from {1}".frmt(id, Name), LogMessageTypes.DataEvent)
+                        Dim pk = W3Packet.FromData(id, data)
+                        If pk.payload.Data.Length <> data.Length Then
+                            Throw New Pickling.PicklingException("Data left over after parsing.")
+                        End If
+                        Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+                        f.SetValue(pk)
 
-                'Handle
-                RaiseEvent ReceivedPacket(Me, id, d)
+                    Catch e As Pickling.PicklingException
+                        Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".frmt(id, Name, e)
+                        Logger.log(msg, LogMessageTypes.Negative)
+                        f.SetValue(e)
 
-            Catch e As Pickling.PicklingException
-                Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".frmt(id, name, e.Message)
-                logger.log(msg, LogMessageTypes.Negative)
-
-            Catch e As Exception
-                Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".frmt(id, name, e.Message)
-                logger.log(msg, LogMessageTypes.Problem)
-                Logging.LogUnexpectedException(msg, e)
-            End Try
-        End Sub
-#End Region
+                    Catch e As Exception
+                        If Not (TypeOf e Is SocketException OrElse
+                                TypeOf e Is ObjectDisposedException) Then
+                            Logging.LogUnexpectedException("Error receiving {0} from {1}.".frmt(id, Name), e)
+                        End If
+                        Dim msg = "Error receiving {0} from {1}: {2}".frmt(id, Name, e)
+                        Logger.log(msg, LogMessageTypes.Problem)
+                        socket.Disconnect(reason:=msg)
+                        f.SetValue(e)
+                    End Try
+                End Sub
+            )
+            Return f
+        End Function
     End Class
 End Namespace

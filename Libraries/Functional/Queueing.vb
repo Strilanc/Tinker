@@ -19,7 +19,8 @@ Namespace Functional.Queueing
 
     Public Module ExtensionsForICallQueue
         '''<summary>Queues a function to be run and returns a future for the function's eventual output.</summary>
-        <Extension()> Public Function QueueFunc(Of R)(ByVal queue As ICallQueue, ByVal func As Func(Of R)) As IFuture(Of R)
+        <Extension()>
+        Public Function QueueFunc(Of R)(ByVal queue As ICallQueue, ByVal func As Func(Of R)) As IFuture(Of R)
             Contract.Requires(queue IsNot Nothing)
             Contract.Requires(func IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of R))() IsNot Nothing)
@@ -61,11 +62,15 @@ Namespace Functional.Queueing
 
         '''<summary>Runs queued calls until there are none left.</summary>
         Protected Overrides Sub Consume(ByVal item As Node)
-            Try
+            If My.Settings.debugMode Then
                 Call item.action()
-            Catch ex As Exception
-                Logging.LogUnexpectedException("Exception rose past {0}.Run()".frmt(Me.GetType.Name), ex)
-            End Try
+            Else
+                Try
+                    Call item.action()
+                Catch ex As Exception
+                    Logging.LogUnexpectedException("Exception rose past {0}.Run()".frmt(Me.GetType.Name), ex)
+                End Try
+            End If
             Call item.future.SetReady()
         End Sub
     End Class

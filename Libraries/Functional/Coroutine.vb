@@ -6,7 +6,7 @@
         Sub Yield(ByVal value As R)
     End Interface
 
-    Public Class Coroutine
+    Public NotInheritable Class Coroutine
         Implements IDisposable
         Implements ICoroutineYielder
         Private started As Boolean
@@ -78,7 +78,7 @@
         End Sub
     End Class
 
-    Public Class Coroutine(Of R)
+    Public NotInheritable Class Coroutine(Of R)
         Implements ICoroutineYielder(Of R)
         Implements IEnumerator(Of R)
         Private coroutineContinuer As Coroutine

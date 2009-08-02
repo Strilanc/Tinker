@@ -25,8 +25,8 @@ Namespace Commands
         '''<summary>Runs the command.</summary>
         '''<param name="target">The object the command is being run from.</param>
         '''<param name="user">The user running the command. Local user is nothing.</param>
-        '''<param name="argument">The argument text passed to the command</param>
-        Function Process(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of Outcome)
+        '''<param name="arguments">The arguments passed to the command</param>
+        Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
         '''<summary>Determines if a user is allowed to use the command.</summary>
         Function IsUserAllowed(ByVal user As BotUser) As Boolean
         ReadOnly Property ExtraHelp() As Dictionary(Of String, String)
@@ -35,9 +35,9 @@ Namespace Commands
     Public Class ContractClassICommand(Of T)
         Implements ICommand(Of T)
 
-        Public Function Process(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of Outcome) Implements ICommand(Of T).Process
+        Public Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements ICommand(Of T).Process
             Contract.Requires(target IsNot Nothing)
-            Contract.Requires(argument IsNot Nothing)
+            Contract.Requires(arguments IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
@@ -106,7 +106,13 @@ Namespace Commands
                        ByVal requiredPermissions As String,
                        ByVal extraHelp As String,
                        Optional ByVal shouldHideArguments As Boolean = False)
-            Me.New(name, argumentLimit, argumentLimitType, help, DictStrUInt(requiredPermissions), DictStrStr(extraHelp, vbNewLine), shouldHideArguments)
+            Me.New(name,
+                   argumentLimit,
+                   argumentLimitType,
+                   help,
+                   DictStrT(requiredPermissions, Function(x) UInteger.Parse(x)),
+                   DictStrT(extraHelp, Function(x) x, vbNewLine),
+                   shouldHideArguments)
         End Sub
         Public Sub New(ByVal name As String,
                        ByVal argumentLimit As Integer,
@@ -132,32 +138,32 @@ Namespace Commands
         End Sub
 
 #Region "Private Interface"
-        Private ReadOnly Property _Name() As String Implements ICommand(Of T).name
+        Protected ReadOnly Property _Name() As String Implements ICommand(Of T).name
             Get
                 Return name
             End Get
         End Property
-        Private ReadOnly Property _Help() As String Implements ICommand(Of T).Help
+        Protected ReadOnly Property _Help() As String Implements ICommand(Of T).Help
             Get
                 Return help
             End Get
         End Property
-        Private ReadOnly Property _ExtraHelp() As Dictionary(Of String, String) Implements ICommand(Of T).ExtraHelp
+        Protected ReadOnly Property _ExtraHelp() As Dictionary(Of String, String) Implements ICommand(Of T).ExtraHelp
             Get
                 Return extraHelp
             End Get
         End Property
-        Private ReadOnly Property _ShouldHideArguments() As Boolean Implements ICommand(Of T).ShouldHideArguments
+        Protected ReadOnly Property _ShouldHideArguments() As Boolean Implements ICommand(Of T).ShouldHideArguments
             Get
                 Return shouldHideArguments
             End Get
         End Property
-        Private ReadOnly Property _ArgumentLimit() As Integer Implements ICommand(Of T).ArgumentLimit
+        Protected ReadOnly Property _ArgumentLimit() As Integer Implements ICommand(Of T).ArgumentLimit
             Get
                 Return argumentLimit
             End Get
         End Property
-        Private ReadOnly Property _ArgumentLimitType() As ArgumentLimits Implements ICommand(Of T).ArgumentLimitType
+        Protected ReadOnly Property _ArgumentLimitType() As ArgumentLimits Implements ICommand(Of T).ArgumentLimitType
             Get
                 Return argumentLimitType
             End Get
@@ -175,14 +181,13 @@ Namespace Commands
         End Function
 
         '''<summary>Checks user permissions, number of arguments, and delegates processing to child implementation.</summary>
-        Public Function ProcessText(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of Outcome) Implements ICommand(Of T).Process
+        Public Function ProcessCommand(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements ICommand(Of T).Process
             'Check permissions
             If Not IsUserAllowed(user) Then
                 Return failure("You do not have sufficient permissions to use that command.").Futurize()
             End If
 
             'Check arguments
-            Dim arguments As IList(Of String) = breakQuotedWords(argument)
             Select Case argumentLimitType
                 Case ArgumentLimits.exact
                     If arguments.Count > argumentLimit Then
@@ -205,7 +210,7 @@ Namespace Commands
                 Return Process(target, user, arguments)
             Catch e As Exception
                 Logging.LogUnexpectedException("Processing text for command.", e)
-                Return failure("Unexpected exception encountered ({0}).".frmt(e.Message)).Futurize()
+                Return failure("Unexpected exception encountered ({0}).".frmt(e)).Futurize()
             End Try
         End Function
 
@@ -324,7 +329,7 @@ Namespace Commands
 
             'Run subcommand
             arguments.RemoveAt(0)
-            Return subcommand.Process(target, user, mendQuotedWords(arguments))
+            Return subcommand.Process(target, user, arguments)
         End Function
     End Class
 
@@ -339,7 +344,7 @@ Namespace Commands
                         Return MyBase.Process(target, user, arguments)
                     Catch e As Exception
                         LogUnexpectedException("Exception rose past {0}.Process".frmt(Me.GetType.Name), e)
-                        Return failure("Error processing command: " + e.Message).Futurize()
+                        Return failure("Error processing command: " + e.ToString).Futurize()
                     End Try
                 End Function
             ).Defuturize
@@ -369,7 +374,7 @@ Namespace Commands
                 End If
 
                 logger.futurelog("[running command '{0}'...]".frmt(name),
-                                 ProcessText(target, Nothing, text).EvalWhenValueReady(
+                                 ProcessCommand(target, Nothing, words).EvalWhenValueReady(
                                                              AddressOf output_of_command))
             Catch e As Exception
                 Logging.LogUnexpectedException("Exception rose past " + Me.GetType.Name + "[" + Me.name + "].processLocalText", e)

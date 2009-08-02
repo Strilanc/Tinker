@@ -3,30 +3,17 @@ Namespace Warcraft3
         Implements IW3Player
 
 #Region "Networking"
-        '''<summary>Processes packets coming from the remote computer.</summary>
-        Private Sub ReceivePacket(ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object)) Implements IW3Player.ReceivePacket
-            Try
-                If handlers(id) Is Nothing Then
-                    Dim msg = "(Ignored) No handler for parsed packet of type {0} from {1}.".frmt(id, name)
-                    logger.log(msg, LogMessageTypes.Negative)
-                Else
-                    Call handlers(id)(vals)
-                End If
-            Catch e As Exception
-                Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".frmt(id, name, e.Message)
-                logger.log(msg, LogMessageTypes.Problem)
-                Logging.LogUnexpectedException(msg, e)
-            End Try
-        End Sub
-
         Private Sub ReceiveNonGameAction(ByVal vals As Dictionary(Of String, Object))
-            game.f_ReceiveNonGameAction(Me, vals)
+            Contract.Requires(vals IsNot Nothing)
+            game.QueueReceiveNonGameAction(Me, vals)
         End Sub
 
         Private Sub IgnorePacket(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
         End Sub
 
         Private Sub ReceivePong(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             Dim lambda = 0.5
             Dim tick As ModInt32 = Environment.TickCount
             Dim salt = CUInt(vals("salt"))
@@ -46,6 +33,9 @@ Namespace Warcraft3
 
             latency *= 1 - lambda
             latency += lambda * CUInt(tick - stored.time)
+            Contract.Assume(latency >= 0)
+            Contract.Assume(Not Double.IsNaN(latency))
+            Contract.Assume(Not Double.IsInfinity(latency))
         End Sub
 
         Private Sub ReceiveLeaving(ByVal vals As Dictionary(Of String, Object))
@@ -66,10 +56,10 @@ Namespace Warcraft3
         End Property
 
         Public Overridable Function Description() As String Implements IW3Player.Description
-            Dim base = padded(name, 20) +
-                       padded("Host={0}".frmt(CanHost()), 12) +
-                       padded("{0}c".frmt(numPeerConnections), 5) +
-                       padded("RTT={0:0}ms".frmt(latency), 12)
+            Dim base = name.Padded(20) +
+                       "Host={0}".frmt(CanHost()).Padded(12) +
+                       "{0}c".frmt(numPeerConnections).Padded(5) +
+                       "RTT={0:0}ms".frmt(latency).Padded(12)
             Select Case state
                 Case W3PlayerStates.Lobby
                     Dim dl = GetPercentDl().ToString
@@ -82,7 +72,7 @@ Namespace Warcraft3
                             dl += "%"
                     End Select
                     Return base +
-                           padded("DL={0}".frmt(dl), 9) +
+                           Padded("DL={0}".frmt(dl), 9) +
                            "EB={0}".frmt(game.DownloadScheduler.GenerateRateDescription(index))
                 Case W3PlayerStates.Loading
                     Return base + "Ready={0}".frmt(ready)

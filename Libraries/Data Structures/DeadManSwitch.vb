@@ -1,15 +1,17 @@
 ﻿Public Class DeadManSwitch
     Inherits NotifyingDisposable
 
-    Private WithEvents timer As Timers.Timer
+    Private ReadOnly timer As Timers.Timer
     Private flipped As Boolean
     Public Event Triggered(ByVal sender As DeadManSwitch)
 
     Public Sub New(ByVal period As TimeSpan,
                    ByVal initiallyArmed As Boolean)
+        If period.Ticks <= 0 Then Throw New ArgumentOutOfRangeException("TimeSpan must be positive.")
         Me.timer = New Timers.Timer(period.TotalMilliseconds)
         Me.timer.AutoReset = True
         Me.timer.Enabled = initiallyArmed
+        AddHandler timer.Elapsed, Sub() c_Elapsed()
     End Sub
 
     Public Sub Arm()
@@ -23,12 +25,12 @@
     Public Sub Disarm()
         Me.timer.Stop()
     End Sub
-    Protected Overrides Sub PerformDispose()
+    Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         Me.timer.Stop()
         Me.timer.Dispose()
     End Sub
 
-    Private Sub c_Elapsed() Handles timer.Elapsed
+    Private Sub c_Elapsed()
         If flipped Then
             flipped = False
         Else

@@ -11,20 +11,24 @@ Public Class NotifyingDisposable
 
     Public Event Disposed() Implements INotifyingDisposable.Disposed
 
-    Protected Overridable Sub PerformDispose()
-    End Sub
-
-    Public Sub Dispose() Implements IDisposable.Dispose
-        If lockDisposed.TryAcquire Then
-            GC.SuppressFinalize(Me)
-            PerformDispose()
-            RaiseEvent Disposed()
-        End If
-    End Sub
-
     Public ReadOnly Property IsDisposed As Boolean Implements INotifyingDisposable.IsDisposed
         Get
             Return lockDisposed.WasAcquired
         End Get
     End Property
+
+    Protected Overridable Sub Dispose(ByVal disposing As Boolean)
+    End Sub
+    Public Sub Dispose() Implements IDisposable.Dispose
+        If lockDisposed.TryAcquire Then
+            Dispose(True)
+            RaiseEvent Disposed()
+        End If
+        GC.SuppressFinalize(Me)
+    End Sub
+    Protected NotOverridable Overrides Sub Finalize()
+        If lockDisposed.TryAcquire Then
+            Dispose(False)
+        End If
+    End Sub
 End Class

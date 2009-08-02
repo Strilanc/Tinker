@@ -7,14 +7,14 @@
     <framework targetVersion="4.0" profile="Full" supportedRuntime="4.0.20506" />
   </compatibleFrameworks>
   <dependency>
-    <dependentAssembly dependencyType="install" codebase="HostBot.exe.manifest" size="5273">
+    <dependentAssembly dependencyType="install" codebase="HostBot.exe.manifest" size="6059">
       <assemblyIdentity name="HostBot.exe" version="1.0.0.29" publicKeyToken="0000000000000000" language="neutral" processorArchitecture="x86" type="win32" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-        <dsig:DigestValue>ir8v9MEE4Zc5nkLy2yhFqdLn/TA=</dsig:DigestValue>
+        <dsig:DigestValue>Yxr3F+M913RrDsJYKuWZz0GfFTM=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

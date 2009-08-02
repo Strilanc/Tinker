@@ -2,7 +2,7 @@
 Imports System.Net.Sockets
 Imports HostBot.Links
 
-Public Class W3LanAdvertiser
+Public NotInheritable Class W3LanAdvertiser
     Inherits NotifyingDisposable
     Implements IBotWidget
 
@@ -48,7 +48,9 @@ Public Class W3LanAdvertiser
         Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSource.RemovedGame
 
         Public Sub New(ByVal parent As W3LanAdvertiser)
-            Contract.Requires(parent IsNot Nothing)
+            'contract bug wrt interface event implementation requires this:
+            'Contract.Requires(parent IsNot Nothing)
+            Contract.Assume(parent IsNot Nothing)
             Me.parent = parent
             DisposeLink.CreateOneWayLink(parent, Me)
         End Sub
@@ -59,12 +61,12 @@ Public Class W3LanAdvertiser
             parent.AddGame(game)
             RaiseEvent AddedGame(Me, game, server)
             If server IsNot Nothing Then
-                server.f_OpenPort(parent.server_listen_port).CallWhenValueReady(
+                server.QueueOpenPort(parent.server_listen_port).CallWhenValueReady(
                     Sub(listened)
-                                                                                    If Not listened.succeeded Then
-                                                                                        RemoveGame(game, listened.Message)
-                                                                                    End If
-                                                                                End Sub
+                        If Not listened.succeeded Then
+                            RemoveGame(game, listened.Message)
+                        End If
+                    End Sub
                 )
             End If
         End Sub
@@ -78,7 +80,7 @@ Public Class W3LanAdvertiser
             'no distinction between public/private on lan
         End Sub
 
-        Protected Overrides Sub PerformDispose()
+        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
             RaiseEvent DisposedLink(Me, Nothing)
         End Sub
     End Class
@@ -91,8 +93,8 @@ Public Class W3LanAdvertiser
                    Optional ByVal remote_host As String = "localhost",
                    Optional ByVal remote_port As UShort = 6112,
                    Optional ByVal logger As Logger = Nothing)
-        Me.New(parent, name, server_listen_pool_port.port, remote_host, remote_port, logger)
-        Me.server_listen_port = server_listen_pool_port.port
+        Me.New(parent, name, server_listen_pool_port.Port, remote_host, remote_port, logger)
+        Me.server_listen_port = server_listen_pool_port.Port
         Me.pool_port = server_listen_pool_port
     End Sub
     Public Sub New(ByVal parent As MainBot,
@@ -114,7 +116,7 @@ Public Class W3LanAdvertiser
     Private Sub _Stop() Implements IBotWidget.[Stop]
         Dispose()
     End Sub
-    Protected Overrides Sub PerformDispose()
+    Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         SyncLock lock
             ClearGames()
 
@@ -134,7 +136,7 @@ Public Class W3LanAdvertiser
 
         'Log
         logger.log("Shutdown Advertiser", LogMessageTypes.Negative)
-        RaiseEvent clear_state_strings()
+        RaiseEvent ClearStateStrings()
     End Sub
 #End Region
 
@@ -161,8 +163,8 @@ Public Class W3LanAdvertiser
         End SyncLock
 
         'Log
-        logger.log("Added game " + game.header.name, LogMessageTypes.Positive)
-        RaiseEvent add_state_string(id.ToString + "=" + gameHeader.name, False)
+        logger.log("Added game " + game.header.Name, LogMessageTypes.Positive)
+        RaiseEvent AddStateString(id.ToString + "=" + gameHeader.Name, False)
 
         Return id
     End Function
@@ -185,8 +187,8 @@ Public Class W3LanAdvertiser
         End SyncLock
 
         'Log
-        logger.log("Removed game " + game.header.name, LogMessageTypes.Negative)
-        RaiseEvent remove_state_string(game.id.ToString + "=" + game.header.name)
+        logger.log("Removed game " + game.header.Name, LogMessageTypes.Negative)
+        RaiseEvent RemoveStateString(game.id.ToString + "=" + game.header.Name)
         Return True
     End Function
     Public Function RemoveGame(ByVal header As W3GameHeader) As Boolean
@@ -243,29 +245,29 @@ Public Class W3LanAdvertiser
 
         Catch e As Pickling.PicklingException
             'Ignore
-            logger.log("Error packing {0}: {1} (skipped)".frmt(pk.id, e.Message), LogMessageTypes.Negative)
+            logger.log("Error packing {0}: {1} (skipped)".frmt(pk.id, e), LogMessageTypes.Negative)
         Catch e As Exception
             'Fail
-            logger.log("Error sending {0}: {1}".frmt(pk.id, e.Message()), LogMessageTypes.Problem)
+            logger.log("Error sending {0}: {1}".frmt(pk.id, e), LogMessageTypes.Problem)
             Logging.LogUnexpectedException("Exception rose past {0}.send".frmt(Me.GetType.Name), e)
         End Try
     End Sub
 #End Region
 
 #Region "IBotWidget"
-    Private Event add_state_string(ByVal state As String, ByVal insert_at_top As Boolean) Implements IBotWidget.AddStateString
-    Private Event remove_state_string(ByVal state As String) Implements IBotWidget.RemoveStateString
-    Private Event clear_state_strings() Implements IBotWidget.ClearStateStrings
+    Private Event AddStateString(ByVal state As String, ByVal insert_at_top As Boolean) Implements IBotWidget.AddStateString
+    Private Event RemoveStateString(ByVal state As String) Implements IBotWidget.RemoveStateString
+    Private Event ClearStateStrings() Implements IBotWidget.ClearStateStrings
     Private Sub command(ByVal text As String) Implements IBotWidget.ProcessCommand
         parent.LanCommands.ProcessLocalText(Me, text, logger)
     End Sub
     Private Sub hooked() Implements IBotWidget.Hooked
         Dim game_names As List(Of String)
         SyncLock lock
-            game_names = (From game In games1 Select "{0}={1}".frmt(game.id, game.header.name)).ToList
+            game_names = (From game In games1 Select "{0}={1}".frmt(game.id, game.header.Name)).ToList
         End SyncLock
         For Each game_name In game_names
-            RaiseEvent add_state_string(game_name, False)
+            RaiseEvent AddStateString(game_name, False)
         Next game_name
     End Sub
     Private ReadOnly Property _logger() As Logger Implements IBotWidget.Logger

@@ -1,5 +1,5 @@
 ﻿Namespace Warcraft3
-    Partial Public Class W3Player
+    Partial Public NotInheritable Class W3Player
         Implements IW3Player
 
         Private knowMapState As Boolean
@@ -21,18 +21,21 @@
 
 #Region "Networking"
         Private Sub ReceivePeerConnectionInfo(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             Dim dword = CUInt(vals("player bitflags"))
             Dim flags = From i In enumerable.Range(0, 12)
                         Select connected = ((dword >> i) And &H1) <> 0,
                                pid = CByte(i + 1)
             numPeerConnections = (From flag In flags Where flag.connected).Count
+            Contract.Assume(numPeerConnections >= 0)
+            Contract.Assume(numPeerConnections <= 12)
 
             If state = W3PlayerStates.Lobby Then
                 For Each flag In flags
                     game.DownloadScheduler.SetLink(Me.index, flag.pid, flag.connected)
                 Next flag
             End If
-            game.f_ThrowUpdated()
+            game.QueueThrowUpdated()
         End Sub
         Private Sub ReceiveClientMapInfo(ByVal vals As Dictionary(Of String, Object))
             Dim newMapDownloadPosition = CInt(CUInt(vals("total downloaded")))
@@ -57,11 +60,7 @@
                     Return
                 End If
 
-                Dim d As Double = 0
-                Contract.Assume(d >= 0)
-                Contract.Assume(Not Double.IsInfinity(d))
-                Contract.Assume(Not Double.IsNaN(d))
-                game.DownloadScheduler.AddClient(index, hasMap, d)
+                game.DownloadScheduler.AddClient(index, hasMap)
                 game.DownloadScheduler.SetLink(index, W3Game.SELF_DOWNLOAD_ID, True)
                 knowMapState = True
             ElseIf mapDownloadPosition = game.map.FileSize Then
@@ -78,7 +77,7 @@
                 End If
             End If
 
-            game.f_UpdatedGameState()
+            game.QueueUpdatedGameState()
         End Sub
 #End Region
 
@@ -101,10 +100,10 @@
                 gettingMapFromBot = value
             End Set
         End Property
-        Private Function _f_BufferMap() As IFuture Implements IW3Player.f_BufferMap
+        Private Function _f_BufferMap() As IFuture Implements IW3Player.QueueBufferMap
             Return ref.QueueAction(AddressOf BufferMap)
         End Function
-        Private Function _f_StartCountdown() As IFuture Implements IW3Player.f_StartCountdown
+        Private Function _f_StartCountdown() As IFuture Implements IW3Player.QueueStartCountdown
             Return ref.QueueAction(AddressOf StartCountdown)
         End Function
 #End Region
@@ -117,22 +116,21 @@
         End Sub
 
         Private Sub BufferMap()
-            Dim f_host = game.f_FakeHostPlayer
-            Dim f_index = f_host.EvalWhenValueReady(Function(player) If(player Is Nothing, CByte(0), player.index))
-            f_index.CallWhenValueReady(
-                Sub(senderIndex)
-                                           ref.QueueAction(
-                                               Sub()
-                                                   While mapUploadPosition < Math.Min(game.map.FileSize, mapDownloadPosition + MAX_BUFFERED_MAP_SIZE)
-                                                       Dim out_DataSize = 0
-                                                       Dim pk = W3Packet.MakeMapFileData(game.map, index, mapUploadPosition, out_DataSize, senderIndex)
-                                                       mapUploadPosition += out_DataSize
-                                                       SendPacket(pk)
-                                                   End While
-                                               End Sub
-                                           )
-                                       End Sub
-            )
+            Dim f_index = game.QueueGetFakeHostPlayer.EvalWhenValueReady(Function(player) If(player Is Nothing, CByte(0), player.index))
+            f_index.CallWhenValueReady(Sub(senderIndex) ref.QueueAction(
+                Sub()
+                    While mapUploadPosition < Math.Min(game.map.FileSize, mapDownloadPosition + MAX_BUFFERED_MAP_SIZE)
+                        Dim out_DataSize = 0
+                        Contract.Assume(senderIndex >= 0)
+                        Contract.Assume(senderIndex <= 12)
+                        Dim pk = W3Packet.MakeMapFileData(game.map, index, mapUploadPosition, out_DataSize, senderIndex)
+                        mapUploadPosition += out_DataSize
+                        If Not SendPacket(pk).succeeded Then
+                            Exit While
+                        End If
+                    End While
+                End Sub
+            ))
         End Sub
 #End Region
     End Class

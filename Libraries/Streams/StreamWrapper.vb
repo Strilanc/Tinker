@@ -53,6 +53,18 @@ Public MustInherit Class StreamWrapper
         substream.Close()
         MyBase.Close()
     End Sub
+    Public Overrides Function BeginRead(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
+        Return substream.BeginRead(buffer, offset, count, callback, state)
+    End Function
+    Public Overrides Function BeginWrite(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
+        Return substream.BeginWrite(buffer, offset, count, callback, state)
+    End Function
+    Public Overrides Function EndRead(ByVal asyncResult As System.IAsyncResult) As Integer
+        Return substream.EndRead(asyncResult)
+    End Function
+    Public Overrides Sub EndWrite(ByVal asyncResult As System.IAsyncResult)
+        substream.EndWrite(asyncResult)
+    End Sub
 End Class
 
 '''<summary>A stream which can't seek and doesn't have a length.</summary>
@@ -179,40 +191,46 @@ End Class
 Public Class ProducerConsumerStream
     Inherits IO.Stream
     Private data(0 To 15) As Byte
-    Private read_pos As Integer
-    Private write_pos As Integer
+    Private readPosition As Integer
+    Private writePosition As Integer
     Private size As Integer
 
     Public Function Peek(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
+        If buffer Is Nothing Then Throw New ArgumentNullException("buffer")
+        If count <= 0 Then Return 0
         Dim n = Math.Min(count, size)
         For i = 0 To n - 1
-            buffer(offset + i) = data((read_pos + i) Mod data.Length)
+            buffer(offset + i) = data((readPosition + i) Mod data.Length)
         Next i
         Return n
     End Function
 
     Public Overrides Function Read(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
+        If buffer Is Nothing Then Throw New ArgumentNullException("buffer")
         Dim n = Peek(buffer, offset, count)
         size -= n
-        read_pos = (read_pos + n) Mod data.Length
+        readPosition = (readPosition + n) Mod data.Length
         Return n
     End Function
 
-    Private Sub resize(ByVal new_size As Integer)
-        Dim new_data(0 To new_size - 1) As Byte
+    Private Sub resize(ByVal newSize As Integer)
+        Contract.Requires(newSize >= 0)
+        Dim newData(0 To newSize - 1) As Byte
         Dim count = size
-        Read(new_data, 0, count)
+        Read(newData, 0, count)
         size = count
-        data = new_data
-        read_pos = 0
-        write_pos = count
+        data = newData
+        readPosition = 0
+        writePosition = count
     End Sub
 
     Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
+        If buffer Is Nothing Then Throw New ArgumentNullException("buffer")
+        If count <= 0 Then Return
         If size + count > data.Length Then resize((size + count) * 2)
         For i = 0 To count - 1
-            data(write_pos) = buffer(offset + i)
-            write_pos = (write_pos + 1) Mod data.Length
+            data(writePosition) = buffer(offset + i)
+            writePosition = (writePosition + 1) Mod data.Length
         Next i
         size += count
     End Sub
@@ -224,8 +242,8 @@ Public Class ProducerConsumerStream
     End Property
 
     Public Sub Clear()
-        read_pos = 0
-        write_pos = 0
+        readPosition = 0
+        writePosition = 0
         size = 0
     End Sub
 

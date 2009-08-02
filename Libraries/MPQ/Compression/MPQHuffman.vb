@@ -264,7 +264,7 @@ Namespace Mpq.Compression.Huffman
 
                 'Increase the frequency of the leaf and its ancestors and restructure the tree to match
                 While n IsNot Nothing
-                    n.freq += CUInt(1)
+                    n.freq += 1UI
                     'find the new position the node must occupy in the ordered list
                     Dim i = nodes.IndexOf(n) - 1
                     While i >= 0 AndAlso nodes(i).freq < n.freq

@@ -17,7 +17,7 @@ Namespace CKL
 
         Public Sub New(ByVal name As String,
                        ByVal listenPort As PortPool.PortHandle)
-            Me.new(name, listenPort.port)
+            Me.new(name, listenPort.Port)
             Me.portHandle = listenPort
         End Sub
         Public Sub New(ByVal name As String,
@@ -50,58 +50,55 @@ Namespace CKL
             )
         End Function
 
-        Private Sub c_AcceptedConnection(ByVal sender As ConnectionAccepter, ByVal accepted_client As System.Net.Sockets.TcpClient) Handles accepter.AcceptedConnection
-            Dim socket = New BnetSocket(accepted_client, New TimeSpan(0, 0, 10), Me.logger)
-            AddHandler socket.ReceivedPacket, AddressOf c_ReceivedPacket
-            socket.SetReading(True)
-            logger.log("Connection from " + socket.Name, LogMessageTypes.Positive)
-        End Sub
-
-        Public Overridable Sub [stop]()
-            accepter.CloseAllPorts()
-            portHandle.Dispose()
-        End Sub
-
-        Private Sub c_ReceivedPacket(ByVal sender As BnetSocket,
-                                     ByVal flag As Byte,
-                                     ByVal id As Byte,
-                                     ByVal data As IViewableList(Of Byte))
-            ref.QueueAction(
-                Sub()
-                    Dim response_data As Byte() = Nothing
-                    Dim error_message As String = Nothing
+        Private Sub c_AcceptedConnection(ByVal sender As ConnectionAccepter, ByVal acceptedClient As Net.Sockets.TcpClient) Handles accepter.AcceptedConnection
+            Dim socket = New PacketSocket(acceptedClient, 10.Seconds, Me.logger)
+            FutureIterate(AddressOf socket.FutureReadPacket, Function(result) ref.QueueFunc(
+                Function()
+                    If result.Exception IsNot Nothing Then  Return False
+                    Dim flag = result.Value(0)
+                    Dim id = result.Value(0)
+                    Dim data = result.Value.SubView(4)
+                    Dim responseData As Byte() = Nothing
+                    Dim errorMessage As String = Nothing
                     If flag <> PACKET_ID Then
-                        error_message = "Invalid header id."
+                        errorMessage = "Invalid header id."
                     Else
                         Select Case CType(id, CklPacketId)
                             Case CklPacketId.error
                                 'ignore
                             Case CklPacketId.keys
                                 If keys.Count <= 0 Then
-                                    error_message = "No keys to lend."
+                                    errorMessage = "No keys to lend."
                                 ElseIf data.Length <> 8 Then
-                                    error_message = "Invalid length. Require client token [4] + server token [4]."
+                                    errorMessage = "Invalid length. Require client token [4] + server token [4]."
                                 Else
                                     If keyIndex >= keys.Count Then  keyIndex = 0
-                                    response_data = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4),
+                                    responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4),
                                                                         serverToken:=data.SubView(4, 4))
-                                    logger.log("Provided key '{0}' to {1}".frmt(keys(keyIndex).name, sender.Name), LogMessageTypes.Positive)
+                                    logger.log("Provided key '{0}' to {1}".frmt(keys(keyIndex).name, socket.Name), LogMessageTypes.Positive)
                                     keyIndex += 1
                                 End If
                             Case Else
-                                error_message = "Invalid packet id."
+                                errorMessage = "Invalid packet id."
                         End Select
                     End If
 
-                    If response_data IsNot Nothing Then
-                        sender.Write(New Byte() {PACKET_ID, id}, response_data)
+                    If responseData IsNot Nothing Then
+                        socket.WritePacket(Concat({New Byte() {PACKET_ID, id, 0, 0}, responseData}))
                     End If
-                    If error_message IsNot Nothing Then
-                        logger.log("Error parsing data from client: " + error_message, LogMessageTypes.Negative)
-                        sender.Write(New Byte() {PACKET_ID, CklPacketId.error}, System.Text.UTF8Encoding.UTF8.GetBytes(error_message))
+                    If errorMessage IsNot Nothing Then
+                        logger.log("Error parsing data from client: " + errorMessage, LogMessageTypes.Negative)
+                        socket.WritePacket(Concat({New Byte() {PACKET_ID, CklPacketId.error}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)}))
                     End If
-                End Sub
-            )
+                    Return True
+                End Function
+            ))
+            logger.log("Connection from " + socket.Name, LogMessageTypes.Positive)
+        End Sub
+
+        Public Overridable Sub [stop]()
+            accepter.CloseAllPorts()
+            portHandle.Dispose()
         End Sub
     End Class
 End Namespace

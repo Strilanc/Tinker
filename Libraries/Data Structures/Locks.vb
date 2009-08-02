@@ -1,5 +1,6 @@
 ﻿Imports System.Threading
 
+'''<summary>A lock which can only be acquired once, and never released.</summary>
 Public Class OneTimeLock
     Private acquired As Integer
 
@@ -32,6 +33,7 @@ Public Class Throttle
         SyncLock lock
             nextAction = action
             If running Then Return
+            running = True
         End SyncLock
 
         If t >= nextCallTime Then

@@ -37,26 +37,25 @@
         Property NumAdminTries() As Integer
         Property HasVotedToStart() As Boolean
 
-        Function f_SendPacket(ByVal pk As W3Packet) As IFuture(Of Outcome)
-        Function f_QueuePing(ByVal record As W3PlayerPingRecord) As IFuture
-        Function Disconnect(ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes, ByVal reason As String) As IFuture
+        Function QueueSendPacket(ByVal pk As W3Packet) As IFuture(Of Outcome)
+        Function QueuePing(ByVal record As W3PlayerPingRecord) As IFuture
+        Function QueueDisconnect(ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes, ByVal reason As String) As IFuture
 
         ReadOnly Property GetDownloadPercent() As Byte
-        Sub ReceivePacket(ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
 
         Function Description() As String
         Property IsGettingMapFromBot() As Boolean
         ReadOnly Property MapDownloadPosition() As Integer
 
-        Function f_BufferMap() As IFuture
-        Function f_StartCountdown() As IFuture
+        Function QueueBufferMap() As IFuture
+        Function QueueStartCountdown() As IFuture
         ReadOnly Property overcounted() As Boolean
-        Function f_StartLoading() As IFuture
+        Function QueueStartLoading() As IFuture
         Property Ready() As Boolean
         ReadOnly Property TockTime() As Integer
-        Function f_StartPlaying() As IFuture
-        Function f_StopPlaying() As IFuture
-        Function f_QueueTick(ByVal record As TickRecord) As IFuture
+        Function QueueStartPlaying() As IFuture
+        Function QueueStopPlaying() As IFuture
+        Function QueueSendTick(ByVal record As TickRecord, ByVal data As Byte()) As IFuture
     End Interface
     <ContractClassfor(GetType(IW3Player))>
     Public Class ContractClassForIW3Player
@@ -68,19 +67,19 @@
             End Get
         End Property
 
-        Public Function Disconnect(ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture Implements IW3Player.Disconnect
+        Public Function Disconnect(ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture Implements IW3Player.QueueDisconnect
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_QueuePing(ByVal record As W3PlayerPingRecord) As IFuture Implements IW3Player.f_QueuePing
+        Public Function f_QueuePing(ByVal record As W3PlayerPingRecord) As IFuture Implements IW3Player.QueuePing
             Contract.Requires(record IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function f_SendPacket(ByVal pk As W3Packet) As IFuture(Of Outcome) Implements IW3Player.f_SendPacket
+        Public Function f_SendPacket(ByVal pk As W3Packet) As IFuture(Of Outcome) Implements IW3Player.QueueSendPacket
             Contract.Requires(pk IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
@@ -168,18 +167,19 @@
             End Get
         End Property
 
-        Public Function f_QueueTick(ByVal record As TickRecord) As IFuture Implements IW3Player.f_QueueTick
+        Public Function QueueSendTick(ByVal record As TickRecord, ByVal data As Byte()) As IFuture Implements IW3Player.QueueSendTick
             Contract.Requires(record IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
 
-        Public Function f_StartPlaying() As Functional.Futures.IFuture Implements IW3Player.f_StartPlaying
+        Public Function QueueStartPlaying() As Functional.Futures.IFuture Implements IW3Player.QueueStartPlaying
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
 
-        Public Function f_StopPlaying() As Functional.Futures.IFuture Implements IW3Player.f_StopPlaying
+        Public Function QueueStopPlaying() As Functional.Futures.IFuture Implements IW3Player.QueueStopPlaying
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
@@ -191,7 +191,7 @@
             End Get
         End Property
 
-        Public Function f_StartLoading() As Functional.Futures.IFuture Implements IW3Player.f_StartLoading
+        Public Function QueueStartLoading() As Functional.Futures.IFuture Implements IW3Player.QueueStartLoading
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
@@ -213,12 +213,12 @@
             End Get
         End Property
 
-        Public Function f_BufferMap() As Functional.Futures.IFuture Implements IW3Player.f_BufferMap
+        Public Function QueueBufferMap() As Functional.Futures.IFuture Implements IW3Player.QueueBufferMap
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
 
-        Public Function f_StartCountdown() As Functional.Futures.IFuture Implements IW3Player.f_StartCountdown
+        Public Function QueueStartCountdown() As Functional.Futures.IFuture Implements IW3Player.QueueStartCountdown
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
@@ -247,11 +247,5 @@
                 Throw New NotSupportedException()
             End Get
         End Property
-
-        Public Sub ReceivePacket(ByVal id As W3PacketId,
-                                 ByVal vals As Dictionary(Of String, Object)) Implements IW3Player.ReceivePacket
-            Contract.Requires(vals IsNot Nothing)
-            Throw New NotSupportedException()
-        End Sub
     End Class
 End Namespace

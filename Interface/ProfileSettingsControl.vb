@@ -12,12 +12,12 @@
 
         txtUsername.Text = p.username
         txtPassword.Text = p.password
-        txtTftKey.Text = p.tft_cd_key
-        txtRocKey.Text = p.roc_cd_key
+        txtTftKey.Text = p.tftCdKey
+        txtRocKey.Text = p.rocCdKey
         cboGateway.Text = p.server
-        numLocalPort.Value = p.listen_port
-        txtInitialChannel.Text = p.initial_channel
-        txtCKLServer.Text = p.CKL_server
+        numLocalPort.Value = p.listenPort
+        txtInitialChannel.Text = p.initialChannel
+        txtCKLServer.Text = p.keyServerAddress
         cboLanHost.Text = p.lanHost
 
         gridUsers.Rows.Clear()
@@ -35,12 +35,12 @@
 
         p.username = txtUsername.Text
         p.password = txtPassword.Text
-        p.tft_cd_key = txtTftKey.Text
-        p.roc_cd_key = txtRocKey.Text
+        p.tftCdKey = txtTftKey.Text
+        p.rocCdKey = txtRocKey.Text
         p.server = cboGateway.Text
-        p.listen_port = CUShort(numLocalPort.Value)
-        p.initial_channel = txtInitialChannel.Text
-        p.CKL_server = txtCKLServer.Text
+        p.listenPort = CUShort(numLocalPort.Value)
+        p.initialChannel = txtInitialChannel.Text
+        p.keyServerAddress = txtCKLServer.Text
         p.lanHost = cboLanHost.Text
 
         Dim existing_users As New List(Of String)

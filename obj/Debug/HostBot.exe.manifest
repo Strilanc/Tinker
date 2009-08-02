@@ -3,7 +3,7 @@
   <asmv1:assemblyIdentity version="1.0.0.29" name="HostBot.exe" publicKeyToken="0000000000000000" language="neutral" processorArchitecture="x86" type="win32" />
   <application />
   <entryPoint>
-    <assemblyIdentity name="HostBot" version="1.0.0.0" language="neutral" processorArchitecture="x86" />
+    <assemblyIdentity name="HostBot" version="1.0.0.0" publicKeyToken="9BAE8FBA86733575" language="neutral" processorArchitecture="x86" />
     <commandLine file="HostBot.exe" parameters="" />
   </entryPoint>
   <trustInfo>
@@ -41,26 +41,38 @@
     </dependentAssembly>
   </dependency>
   <dependency>
-    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="HostBot.exe" size="781312">
-      <assemblyIdentity name="HostBot" version="1.0.0.0" language="neutral" processorArchitecture="x86" />
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="HostBot.exe" size="803840">
+      <assemblyIdentity name="HostBot" version="1.0.0.0" publicKeyToken="9BAE8FBA86733575" language="neutral" processorArchitecture="x86" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-        <dsig:DigestValue>MMEruZD4/DhLCSkM8/AB6wSExEY=</dsig:DigestValue>
+        <dsig:DigestValue>mESW7OTOBu0RcuT9xbsEU6kCye8=</dsig:DigestValue>
+      </hash>
+    </dependentAssembly>
+  </dependency>
+  <dependency>
+    <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="ICSharpCode.SharpZipLib.dll" size="192512">
+      <assemblyIdentity name="ICSharpCode.SharpZipLib" version="0.85.5.452" publicKeyToken="1B03E6ACF1164F73" language="neutral" processorArchitecture="msil" />
+      <hash>
+        <dsig:Transforms>
+          <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
+        </dsig:Transforms>
+        <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
+        <dsig:DigestValue>1pnltGoU6k18BS5Bk/hfCk8rKes=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>
   <dependency>
     <dependentAssembly dependencyType="install" allowDelayedBinding="true" codebase="Interop.Warden_Module_Lib.dll" size="6144">
-      <assemblyIdentity name="Interop.Warden_Module_Lib" version="4.0.0.0" language="neutral" processorArchitecture="msil" />
+      <assemblyIdentity name="Interop.Warden_Module_Lib" version="4.0.0.0" publicKeyToken="9BAE8FBA86733575" language="neutral" processorArchitecture="msil" />
       <hash>
         <dsig:Transforms>
           <dsig:Transform Algorithm="urn:schemas-microsoft-com:HashTransforms.Identity" />
         </dsig:Transforms>
         <dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1" />
-        <dsig:DigestValue>VqRdSbmBDMVB9I3v8N3n824GA4I=</dsig:DigestValue>
+        <dsig:DigestValue>gs3L0Vf/H1C/W3At5WxoOCJBH4c=</dsig:DigestValue>
       </hash>
     </dependentAssembly>
   </dependency>

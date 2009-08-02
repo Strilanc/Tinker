@@ -26,7 +26,7 @@ Namespace Warcraft3.Warden
 
 #Region "Jar"
         Private Shared Sub regPack(ByVal jar As ManualSwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IPackJar(Of Object))
-            jar.regPacker(id, New TuplePackJar(id.ToString(), "No Info", subjars))
+            jar.regPacker(id, New TuplePackJar(id.ToString(), subjars))
         End Sub
         Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IParseJar(Of Object))
             jar.regParser(id, New TupleParseJar(id.ToString(), subjars))
@@ -45,7 +45,7 @@ Namespace Warcraft3.Warden
         End Function
 #End Region
 
-        Public Shared Function FromData(ByVal id As WardenPacketId, ByVal data As IViewableList(Of Byte)) As WardenPacket
+        Public Shared Function FromData(ByVal id As WardenPacketId, ByVal data As ViewableList(Of Byte)) As WardenPacket
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of WardenPacket)() IsNot Nothing)
             Return New WardenPacket(id, packetJar.parse(id, data))

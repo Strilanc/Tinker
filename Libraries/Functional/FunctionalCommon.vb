@@ -1,4 +1,33 @@
 Namespace Functional
+    <DebuggerDisplay("{ToString}")>
+    Public Structure PossibleException(Of T, E As Exception)
+        Public ReadOnly Exception As E
+        Public ReadOnly Value As T
+        Public Sub New(ByVal value As T)
+            Me.Value = value
+        End Sub
+        Public Sub New(ByVal exception As E)
+            If exception Is Nothing Then Throw New ArgumentException("exception")
+            Me.Exception = exception
+        End Sub
+        Public Sub New(ByVal partialValue As T, ByVal exception As E)
+            If exception Is Nothing Then Throw New ArgumentException("exception")
+            Me.Value = partialValue
+            Me.Exception = exception
+        End Sub
+        Public Shared Widening Operator CType(ByVal value As T) As PossibleException(Of T, E)
+            Return New PossibleException(Of T, E)(value)
+        End Operator
+        Public Shared Widening Operator CType(ByVal exception As E) As PossibleException(Of T, E)
+            Return New PossibleException(Of T, E)(exception)
+        End Operator
+        Public Overrides Function ToString() As String
+            Return "Value: {0}{1}Exception: {2}".frmt(If(Value.IsNullReferenceGeneric, "Null", Value.ToString),
+                                                      Environment.NewLine,
+                                                      If(Exception Is Nothing, "Null", Exception.ToString))
+        End Function
+    End Structure
+
 #Region "Outcomes"
     '''<summary>Stores the outcome of an operation that doesn't produce a value.</summary>
     Public Structure Outcome
@@ -7,6 +36,7 @@ Namespace Functional
         Public ReadOnly Property Message As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Contract.Assume(_message IsNot Nothing) 'I hope you didn't use default(Outcome)!
                 Return _message
             End Get
         End Property
@@ -32,6 +62,7 @@ Namespace Functional
         Public ReadOnly Property Message As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Contract.Assume(_message IsNot Nothing) 'I hope you didn't use default(Outcome)!
                 Return _message
             End Get
         End Property
@@ -53,10 +84,10 @@ Namespace Functional
         End Sub
 
         Public Shared Widening Operator CType(ByVal out As Outcome(Of R)) As Outcome
-            Return New Outcome(out.succeeded, out.message)
+            Return New Outcome(out.succeeded, out.Message)
         End Operator
         Public Shared Widening Operator CType(ByVal out As Outcome) As Outcome(Of R)
-            Return New Outcome(Of R)(Nothing, out.succeeded, out.message)
+            Return New Outcome(Of R)(Nothing, out.succeeded, out.Message)
         End Operator
     End Structure
 #End Region
@@ -66,15 +97,21 @@ Namespace Functional
         Public Function ThreadedAction(ByVal action As Action, Optional ByVal threadName As String = Nothing) As IFuture
             Contract.Requires(action IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Dim action_ = action 'avoid contract verification issue on hoisted arguments
             Dim f As New Future
             Dim t = New Threading.Thread(
                 Sub()
-                    Try
-                        Call action()
+                    If My.Settings.debugMode Then
+                        Call action_()
                         Call f.SetReady()
-                    Catch ex As Exception
-                        Logging.LogUnexpectedException("Exception rose past ThreadedAction ({0}).".frmt(threadName), ex)
-                    End Try
+                    Else
+                        Try
+                            Call action_()
+                            Call f.SetReady()
+                        Catch ex As Exception
+                            Logging.LogUnexpectedException("Exception rose past ThreadedAction ({0}).".frmt(threadName), ex)
+                        End Try
+                    End If
                 End Sub
             )
             t.Name = If(threadName, "ThreadedAction")
@@ -84,23 +121,30 @@ Namespace Functional
         Public Function ThreadedFunc(Of R)(ByVal func As Func(Of R), Optional ByVal threadName As String = Nothing) As IFuture(Of R)
             Contract.Requires(func IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of R))() IsNot Nothing)
+            Dim func_ = func 'avoid contract verification issue on hoisted arguments
             Dim f As New Future(Of R)
-            ThreadedAction(Sub() f.SetValue(func()), threadName)
+            ThreadedAction(Sub() f.SetValue(func_()), threadName)
             Return f
         End Function
 
         Public Function ThreadPooledAction(ByVal action As Action) As IFuture
             Contract.Requires(action IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Dim action_ = action 'avoid contract verification issue on hoisted arguments
             Dim f As New Future
             Threading.ThreadPool.QueueUserWorkItem(
                 Sub()
-                    Try
-                        Call action()
+                    If My.Settings.debugMode Then
+                        Call action_()
                         Call f.SetReady()
-                    Catch ex As Exception
-                        Logging.LogUnexpectedException("Exception rose past ThreadPooledAction.", ex)
-                    End Try
+                    Else
+                        Try
+                            Call action_()
+                            Call f.SetReady()
+                        Catch ex As Exception
+                            Logging.LogUnexpectedException("Exception rose past ThreadPooledAction.", ex)
+                        End Try
+                    End If
                 End Sub
             )
             Return f
@@ -108,8 +152,9 @@ Namespace Functional
         Public Function ThreadPooledFunc(Of R)(ByVal func As Func(Of R)) As IFuture(Of R)
             Contract.Requires(func IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of R))() IsNot Nothing)
+            Dim func_ = func 'avoid contract verification issue on hoisted arguments
             Dim f As New Future(Of R)
-            ThreadPooledAction(Sub() f.SetValue(func()))
+            ThreadPooledAction(Sub() f.SetValue(func_()))
             Return f
         End Function
 #End Region
@@ -140,8 +185,12 @@ Namespace Functional
 #Region "Future Casts"
         '''<summary>Casts a future of an outcome with a value  to a future of an outcome without a value.</summary>
         '''<typeparam name="R">The type returned by the outcome with value.</typeparam>
+        <Pure()>
         Public Function stripFutureOutcome(Of R)(ByVal f As IFuture(Of Outcome(Of R))) As IFuture(Of Outcome)
-            Return f.EvalWhenReady(Function() CType(f.GetValue(), Outcome))
+            Contract.Requires(f IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Dim f_ = f
+            Return f_.EvalWhenReady(Function() CType(f_.Value(), Outcome))
         End Function
 #End Region
     End Module

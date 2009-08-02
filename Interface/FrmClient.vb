@@ -32,8 +32,10 @@ Public Class FrmClient
             'load initial plugins
             Dim pluginNames = (From x In My.Settings.initial_plugins.Split(";"c) Where x <> "").ToList
             Dim futureLoadedPlugins = (From x In pluginNames Select bot.f_LoadPlugin(x)).ToList
-            BlockOnFuture(FutureCompress(futureLoadedPlugins))
-            Dim pluginLoadOutcomes = (From x In futureLoadedPlugins Select x.GetValue()).ToList
+            Dim t = New Threading.ManualResetEvent(False)
+            FutureCompress(futureLoadedPlugins).CallWhenReady(Sub() t.Set())
+            t.WaitOne()
+            Dim pluginLoadOutcomes = (From x In futureLoadedPlugins Select x.Value()).ToList
             For i = 0 To pluginNames.Count - 1
                 Dim plugin = pluginNames(i)
                 Dim loaded = pluginLoadOutcomes(i)
@@ -92,7 +94,7 @@ Public Class FrmClient
     End Sub
 
     Private Sub btnSettings_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSettings.Click
-        FrmSettings.showBotSettings(bot)
+        FrmSettings.ShowBotSettings(bot)
     End Sub
 
     Private Sub mnuShowHide_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuShowHide.Click

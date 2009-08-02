@@ -1,23 +1,28 @@
 ﻿''' <summary>
 ''' A multiple-producer, single-consumer lock-free queue.
-''' Does NOT guarantee an item be have been enqueued when BeginEnqueue finishes.
+''' Does NOT guarantee an item has been queued when BeginEnqueue finishes.
 ''' Does guarantee an item will eventually be queued after BeginEnqueue finishes.
-''' Does guarantee that for calls simultaneously in BeginEnqueue, at least one will finish with its item having been enqueued.
-''' Does guarantee that if BeginEnqueue(Y) is called after BeginEnqueue(X) finishes, Y will follow X in the queue.
+''' Does guarantee that, for calls simultaneously in BeginEnqueue, at least one will finish with its item having been enqueued.
+''' Does guarantee that, if BeginEnqueue(Y) is called after BeginEnqueue(X) finishes, Y will follow X in the queue.
 ''' </summary>
+''' <remarks>
+''' Performance characteristics:
+''' - All operations are guaranteed constant time.
+''' - Latency between BeginEnqueue finishing and the item being enqueued can be delayed arbitrarily by slowing down only one of the producers.
+''' - (How does this compare to CAS-based implementations in terms of average throughput? It should be higher?)
+''' </remarks>
 Public Class SingleConsumerLockFreeQueue(Of T)
     ''' <summary>
     ''' Owned by the consumer.
     ''' This node is the end marker of the consumed nodes.
-    ''' The node's next is the next node to be consumed.
+    ''' This node's next is the next node to be consumed.
     ''' </summary>
     Private head As Node = New Node(Nothing)
     ''' <summary>
-    ''' Owned by producers.
-    ''' This node is the insertion point, and is not guaranteed to be in the queue at all times. 
-    ''' For example while an item is partially enqueued the tail is not in the queue until prev.next is set.
+    ''' This node is the tail of the last partially or fully inserted chain.
+    ''' The next inserted chain will exchange its tail for the insertionPoint, then set the old insertionPoint's next to the chain's head.
     ''' </summary>
-    Private tail As Node = head
+    Private insertionPoint As Node = head
     ''' <summary>
     ''' Singly linked list node containing queue items.
     ''' </summary>
@@ -31,29 +36,29 @@ Public Class SingleConsumerLockFreeQueue(Of T)
 
     ''' <summary>
     ''' Begins adding new items to the queue.
-    ''' The items may not be dequeueable when this method finishes, but eventually it will be.
+    ''' The items may not be dequeueable when this method finishes, but eventually they will be.
     ''' The items are guaranteed to end up adjacent in the queue and in the correct order.
     ''' </summary>
     ''' <remarks>
     ''' An example of what can occur when two items are queued simultaneously:
     ''' Inital state:
-    '''   head=tail -> null
+    '''   insert=head -> null
     '''   [queue is empty]
-    ''' Step 1: First item is created and exchanged with tail.
+    ''' Step 1: First item is created and exchanged with insertion point.
     '''   head=prev1 -> null
-    '''   tail=node1 -> null
+    '''   insert=node1 -> null
     '''   [queue is empty]
-    ''' Step 2: Second thread preempts and second item is created and exchanged with tail.
+    ''' Step 2: Second thread preempts and second item is created and exchanged with insertion point.
     '''   head=prev1 -> null
     '''   node1=prev2 -> null
-    '''   tail=node2 -> null
+    '''   insert=node2 -> null
     '''   [queue is empty]
     ''' Step 3: Second thread finishes setting prev.next.
     '''   head=prev1 -> null
-    '''   node1=prev2 -> tail=node2 -> null
+    '''   node1=prev2 -> insert=node2 -> null
     '''   [queue is empty]
     ''' Step 4: First thread comes back and finishes setting prev.next.
-    '''   head=prev1 -> node1=prev2 -> tail=node2 -> null
+    '''   head=prev1 -> node1=prev2 -> insert=node2 -> null
     '''   [queue contains 2 elements]
     ''' </remarks>
     ''' <implementation>
@@ -66,21 +71,21 @@ Public Class SingleConsumerLockFreeQueue(Of T)
         If Not items.Any Then Return
 
         'Create new chain
-        Dim new_chain_head As Node = Nothing
-        Dim new_chain_tail As Node = Nothing
+        Dim chainHead As Node = Nothing
+        Dim chainTail As Node = Nothing
         For Each item In items
-            If new_chain_head Is Nothing Then
-                new_chain_head = New Node(item)
-                new_chain_tail = new_chain_head
+            If chainHead Is Nothing Then
+                chainHead = New Node(item)
+                chainTail = chainHead
             Else
-                new_chain_tail.next = New Node(item)
-                new_chain_tail = new_chain_tail.next
+                chainTail.next = New Node(item)
+                chainTail = chainTail.next
             End If
         Next item
 
         'Append chain to previous chain
-        Dim prev_chain_tail = Threading.Interlocked.Exchange(Me.tail, new_chain_tail)
-        prev_chain_tail.next = new_chain_head
+        Dim prevChainTail = Threading.Interlocked.Exchange(Me.insertionPoint, chainTail)
+        prevChainTail.next = chainHead
     End Sub
     ''' <summary>
     ''' Begins adding a new item to the queue.
@@ -90,14 +95,14 @@ Public Class SingleConsumerLockFreeQueue(Of T)
     ''' Just an inlined and simplified version of BeginEnqueue(IEnumerable(Of T))
     ''' </implementation>
     Public Sub BeginEnqueue(ByVal item As T)
-        Dim new_chain = New Node(item)
-        Dim prev_chain_tail = Threading.Interlocked.Exchange(Me.tail, new_chain)
-        prev_chain_tail.next = new_chain
+        Dim chainOfOne = New Node(item)
+        Dim prevChainTail = Threading.Interlocked.Exchange(Me.insertionPoint, chainOfOne)
+        prevChainTail.next = chainOfOne
     End Sub
 
     ''' <summary>
     ''' Returns true if there were any items in the queue.
-    ''' The return value of this function is only stable if the queue is non-empty and you are calling from the consumer thread.
+    ''' The return value is only stable if the queue is non-empty and you are calling from the consumer thread.
     ''' </summary>
     Public ReadOnly Property WasEmpty As Boolean
         Get
@@ -126,16 +131,16 @@ End Class
 
 ''' <summary>
 ''' Consumes items produced by multiple producers.
-''' Ensures at all exit points that either the consumption queue is empty or exactly one consumer will exist.
+''' Ensures that enqueued items are consumed by ensuring at all exit points that either:
+''' - the queue is empty
+''' - or exactly one consumer exists
+''' - or another exit point will be hit [by another thread]
 ''' </summary>
 Public MustInherit Class BaseLockFreeConsumer(Of T)
     Private ReadOnly queue As New SingleConsumerLockFreeQueue(Of T)
     Private running As Integer 'stores consumer state and is used as a semaphore
 
-    ''' <summary>
-    ''' Enqueues an item to be consumed by the consumer.
-    ''' Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
-    ''' </summary>
+    '''<summary>Enqueues an item to be consumed by the consumer.</summary>
     Protected Sub EnqueueConsume(ByVal item As T)
         queue.BeginEnqueue(item)
 
@@ -147,7 +152,6 @@ Public MustInherit Class BaseLockFreeConsumer(Of T)
     ''' <summary>
     ''' Enqueues a sequence of items to be consumed by the consumer.
     ''' The items are guaranteed to end up adjacent in the queue.
-    ''' Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
     ''' </summary>
     Protected Sub EnqueueConsume(ByVal items As IEnumerable(Of T))
         queue.BeginEnqueue(items)
@@ -158,10 +162,7 @@ Public MustInherit Class BaseLockFreeConsumer(Of T)
         End If
     End Sub
 
-    ''' <summary>
-    ''' Returns true if consumer responsibilities were acquired by this thread.
-    ''' Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
-    ''' </summary>
+    '''<summary>Returns true if consumer responsibilities were acquired by this thread.</summary>
     Private Function TryAcquireConsumer() As Boolean
         'Don't bother acquiring if there are no items to consume
         'This unsafe check is alright because enqueuers call this method after enqueuing
@@ -175,10 +176,7 @@ Public MustInherit Class BaseLockFreeConsumer(Of T)
         'Note that between the empty check and acquiring the consumer, all queued actions may have been processed.
         'Therefore the queue may be empty at this point, but that's alright. Just a bit of extra work, nothing unsafe.
     End Function
-    ''' <summary>
-    ''' Returns true if consumer responsibilities were released by this thread.
-    ''' Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
-    ''' </summary>
+    '''<summary>Returns true if consumer responsibilities were released by this thread.</summary>
     Private Function TryReleaseConsumer() As Boolean
         Do
             'Don't release while there's still things to consume
@@ -203,10 +201,7 @@ Public MustInherit Class BaseLockFreeConsumer(Of T)
     Protected MustOverride Sub StartRunning()
     '''<summary>Consumes an item.</summary>
     Protected MustOverride Sub Consume(ByVal item As T)
-    ''' <summary>
-    ''' Runs queued calls until there are none left.
-    ''' Ensures that when the function finishes either the queue is empty or exactly one consumer will exist.
-    ''' </summary>
+    ''' <summary>Runs queued calls until there are none left.</summary>
     Protected Sub Run()
         Do Until TryReleaseConsumer()
             Consume(queue.Dequeue())

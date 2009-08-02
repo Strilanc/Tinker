@@ -8,7 +8,7 @@
     ''' <summary>
     ''' Uses a lambda expression to enumerate elements.
     ''' </summary>
-    Public Class Enumerator(Of T)
+    Public NotInheritable Class Enumerator(Of T)
         Implements IEnumerator(Of T)
         Implements IEnumeratorController(Of T)
 
@@ -86,7 +86,9 @@
             Me.generator = generator
         End Sub
         Public Function GetEnumerator() As IEnumerator(Of T) Implements IEnumerable(Of T).GetEnumerator
-            Return generator()
+            Dim x = generator()
+            If x Is Nothing Then Throw New OperationFailedException("The generator function returned a null value.")
+            Return x
         End Function
         Private Function GetEnumeratorObj() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
             Return GetEnumerator()
@@ -96,8 +98,8 @@
     ''' <summary>
     ''' Reverses the direction of an enumerator, allowing you to push values instead of pulling them.
     ''' </summary>
-    Public Class PushEnumerator(Of T)
-        Implements IDisposable
+    Public NotInheritable Class PushEnumerator(Of T)
+        Inherits NotifyingDisposable
         Private finished As Boolean
         Private ReadOnly sequenceQueue As New Queue(Of IEnumerator(Of T))
         Private ReadOnly coroutine As Coroutine
@@ -105,33 +107,33 @@
         Public Sub New(ByVal consumer As Action(Of IEnumerator(Of T)))
             Me.coroutine = New Coroutine(
                 Sub(coroutine)
-                                             'Construct the blocking sequence
-                                             Dim curSubsequence As IEnumerator(Of T) = Nothing
-                                             Dim sequence = New Enumerator(Of T)(
-                                                 Function(controller)
-                                                     'Move to next element, and when current sequence runs out grab another one
-                                                     While curSubsequence Is Nothing OrElse Not curSubsequence.MoveNext
-                                                         If sequenceQueue.Count <= 0 Then
-                                                             'Wait for more elements
-                                                             Call coroutine.Yield()
+                    'Construct the blocking sequence
+                    Dim curSubsequence As IEnumerator(Of T) = Nothing
+                    Dim sequence = New Enumerator(Of T)(
+                        Function(controller)
+                            'Move to next element, and when current sequence runs out grab another one
+                            While curSubsequence Is Nothing OrElse Not curSubsequence.MoveNext
+                                If sequenceQueue.Count <= 0 Then
+                                    'Wait for more elements
+                                    Call coroutine.Yield()
 
-                                                             'Break if there are no more elements to return
-                                                             If finished Then  Return controller.Break
-                                                         End If
+                                    'Break if there are no more elements to return
+                                    If finished Then  Return controller.Break
+                                End If
 
-                                                         'Grab next sequence of elements to return
-                                                         curSubsequence = sequenceQueue.Dequeue()
-                                                     End While
+                                'Grab next sequence of elements to return
+                                curSubsequence = sequenceQueue.Dequeue()
+                            End While
 
-                                                     Return curSubsequence.Current
-                                                 End Function
-                                             )
+                            Return curSubsequence.Current
+                        End Function
+                    )
 
-                                             'Consume the sequence
-                                             Call consumer(sequence)
-                                             While sequence.MoveNext 'get any remainder left by the consumer
-                                             End While
-                                         End Sub
+                    'Consume the sequence
+                    Call consumer(sequence)
+                    While sequence.MoveNext 'get any remainder left by the consumer
+                    End While
+                End Sub
             )
         End Sub
 
@@ -148,25 +150,13 @@
             finished = True
             coroutine.Continue()
         End Sub
-        Public Sub Dispose() Implements IDisposable.Dispose
-            coroutine.Dispose()
-            GC.SuppressFinalize(Me)
-        End Sub
 
-        Protected Overrides Sub Finalize()
-            Dispose()
+        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
+            If disposing Then
+                coroutine.Dispose()
+            End If
         End Sub
     End Class
-
-
-
-
-
-
-
-
-
-
 End Namespace
 
 
@@ -189,7 +179,7 @@ Public Interface IEnumeratorConsumer(Of T, S)
     Function YieldMany(ByVal sequence As IEnumerator(Of T), ByVal newState As S) As S
     Function Yield(ByVal value As T, ByVal newState As S) As S
 End Interface
-Public Class Enumerator(Of T, S)
+Public NotInheritable Class Enumerator(Of T, S)
     Implements IEnumerator(Of T)
     Implements IEnumeratorConsumer(Of T, S)
 

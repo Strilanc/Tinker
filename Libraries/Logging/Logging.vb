@@ -55,7 +55,11 @@ Namespace Logging
                 'info
                 message += Environment.NewLine + "Exception Type: " + e.GetType.Name
                 message += Environment.NewLine + "Exception Message: " + e.Message
-                message += Environment.NewLine + "Stack Trace: " + Environment.NewLine + indent(e.StackTrace.ToString())
+                If e.StackTrace IsNot Nothing Then
+                    message += Environment.NewLine + "Stack Trace: " + Environment.NewLine + indent(e.StackTrace.ToString())
+                Else
+                    message += Environment.NewLine + "Stack Trace: None"
+                End If
                 'next
                 e = e.InnerException
                 If e Is Nothing Then Exit For

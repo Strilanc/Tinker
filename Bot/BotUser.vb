@@ -47,7 +47,7 @@ Public Class BotUser
             If pair.Length <> 2 Then Continue For
             Dim v As UInteger
             If Not UInteger.TryParse(pair(1), v) Then Continue For
-            v = between(v, MIN_PERMISSION_VALUE, MAX_PERMISSION_VALUE)
+            v = v.Between(MIN_PERMISSION_VALUE, MAX_PERMISSION_VALUE)
             permission_map(unpack2(pair(0))) = v
         Next permission
         Return permission_map
@@ -187,33 +187,35 @@ Public Class BotUserSet
         Return userMap.Values()
     End Function
 
-    Public Function create_new_user(ByVal name As String) As BotUser
-        Dim key_name As String = name.ToLower
-        If userMap.ContainsKey(name) Then
+    Public Function CreateNewUser(ByVal name As String) As BotUser
+        Contract.Requires(name IsNot Nothing)
+        Dim key = name.ToLower
+        If userMap.ContainsKey(key) Then
             Throw New InvalidOperationException("User already exists")
         ElseIf userMap.ContainsKey(NAME_NEW_USER) Then
-            Dim user As BotUser = userMap(NAME_NEW_USER).clone(name)
+            Dim user = userMap(NAME_NEW_USER).clone(name)
             AddUser(user)
             Return user
         Else
-            Dim user As BotUser = New BotUser(name)
+            Dim user = New BotUser(name)
             AddUser(user)
             Return user
         End If
     End Function
 
     Public Sub RemoveUser(ByVal name As String)
+        Contract.Requires(name IsNot Nothing)
         If Not ContainsUser(name) Then Throw New InvalidOperationException("That user doesn't exist")
         userMap.Remove(name.ToLower)
     End Sub
     Default Public ReadOnly Property user(ByVal name As String) As BotUser
         Get
-            If name Is Nothing Then Return Nothing
-            Dim key_name As String = name.ToLower
-            If userMap.ContainsKey(key_name) Then
-                Return userMap(key_name)
-            ElseIf tempUserMap.ContainsKey(name) Then
-                Return tempUserMap(name)
+            Contract.Requires(name IsNot Nothing)
+            Dim key As String = name.ToLower
+            If userMap.ContainsKey(key) Then
+                Return userMap(key)
+            ElseIf tempUserMap.ContainsKey(key) Then
+                Return tempUserMap(key)
             ElseIf userMap.ContainsKey(NAME_UNKNOWN_USER) Then
                 tempUserMap(name) = userMap(NAME_UNKNOWN_USER).clone(name)
                 Return tempUserMap(name)
@@ -224,11 +226,12 @@ Public Class BotUserSet
     End Property
 
     Public Function ContainsUser(ByVal name As String) As Boolean
-        If name Is Nothing Then Return False
+        Contract.Requires(name IsNot Nothing)
         Return userMap.ContainsKey(name.ToLower())
     End Function
 
     Public Sub RemoveOtherUsers(ByVal usernames As IList(Of String))
+        Contract.Requires(usernames IsNot Nothing)
         'Find users not in the usernames list
         Dim removed_users = New List(Of String)
         For Each existing_name In userMap.Keys
@@ -248,27 +251,31 @@ Public Class BotUserSet
         Next name
     End Sub
     Public Sub UpdateUser(ByVal user As BotUser)
+        Contract.Requires(user IsNot Nothing)
         If ContainsUser(user.name) Then
-            Dim old_user = Me(user.name)
-            old_user.updatePermissions(user.packPermissions)
-            old_user.updateSettings(user.packSettings)
+            Dim oldUser = Me(user.name)
+            oldUser.updatePermissions(user.packPermissions)
+            oldUser.updateSettings(user.packSettings)
         Else
             AddUser(user)
         End If
     End Sub
 
     Public Sub AddUser(ByVal user As BotUser)
+        Contract.Requires(user IsNot Nothing)
         If ContainsUser(user.name) Then Throw New InvalidOperationException("That user already exists")
         userMap(user.name.ToLower) = user
     End Sub
 
     Public Sub Load(ByVal r As IO.BinaryReader)
+        Contract.Requires(r IsNot Nothing)
         For i As Integer = 1 To r.ReadUInt16()
             Dim new_user As New BotUser(r)
             AddUser(new_user)
         Next i
     End Sub
     Public Sub Save(ByVal w As IO.BinaryWriter)
+        Contract.Requires(w IsNot Nothing)
         w.Write(CUShort(userMap.Keys.Count))
         For Each user As BotUser In userMap.Values
             user.save(w)
@@ -276,12 +283,10 @@ Public Class BotUserSet
     End Sub
 
     Public Function Clone() As BotUserSet
-        Dim new_user_set As New BotUserSet
-        With new_user_set
-            For Each user As BotUser In userMap.Values
-                new_user_set.AddUser(user.clone())
-            Next user
-        End With
-        Return new_user_set
+        Dim newUserSet As New BotUserSet
+        For Each user As BotUser In userMap.Values
+            newUserSet.AddUser(user.clone())
+        Next user
+        Return newUserSet
     End Function
 End Class

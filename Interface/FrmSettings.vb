@@ -4,10 +4,11 @@ Public Class FrmSettings
     Private bot As MainBot
     Dim profiles As List(Of ClientProfile)
 
-    Public Shared Sub showBotSettings(ByVal bot As MainBot)
-        Dim f = New FrmSettings
-        f.load_from_bot(bot)
-        f.ShowDialog()
+    Public Shared Sub ShowBotSettings(ByVal bot As MainBot)
+        Using f = New FrmSettings
+            f.load_from_bot(bot)
+            f.ShowDialog()
+        End Using
     End Sub
 
     Public Sub load_from_bot(ByVal bot As MainBot)
@@ -28,7 +29,7 @@ Public Class FrmSettings
         txtExeInformation.Text = My.Settings.exeInformation
         txtCommandPrefix.Text = My.Settings.commandPrefix
         numLagLimit.Value = My.Settings.game_lag_limit
-        numTickPeriod.Value = between(My.Settings.game_tick_period, numTickPeriod.Minimum, numTickPeriod.Maximum)
+        numTickPeriod.Value = CDec(My.Settings.game_tick_period).Between(numTickPeriod.Minimum, numTickPeriod.Maximum)
         txtInGameName.Text = My.Settings.ingame_name
         txtInitialPlugins.Text = My.Settings.initial_plugins
     End Sub

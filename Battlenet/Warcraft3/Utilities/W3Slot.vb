@@ -67,7 +67,7 @@
             If contents.Matches(query) Then Return Match.Contents
             Return Match.None
         End Function
-        Public Function Cloned(ByVal game As IW3Game) As W3Slot
+        Public Function Cloned() As W3Slot
             Dim slot = New W3Slot(game, index)
             slot.color = color
             slot.team = team
@@ -90,7 +90,7 @@
                 Case W3Slot.Lock.sticky
                     s = "(STICKY) " + s
             End Select
-            Return padded(s, 30) + contents.ToString()
+            Return Padded(s, 30) + contents.ToString()
         End Function
     End Class
 
@@ -367,7 +367,7 @@
         Inherits W3SlotContents
         Public ReadOnly coveringSlot As W3Slot
         Private ReadOnly _playerIndex As Byte
-        Protected ReadOnly players As List(Of IW3Player)
+        Private ReadOnly players As List(Of IW3Player)
         Public Sub New(ByVal parent As W3Slot, ByVal coveringSlot As W3Slot, ByVal playerIndex As Byte, ByVal players As IEnumerable(Of IW3Player))
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)

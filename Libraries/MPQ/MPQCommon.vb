@@ -81,15 +81,13 @@ Namespace Mpq.Common
                     'Write to file
                     Dim buffer(0 To 511) As Byte
                     write_stream_to_disk(m, targetpath + filename)
-                    m.Close()
                     Debug.Print("Extracted " + filename)
                 Catch e As IO.InvalidDataException
-                    Debug.Print("Error extracting " + filename + ": " + e.Message)
-                    If m IsNot Nothing Then m.Close()
+                    Debug.Print("Error extracting " + filename + ": " + e.ToString)
                 Catch e As IO.IOException
-                    Debug.Print("Error extracting " + filename + ": " + e.Message)
-                    If m IsNot Nothing Then m.Close()
+                    Debug.Print("Error extracting " + filename + ": " + e.ToString)
                 End Try
+                If m IsNot Nothing Then m.Close()
             Next h
         End Sub
     End Module

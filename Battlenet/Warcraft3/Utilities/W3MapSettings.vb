@@ -3,7 +3,7 @@ Imports HostBot.Pickling
 
 Namespace Warcraft3
     Public Class W3MapSettingsJar
-        Inherits Pickling.Jars.Jar(Of Object)
+        Inherits Jar(Of Object)
         Private Enum GameSettingFlags As UInteger
             'SpeedSlow = 0 'no flags set
             SpeedMedium = 1 << 0
@@ -35,9 +35,10 @@ Namespace Warcraft3
 
         Public Sub New(ByVal name As String)
             MyBase.New(name)
+            Contract.Requires(name IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(Of R As Object)(ByVal value As R) As Pickling.IPickle(Of R)
+        Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
             Dim dd = CType(CType(value, Object), Dictionary(Of String, Object))
             Dim settings = CType(dd("settings"), W3MapSettings)
             Dim username = CStr(dd("username"))
@@ -83,16 +84,16 @@ Namespace Warcraft3
                     {"playable width", settings.playableWidth},
                     {"playable height", settings.playableHeight},
                     {"settings", u},
-                    {"xoro checksum", settings.xoroChecksum},
+                    {"xoro checksum", settings.xoroChecksum.ToArray},
                     {"relative path", settings.relativePath},
                     {"username", username},
                     {"unknown1", 0},
                     {"unknown2", ""}
                 })
             Dim data = Concat({EncodeStatStringData(p.Data).ToArray(), New Byte() {0}})
-            Return New Pickling.Pickles.Pickle(Of R)(value, data.ToView, p.Description)
+            Return New Pickling.Pickle(Of R)(value, data.ToView, p.Description)
         End Function
-        Public Overrides Function Parse(ByVal data As IViewableList(Of Byte)) As Pickling.IPickle(Of Object)
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of Object)
             Dim i As Integer
             For i = 0 To data.Length - 1
                 If data(i) = 0 Then
@@ -157,10 +158,10 @@ Namespace Warcraft3
                                        xoroChecksum,
                                        relativePath)
             Dim dd = New Dictionary(Of String, Object) From {{"settings", ms}, {"username", CStr(vals("username"))}}
-            Return New Pickling.Pickles.Pickle(Of Object)(dd, data, p.Description)
+            Return New Pickling.Pickle(Of Object)(dd, data, p.Description)
         End Function
 
-        Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IViewableList(Of Byte)
+        Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As ViewableList(Of Byte)
             Dim out As New List(Of Byte)
             For Each block In data.EnumBlocks(7)
                 'Compute block header
@@ -178,7 +179,7 @@ Namespace Warcraft3
             Next block
             Return out.ToView
         End Function
-        Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IViewableList(Of Byte)
+        Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As ViewableList(Of Byte)
             Dim out As New List(Of Byte)
             For Each block In data.EnumBlocks(8)
                 'Output block
@@ -206,7 +207,7 @@ Namespace Warcraft3
         Public ReadOnly speed As GameSpeedOption
         Public ReadOnly playableWidth As Integer
         Public ReadOnly playableHeight As Integer
-        Public ReadOnly xoroChecksum As Byte()
+        Public ReadOnly xoroChecksum As ViewableList(Of Byte)
         Public ReadOnly relativePath As String
         Public ReadOnly gameType As GameTypeFlags
 
@@ -235,13 +236,13 @@ Namespace Warcraft3
             Me.speed = speed
             Me.playableWidth = playableWidth
             Me.playableHeight = playableHeight
-            Me.xoroChecksum = xoroChecksum
+            If xoroChecksum IsNot Nothing Then Me.xoroChecksum = xoroChecksum.ToView
             Me.relativePath = relativePath
             Me.gameType = gameType
             If map IsNot Nothing Then
                 Me.playableWidth = map.playableWidth
                 Me.playableHeight = map.playableHeight
-                Me.xoroChecksum = map.checksumXoro
+                Me.xoroChecksum = map.ChecksumXoro.ToView
                 Me.relativePath = "Maps\" + map.relativePath
                 Me.gameType = map.gameType
             Else

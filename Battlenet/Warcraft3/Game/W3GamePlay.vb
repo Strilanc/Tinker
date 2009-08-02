@@ -57,14 +57,14 @@
         End Sub
         Private Sub GameplayStart()
             For Each player In players
-                player.f_StartPlaying()
+                player.QueueStartPlaying()
             Next player
             Me.lastTickTime = Environment.TickCount
             Me.tickTimer.Start()
         End Sub
         Private Sub GameplayStop()
             For Each player In players
-                player.f_StopPlaying()
+                player.QueueStopPlaying()
             Next player
             tickTimer.Stop()
         End Sub
@@ -109,8 +109,8 @@
 
                     'Throttle tick rate
                     gameTimeBuffer += dt - dgt
-                    gameTimeBuffer = gameTimeBuffer.between(-dgt * 10, dgt * 10)
-                    tickTimer.Interval = (dgt - gameTimeBuffer).between(dgt / 2, dgt * 2)
+                    gameTimeBuffer = gameTimeBuffer.Between(-dgt * 10, dgt * 10)
+                    tickTimer.Interval = (dgt - gameTimeBuffer).Between(dgt / 2, dgt * 2)
 
                     'Send
                     SendQueuedGameData(New TickRecord(dgt, gameTime))
@@ -148,17 +148,12 @@
             End If
         End Sub
         Private Sub SendQueuedGameData(ByVal record As TickRecord)
-            Dim dgt = record.length
-            For Each player In players
-                player.f_QueueTick(record)
-            Next player
-
             'Include all the data we can fit in a packet
             Dim dataLength = 0
             Dim dataList = New List(Of Byte())(gameDataQueue.Count)
             Dim outgoingData = New List(Of GameTickDatum)(gameDataQueue.Count)
             While gameDataQueue.Count > 0 _
-                  AndAlso dataLength + gameDataQueue.Peek().data.Length < BnetSocket.DefaultBufferSize - 20 '[20 includes headers and a small safety margin]
+                  AndAlso dataLength + gameDataQueue.Peek().Data.Length < PacketSocket.DefaultBufferSize - 20 '[20 includes headers and a small safety margin]
                 Dim e = gameDataQueue.Dequeue()
                 outgoingData.Add(e)
 
@@ -173,31 +168,28 @@
             'Send data
             Contract.Assume(dataList IsNot Nothing) 'remove this once verifier properly understands how List.Add works
             Contract.Assume(outgoingData IsNot Nothing) 'remove this once verifier properly understands how List.Add works
-            Dim normal_packet = W3Packet.MakeTick(dgt, Concat(dataList))
+            Dim normalData = Concat(dataList)
             For Each receiver In players
                 Contract.Assume(receiver IsNot Nothing)
                 If IsPlayerVisible(receiver) Then
-                    receiver.f_SendPacket(normal_packet)
+                    receiver.QueueSendTick(record, normalData)
                 Else
-                    Contract.Assume(receiver IsNot Nothing)
-                    Contract.Assume(outgoingData IsNot Nothing)
-                    Dim pk = CreatePacketForInvisiblePlayer(receiver, dgt, outgoingData)
-                    receiver.f_SendPacket(pk)
+                    receiver.QueueSendTick(record, CreateTickDataForInvisiblePlayer(receiver, outgoingData))
                 End If
             Next receiver
         End Sub
         <Pure()>
-        Private Function CreatePacketForInvisiblePlayer(ByVal receiver As IW3Player,
-                                                        ByVal dgt As UShort,
-                                                        ByVal data As IEnumerable(Of GameTickDatum)) As W3Packet
+        Private Function CreateTickDataForInvisiblePlayer(ByVal receiver As IW3Player,
+                                                          ByVal data As IEnumerable(Of GameTickDatum)) As Byte()
             Contract.Requires(receiver IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Return W3Packet.MakeTick(dgt,
-                    Concat((From e In data
-                            Select Concat({New Byte() {If(e.Source Is receiver, receiver, GetVisiblePlayer(e.Source)).index},
+            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Dim receiver_ = receiver
+            Dim data_ = data
+            Return Concat((From e In data_
+                           Select Concat({New Byte() {If(e.Source Is receiver_, receiver_, GetVisiblePlayer(e.Source)).index},
                                           CUShort(e.Data.Length).bytes(ByteOrder.LittleEndian),
-                                          e.Data}))))
+                                          e.Data})))
         End Function
 #End Region
 
@@ -207,10 +199,10 @@
                 Return gameTime
             End Get
         End Property
-        Private Function _f_DropLagger() As IFuture Implements IW3Game.f_DropLagger
+        Private Function _f_DropLagger() As IFuture Implements IW3Game.QueueDropLagger
             Return ref.QueueAction(AddressOf DropLagger)
         End Function
-        Private Function _f_QueueGameData(ByVal sender As IW3Player, ByVal data() As Byte) As IFuture Implements IW3Game.f_QueueGameData
+        Private Function _f_QueueGameData(ByVal sender As IW3Player, ByVal data() As Byte) As IFuture Implements IW3Game.QueueSendGameData
             Return ref.QueueAction(Sub()
                                        Contract.Assume(sender IsNot Nothing)
                                        Contract.Assume(data IsNot Nothing)

@@ -24,7 +24,8 @@ Namespace Links
 
         Public Shared Function CreateMultiWayLink(ByVal members As IEnumerable(Of IGameSourceSink)) As INotifyingDisposable
             Contract.Requires(members IsNot Nothing)
-            Return DisposeLink.CreateMultiWayLink(From m1 In members, m2 In members
+            Dim members_ = members
+            Return DisposeLink.CreateMultiWayLink(From m1 In members_, m2 In members_
                                                   Where m1 IsNot m2
                                                   Select AdvertisingLink.CreateOneWayLink(m1, m2))
         End Function
@@ -34,8 +35,11 @@ Namespace Links
         End Function
         Private Sub New(ByVal master As IGameSource,
                         ByVal servant As IGameSink)
-            Contract.Requires(master IsNot Nothing)
-            Contract.Requires(servant IsNot Nothing)
+            'contract bug wrt interface event implementation requires this:
+            'Contract.Requires(master IsNot Nothing)
+            'Contract.Requires(servant IsNot Nothing)
+            Contract.Assume(master IsNot Nothing)
+            Contract.Assume(servant IsNot Nothing)
             Me.master = master
             Me.servant = servant
             AddHandler master.AddedGame, AddressOf c_StartedAdvertising
@@ -43,7 +47,7 @@ Namespace Links
             AddHandler master.DisposedLink, AddressOf c_DisposedLink
         End Sub
 
-        Protected Overrides Sub PerformDispose()
+        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
             RemoveHandler master.AddedGame, AddressOf c_StartedAdvertising
             RemoveHandler master.RemovedGame, AddressOf c_StoppedAdvertising
             RemoveHandler master.DisposedLink, AddressOf c_DisposedLink
@@ -69,23 +73,21 @@ Namespace Links
 
     Public Class AdvertisingDisposeNotifier
         Inherits NotifyingDisposable
-
         Private ReadOnly member As IGameSourceSink
 
         Public Sub New(ByVal member As IGameSourceSink)
-            Contract.Requires(member IsNot Nothing)
+            'contract bug wrt interface event implementation requires this:
+            'Contract.Requires(member IsNot Nothing)
+            Contract.Assume(member IsNot Nothing)
             Me.member = member
-            AddHandler Me.member.RemovedGame, AddressOf c_StoppedAdvertising
+            AddHandler Me.member.RemovedGame, AddressOf CatchStoppedAdvertising
         End Sub
-        Protected Overrides Sub Finalize()
-            Dispose()
-        End Sub
-        Private Sub c_StoppedAdvertising(ByVal sender As Links.IGameSource, ByVal game As W3GameHeader, ByVal reason As String)
+        Private Sub CatchStoppedAdvertising(ByVal sender As Links.IGameSource, ByVal game As W3GameHeader, ByVal reason As String)
             Dispose()
         End Sub
 
-        Protected Overrides Sub PerformDispose()
-            RemoveHandler Me.member.RemovedGame, AddressOf c_StoppedAdvertising
+        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
+            RemoveHandler Me.member.RemovedGame, AddressOf CatchStoppedAdvertising
         End Sub
     End Class
 
@@ -106,37 +108,43 @@ Namespace Links
         End Function
         Public Shared Function CreateOneWayLink(ByVal master As INotifyingDisposable,
                                                 ByVal servant As INotifyingDisposable) As INotifyingDisposable
-            Contract.Requires(master IsNot Nothing)
-            Contract.Requires(servant IsNot Nothing)
+            'contract bug wrt interface event implementation requires this:
+            'Contract.Requires(master IsNot Nothing)
+            'Contract.Requires(servant IsNot Nothing)
+            Contract.Assume(master IsNot Nothing)
+            Contract.Assume(servant IsNot Nothing)
             Return New DisposeLink(master, servant)
         End Function
 
         Private Sub New(ByVal master As INotifyingDisposable,
                         ByVal servant As INotifyingDisposable)
-            Contract.Requires(master IsNot Nothing)
-            Contract.Requires(servant IsNot Nothing)
+            'contract bug wrt interface event implementation requires this:
+            'Contract.Requires(master IsNot Nothing)
+            'Contract.Requires(servant IsNot Nothing)
+            Contract.Assume(master IsNot Nothing)
+            Contract.Assume(servant IsNot Nothing)
             Me.master = master
             Me.servant = servant
-            AddHandler master.Disposed, AddressOf c_MasterDisposed
-            AddHandler servant.Disposed, AddressOf c_ServantDisposed
+            AddHandler master.Disposed, AddressOf CatchMasterDisposed
+            AddHandler servant.Disposed, AddressOf CatchServantDisposed
             If servant.IsDisposed Then
-                c_ServantDisposed()
+                CatchServantDisposed()
             ElseIf master.IsDisposed Then
-                c_MasterDisposed()
+                CatchMasterDisposed()
             End If
         End Sub
 
-        Private Sub c_MasterDisposed()
+        Private Sub CatchMasterDisposed()
             Me.Dispose()
             servant.Dispose()
         End Sub
-        Private Sub c_ServantDisposed()
+        Private Sub CatchServantDisposed()
             Me.Dispose()
         End Sub
 
-        Protected Overrides Sub PerformDispose()
-            RemoveHandler master.Disposed, AddressOf c_MasterDisposed
-            RemoveHandler servant.Disposed, AddressOf c_ServantDisposed
+        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
+            RemoveHandler master.Disposed, AddressOf CatchMasterDisposed
+            RemoveHandler servant.Disposed, AddressOf CatchServantDisposed
         End Sub
     End Class
 End Namespace

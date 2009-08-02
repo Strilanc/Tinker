@@ -35,15 +35,25 @@ Public Class TransferScheduler(Of TClientKey)
                    ByVal typicalSwitchTime As Double,
                    ByVal fileSize As Double,
                    Optional ByVal pq As ICallQueue = Nothing)
-        Contract.Requires(fileSize > 0)
-        Contract.Requires(Not Double.IsInfinity(fileSize))
-        Contract.Requires(Not Double.IsNaN(fileSize))
-        Contract.Requires(typicalRate > 0)
-        Contract.Requires(Not Double.IsInfinity(typicalRate))
-        Contract.Requires(Not Double.IsNaN(typicalRate))
-        Contract.Requires(typicalSwitchTime >= 0)
-        Contract.Requires(Not Double.IsInfinity(typicalSwitchTime))
-        Contract.Requires(Not Double.IsNaN(typicalSwitchTime))
+        'contract bug wrt interface event implementation requires this:
+        'Contract.Requires(fileSize > 0)
+        'Contract.Requires(Not Double.IsInfinity(fileSize))
+        'Contract.Requires(Not Double.IsNaN(fileSize))
+        'Contract.Requires(typicalRate > 0)
+        'Contract.Requires(Not Double.IsInfinity(typicalRate))
+        'Contract.Requires(Not Double.IsNaN(typicalRate))
+        'Contract.Requires(typicalSwitchTime >= 0)
+        'Contract.Requires(Not Double.IsInfinity(typicalSwitchTime))
+        'Contract.Requires(Not Double.IsNaN(typicalSwitchTime))
+        Contract.Assume(fileSize > 0)
+        Contract.Assume(Not Double.IsInfinity(fileSize))
+        Contract.Assume(Not Double.IsNaN(fileSize))
+        Contract.Assume(typicalRate > 0)
+        Contract.Assume(Not Double.IsInfinity(typicalRate))
+        Contract.Assume(Not Double.IsNaN(typicalRate))
+        Contract.Assume(typicalSwitchTime >= 0)
+        Contract.Assume(Not Double.IsInfinity(typicalSwitchTime))
+        Contract.Assume(Not Double.IsNaN(typicalSwitchTime))
         Me.ref = If(pq, New ThreadPooledCallQueue)
         Me.typicalRate = typicalRate
         Me.typicalSwitchTime = typicalSwitchTime
@@ -55,12 +65,13 @@ Public Class TransferScheduler(Of TClientKey)
                               ByVal completed As Boolean,
                               Optional ByVal expectedRate As Double = 0) As IFuture(Of Outcome)
         Contract.Requires(expectedRate >= 0)
-        Contract.Requires(Not Double.IsInfinity(expectedRate))
-        Contract.Requires(Not Double.IsNaN(expectedRate))
+        Contract.Requires(expectedRate = 0 OrElse Not Double.IsInfinity(expectedRate))
+        Contract.Requires(expectedRate = 0 OrElse Not Double.IsNaN(expectedRate))
+        Dim expectedRate_ = expectedRate 'avoids hoisted argument contract verification flaw
         Return ref.QueueFunc(
             Function()
                 If clients.ContainsKey(clientKey) Then  Return failure("client key already exists")
-                clients(clientKey) = New Client(clientKey, completed, If(expectedRate = 0, typicalRate, expectedRate))
+                clients(clientKey) = New Client(clientKey, completed, If(expectedRate_ = 0, typicalRate, expectedRate_))
                 Return success("added")
             End Function
         )
@@ -140,13 +151,14 @@ Public Class TransferScheduler(Of TClientKey)
         Contract.Requires(progress >= 0)
         Contract.Requires(Not Double.IsInfinity(progress))
         Contract.Requires(Not Double.IsNaN(progress))
+        Dim progress_ = progress 'avoids hoisted argument contract verification flaw
         Return ref.QueueFunc(
             Function()
                 If Not clients.ContainsKey(clientKey) Then  Return failure("No such client key.")
                 Dim client = clients(clientKey)
                 If Not client.busy Then  Return failure("Client isn't transfering.")
-                client.UpdateProgress(progress)
-                client.other.UpdateProgress(progress)
+                client.UpdateProgress(progress_)
+                client.other.UpdateProgress(progress_)
                 Return success("Updated")
             End Function
         )
@@ -211,7 +223,7 @@ Public Class TransferScheduler(Of TClientKey)
                 Next e
 
                 'Report actions to the outside
-                If transfers.Any Or breaks.Any Then
+                If transfers.Any OrElse breaks.Any Then
                     RaiseEvent actions(transfers, breaks)
                 End If
             End Sub

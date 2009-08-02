@@ -2,6 +2,7 @@ Imports HostBot.Mpq.Crypt
 Imports HostBot.Mpq.MpqFileTable.FileEntry
 
 Namespace Mpq
+    <Serializable()>
     Public Class MPQException
         Inherits Exception
         Public Sub New(ByVal message As String, Optional ByVal innerException As Exception = Nothing)
@@ -59,8 +60,10 @@ Namespace Mpq
         End Sub
 
         Public Sub New(ByVal streamFactory As Func(Of IO.Stream))
+            Contract.Requires(streamFactory IsNot Nothing)
             Me.streamFactory = streamFactory
             Using stream = streamFactory()
+                If stream Is Nothing Then Throw New ArgumentException("streamFactory returned a null stream.")
                 Using br = New IO.BinaryReader(stream)
                     'Find valid header
                     Dim found = False
@@ -97,7 +100,7 @@ Namespace Mpq
                     stream.Close()
 
                     'Correct values
-                    fileBlockSize = CUInt(512) << CInt(fileBlockSize) 'correct size to actual size in bytes
+                    fileBlockSize = 512UI << CInt(fileBlockSize) 'correct size to actual size in bytes
                     hashTablePosition += filePosition 'correct position from relative to absolute
                     fileTablePosition += filePosition 'correct position from relative to absolute
 
@@ -249,31 +252,31 @@ Namespace Mpq
                 Next i
 
                 'Build new file table layout
-                Dim num_file_entries = CUInt(0)
-                Dim file_index_map As New Dictionary(Of UInteger, UInteger)
+                Dim numFileEntries = 0UI
+                Dim fileIndexMap As New Dictionary(Of UInteger, UInteger)
                 For i = 0 To fileTable.fileEntries.Count - 1
                     Dim e = fileTable.fileEntries(i)
                     Dim u = CUInt(i)
                     If Not del_files.Contains(u) Then
-                        file_index_map(u) = num_file_entries
-                        num_file_entries += CUInt(1)
+                        fileIndexMap(u) = numFileEntries
+                        numFileEntries += 1UI
                     End If
                 Next i
 
                 'Write header
                 w.Write(ID_MPQ)
-                w.Write(CUInt(32))
+                w.Write(32UI)
                 Dim sizePos = w.BaseStream.Position()
-                w.Write(CUInt(0)) 'size placeholder
-                w.Write(CShort(21536))
+                w.Write(0UI) 'size placeholder
+                w.Write(21536US)
                 w.Write(CShort(Math.Log(fileBlockSize \ &H200, 2)))
-                w.Write(CUInt(32 + num_file_entries * 16))
-                w.Write(CUInt(32))
+                w.Write(32UI + numFileEntries * 16UI)
+                w.Write(32UI)
                 w.Write(numHashTableEntries)
-                w.Write(num_file_entries)
+                w.Write(numFileEntries)
 
                 'Write file table
-                Dim t = CUInt(32 + 16 * (num_file_entries + hashTable.hashes.Count))
+                Dim t = CUInt(32 + 16 * (numFileEntries + hashTable.hashes.Count))
                 With New IO.BinaryWriter(
                       New Mpq.Crypt.Cypherer(HashString("(block table)", HashType.FILE_KEY), Cypherer.modes.encrypt).
                           ConvertWriteOnlyStream(bbf))
@@ -300,10 +303,10 @@ Namespace Mpq
                     For Each e In hashTable.hashes
                         .Write(e.key)
                         .Write(e.language)
-                        If del_files.Contains(e.fileIndex) OrElse Not file_index_map.ContainsKey(e.fileIndex) Then
+                        If del_files.Contains(e.fileIndex) OrElse Not fileIndexMap.ContainsKey(e.fileIndex) Then
                             .Write(Mpq.MpqHashTable.HashEntry.FILE_INDEX_DELETED)
                         Else
-                            .Write(file_index_map(e.fileIndex))
+                            .Write(fileIndexMap(e.fileIndex))
                         End If
                     Next e
                 End With

@@ -32,7 +32,7 @@ Namespace Commands.Specializations
                 MyBase.New(My.Resources.Command_Bot_GetSetting,
                            1, ArgumentLimits.exact,
                            My.Resources.Command_Bot_GetSetting_Help,
-                           DictStrUInt("root=1"))
+                           "root=1", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim val As Object
@@ -57,7 +57,7 @@ Namespace Commands.Specializations
                 MyBase.New(My.Resources.Command_Bot_SetSetting,
                            2, ArgumentLimits.exact,
                            My.Resources.Command_Bot_SetSetting_Help,
-                           DictStrUInt("root=2"))
+                           "root=2", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim val_us As UShort
@@ -163,7 +163,7 @@ Namespace Commands.Specializations
                 Return target.f_FindClient(arguments(0)).EvalWhenValueReady(
                     Function(client)
                         If client Is Nothing Then  Return failure("No matching client").Futurize()
-                        Return target.ClientCommands.ProcessText(client, user, mendQuotedWords(arguments, 1))
+                        Return target.ClientCommands.ProcessCommand(client, user, arguments.SubToArray(1))
                     End Function
                 ).Defuturize()
             End Function
@@ -176,7 +176,7 @@ Namespace Commands.Specializations
                 MyBase.New(My.Resources.Command_Bot_Server,
                            1, ArgumentLimits.min,
                            My.Resources.Command_Bot_Server_Help,
-                           DictStrUInt("root=3"))
+                           "root=3", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'Find the server, then pass the command to it
@@ -184,7 +184,7 @@ Namespace Commands.Specializations
                     Function(server)
                         If server Is Nothing Then  Return failure("No matching server").Futurize()
                         'Pass the command
-                        Return target.ServerCommands.ProcessText(server, user, mendQuotedWords(arguments, 1))
+                        Return target.ServerCommands.ProcessCommand(server, user, arguments.SubToArray(1))
                     End Function
                 ).Defuturize()
             End Function
@@ -197,7 +197,7 @@ Namespace Commands.Specializations
                 MyBase.New(My.Resources.Command_Bot_CreateClient,
                            1, ArgumentLimits.exact,
                            My.Resources.Command_Bot_CreateClient_Help,
-                           DictStrUInt("root=4"))
+                           "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return stripFutureOutcome(target.f_CreateClient(arguments(0)))
@@ -211,7 +211,7 @@ Namespace Commands.Specializations
                 MyBase.New(My.Resources.Command_Bot_KillClient,
                            1, ArgumentLimits.exact,
                            My.Resources.Command_Bot_KillClient_Help,
-                           DictStrUInt("root=4"))
+                           "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.f_RemoveClient(arguments(0))
@@ -225,7 +225,7 @@ Namespace Commands.Specializations
                 MyBase.New(My.Resources.Command_Bot_KillServer,
                            1, ArgumentLimits.exact,
                            My.Resources.Command_Bot_KillServer_Help,
-                           DictStrUInt("root=4"))
+                           "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.f_RemoveServer(arguments(0))
@@ -253,7 +253,7 @@ Namespace Commands.Specializations
                                                   New W3GameHeader(arguments(0),
                                                                    If(user Is Nothing, My.Resources.ProgramName, user.name),
                                                                    New W3MapSettings(arguments, map),
-                                                                   0, 0, 0, arguments, map.numPlayerSlots))
+                                                                   0, 0, 0, arguments, map.NumPlayerSlots))
                 Return stripFutureOutcome(target.f_CreateServer(arguments(0), settings))
             End Function
         End Class
@@ -265,7 +265,7 @@ Namespace Commands.Specializations
                 MyBase.New(My.Resources.Command_Bot_LoadPlugin,
                            1, ArgumentLimits.exact,
                            My.Resources.Command_Bot_LoadPlugin_Help,
-                           DictStrUInt("root=5"))
+                           "root=5", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.f_LoadPlugin(arguments(0))
@@ -278,7 +278,7 @@ Namespace Commands.Specializations
                 MyBase.New("RecacheIP",
                            0, ArgumentLimits.exact,
                            "Recaches external and internal IP addresses",
-                           DictStrUInt("root=5"))
+                           "root=5", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 CacheIPAddresses()
@@ -340,7 +340,7 @@ Namespace Commands.Specializations
                 MyBase.New(My.Resources.Command_Bot_DownloadEpicWarMap,
                            1, ArgumentLimits.exact,
                            My.Resources.Command_Bot_DownloadEpicWarMap_Help,
-                           DictStrUInt("root=2"))
+                           "root=2", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim epicWarNumber As UInteger

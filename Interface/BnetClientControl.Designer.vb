@@ -19,21 +19,21 @@ Partial Class BnetClientControl
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.lstState = New System.Windows.Forms.ListBox
-        Me.txtCommand = New System.Windows.Forms.TextBox
-        Me.txtTalk = New System.Windows.Forms.TextBox
-        Me.logClient = New HostBot.LoggerControl
+        Me.lstState = New System.Windows.Forms.ListBox()
+        Me.txtCommand = New System.Windows.Forms.TextBox()
+        Me.txtTalk = New System.Windows.Forms.TextBox()
+        Me.logClient = New HostBot.LoggerControl()
         Me.SuspendLayout()
         '
-        'lstUsers
+        'lstState
         '
         Me.lstState.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
                     Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.lstState.FormattingEnabled = True
         Me.lstState.IntegralHeight = False
-        Me.lstState.Location = New System.Drawing.Point(593, 0)
-        Me.lstState.Name = "lstUsers"
-        Me.lstState.Size = New System.Drawing.Size(147, 389)
+        Me.lstState.Location = New System.Drawing.Point(534, 0)
+        Me.lstState.Name = "lstState"
+        Me.lstState.Size = New System.Drawing.Size(206, 389)
         Me.lstState.TabIndex = 2
         '
         'txtCommand
@@ -52,7 +52,7 @@ Partial Class BnetClientControl
                     Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.txtTalk.Location = New System.Drawing.Point(0, 369)
         Me.txtTalk.Name = "txtTalk"
-        Me.txtTalk.Size = New System.Drawing.Size(587, 20)
+        Me.txtTalk.Size = New System.Drawing.Size(528, 20)
         Me.txtTalk.TabIndex = 1
         '
         'logClient
@@ -62,7 +62,7 @@ Partial Class BnetClientControl
                     Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.logClient.Location = New System.Drawing.Point(0, 0)
         Me.logClient.Name = "logClient"
-        Me.logClient.Size = New System.Drawing.Size(587, 363)
+        Me.logClient.Size = New System.Drawing.Size(528, 363)
         Me.logClient.TabIndex = 0
         '
         'BnetClientControl

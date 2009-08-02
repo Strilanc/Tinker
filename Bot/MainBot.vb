@@ -60,7 +60,9 @@ Public NotInheritable Class MainBot
 #Region "New"
     Public Sub New(ByVal wardenRef As ICallQueue,
                    Optional ByVal logger As Logger = Nothing)
-        Contract.Requires(wardenRef IsNot Nothing)
+        'contract bug wrt interface event implementation requires this:
+        'Contract.Requires(wardenRef IsNot Nothing)
+        Contract.Assume(wardenRef IsNot Nothing)
         Me.wardenRef = wardenRef
         Me.logger = If(logger, New Logger)
         Me.eref = New ThreadPooledCallQueue
@@ -121,7 +123,7 @@ Public NotInheritable Class MainBot
         End If
 
         clientProfiles.Clear()
-        For repeat = CUInt(1) To n
+        For repeat = 1UI To n
             clientProfiles.Add(New ClientProfile(r))
         Next repeat
         If first_version Then
@@ -130,7 +132,7 @@ Public NotInheritable Class MainBot
         End If
 
         pluginProfiles.Clear()
-        For repeat = CUInt(1) To r.ReadUInt32()
+        For repeat = 1UI To r.ReadUInt32()
             pluginProfiles.Add(New Plugins.PluginProfile(r))
         Next repeat
     End Sub
@@ -161,7 +163,7 @@ Public NotInheritable Class MainBot
 
             Return successVal(server, "Created server with name '{0}'. Admin password is {1}.".frmt(name, server.settings.adminPassword))
         Catch e As Exception
-            Return failure("Failed to create server: " + e.Message)
+            Return failure("Failed to create server: " + e.ToString)
         End Try
     End Function
     Private Function KillServer(ByVal name As String) As Outcome
@@ -173,7 +175,7 @@ Public NotInheritable Class MainBot
         RemoveHandler server.PlayerTalked, AddressOf c_ServerPlayerTalked
         RemoveHandler server.ChangedState, AddressOf c_ServerStateChanged
         servers.Remove(server)
-        server.f_Kill()
+        server.QueueKill()
         e_ThrowRemovedServer(server)
         Return success("Removed server with name {0}.".frmt(name))
     End Function
@@ -205,7 +207,7 @@ Public NotInheritable Class MainBot
         End If
 
         Dim client As IBnetClient = New BnetClient(Me, FindClientProfile(profileName), name, wardenRef)
-        AddHandler client.ReceivedChatEvent, AddressOf c_ClientChatEvent
+        AddHandler client.ReceivedPacket, AddressOf c_ClientReceivedPacket
         AddHandler client.StateChanged, AddressOf c_ClientStateChanged
         clients.Add(client)
 
@@ -218,7 +220,7 @@ Public NotInheritable Class MainBot
             Return failure("No client with name {0}.".frmt(name))
         End If
 
-        RemoveHandler client.ReceivedChatEvent, AddressOf c_ClientChatEvent
+        RemoveHandler client.ReceivedPacket, AddressOf c_ClientReceivedPacket
         RemoveHandler client.StateChanged, AddressOf c_ClientStateChanged
         client.f_Disconnect("Killed by MainBot")
         clients.Remove(client)
@@ -237,7 +239,7 @@ Public NotInheritable Class MainBot
         Return (From x In clients Where x.Name.ToLower = name.ToLower).FirstOrDefault()
     End Function
     Private Function FindServer(ByVal name As String) As IW3Server
-        Return (From x In servers Where x.name.ToLower = name.ToLower).FirstOrDefault()
+        Return (From x In servers Where x.Name.ToLower = name.ToLower).FirstOrDefault()
     End Function
     Private Function FindWidget(ByVal name As String, ByVal typeName As String) As IBotWidget
         Return (From x In widgets Where x.Name.ToLower = name.ToLower AndAlso x.TypeName.ToLower = typeName.ToLower).FirstOrDefault()
@@ -257,7 +259,7 @@ Public NotInheritable Class MainBot
 
         'Kill servers
         For Each server In servers.ToList
-            KillServer(server.name)
+            KillServer(server.Name)
         Next server
 
         'Kill widgets
@@ -339,7 +341,7 @@ Public NotInheritable Class MainBot
         Try
             lan = New W3LanAdvertiser(Me, name, listenPort, remoteHost)
         Catch e As Exception
-            Return failure("Error creating lan advertiser: {0}".frmt(e.Message)).Futurize
+            Return failure("Error creating lan advertiser: {0}".frmt(e.ToString)).Futurize
         End Try
         Dim added = AddWidget(lan)
         If Not added.succeeded Then
@@ -348,19 +350,19 @@ Public NotInheritable Class MainBot
         lan.AddGame(header)
 
         Dim f = New Future(Of Outcome)
-        server.f_OpenPort(listenPort).CallWhenValueReady(
+        server.QueueOpenPort(listenPort).CallWhenValueReady(
             Sub(listened)
-                If Not listened.succeeded Then
-                    server.f_Kill()
-                    lan.Dispose()
-                    f.SetValue(failure("Failed to listen on tcp port."))
-                    Return
-                End If
+                                                                If Not listened.succeeded Then
+                                                                    server.QueueKill()
+                                                                    lan.Dispose()
+                                                                    f.SetValue(failure("Failed to listen on tcp port."))
+                                                                    Return
+                                                                End If
 
-                DisposeLink.CreateOneWayLink(lan, server)
-                DisposeLink.CreateOneWayLink(server, lan)
-                f.SetValue(success("Created lan Admin Game"))
-            End Sub
+                                                                DisposeLink.CreateOneWayLink(lan, server)
+                                                                DisposeLink.CreateOneWayLink(server, lan)
+                                                                f.SetValue(success("Created lan Admin Game"))
+                                                            End Sub
         )
         Return f
     End Function
@@ -410,7 +412,14 @@ Public NotInheritable Class MainBot
         )
     End Sub
 
-    Private Sub c_ClientChatEvent(ByVal client As IBnetClient, ByVal id As Bnet.BnetPacket.ChatEventId, ByVal username As String, ByVal text As String)
+    Private Sub c_ClientReceivedPacket(ByVal client As IBnetClient, ByVal packet As BnetPacket)
+        If packet.id <> BnetPacketID.ChatEvent Then Return
+
+        Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+        Dim id = CType(vals("event id"), BnetPacket.ChatEventId)
+        Dim username = CStr(vals("username"))
+        Dim text = CStr(vals("text"))
+
         'Exit if this is not a command
         If id <> Bnet.BnetPacket.ChatEventId.Talk And id <> Bnet.BnetPacket.ChatEventId.Whisper Then
             Return
@@ -431,15 +440,15 @@ Public NotInheritable Class MainBot
         End If
 
         'Process prefixed commands
-        Dim command_text = text.Substring(My.Settings.commandPrefix.Length)
-        Dim f = ClientCommands.ProcessText(client, user, command_text)
-        f.CallWhenValueReady(
+        Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
+        Dim commandOutcocme = ClientCommands.ProcessCommand(client, user, breakQuotedWords(commandText))
+        commandOutcocme.CallWhenValueReady(
             Sub(output) client.f_SendWhisper(user.name, If(output.succeeded, "", "(Failed) ") + output.Message)
         )
-        If Not f.IsReady Then
-            FutureWait(New TimeSpan(0, 0, 2)).CallWhenReady(
+        If Not commandOutcocme.IsReady Then
+            FutureWait(2.Seconds).CallWhenReady(
                 Sub()
-                    If Not f.IsReady Then
+                    If Not commandOutcocme.IsReady Then
                         client.f_SendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".frmt(text))
                     End If
                 End Sub
@@ -459,16 +468,16 @@ Public NotInheritable Class MainBot
 
         'Process ?trigger command
         If text.ToLower() = "?trigger" Then
-            game.f_SendMessageTo("Command prefix is '{0}'".frmt(My.Settings.commandPrefix), player)
+            game.QueueSendMessageTo("Command prefix is '{0}'".frmt(My.Settings.commandPrefix), player)
             Return
         End If
 
         'Process prefixed commands
-        Dim command_text = text.Substring(My.Settings.commandPrefix.Length)
-        game.f_CommandProcessText(player, command_text).CallWhenValueReady(
-            Sub(out)
-                Dim msg = If(out.succeeded, "", "Failed: ") + out.Message
-                game.f_SendMessageTo(msg, player)
+        Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
+        game.QueueProcessCommand(player, breakQuotedWords(commandText)).CallWhenValueReady(
+            Sub(commandOutcome)
+                Dim msg = If(commandOutcome.succeeded, "", "Failed: ") + commandOutcome.Message
+                game.QueueSendMessageTo(msg, player)
             End Sub
         )
     End Sub
@@ -599,44 +608,29 @@ Public Class PortPool
         SyncLock lock
             If InPorts.Count = 0 Then Return failure("No ports are in the pool.")
             Dim port = New PortHandle(Me, InPorts.First)
-            InPorts.Remove(port.port)
-            Return successVal(port, "Took port {0} from the pool.".frmt(port.port))
+            InPorts.Remove(port.Port)
+            Return successVal(port, "Took port {0} from the pool.".frmt(port.Port))
         End SyncLock
     End Function
 
     Public Class PortHandle
-        Implements IDisposable
+        Inherits NotifyingDisposable
         Private ReadOnly pool As PortPool
         Private ReadOnly _port As UShort
-        Private disposed As Boolean
-        Private ReadOnly lock As New Object()
 
         Public Sub New(ByVal pool As PortPool, ByVal port As UShort)
             Me.pool = pool
             Me._port = port
         End Sub
 
-        Public ReadOnly Property port() As UShort
+        Public ReadOnly Property Port() As UShort
             Get
-                SyncLock lock
-                    If disposed Then Throw New InvalidOperationException("Can't access a disposed object.")
-                    Return _port
-                End SyncLock
+                If IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
+                Return _port
             End Get
         End Property
 
-        Public Sub Dispose() Implements IDisposable.Dispose
-            SyncLock lock
-                If disposed Then Return
-                disposed = True
-            End SyncLock
-
-            pool.TryReturnPortToPool(_port)
-            GC.SuppressFinalize(Me)
-        End Sub
-
-        Protected Overrides Sub Finalize()
-            disposed = True
+        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
             pool.TryReturnPortToPool(_port)
         End Sub
     End Class

@@ -87,25 +87,25 @@ Namespace Mpq.Crypt
 
         '''<summary>Creates the encryption table used for MPQ data</summary>
         Private Function computeCryptTable() As Dictionary(Of HashType, ModInt32())
-            Const N As Integer = 256 * 5 'table size
-            Dim T(0 To N - 1) As ModInt32 'table
-            Dim k As ModInt32 = &H100001 'key generator
-            Dim p = 0 'position
+            Const TableSize As Integer = 256 * 5
+            Dim table(0 To TableSize - 1) As ModInt32
+            Dim k As ModInt32 = &H100001
+            Dim pos = 0
 
-            While T(p) = 0 '[every value in the table will have been initialized when this condition is no longer met]
+            While table(pos) = 0 '[every value in the table will have been initialized when this condition is no longer met]
                 For word = 1 To 2
-                    k = CUInt(k * 125 + 3) Mod CUInt(2796203)
-                    T(p) <<= 16 '[don't overwrite value from first iteration]
-                    T(p) = T(p) Or (k And &HFFFF)
+                    k = CUInt(k * 125 + 3) Mod 2796203UI
+                    table(pos) <<= 16 '[don't overwrite value from first iteration]
+                    table(pos) = table(pos) Or (k And &HFFFF)
                 Next word
 
-                p += 256
-                If p > N - 1 Then p -= N - 1
+                pos += 256
+                If pos > TableSize - 1 Then pos -= TableSize - 1
             End While
 
             Dim d = New Dictionary(Of HashType, ModInt32())
             For Each h In EnumValues(Of HashType)()
-                d(h) = T.SubArray(CInt(h) * 256, 256)
+                d(h) = table.SubArray(CInt(h) * 256, 256)
             Next h
             Return d
         End Function
@@ -130,7 +130,7 @@ Namespace Mpq.Crypt
 
         '''<summary>Computes the decryption key of a file with known filename</summary>
         Public Function GetFileDecryptionKey(ByVal fileName As String, ByVal fileTableEntry As MpqFileTable.FileEntry, ByVal mpqa As MpqArchive) As ModInt32
-            Dim key = HashString(getFileNameSlash(fileName), HashType.FILE_KEY) 'key from hashed file name [without folders]
+            Dim key = HashString(GetFileNameSlash(fileName), HashType.FILE_KEY) 'key from hashed file name [without folders]
 
             'adjusted keys are offset by the file position
             If (fileTableEntry.flags And MpqFileTable.FileEntry.FILE_FLAGS.ADJUSTED_KEY) <> 0 Then

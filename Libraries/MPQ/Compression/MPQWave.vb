@@ -49,7 +49,7 @@ Namespace Mpq.Compression.Wave
                                     Else
                                         stepIndex(channel) -= 8
                                     End If
-                                    stepIndex(channel) = between(0, stepIndex(channel), stepSizeTable.Length - 1)
+                                    stepIndex(channel) = stepIndex(channel).Between(0, stepSizeTable.Length - 1)
                                     nextChannel = channel 'use this channel again in the next iteration
                                     Continue Do
                             End Select
@@ -71,8 +71,8 @@ Namespace Mpq.Compression.Wave
                         End If
 
                         'keep channel states from going out of range
-                        prediction(channel) = between(Short.MinValue, prediction(channel), Short.MaxValue)
-                        stepIndex(channel) = between(0, stepIndex(channel), stepSizeTable.Length - 1)
+                        prediction(channel) = prediction(channel).Between(Short.MinValue, Short.MaxValue)
+                        stepIndex(channel) = stepIndex(channel).Between(0, stepSizeTable.Length - 1)
 
                         'output prediction
                         outBitBuffer.QueueUInt16(CType(prediction(channel), ModInt16))

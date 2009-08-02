@@ -40,7 +40,7 @@ Namespace Warcraft3
             If Not IO.Directory.Exists(My.Settings.mapPath + "HostBot") Then
                 IO.Directory.CreateDirectory(My.Settings.mapPath + "HostBot")
             End If
-            Dim filename = getFileNameSlash(path)
+            Dim filename = GetFileNameSlash(path)
             Dim filenameWithoutExtension = IO.Path.GetFileNameWithoutExtension(filename)
             Dim fileExtension = IO.Path.GetExtension(filename)
             Dim n = 1

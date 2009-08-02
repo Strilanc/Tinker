@@ -175,8 +175,9 @@ Public Module ExtensionsIConverter
     <Extension()> Public Function ToReadEnumerator(ByVal stream As IO.Stream) As IEnumerator(Of Byte)
         Contract.Requires(stream IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerator(Of Byte))() IsNot Nothing)
+        Dim stream_ = stream
         Return New Enumerator(Of Byte)(Function(controller)
-                                           Dim r = stream.ReadByte()
+                                           Dim r = stream_.ReadByte()
                                            If r = -1 Then  Return controller.Break()
                                            Return CByte(r)
                                        End Function)
@@ -186,12 +187,14 @@ Public Module ExtensionsIConverter
         Contract.Requires(converter IsNot Nothing)
         Contract.Requires(stream IsNot Nothing)
         Contract.Ensures(Contract.Result(Of PushEnumerator(Of T))() IsNot Nothing)
+        Dim converter_ = converter
+        Dim stream_ = stream
         Return New PushEnumerator(Of T)(Sub(sequenceT)
-                                            Dim sequence = converter.Convert(sequenceT)
+                                            Dim sequence = converter_.Convert(sequenceT)
                                             While sequence.MoveNext
-                                                stream.WriteByte(sequence.Current)
+                                                stream_.WriteByte(sequence.Current)
                                             End While
-                                            stream.Close()
+                                            stream_.Close()
                                         End Sub)
     End Function
 

@@ -30,8 +30,8 @@ Public Class W3GameServerControl
                 If server Is Nothing Then
                     logServer.SetLogger(Nothing, Nothing)
                 Else
-                    logServer.SetLogger(server.logger, "Server")
-                    server.f_EnumGames().CallWhenValueReady(
+                    logServer.SetLogger(server.Logger, "Server")
+                    server.QueueGetGames().CallWhenValueReady(
                         Sub(games)
                             uiRef.QueueAction(
                                 Sub()
