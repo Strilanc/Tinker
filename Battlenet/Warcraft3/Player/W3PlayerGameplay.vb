@@ -70,7 +70,7 @@
             Contract.Assume(data IsNot Nothing)
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'
             eref.QueueAction(Sub()
-                                 game.QueueSendGameData(Me, Concat({New Byte() {id}, data}))
+                                 game.QueueSendGameData(Me, Concat({id}, data))
                              End Sub)
         End Sub
         Private Sub ReceiveTock(ByVal vals As Dictionary(Of String, Object))

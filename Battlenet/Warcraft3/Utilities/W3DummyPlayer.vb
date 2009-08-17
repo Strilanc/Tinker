@@ -48,7 +48,7 @@ Namespace Warcraft3
 #End Region
 
 #Region "Networking"
-        Public Function f_Connect(ByVal hostname As String, ByVal port As UShort) As IFuture(Of Outcome)
+        Public Function QueueConnect(ByVal hostname As String, ByVal port As UShort) As IFuture(Of Outcome)
             Contract.Requires(hostname IsNot Nothing)
             Dim hostname_ = hostname
             Return ref.QueueFunc(Function()
@@ -124,7 +124,7 @@ Namespace Warcraft3
                         Catch e As Exception
                             Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".frmt(id, name, e)
                             logger.log(msg, LogMessageTypes.Problem)
-                            Logging.LogUnexpectedException(msg, e)
+                            LogUnexpectedException(msg, e)
                         End Try
 
                         Return socket.connected
@@ -227,7 +227,7 @@ Namespace Warcraft3
                     Catch e As Exception
                         Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".frmt(id, name, e)
                         logger.log(msg, LogMessageTypes.Problem)
-                        Logging.LogUnexpectedException(msg, e)
+                        LogUnexpectedException(msg, e)
                     End Try
                 End Sub
             )

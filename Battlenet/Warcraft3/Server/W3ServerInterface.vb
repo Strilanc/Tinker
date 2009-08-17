@@ -45,7 +45,7 @@ Namespace Warcraft3
         Public Event RemovedGame(ByVal sender As IW3Server, ByVal game As IW3Game) Implements IW3Server.RemovedGame
         Public Event AddedGame(ByVal sender As IW3Server, ByVal game As IW3Game) Implements IW3Server.AddedGame
         Public Event ChangedState(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates) Implements IW3Server.ChangedState
-        Public ReadOnly Property logger As Logging.Logger Implements IW3Server.Logger
+        Public ReadOnly Property logger As Logger Implements IW3Server.Logger
             Get
                 Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
                 Throw New NotSupportedException
@@ -84,19 +84,19 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of INotifyingDisposable)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function f_AddAvertiser(ByVal m As Links.IGameSourceSink) As IFuture(Of Functional.Outcome) Implements IW3Server.QueueAddAvertiser
+        Public Function f_AddAvertiser(ByVal m As Links.IGameSourceSink) As IFuture(Of Outcome) Implements IW3Server.QueueAddAvertiser
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function f_CloseAllPorts() As IFuture(Of Functional.Outcome) Implements IW3Server.QueueCloseAllPorts
+        Public Function f_CloseAllPorts() As IFuture(Of Outcome) Implements IW3Server.QueueCloseAllPorts
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function f_ClosePort(ByVal port As UShort) As IFuture(Of Functional.Outcome) Implements IW3Server.QueueClosePort
+        Public Function f_ClosePort(ByVal port As UShort) As IFuture(Of Outcome) Implements IW3Server.QueueClosePort
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function f_CreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of Functional.Outcome(Of IW3Game)) Implements IW3Server.QueueCreateGame
+        Public Function f_CreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of Outcome(Of IW3Game)) Implements IW3Server.QueueCreateGame
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of IW3Game)))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
@@ -116,19 +116,19 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of IW3Game)))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function f_Kill() As IFuture(Of Functional.Outcome) Implements IW3Server.QueueKill
+        Public Function f_Kill() As IFuture(Of Outcome) Implements IW3Server.QueueKill
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function f_OpenPort(ByVal port As UShort) As IFuture(Of Functional.Outcome) Implements IW3Server.QueueOpenPort
+        Public Function f_OpenPort(ByVal port As UShort) As IFuture(Of Outcome) Implements IW3Server.QueueOpenPort
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function f_RemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture(Of Functional.Outcome) Implements IW3Server.QueueRemoveGame
+        Public Function f_RemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture(Of Outcome) Implements IW3Server.QueueRemoveGame
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Function f_StopAcceptingPlayers() As IFuture(Of Functional.Outcome) Implements IW3Server.QueueStopAcceptingPlayers
+        Public Function f_StopAcceptingPlayers() As IFuture(Of Outcome) Implements IW3Server.QueueStopAcceptingPlayers
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException
         End Function

@@ -86,7 +86,7 @@ Namespace Bnet
             Throw New NotSupportedException()
         End Function
 
-        Public Function f_listenPort() As Functional.Futures.IFuture(Of UShort) Implements IBnetClient.f_listenPort
+        Public Function f_listenPort() As IFuture(Of UShort) Implements IBnetClient.f_listenPort
             Contract.Ensures(Contract.Result(Of IFuture(Of UShort))() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
@@ -133,7 +133,7 @@ Namespace Bnet
             Throw New NotSupportedException()
         End Function
 
-        Public Function f_StopAdvertisingGame(ByVal reason As String) As Functional.Futures.IFuture(Of Functional.Outcome) Implements IBnetClient.f_StopAdvertisingGame
+        Public Function f_StopAdvertisingGame(ByVal reason As String) As IFuture(Of Outcome) Implements IBnetClient.f_StopAdvertisingGame
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Throw New NotSupportedException()
@@ -323,7 +323,7 @@ Namespace Bnet
             AddHandler gameRefreshTimer.Elapsed, Sub() c_RefreshTimerTick()
 
             'Init crypto
-            With Bnet.Crypt.GeneratePublicPrivateKeyPair(New System.Random())
+            With Bnet.Crypt.GeneratePublicPrivateKeyPair(New System.Security.Cryptography.RNGCryptoServiceProvider())
                 clientPublicKey = .Value1
                 clientPrivateKey = .Value2
             End With
@@ -405,7 +405,7 @@ Namespace Bnet
 #Region "State"
         Protected Overrides Sub Dispose(ByVal disposing As Boolean)
             ref.QueueAction(Sub() Disconnect("{0} Disposed".frmt(Me.GetType.Name)))
-            parent.f_RemoveClient(Me.name)
+            parent.QueueRemoveClient(Me.name)
         End Sub
         Private Sub ChangeState(ByVal newState As States)
             Dim oldState = state
@@ -426,10 +426,10 @@ Namespace Bnet
                 'Allocate port
                 If Me.listenPort = 0 Then
                     Dim out = parent.portPool.TryTakePortFromPool()
-                    If Not out.succeeded Then
+                    If out Is Nothing Then
                         Return failure("No listen port specified, and no ports available in the pool.").Futurize()
                     End If
-                    Me.poolPort = out.val
+                    Me.poolPort = out
                     Me.listenPort = Me.poolPort.Port
                     logger.log("Took port {0} from pool.".frmt(Me.listenPort), LogMessageTypes.Positive)
                 End If
@@ -481,7 +481,8 @@ Namespace Bnet
                                         If TypeOf result2.Exception Is Pickling.PicklingException Then
                                             Return True
                                         ElseIf Not (TypeOf result2.Exception Is SocketException OrElse
-                                                    TypeOf result2.Exception Is ObjectDisposedException) Then
+                                                    TypeOf result2.Exception Is ObjectDisposedException OrElse
+                                                    TypeOf result2.Exception Is IO.IOException) Then
                                             LogUnexpectedException("Error receiving data from bnet server", result2.Exception)
                                         End If
                                         Disconnect("Error receiving packet: {0}.".frmt(result2.Exception))
@@ -803,12 +804,7 @@ Namespace Bnet
             Dim war3Path = My.Settings.war3path
             Dim cdKeyOwner = My.Settings.cdKeyOwner
             Dim exeInfo = My.Settings.exeInformation
-            Contract.Assume(serverCdKeySalt IsNot Nothing)
-            Contract.Assume(mpqNumberString IsNot Nothing)
-            Contract.Assume(mpqHashChallenge IsNot Nothing)
-            Contract.Assume(war3Path IsNot Nothing)
-            Contract.Assume(cdKeyOwner IsNot Nothing)
-            Contract.Assume(exeInfo IsNot Nothing)
+            Dim R = New System.Security.Cryptography.RNGCryptoServiceProvider()
             If profile.keyServerAddress Like "*:#*" Then
                 Dim pair = profile.keyServerAddress.Split(":"c)
                 Dim tempPort = pair(1)
@@ -822,21 +818,22 @@ Namespace Bnet
                                                        cdKeyOwner,
                                                        exeInfo,
                                                        pair(0),
-                                                       port).CallWhenValueReady(
+                                                       port,
+                                                       R).CallWhenValueReady(
                     Sub(out)
                         ref.QueueAction(
                             Sub()
                                 If out.succeeded Then
-                                    Contract.Assume(out.val IsNot Nothing)
-                                    Dim rocKeyData = CType(CType(out.val.payload.Value, Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
+                                    Contract.Assume(out.Value IsNot Nothing)
+                                    Dim rocKeyData = CType(CType(out.Value.payload.Value, Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
                                     Dim rocHash = CType(rocKeyData("hash"), Byte())
                                     Contract.Assume(rocHash IsNot Nothing)
-                                    Me.wardenSeed = rocHash.SubArray(0, 4).ToUInteger(ByteOrder.LittleEndian)
-                                    logger.log(out.Message, LogMessageTypes.Positive)
-                                    SendPacket(out.val)
+                                    Me.wardenSeed = rocHash.SubArray(0, 4).ToUInt32(ByteOrder.LittleEndian)
+                                    logger.Log(out.Message, LogMessageTypes.Positive)
+                                    SendPacket(out.Value)
                                 Else
-                                    logger.log(out.Message, LogMessageTypes.Negative)
-                                    futureConnected.TrySetValue(failure("Failed to borrow keys: '{0}'.".frmt(out.Message)))
+                                    logger.Log(out.Message, LogMessageTypes.Negative)
+                                    futureConnected.TrySetValue(Failure("Failed to borrow keys: '{0}'.".Frmt(out.Message)))
                                     Disconnect("Error borrowing keys.")
                                 End If
                             End Sub
@@ -856,11 +853,12 @@ Namespace Bnet
                                                                     cdKeyOwner,
                                                                     exeInfo,
                                                                     rocKey,
-                                                                    tftKey)
+                                                                    tftKey,
+                                                                    R)
                 Dim rocKeyData = CType(CType(p.payload.Value, Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
                 Dim rocHash = CType(rocKeyData("hash"), Byte())
                 Contract.Assume(rocHash IsNot Nothing)
-                Me.wardenSeed = rocHash.SubArray(0, 4).ToUInteger(ByteOrder.LittleEndian)
+                Me.wardenSeed = rocHash.SubArray(0, 4).ToUInt32(ByteOrder.LittleEndian)
                 SendPacket(p)
             End If
         End Sub
@@ -1003,7 +1001,7 @@ Namespace Bnet
             If lan_host <> "" Then
                 Try
                     Dim lan = New W3LanAdvertiser(parent, name, listenPort, lan_host)
-                    parent.f_AddWidget(lan)
+                    parent.QueueAddWidget(lan)
                     DisposeLink.CreateOneWayLink(Me, lan)
                     AdvertisingLink.CreateMultiWayLink({Me, lan.MakeAdvertisingLinkMember})
                 Catch e As Exception
@@ -1043,7 +1041,7 @@ Namespace Bnet
                             End Sub)
         End Sub
         Private Sub c_WardenFail(ByVal e As Exception) Handles warden.Fail
-            Logging.LogUnexpectedException("Warden", e)
+            LogUnexpectedException("Warden", e)
             logger.log("Error dealing with Warden packet. Disconnecting to be safe.", LogMessageTypes.Problem)
             ref.QueueAction(Sub() Disconnect("Error dealing with Warden packet."))
         End Sub
@@ -1122,7 +1120,7 @@ Namespace Bnet
                 Return profile
             End Get
         End Property
-        Private ReadOnly Property _logger As Logging.Logger Implements IBnetClient.logger
+        Private ReadOnly Property _logger As Logger Implements IBnetClient.logger
             Get
                 Return logger
             End Get

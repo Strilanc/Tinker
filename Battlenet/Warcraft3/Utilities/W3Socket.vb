@@ -112,7 +112,7 @@ Namespace Warcraft3
                 Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
 
                 'Send
-                socket.WritePacket(Concat({New Byte() {W3Packet.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray}))
+                socket.WritePacket(Concat({W3Packet.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray))
                 Return success("Sent")
 
             Catch e As Pickling.PicklingException
@@ -122,8 +122,9 @@ Namespace Warcraft3
 
             Catch e As Exception
                 If Not (TypeOf e Is SocketException OrElse
-                        TypeOf e Is ObjectDisposedException) Then
-                    Logging.LogUnexpectedException("Error sending {0} to {1}.".frmt(pk.id, Name), e)
+                        TypeOf e Is ObjectDisposedException OrElse
+                        TypeOf e Is IO.IOException) Then
+                    LogUnexpectedException("Error sending {0} to {1}.".frmt(pk.id, Name), e)
                 End If
                 Dim msg = "Error sending {0} to {1}: {2}".frmt(pk.id, Name, e)
                 socket.Disconnect(reason:=msg)
@@ -185,8 +186,9 @@ Namespace Warcraft3
 
                     Catch e As Exception
                         If Not (TypeOf e Is SocketException OrElse
-                                TypeOf e Is ObjectDisposedException) Then
-                            Logging.LogUnexpectedException("Error receiving {0} from {1}.".frmt(id, Name), e)
+                                TypeOf e Is ObjectDisposedException OrElse
+                                TypeOf e Is IO.IOException) Then
+                            LogUnexpectedException("Error receiving {0} from {1}.".frmt(id, Name), e)
                         End If
                         Dim msg = "Error receiving {0} from {1}: {2}".frmt(id, Name, e)
                         Logger.log(msg, LogMessageTypes.Problem)

@@ -1,7 +1,7 @@
 'Imports HostBot.Functional
-'Imports HostBot.Functional.Futures
-'Imports HostBot.Functional.Futures.BaseImplementations
-'Imports HostBot.Functional.Currying
+'Imports HostBot.Futures
+'Imports HostBot.BaseImplementations
+'Imports HostBot.Currying
 
 'Public Class BotStats
 '    Private WithEvents client As BnetClient = Nothing

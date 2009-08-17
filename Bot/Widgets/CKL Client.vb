@@ -12,7 +12,7 @@
 
             Dim ref = New ThreadPooledCallQueue
             Dim future = New Future(Of Outcome(Of CklEncodedKey))
-            Dim payload = Concat({New Byte() {CklServer.PACKET_ID, CklPacketId.keys, 0, 0}, clientCdKeySalt, serverCdKeySalt})
+            Dim payload = Concat({CklServer.PACKET_ID, CklPacketId.keys, 0, 0}, clientCdKeySalt, serverCdKeySalt)
             Dim socket As PacketSocket = Nothing
 
             'prepare timeout
@@ -30,7 +30,7 @@
                     If future.IsReady Then
                         If result.Value IsNot Nothing Then  result.Value.Close()
                     ElseIf result.Exception IsNot Nothing Then
-                        future.SetValue(failure("Failed to connect: {0}".frmt(result.Exception.Message)))
+                        future.SetValue(Failure("Failed to connect: {0}".Frmt(result.Exception.Message)))
                     Else
                         socket = New PacketSocket(result.Value, timeout:=10.Seconds)
                         socket.WritePacket(payload)
@@ -46,27 +46,27 @@
                                     socket.Disconnect("Received response")
 
                                     If flag <> CklServer.PACKET_ID Then
-                                        future.SetValue(failure("Incorrect header id in data returned from CKL server."))
+                                        future.SetValue(Failure("Incorrect header id in data returned from CKL server."))
                                         Return
                                     End If
                                     Select Case CType(id, CklPacketId)
                                         Case CklPacketId.error
                                             'error
-                                            future.SetValue(failure("CKL server returned an error: {0}.".frmt(System.Text.UTF8Encoding.UTF8.GetString(data.ToArray))))
+                                            future.SetValue(Failure("CKL server returned an error: {0}.".Frmt(System.Text.UTF8Encoding.UTF8.GetString(data.ToArray))))
                                         Case CklPacketId.keys
                                             'success
                                             Dim keyLength = data.Length \ 2
                                             Dim rocKeyData = data.SubView(0, keyLength).ToArray
                                             Dim tftKeyData = data.SubView(keyLength, keyLength).ToArray
                                             Dim kv = New CklEncodedKey(Bnet.BnetPacket.CDKeyJar.packBorrowedCdKey(rocKeyData), Bnet.BnetPacket.CDKeyJar.packBorrowedCdKey(tftKeyData))
-                                            future.SetValue(successVal(kv, "Succesfully borrowed keys from CKL server."))
+                                            future.SetValue(Success(kv, "Succesfully borrowed keys from CKL server."))
                                         Case Else
                                             'unknown
-                                            future.SetValue(failure("Incorrect packet id in data returned from CKL server."))
+                                            future.SetValue(Failure("Incorrect packet id in data returned from CKL server."))
                                     End Select
 
                                 Catch e As Exception
-                                    future.SetValue(failure("Error borrowing keys from CKL server: {0}.".frmt(e.ToString)))
+                                    future.SetValue(Failure("Error borrowing keys from CKL server: {0}.".Frmt(e.ToString)))
                                 End Try
                             End Sub
                         )

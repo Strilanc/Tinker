@@ -97,15 +97,15 @@ Namespace Warcraft3
                         Sub()
                             For i = 1 To 3
                                 Dim receivedPort = parent.portPool.TryTakePortFromPool()
-                                If Not receivedPort.succeeded Then
+                                If receivedPort Is Nothing Then
                                     logger.log("Failed to get port for fake player.", LogMessageTypes.Negative)
                                     Exit For
                                 End If
 
-                                Dim p = New W3DummyPlayer("Wait {0}min".frmt(i), receivedPort.val, logger, W3DummyPlayer.Modes.EnterGame)
+                                Dim p = New W3DummyPlayer("Wait {0}min".frmt(i), receivedPort, logger, W3DummyPlayer.Modes.EnterGame)
                                 p.readyDelay = i.Minutes
                                 Dim i_ = i
-                                p.f_Connect("localhost", settings.default_listen_ports.FirstOrDefault).CallWhenValueReady(
+                                p.QueueConnect("localhost", settings.default_listen_ports.FirstOrDefault).CallWhenValueReady(
                                     Sub(succeeded)
                                         Me.logger.log("Fake player {0}: {1}".frmt(i_, succeeded.Message), If(succeeded.succeeded, LogMessageTypes.Positive, LogMessageTypes.Negative))
                                     End Sub)
@@ -120,14 +120,14 @@ Namespace Warcraft3
                     End If
 
                     Dim grabPort = parent.portPool.TryTakePortFromPool()
-                    If Not grabPort.succeeded Then
+                    If grabPort Is Nothing Then
                         Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
                     End If
 
                     FutureWait(3.Seconds).CallWhenReady(
                         Sub()
-                            Dim p = New W3DummyPlayer("Grab", grabPort.val, logger)
-                            p.f_Connect("localhost", server_port)
+                            Dim p = New W3DummyPlayer("Grab", grabPort, logger)
+                            p.QueueConnect("localhost", server_port)
                         End Sub)
                 End If
             Catch e As Exception
@@ -259,7 +259,7 @@ Namespace Warcraft3
 
             change_state(W3ServerStates.killed)
             Me.Dispose()
-            parent.f_RemoveServer(Me.name)
+            parent.QueueRemoveServer(Me.name)
             Return success("Server killed.")
         End Function
         Protected Overrides Sub Dispose(ByVal disposing As Boolean)
@@ -294,7 +294,7 @@ Namespace Warcraft3
 
             SetAdvertiserOptions(private:=False)
             e_ThrowAddedGame(game)
-            Return successVal(game, "Succesfully created instance '{0}'.".frmt(game_name))
+            Return Success(game, "Succesfully created instance '{0}'.".Frmt(game_name))
         End Function
 
         '''<summary>Finds a game with the given name.</summary>

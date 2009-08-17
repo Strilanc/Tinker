@@ -4,7 +4,7 @@
     ''' Appends to the data stream, and makes sure it will be a multiple of 512 bits in length.
     ''' </summary>
     Public Class BSha1DataStream
-        Inherits WrappedReadOnlyConversionStream
+        Inherits WrappedReadOnlyStream
         Private Enum modes
             data
             pad_1

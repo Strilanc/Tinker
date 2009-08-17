@@ -78,7 +78,7 @@ Namespace Warcraft3
                     Throw New UnreachableException()
             End Select
         End Sub
-        Private Function CommandProcessText(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Functional.Outcome)
+        Private Function CommandProcessText(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Contract.Requires(arguments IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Dim user = New BotUser(player.name)
@@ -111,14 +111,15 @@ Namespace Warcraft3
 
         Private Sub ReceiveChat(ByVal sender As IW3Player,
                                 ByVal text As String,
-                                ByVal flags() As Byte,
+                                ByVal type As W3Packet.ChatType,
+                                ByVal receiverType As W3Packet.ChatReceiverType,
                                 ByVal requestedReceiverIndexes As IList(Of Byte))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(requestedReceiverIndexes IsNot Nothing)
 
             'Log
-            logger.log(sender.name + ": " + text, LogMessageTypes.Typical)
+            logger.Log(sender.name + ": " + text, LogMessageTypes.Typical)
             ThrowPlayerTalked(sender, text)
 
             'Forward to requested players
@@ -128,7 +129,7 @@ Namespace Warcraft3
                 text = visibleSender.name + ": " + text
             End If
             'packet
-            Dim pk = W3Packet.MakeText(text, flags, players, visibleSender)
+            Dim pk = W3Packet.MakeText(text, type, receiverType, players, visibleSender)
             'receivers
             For Each receiver In players
                 Contract.Assume(receiver IsNot Nothing)
@@ -150,13 +151,16 @@ Namespace Warcraft3
                 Case W3Packet.NonGameAction.GameChat, W3Packet.NonGameAction.LobbyChat
                     Dim command_vals = CType(vals("command val"), Dictionary(Of String, Object))
                     Dim message = CStr(command_vals("message"))
-                    Dim flags = CType(command_vals("flags"), Byte())
+                    Dim type = If(command_type = W3Packet.NonGameAction.GameChat, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby)
+                    Dim receiverType As W3Packet.ChatReceiverType
+                    If type = W3Packet.ChatType.Game Then receiverType = CType(command_vals("receiver type"), W3Packet.ChatReceiverType)
                     Dim receivePlayerIndexes = CType(vals("receiving player indexes"), IList(Of Byte))
                     Contract.Assume(message IsNot Nothing)
                     Contract.Assume(receivePlayerIndexes IsNot Nothing)
                     ReceiveChat(sender,
                                 message,
-                                flags,
+                                type,
+                                receiverType,
                                 receivePlayerIndexes)
 
                 Case W3Packet.NonGameAction.SetTeam
@@ -172,8 +176,8 @@ Namespace Warcraft3
                     ReceiveSetColor(sender, CType(vals("command val"), W3Slot.PlayerColor))
 
                 Case Else
-                    Dim msg = "{0} sent unrecognized client command type: {1}".frmt(sender.name, command_type)
-                    logger.log(msg, LogMessageTypes.Negative)
+                    Dim msg = "{0} sent unrecognized client command type: {1}".Frmt(sender.name, command_type)
+                    logger.Log(msg, LogMessageTypes.Negative)
                     RemovePlayer(sender, True, W3PlayerLeaveTypes.Disconnect, msg)
             End Select
         End Sub
@@ -219,7 +223,7 @@ Namespace Warcraft3
         '''<summary>Disconnects from all players and kills the instance. Passes hosting to a player if possible.</summary>
         Private Function Close() As outcome
             If state >= W3GameStates.Closed Then
-                Return success(My.Resources.Instance_AlreadyClosed_f0name.frmt(Me.name))
+                Return Success(My.Resources.Instance_AlreadyClosed_f0name.Frmt(Me.name))
             End If
             pingTimer.Stop()
 
@@ -240,9 +244,9 @@ Namespace Warcraft3
 
                 If host IsNot Nothing AndAlso Not host.IsFake Then
                     BroadcastPacket(W3Packet.MakeSetHost(host.index), Nothing)
-                    logger.log(name + " has handed off hosting to " + host.name, LogMessageTypes.Positive)
+                    logger.Log(name + " has handed off hosting to " + host.name, LogMessageTypes.Positive)
                 Else
-                    logger.log(name + " has failed to hand off hosting", LogMessageTypes.Negative)
+                    logger.Log(name + " has failed to hand off hosting", LogMessageTypes.Negative)
                 End If
             End If
 
@@ -254,7 +258,7 @@ Namespace Warcraft3
 
             ChangeState(W3GameStates.Closed)
 
-            Return success(My.Resources.Instance_Closed_f0name.frmt(Me.name))
+            Return Success(My.Resources.Instance_Closed_f0name.Frmt(Me.name))
         End Function
 #End Region
 
@@ -307,11 +311,11 @@ Namespace Warcraft3
                 Dim b As Byte
                 Contract.Assume(e IsNot Nothing)
                 If Not Byte.TryParse(e, b) Then
-                    Return failure("Non-numeric team limit '{0}'.".frmt(e))
+                    Return Failure("Non-numeric team limit '{0}'.".Frmt(e))
                 End If
                 nums.Add(b)
             Next e
-            Return successVal(CType(nums, IList(Of Integer)), "Converted to numbers.")
+            Return Success(CType(nums, IList(Of Integer)), "Converted to numbers.")
         End Function
 
         Private Sub ChangeState(ByVal newState As W3GameStates)
@@ -347,9 +351,9 @@ Namespace Warcraft3
             slots.MaxPair(Function(slot) slot.Matches(query_), bestSlot, bestMatch)
 
             If bestMatch = W3Slot.Match.None Then
-                Return failure(My.Resources.Slot_NotMatched_f0pattern.frmt(query))
+                Return Failure(My.Resources.Slot_NotMatched_f0pattern.Frmt(query))
             Else
-                Return successVal(bestSlot, "Matched '{0}' to a slot's {1}.".frmt(query, bestMatch))
+                Return Success(bestSlot, "Matched '{0}' to a slot's {1}.".Frmt(query, bestMatch))
             End If
         End Function
 
@@ -372,7 +376,7 @@ Namespace Warcraft3
                 Contract.Assume(player IsNot Nothing)
                 SendMessageTo(message, player, display:=False)
             Next player
-            logger.log("{0}: {1}".frmt(My.Resources.ProgramName, message), LogMessageTypes.Typical)
+            logger.Log("{0}: {1}".Frmt(My.Resources.ProgramName, message), LogMessageTypes.Typical)
         End Sub
 
         '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
@@ -382,27 +386,16 @@ Namespace Warcraft3
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
 
-            'Prep
-            Dim flags() As Byte
-            If state >= W3GameStates.Loading Then
-                'public game chat
-                flags = New Byte() {0, 0, 0, 0}
-            Else
-                'lobby chat
-                flags = Nothing
-            End If
-
             'Send Text
-            If fakeHostPlayer IsNot Nothing Then
-                'text comes from fake host
-                player.QueueSendPacket(W3Packet.MakeText(message, flags, players, fakeHostPlayer))
-            Else
-                'text spoofs from receiving player
-                player.QueueSendPacket(W3Packet.MakeText(My.Resources.ProgramName + ": " + message, flags, players, player))
-            End If
+            'text comes from fake host or spoofs from the receiving player
+            player.QueueSendPacket(W3Packet.MakeText(text:=If(fakeHostPlayer Is Nothing, My.Resources.ProgramName + ": ", "") + message,
+                                                     type:=If(state >= W3GameStates.Loading, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby),
+                                                     receiverType:=W3Packet.ChatReceiverType.AllPlayers,
+                                                     receivingPlayers:=players,
+                                                     sender:=If(fakeHostPlayer, player)))
 
             If display Then
-                logger.log("(Private to {0}): {1}".frmt(player.name, message), LogMessageTypes.Typical)
+                logger.Log("(Private to {0}): {1}".Frmt(player.name, message), LogMessageTypes.Typical)
             End If
         End Sub
 #End Region
@@ -416,7 +409,7 @@ Namespace Warcraft3
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
             If Not players.Contains(player) Then
-                Return success("Player already not in game.")
+                Return Success("Player already not in game.")
             End If
 
             'Clean slot
@@ -455,18 +448,18 @@ Namespace Warcraft3
 
             'Log
             If player.IsFake Then
-                logger.log("{0} has been removed from the game. ({1})".frmt(player.name, reason), LogMessageTypes.Negative)
+                logger.Log("{0} has been removed from the game. ({1})".Frmt(player.name, reason), LogMessageTypes.Negative)
             Else
                 flagHasPlayerLeft = True
                 If wasExpected Then
-                    logger.log("{0} has left the game. ({1})".frmt(player.name, reason), LogMessageTypes.Negative)
+                    logger.Log("{0} has left the game. ({1})".Frmt(player.name, reason), LogMessageTypes.Negative)
                 Else
-                    logger.log("{0} has disconnected. ({1})".frmt(player.name, reason), LogMessageTypes.Problem)
+                    logger.Log("{0} has disconnected. ({1})".Frmt(player.name, reason), LogMessageTypes.Problem)
                 End If
                 ThrowPlayerLeft(player, leaveType, reason)
             End If
 
-            Return success("Removed player {0} from the game.".frmt(player.name))
+            Return Success("Removed player {0} from the game.".Frmt(player.name))
         End Function
 
         Private Function TryElevatePlayer(ByVal name As String,
@@ -474,17 +467,17 @@ Namespace Warcraft3
             Contract.Requires(name IsNot Nothing)
 
             Dim player = FindPlayer(name)
-            If player Is Nothing Then Return failure("No player found with the name '{0}'.".frmt(name))
-            If adminPlayer IsNot Nothing Then Return failure("A player is already the admin.")
+            If player Is Nothing Then Return Failure("No player found with the name '{0}'.".Frmt(name))
+            If adminPlayer IsNot Nothing Then Return Failure("A player is already the admin.")
             If password IsNot Nothing Then
                 player.NumAdminTries += 1
-                If player.NumAdminTries > 5 Then Return failure("Too many tries.")
-                If password.ToLower() <> server.settings.adminPassword.ToLower() Then Return failure("Incorrect password.")
+                If player.NumAdminTries > 5 Then Return Failure("Too many tries.")
+                If password.ToLower() <> server.settings.adminPassword.ToLower() Then Return Failure("Incorrect password.")
             End If
 
             adminPlayer = player
             SendMessageTo("You are now the admin.", player)
-            Return success("'{0}' is now the admin.".frmt(name))
+            Return Success("'{0}' is now the admin.".Frmt(name))
         End Function
 
         Private Function FindPlayer(ByVal username As String) As IW3Player
@@ -502,9 +495,9 @@ Namespace Warcraft3
             Dim foundSlot = FindMatchingSlot(slotQuery)
             If Not foundSlot.succeeded Then Return foundSlot
 
-            Dim slot = foundSlot.val
+            Dim slot = foundSlot.Value
             If Not slot.contents.EnumPlayers.Any Then
-                Return failure("There is no player to boot in slot '{0}'.".frmt(slotQuery))
+                Return Failure("There is no player to boot in slot '{0}'.".Frmt(slotQuery))
             End If
 
             Dim slotQuery_ = slotQuery
@@ -513,7 +506,7 @@ Namespace Warcraft3
             If target IsNot Nothing Then
                 slot.contents = slot.contents.RemovePlayer(target)
                 RemovePlayer(target, True, W3PlayerLeaveTypes.Disconnect, "Booted")
-                Return success("Booting player '{0}'.".frmt(slotQuery))
+                Return Success("Booting player '{0}'.".Frmt(slotQuery))
             End If
 
             For Each player In slot.contents.EnumPlayers
@@ -521,7 +514,7 @@ Namespace Warcraft3
                 slot.contents = slot.contents.RemovePlayer(player)
                 RemovePlayer(player, True, W3PlayerLeaveTypes.Disconnect, "Booted")
             Next player
-            Return success("Booting from slot '{0}'.".frmt(slotQuery))
+            Return Success("Booting from slot '{0}'.".Frmt(slotQuery))
         End Function
 #End Region
 
@@ -590,7 +583,7 @@ Namespace Warcraft3
                                        CommandProcessLocalText(text, logger)
                                    End Sub)
         End Function
-        Private Function _f_CommandProcessText(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Functional.Outcome) Implements IW3Game.QueueProcessCommand
+        Private Function _f_CommandProcessText(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements IW3Game.QueueProcessCommand
             Return ref.QueueFunc(Function()
                                      Contract.Assume(player IsNot Nothing)
                                      Contract.Assume(arguments IsNot Nothing)
@@ -600,7 +593,7 @@ Namespace Warcraft3
         Private Function _f_TryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture(Of Outcome) Implements IW3Game.QueueTryElevatePlayer
             Return ref.QueueFunc(Function()
                                      Contract.Assume(name IsNot Nothing)
-                                     Contract.assume(password IsNot Nothing)
+                                     Contract.Assume(password IsNot Nothing)
                                      Return TryElevatePlayer(name, password)
                                  End Function)
         End Function

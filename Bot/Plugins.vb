@@ -126,7 +126,7 @@ Namespace Plugins
                 End If
                 Dim plug = sockets(path).load_plugin()
                 loaded_plugs.Add(plug)
-                Return successVal(plug.plugin, "Loaded plugin succesfully. Plugin Description is: '" + plug.plugin.description + "'")
+                Return Success(plug.plugin, "Loaded plugin succesfully. Plugin Description is: '" + plug.plugin.description + "'")
             Catch e As Exception
                 Return failure("Error loading plugin: " + e.ToString)
             End Try

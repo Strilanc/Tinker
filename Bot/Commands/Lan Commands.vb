@@ -23,7 +23,7 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim map_out = W3Map.FromArgument(arguments(1))
                 If Not map_out.succeeded Then Return map_out.Outcome.Futurize
-                Dim map = map_out.val
+                Dim map = map_out.Value
                 Dim name = arguments(0)
                 Dim id = target.AddGame(New W3GameHeader(arguments(0),
                                                          My.Resources.ProgramName,

@@ -67,7 +67,7 @@ Namespace Bnet.Crypt
             Return Not reg
         End Function
 
-        Public Function GeneratePublicPrivateKeyPair(ByVal r As System.Random) As KeyPair
+        Public Function GeneratePublicPrivateKeyPair(ByVal r As System.Security.Cryptography.RandomNumberGenerator) As KeyPair
             Contract.Requires(r IsNot Nothing)
             Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
 
@@ -106,7 +106,7 @@ Namespace Bnet.Crypt
             Dim clientPublicKey = BigNum.FromBytes(clientPublicKeyBytes, ByteOrder.LittleEndian)
 
             'Password private key
-            Dim x = BigNum.FromBytes(SHA1(Concat({accountSalt, SHA1((username + ":" + password).ToAscBytes())})), ByteOrder.LittleEndian)
+            Dim x = BigNum.FromBytes(SHA1(Concat(accountSalt, SHA1((username + ":" + password).ToAscBytes()))), ByteOrder.LittleEndian)
 
             'Verifier
             Dim v = G.PowerMod(x, N)
@@ -141,13 +141,13 @@ Namespace Bnet.Crypt
             Next i
 
             'Proofs
-            Dim clientProof = SHA1(Concat({fixed_salt,
-                                           SHA1(username.ToAscBytes),
-                                           accountSalt,
-                                           clientPublicKeyBytes,
-                                           serverOffsetPublicKeyBytes,
-                                           shared_secret}))
-            Dim serverProof = SHA1(Concat({clientPublicKeyBytes, clientProof, shared_secret}))
+            Dim clientProof = SHA1(Concat(fixed_salt,
+                                          SHA1(username.ToAscBytes),
+                                          accountSalt,
+                                          clientPublicKeyBytes,
+                                          serverOffsetPublicKeyBytes,
+                                          shared_secret))
+            Dim serverProof = SHA1(Concat(clientPublicKeyBytes, clientProof, shared_secret))
             Return New KeyPair(clientProof, serverProof)
         End Function
 

@@ -152,7 +152,7 @@ Namespace Warcraft3
                 Try
                     Dim hexData(0 To arg.Length \ 2 - 1 - 1) As Byte
                     For i = 0 To hexData.Length - 1
-                        hexData(i) = CByte(dehex(arg.Substring(i * 2 + 2, 2), ByteOrder.BigEndian))
+                        hexData(i) = CByte(arg.Substring(i * 2 + 2, 2).ParseAsUnsignedHexNumber(ByteOrder.BigEndian))
                     Next i
 
                     Dim packet = W3Packet.FromData(W3PacketId.HostMapInfo, hexData.ToView())
@@ -166,11 +166,11 @@ Namespace Warcraft3
                 Dim crc32 = CType(vals("crc32"), Byte())
                 Dim xoro = CType(vals("xoro checksum"), Byte())
                 Dim sha1 = CType(vals("sha1 checksum"), Byte())
-                Return successVal(New W3Map(My.Settings.mapPath, path, size, crc32, sha1, xoro, 3), "Loaded map meta data.")
+                Return Success(New W3Map(My.Settings.mapPath, path, size, crc32, sha1, xoro, 3), "Loaded map meta data.")
             Else
                 Dim out = findFileMatching("*" + arg + "*", "*.[wW]3[mxMX]", My.Settings.mapPath)
                 If Not out.succeeded Then Return CType(out, Outcome)
-                Return successVal(New W3Map(My.Settings.mapPath, out.val, My.Settings.war3path), "Loaded map file.")
+                Return Success(New W3Map(My.Settings.mapPath, out.Value, My.Settings.war3path), "Loaded map file.")
             End If
         End Function
         Public Sub New(ByVal folder As String,
@@ -199,7 +199,7 @@ Namespace Warcraft3
             Me.playableHeight = 256
             Me.playableWidth = 256
             Me.isMelee = True
-            Me.name = GetFileNameSlash(relPath)
+            Me.name = Mpq.Common.GetFileNameSlash(relPath)
             Me._numPlayerSlots = numSlots
             Me._fileSize = fileSize
             Me._crc32 = crc32
@@ -390,7 +390,7 @@ Namespace Warcraft3
                         Return cur_val.ToString
                     End If
                 Loop
-                Throw New IO.IOException("String not found")
+                Throw New KeyNotFoundException("String not found")
             End Using
         End Function
 
@@ -409,8 +409,8 @@ Namespace Warcraft3
                     If b = 0 Then Exit Do
                     name_key += Chr(b)
                 Loop
+                Dim key = name_key
                 Try
-                    Dim key = name_key
                     If key Like "TRIGSTR_#*" Then
                         Dim key_id As UInteger
                         If UInt32.TryParse(key.Substring("TRIGSTR_".Length), key_id) Then
@@ -418,6 +418,8 @@ Namespace Warcraft3
                         End If
                     End If
                     Me.name = GetMapString(mapArchive, key)
+                Catch e As KeyNotFoundException
+                    Me.name = key
                 Catch e As Exception
                     Me.name = "{0} (error reading strings file: {1})".frmt(name_key, e)
                 End Try
@@ -476,7 +478,7 @@ Namespace Warcraft3
                     Dim slot = New W3Slot(Nothing, CByte(slots.Count + 1))
                     'color
                     slot.color = CType(br.ReadInt32(), W3Slot.PlayerColor)
-                    If Not IsEnumValid(slot.color) Then Throw New IO.IOException("Unrecognized map slot color.")
+                    If Not slot.color.EnumValueIsDefined Then Throw New IO.IOException("Unrecognized map slot color.")
                     'type
                     Select Case br.ReadInt32()
                         Case 1

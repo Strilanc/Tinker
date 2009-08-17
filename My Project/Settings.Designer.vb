@@ -80,7 +80,7 @@ Namespace My
         
         <Global.System.Configuration.UserScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
-         Global.System.Configuration.DefaultSettingValueAttribute("1.23.0.6352")>  _
+         Global.System.Configuration.DefaultSettingValueAttribute("1.24.0.6372")>  _
         Public Property exeVersion() As String
             Get
                 Return CType(Me("exeVersion"),String)
@@ -99,18 +99,6 @@ Namespace My
             End Get
             Set
                 Me("exeInformation") = value
-            End Set
-        End Property
-        
-        <Global.System.Configuration.UserScopedSettingAttribute(),  _
-         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
-         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
-        Public Property debugMode() As Boolean
-            Get
-                Return CType(Me("debugMode"),Boolean)
-            End Get
-            Set
-                Me("debugMode") = value
             End Set
         End Property
         

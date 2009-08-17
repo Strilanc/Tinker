@@ -11,7 +11,7 @@
 '        Me.forward_host = forward_host
 '        accepter = New ConnectionAccepter()
 '        Dim out = accepter.start_listening_on_port(listen_port)
-'        If out.outcome <> Functional.Operations.Outcomes.succeeded Then Throw New Exception("Accepter failed")
+'        If out.outcome <> Operations.Outcomes.succeeded Then Throw New Exception("Accepter failed")
 '    End Sub
 
 '    Private Sub accepter_accepted_connection(ByVal sender As ConnectionAccepter, ByVal accepted_client As System.Net.Sockets.TcpClient) Handles accepter.accepted_connection
@@ -143,7 +143,7 @@
 
 '    Public Sub New(ByVal listen_port As UShort)
 '        Dim out = accepter.start_listening_on_port(listen_port)
-'        If out.outcome <> Functional.Operations.Outcomes.succeeded Then Throw New Exception("Accepter failed")
+'        If out.outcome <> Operations.Outcomes.succeeded Then Throw New Exception("Accepter failed")
 '    End Sub
 
 '    Private Sub accepter_accepted_connection(ByVal sender As ConnectionAccepter, ByVal accepted_client As System.Net.Sockets.TcpClient) Handles accepter.accepted_connection
@@ -183,11 +183,11 @@
 '                End If
 '                Dim port = CUShort(unpackUInteger(data))
 '                Dim out = accepter.start_listening_on_port(port)
-'                If out.outcome = Functional.Operations.Outcomes.succeeded Then
+'                If out.outcome = Operations.Outcomes.succeeded Then
 '                    err_msg = out.message
-'                    return_data = concat(New Byte() {1}, packUInteger(port))
+'                    return_data = Concat({1}, packUInteger(port))
 '                Else
-'                    return_data = concat(New Byte() {0}, packUInteger(port))
+'                    return_data = Concat({0}, packUInteger(port))
 '                End If
 
 '            Case IDS.close_port
@@ -197,11 +197,11 @@
 '                Dim port = CUShort(unpackUInteger(data))
 '                Dim out = accepter.stop_listening_on_port(port)
 '                Select Case out.outcome
-'                    Case Functional.Operations.Outcomes.unnecessary, Functional.Operations.Outcomes.failed
+'                    Case Operations.Outcomes.unnecessary, Operations.Outcomes.failed
 '                        err_msg = "No such open port"
-'                        return_data = concat(New Byte() {1}, packUInteger(port))
+'                        return_data = Concat({1}, packUInteger(port))
 '                    Case Else
-'                        return_data = concat(New Byte() {0}, packUInteger(port))
+'                        return_data = Concat({0}, packUInteger(port))
 '                End Select
 
 '            Case IDS.open_connection
@@ -216,9 +216,9 @@
 '                    client.Close()
 '                    amap1.Remove(client)
 '                    amap2.Remove(index)
-'                    return_data = concat(New Byte() {1}, packUInteger(index))
+'                    return_data = Concat({1}, packUInteger(index))
 '                Else
-'                    return_data = concat(New Byte() {0}, packUInteger(index))
+'                    return_data = Concat({0}, packUInteger(index))
 '                End If
 
 '            Case IDS.transfer_data

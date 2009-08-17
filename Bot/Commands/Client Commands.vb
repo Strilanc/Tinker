@@ -65,7 +65,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim client = target
-                Dim other_client = target.Parent.f_FindClient(arguments(0))
+                Dim other_client = target.Parent.QueueFindClient(arguments(0))
                 Return other_client.EvalWhenValueReady(
                     Function(client2)
                         If client2 Is Nothing Then
@@ -90,17 +90,17 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_AdUnlink_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal client As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return client.Parent.f_FindClient(arguments(0)).EvalWhenValueReady(
+                Return client.Parent.QueueFindClient(arguments(0)).EvalWhenValueReady(
                     Function(client2)
-                                                                                       If client2 Is Nothing Then
-                                                                                           Return failure("No client matching that name.")
-                                                                                       ElseIf client2 Is client Then
-                                                                                           Return failure("Can't link to self.")
-                                                                                       End If
+                        If client2 Is Nothing Then
+                            Return failure("No client matching that name.")
+                        ElseIf client2 Is client Then
+                            Return failure("Can't link to self.")
+                        End If
 
-                                                                                       client.ClearAdvertisingPartner(client2)
-                                                                                       Return success("Any link between client {0} and client {1} has been removed.".frmt(client.Name, client2.Name))
-                                                                                   End Function
+                        client.ClearAdvertisingPartner(client2)
+                        Return success("Any link between client {0} and client {1} has been removed.".frmt(client.Name, client2.Name))
+                    End Function
                 )
             End Function
         End Class
@@ -369,7 +369,7 @@ Namespace Commands.Specializations
                 'Map
                 Dim map_out = W3Map.FromArgument(arguments(1))
                 If Not map_out.succeeded Then Return map_out.Outcome.Futurize
-                Dim map = map_out.val
+                Dim map = map_out.Value
 
                 'Server settings
                 arguments = arguments.ToList
@@ -383,15 +383,15 @@ Namespace Commands.Specializations
                             End If
                     End Select
                     If arguments(i).ToLower Like "-port=*" AndAlso user IsNot Nothing AndAlso user.permission("root") < 5 Then
-                        Return failure("You need root=5 to use -port.").Futurize
+                        Return Failure("You need root=5 to use -port.").Futurize
                     End If
                 Next i
                 Dim header = New W3GameHeader(arguments(0),
                                               If(user Is Nothing, My.Resources.ProgramName, user.name),
                                               New W3MapSettings(arguments, map),
-                                              0, 0, 0, arguments, map.numPlayerSlots)
+                                              0, 0, 0, arguments, map.NumPlayerSlots)
                 Dim f_settings = target.f_listenPort.EvalWhenValueReady(Function(port) New ServerSettings(map, header, default_listen_ports:={port}))
-                Dim f_server = f_settings.EvalWhenValueReady(Function(settings) target.Parent.f_CreateServer(target.Name, settings, "[Linked]", True)).Defuturize()
+                Dim f_server = f_settings.EvalWhenValueReady(Function(settings) target.Parent.QueueCreateServer(target.Name, settings, "[Linked]", True)).Defuturize()
 
                 'Create the server, then advertise the game
                 Dim client = target
@@ -402,12 +402,12 @@ Namespace Commands.Specializations
                         End If
 
                         'Start advertising
-                        Dim server = created_server.val
+                        Dim server = created_server.Value
                         client.f_SetUserServer(user, server)
                         Return client.f_StartAdvertisingGame(header, server).EvalWhenValueReady(
                             Function(advertised)
                                 If advertised.succeeded Then
-                                    Return success("Game hosted succesfully. Admin code is '{0}'.".frmt(server.settings.adminPassword))
+                                    Return Success("Game hosted succesfully. Admin code is '{0}'.".Frmt(server.settings.adminPassword))
                                 Else
                                     server.QueueKill()
                                     Return advertised
@@ -442,14 +442,14 @@ Namespace Commands.Specializations
                 Return target.f_GetUserServer(user).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then
-                            Return failure("You don't have a hosted game to forward that command to.").Futurize
+                            Return Failure("You don't have a hosted game to forward that command to.").Futurize
                         End If
 
                         'Find game, then pass command
                         Return server.QueueFindGame(arguments(0)).EvalWhenValueReady(
                             Function(game)
                                 If game Is Nothing Then
-                                    Return failure("No game with that name.").Futurize
+                                    Return Failure("No game with that name.").Futurize
                                 End If
 
                                 'Pass command
@@ -472,11 +472,11 @@ Namespace Commands.Specializations
                 Return target.f_GetUserServer(user).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then
-                            Return failure("You don't have a hosted game to cancel.")
+                            Return Failure("You don't have a hosted game to cancel.")
                         End If
 
                         server.QueueKill()
-                        Return success("Cancelled hosting.")
+                        Return Success("Cancelled hosting.")
                     End Function
                 )
             End Function
@@ -495,10 +495,10 @@ Namespace Commands.Specializations
                 Return target.f_GetUserServer(user).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then
-                            Return failure("You don't have a hosted game to cancel.")
+                            Return Failure("You don't have a hosted game to cancel.")
                         End If
 
-                        Return success(server.settings.adminPassword)
+                        Return Success(server.settings.adminPassword)
                     End Function
                 )
             End Function
@@ -515,7 +515,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 target.f_SendText(arguments(0))
-                Return success("Said {0}".frmt(arguments(0))).Futurize
+                Return Success("Said {0}".Frmt(arguments(0))).Futurize
             End Function
         End Class
 
@@ -533,13 +533,13 @@ Namespace Commands.Specializations
                 'Map
                 Dim map_out = W3Map.FromArgument(arguments(1))
                 If Not map_out.succeeded Then Return map_out.Outcome.Futurize
-                Dim map = map_out.val
+                Dim map = map_out.Value
 
                 'create
                 Return target.f_StartAdvertisingGame(New W3GameHeader(arguments(0),
                                                                       My.Resources.ProgramName,
                                                                       New W3MapSettings(arguments, map),
-                                                                      0, 0, 0, arguments, map.numPlayerSlots), Nothing)
+                                                                      0, 0, 0, arguments, map.NumPlayerSlots), Nothing)
             End Function
         End Class
 
@@ -569,7 +569,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count = 0 AndAlso user Is Nothing Then
-                    Return failure("You didn't specify a player to elevate.").Futurize
+                    Return Failure("You didn't specify a player to elevate.").Futurize
                 End If
                 Dim username = If(arguments.Count = 0, user.name, arguments(0))
 
@@ -577,18 +577,18 @@ Namespace Commands.Specializations
                 Return target.f_GetUserServer(user).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then
-                            Return failure("You don't have a hosted game.").Futurize
+                            Return Failure("You don't have a hosted game.").Futurize
                         End If
 
                         'Find player's game, then elevate player
                         Return server.QueueFindPlayerGame(username).EvalWhenValueReady(
                             Function(game)
-                                If game.val Is Nothing Then
-                                    Return failure("No matching user found.").Futurize
+                                If game.Value Is Nothing Then
+                                    Return Failure("No matching user found.").Futurize
                                 End If
 
                                 'Elevate player
-                                Return game.val.QueueTryElevatePlayer(username)
+                                Return game.Value.QueueTryElevatePlayer(username)
                             End Function
                         ).Defuturize()
                     End Function

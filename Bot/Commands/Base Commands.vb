@@ -209,7 +209,7 @@ Namespace Commands
             Try
                 Return Process(target, user, arguments)
             Catch e As Exception
-                Logging.LogUnexpectedException("Processing text for command.", e)
+                LogUnexpectedException("Processing text for command.", e)
                 Return failure("Unexpected exception encountered ({0}).".frmt(e)).Futurize()
             End Try
         End Function
@@ -377,12 +377,12 @@ Namespace Commands
                                  ProcessCommand(target, Nothing, words).EvalWhenValueReady(
                                                              AddressOf output_of_command))
             Catch e As Exception
-                Logging.LogUnexpectedException("Exception rose past " + Me.GetType.Name + "[" + Me.name + "].processLocalText", e)
+                LogUnexpectedException("Exception rose past " + Me.GetType.Name + "[" + Me.name + "].processLocalText", e)
             End Try
         End Sub
 
         Private Function output_of_command(ByVal out As Outcome) As Outcome
-            Dim message = out.message
+            Dim message = out.Message
             If message Is Nothing Or message = "" Then
                 message = "Command {0}.".frmt(If(out.succeeded, "Succeeded", "Failed"))
             End If

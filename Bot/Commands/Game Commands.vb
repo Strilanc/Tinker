@@ -100,7 +100,7 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim out = W3Game.XvX(arguments(0))
                 If Not out.succeeded Then Return out.Outcome.Futurize
-                Return target.QueueTrySetTeamSizes(out.val)
+                Return target.QueueTrySetTeamSizes(out.Value)
             End Function
         End Class
 

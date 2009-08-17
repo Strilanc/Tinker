@@ -1,7 +1,4 @@
-﻿Imports HostBot.Pickling.Jars
-Imports HostBot.Pickling
-
-Namespace Warcraft3
+﻿Namespace Warcraft3
     Public Class W3MapSettingsJar
         Inherits Jar(Of Object)
         Private Enum GameSettingFlags As UInteger
@@ -24,7 +21,7 @@ Namespace Warcraft3
         End Enum
 
         Private Shared ReadOnly DataJar As New TupleJar("data",
-                    New EnumJar(Of GameSettingFlags)("settings", 4).Weaken,
+                    New EnumJar(Of GameSettingFlags)("settings", 4, flags:=True).Weaken,
                     New ValueJar("unknown1", 1).Weaken,
                     New ValueJar("playable width", 2).Weaken,
                     New ValueJar("playable height", 2).Weaken,
@@ -90,7 +87,7 @@ Namespace Warcraft3
                     {"unknown1", 0},
                     {"unknown2", ""}
                 })
-            Dim data = Concat({EncodeStatStringData(p.Data).ToArray(), New Byte() {0}})
+            Dim data = Concat(EncodeStatStringData(p.Data).ToArray(), {0})
             Return New Pickling.Pickle(Of R)(value, data.ToView, p.Description)
         End Function
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of Object)
@@ -243,7 +240,7 @@ Namespace Warcraft3
                 Me.playableWidth = map.playableWidth
                 Me.playableHeight = map.playableHeight
                 Me.xoroChecksum = map.ChecksumXoro.ToView
-                Me.relativePath = "Maps\" + map.relativePath
+                Me.relativePath = "Maps\" + map.RelativePath
                 Me.gameType = map.gameType
             Else
                 If gameType = 0 Then

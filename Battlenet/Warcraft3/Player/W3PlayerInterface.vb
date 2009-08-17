@@ -174,12 +174,12 @@
             Throw New NotSupportedException()
         End Function
 
-        Public Function QueueStartPlaying() As Functional.Futures.IFuture Implements IW3Player.QueueStartPlaying
+        Public Function QueueStartPlaying() As IFuture Implements IW3Player.QueueStartPlaying
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
 
-        Public Function QueueStopPlaying() As Functional.Futures.IFuture Implements IW3Player.QueueStopPlaying
+        Public Function QueueStopPlaying() As IFuture Implements IW3Player.QueueStopPlaying
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
@@ -191,7 +191,7 @@
             End Get
         End Property
 
-        Public Function QueueStartLoading() As Functional.Futures.IFuture Implements IW3Player.QueueStartLoading
+        Public Function QueueStartLoading() As IFuture Implements IW3Player.QueueStartLoading
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
@@ -213,12 +213,12 @@
             End Get
         End Property
 
-        Public Function QueueBufferMap() As Functional.Futures.IFuture Implements IW3Player.QueueBufferMap
+        Public Function QueueBufferMap() As IFuture Implements IW3Player.QueueBufferMap
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
 
-        Public Function QueueStartCountdown() As Functional.Futures.IFuture Implements IW3Player.QueueStartCountdown
+        Public Function QueueStartCountdown() As IFuture Implements IW3Player.QueueStartCountdown
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function

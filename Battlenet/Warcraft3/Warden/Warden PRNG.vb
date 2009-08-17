@@ -1,7 +1,7 @@
 ﻿Namespace Warcraft3.Warden
     '''<summary>Generates random data from a seed.</summary>
     Public Class WardenPseudoRandomNumberStream
-        Inherits ReadOnlyConversionStream
+        Inherits ReadOnlyStream
         Private hashState(0 To 59) As Byte
         Private outBuffer As Byte()
         Private numBuffered As Integer

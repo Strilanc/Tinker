@@ -77,7 +77,7 @@ Public NotInheritable Class MainBot
             Catch e As Exception
                 clientProfiles.Clear()
                 clientProfiles.Add(New ClientProfile())
-                Logging.LogUnexpectedException("Error loading profiles.", e)
+                LogUnexpectedException("Error loading profiles.", e)
             End Try
         Else
             clientProfiles.Clear()
@@ -146,7 +146,7 @@ Public NotInheritable Class MainBot
                 Return failure("Invalid server name.")
             ElseIf HaveServer(name) Then
                 If Not avoidNameCollision Then
-                    Return failureVal(FindServer(name), "Server with name '{0}' already exists.".frmt(name))
+                    Return Failure(FindServer(name), "Server with name '{0}' already exists.".Frmt(name))
                 End If
                 Dim i = 2
                 While HaveServer(name + i.ToString())
@@ -156,63 +156,63 @@ Public NotInheritable Class MainBot
             End If
 
             Dim server As IW3Server = New W3Server(name, Me, serverSettings, suffix)
-            AddHandler server.PlayerTalked, AddressOf c_ServerPlayerTalked
-            AddHandler server.ChangedState, AddressOf c_ServerStateChanged
+            AddHandler server.PlayerTalked, AddressOf CatchServerPlayerTalked
+            AddHandler server.ChangedState, AddressOf CatchServerStateChanged
             servers.Add(server)
-            e_ThrowAddedServer(server)
+            ThrowAddedServer(server)
 
-            Return successVal(server, "Created server with name '{0}'. Admin password is {1}.".frmt(name, server.settings.adminPassword))
+            Return Success(server, "Created server with name '{0}'. Admin password is {1}.".Frmt(name, server.settings.adminPassword))
         Catch e As Exception
-            Return failure("Failed to create server: " + e.ToString)
+            Return Failure("Failed to create server: " + e.ToString)
         End Try
     End Function
     Private Function KillServer(ByVal name As String) As Outcome
         Dim server = FindServer(name)
         If server Is Nothing Then
-            Return failure("No server with name {0}.".frmt(name))
+            Return Failure("No server with name {0}.".Frmt(name))
         End If
 
-        RemoveHandler server.PlayerTalked, AddressOf c_ServerPlayerTalked
-        RemoveHandler server.ChangedState, AddressOf c_ServerStateChanged
+        RemoveHandler server.PlayerTalked, AddressOf CatchServerPlayerTalked
+        RemoveHandler server.ChangedState, AddressOf CatchServerStateChanged
         servers.Remove(server)
         server.QueueKill()
-        e_ThrowRemovedServer(server)
-        Return success("Removed server with name {0}.".frmt(name))
+        ThrowRemovedServer(server)
+        Return Success("Removed server with name {0}.".Frmt(name))
     End Function
 
     Private Function AddWidget(ByVal widget As IBotWidget) As Outcome
         If FindWidget(widget.TypeName, widget.Name) IsNot Nothing Then
-            Return success("{0} with name {1} already exists.".frmt(widget.TypeName, widget.Name))
+            Return Success("{0} with name {1} already exists.".Frmt(widget.TypeName, widget.Name))
         End If
         widgets.Add(widget)
-        e_ThrowAddedWidget(widget)
-        Return success("Added {0} with name {1}.".frmt(widget.TypeName, widget.Name))
+        ThrowAddedWidget(widget)
+        Return Success("Added {0} with name {1}.".Frmt(widget.TypeName, widget.Name))
     End Function
     Private Function RemoveWidget(ByVal typeName As String, ByVal name As String) As Outcome
         Dim widget = FindWidget(name, typeName)
-        If widget Is Nothing Then Return failure("No {0} with name {1}.".frmt(typeName, name))
+        If widget Is Nothing Then Return Failure("No {0} with name {1}.".Frmt(typeName, name))
         widgets.Remove(widget)
         widget.[Stop]()
-        e_ThrowRemovedWidget(widget)
-        Return success("Removed {0} with name {1}.".frmt(typeName, name))
+        ThrowRemovedWidget(widget)
+        Return Success("Removed {0} with name {1}.".Frmt(typeName, name))
     End Function
 
     Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As Outcome(Of IBnetClient)
         If name.Trim = "" Then
-            Return failure("Invalid client name.")
+            Return Failure("Invalid client name.")
         ElseIf HaveClient(name) Then
-            Return failureVal(FindClient(name), "Client with name '{0}' already exists.".frmt(name))
+            Return Failure(FindClient(name), "Client with name '{0}' already exists.".Frmt(name))
         ElseIf FindClientProfile(profileName) Is Nothing Then
-            Return failure("Invalid profile.")
+            Return Failure("Invalid profile.")
         End If
 
         Dim client As IBnetClient = New BnetClient(Me, FindClientProfile(profileName), name, wardenRef)
-        AddHandler client.ReceivedPacket, AddressOf c_ClientReceivedPacket
-        AddHandler client.StateChanged, AddressOf c_ClientStateChanged
+        AddHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
+        AddHandler client.StateChanged, AddressOf CatchClientStateChanged
         clients.Add(client)
 
-        e_ThrowAddedClient(client)
-        Return successVal(client, "Created client with name '{0}'.".frmt(name))
+        ThrowAddedClient(client)
+        Return Success(client, "Created client with name '{0}'.".Frmt(name))
     End Function
     Private Function KillClient(ByVal name As String) As Outcome
         Dim client = FindClient(name)
@@ -220,11 +220,11 @@ Public NotInheritable Class MainBot
             Return failure("No client with name {0}.".frmt(name))
         End If
 
-        RemoveHandler client.ReceivedPacket, AddressOf c_ClientReceivedPacket
-        RemoveHandler client.StateChanged, AddressOf c_ClientStateChanged
+        RemoveHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
+        RemoveHandler client.StateChanged, AddressOf CatchClientStateChanged
         client.f_Disconnect("Killed by MainBot")
         clients.Remove(client)
-        e_ThrowRemovedClient(client)
+        ThrowRemovedClient(client)
         Return success("Removed client with name {0}.".frmt(name))
     End Function
 
@@ -281,7 +281,7 @@ Public NotInheritable Class MainBot
         If loaded.succeeded Then loadedPluginNames.Add(name)
         Return loaded
     End Function
-    Private Sub c_UnloadedPlugin(ByVal name As String, ByVal plugin As Plugins.IPlugin, ByVal reason As String) Handles pluginManager.UnloadedPlugin
+    Private Sub CatchUnloadedPlugin(ByVal name As String, ByVal plugin As Plugins.IPlugin, ByVal reason As String) Handles pluginManager.UnloadedPlugin
         logger.log("Plugin '{0}' was unloaded ({1})".frmt(name, reason), LogMessageTypes.Negative)
     End Sub
 #End Region
@@ -302,6 +302,12 @@ Public NotInheritable Class MainBot
             exeV(3 - i) = CByte(CInt(ss(i)) And &HFF)
         Next i
         Return exeV
+    End Function
+    Public Shared Function Wc3Path() As String
+        Return My.Settings.war3path
+    End Function
+    Public Shared Function MapPath() As String
+        Return My.Settings.mapPath
     End Function
 
     Private Function CreateLanAdmin(ByVal name As String,
@@ -335,7 +341,7 @@ Public NotInheritable Class MainBot
         If Not server_out.succeeded Then
             Return failure("Failed to create server.").Futurize
         End If
-        Dim server = server_out.val
+        Dim server = server_out.Value
 
         Dim lan As W3LanAdvertiser
         Try
@@ -352,67 +358,55 @@ Public NotInheritable Class MainBot
         Dim f = New Future(Of Outcome)
         server.QueueOpenPort(listenPort).CallWhenValueReady(
             Sub(listened)
-                                                                If Not listened.succeeded Then
-                                                                    server.QueueKill()
-                                                                    lan.Dispose()
-                                                                    f.SetValue(failure("Failed to listen on tcp port."))
-                                                                    Return
-                                                                End If
+                If Not listened.succeeded Then
+                    server.QueueKill()
+                    lan.Dispose()
+                    f.SetValue(failure("Failed to listen on tcp port."))
+                    Return
+                End If
 
-                                                                DisposeLink.CreateOneWayLink(lan, server)
-                                                                DisposeLink.CreateOneWayLink(server, lan)
-                                                                f.SetValue(success("Created lan Admin Game"))
-                                                            End Sub
+                DisposeLink.CreateOneWayLink(lan, server)
+                DisposeLink.CreateOneWayLink(server, lan)
+                f.SetValue(success("Created lan Admin Game"))
+            End Sub
         )
         Return f
     End Function
 #End Region
 
 #Region "Events"
-    Private Sub e_ThrowAddedWidget(ByVal widget As IBotWidget)
-        eref.QueueAction(
-            Sub()
-                RaiseEvent AddedWidget(widget)
-            End Sub
-        )
+    Private Sub ThrowAddedWidget(ByVal widget As IBotWidget)
+        eref.QueueAction(Sub()
+                             RaiseEvent AddedWidget(widget)
+                         End Sub)
     End Sub
-    Private Sub e_ThrowRemovedWidget(ByVal widget As IBotWidget)
-        eref.QueueAction(
-            Sub()
-                RaiseEvent RemovedWidget(widget)
-            End Sub
-        )
+    Private Sub ThrowRemovedWidget(ByVal widget As IBotWidget)
+        eref.QueueAction(Sub()
+                             RaiseEvent RemovedWidget(widget)
+                         End Sub)
     End Sub
-    Private Sub e_ThrowAddedServer(ByVal server As IW3Server)
-        eref.QueueAction(
-            Sub()
-                RaiseEvent AddedServer(server)
-            End Sub
-        )
+    Private Sub ThrowAddedServer(ByVal server As IW3Server)
+        eref.QueueAction(Sub()
+                             RaiseEvent AddedServer(server)
+                         End Sub)
     End Sub
-    Private Sub e_ThrowRemovedServer(ByVal server As IW3Server)
-        eref.QueueAction(
-            Sub()
-                RaiseEvent RemovedServer(server)
-            End Sub
-        )
+    Private Sub ThrowRemovedServer(ByVal server As IW3Server)
+        eref.QueueAction(Sub()
+                             RaiseEvent RemovedServer(server)
+                         End Sub)
     End Sub
-    Private Sub e_ThrowAddedClient(ByVal client As IBnetClient)
-        eref.QueueAction(
-            Sub()
-                RaiseEvent AddedClient(client)
-            End Sub
-        )
+    Private Sub ThrowAddedClient(ByVal client As IBnetClient)
+        eref.QueueAction(Sub()
+                             RaiseEvent AddedClient(client)
+                         End Sub)
     End Sub
-    Private Sub e_ThrowRemovedClient(ByVal client As IBnetClient)
-        eref.QueueAction(
-            Sub()
-                RaiseEvent RemovedClient(client)
-            End Sub
-        )
+    Private Sub ThrowRemovedClient(ByVal client As IBnetClient)
+        eref.QueueAction(Sub()
+                             RaiseEvent RemovedClient(client)
+                         End Sub)
     End Sub
 
-    Private Sub c_ClientReceivedPacket(ByVal client As IBnetClient, ByVal packet As BnetPacket)
+    Private Sub CatchClientReceivedPacket(ByVal client As IBnetClient, ByVal packet As BnetPacket)
         If packet.id <> BnetPacketID.ChatEvent Then Return
 
         Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
@@ -456,10 +450,10 @@ Public NotInheritable Class MainBot
         End If
     End Sub
 
-    Private Sub c_ServerPlayerTalked(ByVal sender As IW3Server,
-                                     ByVal game As IW3Game,
-                                     ByVal player As IW3Player,
-                                     ByVal text As String)
+    Private Sub CatchServerPlayerTalked(ByVal sender As IW3Server,
+                                        ByVal game As IW3Game,
+                                        ByVal player As IW3Player,
+                                        ByVal text As String)
         If text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
             If text.ToLower() <> "?trigger" Then
                 Return
@@ -482,62 +476,61 @@ Public NotInheritable Class MainBot
         )
     End Sub
 
-    Private Sub c_ClientStateChanged(ByVal sender As IBnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
+    Private Sub CatchClientStateChanged(ByVal sender As IBnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
         RaiseEvent ClientStateChanged(sender, old_state, new_state)
     End Sub
-    Private Sub c_ServerStateChanged(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
+    Private Sub CatchServerStateChanged(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
         RaiseEvent ServerStateChanged(sender, old_state, new_state)
     End Sub
 #End Region
 
 #Region "Remote Calls"
-    Public Function f_FindServer(ByVal name As String) As IFuture(Of IW3Server)
+    Public Function QueueFindServer(ByVal name As String) As IFuture(Of IW3Server)
         Return ref.QueueFunc(Function() FindServer(name))
     End Function
-    Public Function f_Kill() As IFuture(Of Outcome)
+    Public Function QueueKill() As IFuture(Of Outcome)
         Return ref.QueueFunc(AddressOf Kill)
     End Function
-    Public Function f_CreateLanAdmin(ByVal name As String,
+    Public Function QueueCreateLanAdmin(ByVal name As String,
                                        ByVal password As String,
                                        Optional ByVal remote_host As String = "localhost",
                                        Optional ByVal listen_port As UShort = 0) As IFuture(Of Outcome)
         Return ref.QueueFunc(Function() CreateLanAdmin(name, password, remote_host, listen_port)).Defuturize
     End Function
-    Public Function f_AddWidget(ByVal widget As IBotWidget) As IFuture(Of Outcome)
+    Public Function QueueAddWidget(ByVal widget As IBotWidget) As IFuture(Of Outcome)
         Return ref.QueueFunc(Function() AddWidget(widget))
     End Function
-    Public Function f_RemoveWidget(ByVal type_name As String, ByVal name As String) As IFuture(Of Outcome)
+    Public Function QueueRemoveWidget(ByVal type_name As String, ByVal name As String) As IFuture(Of Outcome)
         Return ref.QueueFunc(Function() RemoveWidget(type_name, name))
     End Function
-    Public Function f_RemoveServer(ByVal name As String) As IFuture(Of Outcome)
+    Public Function QueueRemoveServer(ByVal name As String) As IFuture(Of Outcome)
         Return ref.QueueFunc(Function() KillServer(name))
     End Function
-    Public Function f_CreateServer(ByVal name As String,
-                                    ByVal default_settings As ServerSettings,
-                                    Optional ByVal suffix As String = "",
-                                    Optional ByVal avoid_name_collision As Boolean = False) _
-                                    As IFuture(Of Outcome(Of IW3Server))
-        Return ref.QueueFunc(Function() CreateServer(name, default_settings, suffix, avoid_name_collision))
+    Public Function QueueCreateServer(ByVal name As String,
+                                      ByVal defaultSettings As ServerSettings,
+                                      Optional ByVal suffix As String = "",
+                                      Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of Outcome(Of IW3Server))
+        Return ref.QueueFunc(Function() CreateServer(name, defaultSettings, suffix, avoidNameCollisions))
     End Function
-    Public Function f_FindClient(ByVal name As String) As IFuture(Of IBnetClient)
+    Public Function QueueFindClient(ByVal name As String) As IFuture(Of IBnetClient)
         Return ref.QueueFunc(Function() FindClient(name))
     End Function
-    Public Function f_RemoveClient(ByVal name As String) As IFuture(Of Outcome)
+    Public Function QueueRemoveClient(ByVal name As String) As IFuture(Of Outcome)
         Return ref.QueueFunc(Function() KillClient(name))
     End Function
-    Public Function f_CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of Outcome(Of IBnetClient))
+    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of Outcome(Of IBnetClient))
         Return ref.QueueFunc(Function() CreateClient(name, profileName))
     End Function
-    Public Function f_EnumServers() As IFuture(Of List(Of IW3Server))
+    Public Function QueueGetServers() As IFuture(Of List(Of IW3Server))
         Return ref.QueueFunc(Function() servers.ToList)
     End Function
-    Public Function f_EnumClients() As IFuture(Of List(Of IBnetClient))
+    Public Function QueueGetClients() As IFuture(Of List(Of IBnetClient))
         Return ref.QueueFunc(Function() clients.ToList)
     End Function
-    Public Function f_EnumWidgets() As IFuture(Of List(Of IBotWidget))
+    Public Function QueueGetWidgets() As IFuture(Of List(Of IBotWidget))
         Return ref.QueueFunc(Function() widgets.ToList)
     End Function
-    Public Function f_LoadPlugin(ByVal name As String) As IFuture(Of Outcome)
+    Public Function QueueLoadPlugin(ByVal name As String) As IFuture(Of Outcome)
         Return ref.QueueFunc(Function() LoadPlugin(name))
     End Function
 #End Region
@@ -590,26 +583,12 @@ Public Class PortPool
         End SyncLock
     End Function
 
-    Private Function TryReturnPortToPool(ByVal port As UShort) As Outcome
+    Public Function TryTakePortFromPool() As PortHandle
         SyncLock lock
-            If InPorts.Contains(port) Then Return failure("Port {0} is already in the pool.".frmt(port))
-            If Not OutPorts.Contains(port) Then Return failure("Port {0} wasn't taken from the pool.".frmt(port))
-            If PortPool.Contains(port) Then
-                OutPorts.Remove(port)
-                Return success("Returned port {0}, but it is no longer in the pool.".frmt(port))
-            Else
-                InPorts.Add(port)
-                OutPorts.Remove(port)
-                Return success("Returned port {0} to the pool.".frmt(port))
-            End If
-        End SyncLock
-    End Function
-    Public Function TryTakePortFromPool() As Outcome(Of PortHandle)
-        SyncLock lock
-            If InPorts.Count = 0 Then Return failure("No ports are in the pool.")
+            If InPorts.Count = 0 Then Return Nothing
             Dim port = New PortHandle(Me, InPorts.First)
             InPorts.Remove(port.Port)
-            Return successVal(port, "Took port {0} from the pool.".frmt(port.Port))
+            Return port
         End SyncLock
     End Function
 
@@ -625,13 +604,20 @@ Public Class PortPool
 
         Public ReadOnly Property Port() As UShort
             Get
-                If IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
+                If IsDisposed Then Throw New ObjectDisposedException(GetType(PortHandle).Name)
                 Return _port
             End Get
         End Property
 
         Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-            pool.TryReturnPortToPool(_port)
+            SyncLock pool.lock
+                If pool.InPorts.Contains(_port) Then Throw New InvalidStateException("Unreturned Port was still in pool.")
+                If Not pool.OutPorts.Contains(_port) Then Throw New InvalidStateException("Unreturned Port was not checked out from pool.")
+                pool.OutPorts.Remove(_port)
+                If pool.PortPool.Contains(_port) Then
+                    pool.InPorts.Add(_port)
+                End If
+            End SyncLock
         End Sub
     End Class
 End Class

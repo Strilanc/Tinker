@@ -102,7 +102,7 @@ Namespace Commands.Specializations
                     Return failure("Invalid listen port.").Futurize()
                 End If
                 If arguments.Count >= 4 Then remote_host = arguments(3)
-                Return target.f_CreateLanAdmin(name, password, remote_host, listen_port)
+                Return target.QueueCreateLanAdmin(name, password, remote_host, listen_port)
             End Function
         End Class
 
@@ -128,10 +128,10 @@ Namespace Commands.Specializations
 
                 If listen_port = 0 Then
                     Dim out = target.portPool.TryTakePortFromPool()
-                    If Not out.succeeded Then Return out.Outcome.Futurize()
-                    Return target.f_AddWidget(New W3LanAdvertiser(target, name, out.val, remote_host))
+                    If out Is Nothing Then Return failure("Failed to get a port from pool.").Futurize()
+                    Return target.QueueAddWidget(New W3LanAdvertiser(target, name, out, remote_host))
                 Else
-                    Return target.f_AddWidget(New W3LanAdvertiser(target, name, listen_port, remote_host))
+                    Return target.QueueAddWidget(New W3LanAdvertiser(target, name, listen_port, remote_host))
                 End If
             End Function
         End Class
@@ -145,7 +145,7 @@ Namespace Commands.Specializations
                             My.Resources.Command_Bot_KillLan_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_RemoveWidget(W3LanAdvertiser.TYPE_NAME, arguments(0))
+                Return target.QueueRemoveWidget(W3LanAdvertiser.TYPE_NAME, arguments(0))
             End Function
         End Class
 
@@ -160,11 +160,11 @@ Namespace Commands.Specializations
                             My.Resources.Command_Bot_Client_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_FindClient(arguments(0)).EvalWhenValueReady(
+                Return target.QueueFindClient(arguments(0)).EvalWhenValueReady(
                     Function(client)
-                        If client Is Nothing Then  Return failure("No matching client").Futurize()
-                        Return target.ClientCommands.ProcessCommand(client, user, arguments.SubToArray(1))
-                    End Function
+                                                                                   If client Is Nothing Then  Return failure("No matching client").Futurize()
+                                                                                   Return target.ClientCommands.ProcessCommand(client, user, arguments.SubToArray(1))
+                                                                               End Function
                 ).Defuturize()
             End Function
         End Class
@@ -180,7 +180,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'Find the server, then pass the command to it
-                Return target.f_FindServer(arguments(0)).EvalWhenValueReady(
+                Return target.QueueFindServer(arguments(0)).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then  Return failure("No matching server").Futurize()
                         'Pass the command
@@ -200,7 +200,7 @@ Namespace Commands.Specializations
                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return stripFutureOutcome(target.f_CreateClient(arguments(0)))
+                Return stripFutureOutcome(target.QueueCreateClient(arguments(0)))
             End Function
         End Class
 
@@ -214,7 +214,7 @@ Namespace Commands.Specializations
                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_RemoveClient(arguments(0))
+                Return target.QueueRemoveClient(arguments(0))
             End Function
         End Class
 
@@ -228,7 +228,7 @@ Namespace Commands.Specializations
                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_RemoveServer(arguments(0))
+                Return target.QueueRemoveServer(arguments(0))
             End Function
         End Class
 
@@ -247,14 +247,14 @@ Namespace Commands.Specializations
                                               ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim map_out = W3Map.FromArgument(arguments(1))
                 If Not map_out.succeeded Then Return map_out.Outcome.Futurize()
-                Dim map = map_out.val
+                Dim map = map_out.Value
 
                 Dim settings = New ServerSettings(map,
                                                   New W3GameHeader(arguments(0),
                                                                    If(user Is Nothing, My.Resources.ProgramName, user.name),
                                                                    New W3MapSettings(arguments, map),
                                                                    0, 0, 0, arguments, map.NumPlayerSlots))
-                Return stripFutureOutcome(target.f_CreateServer(arguments(0), settings))
+                Return StripFutureOutcome(target.QueueCreateServer(arguments(0), settings))
             End Function
         End Class
 
@@ -268,7 +268,7 @@ Namespace Commands.Specializations
                            "root=5", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_LoadPlugin(arguments(0))
+                Return target.QueueLoadPlugin(arguments(0))
             End Function
         End Class
 
@@ -282,7 +282,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 CacheIPAddresses()
-                Return success("Recaching addresses.").Futurize()
+                Return Success("Recaching addresses.").Futurize()
             End Function
         End Class
 
@@ -300,12 +300,12 @@ Namespace Commands.Specializations
                 Dim client_name = arguments(0)
                 Dim profile_name = arguments(0) '[Yes, client named same as profile]
                 'Create client, then connect to bnet, then login
-                Return target.f_CreateClient(client_name, profile_name).EvalWhenValueReady(
+                Return target.QueueCreateClient(client_name, profile_name).EvalWhenValueReady(
                     Function(createdClient)
                         If Not createdClient.succeeded Then
                             Return createdClient.Outcome.Futurize() 'failed
                         End If
-                        Dim client = createdClient.val
+                        Dim client = createdClient.Value
 
                         'Connect to bnet, then login
                         Dim connectedAndLoggedIn = client.f_Connect(client.profile.server.Split(" "c)(0)).EvalWhenValueReady(
@@ -323,7 +323,7 @@ Namespace Commands.Specializations
                         connectedAndLoggedIn.CallWhenValueReady(
                             Sub(finished)
                                 If Not finished.succeeded Then
-                                    target.f_RemoveClient(arguments(0))
+                                    target.QueueRemoveClient(arguments(0))
                                 End If
                             End Sub
                         )
@@ -345,7 +345,7 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim epicWarNumber As UInteger
                 If Not UInteger.TryParse(arguments(0), epicWarNumber) Then
-                    Return failure("Expected a numeric argument.").Futurize
+                    Return Failure("Expected a numeric argument.").Futurize
                 End If
                 Return ThreadedFunc(
                     Function()
@@ -370,9 +370,9 @@ Namespace Commands.Specializations
 
                             'Check for existing files
                             If IO.File.Exists(path + ".dl") Then
-                                Return failure("A map with the filename '{0}' is already being downloaded.".frmt(filename))
+                                Return Failure("A map with the filename '{0}' is already being downloaded.".Frmt(filename))
                             ElseIf IO.File.Exists(path) Then
-                                Return failure("A map with the filename '{0}' already exists.".frmt(filename))
+                                Return Failure("A map with the filename '{0}' already exists.".Frmt(filename))
                             End If
 
                             'Download
@@ -380,16 +380,16 @@ Namespace Commands.Specializations
                             IO.File.Move(path + ".dl", path)
 
                             'Finished
-                            Return success("Finished downloading map with filename '{0}'.".frmt(filename))
+                            Return Success("Finished downloading map with filename '{0}'.".Frmt(filename))
                         Catch e As Exception
                             If path IsNot Nothing Then
                                 'cleanup
                                 IO.File.Delete(path + ".dl")
                                 IO.File.Delete(path)
 
-                                Return failure("There was an error downloading the map '{0}'".frmt(filename))
+                                Return Failure("There was an error downloading the map '{0}'".Frmt(filename))
                             Else
-                                Return failure("There was an error downloading the map '{0}'".frmt(epicWarNumber))
+                                Return Failure("There was an error downloading the map '{0}'".Frmt(epicWarNumber))
                             End If
                         End Try
                     End Function
@@ -409,16 +409,16 @@ Namespace Commands.Specializations
                 Const MAX_RESULTS As Integer = 5
                 Dim out = findFilesMatching("*" + arguments(0) + "*", "*.[wW]3[mxMX]", My.Settings.mapPath, MAX_RESULTS)
                 Dim ret = ""
-                For Each result In out.val
+                For Each result In out.Value
                     If ret <> "" Then ret += ", "
                     ret += result
                 Next result
-                If Not out.succeeded AndAlso out.val.Count = 0 Then
-                    Return failure(out.Message).Futurize
-                ElseIf out.val.Count = 0 Then
-                    Return success("No matching maps.").Futurize
+                If Not out.succeeded AndAlso out.Value.Count = 0 Then
+                    Return Failure(out.Message).Futurize
+                ElseIf out.Value.Count = 0 Then
+                    Return Success("No matching maps.").Futurize
                 End If
-                Return success(ret).Futurize
+                Return Success(ret).Futurize
             End Function
         End Class
 
@@ -433,15 +433,15 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count < 2 Then
                     Dim port = target.portPool.TryTakePortFromPool()
-                    If Not port.succeeded Then Return port.Outcome.Futurize
-                    Return target.f_AddWidget(New CKL.BotCKLServer(arguments(0), port.val))
+                    If port Is Nothing Then Return failure("Failed to get a port from pool.").Futurize
+                    Return target.QueueAddWidget(New CKL.BotCKLServer(arguments(0), port))
                 Else
                     Dim port As UShort
                     If Not UShort.TryParse(arguments(1), port) Then
                         Return failure("Expected port number for second argument.").Futurize
                     End If
                     Dim widget = New CKL.BotCKLServer(arguments(0), port)
-                    Return target.f_AddWidget(widget)
+                    Return target.QueueAddWidget(widget)
                 End If
             End Function
         End Class
@@ -454,7 +454,7 @@ Namespace Commands.Specializations
                            "root=5", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_RemoveWidget(CKL.BotCKLServer.WIDGET_TYPE_NAME, arguments(0))
+                Return target.QueueRemoveWidget(CKL.BotCKLServer.WIDGET_TYPE_NAME, arguments(0))
             End Function
         End Class
     End Class

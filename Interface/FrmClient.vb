@@ -1,3 +1,4 @@
+Imports System.Threading
 Imports HostBot.Bnet
 
 Public Class FrmClient
@@ -7,7 +8,7 @@ Public Class FrmClient
     Private Sub c_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         Try
             'prep form
-            Threading.Thread.CurrentThread.Name = "UI Thread"
+            Thread.CurrentThread.Name = "UI Thread"
             Me.Text = My.Application.Info.ProductName
             trayIcon.Text = My.Application.Info.ProductName
 
@@ -18,7 +19,7 @@ Public Class FrmClient
                 bot.portPool.TryAddPort(port)
             Next port
             botcMain.logBot.SetLogUnexpected(True)
-            botcMain.f_hook(bot)
+            botcMain.QueueHook(bot)
 
             Me.Show()
 
@@ -31,8 +32,8 @@ Public Class FrmClient
 
             'load initial plugins
             Dim pluginNames = (From x In My.Settings.initial_plugins.Split(";"c) Where x <> "").ToList
-            Dim futureLoadedPlugins = (From x In pluginNames Select bot.f_LoadPlugin(x)).ToList
-            Dim t = New Threading.ManualResetEvent(False)
+            Dim futureLoadedPlugins = (From x In pluginNames Select bot.QueueLoadPlugin(x)).ToList
+            Dim t = New ManualResetEvent(False)
             FutureCompress(futureLoadedPlugins).CallWhenReady(Sub() t.Set())
             t.WaitOne()
             Dim pluginLoadOutcomes = (From x In futureLoadedPlugins Select x.Value()).ToList
@@ -82,13 +83,13 @@ Public Class FrmClient
             End If
         End If
 
-        botcMain.f_hook(Nothing)
+        botcMain.QueueHook(Nothing)
         botcMain.Dispose()
 
         With bot
             bot = Nothing
             client = Nothing
-            .f_Kill()
+            .QueueKill()
         End With
         My.Settings.Save()
     End Sub

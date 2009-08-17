@@ -1,4 +1,6 @@
-﻿Namespace Warcraft3.Warden
+﻿Imports System.Threading
+
+Namespace Warcraft3.Warden
     '''<summary>Uses wireshark traces of warcraft 3 handling warden challenges to test WardenPacketHandler.</summary>
     Public Class WardenTester
         Private ReadOnly p_wc3 As New List(Of Byte())
@@ -30,7 +32,7 @@
                     Else
                         For Each word In line.Split(" "c)
                             If word Like "0x??*" Then
-                                bb.Add(CByte(dehex(word.Substring(2, 2), ByteOrder.BigEndian)))
+                                bb.Add(CByte(word.Substring(2, 2).ParseAsUnsignedHexNumber(ByteOrder.BigEndian)))
                             End If
                         Next word
                     End If
@@ -52,7 +54,7 @@
                                         P_bnet.Add(payload)
                                     End If
                                 ElseIf header(i)(1) = Bnet.BnetPacketID.AuthenticationFinish And i = 0 Then
-                                    seed = payload.SubArray(36, 4).ToUInteger(ByteOrder.LittleEndian)
+                                    seed = payload.SubArray(36, 4).ToUInt32(ByteOrder.LittleEndian)
                                 End If
                                 header(i) = Nothing
                                 i -= 1
@@ -91,7 +93,7 @@
         '''<summary>Runs all the tests in a folder.</summary>
         Private Shared Sub run_many(ByVal folder As String)
             For Each file In IO.Directory.GetFiles(folder)
-                Debug.Print("Running test {0}".frmt(IO.Path.GetFileName(file)))
+                Debug.Print("Running test {0}".Frmt(IO.Path.GetFileName(file)))
                 Call New WardenTester(file).run()
             Next file
         End Sub
@@ -101,7 +103,7 @@
             For Each payload In P_bnet
                 handler.ReceiveData(payload.ToArray)
             Next payload
-            Threading.Thread.Sleep(1000)
+            Thread.Sleep(1000)
             If rcv_index < p_wc3.Count Then
                 Throw New IO.IOException("DIdn't send as much data as wc3.")
             End If

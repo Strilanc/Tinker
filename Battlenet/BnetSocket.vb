@@ -68,7 +68,7 @@ Public Class BnetSocket
             Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
 
             'Send
-            socket.WritePacket(Concat({New Byte() {Bnet.BnetPacket.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray}))
+            socket.WritePacket(Concat({Bnet.BnetPacket.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray))
             Return success("Sent")
 
         Catch e As Pickling.PicklingException
@@ -77,7 +77,7 @@ Public Class BnetSocket
             Return failure(msg)
         Catch e As Exception
             Dim msg = "Error sending {0} to {1}: {2}".frmt(pk.id, Name, e)
-            Logging.LogUnexpectedException(msg, e)
+            LogUnexpectedException(msg, e)
             Logger.log(msg, LogMessageTypes.Problem)
             Return failure(msg)
         End Try
@@ -118,7 +118,7 @@ Public Class BnetSocket
                 Catch e As Exception
                     Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".frmt(id, Name, e)
                     Logger.log(msg, LogMessageTypes.Problem)
-                    Logging.LogUnexpectedException(msg, e)
+                    LogUnexpectedException(msg, e)
                     f.SetValue(e)
                 End Try
             End Sub
@@ -151,14 +151,14 @@ Public Class PacketSocket
     Public Sub New(ByVal client As TcpClient,
                    ByVal timeout As TimeSpan,
                    Optional ByVal logger As Logger = Nothing,
-                   Optional ByVal streamWrapper As Func(Of IO.Stream, IO.Stream) = Nothing,
+                   Optional ByVal WrappedStream As Func(Of IO.Stream, IO.Stream) = Nothing,
                    Optional ByVal bufferSize As Integer = DefaultBufferSize)
         'contract bug wrt interface event implementation requires this:
         'Contract.Requires(client IsNot Nothing)
         Contract.Assume(client IsNot Nothing)
 
         Me.substream = client.GetStream
-        If streamWrapper IsNot Nothing Then Me.substream = streamWrapper(Me.substream)
+        If WrappedStream IsNot Nothing Then Me.substream = WrappedStream(Me.substream)
         Me.bufferSize = bufferSize
         Me.deadManSwitch = New DeadManSwitch(timeout, initiallyArmed:=True)
         Me.logger = If(logger, New Logger)
@@ -200,11 +200,9 @@ Public Class PacketSocket
         client.Close()
         deadManSwitch.Dispose()
         substream.Close()
-        ThreadPooledAction(
-            Sub()
-                RaiseEvent Disconnected(Me, _reason)
-            End Sub
-        )
+        ThreadPooledAction(Sub()
+                               RaiseEvent Disconnected(Me, _reason)
+                           End Sub)
     End Sub
     Private Sub DeadManSwitch_Triggered(ByVal sender As DeadManSwitch) Handles deadManSwitch.Triggered
         Disconnect("Connection went idle.")

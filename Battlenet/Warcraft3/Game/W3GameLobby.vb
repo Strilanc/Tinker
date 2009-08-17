@@ -96,8 +96,8 @@
                     Case "-teams=", "-t="
                         Dim out = XvX(arg2)
                         If out.succeeded Then
-                            Contract.Assume(out.val IsNot Nothing)
-                            TrySetTeamSizes(out.val)
+                            Contract.Assume(out.Value IsNot Nothing)
+                            TrySetTeamSizes(out.Value)
                         End If
                     Case "-reserve=", "-r="
                         Dim slot = (From s In slots _
@@ -121,12 +121,12 @@
                 End If
 
                 Dim grabPort = server.parent.portPool.TryTakePortFromPool()
-                If Not grabPort.succeeded Then
+                If grabPort Is Nothing Then
                     Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
                 End If
 
-                Dim p = New W3DummyPlayer("Grab", grabPort.val, logger)
-                p.f_Connect("localhost", server_port)
+                Dim p = New W3DummyPlayer("Grab", grabPort, logger)
+                p.QueueConnect("localhost", server_port)
             End If
         End Sub
 
@@ -322,7 +322,7 @@
 
             'Update state
             ChangedLobbyState()
-            Return successVal(newPlayer, "Added fake player '{0}'.".frmt(newPlayer.name))
+            Return Success(newPlayer, "Added fake player '{0}'.".Frmt(newPlayer.name))
         End Function
         Private Function TryRestoreFakeHost() As Outcome
             If fakeHostPlayer IsNot Nothing Then
@@ -335,7 +335,7 @@
             Contract.Assume(pname IsNot Nothing)
             Dim out = TryAddFakePlayer(pname)
             If out.succeeded Then
-                fakeHostPlayer = out.val
+                fakeHostPlayer = out.Value
             End If
             Return out
         End Function
@@ -580,7 +580,7 @@
                 Return found_slot
             End If
 
-            Dim slot = found_slot.val
+            Dim slot = found_slot.Value
             If avoidPlayers AndAlso slot.contents.Type = W3SlotContents.ContentType.Player Then
                 Return failure("Slot '{0}' contains a player.".frmt(slotQuery))
             End If
@@ -636,7 +636,7 @@
             End If
             Dim slot_out = FindMatchingSlot(slotid)
             If Not slot_out.succeeded Then Return slot_out
-            Dim slot = slot_out.val
+            Dim slot = slot_out.Value
             If slot.contents.Type = W3SlotContents.ContentType.Player Then
                 Return failure("Slot '{0}' can't be reserved because it already contains a player.".frmt(slotid))
             Else
@@ -654,8 +654,8 @@
             Dim slot_out2 = FindMatchingSlot(query2)
             If Not slot_out1.succeeded Then Return slot_out1
             If Not slot_out2.succeeded Then Return slot_out2
-            Dim slot1 = slot_out1.val
-            Dim slot2 = slot_out2.val
+            Dim slot1 = slot_out1.Value
+            Dim slot2 = slot_out2.Value
             If slot1 Is Nothing Then
                 Return failure("No slot matching '{0}'.".frmt(query1))
             ElseIf slot2 Is Nothing Then
@@ -687,8 +687,8 @@
             If Not foundSlot.succeeded Then Return foundSlot
 
             Dim swap_color_slot = (From x In slots Where x.color = color).FirstOrDefault
-            If swap_color_slot IsNot Nothing Then swap_color_slot.color = foundSlot.val.color
-            foundSlot.val.color = color
+            If swap_color_slot IsNot Nothing Then swap_color_slot.color = foundSlot.Value.color
+            foundSlot.Value.color = color
 
             ChangedLobbyState()
             Return success("Slot '{0}' color set to {1}.".frmt(slotid, color))
@@ -742,7 +742,7 @@
 #End Region
 
 #Region "Networking"
-        Private Sub ReceiveSetColor(ByVal player As IW3Player, ByVal new_color As W3Slot.PlayerColor)
+        Private Sub ReceiveSetColor(ByVal player As IW3Player, ByVal newColor As W3Slot.PlayerColor)
             Contract.Requires(player IsNot Nothing)
             Dim slot = FindPlayerSlot(player)
 
@@ -751,11 +751,11 @@
             If slot.locked = W3Slot.Lock.frozen Then Return '[no changes allowed]
             If Not slot.contents.Moveable Then Return '[slot is weird]
             If state >= W3GameStates.Loading Then Return '[too late]
-            If Not IsEnumValid(Of W3Slot.PlayerColor)(new_color) Then Return '[not a valid color]
+            If Not newColor.EnumValueIsDefined Then Return '[not a valid color]
 
             'check for duplicates
             For Each other_slot In slots.ToList()
-                If other_slot.color = new_color Then
+                If other_slot.color = newColor Then
                     If Not map.isMelee Then Return
                     If Not other_slot.contents.Type = W3SlotContents.ContentType.Empty Then Return
                     other_slot.color = slot.color
@@ -764,10 +764,10 @@
             Next other_slot
 
             'change color
-            slot.color = new_color
+            slot.color = newColor
             ChangedLobbyState()
         End Sub
-        Private Sub ReceiveSetRace(ByVal player As IW3Player, ByVal new_race As W3Slot.RaceFlags)
+        Private Sub ReceiveSetRace(ByVal player As IW3Player, ByVal newRace As W3Slot.RaceFlags)
             Contract.Requires(player IsNot Nothing)
             Dim slot = FindPlayerSlot(player)
 
@@ -776,10 +776,10 @@
             If slot.locked = W3Slot.Lock.frozen Then Return '[no changes allowed]
             If Not slot.contents.Moveable Then Return '[slot is weird]
             If state >= W3GameStates.Loading Then Return '[too late]
-            If Not IsEnumValid(Of W3Slot.RaceFlags)(new_race) OrElse new_race = W3Slot.RaceFlags.Unlocked Then Return '[not a valid race]
+            If Not newRace.EnumValueIsDefined OrElse newRace = W3Slot.RaceFlags.Unlocked Then Return '[not a valid race]
 
             'Perform
-            slot.race = new_race
+            slot.race = newRace
             ChangedLobbyState()
         End Sub
         Private Sub ReceiveSetHandicap(ByVal player As IW3Player, ByVal new_handicap As Byte)

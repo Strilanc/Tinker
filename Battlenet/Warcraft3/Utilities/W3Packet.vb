@@ -1,6 +1,3 @@
-Imports HostBot.Pickling
-Imports HostBot.Pickling.Jars
-
 Namespace Warcraft3
     '''<summary>Identifies a warcraft 3 packet type.</summary>
     '''<data>
@@ -179,7 +176,7 @@ Namespace Warcraft3
         Public Const PACKET_PREFIX As Byte = &HF7
         Public ReadOnly id As W3PacketId
         Public ReadOnly payload As IPickle(Of Object)
-        Private Shared ReadOnly packetJar As ManualSwitchJar = MakeW3PacketJar()
+        Private Shared ReadOnly packetJar As SwitchJar = MakeW3PacketJar()
 
 #Region "New"
         Private Sub New(ByVal id As W3PacketId, ByVal payload As IPickle(Of Object))
@@ -188,14 +185,14 @@ Namespace Warcraft3
             Me.id = id
         End Sub
         Private Sub New(ByVal id As W3PacketId, ByVal value As Object)
-            Me.New(id, packetJar.pack(id, value))
+            Me.New(id, packetJar.Pack(id, value))
             Contract.Requires(value IsNot Nothing)
         End Sub
 #End Region
 
 #Region "Jar"
-        Public Shared Function MakeW3PacketJar() As ManualSwitchJar
-            Dim jar = New ManualSwitchJar
+        Public Shared Function MakeW3PacketJar() As SwitchJar
+            Dim jar = New SwitchJar
             reg_general(jar)
             reg_leave(jar)
             reg_new(jar)
@@ -207,10 +204,10 @@ Namespace Warcraft3
             reg_dl(jar)
             Return jar
         End Function
-        Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal id As W3PacketId, ByVal ParamArray subjars() As IJar(Of Object))
+        Private Shared Sub reg(ByVal jar As SwitchJar, ByVal id As W3PacketId, ByVal ParamArray subjars() As IJar(Of Object))
             jar.reg(id, New TupleJar(id.ToString(), subjars).Weaken)
         End Sub
-        Private Shared Sub reg_general(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_general(ByVal jar As SwitchJar)
             reg(jar, W3PacketId.Ping,
                     New ValueJar("salt", 4).Weaken)
 
@@ -222,30 +219,31 @@ Namespace Warcraft3
                     New ValueJar("player bitflags", 2).Weaken)
 
             '[server send] [Tells clients to display a message]
-            Dim chatTypeJar = New MemoryJar(Of ChatType)(New EnumJar(Of ChatType)("chat type", 1))
+            Dim chatTypeJar = New MemoryJar(Of ChatType)(New EnumJar(Of ChatType)("type", 1, flags:=False)).Weaken
             reg(jar, W3PacketId.Text,
                     New ListJar(Of ULong)("receiving player indexes", New ValueJar("player index", 1)).Weaken,
                     New ValueJar("sending player index", 1).Weaken,
                     chatTypeJar.Weaken,
-                    New AutoMemorySwitchJar(Of ChatType)("chat", chatTypeJar, New Dictionary(Of Byte, IJar(Of Object)) From {
-                            {ChatType.Game, New TupleJar("chat", New ArrayJar("flags", 4).Weaken, New StringJar("message").Weaken).Weaken},
-                            {ChatType.Lobby, New TupleJar("chat", New EmptyJar("flags"), New StringJar("message").Weaken).Weaken}}))
+                    New SwitchJar("receiver type", chatTypeJar, New Dictionary(Of Byte, IJar(Of Object)) From {
+                            {ChatType.Game, New EnumJar(Of ChatReceiverType)("receiver type", 4, flags:=False).Weaken},
+                            {ChatType.Lobby, New EmptyJar("receiver type").Weaken}}),
+                    New StringJar("message").Weaken)
 
             '[server receive] [Tells the server a client wants to perform a slot action or talk]
-            Dim commandTypeJar As New MemoryJar(Of NonGameAction)(New EnumJar(Of NonGameAction)("command type", 1))
+            Dim commandTypeJar = New MemoryJar(Of NonGameAction)(New EnumJar(Of NonGameAction)("command type", 1, flags:=False)).Weaken
             reg(jar, W3PacketId.NonGameAction,
                     New ArrayJar("receiving player indexes", , 1).Weaken,
                     New ValueJar("sending player", 1).Weaken,
                     commandTypeJar.Weaken,
-                    New AutoMemorySwitchJar(Of NonGameAction)("command val", commandTypeJar, New Dictionary(Of Byte, IJar(Of Object)) From {
-                            {NonGameAction.GameChat, New TupleJar("chat", New ArrayJar("flags", 4).Weaken, New StringJar("message").Weaken).Weaken},
-                            {NonGameAction.LobbyChat, New TupleJar("chat", New EmptyJar("flags"), New StringJar("message").Weaken).Weaken},
+                    New SwitchJar("command val", commandTypeJar, New Dictionary(Of Byte, IJar(Of Object)) From {
+                            {NonGameAction.GameChat, New TupleJar("chat", New EnumJar(Of ChatReceiverType)("receiver type", 4, flags:=False).Weaken, New StringJar("message").Weaken).Weaken},
+                            {NonGameAction.LobbyChat, New TupleJar("chat", New EmptyJar("receiver type"), New StringJar("message").Weaken).Weaken},
                             {NonGameAction.SetTeam, New ValueJar("new value", 1).Weaken},
                             {NonGameAction.SetHandicap, New ValueJar("new value", 1).Weaken},
-                            {NonGameAction.SetRace, New EnumJar(Of W3Slot.RaceFlags)("new value", 1).Weaken},
-                            {NonGameAction.SetColor, New EnumJar(Of W3Slot.PlayerColor)("new value", 1).Weaken}}))
+                            {NonGameAction.SetRace, New EnumJar(Of W3Slot.RaceFlags)("new value", 1, flags:=True).Weaken},
+                            {NonGameAction.SetColor, New EnumJar(Of W3Slot.PlayerColor)("new value", 1, flags:=False).Weaken}}))
         End Sub
-        Private Shared Sub reg_leave(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_leave(ByVal jar As SwitchJar)
             'EXPERIMENTAL
             reg(jar, W3PacketId.ConfirmHost)
             reg(jar, W3PacketId.SetHost,
@@ -261,7 +259,7 @@ Namespace Warcraft3
                     New ValueJar("player index", 1).Weaken,
                     New ValueJar("leave type", 4, "1=disc, 7=lose, 8=melee lose, 9=win, 10=draw, 11=obs, 13=lobby").Weaken)
         End Sub
-        Private Shared Sub reg_new(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_new(ByVal jar As SwitchJar)
             reg(jar, W3PacketId.Knock,
                     New ValueJar("game id", 4).Weaken,
                     New ValueJar("entry key", 4).Weaken,
@@ -286,9 +284,9 @@ Namespace Warcraft3
                     New ArrayJar("sha1 checksum", 20).Weaken)
 
             reg(jar, W3PacketId.RejectEntry,
-                    New ValueJar("reason", 4, "9=full, 10=started, 27=password wrong, else=game not found").Weaken)
+                    New EnumJar(Of RejectReason)("reason", 4, flags:=False).Weaken)
         End Sub
-        Private Shared Sub reg_lobby_to_play(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_lobby_to_play(ByVal jar As SwitchJar)
             '[server send; broadcast when a player becomes ready to play] [informs other players a player is ready] [players auto start when all others ready]
             reg(jar, W3PacketId.OtherPlayerReady,
                     New ValueJar("player index", 1).Weaken)
@@ -297,7 +295,7 @@ Namespace Warcraft3
             reg(jar, W3PacketId.StartCountdown)
             reg(jar, W3PacketId.Ready)
         End Sub
-        Private Shared Sub reg_lobby(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_lobby(ByVal jar As SwitchJar)
             reg(jar, W3PacketId.OtherPlayerJoined,
                     New ValueJar("peer key", 4).Weaken,
                     New ValueJar("index", 1).Weaken,
@@ -313,7 +311,7 @@ Namespace Warcraft3
                     New ValueJar("layout style", 1).Weaken,
                     New ValueJar("num player slots", 1).Weaken)
         End Sub
-        Private Shared Sub reg_play(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_play(ByVal jar As SwitchJar)
             reg(jar, W3PacketId.ShowLagScreen,
                     New ListJar(Of Dictionary(Of String, Object))("laggers",
                         New TupleJar("lagger",
@@ -326,16 +324,19 @@ Namespace Warcraft3
 
             reg(jar, W3PacketId.Tick,
                     New ValueJar("time span", 2).Weaken,
-                    New ArrayJar("subpacket", , , True).Weaken)
+                    New ArrayJar("subpacket", , , takerest:=True).Weaken)
             reg(jar, W3PacketId.Tock,
                     New ArrayJar("game state checksum", 5).Weaken)
-            jar.reg(W3PacketId.GameAction,
-                    New CRC32Jar(Of Dictionary(Of String, Object))(W3PacketId.GameAction.ToString(),
-                        New TupleJar("subpacket",
-                            New ValueJar("id", 1).Weaken,
-                            New ArrayJar("data", , , True).Weaken)).Weaken)
+
+            Dim idJar = New MemoryJar(Of W3GameActionId)(New EnumJar(Of W3GameActionId)("id", 1, flags:=False)).Weaken
+            Dim switchJar = New SwitchJar("body", idJar)
+            W3GameAction.RegJar(switchJar)
+            reg(jar, W3PacketId.GameAction,
+                    New ArrayJar("crc32", expectedSize:=4).Weaken,
+                    New RepeatingJar(Of Dictionary(Of String, Object))("actions",
+                        New TupleJar("action", idJar, switchJar)).Weaken)
         End Sub
-        Private Shared Sub reg_lan(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_lan(ByVal jar As SwitchJar)
             reg(jar, W3PacketId.LanRequestGame,
                     New StringJar("product id", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
                     New ValueJar("major version", 4).Weaken,
@@ -363,13 +364,13 @@ Namespace Warcraft3
                     New StringJar("password", True, , , "unused").Weaken,
                     New W3MapSettingsJar("statstring"),
                     New ValueJar("num slots", 4).Weaken,
-                    New EnumJar(Of GameTypeFlags)("game type", 4).Weaken,
+                    New EnumJar(Of GameTypeFlags)("game type", 4, flags:=True).Weaken,
                     New ValueJar("num players + 1", 4).Weaken,
                     New ValueJar("free slots + 1", 4).Weaken,
                     New ValueJar("age", 4).Weaken,
                     New ValueJar("listen port", 2).Weaken)
         End Sub
-        Private Shared Sub RegPeer(ByVal jar As ManualSwitchJar)
+        Private Shared Sub RegPeer(ByVal jar As SwitchJar)
             '[Peer introduction]
             reg(jar, W3PacketId.PeerKnock,
                     New ValueJar("receiver peer key", 4, "As received from host in OTHER_PLAYER_JOINED").Weaken,
@@ -388,7 +389,7 @@ Namespace Warcraft3
             reg(jar, W3PacketId.PeerPong,
                     New ArrayJar("salt", 4).Weaken)
         End Sub
-        Private Shared Sub reg_dl(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_dl(ByVal jar As SwitchJar)
             reg(jar, W3PacketId.ClientMapInfo,
                     New ValueJar("unknown", 4, "=1").Weaken,
                     New ValueJar("dl state", 1, "1=no dl, 3=active dl").Weaken,
@@ -427,7 +428,7 @@ Namespace Warcraft3
 #Region "Parsing"
         Public Shared Function FromData(ByVal id As W3PacketId, ByVal data As ViewableList(Of Byte)) As W3Packet
             If data Is Nothing Then Throw New ArgumentException()
-            Return New W3Packet(id, packetJar.parse(id, data))
+            Return New W3Packet(id, packetJar.Parse(id, data))
         End Function
 #End Region
 
@@ -451,8 +452,25 @@ Namespace Warcraft3
             GameChat = &H20
         End Enum
         Public Enum ChatType As Byte
-            Lobby = 1 << 4
-            Game = 1 << 5
+            Lobby = &H10
+            Game = &H20
+        End Enum
+        Public Enum ChatReceiverType As Byte
+            AllPlayers = 0
+            Allies = 1
+            Observers = 2
+            Player1 = 3
+            Player2 = 4
+            Player3 = 5
+            Player4 = 6
+            Player5 = 7
+            Player6 = 8
+            Player7 = 9
+            Player8 = 10
+            Player9 = 11
+            Player10 = 12
+            Player11 = 13
+            Player12 = 14
         End Enum
 #End Region
 
@@ -478,7 +496,8 @@ Namespace Warcraft3
         End Function
         <Pure()>
         Public Shared Function MakeText(ByVal text As String,
-                                        ByVal flags() As Byte,
+                                        ByVal type As ChatType,
+                                        ByVal receiverType As ChatReceiverType,
                                         ByVal receivingPlayers As IEnumerable(Of IW3Player),
                                         ByVal sender As IW3Player) As W3Packet
             Contract.Requires(text IsNot Nothing)
@@ -488,10 +507,9 @@ Namespace Warcraft3
             Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
                     {"receiving player indexes", (From p In receivingPlayers Select CULng(p.index)).ToList},
                     {"sending player index", sender.index},
-                    {"chat type", If(flags Is Nothing, ChatType.Lobby, ChatType.Game)},
-                    {"chat", New Dictionary(Of String, Object) From {
-                            {"message", text},
-                            {"flags", flags}}}})
+                    {"type", type},
+                    {"message", text},
+                    {"receiver type", receiverType}})
         End Function
         <Pure()>
         Public Shared Function MakeGreet(ByVal p As IW3Player,
@@ -606,7 +624,7 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             subdata = If(subdata, {})
             If subdata.Length > 0 Then
-                subdata = Concat({Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(ByteOrder.LittleEndian).SubArray(0, 2), subdata})
+                subdata = Concat(Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(ByteOrder.LittleEndian).SubArray(0, 2), subdata)
             End If
 
             Return New W3Packet(W3PacketId.Tick, New Dictionary(Of String, Object) From {
@@ -862,43 +880,6 @@ Namespace Warcraft3
         End Function
     End Class
 
-    Public Class CRC32Jar(Of T As Class)
-        Inherits Jar(Of T)
-        Private ReadOnly tj As TupleJar
-        Private ReadOnly sj As IJar(Of T)
-        Private ReadOnly size As Integer
-
-        Public Sub New(ByVal name As String, ByVal subjar As IJar(Of T), Optional ByVal size As Integer = 4)
-            MyBase.New(name)
-            Me.sj = subjar
-            Me.tj = New TupleJar(name, New ArrayJar(subjar.Name + ":crc32", size).Weaken, subjar.Weaken)
-            Me.size = size
-        End Sub
-
-        Public Overrides Function Pack(Of R As T)(ByVal value As R) As Pickling.IPickle(Of R)
-            Dim vals As New Dictionary(Of String, Object)
-            vals(sj.Name) = value
-            vals(sj.Name + ":crc32") = SubArray(Bnet.Crypt.crc32(New IO.MemoryStream(sj.Pack(value).Data.ToArray)).bytes(ByteOrder.LittleEndian), 0, size)
-            Dim p = tj.Pack(vals)
-            Return New Pickling.Pickle(Of R)(value, p.Data, p.Description)
-        End Function
-
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of T)
-            Dim p = tj.Parse(data)
-            Dim vals = p.Value
-
-            'check CRC
-            Using m As New IO.MemoryStream(data.ToArray())
-                m.Seek(size, IO.SeekOrigin.Begin)
-                Dim crc = CType(vals(sj.Name + ":crc32"), Byte())
-                Dim crc2 = SubArray(Bnet.Crypt.crc32(m, data.Length - size).bytes(ByteOrder.LittleEndian), 0, size)
-                If Not ArraysEqual(crc, crc2) Then Throw New PicklingException("Incorrect CRC")
-            End Using
-
-            Return New Pickling.Pickle(Of T)(CType(vals(sj.Name), T), p.Data, p.Description)
-        End Function
-    End Class
-
     Public Class SlotJar
         Inherits TupleJar
 
@@ -906,12 +887,12 @@ Namespace Warcraft3
             MyBase.New(name,
                     New ValueJar("player index", 1).Weaken,
                     New ValueJar("dl percent", 1).Weaken,
-                    New EnumJar(Of W3SlotContents.State)("slot state", 1).Weaken,
+                    New EnumJar(Of W3SlotContents.State)("slot state", 1, flags:=False).Weaken,
                     New ValueJar("is computer", 1).Weaken,
                     New ValueJar("team index", 1).Weaken,
-                    New EnumJar(Of W3Slot.PlayerColor)("color", 1).Weaken,
-                    New EnumJar(Of W3Slot.RaceFlags)("race", 1).Weaken,
-                    New EnumJar(Of W3Slot.ComputerLevel)("computer difficulty", 1).Weaken,
+                    New EnumJar(Of W3Slot.PlayerColor)("color", 1, flags:=False).Weaken,
+                    New EnumJar(Of W3Slot.RaceFlags)("race", 1, flags:=True).Weaken,
+                    New EnumJar(Of W3Slot.ComputerLevel)("computer difficulty", 1, flags:=False).Weaken,
                     New ValueJar("handicap", 1).Weaken)
         End Sub
 

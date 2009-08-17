@@ -84,11 +84,11 @@ Namespace CKL
                     End If
 
                     If responseData IsNot Nothing Then
-                        socket.WritePacket(Concat({New Byte() {PACKET_ID, id, 0, 0}, responseData}))
+                        socket.WritePacket(Concat({PACKET_ID, id, 0, 0}, responseData))
                     End If
                     If errorMessage IsNot Nothing Then
                         logger.log("Error parsing data from client: " + errorMessage, LogMessageTypes.Negative)
-                        socket.WritePacket(Concat({New Byte() {PACKET_ID, CklPacketId.error}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)}))
+                        socket.WritePacket(Concat({PACKET_ID, CklPacketId.error}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
                     End If
                     Return True
                 End Function

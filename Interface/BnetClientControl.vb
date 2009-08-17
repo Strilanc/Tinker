@@ -5,16 +5,17 @@ Imports HostBot.Bnet.BnetPacket
 Public Class BnetClientControl
     Implements IHookable(Of IBnetClient)
     Private WithEvents client As IBnetClient
-    Private ReadOnly uiRef As New InvokedCallQueue(Me)
-    Private numStates1 As Integer
+    Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
+    Private numPrimaryStates As Integer
 
-#Region "Hook"
-    Private Function f_caption() As IFuture(Of String) Implements IHookable(Of IBnetClient).f_caption
-        Return uiRef.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.Name)))
+    Private Function QueueDispose() As IFuture Implements IHookable(Of IBnetClient).QueueDispose
+        Return ref.QueueAction(Sub() Me.Dispose())
     End Function
-
-    Public Function f_hook(ByVal client As IBnetClient) As IFuture Implements IHookable(Of IBnetClient).f_Hook
-        Return uiRef.QueueAction(
+    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of IBnetClient).QueueGetCaption
+        Return ref.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.Name)))
+    End Function
+    Public Function QueueHook(ByVal client As IBnetClient) As IFuture Implements IHookable(Of IBnetClient).QueueHook
+        Return ref.QueueAction(
             Sub()
                 If Me.client Is client Then  Return
                 Me.client = client
@@ -26,16 +27,14 @@ Public Class BnetClientControl
                     txtTalk.Enabled = False
                 Else
                     logClient.SetLogger(client.logger, "Client")
-                    client.f_GetState.CallWhenValueReady(Sub(state) c_ClientStateChanged(client, state, state))
+                    client.f_GetState.CallWhenValueReady(Sub(state) CatchClientStateChanged(client, state, state))
                 End If
             End Sub
         )
     End Function
-#End Region
 
-#Region "Events"
-    Private Sub c_ReceivedPacket(ByVal sender As IBnetClient, ByVal packet As BnetPacket) Handles client.ReceivedPacket
-        uiRef.QueueAction(
+    Private Sub CatchReceivedPacket(ByVal sender As IBnetClient, ByVal packet As BnetPacket) Handles client.ReceivedPacket
+        ref.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
                 Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
@@ -46,14 +45,14 @@ Public Class BnetClientControl
                         Dim text = CStr(vals("text"))
                         Select Case id
                             Case ChatEventId.ShowUser, ChatEventId.UserJoined
-                                If Not lstState.Items.Contains(user) OrElse lstState.Items.IndexOf(user) >= numStates1 Then
-                                    lstState.Items.Insert(numStates1, user)
-                                    numStates1 += 1
+                                If Not lstState.Items.Contains(user) OrElse lstState.Items.IndexOf(user) >= numPrimaryStates Then
+                                    lstState.Items.Insert(numPrimaryStates, user)
+                                    numPrimaryStates += 1
                                 End If
                                 logClient.LogMessage("{0} entered the channel".frmt(user), Color.LightGray)
                             Case ChatEventId.UserLeft
-                                If lstState.Items.Contains(user) AndAlso lstState.Items.IndexOf(user) < numStates1 Then
-                                    numStates1 -= 1
+                                If lstState.Items.Contains(user) AndAlso lstState.Items.IndexOf(user) < numPrimaryStates Then
+                                    numPrimaryStates -= 1
                                     lstState.Items.Remove(user)
                                 End If
                                 logClient.LogMessage("{0} left the channel".frmt(user), Color.LightGray)
@@ -62,7 +61,7 @@ Public Class BnetClientControl
                                 lstState.Items.Clear()
                                 lstState.Items.Add("Channel " + text)
                                 lstState.Items.Add(New String("-"c, 50))
-                                numStates1 = 2
+                                numPrimaryStates = 2
                             Case ChatEventId.Whisper
                                 logClient.LogMessage("{0} whispers: {1}".frmt(user, text), Color.DarkGreen)
                             Case ChatEventId.Talk
@@ -87,7 +86,7 @@ Public Class BnetClientControl
                                 logClient.LogMessage("{0} {1}".frmt(user, text), Color.DarkGray)
                         End Select
                     Case BnetPacketID.QueryGamesList
-                        While lstState.Items.Count > numStates1
+                        While lstState.Items.Count > numPrimaryStates
                             lstState.Items.RemoveAt(lstState.Items.Count - 1)
                         End While
                         lstState.Items.Add("--------")
@@ -99,7 +98,7 @@ Public Class BnetClientControl
                             Dim settings = CType(stats("settings"), Warcraft3.W3MapSettings)
                             lstState.Items.Add(CStr(game("game name")))
                             lstState.Items.Add(CStr(stats("username")))
-                            lstState.Items.Add(GetFileNameSlash(settings.relativePath))
+                            lstState.Items.Add(Mpq.Common.GetFileNameSlash(settings.relativePath))
                         Next game
                 End Select
             End Sub
@@ -125,8 +124,8 @@ Public Class BnetClientControl
         txtTalk.Text = ""
     End Sub
 
-    Private Sub c_ClientStateChanged(ByVal sender As IBnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States) Handles client.StateChanged
-        uiRef.QueueAction(
+    Private Sub CatchClientStateChanged(ByVal sender As IBnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States) Handles client.StateChanged
+        ref.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
                 txtTalk.Enabled = False
@@ -146,7 +145,7 @@ Public Class BnetClientControl
                             lstState.Items.Add(If(g.private, "Private", "Public"))
                             lstState.Items.Add("Refreshed: {0}".frmt(Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
                         End If
-                        numStates1 = lstState.Items.Count
+                        numPrimaryStates = lstState.Items.Count
                     Case Else
                         lstState.Items.Clear()
                         lstState.Enabled = False
@@ -155,5 +154,4 @@ Public Class BnetClientControl
             End Sub
         )
     End Sub
-#End Region
 End Class

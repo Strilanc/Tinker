@@ -8,7 +8,7 @@ referee thread.
   To ensure there are no deadlocks, local calls are not supposed to block, ever. A consequence of this is that local calls are not permitted to
 sleep or call unknown functions (eg. by raising an event). These things must be achieved by running a non-local call on another thread. This
 also complicates returning function values between threaded objects, because A can't expect B to evaluate a function immediately and A can't
-block on B evaluating the function. Thread-unsafe functions generally return a Functional.Future.IFuture which only becomes ready once
+block on B evaluating the function. Thread-unsafe functions generally return a Future.IFuture which only becomes ready once
 the function has been evaluated.
 
 Prefixes:

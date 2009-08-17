@@ -119,9 +119,13 @@
     <CodeAnalysisRuleSet>SecurityRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=0.85.5.452, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+    <Reference Include="MpqLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9bae8fba86733575, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Downloads\Software\Programming\SharpZipLib_0855_Bin\net-20\ICSharpCode.SharpZipLib.dll</HintPath>
+      <HintPath>..\..\..\Documents\Visual Studio 10\Projects\MpqLibrary\MpqLibrary\bin\Release\MpqLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="Strilbrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9bae8fba86733575, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\Documents\Visual Studio 10\Projects\Strilbrary\Strilbrary\bin\Release\Strilbrary.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -134,11 +138,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Import Include="HostBot.Functional" />
-    <Import Include="HostBot.Functional.Futures" />
-    <Import Include="HostBot.Functional.Queueing" />
-    <Import Include="HostBot.Logging" />
+    <Import Include="HostBot.Pickling" />
+    <Import Include="HostBot.Pickling.Jars" />
     <Import Include="Microsoft.VisualBasic" />
+    <Import Include="Strilbrary" />
+    <Import Include="Strilbrary.Enumeration" />
+    <Import Include="Strilbrary.Logging" />
+    <Import Include="Strilbrary.Streams" />
+    <Import Include="Strilbrary.Threading" />
+    <Import Include="Strilbrary.Threading.Futures" />
+    <Import Include="Strilbrary.Threading.Queueing" />
     <Import Include="System" />
     <Import Include="System.Collections.Generic" />
     <Import Include="System.Data" />
@@ -151,6 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameAction.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3GameHeader.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3RemotePlayer.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3MapDownload.vb" />
@@ -184,25 +194,6 @@
     <Compile Include="Interface\ProfileSettingsControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Libraries\Data Structures\ArrayView.vb" />
-    <Compile Include="Libraries\Data Structures\BigNum.vb" />
-    <Compile Include="Libraries\Data Structures\DeadManSwitch.vb" />
-    <Compile Include="Libraries\Data Structures\Locks.vb" />
-    <Compile Include="Libraries\Data Structures\ModInt.vb" />
-    <Compile Include="Libraries\Data Structures\MStack.vb" />
-    <Compile Include="Libraries\Data Structures\LockFreeQueue.vb" />
-    <Compile Include="Libraries\Functional\FuturesExtra.vb" />
-    <Compile Include="Libraries\Mpq\MpqHashTable.vb" />
-    <Compile Include="Libraries\Mpq\MpqFileTable.vb" />
-    <Compile Include="Libraries\Mpq\MpqFileStream.vb" />
-    <Compile Include="Libraries\PackParse\PicklingBase.vb" />
-    <Compile Include="Libraries\PackParse\PicklingInterface.vb" />
-    <Compile Include="Libraries\Utilities\ConnectionAccepter.vb" />
-    <Compile Include="Libraries\Streams\SeekableStream.vb" />
-    <Compile Include="Libraries\Functional\Coroutine.vb" />
-    <Compile Include="Libraries\Utilities\Disposable.vb" />
-    <Compile Include="Libraries\Utilities\Exceptions.vb" />
-    <Compile Include="Libraries\Functional\Iterator.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3DummyPlayer.vb" />
     <Compile Include="Battlenet\Warcraft3\W3LanAdvertiser.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\TransferScheduler.vb" />
@@ -225,9 +216,20 @@
     <Compile Include="Interface\BotWidgetControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Libraries\Mpq\Compression\MpqPkWare.vb" />
-    <Compile Include="Libraries\Utilities\Linqish.vb" />
-    <Compile Include="Libraries\Utilities\Networking.vb" />
+    <Compile Include="Library\BigNum.vb" />
+    <Compile Include="Library\Common.vb" />
+    <Compile Include="Library\ConnectionAccepter.vb" />
+    <Compile Include="Library\DeadManSwitch.vb" />
+    <Compile Include="Library\MStack.vb" />
+    <Compile Include="Library\Networking.vb" />
+    <Compile Include="Library\Pickling\Pack.vb" />
+    <Compile Include="Library\Pickling\PicklingBase.vb" />
+    <Compile Include="Library\Pickling\PicklingInterface.vb" />
+    <Compile Include="Library\Pickling\PicklingJars.vb" />
+    <Compile Include="Library\Streams\PacketStream.vb" />
+    <Compile Include="Library\Streams\ProducerConsumerStream.vb" />
+    <Compile Include="Library\Streams\SeekableStream.vb" />
+    <Compile Include="Library\Streams\ThrottledWriteStream.vb" />
     <Compile Include="RecyclingBin\Settings.vb" />
     <Compile Include="RecyclingBin\SettingsList.Designer.vb">
       <DependentUpon>SettingsList.vb</DependentUpon>
@@ -240,26 +242,18 @@
     <Compile Include="Bot\Widgets\CKL Server.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Packet.vb" />
     <Compile Include="Bot\BotUser.vb" />
-    <Compile Include="Libraries\Functional\Queueing.vb" />
     <Compile Include="RecyclingBin\FrmLogger.Designer.vb">
       <DependentUpon>FrmLogger.vb</DependentUpon>
     </Compile>
     <Compile Include="RecyclingBin\FrmLogger.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Libraries\Logging\LoggerControl.Designer.vb">
+    <Compile Include="Interface\LoggerControl.Designer.vb">
       <DependentUpon>LoggerControl.vb</DependentUpon>
     </Compile>
-    <Compile Include="Libraries\Logging\LoggerControl.vb">
+    <Compile Include="Interface\LoggerControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Libraries\Data Structures\BitBuffer.vb" />
-    <Compile Include="Libraries\Functional\FunctionalCommon.vb" />
-    <Compile Include="Libraries\Logging\Logging.vb" />
-    <Compile Include="Libraries\PackParse\PicklingJars.vb" />
-    <Compile Include="Libraries\Utilities\Converter.vb" />
-    <Compile Include="Libraries\Mpq\MpqCommon.vb" />
-    <Compile Include="Libraries\Mpq\Compression\MpqHuffman.vb" />
     <Compile Include="RecyclingBin\RateList.vb" />
     <Compile Include="RecyclingBin\TimeGraphControl.Designer.vb">
       <DependentUpon>TimeGraphControl.vb</DependentUpon>
@@ -267,18 +261,16 @@
     <Compile Include="RecyclingBin\TimeGraphControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Libraries\Functional\Futures.vb" />
-    <Compile Include="Libraries\Streams\ThrottledWriteStream.vb" />
     <Compile Include="Interface\BnetClientControl.Designer.vb">
       <DependentUpon>BnetClientControl.vb</DependentUpon>
     </Compile>
     <Compile Include="Interface\BnetClientControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\W3GameServerControl.Designer.vb">
-      <DependentUpon>W3GameServerControl.vb</DependentUpon>
+    <Compile Include="Interface\W3ServerControl.Designer.vb">
+      <DependentUpon>W3ServerControl.vb</DependentUpon>
     </Compile>
-    <Compile Include="Interface\W3GameServerControl.vb">
+    <Compile Include="Interface\W3ServerControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="RecyclingBin\W3TextControl.Designer.vb">
@@ -288,27 +280,19 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Bot\MainBot.vb" />
-    <Compile Include="Libraries\Mpq\MpqArchive.vb" />
-    <Compile Include="Libraries\Mpq\MpqCrypt.vb" />
-    <Compile Include="Libraries\Streams\PacketStream.vb" />
-    <Compile Include="Libraries\Streams\StreamWrapper.vb" />
     <Compile Include="Battlenet\BnetClient.vb" />
-    <Compile Include="Libraries\Utilities\Common.vb" />
     <Compile Include="Battlenet\BnetCrypt.vb" />
-    <Compile Include="Libraries\PackParse\Pack.vb" />
     <Compile Include="Battlenet\BnetSocket.vb" />
-    <Compile Include="Libraries\Mpq\Compression\MpqWave.vb" />
-    <Compile Include="Libraries\Streams\ConcatStream.vb" />
     <Compile Include="RecyclingBin\W3SlotControl.Designer.vb">
       <DependentUpon>W3SlotControl.vb</DependentUpon>
     </Compile>
     <Compile Include="RecyclingBin\W3SlotControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\W3GameInstanceControl.Designer.vb">
-      <DependentUpon>W3GameInstanceControl.vb</DependentUpon>
+    <Compile Include="Interface\W3GameControl.Designer.vb">
+      <DependentUpon>W3GameControl.vb</DependentUpon>
     </Compile>
-    <Compile Include="Interface\W3GameInstanceControl.vb">
+    <Compile Include="Interface\W3GameControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Interface\FrmClient.Designer.vb">
@@ -370,7 +354,7 @@
       <SubType>Designer</SubType>
       <DependentUpon>FrmLogger.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Libraries\Logging\LoggerControl.resx">
+    <EmbeddedResource Include="Interface\LoggerControl.resx">
       <SubType>Designer</SubType>
       <DependentUpon>LoggerControl.vb</DependentUpon>
     </EmbeddedResource>
@@ -382,17 +366,17 @@
       <SubType>Designer</SubType>
       <DependentUpon>BnetClientControl.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\W3GameServerControl.resx">
+    <EmbeddedResource Include="Interface\W3ServerControl.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>W3GameServerControl.vb</DependentUpon>
+      <DependentUpon>W3ServerControl.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="RecyclingBin\W3SlotControl.resx">
       <SubType>Designer</SubType>
       <DependentUpon>W3SlotControl.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\W3GameInstanceControl.resx">
+    <EmbeddedResource Include="Interface\W3GameControl.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>W3GameInstanceControl.vb</DependentUpon>
+      <DependentUpon>W3GameControl.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\FrmClient.resx">
       <DependentUpon>FrmClient.vb</DependentUpon>

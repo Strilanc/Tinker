@@ -1,6 +1,7 @@
 ﻿Public Interface IHookable(Of T)
-    Function f_Hook(ByVal child As T) As IFuture
-    Function f_caption() As IFuture(Of String)
+    Function QueueHook(ByVal child As T) As IFuture
+    Function QueueGetCaption() As IFuture(Of String)
+    Function QueueDispose() As IFuture
 End Interface
 
 Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
@@ -33,7 +34,7 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         control.Width = page.Width
         control.Height = page.Height
         control.Anchor = AnchorStyles.Bottom Or AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Top
-        control.f_Hook(element)
+        control.QueueHook(element)
         page.Text = "..."
         UpdateText(element)
     End Sub
@@ -41,17 +42,17 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
     Private Sub UpdateText(ByVal element As T)
         Dim control = controls(element)
         Dim page = tabs(element)
-        control.f_caption.CallWhenValueReady(
+        control.QueueGetCaption.CallWhenValueReady(
             Sub(text)
-                                                 ref.QueueAction(
-                                                     Sub()
-                                                         Try
-                                                             page.Text = text
-                                                         Catch e As Exception
-                                                         End Try
-                                                     End Sub
-                                                 )
-                                             End Sub
+                ref.QueueAction(
+                    Sub()
+                        Try
+                            page.Text = text
+                        Catch e As Exception
+                        End Try
+                    End Sub
+                )
+            End Sub
         )
     End Sub
     Public Function Update(ByVal element As T) As Outcome
@@ -67,7 +68,7 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
     Public Sub Replace(ByVal old_element As T, ByVal new_element As T)
         If Not tabs.ContainsKey(old_element) Then Throw New InvalidOperationException("Don't have a control to replace for element.")
         Dim control = controls(old_element)
-        control.f_Hook(new_element)
+        control.QueueHook(new_element)
     End Sub
 
     Public Sub Remove(ByVal element As T)
@@ -78,11 +79,11 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         Dim control = controls(element)
 
         'cleanup
-        control.f_Hook(Nothing)
+        control.QueueHook(Nothing)
         page.Controls.Remove(control)
         tabCollection.Remove(page)
         Try
-            control.Dispose()
+            control.QueueDispose()
             page.Dispose()
         Catch e As InvalidOperationException
         End Try

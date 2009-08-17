@@ -124,7 +124,7 @@
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logging.Logger) As IFuture Implements IW3Game.QueueCommandProcessLocalText
+        Public Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture Implements IW3Game.QueueCommandProcessLocalText
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)

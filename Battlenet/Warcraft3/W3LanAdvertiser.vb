@@ -126,7 +126,7 @@ Public NotInheritable Class W3LanAdvertiser
         End SyncLock
 
         'break links with other components
-        parent.f_RemoveWidget(TYPE_NAME, name)
+        parent.QueueRemoveWidget(TYPE_NAME, name)
 
         If Me.pool_port IsNot Nothing Then
             logger.log("Returned port {0} to the pool.".frmt(Me.server_listen_port), LogMessageTypes.Positive)
@@ -233,7 +233,7 @@ Public NotInheritable Class W3LanAdvertiser
         Try
             'pack
             Dim data = pk.payload.Data.ToArray()
-            data = Concat({New Byte() {W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).bytes(ByteOrder.LittleEndian), data})
+            data = Concat({W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).bytes(ByteOrder.LittleEndian), data)
 
             'Log
             logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageTypes.DataEvent)
@@ -249,7 +249,7 @@ Public NotInheritable Class W3LanAdvertiser
         Catch e As Exception
             'Fail
             logger.log("Error sending {0}: {1}".frmt(pk.id, e), LogMessageTypes.Problem)
-            Logging.LogUnexpectedException("Exception rose past {0}.send".frmt(Me.GetType.Name), e)
+            LogUnexpectedException("Exception rose past {0}.send".frmt(Me.GetType.Name), e)
         End Try
     End Sub
 #End Region

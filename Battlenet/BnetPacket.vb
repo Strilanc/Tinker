@@ -13,8 +13,6 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
-Imports HostBot.Pickling
-Imports HostBot.Pickling.Jars
 Imports HostBot.Warcraft3
 
 Namespace Bnet
@@ -126,7 +124,7 @@ Namespace Bnet
         Public Const PACKET_PREFIX As Byte = &HFF
         Public ReadOnly payload As IPickle(Of Object)
         Public ReadOnly id As BnetPacketID
-        Private Shared ReadOnly packetJar As ManualSwitchJar = MakeBnetPacketJar()
+        Private Shared ReadOnly packetJar As SwitchJar = MakeBnetPacketJar()
 
         <ContractInvariantMethod()> Protected Sub Invariant()
             Contract.Invariant(payload IsNot Nothing)
@@ -145,15 +143,15 @@ Namespace Bnet
 #End Region
 
 #Region "Jar"
-        Private Shared Sub regPack(ByVal jar As ManualSwitchJar,
+        Private Shared Sub regPack(ByVal jar As SwitchJar,
                                    ByVal id As BnetPacketID,
                                    ByVal ParamArray subjars() As IPackJar(Of Object))
-            jar.regPacker(id, New TuplePackJar(id.ToString(), subjars))
+            jar.regPacker(id, New TuplePackJar(id.ToString(), subjars).Weaken)
         End Sub
-        Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As BnetPacketID, ByVal ParamArray subjars() As IParseJar(Of Object))
+        Private Shared Sub regParse(ByVal jar As SwitchJar, ByVal id As BnetPacketID, ByVal ParamArray subjars() As IParseJar(Of Object))
             jar.regParser(id, New TupleParseJar(id.ToString(), subjars))
         End Sub
-        Private Shared Sub reg_login(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_login(ByVal jar As SwitchJar)
             'AUTHENTICATION_BEGIN [Introductions, server authentication, and server challenge to client]
             '[client send] [the client introduces itself]
             regPack(jar, BnetPacketID.AuthenticationBegin,
@@ -230,20 +228,20 @@ Namespace Bnet
                     New StringJar("statstring", , True),
                     New StringJar("account username"))
         End Sub
-        Private Shared Sub reg_state(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_state(ByVal jar As SwitchJar)
             regPack(jar, BnetPacketID.QueryGamesList,
-                    New EnumJar(Of GameTypeFlags)("filter", 4).Weaken,
-                    New EnumJar(Of GameTypeFlags)("filter mask", 4).Weaken,
+                    New EnumJar(Of GameTypeFlags)("filter", 4, flags:=True).Weaken,
+                    New EnumJar(Of GameTypeFlags)("filter mask", 4, flags:=True).Weaken,
                     New ValueJar("unknown0", 4, "=0").Weaken,
                     New ValueJar("list count", 4).Weaken,
                     New StringJar("game name", True, , , "empty means list games").Weaken,
                     New StringJar("game password", True).Weaken,
                     New StringJar("game stats", True).Weaken)
             regParse(jar, BnetPacketID.QueryGamesList, New ListParseJar(Of Dictionary(Of String, Object))("games", numSizePrefixBytes:=4, subjar:=New TupleParseJar("game",
-                     New EnumJar(Of GameTypeFlags)("game type", 4).Weaken,
+                     New EnumJar(Of GameTypeFlags)("game type", 4, flags:=True).Weaken,
                      New ValueJar("language id", 4).Weaken,
                      New AddressJar("host address"),
-                     New EnumJar(Of GameStateFlags)("game state", 4).Weaken,
+                     New EnumJar(Of GameStateFlags)("game state", 4, flags:=True).Weaken,
                      New ValueJar("elapsed time", 4, "(seconds)").Weaken,
                      New StringJar("game name", True),
                      New StringJar("game password", True),
@@ -254,9 +252,9 @@ Namespace Bnet
             'CREATE_GAME_3 [Request/response for listing a game]
             '[client send]
             regPack(jar, BnetPacketID.CreateGame3,
-                    New EnumJar(Of GameStateFlags)("game state", 4).Weaken,
+                    New EnumJar(Of GameStateFlags)("game state", 4, flags:=True).Weaken,
                     New ValueJar("time", 4, "time since creation in seconds").Weaken,
-                    New EnumJar(Of GameTypeFlags)("game type", 4).Weaken,
+                    New EnumJar(Of GameTypeFlags)("game type", 4, flags:=True).Weaken,
                     New ValueJar("unknown1", 4, "=1023").Weaken,
                     New ValueJar("ladder", 4, "0=false, 1=true)").Weaken,
                     New StringJar("name").Weaken,
@@ -283,11 +281,11 @@ Namespace Bnet
             regPack(jar, BnetPacketID.NetGamePort,
                     New ValueJar("port", 2).Weaken)
         End Sub
-        Private Shared Sub reg_misc(ByVal jar As ManualSwitchJar)
+        Private Shared Sub reg_misc(ByVal jar As SwitchJar)
             'CHAT_EVENT [Informs the client what other clients are doing (talking, leaving, etc)]
             '[client receive]
             regParse(jar, BnetPacketID.ChatEvent,
-                    New EnumJar(Of ChatEventId)("event id", 4).Weaken,
+                    New EnumJar(Of ChatEventId)("event id", 4, flags:=False).Weaken,
                     New ArrayJar("flags", 4),
                     New ValueJar("ping", 4).Weaken,
                     New IpBytesJar("ip", "[unused]"),
@@ -340,8 +338,8 @@ Namespace Bnet
             regParse(jar, BnetPacketID.Warden, New ArrayJar("encrypted data", , , True))
             regPack(jar, BnetPacketID.Warden, New ArrayJar("encrypted data", , , True).Weaken)
         End Sub
-        Public Shared Function MakeBnetPacketJar() As ManualSwitchJar
-            Dim jar As New ManualSwitchJar
+        Public Shared Function MakeBnetPacketJar() As SwitchJar
+            Dim jar As New SwitchJar
             reg_login(jar)
             reg_misc(jar)
             reg_state(jar)
@@ -408,7 +406,7 @@ Namespace Bnet
                                                         ByVal exeInformation As String,
                                                         ByVal rocKey As String,
                                                         ByVal tftKey As String,
-                                                        Optional ByVal R As System.Random = Nothing) As BnetPacket
+                                                        ByVal R As System.Security.Cryptography.RandomNumberGenerator) As BnetPacket
             Contract.Requires(version IsNot Nothing)
             Contract.Requires(mpqFolder IsNot Nothing)
             Contract.Requires(mpqNumberString IsNot Nothing)
@@ -421,9 +419,7 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
 
             Dim clientCdKeySalt(0 To 3) As Byte
-            With If(R, New System.Random())
-                .NextBytes(clientCdKeySalt)
-            End With
+            R.GetBytes(clientCdKeySalt)
 
             Return New BnetPacket(BnetPacketID.AuthenticationFinish, New Dictionary(Of String, Object) From {
                     {"client cd key salt", clientCdKeySalt},
@@ -523,7 +519,8 @@ Namespace Bnet
                                                            ByVal CdKeyOwner As String,
                                                            ByVal ExeInformation As String,
                                                            ByVal CklRemoteHost As String,
-                                                           ByVal CklRemotePort As UShort) As IFuture(Of Outcome(Of BnetPacket))
+                                                           ByVal CklRemotePort As UShort,
+                                                           ByVal R As System.Security.Cryptography.RandomNumberGenerator) As IFuture(Of Outcome(Of BnetPacket))
             Contract.Requires(Version IsNot Nothing)
             Contract.Requires(MpqFolder IsNot Nothing)
             Contract.Requires(MpqNumberString IsNot Nothing)
@@ -536,9 +533,7 @@ Namespace Bnet
             Dim vals As New Dictionary(Of String, Object)
 
             Dim clientCdKeySalt(0 To 3) As Byte
-            With New System.Random()
-                .NextBytes(clientCdKeySalt)
-            End With
+            R.GetBytes(clientCdKeySalt)
 
             vals("client cd key salt") = clientCdKeySalt
             vals("exe version") = Version
@@ -550,11 +545,11 @@ Namespace Bnet
 
             Return CKL.CklClient.BeginBorrowKeys(CklRemoteHost, CklRemotePort, clientCdKeySalt, ServerCdKeySalt).EvalWhenValueReady(
                 Function(borrowed) As Outcome(Of BnetPacket)
-                    If Not borrowed.succeeded Then  Return failure(borrowed.Message)
+                    If Not borrowed.succeeded Then  Return Failure(borrowed.Message)
 
-                    vals("ROC cd key") = borrowed.val.rocKey
-                    vals("TFT cd key") = borrowed.val.tftKey
-                    Return successVal(New BnetPacket(BnetPacketID.AuthenticationFinish, vals), borrowed.Message)
+                    vals("ROC cd key") = borrowed.Value.rocKey
+                    vals("TFT cd key") = borrowed.Value.tftKey
+                    Return Success(New BnetPacket(BnetPacketID.AuthenticationFinish, vals), borrowed.Message)
                 End Function
             )
         End Function
@@ -590,7 +585,7 @@ Namespace Bnet
         Public Shared Function FromData(ByVal id As BnetPacketID, ByVal data As ViewableList(Of Byte)) As BnetPacket
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
-            Return New BnetPacket(id, packetJar.parse(id, data))
+            Return New BnetPacket(id, packetJar.Parse(id, data))
         End Function
 
 #Region "Jars"
@@ -638,7 +633,7 @@ Namespace Bnet
             Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
                 If data.Length < numDigits Then Throw New PicklingException("Not enough data")
                 data = data.SubView(0, numDigits)
-                Return New Pickling.Pickle(Of ULong)(Me.Name, udehex(data.ParseChrString(nullTerminated:=False), byteOrder), data)
+                Return New Pickling.Pickle(Of ULong)(Me.Name, data.ParseChrString(nullTerminated:=False).ParseAsUnsignedHexNumber(byteOrder), data)
             End Function
         End Class
 
@@ -668,11 +663,11 @@ Namespace Bnet
                         {"product key", cdkey.productKey.ToArray()},
                         {"public key", cdkey.publicKey.ToArray()},
                         {"unknown", 0},
-                        {"hash", Bnet.Crypt.SHA1(Concat({clientToken.ToArray,
-                                                         serverToken.ToArray,
-                                                         cdkey.productKey.ToArray,
-                                                         cdkey.publicKey.ToArray,
-                                                         cdkey.privateKey.ToArray}))}}
+                        {"hash", Bnet.Crypt.SHA1(Concat(clientToken.ToArray,
+                                                        serverToken.ToArray,
+                                                        cdkey.productKey.ToArray,
+                                                        cdkey.publicKey.ToArray,
+                                                        cdkey.privateKey.ToArray))}}
             End Function
 
             Public Shared Function packBorrowedCdKey(ByVal data() As Byte) As Dictionary(Of String, Object)
@@ -680,10 +675,10 @@ Namespace Bnet
                 Contract.Requires(data.Length = 36)
 
                 Return New Dictionary(Of String, Object) From {
-                        {"length", data.SubArray(0, 4).ToUInteger(ByteOrder.LittleEndian)},
+                        {"length", data.SubArray(0, 4).ToUInt32(ByteOrder.LittleEndian)},
                         {"product key", data.SubArray(4, 4)},
                         {"public key", data.SubArray(8, 4)},
-                        {"unknown", data.SubArray(12, 4).ToUInteger(ByteOrder.LittleEndian)},
+                        {"unknown", data.SubArray(12, 4).ToUInt32(ByteOrder.LittleEndian)},
                         {"hash", data.SubArray(16, 20)}}
             End Function
         End Class
