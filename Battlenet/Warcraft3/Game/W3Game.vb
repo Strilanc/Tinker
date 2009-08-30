@@ -149,11 +149,10 @@ Namespace Warcraft3
             'Player Chat
             Select Case command_type
                 Case W3Packet.NonGameAction.GameChat, W3Packet.NonGameAction.LobbyChat
-                    Dim command_vals = CType(vals("command val"), Dictionary(Of String, Object))
-                    Dim message = CStr(command_vals("message"))
+                    Dim message = CStr(vals("message"))
                     Dim type = If(command_type = W3Packet.NonGameAction.GameChat, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby)
                     Dim receiverType As W3Packet.ChatReceiverType
-                    If type = W3Packet.ChatType.Game Then receiverType = CType(command_vals("receiver type"), W3Packet.ChatReceiverType)
+                    If type = W3Packet.ChatType.Game Then receiverType = CType(vals("receiver type"), W3Packet.ChatReceiverType)
                     Dim receivePlayerIndexes = CType(vals("receiving player indexes"), IList(Of Byte))
                     Contract.Assume(message IsNot Nothing)
                     Contract.Assume(receivePlayerIndexes IsNot Nothing)

@@ -176,7 +176,7 @@ Namespace Warcraft3
         Public Const PACKET_PREFIX As Byte = &HF7
         Public ReadOnly id As W3PacketId
         Public ReadOnly payload As IPickle(Of Object)
-        Private Shared ReadOnly packetJar As SwitchJar = MakeW3PacketJar()
+        Private Shared ReadOnly packetJar As ManualSwitchJar = MakeW3PacketJar()
 
 #Region "New"
         Private Sub New(ByVal id As W3PacketId, ByVal payload As IPickle(Of Object))
@@ -191,8 +191,8 @@ Namespace Warcraft3
 #End Region
 
 #Region "Jar"
-        Public Shared Function MakeW3PacketJar() As SwitchJar
-            Dim jar = New SwitchJar
+        Public Shared Function MakeW3PacketJar() As ManualSwitchJar
+            Dim jar = New ManualSwitchJar
             reg_general(jar)
             reg_leave(jar)
             reg_new(jar)
@@ -204,10 +204,13 @@ Namespace Warcraft3
             reg_dl(jar)
             Return jar
         End Function
-        Private Shared Sub reg(ByVal jar As SwitchJar, ByVal id As W3PacketId, ByVal ParamArray subjars() As IJar(Of Object))
+        Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal id As W3PacketId, ByVal ParamArray subjars() As IJar(Of Object))
             jar.reg(id, New TupleJar(id.ToString(), subjars).Weaken)
         End Sub
-        Private Shared Sub reg_general(ByVal jar As SwitchJar)
+        Private Shared Sub reg1(ByVal jar As ManualSwitchJar, ByVal id As W3PacketId, ByVal subjar As IJar(Of Object))
+            jar.reg(id, subjar)
+        End Sub
+        Private Shared Sub reg_general(ByVal jar As ManualSwitchJar)
             reg(jar, W3PacketId.Ping,
                     New ValueJar("salt", 4).Weaken)
 
@@ -219,31 +222,60 @@ Namespace Warcraft3
                     New ValueJar("player bitflags", 2).Weaken)
 
             '[server send] [Tells clients to display a message]
-            Dim chatTypeJar = New MemoryJar(Of ChatType)(New EnumJar(Of ChatType)("type", 1, flags:=False)).Weaken
-            reg(jar, W3PacketId.Text,
+            Dim chatJar = New InteriorSwitchJar(Of Dictionary(Of String, Object))(W3PacketId.Text.ToString,
+                                                                                  Function(val) CByte(val("type")),
+                                                                                  Function(data) data(data(0) + 2))
+            chatJar.reg(ChatType.Game, New TupleJar(W3PacketId.Text.ToString,
                     New ListJar(Of ULong)("receiving player indexes", New ValueJar("player index", 1)).Weaken,
                     New ValueJar("sending player index", 1).Weaken,
-                    chatTypeJar.Weaken,
-                    New SwitchJar("receiver type", chatTypeJar, New Dictionary(Of Byte, IJar(Of Object)) From {
-                            {ChatType.Game, New EnumJar(Of ChatReceiverType)("receiver type", 4, flags:=False).Weaken},
-                            {ChatType.Lobby, New EmptyJar("receiver type").Weaken}}),
-                    New StringJar("message").Weaken)
+                    New EnumJar(Of ChatType)("type", 1, flags:=False).Weaken,
+                    New EnumJar(Of ChatReceiverType)("receiver type", 4, flags:=False).Weaken,
+                    New StringJar("message").Weaken))
+            chatJar.reg(ChatType.Lobby, New TupleJar(W3PacketId.Text.ToString,
+                    New ListJar(Of ULong)("receiving player indexes", New ValueJar("player index", 1)).Weaken,
+                    New ValueJar("sending player index", 1).Weaken,
+                    New EnumJar(Of ChatType)("type", 1, flags:=False).Weaken,
+                    New StringJar("message").Weaken))
+            reg1(jar, W3PacketId.Text, chatJar.Weaken)
 
             '[server receive] [Tells the server a client wants to perform a slot action or talk]
-            Dim commandTypeJar = New MemoryJar(Of NonGameAction)(New EnumJar(Of NonGameAction)("command type", 1, flags:=False)).Weaken
-            reg(jar, W3PacketId.NonGameAction,
+            Dim commandJar = New InteriorSwitchJar(Of Dictionary(Of String, Object))(W3PacketId.NonGameAction.ToString,
+                                                                                     Function(val) CByte(val("command type")),
+                                                                                     Function(data) data(data(0) + 2))
+            commandJar.reg(NonGameAction.GameChat, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ValueJar("sending player", 1).Weaken,
+                    New EnumJar(Of NonGameAction)("command type", 1, flags:=False).Weaken,
+                    New EnumJar(Of ChatReceiverType)("receiver type", 4, flags:=False).Weaken,
+                    New StringJar("message").Weaken))
+            commandJar.reg(NonGameAction.LobbyChat, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ValueJar("sending player", 1).Weaken,
+                    New EnumJar(Of NonGameAction)("command type", 1, flags:=False).Weaken,
+                    New StringJar("message").Weaken))
+            commandJar.reg(NonGameAction.SetTeam, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ValueJar("sending player", 1).Weaken,
+                    New EnumJar(Of NonGameAction)("command type", 1, flags:=False).Weaken,
+                    New ValueJar("new value", numBytes:=1).Weaken))
+            commandJar.reg(NonGameAction.SetHandicap, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ValueJar("sending player", 1).Weaken,
+                    New EnumJar(Of NonGameAction)("command type", 1, flags:=False).Weaken,
+                    New ValueJar("new value", numBytes:=1).Weaken))
+            commandJar.reg(NonGameAction.SetRace, New TupleJar(W3PacketId.NonGameAction.ToString,
                     New ArrayJar("receiving player indexes", , 1).Weaken,
                     New ValueJar("sending player", 1).Weaken,
-                    commandTypeJar.Weaken,
-                    New SwitchJar("command val", commandTypeJar, New Dictionary(Of Byte, IJar(Of Object)) From {
-                            {NonGameAction.GameChat, New TupleJar("chat", New EnumJar(Of ChatReceiverType)("receiver type", 4, flags:=False).Weaken, New StringJar("message").Weaken).Weaken},
-                            {NonGameAction.LobbyChat, New TupleJar("chat", New EmptyJar("receiver type"), New StringJar("message").Weaken).Weaken},
-                            {NonGameAction.SetTeam, New ValueJar("new value", 1).Weaken},
-                            {NonGameAction.SetHandicap, New ValueJar("new value", 1).Weaken},
-                            {NonGameAction.SetRace, New EnumJar(Of W3Slot.RaceFlags)("new value", 1, flags:=True).Weaken},
-                            {NonGameAction.SetColor, New EnumJar(Of W3Slot.PlayerColor)("new value", 1, flags:=False).Weaken}}))
+                    New EnumJar(Of NonGameAction)("command type", 1, flags:=False).Weaken,
+                    New EnumJar(Of W3Slot.RaceFlags)("new value", numBytes:=1, flags:=True).Weaken))
+            commandJar.reg(NonGameAction.SetColor, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ValueJar("sending player", 1).Weaken,
+                    New EnumJar(Of NonGameAction)("command type", 1, flags:=False).Weaken,
+                    New EnumJar(Of W3Slot.PlayerColor)("new value", numBytes:=1, flags:=False).Weaken))
+            reg1(jar, W3PacketId.NonGameAction, commandJar.Weaken)
         End Sub
-        Private Shared Sub reg_leave(ByVal jar As SwitchJar)
+        Private Shared Sub reg_leave(ByVal jar As ManualSwitchJar)
             'EXPERIMENTAL
             reg(jar, W3PacketId.ConfirmHost)
             reg(jar, W3PacketId.SetHost,
@@ -259,7 +291,7 @@ Namespace Warcraft3
                     New ValueJar("player index", 1).Weaken,
                     New ValueJar("leave type", 4, "1=disc, 7=lose, 8=melee lose, 9=win, 10=draw, 11=obs, 13=lobby").Weaken)
         End Sub
-        Private Shared Sub reg_new(ByVal jar As SwitchJar)
+        Private Shared Sub reg_new(ByVal jar As ManualSwitchJar)
             reg(jar, W3PacketId.Knock,
                     New ValueJar("game id", 4).Weaken,
                     New ValueJar("entry key", 4).Weaken,
@@ -286,7 +318,7 @@ Namespace Warcraft3
             reg(jar, W3PacketId.RejectEntry,
                     New EnumJar(Of RejectReason)("reason", 4, flags:=False).Weaken)
         End Sub
-        Private Shared Sub reg_lobby_to_play(ByVal jar As SwitchJar)
+        Private Shared Sub reg_lobby_to_play(ByVal jar As ManualSwitchJar)
             '[server send; broadcast when a player becomes ready to play] [informs other players a player is ready] [players auto start when all others ready]
             reg(jar, W3PacketId.OtherPlayerReady,
                     New ValueJar("player index", 1).Weaken)
@@ -295,7 +327,7 @@ Namespace Warcraft3
             reg(jar, W3PacketId.StartCountdown)
             reg(jar, W3PacketId.Ready)
         End Sub
-        Private Shared Sub reg_lobby(ByVal jar As SwitchJar)
+        Private Shared Sub reg_lobby(ByVal jar As ManualSwitchJar)
             reg(jar, W3PacketId.OtherPlayerJoined,
                     New ValueJar("peer key", 4).Weaken,
                     New ValueJar("index", 1).Weaken,
@@ -311,7 +343,7 @@ Namespace Warcraft3
                     New ValueJar("layout style", 1).Weaken,
                     New ValueJar("num player slots", 1).Weaken)
         End Sub
-        Private Shared Sub reg_play(ByVal jar As SwitchJar)
+        Private Shared Sub reg_play(ByVal jar As ManualSwitchJar)
             reg(jar, W3PacketId.ShowLagScreen,
                     New ListJar(Of Dictionary(Of String, Object))("laggers",
                         New TupleJar("lagger",
@@ -332,7 +364,7 @@ Namespace Warcraft3
                     New ArrayJar("crc32", expectedSize:=4).Weaken,
                     New RepeatingJar(Of W3GameAction)("actions", New W3GameActionJar("action")).Weaken)
         End Sub
-        Private Shared Sub reg_lan(ByVal jar As SwitchJar)
+        Private Shared Sub reg_lan(ByVal jar As ManualSwitchJar)
             reg(jar, W3PacketId.LanRequestGame,
                     New StringJar("product id", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
                     New ValueJar("major version", 4).Weaken,
@@ -366,7 +398,7 @@ Namespace Warcraft3
                     New ValueJar("age", 4).Weaken,
                     New ValueJar("listen port", 2).Weaken)
         End Sub
-        Private Shared Sub RegPeer(ByVal jar As SwitchJar)
+        Private Shared Sub RegPeer(ByVal jar As ManualSwitchJar)
             '[Peer introduction]
             reg(jar, W3PacketId.PeerKnock,
                     New ValueJar("receiver peer key", 4, "As received from host in OTHER_PLAYER_JOINED").Weaken,
@@ -385,7 +417,7 @@ Namespace Warcraft3
             reg(jar, W3PacketId.PeerPong,
                     New ArrayJar("salt", 4).Weaken)
         End Sub
-        Private Shared Sub reg_dl(ByVal jar As SwitchJar)
+        Private Shared Sub reg_dl(ByVal jar As ManualSwitchJar)
             reg(jar, W3PacketId.ClientMapInfo,
                     New ValueJar("unknown", 4, "=1").Weaken,
                     New ValueJar("dl state", 1, "1=no dl, 3=active dl").Weaken,
@@ -500,12 +532,23 @@ Namespace Warcraft3
             Contract.Requires(receivingPlayers IsNot Nothing)
             Contract.Requires(sender IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
-                    {"receiving player indexes", (From p In receivingPlayers Select CULng(p.index)).ToList},
-                    {"sending player index", sender.index},
-                    {"type", type},
-                    {"message", text},
-                    {"receiver type", receiverType}})
+            Select Case type
+                Case ChatType.Game
+                    Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
+                            {"receiving player indexes", (From p In receivingPlayers Select CULng(p.index)).ToList},
+                            {"sending player index", sender.index},
+                            {"type", type},
+                            {"message", text},
+                            {"receiver type", receiverType}})
+                Case ChatType.Lobby
+                    Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
+                            {"receiving player indexes", (From p In receivingPlayers Select CULng(p.index)).ToList},
+                            {"sending player index", sender.index},
+                            {"type", type},
+                            {"message", text}})
+                Case Else
+                    Throw type.ValueShouldBeImpossibleException
+            End Select
         End Function
         <Pure()>
         Public Shared Function MakeGreet(ByVal p As IW3Player,

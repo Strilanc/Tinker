@@ -11,7 +11,7 @@ Namespace Warcraft3.Warden
     Public Class WardenPacket
         Public ReadOnly payload As IPickle(Of Object)
         Public ReadOnly id As WardenPacketId
-        Private Shared ReadOnly packetJar As SwitchJar = MakeWardenPacketJar()
+        Private Shared ReadOnly packetJar As ManualSwitchJar = MakeWardenPacketJar()
 
         Private Sub New(ByVal id As WardenPacketId, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
@@ -23,15 +23,15 @@ Namespace Warcraft3.Warden
         End Sub
 
 #Region "Jar"
-        Private Shared Sub regPack(ByVal jar As SwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IPackJar(Of Object))
+        Private Shared Sub regPack(ByVal jar As ManualSwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IPackJar(Of Object))
             jar.regPacker(id, New TuplePackJar(id.ToString(), subjars).Weaken)
         End Sub
-        Private Shared Sub regParse(ByVal jar As SwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IParseJar(Of Object))
+        Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As WardenPacketId, ByVal ParamArray subjars() As IParseJar(Of Object))
             jar.regParser(id, New TupleParseJar(id.ToString(), subjars))
         End Sub
-        Public Shared Function MakeWardenPacketJar() As SwitchJar
-            Contract.Ensures(Contract.Result(Of SwitchJar)() IsNot Nothing)
-            Dim g = New SwitchJar()
+        Public Shared Function MakeWardenPacketJar() As ManualSwitchJar
+            Contract.Ensures(Contract.Result(Of ManualSwitchJar)() IsNot Nothing)
+            Dim g = New ManualSwitchJar()
             regParse(g, LoadModule,
                                 New ArrayJar("module id", expectedSize:=16).Weaken,
                                 New ArrayJar("module rc4 seed", expectedSize:=16).Weaken,

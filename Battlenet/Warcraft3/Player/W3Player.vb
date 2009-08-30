@@ -118,7 +118,7 @@
                             Dim msg = "Ignored a packet of type {0} from {1} because there is no parser for that packet type.".Frmt(result.Value.id, name)
                             logger.Log(msg, LogMessageTypes.Negative)
                         Else
-                            Call handlers(result.Value.id)(result.value)
+                            Call handlers(result.Value.id)(result.Value)
                         End If
                     Catch e As Exception
                         Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".Frmt(result.Value.id, name, e)

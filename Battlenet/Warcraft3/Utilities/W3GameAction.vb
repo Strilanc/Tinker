@@ -98,17 +98,17 @@
         _unseen_0x5D = &H5D
         _unseen_0x5E = &H5E
         _unseen_0x5F = &H5F
-        ChatTriggerEventFired = &H60
+        TriggerChatEvent = &H60
         PressedEscape = &H61
-        ScenarioTrigger = &H62
+        TriggerWaitFinished = &H62
         _unseen_0x63 = &H63
-        MouseClickedTrackable = &H64
-        MouseTouchedTrackable = &H65
+        TriggerMouseClickedTrackable = &H64
+        TriggerMouseTouchedTrackable = &H65
         EnterChooseHeroSkillSubmenu = &H66
         EnterChooseBuildingSubmenu = &H67
         MinimapPing = &H68
-        DialogButtonClicked2 = &H69
-        DialogButtonClicked = &H6A
+        TriggerDialogButtonClicked2 = &H69
+        TriggerDialogButtonClicked = &H6A
         GameCacheSyncInteger = &H6B
         GameCacheSyncReal = &H6C
         GameCacheSyncBoolean = &H6D
@@ -119,25 +119,23 @@
         _unseen_0x72 = &H72
         _unseen_0x73 = &H73
         _unseen_0x74 = &H74
-        PressedArrowKey = &H75
+        TriggerArrowKeyPressed = &H75
     End Enum
 
     Public Class W3GameAction
         Public ReadOnly id As W3GameActionId
         Public ReadOnly payload As IPickle(Of Object)
-        Public Shared ReadOnly packetJar As SwitchJar = MakeJar()
+        Public Shared ReadOnly packetJar As PrefixSwitchJar(Of W3GameActionId) = MakeJar()
 
-        Private Sub New(ByVal id As W3GameActionId, ByVal payload As IPickle(Of Object))
+        Private Sub New(ByVal payload As IPickle(Of PrefixSwitchJar(Of W3GameActionId).PrefixPickle))
             Contract.Requires(payload IsNot Nothing)
-            Me.payload = payload
-            Me.id = id
-        End Sub
-        Private Sub New(ByVal id As W3GameActionId, ByVal value As Object)
-            Me.New(id, packetJar.Pack(id, value))
-            Contract.Requires(value IsNot Nothing)
+            Me.payload = payload.Value.payload
+            Me.id = payload.Value.index
         End Sub
 
-        Private Shared Sub reg(ByVal jar As SwitchJar, ByVal id As W3GameActionId, ByVal ParamArray subjars() As IJar(Of Object))
+        Private Shared Sub reg(ByVal jar As PrefixSwitchJar(Of W3GameActionId),
+                               ByVal id As W3GameActionId,
+                               ByVal ParamArray subjars() As IJar(Of Object))
             jar.reg(id, New TupleJar("data", subjars).Weaken)
         End Sub
 
@@ -173,12 +171,20 @@
             Down = 4
             Up = 6
         End Enum
-        Private Shared Function MakeJar() As SwitchJar
-            Dim jar = New SwitchJar()
-            RegJar(jar)
-            Return jar
-        End Function
-        Public Shared Sub RegJar(ByVal jar As SwitchJar)
+        Public Enum OrderId As UInteger
+            Smart = &HD0003
+            [Stop] = &HD0004
+            Attack = &HD000F
+            Move = &HD0012
+            Patrol = &HD0016
+            HoldPosition = &HD0019
+            Gather = &HD0032
+        End Enum
+
+        Private Shared Function MakeJar() As PrefixSwitchJar(Of W3GameActionId)
+            Dim jar = New PrefixSwitchJar(Of W3GameActionId)("W3GameAction")
+
+            'Game controls
             reg(jar, W3GameActionId.PauseGame)
             reg(jar, W3GameActionId.ResumeGame)
             reg(jar, W3GameActionId.SetGameSpeed, New EnumJar(Of GameSpeedSetting)("speed", 1, flags:=False).Weaken)
@@ -186,41 +192,43 @@
             reg(jar, W3GameActionId.DecreaseGameSpeed)
             reg(jar, W3GameActionId.SaveGameStarted, New StringJar("filename").Weaken)
             reg(jar, W3GameActionId.SaveGameFinished, New ValueJar("unknown1_0x01", 4).Weaken)
+
+            'Orders
             reg(jar, W3GameActionId.SelfOrder,
                         New EnumJar(Of OrderFlags)("flags", 2, flags:=True).Weaken,
-                        New IdValueJar("source").Weaken,
+                        New EnumJar(Of OrderId)("order id", numBytes:=4, flags:=False).Weaken,
                         New IdValueJar("_unknownA").Weaken,
                         New IdValueJar("_unknownB").Weaken)
             reg(jar, W3GameActionId.PointOrder,
                         New EnumJar(Of OrderFlags)("flags", 2, flags:=True).Weaken,
-                        New IdValueJar("source").Weaken,
+                        New EnumJar(Of OrderId)("order id", numBytes:=4, flags:=False).Weaken,
                         New IdValueJar("_unknownA").Weaken,
                         New IdValueJar("_unknownB").Weaken,
                         New FloatSingleJar("target x").Weaken,
                         New FloatSingleJar("target y").Weaken)
             reg(jar, W3GameActionId.ObjectOrder,
                         New EnumJar(Of OrderFlags)("flags", 2, flags:=True).Weaken,
-                        New IdValueJar("source").Weaken,
+                        New EnumJar(Of OrderId)("order id", numBytes:=4, flags:=False).Weaken,
                         New IdValueJar("_unknownA").Weaken,
                         New IdValueJar("_unknownB").Weaken,
                         New FloatSingleJar("x").Weaken,
                         New FloatSingleJar("y").Weaken,
-                        New IdValueJar("target id1").Weaken,
-                        New IdValueJar("target id2").Weaken)
+                        New ValueJar("target id1", 4).Weaken,
+                        New ValueJar("target id2", 4).Weaken)
             reg(jar, W3GameActionId.DropOrGiveItem,
                         New EnumJar(Of OrderFlags)("flags", 2, flags:=True).Weaken,
-                        New IdValueJar("source").Weaken,
+                        New EnumJar(Of OrderId)("order id", numBytes:=4, flags:=False).Weaken,
                         New IdValueJar("_unknownA").Weaken,
                         New IdValueJar("_unknownB").Weaken,
                         New FloatSingleJar("x").Weaken,
                         New FloatSingleJar("y").Weaken,
-                        New IdValueJar("target id1").Weaken,
-                        New IdValueJar("target id2").Weaken,
+                        New ValueJar("target id1", 4).Weaken,
+                        New ValueJar("target id2", 4).Weaken,
                         New IdValueJar("item id1").Weaken,
                         New IdValueJar("item id2").Weaken)
             reg(jar, W3GameActionId.FogObjectOrder,
                         New EnumJar(Of OrderFlags)("flags", 2, flags:=True).Weaken,
-                        New ValueJar("source id", 4).Weaken,
+                        New EnumJar(Of OrderId)("order id", numBytes:=4, flags:=False).Weaken,
                         New IdValueJar("_unknownA").Weaken,
                         New IdValueJar("_unknownB").Weaken,
                         New FloatSingleJar("fog target x").Weaken,
@@ -229,18 +237,44 @@
                         New ArrayJar("unknown", expectedSize:=9).Weaken,
                         New FloatSingleJar("actual target x").Weaken,
                         New FloatSingleJar("actual target y").Weaken)
+
+            'Other orders
+            reg(jar, W3GameActionId.EnterChooseHeroSkillSubmenu)
+            reg(jar, W3GameActionId.EnterChooseBuildingSubmenu)
+            reg(jar, W3GameActionId.PressedEscape)
+            reg(jar, W3GameActionId.CancelHeroRevive,
+                        New IdValueJar("unit id 1").Weaken,
+                        New IdValueJar("unit id 2").Weaken)
+            reg(jar, W3GameActionId.DequeueBuildingOrder,
+                        New ValueJar("slot number", 1).Weaken,
+                        New IdValueJar("object type").Weaken)
+            reg(jar, W3GameActionId.MinimapPing,
+                        New FloatSingleJar("x").Weaken,
+                        New FloatSingleJar("y").Weaken,
+                        New IdValueJar("unknown").Weaken)
+
+            'Alliance
+            reg(jar, W3GameActionId.ChangeAllyOptions,
+                        New ValueJar("player slot id", 1).Weaken,
+                        New EnumJar(Of AllianceFlags)("flags", 4, flags:=True).Weaken)
+            reg(jar, W3GameActionId.TransferResources,
+                        New ValueJar("player slot id", 1).Weaken,
+                        New ValueJar("gold", 4).Weaken,
+                        New ValueJar("lumber", 4).Weaken)
+
+            'Selection
             reg(jar, W3GameActionId.ChangeSelection,
                         New EnumJar(Of SelectionModification)("mode", 1, flags:=True).Weaken,
                         New ListJar(Of Object)("targets",
                             New TupleJar("target",
-                            New ValueJar("target id 1", 4).Weaken,
-                            New ValueJar("target id 2", 4).Weaken).Weaken, 2).Weaken)
+                                New ValueJar("target id 1", 4).Weaken,
+                                New ValueJar("target id 2", 4).Weaken).Weaken, 2).Weaken)
             reg(jar, W3GameActionId.AssignGroupHotkey,
                         New ValueJar("group index", 1).Weaken,
                         New ListJar(Of Object)("targets",
                             New TupleJar("target",
-                            New ValueJar("target id 1", 4).Weaken,
-                            New ValueJar("target id 2", 4).Weaken).Weaken, 2).Weaken)
+                                New ValueJar("target id 1", 4).Weaken,
+                                New ValueJar("target id 2", 4).Weaken).Weaken, 2).Weaken)
             reg(jar, W3GameActionId.SelectGroupHotkey,
                         New ValueJar("group index", 1).Weaken,
                         New ValueJar("unknown1_0x03", 1).Weaken)
@@ -253,12 +287,8 @@
                         New ValueJar("unknown1_0x04", 1).Weaken,
                         New IdValueJar("target id 1").Weaken,
                         New IdValueJar("target id 2").Weaken)
-            reg(jar, W3GameActionId.CancelHeroRevive,
-                        New IdValueJar("unit id 1").Weaken,
-                        New IdValueJar("unit id 2").Weaken)
-            reg(jar, W3GameActionId.DequeueBuildingOrder,
-                        New ValueJar("slot number", 1).Weaken,
-                        New IdValueJar("object type").Weaken)
+
+            'Cheats
             reg(jar, W3GameActionId.CheatDisableTechRequirements)
             reg(jar, W3GameActionId.CheatDisableVictoryConditions)
             reg(jar, W3GameActionId.CheatEnableResearch)
@@ -284,42 +314,33 @@
             reg(jar, W3GameActionId.CheatLumber,
                         New ValueJar("unknown", 1).Weaken,
                         New ValueJar("amount", 4).Weaken)
-            reg(jar, W3GameActionId.ChangeAllyOptions,
-                        New ValueJar("player slot id", 1).Weaken,
-                        New EnumJar(Of AllianceFlags)("flags", 4, flags:=True).Weaken)
-            reg(jar, W3GameActionId.TransferResources,
-                        New ValueJar("player slot id", 1).Weaken,
-                        New ValueJar("gold", 4).Weaken,
-                        New ValueJar("lumber", 4).Weaken)
-            reg(jar, W3GameActionId.ChatTriggerEventFired,
-                        New IdValueJar("trigger event id").Weaken,
-                        New IdValueJar("trigger event id (again)").Weaken,
+
+            'Triggers
+            reg(jar, W3GameActionId.TriggerChatEvent,
+                        New RepeatedIdValueJar("trigger event id").Weaken,
                         New StringJar("text").Weaken)
-            reg(jar, W3GameActionId.PressedEscape)
-            reg(jar, W3GameActionId.ScenarioTrigger,
+            reg(jar, W3GameActionId.TriggerWaitFinished,
                         New IdValueJar("unknown1").Weaken,
                         New IdValueJar("unknown2").Weaken,
                         New ValueJar("counter", 4).Weaken)
-            reg(jar, W3GameActionId.EnterChooseHeroSkillSubmenu)
-            reg(jar, W3GameActionId.EnterChooseBuildingSubmenu)
-            reg(jar, W3GameActionId.MinimapPing,
-                        New FloatSingleJar("x").Weaken,
-                        New FloatSingleJar("y").Weaken,
-                        New IdValueJar("unknown").Weaken)
-            reg(jar, W3GameActionId.MouseTouchedTrackable,
+            reg(jar, W3GameActionId.TriggerMouseTouchedTrackable,
                         New IdValueJar("trigger event id").Weaken,
                         New IdValueJar("trackable id").Weaken)
-            reg(jar, W3GameActionId.MouseClickedTrackable,
+            reg(jar, W3GameActionId.TriggerMouseClickedTrackable,
                         New IdValueJar("trackable id").Weaken,
                         New IdValueJar("trigger event id").Weaken)
-            reg(jar, W3GameActionId.DialogButtonClicked,
+            reg(jar, W3GameActionId.TriggerDialogButtonClicked,
                         New RepeatedIdValueJar("dialog id").Weaken,
                         New IdValueJar("button id").Weaken,
                         New IdValueJar("trigger event id").Weaken)
-            reg(jar, W3GameActionId.DialogButtonClicked2,
+            reg(jar, W3GameActionId.TriggerDialogButtonClicked2,
                         New IdValueJar("button id").Weaken,
                         New IdValueJar("trigger event id").Weaken,
                         New RepeatedIdValueJar("dialog id").Weaken)
+            reg(jar, W3GameActionId.TriggerArrowKeyPressed,
+                        New EnumJar(Of ArrowKeyButtons)("button", numBytes:=1, flags:=False).Weaken)
+
+            'Game Cache
             reg(jar, W3GameActionId.GameCacheSyncInteger,
                         New StringJar("filename").Weaken,
                         New StringJar("mission key").Weaken,
@@ -335,94 +356,31 @@
                         New StringJar("mission key").Weaken,
                         New StringJar("key").Weaken,
                         New FloatSingleJar("value").Weaken)
-            reg(jar, W3GameActionId.PressedArrowKey,
-                        New EnumJar(Of ArrowKeyButtons)("button", numBytes:=1, flags:=False).Weaken)
-
             reg(jar, W3GameActionId.GameCacheSyncUnit,
                         New StringJar("filename").Weaken,
                         New StringJar("mission key").Weaken,
                         New StringJar("key").Weaken,
                         New IdValueJar("unit type").Weaken,
                         New ArrayJar("unknown data", expectedSize:=86).Weaken)
-
             reg(jar, W3GameActionId.GameCacheSyncString,
                         New StringJar("filename").Weaken,
                         New StringJar("mission key").Weaken,
                         New StringJar("key").Weaken,
                         New StringJar("value").Weaken) 'this is a guess based on the other syncs; I've never actually seen this packet.
 
-
+            'unclassified
             reg(jar, W3GameActionId._unknown0x1B,
                         New ValueJar("unknown0x01", 1).Weaken,
                         New ValueJar("unknown2", 4).Weaken,
                         New ValueJar("unknown3", 4).Weaken)
 
-
-
-            '6D 
-            '74 65 73 74 2E 64 73 00 
-            '00 
-            '62 00 
-            '01 00 00 00 
-
-            '6B 
-            '74 65 73 74 2E 64 73 00 
-            '00 
-            '69 00 
-            '17 00 00 00 
-
-            '6C 
-            '74 65 73 74 2E 64 73 00 
-            '00 
-            '72 00 
-            '33 33 A3 40 
-
-            '6F
-            '6E 74 65 73 74 2E 64 73 00
-            '00
-            '75 00
-            '61 65 70 68 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '02 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00 00 00 
-            '00 00
-
-
-
-
-            'reg(jar,
-            '1B 
-            '01
-            'DF 04 00 00 DF 04 00 00
-
-            '75 00
-
-            '1B 01 5D 04 00 00 5D 04 00 00 16 01 01 00 5D 04 00 00 5D 04 00 00 1A 19 31 30 30 68 5D 04 00 00 5D 04 00 00
-        End Sub
+            Return jar
+        End Function
 
         Public Shared Function FromData(ByVal data As ViewableList(Of Byte)) As W3GameAction
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3GameAction)() IsNot Nothing)
-            Dim id = CType(data(0), W3GameActionId)
-            Return New W3GameAction(id, packetJar.Parse(id, data.SubView(1)))
+            Return New W3GameAction(packetJar.Parse(data))
         End Function
 
         Private Class RepeatedIdValueJar

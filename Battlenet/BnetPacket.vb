@@ -124,7 +124,7 @@ Namespace Bnet
         Public Const PACKET_PREFIX As Byte = &HFF
         Public ReadOnly payload As IPickle(Of Object)
         Public ReadOnly id As BnetPacketID
-        Private Shared ReadOnly packetJar As SwitchJar = MakeBnetPacketJar()
+        Private Shared ReadOnly packetJar As ManualSwitchJar = MakeBnetPacketJar()
 
         <ContractInvariantMethod()> Protected Sub Invariant()
             Contract.Invariant(payload IsNot Nothing)
@@ -143,15 +143,15 @@ Namespace Bnet
 #End Region
 
 #Region "Jar"
-        Private Shared Sub regPack(ByVal jar As SwitchJar,
+        Private Shared Sub regPack(ByVal jar As ManualSwitchJar,
                                    ByVal id As BnetPacketID,
                                    ByVal ParamArray subjars() As IPackJar(Of Object))
             jar.regPacker(id, New TuplePackJar(id.ToString(), subjars).Weaken)
         End Sub
-        Private Shared Sub regParse(ByVal jar As SwitchJar, ByVal id As BnetPacketID, ByVal ParamArray subjars() As IParseJar(Of Object))
+        Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As BnetPacketID, ByVal ParamArray subjars() As IParseJar(Of Object))
             jar.regParser(id, New TupleParseJar(id.ToString(), subjars))
         End Sub
-        Private Shared Sub reg_login(ByVal jar As SwitchJar)
+        Private Shared Sub reg_login(ByVal jar As ManualSwitchJar)
             'AUTHENTICATION_BEGIN [Introductions, server authentication, and server challenge to client]
             '[client send] [the client introduces itself]
             regPack(jar, BnetPacketID.AuthenticationBegin,
@@ -228,7 +228,7 @@ Namespace Bnet
                     New StringJar("statstring", , True),
                     New StringJar("account username"))
         End Sub
-        Private Shared Sub reg_state(ByVal jar As SwitchJar)
+        Private Shared Sub reg_state(ByVal jar As ManualSwitchJar)
             regPack(jar, BnetPacketID.QueryGamesList,
                     New EnumJar(Of GameTypeFlags)("filter", 4, flags:=True).Weaken,
                     New EnumJar(Of GameTypeFlags)("filter mask", 4, flags:=True).Weaken,
@@ -281,7 +281,7 @@ Namespace Bnet
             regPack(jar, BnetPacketID.NetGamePort,
                     New ValueJar("port", 2).Weaken)
         End Sub
-        Private Shared Sub reg_misc(ByVal jar As SwitchJar)
+        Private Shared Sub reg_misc(ByVal jar As ManualSwitchJar)
             'CHAT_EVENT [Informs the client what other clients are doing (talking, leaving, etc)]
             '[client receive]
             regParse(jar, BnetPacketID.ChatEvent,
@@ -338,8 +338,8 @@ Namespace Bnet
             regParse(jar, BnetPacketID.Warden, New ArrayJar("encrypted data", , , True))
             regPack(jar, BnetPacketID.Warden, New ArrayJar("encrypted data", , , True).Weaken)
         End Sub
-        Public Shared Function MakeBnetPacketJar() As SwitchJar
-            Dim jar As New SwitchJar
+        Public Shared Function MakeBnetPacketJar() As ManualSwitchJar
+            Dim jar As New ManualSwitchJar
             reg_login(jar)
             reg_misc(jar)
             reg_state(jar)
