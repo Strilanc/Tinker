@@ -280,10 +280,10 @@
     <value>[--SetColor slot color] Sets a slot's color. Can't duplicate colors.</value>
   </data>
   <data name="Command_Instance_SetComputer" xml:space="preserve">
-    <value>SetComputer</value>
+    <value>CPU</value>
   </data>
   <data name="Command_Instance_SetComputer_Help" xml:space="preserve">
-    <value>[--SetComputer slot difficulty] Places a computer in a slot, unless it contains a player.</value>
+    <value>[--CPU slot [difficulty]] Places a computer in a slot, unless it contains a player.</value>
   </data>
   <data name="Command_Instance_SetHandicap" xml:space="preserve">
     <value>SetHandicap</value>

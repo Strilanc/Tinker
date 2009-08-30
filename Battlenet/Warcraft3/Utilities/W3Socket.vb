@@ -116,7 +116,7 @@ Namespace Warcraft3
                 Return success("Sent")
 
             Catch e As Pickling.PicklingException
-                Dim msg = "Error packing {0} for {1}: {2}".frmt(pk.id, Name, e)
+                Dim msg = "Error packing {0} for {1}: {2}".Frmt(pk.id, Name, e)
                 Logger.log(msg, LogMessageTypes.Problem)
                 Return failure(msg)
 
@@ -171,27 +171,27 @@ Namespace Warcraft3
                         End If
 
                         'Handle
-                        Logger.log(Function() "Received {0} from {1}".frmt(id, Name), LogMessageTypes.DataEvent)
+                        Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageTypes.DataEvent)
                         Dim pk = W3Packet.FromData(id, data)
                         If pk.payload.Data.Length <> data.Length Then
                             Throw New Pickling.PicklingException("Data left over after parsing.")
                         End If
-                        Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+                        Logger.Log(pk.payload.Description, LogMessageTypes.DataParsed)
                         f.SetValue(pk)
 
                     Catch e As Pickling.PicklingException
-                        Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".frmt(id, Name, e)
-                        Logger.log(msg, LogMessageTypes.Negative)
+                        Dim msg = "Error parsing {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
+                        Logger.Log(msg, LogMessageTypes.Negative)
                         f.SetValue(e)
 
                     Catch e As Exception
                         If Not (TypeOf e Is SocketException OrElse
                                 TypeOf e Is ObjectDisposedException OrElse
                                 TypeOf e Is IO.IOException) Then
-                            LogUnexpectedException("Error receiving {0} from {1}.".frmt(id, Name), e)
+                            LogUnexpectedException("Error receiving {0} from {1} ({2}).".Frmt(id, Name, data.ToHexString()), e)
                         End If
-                        Dim msg = "Error receiving {0} from {1}: {2}".frmt(id, Name, e)
-                        Logger.log(msg, LogMessageTypes.Problem)
+                        Dim msg = "Error receiving {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
+                        Logger.Log(msg, LogMessageTypes.Problem)
                         socket.Disconnect(reason:=msg)
                         f.SetValue(e)
                     End Try

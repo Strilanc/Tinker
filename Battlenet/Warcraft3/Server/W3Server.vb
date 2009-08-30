@@ -47,7 +47,7 @@ Namespace Warcraft3
         End Sub
 #End Region
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Protected Overrides Sub Invariant()
             Contract.Invariant(parent IsNot Nothing)
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(settings IsNot Nothing)

@@ -1,5 +1,28 @@
 'Library for packing and parsing object data
 Namespace Pickling.Jars
+    Public Class FloatSingleJar
+        Inherits Jar(Of Single)
+
+        Public Sub New(ByVal name As String)
+            MyBase.New(name)
+        End Sub
+
+        Public Overrides Function Pack(Of R As Single)(ByVal value As R) As IPickle(Of R)
+            Dim buffer(0 To 3) As Byte
+            Using bw = New IO.BinaryWriter(New IO.MemoryStream(buffer))
+                bw.Write(value)
+            End Using
+            Return New Pickle(Of R)(Name, value, buffer.ToArray.ToView)
+        End Function
+
+        Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As IPickle(Of Single)
+            data = data.SubView(0, 4)
+            Using br = New IO.BinaryReader(New IO.MemoryStream(data.ToArray()))
+                Return New Pickle(Of Single)(Name, br.ReadSingle(), data)
+            End Using
+        End Function
+    End Class
+
     '''<summary>Pickles fixed-size unsigned integers</summary>
     Public Class ValueJar
         Inherits Jar(Of ULong)
@@ -20,7 +43,7 @@ Namespace Pickling.Jars
         End Sub
 
         Public Overrides Function Pack(Of R As ULong)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, value.bytes(byteOrder, numBytes).ToView())
+            Return New Pickle(Of R)(Me.Name, value, value.Bytes(byteOrder, numBytes).ToView())
         End Function
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
@@ -49,7 +72,7 @@ Namespace Pickling.Jars
         End Sub
 
         Public Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, CULng(CType(value, Object)).bytes(byteOrder, numBytes).ToView(), Function() ToEnumString(value))
+            Return New Pickle(Of R)(Me.Name, value, CULng(CType(value, Object)).Bytes(byteOrder, numBytes).ToView(), Function() ToEnumString(value))
         End Function
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
@@ -91,7 +114,7 @@ Namespace Pickling.Jars
         End Sub
 
         Protected Overridable Function DescribeValue(ByVal val As Byte()) As String
-            Return "[{0}]".frmt(val.ToHexString)
+            Return "[{0}]".Frmt(val.ToHexString)
         End Function
 
         Public Overrides Function Pack(Of R As Byte())(ByVal value As R) As IPickle(Of R)
@@ -108,7 +131,7 @@ Namespace Pickling.Jars
             Dim data(0 To size - 1) As Byte
             If sizePrefixSize > 0 Then
                 size -= sizePrefixSize
-                Dim ds = CUInt(size).bytes(ByteOrder.LittleEndian, size:=sizePrefixSize)
+                Dim ds = CUInt(size).Bytes(ByteOrder.LittleEndian, size:=sizePrefixSize)
                 If ds.Length <> sizePrefixSize Then Throw New PicklingException("Unable to fit size into prefix.")
                 For i = 0 To sizePrefixSize - 1
                     data(i) = ds(i)
@@ -143,7 +166,7 @@ Namespace Pickling.Jars
             End If
             'Validate
             If inputSize > data.Length Then
-                Throw New PicklingException("Not enough data to parse array. Need {0} more bytes but only have {1}.".frmt(inputSize, data.Length))
+                Throw New PicklingException("Not enough data to parse array. Need {0} more bytes but only have {1}.".Frmt(inputSize, data.Length))
             End If
 
             'Parse
@@ -192,7 +215,7 @@ Namespace Pickling.Jars
                 i += 1
             End While
 
-            Return New Pickle(Of R)(Me.Name, value, data.ToView(), Function() """{0}""".frmt(value))
+            Return New Pickle(Of R)(Me.Name, value, data.ToView(), Function() """{0}""".Frmt(value))
         End Function
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of String)
@@ -226,7 +249,7 @@ Namespace Pickling.Jars
                 i += 1
             End While
 
-            Return New Pickle(Of String)(Me.Name, cc, data.SubView(0, inputSize), Function() """{0}""".frmt(CStr(cc)))
+            Return New Pickle(Of String)(Me.Name, cc, data.SubView(0, inputSize), Function() """{0}""".Frmt(CStr(cc)))
         End Function
     End Class
     Public Class FusionJar(Of T)
@@ -329,7 +352,7 @@ Namespace Pickling.Jars
             'Pack
             Dim pickles = New List(Of IPickle(Of Object))
             For Each j In subjars
-                If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".frmt(j.Name))
+                If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(j.Name))
                 pickles.Add(j.Pack(value(j.Name)))
             Next j
             Return New Pickle(Of R)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
@@ -391,7 +414,7 @@ Namespace Pickling.Jars
             'Pack
             Dim pickles = New List(Of IPickle(Of Object))
             For Each j In subjars
-                If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".frmt(j.Name))
+                If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(j.Name))
                 pickles.Add(j.Pack(value(j.Name)))
             Next j
             Return New Pickle(Of R)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
@@ -478,8 +501,8 @@ Namespace Pickling.Jars
 
         Public Overrides Function Pack(Of R As List(Of T))(ByVal value As R) As IPickle(Of R)
             Dim pickles = (From e In value Select CType(subjar.Pack(e), IPickle(Of T))).ToList()
-            Dim data = Concat(CUInt(value.Count).bytes(ByteOrder.LittleEndian, size:=prefixSize), Concat(From p In pickles Select p.Data.ToArray))
-            Return New Pickle(Of R)(Me.Name, value, Data.ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
+            Dim data = Concat(CUInt(value.Count).Bytes(ByteOrder.LittleEndian, size:=prefixSize), Concat(From p In pickles Select p.Data.ToArray))
+            Return New Pickle(Of R)(Me.Name, value, data.ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
         End Function
     End Class
     Public Class ListJar(Of T)

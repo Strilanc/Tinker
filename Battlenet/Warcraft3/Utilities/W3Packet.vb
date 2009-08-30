@@ -328,13 +328,9 @@ Namespace Warcraft3
             reg(jar, W3PacketId.Tock,
                     New ArrayJar("game state checksum", 5).Weaken)
 
-            Dim idJar = New MemoryJar(Of W3GameActionId)(New EnumJar(Of W3GameActionId)("id", 1, flags:=False)).Weaken
-            Dim switchJar = New SwitchJar("body", idJar)
-            W3GameAction.RegJar(switchJar)
             reg(jar, W3PacketId.GameAction,
                     New ArrayJar("crc32", expectedSize:=4).Weaken,
-                    New RepeatingJar(Of Dictionary(Of String, Object))("actions",
-                        New TupleJar("action", idJar, switchJar)).Weaken)
+                    New RepeatingJar(Of W3GameAction)("actions", New W3GameActionJar("action")).Weaken)
         End Sub
         Private Shared Sub reg_lan(ByVal jar As SwitchJar)
             reg(jar, W3PacketId.LanRequestGame,

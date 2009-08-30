@@ -55,28 +55,29 @@
         End Sub
 
 #Region "Networking"
-        Private Sub ReceiveDropLagger(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+        Private Sub ReceiveDropLagger(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             game.QueueDropLagger()
         End Sub
-        Private Sub ReceiveAcceptHost(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+        Private Sub ReceiveAcceptHost(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             SendPacket(W3Packet.MakeConfirmHost())
         End Sub
-        Private Sub ReceiveGameAction(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
-            Dim id = CByte(vals("id"))
-            Dim data = CType(vals("data"), Byte())
-            Contract.Assume(data IsNot Nothing)
+        Private Sub ReceiveGameAction(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'
             eref.QueueAction(Sub()
-                                 game.QueueSendGameData(Me, Concat({id}, data))
+                                 game.QueueSendGameData(Me, packet.payload.Data.SubView(4).ToArray)
                              End Sub)
         End Sub
-        Private Sub ReceiveTock(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+        Private Sub ReceiveTock(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             If tickQueue.Count <= 0 Then
-                logger.log("Banned behavior: {0} responded to a tick which wasn't sent.".frmt(name), LogMessageTypes.Problem)
+                logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageTypes.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "overticked")
                 Return
             End If

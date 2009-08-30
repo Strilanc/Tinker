@@ -8,7 +8,7 @@
         Private mapUploadPosition As Integer
         Private countdowns As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
-        Private ReadOnly handlers(0 To 255) As Action(Of Dictionary(Of String, Object))
+        Private ReadOnly handlers(0 To 255) As Action(Of W3Packet)
 
         Private Sub LobbyStart()
             state = W3PlayerStates.Lobby
@@ -20,8 +20,9 @@
         End Sub
 
 #Region "Networking"
-        Private Sub ReceivePeerConnectionInfo(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+        Private Sub ReceivePeerConnectionInfo(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             Dim dword = CUInt(vals("player bitflags"))
             Dim flags = From i In enumerable.Range(0, 12)
                         Select connected = ((dword >> i) And &H1) <> 0,
@@ -37,11 +38,13 @@
             End If
             game.QueueThrowUpdated()
         End Sub
-        Private Sub ReceiveClientMapInfo(ByVal vals As Dictionary(Of String, Object))
+        Private Sub ReceiveClientMapInfo(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             Dim newMapDownloadPosition = CInt(CUInt(vals("total downloaded")))
             Dim delta = newMapDownloadPosition - mapDownloadPosition
             If delta < 0 Then
-                Disconnect(True, W3PlayerLeaveTypes.Disconnect, "auto-booted: moved download position backwards from {1} to {2}.".frmt(mapDownloadPosition, newMapDownloadPosition))
+                Disconnect(True, W3PlayerLeaveTypes.Disconnect, "auto-booted: moved download position backwards from {1} to {2}.".Frmt(mapDownloadPosition, newMapDownloadPosition))
                 Return
             ElseIf newMapDownloadPosition > game.map.FileSize Then
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "auto-booted: moved download position past file size")
@@ -64,7 +67,7 @@
                 game.DownloadScheduler.SetLink(index, W3Game.SELF_DOWNLOAD_ID, True)
                 knowMapState = True
             ElseIf mapDownloadPosition = game.map.FileSize Then
-                logger.log("{0} finished downloading the map.".frmt(name), LogMessageTypes.Positive)
+                logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageTypes.Positive)
                 game.DownloadScheduler.StopTransfer(index, True)
             Else
                 Dim d = CDbl(mapDownloadPosition)

@@ -152,7 +152,9 @@ Public Class PacketSocket
                    ByVal timeout As TimeSpan,
                    Optional ByVal logger As Logger = Nothing,
                    Optional ByVal WrappedStream As Func(Of IO.Stream, IO.Stream) = Nothing,
-                   Optional ByVal bufferSize As Integer = DefaultBufferSize)
+                   Optional ByVal bufferSize As Integer = DefaultBufferSize,
+                   Optional ByVal numByteBeforeSize As Integer = 2,
+                   Optional ByVal numSizeBytes As Integer = 2)
         'contract bug wrt interface event implementation requires this:
         'Contract.Requires(client IsNot Nothing)
         Contract.Assume(client IsNot Nothing)
@@ -163,7 +165,7 @@ Public Class PacketSocket
         Me.deadManSwitch = New DeadManSwitch(timeout, initiallyArmed:=True)
         Me.logger = If(logger, New Logger)
         Me.client = client
-        Me.packetStreamer = New PacketStreamer(Me.substream, numBytesBeforeSize:=2, numSizeBytes:=2, maxPacketSize:=bufferSize)
+        Me.packetStreamer = New PacketStreamer(Me.substream, numByteBeforeSize, numSizeBytes, maxPacketSize:=bufferSize)
         Me.expectConnected = client.Connected
         _remoteEndPoint = CType(client.Client.RemoteEndPoint, Net.IPEndPoint)
         If ArraysEqual(RemoteEndPoint.Address.GetAddressBytes(), GetCachedIpAddressBytes(external:=False)) OrElse

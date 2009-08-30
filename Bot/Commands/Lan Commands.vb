@@ -10,7 +10,56 @@ Namespace Commands.Specializations
         Public Sub New()
             AddCommand(New com_Add)
             AddCommand(New com_Remove)
+            AddCommand(New com_Host)
         End Sub
+
+        Public Class com_Host
+            Inherits BaseCommand(Of W3LanAdvertiser)
+            Public Sub New()
+                MyBase.New(My.Resources.Command_Client_Host,
+                           2, ArgumentLimits.min,
+                           My.Resources.Command_Client_Host_Help,
+                           My.Resources.Command_Client_Host_Access,
+                           My.Resources.Command_Client_Host_ExtraHelp)
+            End Sub
+            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                'Map
+                Dim map_out = W3Map.FromArgument(arguments(1))
+                If Not map_out.succeeded Then Return map_out.Outcome.Futurize
+                Dim map = map_out.Value
+
+                'Server settings
+                arguments = arguments.ToList
+                For i = 0 To arguments.Count - 1
+                    Select Case arguments(i).ToLower()
+                        Case "-reserve", "-r"
+                            arguments(i) = ""
+                    End Select
+                    If arguments(i).ToLower Like "-port=*" Then
+                        arguments(i) = ""
+                    End If
+                Next i
+                Dim header = New W3GameHeader(arguments(0),
+                                              If(user Is Nothing, My.Resources.ProgramName, user.name),
+                                              New W3MapSettings(arguments, map),
+                                              target.server_listen_port, 0, 0, arguments, map.NumPlayerSlots)
+                Dim settings = New ServerSettings(map, header, default_listen_ports:={target.server_listen_port})
+                Dim f_server = target.parent.QueueCreateServer(target.name, settings, "[Not Linked]", True)
+
+                'Create the server, then advertise the game
+                Return f_server.EvalWhenValueReady(
+                    Function(created_server)
+                        If Not created_server.succeeded Then
+                            Return created_server.Outcome
+                        End If
+
+                        'Start advertising
+                        target.AddGame(header)
+                        Return Success("Server created.")
+                    End Function
+                )
+            End Function
+        End Class
 
         '''<summary>Starts advertising a game.</summary>
         Private Class com_Add

@@ -13,13 +13,13 @@ Public NotInheritable Class W3LanAdvertiser
     Public Const TYPE_NAME As String = "LanAdvertiser"
 
     Private ReadOnly logger As Logger
-    Private ReadOnly name As String
+    Public ReadOnly name As String
 
-    Private ReadOnly server_listen_port As UShort
+    Public ReadOnly server_listen_port As UShort
     Private ReadOnly remote_host As String
     Private ReadOnly remote_port As UShort
     Private ReadOnly lock As New Object()
-    Private ReadOnly parent As MainBot
+    Public ReadOnly parent As MainBot
     Private pool_port As PortPool.PortHandle
 
     Private create_count As UInteger = 0

@@ -163,12 +163,12 @@ Namespace Commands.Specializations
             Inherits BaseCommand(Of IW3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetComputer,
-                           2, ArgumentLimits.exact,
+                           1, ArgumentLimits.min,
                            My.Resources.Command_Instance_SetComputer_Help)
             End Sub
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim arg_slot = arguments(0)
-                Dim arg_difficulty = arguments(1)
+                Dim arg_difficulty = If(arguments.Count >= 2, arguments(1), W3Slot.ComputerLevel.Normal.ToString)
                 Dim ret_difficulty As W3Slot.ComputerLevel
                 If EnumTryParse(Of W3Slot.ComputerLevel)(arg_difficulty, True, ret_difficulty) Then
                     Return target.QueueSetSlotCpu(arg_slot, ret_difficulty)

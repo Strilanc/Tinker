@@ -1,4 +1,5 @@
 ﻿Namespace Pickling
+    <DebuggerDisplay("{ToString}")>
     Public Class Pickle(Of T)
         Implements IPickle(Of T)
 
@@ -27,7 +28,7 @@
 
         Public Shared Function MakeListDescription(Of X)(ByVal pickles As IEnumerable(Of IPickle(Of X))) As String
             Return "{" + Environment.NewLine +
-                        indent(String.Join(Environment.NewLine,
+                        Indent(String.Join(Environment.NewLine,
                                (From e In pickles Select e.Description.Value).ToArray)) +
                     Environment.NewLine + "}"
         End Function
@@ -47,6 +48,10 @@
                 Return _value
             End Get
         End Property
+
+        Public Overrides Function ToString() As String
+            Return Description.Value()
+        End Function
     End Class
 
     Public MustInherit Class PackJar(Of T)

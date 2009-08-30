@@ -56,9 +56,9 @@ Namespace Commands.Specializations
         Private Class com_StartListening
             Inherits BaseCommand(Of IW3Server)
             Public Sub New()
-                MyBase.New("StartListening",
+                MyBase.New("Listen",
                             1, ArgumentLimits.exact,
-                            "[--StartListening port]",
+                            "[--Listen port]",
                             "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)

@@ -280,7 +280,7 @@ Namespace Bnet
         Private state As States
 #End Region
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Protected Overrides Sub Invariant()
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(parent IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
@@ -334,7 +334,7 @@ Namespace Bnet
             packetHandlers(Bnet.BnetPacketID.AccountLogonBegin) = AddressOf ReceiveAccountLogonBegin
             packetHandlers(Bnet.BnetPacketID.AccountLogonFinish) = AddressOf ReceiveAccountLogonFinish
             packetHandlers(Bnet.BnetPacketID.ChatEvent) = AddressOf ReceiveChatEvent
-            packetHandlers(Bnet.BnetPacketID.EnterChat) = AddressOf ReceivePacket_ENTER_CHAT
+            packetHandlers(Bnet.BnetPacketID.EnterChat) = AddressOf ReceiveEnterChat
             packetHandlers(Bnet.BnetPacketID.Null) = AddressOf ReceiveNull
             packetHandlers(Bnet.BnetPacketID.Ping) = AddressOf ReceivePing
             packetHandlers(Bnet.BnetPacketID.MessageBox) = AddressOf ReceiveMessageBox
@@ -1016,7 +1016,7 @@ Namespace Bnet
             SendPacket(BnetPacket.MakeEnterChat())
         End Sub
 
-        Private Sub ReceivePacket_ENTER_CHAT(ByVal vals As Dictionary(Of String, Object))
+        Private Sub ReceiveEnterChat(ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(vals IsNot Nothing)
             logger.log("Entered chat", LogMessageTypes.Typical)
             EnterChannel(profile.initialChannel)
@@ -1026,13 +1026,13 @@ Namespace Bnet
 #Region "Networking (Warden)"
         Private Sub ReceiveWarden(ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(vals IsNot Nothing)
-            Try
-                warden = If(warden, New Warden.WardenPacketHandler(wardenSeed, wardenRef, logger))
-                Dim data = CType(vals("encrypted data"), Byte())
-                warden.ReceiveData(data)
-            Catch e As Exception
-                c_WardenFail(e)
-            End Try
+            'Try
+            '    warden = If(warden, New Warden.WardenPacketHandler(wardenSeed, wardenRef, logger))
+            '    Dim data = CType(vals("encrypted data"), Byte())
+            '    warden.ReceiveData(data)
+            'Catch e As Exception
+            '    c_WardenFail(e)
+            'End Try
         End Sub
         Private Sub c_WardenSend(ByVal data() As Byte) Handles warden.Send
             ref.QueueAction(Sub()

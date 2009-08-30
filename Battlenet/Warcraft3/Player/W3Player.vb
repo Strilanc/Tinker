@@ -109,23 +109,20 @@
                     If result.Exception IsNot Nothing Then
                         Me.Disconnect(expected:=False,
                                       leaveType:=W3PlayerLeaveTypes.Disconnect,
-                                      reason:="Error receiving packet from {0}: {1}".frmt(name, result.Exception))
+                                      reason:="Error receiving packet from {0}: {1}".Frmt(name, result.Exception))
                         Return False
                     End If
 
                     Try
-                        Dim vals = CType(result.Value.payload.Value, Dictionary(Of String, Object))
-                        Contract.Assume(vals IsNot Nothing)
-
                         If handlers(result.Value.id) Is Nothing Then
-                            Dim msg = "Ignored a packet of type {0} from {1} because there is no parser for that packet type.".frmt(result.Value.id, name)
-                            logger.log(msg, LogMessageTypes.Negative)
+                            Dim msg = "Ignored a packet of type {0} from {1} because there is no parser for that packet type.".Frmt(result.Value.id, name)
+                            logger.Log(msg, LogMessageTypes.Negative)
                         Else
-                            Call handlers(result.Value.id)(vals)
+                            Call handlers(result.Value.id)(result.value)
                         End If
                     Catch e As Exception
-                        Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".frmt(result.Value.id, name, e)
-                        logger.log(msg, LogMessageTypes.Problem)
+                        Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".Frmt(result.Value.id, name, e)
+                        logger.Log(msg, LogMessageTypes.Problem)
                         LogUnexpectedException(msg, e)
                     End Try
 

@@ -3,30 +3,32 @@ Namespace Warcraft3
         Implements IW3Player
 
 #Region "Networking"
-        Private Sub ReceiveNonGameAction(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+        Private Sub ReceiveNonGameAction(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             game.QueueReceiveNonGameAction(Me, vals)
         End Sub
 
-        Private Sub IgnorePacket(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+        Private Sub IgnorePacket(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
         End Sub
 
-        Private Sub ReceivePong(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+        Private Sub ReceivePong(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             Dim lambda = 0.5
             Dim tick As ModInt32 = Environment.TickCount
             Dim salt = CUInt(vals("salt"))
 
             If pingQueue.Count <= 0 Then
-                logger.log("Banned behavior: {0} responded to a ping which wasn't sent.".frmt(name), LogMessageTypes.Problem)
+                logger.Log("Banned behavior: {0} responded to a ping which wasn't sent.".Frmt(name), LogMessageTypes.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "no pings for pong")
                 Return
             End If
 
             Dim stored = pingQueue.Dequeue()
             If salt <> stored.salt Then
-                logger.log("Banned behavior: {0} responded incorrectly to a ping. {1} was returned instead of {2}.".frmt(name, salt, stored.salt), LogMessageTypes.Problem)
+                logger.Log("Banned behavior: {0} responded incorrectly to a ping. {1} was returned instead of {2}.".Frmt(name, salt, stored.salt), LogMessageTypes.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "incorrect pong")
                 Return
             End If
@@ -38,9 +40,11 @@ Namespace Warcraft3
             Contract.Assume(Not Double.IsInfinity(latency))
         End Sub
 
-        Private Sub ReceiveLeaving(ByVal vals As Dictionary(Of String, Object))
+        Private Sub ReceiveLeaving(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             Dim leaveType = CType(vals("leave type"), W3PlayerLeaveTypes)
-            Disconnect(True, leaveType, "manually leaving ({0})".frmt(leaveType))
+            Disconnect(True, leaveType, "manually leaving ({0})".Frmt(leaveType))
         End Sub
 #End Region
 

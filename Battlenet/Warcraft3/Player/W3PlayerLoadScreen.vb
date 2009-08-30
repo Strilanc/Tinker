@@ -13,13 +13,14 @@
             handlers(W3PacketId.Ready) = Nothing
         End Sub
 
-        Private Sub ReceiveReady(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+        Private Sub ReceiveReady(ByVal packet As W3Packet)
+            Contract.Requires(packet IsNot Nothing)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             ready = True
             If game.server.settings.loadInGame Then
                 handlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
             End If
-            logger.log(name + " is ready", LogMessageTypes.Positive)
+            logger.Log(name + " is ready", LogMessageTypes.Positive)
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'
             eref.QueueAction(Sub()
                                  Contract.Assume(vals IsNot Nothing)
