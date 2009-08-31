@@ -35,7 +35,7 @@ Namespace Warcraft3.Warden
             regParse(g, LoadModule,
                                 New ArrayJar("module id", expectedSize:=16).Weaken,
                                 New ArrayJar("module rc4 seed", expectedSize:=16).Weaken,
-                                New ValueJar("dl size", 4).Weaken)
+                                New UInt32Jar("dl size").Weaken)
             regParse(g, DownloadModule, New ArrayJar("dl data", sizePrefixSize:=2).Weaken)
             regParse(g, PerformCheck, New ArrayJar("unknown0", takeRest:=True).Weaken)
             regParse(g, RunModule, New ArrayJar("module input data", takeRest:=True).Weaken)

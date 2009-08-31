@@ -1,91 +1,4 @@
-'Library for packing and parsing object data
 Namespace Pickling.Jars
-    Public Class FloatSingleJar
-        Inherits Jar(Of Single)
-
-        Public Sub New(ByVal name As String)
-            MyBase.New(name)
-        End Sub
-
-        Public Overrides Function Pack(Of R As Single)(ByVal value As R) As IPickle(Of R)
-            Dim buffer(0 To 3) As Byte
-            Using bw = New IO.BinaryWriter(New IO.MemoryStream(buffer))
-                bw.Write(value)
-            End Using
-            Return New Pickle(Of R)(Name, value, buffer.ToArray.ToView)
-        End Function
-
-        Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As IPickle(Of Single)
-            data = data.SubView(0, 4)
-            Using br = New IO.BinaryReader(New IO.MemoryStream(data.ToArray()))
-                Return New Pickle(Of Single)(Name, br.ReadSingle(), data)
-            End Using
-        End Function
-    End Class
-
-    '''<summary>Pickles fixed-size unsigned integers</summary>
-    Public Class ValueJar
-        Inherits Jar(Of ULong)
-        Private ReadOnly numBytes As Integer
-        Private ReadOnly byteOrder As ByteOrder
-
-        Public Sub New(ByVal name As String,
-                       ByVal numBytes As Integer,
-                       Optional ByVal info As String = "No Info",
-                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
-            MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
-            Contract.Requires(info IsNot Nothing)
-            Contract.Requires(numBytes > 0)
-            Contract.Requires(numBytes <= 8)
-            Me.numBytes = numBytes
-            Me.byteOrder = byteOrder
-        End Sub
-
-        Public Overrides Function Pack(Of R As ULong)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, value.Bytes(byteOrder, numBytes).ToView())
-        End Function
-
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
-            data = data.SubView(0, numBytes)
-            Return New Pickle(Of ULong)(Me.Name, data.ToUInt64(byteOrder), data)
-        End Function
-    End Class
-
-    Public Class EnumJar(Of T)
-        Inherits Jar(Of T)
-        Private ReadOnly numBytes As Integer
-        Private ReadOnly byteOrder As ByteOrder
-        Private ReadOnly flags As Boolean
-
-        Public Sub New(ByVal name As String,
-                       ByVal numBytes As Integer,
-                       ByVal flags As Boolean,
-                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
-            MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
-            If numBytes <= 0 Then Throw New ArgumentOutOfRangeException("numBytes", "Number of bytes must be positive")
-            If numBytes > 8 Then Throw New ArgumentOutOfRangeException("numBytes", "Number of bytes can't exceed the size of a ULong (8 bytes)")
-            Me.numBytes = numBytes
-            Me.byteOrder = byteOrder
-            Me.flags = flags
-        End Sub
-
-        Public Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, CULng(CType(value, Object)).Bytes(byteOrder, numBytes).ToView(), Function() ToEnumString(value))
-        End Function
-
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
-            data = data.SubView(0, numBytes)
-            Dim val = CType(CType(data.ToUInt64(byteOrder), Object), T)
-            Return New Pickle(Of T)(Me.Name, val, data, Function() ToEnumString(val))
-        End Function
-
-        Private Function ToEnumString(ByVal enumValue As T) As String
-            Return If(flags, enumValue.EnumFlagsToString(), enumValue.ToString)
-        End Function
-    End Class
-
     '''<summary>Pickles byte arrays [can be size-prefixed, fixed-size, or full-sized]</summary>
     Public Class ArrayJar
         Inherits Jar(Of Byte())
@@ -463,7 +376,6 @@ Namespace Pickling.Jars
             Contract.Requires(subjar IsNot Nothing)
         End Sub
     End Class
-
 
     Public Class RepeatingParseJar(Of T)
         Inherits ParseJar(Of List(Of T))

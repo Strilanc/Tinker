@@ -21,10 +21,10 @@
         End Enum
 
         Private Shared ReadOnly DataJar As New TupleJar("data",
-                    New EnumJar(Of GameSettingFlags)("settings", 4, flags:=True).Weaken,
-                    New ValueJar("unknown1", 1).Weaken,
-                    New ValueJar("playable width", 2).Weaken,
-                    New ValueJar("playable height", 2).Weaken,
+                    New EnumUInt32Jar(Of GameSettingFlags)("settings", flags:=True).Weaken,
+                    New ByteJar("unknown1").Weaken,
+                    New UInt16Jar("playable width").Weaken,
+                    New UInt16Jar("playable height").Weaken,
                     New ArrayJar("xoro checksum", 4).Weaken,
                     New StringJar("relative path").Weaken,
                     New StringJar("username").Weaken,

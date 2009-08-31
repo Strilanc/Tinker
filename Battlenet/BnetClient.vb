@@ -863,78 +863,61 @@ Namespace Bnet
             End If
         End Sub
 
-        Private Enum AuthenticationFinishResult As UInteger
-            Passed = &H0
-            InvalidCodeMin = &H1
-            InvalidCodeMax = &HFF
-            OldVersion = &H100
-            InvalidVersion = &H101
-            FutureVersion = &H102
-            InvalidCDKey = &H200
-            UsedCDKey = &H201
-            BannedCDKey = &H202
-            WrongProduct = &H203
-        End Enum
         Private Sub ReceiveAuthenticationFinish(ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(vals IsNot Nothing)
             If state <> States.Connecting Then
                 Throw New Exception("Invalid state for receiving AUTHENTICATION_FINISHED")
             End If
 
-            Dim result = CType(CUInt(vals("result")), AuthenticationFinishResult)
+            Dim result = CType(CUInt(vals("result")), BnetPacket.AuthenticationFinishResult)
             Dim errmsg As String
-            Select Case CType(CUInt(vals("result")), AuthenticationFinishResult)
-                Case AuthenticationFinishResult.Passed
+            Select Case result
+                Case BnetPacket.AuthenticationFinishResult.Passed
                     ChangeState(States.EnterUsername)
-                    futureConnected.TrySetValue(success("Succesfully connected to battle.net server at {0}.".frmt(hostname)))
+                    futureConnected.TrySetValue(Success("Succesfully connected to battle.net server at {0}.".Frmt(hostname)))
                     Return
 
-                Case AuthenticationFinishResult.OldVersion
+                Case BnetPacket.AuthenticationFinishResult.OldVersion
                     errmsg = "Out of date version"
-                Case AuthenticationFinishResult.InvalidVersion
+                Case BnetPacket.AuthenticationFinishResult.InvalidVersion
                     errmsg = "Invalid version"
-                Case AuthenticationFinishResult.FutureVersion
+                Case BnetPacket.AuthenticationFinishResult.FutureVersion
                     errmsg = "Future version (need to downgrade apparently)"
-                Case AuthenticationFinishResult.InvalidCDKey
+                Case BnetPacket.AuthenticationFinishResult.InvalidCdKey
                     errmsg = "Invalid CD key"
-                Case AuthenticationFinishResult.UsedCDKey
+                Case BnetPacket.AuthenticationFinishResult.UsedCdKey
                     errmsg = "CD key in use by:"
-                Case AuthenticationFinishResult.BannedCDKey
+                Case BnetPacket.AuthenticationFinishResult.BannedCdKey
                     errmsg = "CD key banned!"
-                Case AuthenticationFinishResult.WrongProduct
+                Case BnetPacket.AuthenticationFinishResult.WrongProduct
                     errmsg = "Wrong product."
-                Case AuthenticationFinishResult.InvalidCodeMin To AuthenticationFinishResult.InvalidCodeMax
-                    errmsg = "Invalid version code."
                 Case Else
-                    errmsg = "Unknown authentication failure id: {0}.".frmt(result)
+                    errmsg = "Unknown authentication failure id: {0}.".Frmt(result)
             End Select
 
-            futureConnected.TrySetValue(failure("Failed to connect: {0} {1}".frmt(errmsg, vals("info"))))
+            futureConnected.TrySetValue(Failure("Failed to connect: {0} {1}".Frmt(errmsg, vals("info"))))
             Throw New Exception(errmsg)
         End Sub
 
         Private Sub ReceiveAccountLogonBegin(ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(vals IsNot Nothing)
-            Const RESULT_PASSED As UInteger = &H0
-            Const RESULT_BAD_USERNAME As UInteger = &H1
-            Const RESULT_UPGRADE_ACCOUNT As UInteger = &H5
 
             If state <> States.Logon Then
                 Throw New Exception("Invalid state for receiving ACCOUNT_LOGON_BEGIN")
             End If
 
-            Dim result = CUInt(vals("result"))
-            If result <> RESULT_PASSED Then
+            Dim result = CType(vals("result"), BnetPacket.AccountLogonBeginResult)
+            If result <> BnetPacket.AccountLogonBeginResult.Passed Then
                 Dim errmsg As String
                 Select Case result
-                    Case RESULT_BAD_USERNAME
+                    Case BnetPacket.AccountLogonBeginResult.BadUsername
                         errmsg = "Username doesn't exist."
-                    Case RESULT_UPGRADE_ACCOUNT
+                    Case BnetPacket.AccountLogonBeginResult.UpgradeAccount
                         errmsg = "Account requires upgrade."
                     Case Else
                         errmsg = "Unrecognized logon problem: " + result.ToString()
                 End Select
-                futureLoggedIn.TrySetValue(failure("Failed to logon: " + errmsg))
+                futureLoggedIn.TrySetValue(Failure("Failed to logon: " + errmsg))
                 Throw New Exception(errmsg)
             End If
 
@@ -959,33 +942,27 @@ Namespace Bnet
             SendPacket(BnetPacket.MakeAccountLogonFinish(clientPasswordProof))
         End Sub
 
-        Private Enum AccountLogonFinishResult As UInteger
-            Passed = &H0
-            BadPassword = &H2
-            NoEmail = &HE
-            Custom = &HF
-        End Enum
         Private Sub ReceiveAccountLogonFinish(ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(vals IsNot Nothing)
             If state <> States.Logon Then
                 Throw New Exception("Invalid state for receiving ACCOUNT_LOGON_FINISH")
             End If
 
-            Dim result = CType(CUInt(vals("result")), AccountLogonFinishResult)
+            Dim result = CType(vals("result"), BnetPacket.AccountLogonFinishResult)
 
-            If result <> AccountLogonFinishResult.Passed Then
+            If result <> BnetPacket.AccountLogonFinishResult.Passed Then
                 Dim errmsg As String
                 Select Case result
-                    Case AccountLogonFinishResult.BadPassword
+                    Case BnetPacket.AccountLogonFinishResult.IncorrectPassword
                         errmsg = "Incorrect password."
-                    Case AccountLogonFinishResult.NoEmail
+                    Case BnetPacket.AccountLogonFinishResult.NeedEmail
                         errmsg = "No email address associated with account"
-                    Case AccountLogonFinishResult.Custom
+                    Case BnetPacket.AccountLogonFinishResult.CustomError
                         errmsg = "Logon error: " + CType(vals("custom error info"), String)
                     Case Else
                         errmsg = "Unrecognized logon error: " + result.ToString()
                 End Select
-                futureLoggedIn.TrySetValue(failure("Failed to logon: " + errmsg))
+                futureLoggedIn.TrySetValue(Failure("Failed to logon: " + errmsg))
                 Throw New Exception(errmsg)
             End If
 
@@ -994,7 +971,7 @@ Namespace Bnet
             If serverPasswordProof Is Nothing Then Throw New InvalidStateException("Received AccountLogonFinish before server password proof computed.")
             Contract.Assume(removeServerPasswordProof IsNot Nothing)
             If Not ArraysEqual(Me.serverPasswordProof, removeServerPasswordProof) Then
-                futureLoggedIn.TrySetValue(failure("Failed to logon: Server didn't give correct password proof"))
+                futureLoggedIn.TrySetValue(Failure("Failed to logon: Server didn't give correct password proof"))
                 Throw New IO.InvalidDataException("Server didn't give correct password proof.")
             End If
             Dim lan_host = profile.lanHost.Split(" "c)(0)
@@ -1005,12 +982,12 @@ Namespace Bnet
                     DisposeLink.CreateOneWayLink(Me, lan)
                     AdvertisingLink.CreateMultiWayLink({Me, lan.MakeAdvertisingLinkMember})
                 Catch e As Exception
-                    logger.log("Error creating lan advertiser: {0}".frmt(e.ToString), LogMessageTypes.Problem)
+                    logger.Log("Error creating lan advertiser: {0}".Frmt(e.ToString), LogMessageTypes.Problem)
                 End Try
             End If
             'log
-            logger.log("Logged on with username {0}.".frmt(username), LogMessageTypes.Typical)
-            futureLoggedIn.TrySetValue(success("Succesfully logged on with username {0}.".frmt(username)))
+            logger.Log("Logged on with username {0}.".Frmt(username), LogMessageTypes.Typical)
+            futureLoggedIn.TrySetValue(Success("Succesfully logged on with username {0}.".Frmt(username)))
             'respond
             SendPacket(BnetPacket.MakeNetGamePort(listenPort))
             SendPacket(BnetPacket.MakeEnterChat())

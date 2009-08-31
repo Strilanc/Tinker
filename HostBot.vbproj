@@ -223,10 +223,12 @@
     <Compile Include="Library\DeadManSwitch.vb" />
     <Compile Include="Library\MStack.vb" />
     <Compile Include="Library\Networking.vb" />
+    <Compile Include="Library\Pickling\Jars Enum.vb" />
     <Compile Include="Library\Pickling\Pack.vb" />
     <Compile Include="Library\Pickling\PicklingBase.vb" />
     <Compile Include="Library\Pickling\PicklingInterface.vb" />
     <Compile Include="Library\Pickling\PicklingJars.vb" />
+    <Compile Include="Library\Pickling\Jars Numeric.vb" />
     <Compile Include="Library\Streams\PacketStream.vb" />
     <Compile Include="Library\Streams\ProducerConsumerStream.vb" />
     <Compile Include="Library\Streams\SeekableStream.vb" />
