@@ -6,19 +6,25 @@
             MyBase.New(name)
         End Sub
 
-        Public Overrides Function Pack(Of R As Single)(ByVal value As R) As IPickle(Of R)
+        Public NotOverridable Overrides Function Pack(Of R As Single)(ByVal value As R) As IPickle(Of R)
             Dim buffer(0 To 3) As Byte
             Using bw = New IO.BinaryWriter(New IO.MemoryStream(buffer))
                 bw.Write(value)
             End Using
-            Return New Pickle(Of R)(Name, value, buffer.ToArray.ToView)
+            Return New Pickle(Of R)(Name, value, buffer.ToArray.ToView, Function() ValueToString(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As IPickle(Of Single)
+        Public NotOverridable Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As IPickle(Of Single)
             data = data.SubView(0, 4)
+            Dim value As Single
             Using br = New IO.BinaryReader(New IO.MemoryStream(data.ToArray()))
-                Return New Pickle(Of Single)(Name, br.ReadSingle(), data)
+                value = br.ReadSingle()
             End Using
+            Return New Pickle(Of Single)(Name, value, data, Function() ValueToString(value))
+        End Function
+
+        Protected Overridable Function ValueToString(ByVal value As Single) As String
+            Return value.ToString
         End Function
     End Class
 
@@ -33,11 +39,11 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(Of R As UInt32)(ByVal value As R) As IPickle(Of R)
+        Public NotOverridable Overrides Function Pack(Of R As UInt32)(ByVal value As R) As IPickle(Of R)
             Return New Pickle(Of R)(Me.Name, value, value.Bytes(byteOrder).ToView(), Function() ValueToString(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of UInt32)
+        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of UInt32)
             Dim datum = data.SubView(0, 4)
             Dim value = datum.ToUInt32(byteOrder)
             Return New Pickle(Of UInt32)(Me.Name, value, datum, Function() ValueToString(value))
@@ -59,11 +65,11 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(Of R As UInt16)(ByVal value As R) As IPickle(Of R)
+        Public NotOverridable Overrides Function Pack(Of R As UInt16)(ByVal value As R) As IPickle(Of R)
             Return New Pickle(Of R)(Me.Name, value, value.Bytes(byteOrder).ToView(), Function() ValueToString(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of UInt16)
+        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of UInt16)
             Dim datum = data.SubView(0, 2)
             Dim value = datum.ToUInt16(byteOrder)
             Return New Pickle(Of UInt16)(Me.Name, value, datum, Function() ValueToString(value))
@@ -82,13 +88,18 @@
             Contract.Requires(name IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(Of R As Byte)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, {CByte(value)}.ToView())
+        Public NotOverridable Overrides Function Pack(Of R As Byte)(ByVal value As R) As IPickle(Of R)
+            Return New Pickle(Of R)(Me.Name, value, {CByte(value)}.ToView(), Function() ValueToString(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Byte)
+        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Byte)
             Dim datum = data.SubView(0, 1)
-            Return New Pickle(Of Byte)(Me.Name, datum(0), datum)
+            Dim value = datum(0)
+            Return New Pickle(Of Byte)(Me.Name, value, datum, Function() ValueToString(value))
+        End Function
+
+        Protected Overridable Function ValueToString(ByVal value As Byte) As String
+            Return value.ToString
         End Function
     End Class
 

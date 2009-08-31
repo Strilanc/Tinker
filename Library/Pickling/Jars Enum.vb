@@ -10,11 +10,11 @@
             Me.flags = flags
         End Sub
 
-        Public Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
+        Public NotOverridable Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
             Return New Pickle(Of R)(Me.Name, value, {CByte(CType(value, Object))}.ToView(), Function() ValueToString(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
+        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
             Dim datum = data.SubView(0, 1)
             Dim value = CType(CType(datum(0), Object), T)
             Return New Pickle(Of T)(Me.Name, value, datum, Function() ValueToString(value))
@@ -39,11 +39,11 @@
             Me.flags = flags
         End Sub
 
-        Public Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
+        Public NotOverridable Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
             Return New Pickle(Of R)(Me.Name, value, CUShort(CType(value, Object)).Bytes(byteOrder).ToView(), Function() ValueToString(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
+        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
             Dim datum = data.SubView(0, 2)
             Dim value = CType(CType(datum.ToUInt16(byteOrder), Object), T)
             Return New Pickle(Of T)(Me.Name, value, datum, Function() ValueToString(value))
@@ -68,11 +68,11 @@
             Me.flags = flags
         End Sub
 
-        Public Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
+        Public NotOverridable Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
             Return New Pickle(Of R)(Me.Name, value, CUInt(CType(value, Object)).Bytes(byteOrder).ToView(), Function() ValueToString(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
+        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
             Dim datum = data.SubView(0, 4)
             Dim value = CType(CType(datum.ToUInt32(byteOrder), Object), T)
             Return New Pickle(Of T)(Me.Name, value, datum, Function() ValueToString(value))

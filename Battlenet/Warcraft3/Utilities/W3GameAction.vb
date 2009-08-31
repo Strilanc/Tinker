@@ -172,7 +172,6 @@
             Up = 6
         End Enum
 
-        'Not a complete list (at all)
         Public Enum OrderId As UInteger
             Smart = &HD0003 'right-click
             [Stop] = &HD0004
@@ -181,6 +180,7 @@
             Patrol = &HD0016
             HoldPosition = &HD0019
             Gather = &HD0032
+            '... many many more ...
         End Enum
 
         Private Shared Function MakeJar() As PrefixSwitchJar(Of W3GameActionId)
@@ -413,48 +413,28 @@
             End Function
         End Class
         Private Class ObjectIdJar
-            Inherits Jar(Of UInteger)
+            Inherits UInt32Jar
 
             Public Sub New(ByVal name As String)
                 MyBase.New(name)
                 Contract.Requires(name IsNot Nothing)
             End Sub
 
-            Public Overrides Function Pack(Of R As UInteger)(ByVal value As R) As IPickle(Of R)
-                Return New Pickle(Of R)(Me.Name, value, value.Bytes(ByteOrder.LittleEndian).ToView(), Function() ValueString(value))
-            End Function
-
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of UInteger)
-                Dim datum = data.SubView(0, 4)
-                Dim value = datum.ToUInt32(ByteOrder.LittleEndian)
-                Return New Pickle(Of UInteger)(Me.Name, value, datum, Function() ValueString(value))
-            End Function
-
-            Private Shared Function ValueString(ByVal value As UInteger) As String
+            Protected Overrides Function ValueToString(ByVal value As UInteger) As String
                 If value = UInt32.MaxValue Then Return "[none]"
                 Return value.ToString
             End Function
         End Class
         Private Class TypeIdJar
-            Inherits Jar(Of UInteger)
+            Inherits UInt32Jar
 
             Public Sub New(ByVal name As String)
                 MyBase.New(name)
                 Contract.Requires(name IsNot Nothing)
             End Sub
 
-            Public Overrides Function Pack(Of R As UInteger)(ByVal value As R) As IPickle(Of R)
-                Return New Pickle(Of R)(Me.Name, value, value.Bytes(ByteOrder.LittleEndian, 4).ToView(), Function() ToIdString(value))
-            End Function
-
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of UInteger)
-                data = data.SubView(0, 4)
-                Dim value = data.ToUInt32(ByteOrder.LittleEndian)
-                Return New Pickle(Of UInteger)(Me.Name, value, data, Function() ToIdString(value))
-            End Function
-
-            Private Function ToIdString(ByVal val As UInteger) As String
-                Dim bytes = val.Bytes(ByteOrder.LittleEndian)
+            Protected Overrides Function ValueToString(ByVal value As UInteger) As String
+                Dim bytes = value.Bytes(ByteOrder.LittleEndian)
                 Dim id = ""
                 For i = 0 To bytes.Length - 1
                     If bytes(i) >= 32 And bytes(i) < 128 Then
