@@ -1,22 +1,22 @@
 Imports HostBot.Warcraft3
 
 Public Class W3ServerControl
-    Implements IHookable(Of IW3Server)
-    Private WithEvents server As IW3Server = Nothing
+    Implements IHookable(Of W3Server)
+    Private WithEvents server As W3Server = Nothing
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
     Private games As TabControlIHookableSet(Of IW3Game, W3GameControl)
 
-    Private Function QueueDispose() As IFuture Implements IHookable(Of IW3Server).QueueDispose
+    Private Function QueueDispose() As IFuture Implements IHookable(Of W3Server).QueueDispose
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
 
-    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of IW3Server).QueueGetCaption
+    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of W3Server).QueueGetCaption
         Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-        Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".frmt(server.Name, server.suffix)))
+        Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".Frmt(server.name, server.GetSuffix)))
     End Function
 
-    Public Function QueueHook(ByVal server As IW3Server) As IFuture Implements IHookable(Of IW3Server).QueueHook
+    Public Function QueueHook(ByVal server As W3Server) As IFuture Implements IHookable(Of W3Server).QueueHook
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
@@ -72,7 +72,7 @@ Public Class W3ServerControl
         )
     End Function
 
-    Private Sub CatchAddedGame(ByVal sender As IW3Server, ByVal instance As IW3Game) Handles server.AddedGame
+    Private Sub CatchAddedGame(ByVal sender As W3Server, ByVal instance As IW3Game) Handles server.AddedGame
         ref.QueueAction(
             Sub()
                 If sender IsNot server Then  Return
@@ -83,7 +83,7 @@ Public Class W3ServerControl
         )
     End Sub
 
-    Private Sub CatchRemovedGame(ByVal sender As IW3Server, ByVal instance As IW3Game) Handles server.RemovedGame
+    Private Sub CatchRemovedGame(ByVal sender As W3Server, ByVal instance As IW3Game) Handles server.RemovedGame
         ref.QueueAction(
             Sub()
                 If sender IsNot server Then  Return

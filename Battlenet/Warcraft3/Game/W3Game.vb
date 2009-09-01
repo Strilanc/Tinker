@@ -20,7 +20,7 @@ Namespace Warcraft3
     Partial Public NotInheritable Class W3Game
         Implements IW3Game
 
-        Private ReadOnly server As IW3Server
+        Private ReadOnly server As W3Server
         Private ReadOnly map As W3Map
         Private ReadOnly name As String
         Private ReadOnly rand As New Random()
@@ -183,7 +183,7 @@ Namespace Warcraft3
 #End Region
 
 #Region "Life"
-        Public Sub New(ByVal parent As IW3Server,
+        Public Sub New(ByVal parent As W3Server,
                        ByVal name As String,
                        ByVal map As W3Map,
                        ByVal arguments As IEnumerable(Of String),
@@ -548,7 +548,7 @@ Namespace Warcraft3
 #End Region
 
 #Region "Interface"
-        Private ReadOnly Property _parent() As IW3Server Implements IW3Game.server
+        Private ReadOnly Property _parent() As W3Server Implements IW3Game.server
             Get
                 Return server
             End Get

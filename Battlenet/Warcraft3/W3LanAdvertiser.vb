@@ -44,7 +44,7 @@ Public NotInheritable Class W3LanAdvertiser
         Private ReadOnly games As New HashSet(Of W3GameHeader)
 
         Private Event DisposedLink(ByVal sender As Links.IGameSource, ByVal partner As IGameSink) Implements IGameSource.DisposedLink
-        Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As IW3Server) Implements IGameSource.AddedGame
+        Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSource.AddedGame
         Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSource.RemovedGame
 
         Public Sub New(ByVal parent As W3LanAdvertiser)
@@ -55,7 +55,7 @@ Public NotInheritable Class W3LanAdvertiser
             DisposeLink.CreateOneWayLink(parent, Me)
         End Sub
 
-        Public Sub AddGame(ByVal game As W3GameHeader, ByVal server As IW3Server) Implements IGameSourceSink.AddGame
+        Public Sub AddGame(ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSourceSink.AddGame
             If games.Contains(game) Then Return
             games.Add(game)
             parent.AddGame(game)

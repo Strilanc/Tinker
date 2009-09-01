@@ -1,12 +1,12 @@
 ﻿Namespace Warcraft3
     Public Class W3ServerDoor
-        Public ReadOnly server As IW3Server
+        Public ReadOnly server As W3Server
         Public ReadOnly logger As Logger
         Private WithEvents _accepter As W3ConnectionAccepter
         Private connectingPlayers As New List(Of W3ConnectingPlayer)
         Private ReadOnly lock As New Object()
 
-        Public Sub New(ByVal server As IW3Server,
+        Public Sub New(ByVal server As W3Server,
                        Optional ByVal logger As Logger = Nothing)
             'contract bug wrt interface event implementation requires this:
             'Contract.Requires(server IsNot Nothing)

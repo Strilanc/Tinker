@@ -3,12 +3,12 @@ Imports HostBot.Bnet
 
 Namespace Links
     Public Interface IGameSource
-        Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As IW3Server)
+        Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As W3Server)
         Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal reason As String)
         Event DisposedLink(ByVal sender As IGameSource, ByVal partner As IGameSink)
     End Interface
     Public Interface IGameSink
-        Sub AddGame(ByVal game As W3GameHeader, ByVal server As IW3Server)
+        Sub AddGame(ByVal game As W3GameHeader, ByVal server As W3Server)
         Sub RemoveGame(ByVal game As W3GameHeader, ByVal reason As String)
         Sub SetAdvertisingOptions(ByVal [private] As Boolean)
     End Interface
@@ -61,7 +61,7 @@ Namespace Links
         End Sub
         Private Sub c_StartedAdvertising(ByVal sender As IGameSource,
                                          ByVal game As W3GameHeader,
-                                         ByVal server As IW3Server)
+                                         ByVal server As W3Server)
             servant.AddGame(game, server)
         End Sub
         Private Sub c_StoppedAdvertising(ByVal sender As IGameSource,

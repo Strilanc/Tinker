@@ -6,7 +6,7 @@ Public Class BotControl
     Private WithEvents bot As MainBot
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
     Private clients As TabControlIHookableSet(Of BnetClient, BnetClientControl)
-    Private servers As TabControlIHookableSet(Of IW3Server, W3ServerControl)
+    Private servers As TabControlIHookableSet(Of W3Server, W3ServerControl)
     Private widgets As TabControlIHookableSet(Of IBotWidget, BotWidgetControl)
 
     Private Function QueueDispose() As IFuture Implements IHookable(Of MainBot).QueueDispose
@@ -24,7 +24,7 @@ Public Class BotControl
 
                 If clients Is Nothing Then
                     clients = New TabControlIHookableSet(Of BnetClient, BnetClientControl)(tabsBot)
-                    servers = New TabControlIHookableSet(Of IW3Server, W3ServerControl)(tabsBot)
+                    servers = New TabControlIHookableSet(Of W3Server, W3ServerControl)(tabsBot)
                     widgets = New TabControlIHookableSet(Of IBotWidget, BotWidgetControl)(tabsBot)
                 Else
                     clients.Clear()
@@ -58,11 +58,11 @@ Public Class BotControl
         ref.QueueAction(Sub() clients.Remove(client))
     End Sub
 
-    Private Sub CatchBotAddedServer(ByVal server As IW3Server) Handles bot.AddedServer
+    Private Sub CatchBotAddedServer(ByVal server As W3Server) Handles bot.AddedServer
         ref.QueueAction(Sub() servers.Add(server))
     End Sub
 
-    Private Sub CatchBotRemovedServer(ByVal server As IW3Server) Handles bot.RemovedServer
+    Private Sub CatchBotRemovedServer(ByVal server As W3Server) Handles bot.RemovedServer
         ref.QueueAction(Sub() servers.Remove(server))
     End Sub
 
@@ -74,7 +74,7 @@ Public Class BotControl
         ref.QueueAction(Sub() widgets.Remove(widget))
     End Sub
 
-    Private Sub CatchBotServerStateChanged(ByVal server As IW3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates) Handles bot.ServerStateChanged
+    Private Sub CatchBotServerStateChanged(ByVal server As W3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates) Handles bot.ServerStateChanged
         ref.QueueAction(Sub() servers.Update(server))
     End Sub
 End Class

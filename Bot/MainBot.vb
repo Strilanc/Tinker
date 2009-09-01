@@ -44,14 +44,14 @@ Public NotInheritable Class MainBot
     Private intentionalDisconnectFlag As Boolean
 
     Private ReadOnly clients As New List(Of BnetClient)
-    Private ReadOnly servers As New List(Of IW3Server)
+    Private ReadOnly servers As New List(Of W3Server)
     Private ReadOnly widgets As New List(Of IBotWidget)
 
     Public Event AddedWidget(ByVal widget As IBotWidget)
     Public Event RemovedWidget(ByVal widget As IBotWidget)
-    Public Event ServerStateChanged(ByVal server As IW3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates)
-    Public Event AddedServer(ByVal server As IW3Server)
-    Public Event RemovedServer(ByVal server As IW3Server)
+    Public Event ServerStateChanged(ByVal server As W3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates)
+    Public Event AddedServer(ByVal server As W3Server)
+    Public Event RemovedServer(ByVal server As W3Server)
     Public Event ClientStateChanged(ByVal client As BnetClient, ByVal oldState As BnetClient.States, ByVal newState As BnetClient.States)
     Public Event AddedClient(ByVal client As BnetClient)
     Public Event RemovedClient(ByVal client As BnetClient)
@@ -140,7 +140,7 @@ Public NotInheritable Class MainBot
     Private Function CreateServer(ByVal name As String,
                                   ByVal serverSettings As ServerSettings,
                                   Optional ByVal suffix As String = "",
-                                  Optional ByVal avoidNameCollision As Boolean = False) As Outcome(Of IW3Server)
+                                  Optional ByVal avoidNameCollision As Boolean = False) As Outcome(Of W3Server)
         Try
             If name.Trim = "" Then
                 Return failure("Invalid server name.")
@@ -155,7 +155,7 @@ Public NotInheritable Class MainBot
                 name += i.ToString()
             End If
 
-            Dim server As IW3Server = New W3Server(name, Me, serverSettings, suffix)
+            Dim server As W3Server = New W3Server(name, Me, serverSettings, suffix)
             AddHandler server.PlayerTalked, AddressOf CatchServerPlayerTalked
             AddHandler server.ChangedState, AddressOf CatchServerStateChanged
             servers.Add(server)
@@ -238,7 +238,7 @@ Public NotInheritable Class MainBot
     Private Function FindClient(ByVal name As String) As BnetClient
         Return (From x In clients Where x.Name.ToLower = name.ToLower).FirstOrDefault()
     End Function
-    Private Function FindServer(ByVal name As String) As IW3Server
+    Private Function FindServer(ByVal name As String) As W3Server
         Return (From x In servers Where x.Name.ToLower = name.ToLower).FirstOrDefault()
     End Function
     Private Function FindWidget(ByVal name As String, ByVal typeName As String) As IBotWidget
@@ -385,12 +385,12 @@ Public NotInheritable Class MainBot
                              RaiseEvent RemovedWidget(widget)
                          End Sub)
     End Sub
-    Private Sub ThrowAddedServer(ByVal server As IW3Server)
+    Private Sub ThrowAddedServer(ByVal server As W3Server)
         eref.QueueAction(Sub()
                              RaiseEvent AddedServer(server)
                          End Sub)
     End Sub
-    Private Sub ThrowRemovedServer(ByVal server As IW3Server)
+    Private Sub ThrowRemovedServer(ByVal server As W3Server)
         eref.QueueAction(Sub()
                              RaiseEvent RemovedServer(server)
                          End Sub)
@@ -450,7 +450,7 @@ Public NotInheritable Class MainBot
         End If
     End Sub
 
-    Private Sub CatchServerPlayerTalked(ByVal sender As IW3Server,
+    Private Sub CatchServerPlayerTalked(ByVal sender As W3Server,
                                         ByVal game As IW3Game,
                                         ByVal player As IW3Player,
                                         ByVal text As String)
@@ -479,13 +479,13 @@ Public NotInheritable Class MainBot
     Private Sub CatchClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
         RaiseEvent ClientStateChanged(sender, old_state, new_state)
     End Sub
-    Private Sub CatchServerStateChanged(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
+    Private Sub CatchServerStateChanged(ByVal sender As W3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
         RaiseEvent ServerStateChanged(sender, old_state, new_state)
     End Sub
 #End Region
 
 #Region "Remote Calls"
-    Public Function QueueFindServer(ByVal name As String) As IFuture(Of IW3Server)
+    Public Function QueueFindServer(ByVal name As String) As IFuture(Of W3Server)
         Return ref.QueueFunc(Function() FindServer(name))
     End Function
     Public Function QueueKill() As IFuture(Of Outcome)
@@ -509,7 +509,7 @@ Public NotInheritable Class MainBot
     Public Function QueueCreateServer(ByVal name As String,
                                       ByVal defaultSettings As ServerSettings,
                                       Optional ByVal suffix As String = "",
-                                      Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of Outcome(Of IW3Server))
+                                      Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of Outcome(Of W3Server))
         Return ref.QueueFunc(Function() CreateServer(name, defaultSettings, suffix, avoidNameCollisions))
     End Function
     Public Function QueueFindClient(ByVal name As String) As IFuture(Of BnetClient)
@@ -521,7 +521,7 @@ Public NotInheritable Class MainBot
     Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of Outcome(Of BnetClient))
         Return ref.QueueFunc(Function() CreateClient(name, profileName))
     End Function
-    Public Function QueueGetServers() As IFuture(Of List(Of IW3Server))
+    Public Function QueueGetServers() As IFuture(Of List(Of W3Server))
         Return ref.QueueFunc(Function() servers.ToList)
     End Function
     Public Function QueueGetClients() As IFuture(Of List(Of BnetClient))

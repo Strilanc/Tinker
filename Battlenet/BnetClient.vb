@@ -402,7 +402,7 @@ Namespace Bnet
         End Sub
 
         Private Function BeginAdvertiseGame(ByVal game As W3GameHeader,
-                                            ByVal server As IW3Server) As IFuture(Of Outcome)
+                                            ByVal server As W3Server) As IFuture(Of Outcome)
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
 
@@ -514,12 +514,12 @@ Namespace Bnet
         Private Event Disconnected(ByVal sender As BnetClient, ByVal reason As String)
         Private ReadOnly userLinkMap As New Dictionary(Of BotUser, ClientServerUserLink)
 
-        Private Function GetUserServer(ByVal user As BotUser) As IW3Server
+        Private Function GetUserServer(ByVal user As BotUser) As W3Server
             If user Is Nothing Then Return Nothing
             If Not userLinkMap.ContainsKey(user) Then Return Nothing
             Return userLinkMap(user).server
         End Function
-        Private Sub SetUserServer(ByVal user As BotUser, ByVal server As IW3Server)
+        Private Sub SetUserServer(ByVal user As BotUser, ByVal server As W3Server)
             If user Is Nothing Then Return
             If userLinkMap.ContainsKey(user) Then
                 userLinkMap(user).Dispose()
@@ -532,10 +532,10 @@ Namespace Bnet
         Private Class ClientServerUserLink
             Inherits NotifyingDisposable
             Public ReadOnly client As BnetClient
-            Public ReadOnly server As IW3Server
+            Public ReadOnly server As W3Server
             Public ReadOnly user As BotUser
 
-            Public Sub New(ByVal client As BnetClient, ByVal server As IW3Server, ByVal user As BotUser)
+            Public Sub New(ByVal client As BnetClient, ByVal server As W3Server, ByVal user As BotUser)
                 'contract bug wrt interface event implementation requires this:
                 'Contract.Requires(client IsNot Nothing)
                 'Contract.Requires(server IsNot Nothing)
@@ -556,9 +556,9 @@ Namespace Bnet
         End Class
 
         Private Event DisposedAdvertisingLink(ByVal sender As IGameSource, ByVal partner As IGameSink) Implements IGameSource.DisposedLink
-        Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As IW3Server) Implements IGameSource.AddedGame
+        Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSource.AddedGame
         Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSource.RemovedGame
-        Private Sub _f_AddGame(ByVal game As W3GameHeader, ByVal server As IW3Server) Implements IGameSourceSink.AddGame
+        Private Sub _f_AddGame(ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSourceSink.AddGame
             ref.QueueAction(Sub()
                                 Contract.Assume(game IsNot Nothing)
                                 BeginAdvertiseGame(game, server)
@@ -945,7 +945,7 @@ Namespace Bnet
                                  End Function)
         End Function
         Public Function QueueStartAdvertisingGame(ByVal header As W3GameHeader,
-                                                   ByVal server As IW3Server) As IFuture(Of Outcome)
+                                                   ByVal server As W3Server) As IFuture(Of Outcome)
             Contract.Requires(header IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Return ref.QueueFunc(Function()
@@ -979,11 +979,11 @@ Namespace Bnet
                                      Return BeginLogon(username, password)
                                  End Function).Defuturize
         End Function
-        Public Function QueueGetUserServer(ByVal user As BotUser) As IFuture(Of IW3Server)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Warcraft3.IW3Server))() IsNot Nothing)
+        Public Function QueueGetUserServer(ByVal user As BotUser) As IFuture(Of W3Server)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Warcraft3.W3Server))() IsNot Nothing)
             Return ref.QueueFunc(Function() GetUserServer(user))
         End Function
-        Public Function QueueSetUserServer(ByVal user As BotUser, ByVal server As IW3Server) As IFuture
+        Public Function QueueSetUserServer(ByVal user As BotUser, ByVal server As W3Server) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub() SetUserServer(user, server))
         End Function

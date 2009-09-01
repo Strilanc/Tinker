@@ -18,7 +18,7 @@ Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations
     Public Class ServerCommands
-        Inherits UICommandSet(Of IW3Server)
+        Inherits UICommandSet(Of W3Server)
 
         Public Sub New()
             AddCommand(New com_OpenInstance)
@@ -29,13 +29,13 @@ Namespace Commands.Specializations
         End Sub
 
         Private Class com_Bot
-            Inherits BaseCommand(Of IW3Server)
+            Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("bot",
                             0, ArgumentLimits.free,
                             "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.")
             End Sub
-            Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.parent.BotCommands.ProcessCommand(target.parent, user, arguments)
             End Function
         End Class
@@ -54,14 +54,14 @@ Namespace Commands.Specializations
 
         '''<summary>A command which tells the server to stop listening on a port.</summary>
         Private Class com_StartListening
-            Inherits BaseCommand(Of IW3Server)
+            Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Listen",
                             1, ArgumentLimits.exact,
                             "[--Listen port]",
                             "root=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim port As UShort
                 If Not UShort.TryParse(arguments(0), port) Then Return failure("Invalid port").Futurize
                 Return target.QueueOpenPort(port)
@@ -70,14 +70,14 @@ Namespace Commands.Specializations
 
         '''<summary>A command which tells the server to stop listening on a port or all ports.</summary>
         Private Class com_StopListening
-            Inherits BaseCommand(Of IW3Server)
+            Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("StopListening",
                             1, ArgumentLimits.max,
                             "[--StopListening, --StopListening port] Tells the server to stop listening on a port or all ports.",
                             "root=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count = 0 Then
                     Return target.QueueCloseAllPorts()
                 Else
@@ -91,26 +91,26 @@ Namespace Commands.Specializations
         End Class
 
         Private Class com_OpenInstance
-            Inherits BaseCommand(Of IW3Server)
+            Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Open",
                             1, ArgumentLimits.max,
                             "[--Open name=generated_name]",
                             "root=4;games=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return stripFutureOutcome(target.QueueCreateGame(arguments(0)))
             End Function
         End Class
         Private Class com_CloseInstance
-            Inherits BaseCommand(Of IW3Server)
+            Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Close",
                             1, ArgumentLimits.exact,
                             "[--Close name]",
                             "root=4;games=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As IW3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.QueueRemoveGame(arguments(0), ignorePermanent:=True)
             End Function
         End Class

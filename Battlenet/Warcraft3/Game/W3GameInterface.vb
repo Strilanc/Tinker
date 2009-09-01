@@ -11,7 +11,7 @@
     <ContractClass(GetType(ContractClassForIW3Game))>
     Public Interface IW3Game
         ReadOnly Property map() As W3Map
-        ReadOnly Property server() As IW3Server
+        ReadOnly Property server() As W3Server
         ReadOnly Property name() As String
         ReadOnly Property logger() As Logger
 
@@ -330,9 +330,9 @@
             End Get
         End Property
 
-        Public ReadOnly Property server As IW3Server Implements IW3Game.server
+        Public ReadOnly Property server As W3Server Implements IW3Game.server
             Get
-                Contract.Ensures(Contract.Result(Of IW3Server)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of W3Server)() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
