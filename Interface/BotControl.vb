@@ -5,7 +5,7 @@ Public Class BotControl
     Implements IHookable(Of MainBot)
     Private WithEvents bot As MainBot
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
-    Private clients As TabControlIHookableSet(Of IBnetClient, BnetClientControl)
+    Private clients As TabControlIHookableSet(Of BnetClient, BnetClientControl)
     Private servers As TabControlIHookableSet(Of IW3Server, W3ServerControl)
     Private widgets As TabControlIHookableSet(Of IBotWidget, BotWidgetControl)
 
@@ -23,7 +23,7 @@ Public Class BotControl
                 If Me.bot Is bot Then  Return
 
                 If clients Is Nothing Then
-                    clients = New TabControlIHookableSet(Of IBnetClient, BnetClientControl)(tabsBot)
+                    clients = New TabControlIHookableSet(Of BnetClient, BnetClientControl)(tabsBot)
                     servers = New TabControlIHookableSet(Of IW3Server, W3ServerControl)(tabsBot)
                     widgets = New TabControlIHookableSet(Of IBotWidget, BotWidgetControl)(tabsBot)
                 Else
@@ -50,11 +50,11 @@ Public Class BotControl
         txtCommand.Text = ""
     End Sub
 
-    Private Sub CatchBotAddedClient(ByVal client As IBnetClient) Handles bot.AddedClient
+    Private Sub CatchBotAddedClient(ByVal client As BnetClient) Handles bot.AddedClient
         ref.QueueAction(Sub() clients.Add(client))
     End Sub
 
-    Private Sub CatchBotRemovedClient(ByVal client As IBnetClient) Handles bot.RemovedClient
+    Private Sub CatchBotRemovedClient(ByVal client As BnetClient) Handles bot.RemovedClient
         ref.QueueAction(Sub() clients.Remove(client))
     End Sub
 

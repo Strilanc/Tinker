@@ -6,14 +6,14 @@ Imports HostBot.Links
 
 Namespace Commands.Specializations
     Public Class ClientCommands
-        Inherits UICommandSet(Of IBnetClient)
+        Inherits UICommandSet(Of BnetClient)
 
         Private com_login As New ClientLoginCommands()
         Private com_online As New ClientOnlineCommands()
         Private com_offline As New ClientOfflineCommands()
 
-        Private Function GetCurrentCommandSet(ByVal target As IBnetClient) As IFuture(Of BaseClientCommands)
-            Return target.f_GetState.EvalWhenValueReady(Of BaseClientCommands)(
+        Private Function GetCurrentCommandSet(ByVal target As BnetClient) As IFuture(Of BaseClientCommands)
+            Return target.QueueGetState.EvalWhenValueReady(Of BaseClientCommands)(
                 Function(state)
                     Select Case state
                         Case States.Channel, States.CreatingGame, States.Game
@@ -28,16 +28,16 @@ Namespace Commands.Specializations
                 End Function
             )
         End Function
-        Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Return GetCurrentCommandSet(target).EvalWhenValueReady(Function(x) x.Process(target, user, arguments)).Defuturize()
         End Function
-        Public Overrides Sub ProcessLocalText(ByVal target As Bnet.IBnetClient, ByVal text As String, ByVal logger As Logger)
+        Public Overrides Sub ProcessLocalText(ByVal target As Bnet.BnetClient, ByVal text As String, ByVal logger As Logger)
             GetCurrentCommandSet(target).CallWhenValueReady(Sub(x) x.ProcessLocalText(target, text, logger))
         End Sub
     End Class
 
     Public MustInherit Class BaseClientCommands
-        Inherits UICommandSet(Of IBnetClient)
+        Inherits UICommandSet(Of BnetClient)
 
         Public Sub New()
             AddCommand(New com_AdLink)
@@ -55,7 +55,7 @@ Namespace Commands.Specializations
         End Sub
 
         Public Class com_AdLink
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AdLink,
                            1, ArgumentLimits.exact,
@@ -63,25 +63,25 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_AdLink_Access,
                            My.Resources.Command_Client_AdLink_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim client = target
                 Dim other_client = target.Parent.QueueFindClient(arguments(0))
                 Return other_client.EvalWhenValueReady(
                     Function(client2)
                         If client2 Is Nothing Then
-                            Return failure("No client matching that name.")
+                            Return Failure("No client matching that name.")
                         ElseIf client2 Is client Then
-                            Return failure("Can't link to self.")
+                            Return Failure("Can't link to self.")
                         End If
 
                         AdvertisingLink.CreateMultiWayLink({client, client2})
-                        Return success("Created an advertising link between client {0} and client {1}.".frmt(client.Name, client2.Name))
+                        Return Success("Created an advertising link between client {0} and client {1}.".Frmt(client.Name, client2.Name))
                     End Function
                 )
             End Function
         End Class
         Public Class com_AdUnlink
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AdUnlink,
                            1, ArgumentLimits.exact,
@@ -89,17 +89,17 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_AdUnlink_Access,
                            My.Resources.Command_Client_AdUnlink_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal client As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return client.Parent.QueueFindClient(arguments(0)).EvalWhenValueReady(
+            Public Overrides Function Process(ByVal client As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return client.parent.QueueFindClient(arguments(0)).EvalWhenValueReady(
                     Function(client2)
                         If client2 Is Nothing Then
-                            Return failure("No client matching that name.")
+                            Return Failure("No client matching that name.")
                         ElseIf client2 Is client Then
-                            Return failure("Can't link to self.")
+                            Return Failure("Can't link to self.")
                         End If
 
-                        client.ClearAdvertisingPartner(client2)
-                        Return success("Any link between client {0} and client {1} has been removed.".frmt(client.Name, client2.Name))
+                        client.QueueRemoveAdvertisingPartner(client2)
+                        Return Success("Any link between client {0} and client {1} has been removed.".Frmt(client.name, client2.name))
                     End Function
                 )
             End Function
@@ -107,33 +107,33 @@ Namespace Commands.Specializations
 
         '''<summary>A command which forwards sub-commands to the main bot command set</summary>
         Public Class com_Bot
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Bot",
                            0, ArgumentLimits.free,
                            "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.",
                            "root=1", "")
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.Parent.BotCommands.ProcessCommand(target.Parent, user, arguments)
             End Function
         End Class
 
         Public Class com_ParentCommand
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Private parent_command As BaseCommand(Of MainBot)
             Public Sub New(ByVal parent_command As BaseCommand(Of MainBot))
                 MyBase.New(parent_command.name, parent_command.argumentLimit, parent_command.argumentLimitType, parent_command.help, parent_command.requiredPermissions)
                 Me.parent_command = parent_command
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return parent_command.ProcessCommand(target.Parent, user, arguments)
             End Function
         End Class
 
         '''<summary>A command which returns the port the client is set to tell bnet it is listening on.</summary>
         Private Class com_GetPort
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_GetPort,
                            0, ArgumentLimits.exact,
@@ -141,14 +141,14 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_GetPort_Access,
                            My.Resources.Command_Client_GetPort_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return success(target.f_listenPort.ToString()).Futurize
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return Success(target.QueueGetListenPort.ToString()).Futurize
             End Function
         End Class
 
         '''<summary>A command which changes the port the client is set to tell bnet it is listening on.</summary>
         Private Class com_SetPort
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_SetPort,
                            1, ArgumentLimits.exact,
@@ -156,29 +156,29 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_SetPort_Access,
                            My.Resources.Command_Client_SetPort_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Dim port As UShort
-                If Not UShort.TryParse(arguments(0), port) Then Return failure("Invalid port").Futurize
-                Return target.f_SetListenPort(port)
+                If Not UShort.TryParse(arguments(0), port) Then Return Failure("Invalid port").Futurize
+                Return target.QueueSetListenPort(port)
             End Function
         End Class
 
         Private Class com_Disconnect
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("disconnect",
                             0, ArgumentLimits.exact,
                             "[--disconnect]",
                             "root=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                target.f_Disconnect("Client Command")
-                Return success("Disconnected").Futurize
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                target.QueueDisconnect("Client Command")
+                Return Success("Disconnected").Futurize
             End Function
         End Class
 
         Public Class com_AddUser
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AddUser,
                             1, ArgumentLimits.exact,
@@ -186,18 +186,18 @@ Namespace Commands.Specializations
                             My.Resources.Command_Client_AddUser_Access,
                             My.Resources.Command_Client_AddUser_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Try
                     Dim new_user As BotUser = target.profile.users.CreateNewUser(arguments(0))
-                    Return success("Created " + new_user.name).Futurize
+                    Return Success("Created " + new_user.name).Futurize
                 Catch e As InvalidOperationException
-                    Return failure(e.ToString).Futurize
+                    Return Failure(e.ToString).Futurize
                 End Try
             End Function
         End Class
 
         Public Class com_RemoveUser
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_RemoveUser,
                             1, ArgumentLimits.exact,
@@ -205,31 +205,31 @@ Namespace Commands.Specializations
                             My.Resources.Command_Client_RemoveUser_Access,
                             My.Resources.Command_Client_RemoveUser_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
-                    Return failure("That user does not exist").Futurize
+                    Return Failure("That user does not exist").Futurize
                 End If
                 Dim target_user As BotUser = target.profile.users(arguments(0))
                 If user IsNot Nothing AndAlso Not target_user < user Then
-                    Return failure("You can only destroy users with lower permissions.").Futurize
+                    Return Failure("You can only destroy users with lower permissions.").Futurize
                 End If
                 target.profile.users.RemoveUser(arguments(0))
-                Return success("Removed " + arguments(0)).Futurize
+                Return Success("Removed " + arguments(0)).Futurize
             End Function
         End Class
 
         Public Class com_Promote
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Promote",
                             2, ArgumentLimits.min,
                             "[--Promote username permission level] Increases a permissions level for a user.",
                             "users=1", "")
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'get target user
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
-                    Return failure("That user does not exist").Futurize
+                    Return Failure("That user does not exist").Futurize
                 End If
                 Dim target_user As BotUser = target.profile.users(arguments(0))
 
@@ -238,36 +238,36 @@ Namespace Commands.Specializations
                 If arguments.Count < 3 Then
                     lvl = 1
                 ElseIf Not UInteger.TryParse(arguments(2), lvl) Then
-                    Return failure("Expected numeric argument for level").Futurize
+                    Return Failure("Expected numeric argument for level").Futurize
                 End If
 
                 'check for demotion in disguise
                 If lvl <= target_user.permission(arguments(1)) Then
-                    Return failure("That is not a promotion. Jerk.").Futurize
+                    Return Failure("That is not a promotion. Jerk.").Futurize
                 End If
 
                 'check for overpromotion
                 If user IsNot Nothing AndAlso lvl > user.permission(arguments(1)) Then
-                    Return failure("You can't promote users past your own permission levels.").Futurize
+                    Return Failure("You can't promote users past your own permission levels.").Futurize
                 End If
 
                 target_user.permission(arguments(1)) = lvl
-                Return success(arguments(0) + " had permission in " + arguments(1) + " promoted to " + lvl.ToString()).Futurize
+                Return Success(arguments(0) + " had permission in " + arguments(1) + " promoted to " + lvl.ToString()).Futurize
             End Function
         End Class
 
         Public Class com_Demote
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Demote",
                             2, ArgumentLimits.min,
                             "[--Demote username permission level] Decreases a permissions level for a user.",
                             "users=3", "")
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'get target user
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
-                    Return failure("That user does not exist").Futurize
+                    Return Failure("That user does not exist").Futurize
                 End If
                 Dim target_user As BotUser = target.profile.users(arguments(0))
 
@@ -276,26 +276,26 @@ Namespace Commands.Specializations
                 If arguments.Count < 3 Then
                     lvl = 0
                 ElseIf Not UInteger.TryParse(arguments(2), lvl) Then
-                    Return failure("Expected numeric argument for level").Futurize
+                    Return Failure("Expected numeric argument for level").Futurize
                 End If
 
                 'check for promotion in disguise
                 If lvl >= target_user.permission(arguments(1)) Then
-                    Return failure("That is not a demotion.").Futurize
+                    Return Failure("That is not a demotion.").Futurize
                 End If
 
                 'check for overdemotion
                 If user IsNot Nothing AndAlso Not target_user < user Then
-                    Return failure("You can only demote users with lower permissions.").Futurize
+                    Return Failure("You can only demote users with lower permissions.").Futurize
                 End If
 
                 target_user.permission(arguments(1)) = lvl
-                Return success(arguments(0) + " had permission in " + arguments(1) + " demoted to " + lvl.ToString()).Futurize
+                Return Success(arguments(0) + " had permission in " + arguments(1) + " demoted to " + lvl.ToString()).Futurize
             End Function
         End Class
 
         Public Class com_User
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_User,
                            1, ArgumentLimits.max,
@@ -303,15 +303,15 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_User_Access,
                            My.Resources.Command_Client_User_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                If arguments.Count = 0 And user Is Nothing Then Return failure("No user specified.").Futurize
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                If arguments.Count = 0 And user Is Nothing Then Return Failure("No user specified.").Futurize
                 Dim username = If(arguments.Count = 0, user.name, arguments(0))
                 If target.profile.users.ContainsUser(username) Then
-                    Return success(target.profile.users(username).ToString()).Futurize
+                    Return Success(target.profile.users(username).ToString()).Futurize
                 ElseIf target.profile.users.ContainsUser(BotUserSet.NAME_UNKNOWN_USER) Then
-                    Return success("{0} is an unknown user with the permissions of the user '*unknown'".frmt(username)).Futurize
+                    Return Success("{0} is an unknown user with the permissions of the user '*unknown'".Frmt(username)).Futurize
                 Else
-                    Return success("{0} is an ignored unknown user.".frmt(username)).Futurize
+                    Return Success("{0} is an ignored unknown user.".Frmt(username)).Futurize
                 End If
             End Function
         End Class
@@ -326,7 +326,7 @@ Namespace Commands.Specializations
         End Sub
 
         Private Class com_Login
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Login,
                            2, ArgumentLimits.exact,
@@ -335,8 +335,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Login_ExtraHelp,
                            True)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_Login(arguments(0), arguments(1))
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return target.QueueLogin(arguments(0), arguments(1))
             End Function
         End Class
     End Class
@@ -357,7 +357,7 @@ Namespace Commands.Specializations
         End Sub
 
         Public Class com_Host
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Host,
                            2, ArgumentLimits.min,
@@ -365,7 +365,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Host_Access,
                            My.Resources.Command_Client_Host_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'Map
                 Dim map_out = W3Map.FromArgument(arguments(1))
                 If Not map_out.succeeded Then Return map_out.Outcome.Futurize
@@ -390,7 +390,7 @@ Namespace Commands.Specializations
                                               If(user Is Nothing, My.Resources.ProgramName, user.name),
                                               New W3MapSettings(arguments, map),
                                               0, 0, 0, arguments, map.NumPlayerSlots)
-                Dim f_settings = target.f_listenPort.EvalWhenValueReady(Function(port) New ServerSettings(map, header, default_listen_ports:={port}))
+                Dim f_settings = target.QueueGetListenPort.EvalWhenValueReady(Function(port) New ServerSettings(map, header, default_listen_ports:={port}))
                 Dim f_server = f_settings.EvalWhenValueReady(Function(settings) target.Parent.QueueCreateServer(target.Name, settings, "[Linked]", True)).Defuturize()
 
                 'Create the server, then advertise the game
@@ -403,8 +403,8 @@ Namespace Commands.Specializations
 
                         'Start advertising
                         Dim server = created_server.Value
-                        client.f_SetUserServer(user, server)
-                        Return client.f_StartAdvertisingGame(header, server).EvalWhenValueReady(
+                        client.QueueSetUserServer(user, server)
+                        Return client.QueueStartAdvertisingGame(header, server).EvalWhenValueReady(
                             Function(advertised)
                                 If advertised.succeeded Then
                                     Return Success("Game hosted succesfully. Admin code is '{0}'.".Frmt(server.settings.adminPassword))
@@ -420,26 +420,26 @@ Namespace Commands.Specializations
         End Class
 
         Public Class com_RefreshGamesList
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("RefreshGamesList",
                         0, ArgumentLimits.exact,
                         "[RefreshGamesList] Refreshes the bot's game list display. No useful effect from bnet.")
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_SendPacket(BnetPacket.MakeQueryGamesList())
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return target.QueueSendPacket(BnetPacket.MakeQueryGamesList())
             End Function
         End Class
         Public Class com_Game
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Game",
                         1, ArgumentLimits.min,
                         "[Game name command..., Game boot red] Forwards commands to a game of your hosted server.")
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'Find hosted server, then find game, then pass command
-                Return target.f_GetUserServer(user).EvalWhenValueReady(
+                Return target.QueueGetUserServer(user).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then
                             Return Failure("You don't have a hosted game to forward that command to.").Futurize
@@ -462,14 +462,14 @@ Namespace Commands.Specializations
         End Class
 
         Public Class com_CancelHost
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("CancelHost",
                            0, ArgumentLimits.exact,
                            "[--CancelHost] Cancels the last hosting command.")
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_GetUserServer(user).EvalWhenValueReady(
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return target.QueueGetUserServer(user).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then
                             Return Failure("You don't have a hosted game to cancel.")
@@ -483,16 +483,16 @@ Namespace Commands.Specializations
         End Class
 
         Public Class com_AdminCode
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("AdminCode",
                            0, ArgumentLimits.exact,
                            "[--AdminCode] Repeats the admin code for a game you have hosted.")
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient,
+            Public Overrides Function Process(ByVal target As BnetClient,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_GetUserServer(user).EvalWhenValueReady(
+                Return target.QueueGetUserServer(user).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then
                             Return Failure("You don't have a hosted game to cancel.")
@@ -505,7 +505,7 @@ Namespace Commands.Specializations
         End Class
 
         Public Class com_Say
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Say,
                            1, ArgumentLimits.exact,
@@ -513,15 +513,15 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Say_Access,
                            My.Resources.Command_Client_Say_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                target.f_SendText(arguments(0))
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                target.QueueSendText(arguments(0))
                 Return Success("Said {0}".Frmt(arguments(0))).Futurize
             End Function
         End Class
 
         '''<summary>A command which tells the client to start advertising a game.</summary>
         Public Class com_StartAdvertising
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_StartAdvertising,
                            2, ArgumentLimits.min,
@@ -529,14 +529,14 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_StartAdvertising_Access,
                            My.Resources.Command_Client_StartAdvertising_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 'Map
                 Dim map_out = W3Map.FromArgument(arguments(1))
                 If Not map_out.succeeded Then Return map_out.Outcome.Futurize
                 Dim map = map_out.Value
 
                 'create
-                Return target.f_StartAdvertisingGame(New W3GameHeader(arguments(0),
+                Return target.QueueStartAdvertisingGame(New W3GameHeader(arguments(0),
                                                                       My.Resources.ProgramName,
                                                                       New W3MapSettings(arguments, map),
                                                                       0, 0, 0, arguments, map.NumPlayerSlots), Nothing)
@@ -545,7 +545,7 @@ Namespace Commands.Specializations
 
         '''<summary>A command which tells the client to stop advertising a game.</summary>
         Public Class com_StopAdvertising
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_StopAdvertising,
                            0, ArgumentLimits.exact,
@@ -553,13 +553,13 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_StopAdvertising_Access,
                            My.Resources.Command_Client_StopAdvertising_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_StopAdvertisingGame("Advertising stopped manually.")
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return target.QueueStopAdvertisingGame("Advertising stopped manually.")
             End Function
         End Class
 
         Public Class com_Elevate
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Elevate,
                         1, ArgumentLimits.max,
@@ -567,14 +567,14 @@ Namespace Commands.Specializations
                         My.Resources.Command_Client_Elevate_Access,
                         My.Resources.Command_Client_Elevate_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count = 0 AndAlso user Is Nothing Then
                     Return Failure("You didn't specify a player to elevate.").Futurize
                 End If
                 Dim username = If(arguments.Count = 0, user.name, arguments(0))
 
                 'Find hosted server, then find player's game, then elevate player
-                Return target.f_GetUserServer(user).EvalWhenValueReady(
+                Return target.QueueGetUserServer(user).EvalWhenValueReady(
                     Function(server)
                         If server Is Nothing Then
                             Return Failure("You don't have a hosted game.").Futurize
@@ -605,7 +605,7 @@ Namespace Commands.Specializations
         End Sub
 
         Private Class com_Connect
-            Inherits BaseCommand(Of IBnetClient)
+            Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Connect,
                            1, ArgumentLimits.exact,
@@ -613,8 +613,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Connect_Access,
                            My.Resources.Command_Client_Connect_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As IBnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.f_Connect(arguments(0))
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+                Return target.QueueConnect(arguments(0))
             End Function
         End Class
     End Class

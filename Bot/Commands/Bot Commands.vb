@@ -308,14 +308,14 @@ Namespace Commands.Specializations
                         Dim client = createdClient.Value
 
                         'Connect to bnet, then login
-                        Dim connectedAndLoggedIn = client.f_Connect(client.profile.server.Split(" "c)(0)).EvalWhenValueReady(
+                        Dim connectedAndLoggedIn = client.QueueConnect(client.profile.server.Split(" "c)(0)).EvalWhenValueReady(
                             Function(connected)
                                 If Not connected.succeeded Then
                                     Return connected.Futurize 'failed
                                 End If
 
                                 'Login
-                                Return client.f_Login(client.profile.username, client.profile.password)
+                                Return client.QueueLogin(client.profile.username, client.profile.password)
                             End Function
                         ).Defuturize()
 

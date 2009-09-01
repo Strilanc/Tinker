@@ -144,6 +144,7 @@
     <Import Include="Strilbrary" />
     <Import Include="Strilbrary.Enumeration" />
     <Import Include="Strilbrary.Logging" />
+    <Import Include="Strilbrary.Numerics" />
     <Import Include="Strilbrary.Streams" />
     <Import Include="Strilbrary.Threading" />
     <Import Include="Strilbrary.Threading.Futures" />

@@ -43,7 +43,7 @@ Public NotInheritable Class MainBot
     Private ReadOnly wardenRef As ICallQueue
     Private intentionalDisconnectFlag As Boolean
 
-    Private ReadOnly clients As New List(Of IBnetClient)
+    Private ReadOnly clients As New List(Of BnetClient)
     Private ReadOnly servers As New List(Of IW3Server)
     Private ReadOnly widgets As New List(Of IBotWidget)
 
@@ -52,9 +52,9 @@ Public NotInheritable Class MainBot
     Public Event ServerStateChanged(ByVal server As IW3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates)
     Public Event AddedServer(ByVal server As IW3Server)
     Public Event RemovedServer(ByVal server As IW3Server)
-    Public Event ClientStateChanged(ByVal client As IBnetClient, ByVal oldState As BnetClient.States, ByVal newState As BnetClient.States)
-    Public Event AddedClient(ByVal client As IBnetClient)
-    Public Event RemovedClient(ByVal client As IBnetClient)
+    Public Event ClientStateChanged(ByVal client As BnetClient, ByVal oldState As BnetClient.States, ByVal newState As BnetClient.States)
+    Public Event AddedClient(ByVal client As BnetClient)
+    Public Event RemovedClient(ByVal client As BnetClient)
 #End Region
 
 #Region "New"
@@ -197,7 +197,7 @@ Public NotInheritable Class MainBot
         Return Success("Removed {0} with name {1}.".Frmt(typeName, name))
     End Function
 
-    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As Outcome(Of IBnetClient)
+    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As Outcome(Of BnetClient)
         If name.Trim = "" Then
             Return Failure("Invalid client name.")
         ElseIf HaveClient(name) Then
@@ -206,7 +206,7 @@ Public NotInheritable Class MainBot
             Return Failure("Invalid profile.")
         End If
 
-        Dim client As IBnetClient = New BnetClient(Me, FindClientProfile(profileName), name, wardenRef)
+        Dim client = New BnetClient(Me, FindClientProfile(profileName), name, wardenRef)
         AddHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
         AddHandler client.StateChanged, AddressOf CatchClientStateChanged
         clients.Add(client)
@@ -222,7 +222,7 @@ Public NotInheritable Class MainBot
 
         RemoveHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
         RemoveHandler client.StateChanged, AddressOf CatchClientStateChanged
-        client.f_Disconnect("Killed by MainBot")
+        client.QueueDisconnect("Killed by MainBot")
         clients.Remove(client)
         ThrowRemovedClient(client)
         Return success("Removed client with name {0}.".frmt(name))
@@ -235,7 +235,7 @@ Public NotInheritable Class MainBot
         Return FindServer(name) IsNot Nothing
     End Function
 
-    Private Function FindClient(ByVal name As String) As IBnetClient
+    Private Function FindClient(ByVal name As String) As BnetClient
         Return (From x In clients Where x.Name.ToLower = name.ToLower).FirstOrDefault()
     End Function
     Private Function FindServer(ByVal name As String) As IW3Server
@@ -395,18 +395,18 @@ Public NotInheritable Class MainBot
                              RaiseEvent RemovedServer(server)
                          End Sub)
     End Sub
-    Private Sub ThrowAddedClient(ByVal client As IBnetClient)
+    Private Sub ThrowAddedClient(ByVal client As BnetClient)
         eref.QueueAction(Sub()
                              RaiseEvent AddedClient(client)
                          End Sub)
     End Sub
-    Private Sub ThrowRemovedClient(ByVal client As IBnetClient)
+    Private Sub ThrowRemovedClient(ByVal client As BnetClient)
         eref.QueueAction(Sub()
                              RaiseEvent RemovedClient(client)
                          End Sub)
     End Sub
 
-    Private Sub CatchClientReceivedPacket(ByVal client As IBnetClient, ByVal packet As BnetPacket)
+    Private Sub CatchClientReceivedPacket(ByVal client As BnetClient, ByVal packet As BnetPacket)
         If packet.id <> BnetPacketID.ChatEvent Then Return
 
         Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
@@ -429,7 +429,7 @@ Public NotInheritable Class MainBot
 
         'Process ?Trigger command
         If text.ToLower() = "?trigger" Then
-            client.f_SendWhisper(username, "Command prefix is '{0}'".frmt(My.Settings.commandPrefix))
+            client.QueueSendWhisper(username, "Command prefix is '{0}'".frmt(My.Settings.commandPrefix))
             Return
         End If
 
@@ -437,13 +437,13 @@ Public NotInheritable Class MainBot
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
         Dim commandOutcocme = ClientCommands.ProcessCommand(client, user, breakQuotedWords(commandText))
         commandOutcocme.CallWhenValueReady(
-            Sub(output) client.f_SendWhisper(user.name, If(output.succeeded, "", "(Failed) ") + output.Message)
+            Sub(output) client.QueueSendWhisper(user.name, If(output.succeeded, "", "(Failed) ") + output.Message)
         )
         If Not commandOutcocme.IsReady Then
             FutureWait(2.Seconds).CallWhenReady(
                 Sub()
                     If Not commandOutcocme.IsReady Then
-                        client.f_SendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".frmt(text))
+                        client.QueueSendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".frmt(text))
                     End If
                 End Sub
             )
@@ -476,7 +476,7 @@ Public NotInheritable Class MainBot
         )
     End Sub
 
-    Private Sub CatchClientStateChanged(ByVal sender As IBnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
+    Private Sub CatchClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
         RaiseEvent ClientStateChanged(sender, old_state, new_state)
     End Sub
     Private Sub CatchServerStateChanged(ByVal sender As IW3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
@@ -512,19 +512,19 @@ Public NotInheritable Class MainBot
                                       Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of Outcome(Of IW3Server))
         Return ref.QueueFunc(Function() CreateServer(name, defaultSettings, suffix, avoidNameCollisions))
     End Function
-    Public Function QueueFindClient(ByVal name As String) As IFuture(Of IBnetClient)
+    Public Function QueueFindClient(ByVal name As String) As IFuture(Of BnetClient)
         Return ref.QueueFunc(Function() FindClient(name))
     End Function
     Public Function QueueRemoveClient(ByVal name As String) As IFuture(Of Outcome)
         Return ref.QueueFunc(Function() KillClient(name))
     End Function
-    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of Outcome(Of IBnetClient))
+    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of Outcome(Of BnetClient))
         Return ref.QueueFunc(Function() CreateClient(name, profileName))
     End Function
     Public Function QueueGetServers() As IFuture(Of List(Of IW3Server))
         Return ref.QueueFunc(Function() servers.ToList)
     End Function
-    Public Function QueueGetClients() As IFuture(Of List(Of IBnetClient))
+    Public Function QueueGetClients() As IFuture(Of List(Of BnetClient))
         Return ref.QueueFunc(Function() clients.ToList)
     End Function
     Public Function QueueGetWidgets() As IFuture(Of List(Of IBotWidget))

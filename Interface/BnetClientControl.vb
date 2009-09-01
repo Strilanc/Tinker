@@ -3,18 +3,18 @@ Imports HostBot.Bnet.BnetClient
 Imports HostBot.Bnet.BnetPacket
 
 Public Class BnetClientControl
-    Implements IHookable(Of IBnetClient)
-    Private WithEvents client As IBnetClient
+    Implements IHookable(Of BnetClient)
+    Private WithEvents client As BnetClient
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
     Private numPrimaryStates As Integer
 
-    Private Function QueueDispose() As IFuture Implements IHookable(Of IBnetClient).QueueDispose
+    Private Function QueueDispose() As IFuture Implements IHookable(Of BnetClient).QueueDispose
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
-    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of IBnetClient).QueueGetCaption
+    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of BnetClient).QueueGetCaption
         Return ref.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.Name)))
     End Function
-    Public Function QueueHook(ByVal client As IBnetClient) As IFuture Implements IHookable(Of IBnetClient).QueueHook
+    Public Function QueueHook(ByVal client As BnetClient) As IFuture Implements IHookable(Of BnetClient).QueueHook
         Return ref.QueueAction(
             Sub()
                 If Me.client Is client Then  Return
@@ -27,13 +27,13 @@ Public Class BnetClientControl
                     txtTalk.Enabled = False
                 Else
                     logClient.SetLogger(client.logger, "Client")
-                    client.f_GetState.CallWhenValueReady(Sub(state) CatchClientStateChanged(client, state, state))
+                    client.QueueGetState.CallWhenValueReady(Sub(state) CatchClientStateChanged(client, state, state))
                 End If
             End Sub
         )
     End Function
 
-    Private Sub CatchReceivedPacket(ByVal sender As IBnetClient, ByVal packet As BnetPacket) Handles client.ReceivedPacket
+    Private Sub CatchReceivedPacket(ByVal sender As BnetClient, ByVal packet As BnetPacket) Handles client.ReceivedPacket
         ref.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
@@ -119,12 +119,12 @@ Public Class BnetClientControl
         If txtTalk.Text = "" Then Return
         If client Is Nothing Then Return
         e.Handled = True
-        client.f_SendText(txtTalk.Text)
-        logClient.LogMessage(client.username + ": " + txtTalk.Text, Color.DarkBlue)
+        client.QueueSendText(txtTalk.Text)
+        logClient.LogMessage(client.GetUsername + ": " + txtTalk.Text, Color.DarkBlue)
         txtTalk.Text = ""
     End Sub
 
-    Private Sub CatchClientStateChanged(ByVal sender As IBnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States) Handles client.StateChanged
+    Private Sub CatchClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States) Handles client.StateChanged
         ref.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
