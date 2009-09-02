@@ -1,7 +1,6 @@
 ﻿Namespace Warcraft3
-    ''' <source>
-    ''' http://www.wc3c.net/tools/specs/W3GActions.txt
-    ''' </source>
+    '''<summary>Game actions which can be performed by players.</summary>
+    '''<original-source>http://www.wc3c.net/tools/specs/W3GActions.txt</original-source>
     Public Enum W3GameActionId As Byte
         PauseGame = &H1
         ResumeGame = &H2
@@ -28,8 +27,8 @@
         AssignGroupHotkey = &H17
         SelectGroupHotkey = &H18
         SelectSubgroup = &H19
-        _PreSubSelection = &H1A
-        _unknown0x1B = &H1B
+        PreSubGroupSelection = &H1A
+        TriggerSelectionEvent = &H1B
         SelectGroundItem = &H1C
         CancelHeroRevive = &H1D
         DequeueBuildingOrder = &H1E
@@ -119,7 +118,7 @@
         _unseen_0x72 = &H72
         _unseen_0x73 = &H73
         _unseen_0x74 = &H74
-        TriggerArrowKeyPressed = &H75
+        TriggerArrowKeyEvent = &H75
     End Enum
 
     Public Class W3GameAction
@@ -133,71 +132,22 @@
             Me.id = payload.Value.index
         End Sub
 
+        Public Shared Function FromData(ByVal data As ViewableList(Of Byte)) As W3GameAction
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of W3GameAction)() IsNot Nothing)
+            Return New W3GameAction(packetJar.Parse(data))
+        End Function
+
+        Public Overrides Function ToString() As String
+            Return "{0} = {1}".Frmt(id, payload.Description.Value())
+        End Function
+
+#Region "Definition"
         Private Shared Sub reg(ByVal jar As PrefixSwitchJar(Of W3GameActionId),
                                ByVal id As W3GameActionId,
                                ByVal ParamArray subjars() As IJar(Of Object))
             jar.reg(id, New TupleJar("data", subjars).Weaken)
         End Sub
-
-        Public Enum GameSpeedSetting As Byte
-            Slow = 0
-            Normal = 1
-            Fast = 2
-        End Enum
-        Public Enum OrderFlags As UShort
-            Queue = 1 << 0
-            Train = 1 << 1
-            Construct = 1 << 2
-            Group = 1 << 3
-            NoFormation = 1 << 4
-            unknown_0x0020 = 1 << 5
-            SubGroup = 1 << 6
-            unknown_0x0080 = 1 << 7
-            AutocastOn = 1 << 8
-        End Enum
-        Public Enum SelectionOperation As Byte
-            Add = 1
-            Remove = 2
-        End Enum
-        Public Enum AllianceFlags As UInteger
-            Allied = (1 << 0) Or (1 << 1) Or (1 << 2) Or (1 << 3) Or (1 << 4)
-            SharedVision = 1 << 5
-            SharedControl = 1 << 6
-            AlliedVictory = 1 << 10
-        End Enum
-        Public Enum ArrowKeyButton As Byte
-            Left = 0
-            Right = 2
-            Down = 4
-            Up = 6
-        End Enum
-
-        Public Enum OrderId As UInteger
-            Smart = &HD0003 'right-click
-            [Stop] = &HD0004
-            SetRallyPoint = &HD000C
-            Attack = &HD000F
-            AttackGround = &HD0010
-            Move = &HD0012
-            Patrol = &HD0016
-            HoldPosition = &HD0019
-            GiveOrDropItem = &HD0021
-            SwapItemWithItemInSlot1 = &HD0022
-            SwapItemWithItemInSlot2 = &HD0023
-            SwapItemWithItemInSlot3 = &HD0024
-            SwapItemWithItemInSlot4 = &HD0025
-            SwapItemWithItemInSlot5 = &HD0026
-            SwapItemWithItemInSlot6 = &HD0027
-            UseItemInSlot1 = &HD0028
-            UseItemInSlot2 = &HD0029
-            UseItemInSlot3 = &HD002A
-            UseItemInSlot4 = &HD002B
-            UseItemInSlot5 = &HD002C
-            UseItemInSlot6 = &HD002D
-            ReturnResources = &HD0031
-            Gather = &HD0032
-            '... many many more ...
-        End Enum
 
         Private Shared Function MakeJar() As PrefixSwitchJar(Of W3GameActionId)
             Dim jar = New PrefixSwitchJar(Of W3GameActionId)("W3GameAction")
@@ -212,41 +162,41 @@
             reg(jar, W3GameActionId.SaveGameStarted,
                         New StringJar("filename").Weaken)
             reg(jar, W3GameActionId.SaveGameFinished,
-                        New UInt32Jar("unknown1_0x01").Weaken)
+                        New UInt32Jar("unknown").Weaken)
 
             'Orders
             reg(jar, W3GameActionId.SelfOrder,
                         New EnumUInt16Jar(Of OrderFlags)("flags", flags:=True).Weaken,
-                        New OrderIdJar("order id").Weaken,
-                        New DoubleObjectIdValueJar("unknown").Weaken)
+                        New OrderTypeJar("order").Weaken,
+                        New ObjectIdJar("unknown").Weaken)
             reg(jar, W3GameActionId.PointOrder,
                         New EnumUInt16Jar(Of OrderFlags)("flags", flags:=True).Weaken,
-                        New OrderIdJar("order id").Weaken,
-                        New DoubleObjectIdValueJar("unknown").Weaken,
+                        New OrderTypeJar("order").Weaken,
+                        New ObjectIdJar("unknown").Weaken,
                         New FloatSingleJar("target x").Weaken,
                         New FloatSingleJar("target y").Weaken)
             reg(jar, W3GameActionId.ObjectOrder,
                         New EnumUInt16Jar(Of OrderFlags)("flags", flags:=True).Weaken,
-                        New OrderIdJar("order id").Weaken,
-                        New DoubleObjectIdValueJar("unknown").Weaken,
+                        New OrderTypeJar("order").Weaken,
+                        New ObjectIdJar("unknown").Weaken,
                         New FloatSingleJar("x").Weaken,
                         New FloatSingleJar("y").Weaken,
-                        New DoubleObjectIdValueJar("target").Weaken)
+                        New ObjectIdJar("target").Weaken)
             reg(jar, W3GameActionId.DropOrGiveItem,
                         New EnumUInt16Jar(Of OrderFlags)("flags", flags:=True).Weaken,
-                        New OrderIdJar("order id").Weaken,
-                        New DoubleObjectIdValueJar("unknown").Weaken,
+                        New OrderTypeJar("order").Weaken,
+                        New ObjectIdJar("unknown").Weaken,
                         New FloatSingleJar("x").Weaken,
                         New FloatSingleJar("y").Weaken,
-                        New DoubleObjectIdValueJar("receiver").Weaken,
-                        New DoubleObjectIdValueJar("item").Weaken)
+                        New ObjectIdJar("receiver").Weaken,
+                        New ObjectIdJar("item").Weaken)
             reg(jar, W3GameActionId.FogObjectOrder,
                         New EnumUInt16Jar(Of OrderFlags)("flags", flags:=True).Weaken,
-                        New OrderIdJar("order id").Weaken,
-                        New DoubleObjectIdValueJar("unknown1").Weaken,
+                        New OrderTypeJar("order").Weaken,
+                        New ObjectIdJar("unknown").Weaken,
                         New FloatSingleJar("fog target x").Weaken,
                         New FloatSingleJar("fog target y").Weaken,
-                        New TypeIdJar("fog target type").Weaken,
+                        New ObjectTypeJar("fog target type").Weaken,
                         New ArrayJar("unknown2", expectedSize:=9).Weaken,
                         New FloatSingleJar("actual target x").Weaken,
                         New FloatSingleJar("actual target y").Weaken)
@@ -256,10 +206,10 @@
             reg(jar, W3GameActionId.EnterChooseBuildingSubmenu)
             reg(jar, W3GameActionId.PressedEscape)
             reg(jar, W3GameActionId.CancelHeroRevive,
-                        New DoubleObjectIdValueJar("target").Weaken)
+                        New ObjectIdJar("target").Weaken)
             reg(jar, W3GameActionId.DequeueBuildingOrder,
                         New ByteJar("slot number").Weaken,
-                        New TypeIdJar("type").Weaken)
+                        New ObjectTypeJar("type").Weaken)
             reg(jar, W3GameActionId.MinimapPing,
                         New FloatSingleJar("x").Weaken,
                         New FloatSingleJar("y").Weaken,
@@ -278,21 +228,21 @@
             reg(jar, W3GameActionId.ChangeSelection,
                         New EnumByteJar(Of SelectionOperation)("operation", flags:=True).Weaken,
                         New ListJar(Of Object)("targets",
-                            New DoubleObjectIdValueJar("target").Weaken, prefixsize:=2).Weaken)
+                            New ObjectIdJar("target").Weaken, prefixsize:=2).Weaken)
             reg(jar, W3GameActionId.AssignGroupHotkey,
                         New ByteJar("group index").Weaken,
                         New ListJar(Of Object)("targets",
-                            New DoubleObjectIdValueJar("target").Weaken, prefixsize:=2).Weaken)
+                            New ObjectIdJar("target").Weaken, prefixsize:=2).Weaken)
             reg(jar, W3GameActionId.SelectGroupHotkey,
                         New ByteJar("group index").Weaken,
-                        New ByteJar("unknown1_0x03").Weaken)
+                        New ByteJar("unknown").Weaken)
             reg(jar, W3GameActionId.SelectSubgroup,
-                        New TypeIdJar("unit type").Weaken,
-                        New DoubleObjectIdValueJar("target").Weaken)
-            reg(jar, W3GameActionId._PreSubSelection)
+                        New ObjectTypeJar("unit type").Weaken,
+                        New ObjectIdJar("target").Weaken)
+            reg(jar, W3GameActionId.PreSubGroupSelection)
             reg(jar, W3GameActionId.SelectGroundItem,
-                        New ByteJar("unknown1_0x04").Weaken,
-                        New DoubleObjectIdValueJar("target").Weaken)
+                        New ByteJar("unknown").Weaken,
+                        New ObjectIdJar("target").Weaken)
 
             'Cheats
             reg(jar, W3GameActionId.CheatDisableTechRequirements)
@@ -323,28 +273,26 @@
 
             'Triggers
             reg(jar, W3GameActionId.TriggerChatEvent,
-                        New DoubleObjectIdValueJar("trigger event id").Weaken,
+                        New ObjectIdJar("event").Weaken,
                         New StringJar("text").Weaken)
             reg(jar, W3GameActionId.TriggerWaitFinished,
-                        New ObjectIdJar("unknown1").Weaken,
-                        New ObjectIdJar("unknown2").Weaken,
-                        New UInt32Jar("counter").Weaken)
+                        New ObjectIdJar("thread").Weaken,
+                        New UInt32Jar("thread wait count").Weaken)
             reg(jar, W3GameActionId.TriggerMouseTouchedTrackable,
-                        New ObjectIdJar("trigger event id").Weaken,
-                        New ObjectIdJar("trackable id").Weaken)
+                        New ObjectIdJar("trackable").Weaken)
             reg(jar, W3GameActionId.TriggerMouseClickedTrackable,
-                        New ObjectIdJar("trackable id").Weaken,
-                        New ObjectIdJar("trigger event id").Weaken)
+                        New ObjectIdJar("trackable").Weaken)
             reg(jar, W3GameActionId.TriggerDialogButtonClicked,
-                        New DoubleObjectIdValueJar("dialog id").Weaken,
-                        New ObjectIdJar("button id").Weaken,
-                        New ObjectIdJar("trigger event id").Weaken)
+                        New ObjectIdJar("dialog").Weaken,
+                        New ObjectIdJar("button").Weaken)
             reg(jar, W3GameActionId.TriggerDialogButtonClicked2,
-                        New ObjectIdJar("button id").Weaken,
-                        New ObjectIdJar("trigger event id").Weaken,
-                        New DoubleObjectIdValueJar("dialog id").Weaken)
-            reg(jar, W3GameActionId.TriggerArrowKeyPressed,
-                        New EnumByteJar(Of ArrowKeyButton)("button").Weaken)
+                        New ObjectIdJar("button").Weaken,
+                        New ObjectIdJar("dialog").Weaken)
+            reg(jar, W3GameActionId.TriggerArrowKeyEvent,
+                        New EnumByteJar(Of ArrowKeyButton)("key").Weaken)
+            reg(jar, W3GameActionId.TriggerSelectionEvent,
+                        New EnumByteJar(Of SelectionOperation)("operation").Weaken,
+                        New ObjectIdJar("target").Weaken)
 
             'Game Cache
             reg(jar, W3GameActionId.GameCacheSyncInteger,
@@ -366,7 +314,7 @@
                         New StringJar("filename").Weaken,
                         New StringJar("mission key").Weaken,
                         New StringJar("key").Weaken,
-                        New TypeIdJar("unit type").Weaken,
+                        New ObjectTypeJar("unit type").Weaken,
                         New ArrayJar("unknown data", expectedSize:=86).Weaken)
             reg(jar, W3GameActionId.GameCacheSyncString,
                         New StringJar("filename").Weaken,
@@ -374,30 +322,97 @@
                         New StringJar("key").Weaken,
                         New StringJar("value").Weaken) 'this is a guess based on the other syncs; I've never actually seen this packet.
 
-            'unclassified
-            reg(jar, W3GameActionId._unknown0x1B,
-                        New ByteJar("unknown0x01").Weaken,
-                        New UInt32Jar("unknown2").Weaken,
-                        New UInt32Jar("unknown3").Weaken)
-
             Return jar
         End Function
+#End Region
 
-        Public Shared Function FromData(ByVal data As ViewableList(Of Byte)) As W3GameAction
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of W3GameAction)() IsNot Nothing)
-            Return New W3GameAction(packetJar.Parse(data))
-        End Function
+#Region "Enums"
+        Public Enum GameSpeedSetting As Byte
+            Slow = 0
+            Normal = 1
+            Fast = 2
+        End Enum
 
-        Private Class DoubleObjectIdValueJar
+        Public Enum OrderFlags As UShort
+            Queue = 1 << 0
+            Train = 1 << 1
+            Construct = 1 << 2
+            Group = 1 << 3
+            NoFormation = 1 << 4
+            unknown_0x0020 = 1 << 5
+            SubGroup = 1 << 6
+            unknown_0x0080 = 1 << 7
+            AutocastOn = 1 << 8
+        End Enum
+
+        Public Enum SelectionOperation As Byte
+            Add = 1
+            Remove = 2
+        End Enum
+
+        Public Enum AllianceFlags As UInteger
+            Passive = 1 << 0
+            HelpRequest = 1 << 1
+            HelpResponse = 1 << 2
+            SharedXP = 1 << 3
+            SharedSpells = 1 << 4
+            SharedVision = 1 << 5
+            SharedControl = 1 << 6
+            FullSharedControl = 1 << 7
+            Rescuable = 1 << 8
+            SharedVisionForced = 1 << 9
+            AlliedVictory = 1 << 10
+        End Enum
+
+        Public Enum ArrowKeyButton As Byte
+            PressedLeftArrow = 0
+            ReleasedLeftArrow = 1
+            PressedRightArrow = 2
+            ReleasedRightArrow = 3
+            PressedDownArrow = 4
+            ReleasedDownArrow = 5
+            PressedUpArrow = 6
+            ReleasedUpArrow = 7
+        End Enum
+
+        Public Enum OrderId As UInteger
+            Smart = &HD0003 'right-click
+            [Stop] = &HD0004
+            SetRallyPoint = &HD000C
+            Attack = &HD000F
+            AttackGround = &HD0010
+            Move = &HD0012
+            Patrol = &HD0016
+            HoldPosition = &HD0019
+            GiveOrDropItem = &HD0021
+            SwapItemWithItemInSlot1 = &HD0022
+            SwapItemWithItemInSlot2 = &HD0023
+            SwapItemWithItemInSlot3 = &HD0024
+            SwapItemWithItemInSlot4 = &HD0025
+            SwapItemWithItemInSlot5 = &HD0026
+            SwapItemWithItemInSlot6 = &HD0027
+            UseItemInSlot1 = &HD0028
+            UseItemInSlot2 = &HD0029
+            UseItemInSlot3 = &HD002A
+            UseItemInSlot4 = &HD002B
+            UseItemInSlot5 = &HD002C
+            UseItemInSlot6 = &HD002D
+            ReturnResources = &HD0031
+            Gather = &HD0032
+            '... many many more ...
+        End Enum
+#End Region
+
+#Region "Jars"
+        Private Class ObjectIdJar
             Inherits Jar(Of IdPair)
 
             Public Structure IdPair
                 Public ReadOnly AllocatedId As UInteger
-                Public ReadOnly Unknown As UInteger
-                Public Sub New(ByVal allocatedId As UInteger, ByVal unknown As UInteger)
+                Public ReadOnly CounterId As UInteger
+                Public Sub New(ByVal allocatedId As UInteger, ByVal counterId As UInteger)
                     Me.AllocatedId = allocatedId
-                    Me.Unknown = unknown
+                    Me.CounterId = counterId
                 End Sub
             End Structure
 
@@ -408,7 +423,7 @@
 
             Public NotOverridable Overrides Function Pack(Of R As IdPair)(ByVal value As R) As IPickle(Of R)
                 Dim valued As IdPair = value
-                Dim data = Concat(valued.AllocatedId.Bytes(ByteOrder.LittleEndian), valued.Unknown.Bytes(ByteOrder.LittleEndian)).ToView
+                Dim data = Concat(valued.AllocatedId.Bytes(ByteOrder.LittleEndian), valued.CounterId.Bytes(ByteOrder.LittleEndian)).ToView
                 Return New Pickle(Of R)(Me.Name, value, data, Function() ValueToString(valued))
             End Function
 
@@ -420,12 +435,13 @@
             End Function
 
             Protected Overridable Function ValueToString(ByVal value As IdPair) As String
-                If value.AllocatedId = UInt32.MaxValue AndAlso value.Unknown = UInt32.MaxValue Then Return "[none]"
-                If value.AllocatedId = value.Unknown Then Return value.AllocatedId.ToString
-                Return "{0}, unknown={1}".Frmt(value.AllocatedId, value.Unknown)
+                If value.AllocatedId = UInt32.MaxValue AndAlso value.CounterId = UInt32.MaxValue Then Return "[none]"
+                If value.AllocatedId = value.CounterId Then Return "preplaced object #{0}".Frmt(value.AllocatedId)
+                Return "allocated id = {0}, counter id = {1}".Frmt(value.AllocatedId, value.CounterId)
             End Function
         End Class
-        Private Class OrderIdJar
+
+        Private Class OrderTypeJar
             Inherits EnumUInt32Jar(Of OrderId)
 
             Public Sub New(ByVal name As String)
@@ -435,23 +451,11 @@
 
             Protected Overrides Function ValueToString(ByVal value As OrderId) As String
                 If value >= &HD0000 AndAlso value < &HE0000 Then Return MyBase.ValueToString(value)
-                Return TypeIdJar.IdString(value)
+                Return ObjectTypeJar.IdString(value)
             End Function
         End Class
-        Private Class ObjectIdJar
-            Inherits UInt32Jar
 
-            Public Sub New(ByVal name As String)
-                MyBase.New(name)
-                Contract.Requires(name IsNot Nothing)
-            End Sub
-
-            Protected Overrides Function ValueToString(ByVal value As UInteger) As String
-                If value = UInt32.MaxValue Then Return "[none]"
-                Return value.ToString
-            End Function
-        End Class
-        Private Class TypeIdJar
+        Private Class ObjectTypeJar
             Inherits UInt32Jar
 
             Public Sub New(ByVal name As String)
@@ -461,25 +465,20 @@
 
             Public Shared Function IdString(ByVal value As UInteger) As String
                 Dim bytes = value.Bytes(ByteOrder.LittleEndian)
-                Dim id = ""
-                For i = 0 To bytes.Length - 1
-                    If bytes(i) >= 32 And bytes(i) < 128 Then
-                        id = Chr(bytes(i)) + id
-                    Else
-                        id = "."c + id
-                    End If
-                Next i
-
-                Return "'{0}' = {1}".Frmt(id, bytes.ToHexString)
+                If (From b In bytes Where b < 32 Or b >= 128).None Then
+                    'Ascii identifier (eg. 'hfoo' for human footman)
+                    Return bytes.Reverse.ParseChrString(nullTerminated:=False)
+                Else
+                    'Not ascii values, better just output hex
+                    Return bytes.ToHexString
+                End If
             End Function
+
             Protected Overrides Function ValueToString(ByVal value As UInteger) As String
                 Return IdString(value)
             End Function
         End Class
-
-        Public Overrides Function ToString() As String
-            Return "{0} = {1}".Frmt(id, payload.Description.Value())
-        End Function
+#End Region
     End Class
 
     Public Class W3GameActionJar
