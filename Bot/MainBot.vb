@@ -452,7 +452,7 @@ Public NotInheritable Class MainBot
 
     Private Sub CatchServerPlayerTalked(ByVal sender As W3Server,
                                         ByVal game As IW3Game,
-                                        ByVal player As IW3Player,
+                                        ByVal player As W3Player,
                                         ByVal text As String)
         If text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
             If text.ToLower() <> "?trigger" Then
@@ -462,7 +462,7 @@ Public NotInheritable Class MainBot
 
         'Process ?trigger command
         If text.ToLower() = "?trigger" Then
-            game.QueueSendMessageTo("Command prefix is '{0}'".frmt(My.Settings.commandPrefix), player)
+            game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(My.Settings.commandPrefix), player)
             Return
         End If
 

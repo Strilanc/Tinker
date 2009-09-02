@@ -1,10 +1,10 @@
 ﻿Namespace Warcraft3
     Partial Public NotInheritable Class W3Game
         Implements IW3Game
-        Private ReadOnly readyPlayers As New HashSet(Of IW3Player)
-        Private ReadOnly unreadyPlayers As New HashSet(Of IW3Player)
-        Private ReadOnly visibleReadyPlayers As New HashSet(Of IW3Player)
-        Private ReadOnly visibleUnreadyPlayers As New HashSet(Of IW3Player)
+        Private ReadOnly readyPlayers As New HashSet(Of W3Player)
+        Private ReadOnly unreadyPlayers As New HashSet(Of W3Player)
+        Private ReadOnly visibleReadyPlayers As New HashSet(Of W3Player)
+        Private ReadOnly visibleUnreadyPlayers As New HashSet(Of W3Player)
         Private numFakeTicks As Integer
         Private fakeTickTimer As Timers.Timer
 
@@ -42,7 +42,7 @@
             fakeTickTimer.Stop()
         End Sub
 
-        Private Sub LoadScreenCatchRemovedPlayer(ByVal p As IW3Player, ByVal slot As W3Slot)
+        Private Sub LoadScreenCatchRemovedPlayer(ByVal p As W3Player, ByVal slot As W3Slot)
             TryLaunch()
         End Sub
 
@@ -65,12 +65,12 @@
             Return success(My.Resources.Instance_Launched_f0name.frmt(name))
         End Function
 
-        Private Sub ReceiveReady(ByVal sendingPlayer As IW3Player, ByVal vals As Dictionary(Of String, Object))
+        Private Sub ReceiveReady(ByVal sendingPlayer As W3Player, ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(sendingPlayer IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
 
             'Get if there is a visible readied player
-            Dim visibleReadiedPlayer As IW3Player = Nothing
+            Dim visibleReadiedPlayer As W3Player = Nothing
             If IsPlayerVisible(sendingPlayer) Then
                 visibleReadiedPlayer = sendingPlayer
             Else
@@ -144,7 +144,7 @@
             )
         End Sub
 
-        Private Function _receivePacket_READY(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveReady
+        Private Function _receivePacket_READY(ByVal player As W3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveReady
             Return ref.QueueAction(Sub()
                                        Contract.Assume(player IsNot Nothing)
                                        Contract.Assume(vals IsNot Nothing)

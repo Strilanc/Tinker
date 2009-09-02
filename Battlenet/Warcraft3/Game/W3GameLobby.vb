@@ -11,7 +11,7 @@
         Private ReadOnly slotStateUpdateThrottle As New Throttle(250.MilliSeconds)
         Private ReadOnly updateEventThrottle As New Throttle(100.MilliSeconds)
 
-        Private Event PlayerEntered(ByVal sender As IW3Game, ByVal player As IW3Player) Implements IW3Game.PlayerEntered
+        Private Event PlayerEntered(ByVal sender As IW3Game, ByVal player As W3Player) Implements IW3Game.PlayerEntered
 
 #Region "Life"
         Private Sub LobbyNew(ByVal arguments As IEnumerable(Of String))
@@ -147,8 +147,8 @@
                 Return failure("Game isn't full yet.")
             ElseIf state >= W3GameStates.PreCounting Then
                 Return failure("Game is already autostarting.")
-            ElseIf (From player In players Where Not player.IsFake And player.GetDownloadPercent <> 100).Any Then
-                Return failure("Downloads haven't finished yet.")
+            ElseIf (From player In players Where Not player.isFake And player.GetPercentDL <> 100).Any Then
+                Return Failure("Downloads haven't finished yet.")
             End If
 
             ChangeState(W3GameStates.PreCounting)
@@ -190,8 +190,8 @@
                 Return failure("Countdown is already started.")
             ElseIf state > W3GameStates.CountingDown Then
                 Return failure("Countdown has already run.")
-            ElseIf (From p In players Where Not p.IsFake AndAlso p.GetDownloadPercent <> 100).Any Then
-                Return failure("Downloads haven't finished yet.")
+            ElseIf (From p In players Where Not p.isFake AndAlso p.GetPercentDl <> 100).Any Then
+                Return Failure("Downloads haven't finished yet.")
             End If
 
             ChangeState(W3GameStates.CountingDown)
@@ -227,9 +227,9 @@
             If ticks_left > 0 Then
                 'Next tick
                 logger.log("Game starting in {0}".frmt(ticks_left), LogMessageTypes.Positive)
-                For Each player In (From p In players Where p.overcounted)
+                For Each player In (From p In players Where p.GetOvercounted)
                     Contract.Assume(player IsNot Nothing)
-                    SendMessageTo("Game starting in {0}...".frmt(ticks_left), player, display:=False)
+                    SendMessageTo("Game starting in {0}...".Frmt(ticks_left), player, display:=False)
                 Next player
 
                 FutureWait(1.Seconds).CallWhenReady(Sub() ref.QueueAction(Sub() _TryContinueCountdown(ticks_left - 1)))
@@ -289,7 +289,7 @@
         End Function
 
         Private Function TryAddFakePlayer(ByVal name As String,
-                                          Optional ByVal newSlot As W3Slot = Nothing) As Outcome(Of IW3Player)
+                                          Optional ByVal newSlot As W3Slot = Nothing) As Outcome(Of W3Player)
             Contract.Requires(name IsNot Nothing)
             If state > W3GameStates.AcceptingPlayers Then
                 Return failure("No longer accepting players.")
@@ -305,7 +305,7 @@
             'Make player
             Contract.Assume(index > 0)
             Contract.Assume(index <= 12)
-            Dim newPlayer As IW3Player = New W3Player(index, Me, name, logger)
+            Dim newPlayer As W3Player = New W3Player(index, Me, name, logger)
             If newSlot IsNot Nothing Then
                 newSlot.contents = New W3SlotContentsPlayer(newSlot, newPlayer)
             End If
@@ -386,7 +386,7 @@
             End If
 
             'Create player object
-            Dim newPlayer As IW3Player = New W3Player(index, Me, connecting_player, logger)
+            Dim newPlayer As W3Player = New W3Player(index, Me, connecting_player, logger)
             bestSlot.contents = bestSlot.contents.TakePlayer(newPlayer)
             players.Add(newPlayer)
 
@@ -428,7 +428,7 @@
 #End Region
 
 #Region "Events"
-        Private Sub ThrowPlayerEntered(ByVal new_player As IW3Player)
+        Private Sub ThrowPlayerEntered(ByVal new_player As W3Player)
             eventRef.QueueAction(Sub()
                                      RaiseEvent PlayerEntered(Me, new_player)
                                  End Sub)
@@ -447,12 +447,12 @@
 
                         'Apply
                         If e.src = SELF_DOWNLOAD_ID Then
-                            logger.log("Initiating map upload to {0}.".frmt(dst.name), LogMessageTypes.Positive)
+                            logger.Log("Initiating map upload to {0}.".Frmt(dst.name), LogMessageTypes.Positive)
                             dst.IsGettingMapFromBot = True
                             dst.QueueBufferMap()
                         ElseIf src IsNot Nothing Then
-                            logger.log("Initiating peer map transfer from {0} to {1}.".frmt(src.name, dst.name), LogMessageTypes.Positive)
-                            src.QueueSendPacket(W3Packet.MakeSetUploadTarget(dst.index, CUInt(Math.Max(0, dst.MapDownloadPosition))))
+                            logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageTypes.Positive)
+                            src.QueueSendPacket(W3Packet.MakeSetUploadTarget(dst.index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
                             dst.QueueSendPacket(W3Packet.MakeSetDownloadSource(src.index))
                         End If
                     Next e
@@ -466,10 +466,10 @@
 
                         'Apply
                         If e.src = SELF_DOWNLOAD_ID Then
-                            logger.log("Stopping map upload to {0}.".frmt(dst.name), LogMessageTypes.Positive)
+                            logger.Log("Stopping map upload to {0}.".Frmt(dst.name), LogMessageTypes.Positive)
                             dst.IsGettingMapFromBot = False
                         ElseIf src IsNot Nothing Then
-                            logger.log("Stopping peer map transfer from {0} to {1}.".frmt(src.name, dst.name), LogMessageTypes.Positive)
+                            logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageTypes.Positive)
                             src.QueueSendPacket(W3Packet.MakeOtherPlayerLeft(dst, W3PlayerLeaveTypes.Disconnect))
                             src.QueueSendPacket(W3Packet.MakeOtherPlayerJoined(dst))
                             dst.QueueSendPacket(W3Packet.MakeOtherPlayerLeft(src, W3PlayerLeaveTypes.Disconnect))
@@ -484,7 +484,7 @@
             downloadScheduler.Update()
         End Sub
 
-        Public Sub LobbyCatchRemovedPlayer(ByVal p As IW3Player, ByVal slot As W3Slot)
+        Public Sub LobbyCatchRemovedPlayer(ByVal p As W3Player, ByVal slot As W3Slot)
             If slot Is Nothing OrElse slot.contents.PlayerIndex <> p.index Then
                 freeIndexes.Add(p.index)
             End If
@@ -742,7 +742,7 @@
 #End Region
 
 #Region "Networking"
-        Private Sub ReceiveSetColor(ByVal player As IW3Player, ByVal newColor As W3Slot.PlayerColor)
+        Private Sub ReceiveSetColor(ByVal player As W3Player, ByVal newColor As W3Slot.PlayerColor)
             Contract.Requires(player IsNot Nothing)
             Dim slot = FindPlayerSlot(player)
 
@@ -767,7 +767,7 @@
             slot.color = newColor
             ChangedLobbyState()
         End Sub
-        Private Sub ReceiveSetRace(ByVal player As IW3Player, ByVal newRace As W3Slot.RaceFlags)
+        Private Sub ReceiveSetRace(ByVal player As W3Player, ByVal newRace As W3Slot.RaceFlags)
             Contract.Requires(player IsNot Nothing)
             Dim slot = FindPlayerSlot(player)
 
@@ -782,7 +782,7 @@
             slot.race = newRace
             ChangedLobbyState()
         End Sub
-        Private Sub ReceiveSetHandicap(ByVal player As IW3Player, ByVal new_handicap As Byte)
+        Private Sub ReceiveSetHandicap(ByVal player As W3Player, ByVal new_handicap As Byte)
             Contract.Requires(player IsNot Nothing)
             Dim slot = FindPlayerSlot(player)
 
@@ -802,7 +802,7 @@
 
             ChangedLobbyState()
         End Sub
-        Private Sub ReceiveSetTeam(ByVal player As IW3Player, ByVal new_team As Byte)
+        Private Sub ReceiveSetTeam(ByVal player As W3Player, ByVal new_team As Byte)
             Contract.Requires(player IsNot Nothing)
             Dim slot = FindPlayerSlot(player)
 

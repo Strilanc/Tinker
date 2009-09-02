@@ -27,8 +27,6 @@
     End Class
 
     Partial Public Class W3Player
-        Implements IW3Player
-
         Private ReadOnly tickQueue As New Queue(Of TickRecord)
         Private totalTockTime As Integer
 
@@ -65,6 +63,7 @@
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             SendPacket(W3Packet.MakeConfirmHost())
         End Sub
+
         Private Sub ReceiveGameAction(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
 
@@ -96,21 +95,27 @@
 #End Region
 
 #Region "Interface"
-        Private ReadOnly Property _TockTime() As Integer Implements IW3Player.TockTime
+        Public ReadOnly Property GetTockTime() As Integer
             Get
+                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
                 Return totalTockTime
             End Get
         End Property
-        Private Function _QueueSendTick(ByVal record As TickRecord, ByVal data As Byte()) As IFuture Implements IW3Player.QueueSendTick
+        Public Function QueueSendTick(ByVal record As TickRecord, ByVal data As Byte()) As IFuture
+            Contract.Requires(record IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(record IsNot Nothing)
                                        SendTick(record, data)
                                    End Sub)
         End Function
-        Private Function _QueueStartPlaying() As IFuture Implements IW3Player.QueueStartPlaying
+        Public Function QueueStartPlaying() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf GamePlayStart)
         End Function
-        Private Function _QueueStopPlaying() As IFuture Implements IW3Player.QueueStopPlaying
+        Public Function QueueStopPlaying() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf GamePlayStop)
         End Function
 #End Region

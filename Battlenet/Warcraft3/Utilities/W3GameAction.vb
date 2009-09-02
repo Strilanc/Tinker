@@ -273,10 +273,10 @@
 
             'Triggers
             reg(jar, W3GameActionId.TriggerChatEvent,
-                        New ObjectIdJar("event").Weaken,
+                        New ObjectIdJar("trigger event").Weaken,
                         New StringJar("text").Weaken)
             reg(jar, W3GameActionId.TriggerWaitFinished,
-                        New ObjectIdJar("thread").Weaken,
+                        New ObjectIdJar("trigger thread").Weaken,
                         New UInt32Jar("thread wait count").Weaken)
             reg(jar, W3GameActionId.TriggerMouseTouchedTrackable,
                         New ObjectIdJar("trackable").Weaken)
@@ -289,7 +289,7 @@
                         New ObjectIdJar("button").Weaken,
                         New ObjectIdJar("dialog").Weaken)
             reg(jar, W3GameActionId.TriggerArrowKeyEvent,
-                        New EnumByteJar(Of ArrowKeyButton)("key").Weaken)
+                        New EnumByteJar(Of ArrowKeyEvent)("event type").Weaken)
             reg(jar, W3GameActionId.TriggerSelectionEvent,
                         New EnumByteJar(Of SelectionOperation)("operation").Weaken,
                         New ObjectIdJar("target").Weaken)
@@ -364,7 +364,7 @@
             AlliedVictory = 1 << 10
         End Enum
 
-        Public Enum ArrowKeyButton As Byte
+        Public Enum ArrowKeyEvent As Byte
             PressedLeftArrow = 0
             ReleasedLeftArrow = 1
             PressedRightArrow = 2

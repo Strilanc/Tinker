@@ -1,7 +1,5 @@
 Namespace Warcraft3
     Partial Public Class W3Player
-        Implements IW3Player
-
 #Region "Networking"
         Private Sub ReceiveNonGameAction(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
@@ -48,7 +46,7 @@ Namespace Warcraft3
         End Sub
 #End Region
 
-        Protected Overridable ReadOnly Property GetPercentDl() As Byte Implements IW3Player.GetDownloadPercent
+        Public Overridable ReadOnly Property GetPercentDl() As Byte
             Get
                 If state <> W3PlayerStates.Lobby Then Return 100
                 Dim pos = mapDownloadPosition
@@ -59,11 +57,11 @@ Namespace Warcraft3
             End Get
         End Property
 
-        Public Overridable Function Description() As String Implements IW3Player.Description
+        Public Overridable Function Description() As String
             Dim base = name.Padded(20) +
-                       "Host={0}".frmt(CanHost()).Padded(12) +
-                       "{0}c".frmt(numPeerConnections).Padded(5) +
-                       "RTT={0:0}ms".frmt(latency).Padded(12)
+                       "Host={0}".Frmt(CanHost()).Padded(12) +
+                       "{0}c".Frmt(numPeerConnections).Padded(5) +
+                       "RTT={0:0}ms".Frmt(latency).Padded(12)
             Select Case state
                 Case W3PlayerStates.Lobby
                     Dim dl = GetPercentDl().ToString
@@ -76,12 +74,12 @@ Namespace Warcraft3
                             dl += "%"
                     End Select
                     Return base +
-                           Padded("DL={0}".frmt(dl), 9) +
-                           "EB={0}".frmt(game.DownloadScheduler.GenerateRateDescription(index))
+                           Padded("DL={0}".Frmt(dl), 9) +
+                           "EB={0}".Frmt(game.DownloadScheduler.GenerateRateDescription(index))
                 Case W3PlayerStates.Loading
-                    Return base + "Ready={0}".frmt(ready)
+                    Return base + "Ready={0}".Frmt(ready)
                 Case W3PlayerStates.Playing
-                    Return base + "DT={0}gms".frmt(game.GameTime - Me.totalTockTime)
+                    Return base + "DT={0}gms".Frmt(game.GameTime - Me.totalTockTime)
                 Case Else
                     Throw New UnreachableException
             End Select

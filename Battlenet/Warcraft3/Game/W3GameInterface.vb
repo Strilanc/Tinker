@@ -15,27 +15,27 @@
         ReadOnly Property name() As String
         ReadOnly Property logger() As Logger
 
-        Function QueueGetAdminPlayer() As IFuture(Of IW3Player)
-        Function QueueGetFakeHostPlayer() As IFuture(Of IW3Player)
+        Function QueueGetAdminPlayer() As IFuture(Of W3Player)
+        Function QueueGetFakeHostPlayer() As IFuture(Of W3Player)
         Function QueueGetState() As IFuture(Of W3GameStates)
         Function QueueBroadcastMessage(ByVal message As String) As IFuture
-        Function QueueSendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture
-        Function QueueFindPlayer(ByVal username As String) As IFuture(Of IW3Player)
+        Function QueueSendMessageTo(ByVal message As String, ByVal player As W3Player) As IFuture
+        Function QueueFindPlayer(ByVal username As String) As IFuture(Of W3Player)
         Function QueueClose() As IFuture(Of Outcome)
         Function QueueTryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture(Of Outcome)
-        Function QueueGetPlayers() As IFuture(Of List(Of IW3Player))
+        Function QueueGetPlayers() As IFuture(Of List(Of W3Player))
         Function QueueBootSlot(ByVal query As String) As IFuture(Of Outcome)
         Function QueueThrowUpdated() As IFuture
-        Function QueueRemovePlayer(ByVal p As IW3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome)
-        Function QueueReceiveNonGameAction(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
+        Function QueueRemovePlayer(ByVal p As W3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome)
+        Function QueueReceiveNonGameAction(ByVal player As W3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
 
         Event ChangedState(ByVal sender As IW3Game, ByVal oldState As W3GameStates, ByVal newState As W3GameStates)
         Event Updated(ByVal sender As IW3Game, ByVal slots As List(Of W3Slot))
-        Event PlayerTalked(ByVal sender As IW3Game, ByVal player As IW3Player, ByVal text As String)
-        Event PlayerLeft(ByVal sender As IW3Game, ByVal gameState As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
+        Event PlayerTalked(ByVal sender As IW3Game, ByVal player As W3Player, ByVal text As String)
+        Event PlayerLeft(ByVal sender As IW3Game, ByVal gameState As W3GameStates, ByVal player As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
 
         Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture
-        Function QueueProcessCommand(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Function QueueProcessCommand(ByVal player As W3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
 
 #Region "Lobby"
         ReadOnly Property DownloadScheduler() As TransferScheduler(Of Byte)
@@ -57,24 +57,24 @@
         Function QueueUpdatedGameState() As IFuture
         Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture(Of Outcome)
 
-        Event PlayerEntered(ByVal sender As IW3Game, ByVal player As IW3Player)
+        Event PlayerEntered(ByVal sender As IW3Game, ByVal player As W3Player)
 #End Region
 
 #Region "Load Screen"
-        Function QueueReceiveReady(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
+        Function QueueReceiveReady(ByVal player As W3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
 #End Region
 
 #Region "Game Play"
         ReadOnly Property GameTime() As Integer
 
         Function QueueDropLagger() As IFuture
-        Function QueueSendGameData(ByVal sender As IW3Player, ByVal data() As Byte) As IFuture
+        Function QueueSendGameData(ByVal sender As W3Player, ByVal data() As Byte) As IFuture
 
         Property SettingGameRate As Double
         Property SettingLagLimit As Double
         Property SettingTickPeriod As Double
 
-        Event PlayerSentData(ByVal game As IW3Game, ByVal player As IW3Player, ByVal data As Byte())
+        Event PlayerSentData(ByVal game As IW3Game, ByVal player As W3Player, ByVal data As Byte())
 #End Region
     End Interface
 
@@ -83,10 +83,10 @@
         Implements IW3Game
 
         Public Event ChangedState(ByVal sender As IW3Game, ByVal oldState As W3GameStates, ByVal newState As W3GameStates) Implements IW3Game.ChangedState
-        Public Event PlayerEntered(ByVal sender As IW3Game, ByVal player As IW3Player) Implements IW3Game.PlayerEntered
-        Public Event PlayerLeft(ByVal sender As IW3Game, ByVal gameState As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Game.PlayerLeft
-        Public Event PlayerSentData(ByVal game As IW3Game, ByVal player As IW3Player, ByVal data() As Byte) Implements IW3Game.PlayerSentData
-        Public Event PlayerTalked(ByVal sender As IW3Game, ByVal player As IW3Player, ByVal text As String) Implements IW3Game.PlayerTalked
+        Public Event PlayerEntered(ByVal sender As IW3Game, ByVal player As W3Player) Implements IW3Game.PlayerEntered
+        Public Event PlayerLeft(ByVal sender As IW3Game, ByVal gameState As W3GameStates, ByVal player As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Game.PlayerLeft
+        Public Event PlayerSentData(ByVal game As IW3Game, ByVal player As W3Player, ByVal data() As Byte) Implements IW3Game.PlayerSentData
+        Public Event PlayerTalked(ByVal sender As IW3Game, ByVal player As W3Player, ByVal text As String) Implements IW3Game.PlayerTalked
         Public Event Updated(ByVal sender As IW3Game, ByVal slots As System.Collections.Generic.List(Of W3Slot)) Implements IW3Game.Updated
 
         Public ReadOnly Property DownloadScheduler As TransferScheduler(Of Byte) Implements IW3Game.DownloadScheduler
@@ -96,8 +96,8 @@
             End Get
         End Property
 
-        Public Function QueueAdminPlayer() As IFuture(Of IW3Player) Implements IW3Game.QueueGetAdminPlayer
-            Contract.Ensures(Contract.Result(Of IFuture(Of IW3Player))() IsNot Nothing)
+        Public Function QueueAdminPlayer() As IFuture(Of W3Player) Implements IW3Game.QueueGetAdminPlayer
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
@@ -131,7 +131,7 @@
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueProcessCommand(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements IW3Game.QueueProcessCommand
+        Public Function QueueProcessCommand(ByVal player As W3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements IW3Game.QueueProcessCommand
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(arguments IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
@@ -143,19 +143,19 @@
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueEnumPlayers() As IFuture(Of List(Of IW3Player)) Implements IW3Game.QueueGetPlayers
-            Contract.Ensures(Contract.Result(Of IFuture(Of List(Of IW3Player)))() IsNot Nothing)
+        Public Function QueueEnumPlayers() As IFuture(Of List(Of W3Player)) Implements IW3Game.QueueGetPlayers
+            Contract.Ensures(Contract.Result(Of IFuture(Of List(Of W3Player)))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueFakeHostPlayer() As IFuture(Of IW3Player) Implements IW3Game.QueueGetFakeHostPlayer
-            Contract.Ensures(Contract.Result(Of IFuture(Of IW3Player))() IsNot Nothing)
+        Public Function QueueFakeHostPlayer() As IFuture(Of W3Player) Implements IW3Game.QueueGetFakeHostPlayer
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueFindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Game.QueueFindPlayer
+        Public Function QueueFindPlayer(ByVal username As String) As IFuture(Of W3Player) Implements IW3Game.QueueFindPlayer
             Contract.Requires(username IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IW3Player))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
@@ -172,7 +172,7 @@
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueQueueGameData(ByVal sender As IW3Player,
+        Public Function QueueQueueGameData(ByVal sender As W3Player,
                                         ByVal data() As Byte) As IFuture Implements IW3Game.QueueSendGameData
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
@@ -180,14 +180,14 @@
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueReceiveNonGameAction(ByVal player As IW3Player,
+        Public Function QueueReceiveNonGameAction(ByVal player As W3Player,
                                                ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveNonGameAction
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueReceiveReady(ByVal player As IW3Player,
+        Public Function QueueReceiveReady(ByVal player As W3Player,
                                        ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveReady
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
@@ -195,7 +195,7 @@
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueRemovePlayer(ByVal p As IW3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome) Implements IW3Game.QueueRemovePlayer
+        Public Function QueueRemovePlayer(ByVal p As W3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome) Implements IW3Game.QueueRemovePlayer
             Contract.Requires(p IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
@@ -209,7 +209,7 @@
             Throw New NotSupportedException
         End Function
 
-        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture Implements IW3Game.QueueSendMessageTo
+        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As W3Player) As IFuture Implements IW3Game.QueueSendMessageTo
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)

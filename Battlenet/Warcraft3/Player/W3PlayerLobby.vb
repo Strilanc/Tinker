@@ -1,10 +1,8 @@
 ﻿Namespace Warcraft3
     Partial Public NotInheritable Class W3Player
-        Implements IW3Player
-
         Private knowMapState As Boolean
         Private mapDownloadPosition As Integer = -1
-        Private gettingMapFromBot As Boolean
+        Public IsGettingMapFromBot As Boolean
         Private mapUploadPosition As Integer
         Private countdowns As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
@@ -75,7 +73,7 @@
                 Contract.Assume(Not Double.IsNaN(d))
                 Contract.Assume(Not Double.IsInfinity(d))
                 game.DownloadScheduler.UpdateProgress(index, d)
-                If gettingMapFromBot Then
+                If IsGettingMapFromBot Then
                     BufferMap()
                 End If
             End If
@@ -85,28 +83,23 @@
 #End Region
 
 #Region "Interface"
-        Private ReadOnly Property _MapDownloadPosition() As Integer Implements IW3Player.MapDownloadPosition
+        Public ReadOnly Property GetMapDownloadPosition() As Integer
             Get
+                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
                 Return mapDownloadPosition
             End Get
         End Property
-        Private ReadOnly Property _overcounted() As Boolean Implements IW3Player.overcounted
+        Public ReadOnly Property GetOvercounted() As Boolean
             Get
                 Return countdowns > 1
             End Get
         End Property
-        Private Property _IsGettingMapFromBot() As Boolean Implements IW3Player.IsGettingMapFromBot
-            Get
-                Return gettingMapFromBot
-            End Get
-            Set(ByVal value As Boolean)
-                gettingMapFromBot = value
-            End Set
-        End Property
-        Private Function _f_BufferMap() As IFuture Implements IW3Player.QueueBufferMap
+        Public Function QueueBufferMap() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf BufferMap)
         End Function
-        Private Function _f_StartCountdown() As IFuture Implements IW3Player.QueueStartCountdown
+        Public Function QueueStartCountdown() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf StartCountdown)
         End Function
 #End Region

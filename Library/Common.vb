@@ -8,6 +8,12 @@ Imports System.IO
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module Common
 #Region "Strings Extra"
+    <Extension()> <Pure()>
+    Public Function Linefy(ByVal s As String) As String
+        Contract.Requires(s IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return s.Replace("\n", Environment.NewLine)
+    End Function
     <Pure()>
     Public Function breakQuotedWords(ByVal text As String) As List(Of String)
         Contract.Requires(text IsNot Nothing)
@@ -72,6 +78,7 @@ Public Module Common
         End If
         Return Success(out.Value(0), "{0} matched {1}".Frmt(fileQuery, out.Value(0)))
     End Function
+
     Public Function findFilesMatching(ByVal search_pattern As String, ByVal like_pattern As String, ByVal directory As String, ByVal max_results As Integer) As Outcome(Of List(Of String))
         Dim matches As New List(Of String)
 

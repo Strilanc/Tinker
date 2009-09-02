@@ -17,20 +17,19 @@
         Public Sub New(ByVal jarName As String,
                        ByVal value As T,
                        ByVal data As ViewableList(Of Byte))
-            Me.new(value, data, New ExpensiveValue(Of String)(Function() jarName + " = " + value.ToString))
+            Me.new(value, data, New ExpensiveValue(Of String)(Function() "{0}: {1}".Frmt(jarName, value)))
         End Sub
         Public Sub New(ByVal jarName As String,
                        ByVal value As T,
                        ByVal data As ViewableList(Of Byte),
                        ByVal valueDescription As Func(Of String))
-            Me.new(value, data, New ExpensiveValue(Of String)(Function() jarName + " = " + valueDescription()))
+            Me.new(value, data, New ExpensiveValue(Of String)(Function() "{0}: {1}".Frmt(jarName, valueDescription())))
         End Sub
 
         Public Shared Function MakeListDescription(Of X)(ByVal pickles As IEnumerable(Of IPickle(Of X))) As String
-            Return "{" + Environment.NewLine +
-                        Indent(String.Join(Environment.NewLine,
-                               (From e In pickles Select e.Description.Value).ToArray)) +
-                    Environment.NewLine + "}"
+            Return "{{\n{0}\n}}".Linefy.Frmt((From e In pickles
+                                              Select e.Description.Value
+                                              ).StringJoin(Environment.NewLine).Indent("    "))
         End Function
 
         Public ReadOnly Property Description As ExpensiveValue(Of String) Implements IPickle(Of T).Description

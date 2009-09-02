@@ -138,7 +138,7 @@
             Closed = 1
             Occupied = 2
         End Enum
-        Public Overridable ReadOnly Property DataState(ByVal receiver As IW3Player) As State
+        Public Overridable ReadOnly Property DataState(ByVal receiver As W3Player) As State
             Get
                 Return State.Open
             End Get
@@ -148,12 +148,12 @@
                 Return W3Slot.ComputerLevel.Normal
             End Get
         End Property
-        Public Overridable ReadOnly Property DataPlayerIndex(ByVal receiver As IW3Player) As Byte
+        Public Overridable ReadOnly Property DataPlayerIndex(ByVal receiver As W3Player) As Byte
             Get
                 Return 0
             End Get
         End Property
-        Public Overridable ReadOnly Property DataDownloadPercent(ByVal receiver As IW3Player) As Byte
+        Public Overridable ReadOnly Property DataDownloadPercent(ByVal receiver As W3Player) As Byte
             Get
                 Return 255
             End Get
@@ -170,17 +170,17 @@
         Public Overridable Function WantPlayer(ByVal name As String) As WantPlayerPriority
             Return WantPlayerPriority.Reject
         End Function
-        Public Overridable Function TakePlayer(ByVal player As IW3Player) As W3SlotContents
+        Public Overridable Function TakePlayer(ByVal player As W3Player) As W3SlotContents
             Contract.Requires(player IsNot Nothing)
             Throw New InvalidOperationException()
         End Function
-        Public Overridable Function RemovePlayer(ByVal player As IW3Player) As W3SlotContents
+        Public Overridable Function RemovePlayer(ByVal player As W3Player) As W3SlotContents
             Contract.Requires(player IsNot Nothing)
             Throw New InvalidOperationException()
         End Function
-        Public Overridable Function EnumPlayers() As IEnumerable(Of IW3Player)
-            Contract.Ensures(Contract.Result(Of IEnumerable(Of IW3Player))() IsNot Nothing)
-            Return New IW3Player() {}
+        Public Overridable Function EnumPlayers() As IEnumerable(Of W3Player)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of W3Player))() IsNot Nothing)
+            Return New W3Player() {}
         End Function
 #End Region
 
@@ -203,7 +203,7 @@
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)
         End Sub
-        Public Overrides Function TakePlayer(ByVal player As IW3Player) As W3SlotContents
+        Public Overrides Function TakePlayer(ByVal player As W3Player) As W3SlotContents
             Return New W3SlotContentsPlayer(parent, player)
         End Function
         Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
@@ -232,7 +232,7 @@
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsClosed(parent)
         End Function
-        Public Overrides ReadOnly Property DataState(ByVal receiver As IW3Player) As State
+        Public Overrides ReadOnly Property DataState(ByVal receiver As W3Player) As State
             Get
                 Return State.Closed
             End Get
@@ -263,7 +263,7 @@
                 Return level
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(ByVal receiver As IW3Player) As State
+        Public Overrides ReadOnly Property DataState(ByVal receiver As W3Player) As State
             Get
                 Return State.Occupied
             End Get
@@ -272,15 +272,15 @@
 
     Public Class W3SlotContentsPlayer
         Inherits W3SlotContents
-        Protected ReadOnly player As IW3Player
-        Public Sub New(ByVal parent As W3Slot, ByVal player As IW3Player)
+        Protected ReadOnly player As W3Player
+        Public Sub New(ByVal parent As W3Slot, ByVal player As W3Player)
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Me.player = player
         End Sub
-        Public Overrides Function EnumPlayers() As IEnumerable(Of IW3Player)
-            Return New IW3Player() {player}
+        Public Overrides Function EnumPlayers() As IEnumerable(Of W3Player)
+            Return New W3Player() {player}
         End Function
         Public Overrides Function ToString() As String
             Return If(player.IsFake, "(Fake)" + player.name, player.Description)
@@ -303,7 +303,7 @@
         Public Overrides Function Matches(ByVal query As String) As Boolean
             Return query.ToLower = player.name.ToLower
         End Function
-        Public Overrides Function RemovePlayer(ByVal player As IW3Player) As W3SlotContents
+        Public Overrides Function RemovePlayer(ByVal player As W3Player) As W3SlotContents
             If Me.player Is player Then
                 Return New W3SlotContentsOpen(parent)
             Else
@@ -315,17 +315,17 @@
                 Return ContentType.Player
             End Get
         End Property
-        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As IW3Player) As Byte
+        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As W3Player) As Byte
             Get
                 Return player.index
             End Get
         End Property
-        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As IW3Player) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As W3Player) As Byte
             Get
-                Return player.GetDownloadPercent
+                Return player.GetPercentDl
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(ByVal receiver As IW3Player) As State
+        Public Overrides ReadOnly Property DataState(ByVal receiver As W3Player) As State
             Get
                 Return State.Occupied
             End Get
@@ -335,7 +335,7 @@
     Public Class W3SlotContentsCovering
         Inherits W3SlotContentsPlayer
         Public ReadOnly coveredSlot As W3Slot
-        Public Sub New(ByVal parent As W3Slot, ByVal coveredSlot As W3Slot, ByVal player As IW3Player)
+        Public Sub New(ByVal parent As W3Slot, ByVal coveredSlot As W3Slot, ByVal player As W3Player)
             MyBase.New(parent, player)
             Contract.Requires(parent IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
@@ -348,10 +348,10 @@
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsCovering(parent, coveredSlot, player)
         End Function
-        Public Overrides Function RemovePlayer(ByVal player As IW3Player) As W3SlotContents
+        Public Overrides Function RemovePlayer(ByVal player As W3Player) As W3SlotContents
             Throw New InvalidOperationException()
         End Function
-        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As IW3Player) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As W3Player) As Byte
             Get
                 Return CByte(coveredSlot.contents.EnumPlayers.Count)
             End Get
@@ -367,8 +367,8 @@
         Inherits W3SlotContents
         Public ReadOnly coveringSlot As W3Slot
         Private ReadOnly _playerIndex As Byte
-        Private ReadOnly players As List(Of IW3Player)
-        Public Sub New(ByVal parent As W3Slot, ByVal coveringSlot As W3Slot, ByVal playerIndex As Byte, ByVal players As IEnumerable(Of IW3Player))
+        Private ReadOnly players As List(Of W3Player)
+        Public Sub New(ByVal parent As W3Slot, ByVal coveringSlot As W3Slot, ByVal playerIndex As Byte, ByVal players As IEnumerable(Of W3Player))
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)
             Contract.Requires(players IsNot Nothing)
@@ -382,15 +382,15 @@
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, players)
         End Function
-        Public Overrides Function RemovePlayer(ByVal player As IW3Player) As W3SlotContents
+        Public Overrides Function RemovePlayer(ByVal player As W3Player) As W3SlotContents
             If Not players.Contains(player) Then Throw New InvalidOperationException()
             Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, (From p In players Where p IsNot player))
         End Function
-        Public Overrides Function TakePlayer(ByVal player As IW3Player) As W3SlotContents
+        Public Overrides Function TakePlayer(ByVal player As W3Player) As W3SlotContents
             If players.Contains(player) Then Throw New InvalidOperationException()
-            Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, players.Concat(New IW3Player() {player}))
+            Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, players.Concat(New W3Player() {player}))
         End Function
-        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As IW3Player) As Byte
+        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As W3Player) As Byte
             Get
                 Return If(players.Contains(receiver), receiver.index, CByte(0))
             End Get
@@ -400,16 +400,16 @@
                 Return _playerIndex
             End Get
         End Property
-        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As IW3Player) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As W3Player) As Byte
             Get
                 If players.Contains(receiver) Then
-                    Return receiver.GetDownloadPercent
+                    Return receiver.GetPercentDl
                 Else
                     Return 100
                 End If
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(ByVal receiver As IW3Player) As State
+        Public Overrides ReadOnly Property DataState(ByVal receiver As W3Player) As State
             Get
                 Return If(players.Contains(receiver), State.Occupied, State.Closed)
             End Get

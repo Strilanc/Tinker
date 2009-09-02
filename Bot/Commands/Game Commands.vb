@@ -381,13 +381,13 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As IW3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.QueueGetPlayers().EvalWhenValueReady(
                     Function(players)
-                                                                       Dim msg = "Estimated RTT:"
-                                                                       For Each player In players
-                                                                           If player.IsFake Then  Continue For
-                                                                           msg += " {0}={1}ms".frmt(player.name, player.latency.ToString("0"))
-                                                                       Next player
-                                                                       Return success(msg)
-                                                                   End Function
+                        Dim msg = "Estimated RTT:"
+                        For Each player In players
+                            If player.isFake Then  Continue For
+                            msg += " {0}={1}ms".Frmt(player.name, player.GetLatency.ToString("0"))
+                        Next player
+                        Return Success(msg)
+                    End Function
                 )
             End Function
         End Class

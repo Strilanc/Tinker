@@ -25,10 +25,10 @@ Namespace Warcraft3
         Public Event ChangedState(ByVal sender As W3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates)
         Public Event AddedGame(ByVal sender As W3Server, ByVal game As IW3Game)
         Public Event RemovedGame(ByVal sender As W3Server, ByVal game As IW3Game)
-        Public Event PlayerTalked(ByVal sender As W3Server, ByVal game As IW3Game, ByVal player As IW3Player, ByVal text As String)
-        Public Event PlayerLeft(ByVal sender As W3Server, ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
-        Public Event PlayerSentData(ByVal sever As W3Server, ByVal game As IW3Game, ByVal player As IW3Player, ByVal data As Byte())
-        Public Event PlayerEntered(ByVal sender As W3Server, ByVal game As IW3Game, ByVal player As IW3Player)
+        Public Event PlayerTalked(ByVal sender As W3Server, ByVal game As IW3Game, ByVal player As W3Player, ByVal text As String)
+        Public Event PlayerLeft(ByVal sender As W3Server, ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
+        Public Event PlayerSentData(ByVal sever As W3Server, ByVal game As IW3Game, ByVal player As W3Player, ByVal data As Byte())
+        Public Event PlayerEntered(ByVal sender As W3Server, ByVal game As IW3Game, ByVal player As W3Player)
 
         Private total_instances_created_P As Integer = 0
         Private suffix As String
@@ -158,17 +158,17 @@ Namespace Warcraft3
             )
         End Sub
 
-        Private Sub c_PlayerTalked(ByVal game As IW3Game, ByVal player As IW3Player, ByVal text As String)
+        Private Sub c_PlayerTalked(ByVal game As IW3Game, ByVal player As W3Player, ByVal text As String)
             RaiseEvent PlayerTalked(Me, game, player, text)
         End Sub
-        Private Sub c_PlayerSentData(ByVal game As IW3Game, ByVal player As IW3Player, ByVal data As Byte())
+        Private Sub c_PlayerSentData(ByVal game As IW3Game, ByVal player As W3Player, ByVal data As Byte())
             RaiseEvent PlayerSentData(Me, game, player, data)
         End Sub
-        Private Sub c_PlayerLeft(ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
+        Private Sub c_PlayerLeft(ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
             logger.Log("{0} left game {1}. ({2})".Frmt(player.name, game.name, reason), LogMessageTypes.Negative)
             RaiseEvent PlayerLeft(Me, game, game_state, player, leaveType, reason)
         End Sub
-        Private Sub c_PlayerEntered(ByVal game As IW3Game, ByVal player As IW3Player)
+        Private Sub c_PlayerEntered(ByVal game As IW3Game, ByVal player As W3Player)
             RaiseEvent PlayerEntered(Me, game, player)
         End Sub
         Private Sub c_GameStateChanged(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
@@ -302,7 +302,7 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Finds a player with the given name in any of the server's games.</summary>
-        Private Function f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player)
+        Private Function f_FindPlayer(ByVal username As String) As IFuture(Of W3Player)
             Return games_all.ToList.FutureMap(Function(game) game.QueueFindPlayer(username)).EvalWhenValueReady(
                                    Function(players) players.FirstOrDefault)
         End Function
@@ -399,8 +399,8 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of IFuture(Of IW3Game))() IsNot Nothing)
             Return ref.QueueFunc(Function() FindGame(gameName))
         End Function
-        Public Function QueueFindPlayer(ByVal username As String) As IFuture(Of IW3Player)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IW3Player))() IsNot Nothing)
+        Public Function QueueFindPlayer(ByVal username As String) As IFuture(Of W3Player)
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() f_FindPlayer(username)).Defuturize
         End Function
         Public Function QueueFindPlayerGame(ByVal username As String) As IFuture(Of Outcome(Of IW3Game))

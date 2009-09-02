@@ -506,7 +506,7 @@ Namespace Warcraft3
 
 #Region "Packing: Misc Packets"
         <Pure()>
-        Public Shared Function MakeShowLagScreen(ByVal laggers As IEnumerable(Of IW3Player)) As W3Packet
+        Public Shared Function MakeShowLagScreen(ByVal laggers As IEnumerable(Of W3Player)) As W3Packet
             Contract.Requires(laggers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.ShowLagScreen, New Dictionary(Of String, Object) From {
@@ -516,7 +516,7 @@ Namespace Warcraft3
                                         {"initial milliseconds used", 2000}}).ToList()}})
         End Function
         <Pure()>
-        Public Shared Function MakeRemovePlayerFromLagScreen(ByVal player As IW3Player,
+        Public Shared Function MakeRemovePlayerFromLagScreen(ByVal player As W3Player,
                                                              ByVal lagTimeInMilliseconds As UInteger) As W3Packet
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
@@ -528,8 +528,8 @@ Namespace Warcraft3
         Public Shared Function MakeText(ByVal text As String,
                                         ByVal type As ChatType,
                                         ByVal receiverType As ChatReceiverType,
-                                        ByVal receivingPlayers As IEnumerable(Of IW3Player),
-                                        ByVal sender As IW3Player) As W3Packet
+                                        ByVal receivingPlayers As IEnumerable(Of W3Player),
+                                        ByVal sender As W3Player) As W3Packet
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(receivingPlayers IsNot Nothing)
             Contract.Requires(sender IsNot Nothing)
@@ -553,7 +553,7 @@ Namespace Warcraft3
             End Select
         End Function
         <Pure()>
-        Public Shared Function MakeGreet(ByVal p As IW3Player,
+        Public Shared Function MakeGreet(ByVal p As W3Player,
                                          ByVal assignedIndex As Byte,
                                          ByVal map As W3Map) As W3Packet
             Contract.Requires(p IsNot Nothing)
@@ -562,9 +562,9 @@ Namespace Warcraft3
             Return New W3Packet(W3PacketId.Greet, New Dictionary(Of String, Object) From {
                     {"slot layout included", 0},
                     {"player index", assignedIndex},
-                    {"external address", If(p.IsFake,
+                    {"external address", If(p.isFake,
                                             AddressJar.packIPv4Address({0, 0, 0, 0}, 0),
-                                            AddressJar.packIPv4Address(p.RemoteEndPoint))}})
+                                            AddressJar.packIPv4Address(p.GetRemoteEndPoint))}})
         End Function
         <Pure()>
         Public Shared Function MakeReject(ByVal reason As RejectReason) As W3Packet
@@ -585,13 +585,13 @@ Namespace Warcraft3
                     {"sha1 checksum", map.ChecksumSha1}})
         End Function
         <Pure()>
-        Public Shared Function MakeOtherPlayerJoined(ByVal stranger As IW3Player,
+        Public Shared Function MakeOtherPlayerJoined(ByVal stranger As W3Player,
                                                      Optional ByVal overrideIndex As Byte = 0) As W3Packet
             Contract.Requires(stranger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Dim address = If(stranger.IsFake,
+            Dim address = If(stranger.isFake,
                              AddressJar.packIPv4Address({0, 0, 0, 0}, 0),
-                             AddressJar.packIPv4Address(stranger.RemoteEndPoint.Address, stranger.ListenPort))
+                             AddressJar.packIPv4Address(stranger.GetRemoteEndPoint.Address, stranger.listenPort))
             Return New W3Packet(W3PacketId.OtherPlayerJoined, New Dictionary(Of String, Object) From {
                     {"peer key", stranger.peerKey},
                     {"index", If(overrideIndex <> 0, overrideIndex, stranger.index)},
@@ -608,14 +608,14 @@ Namespace Warcraft3
         End Function
 
         <Pure()>
-        Public Shared Function MakeOtherPlayerReady(ByVal player As IW3Player) As W3Packet
+        Public Shared Function MakeOtherPlayerReady(ByVal player As W3Player) As W3Packet
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.OtherPlayerReady, New Dictionary(Of String, Object) From {
                     {"player index", player.index}})
         End Function
         <Pure()>
-        Public Shared Function MakeOtherPlayerLeft(ByVal player As IW3Player,
+        Public Shared Function MakeOtherPlayerLeft(ByVal player As W3Player,
                                                    ByVal leave_type As W3PlayerLeaveTypes) As W3Packet
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
@@ -624,7 +624,7 @@ Namespace Warcraft3
                                 {"leave type", CByte(leave_type)}})
         End Function
         <Pure()>
-        Public Shared Function MakeLobbyState(ByVal receiver As IW3Player,
+        Public Shared Function MakeLobbyState(ByVal receiver As W3Player,
                                               ByVal map As W3Map,
                                               ByVal slots As List(Of W3Slot),
                                               ByVal time As ModInt32,
@@ -937,7 +937,7 @@ Namespace Warcraft3
                     New ByteJar("handicap").Weaken)
         End Sub
 
-        Public Shared Function packSlot(ByVal s As W3Slot, ByVal receiver As IW3Player) As Dictionary(Of String, Object)
+        Public Shared Function packSlot(ByVal s As W3Slot, ByVal receiver As W3Player) As Dictionary(Of String, Object)
             Dim vals As New Dictionary(Of String, Object)
             vals("team index") = s.team
             vals("color") = If(s.team = W3Slot.OBS_TEAM, W3Slot.OBS_TEAM, s.color)

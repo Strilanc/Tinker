@@ -31,15 +31,15 @@ Namespace Warcraft3
         Private Const PING_PERIOD As UShort = 5000
         Private ReadOnly pingTimer As New Timers.Timer(PING_PERIOD)
         Private state As W3GameStates = W3GameStates.AcceptingPlayers
-        Private fakeHostPlayer As IW3Player
+        Private fakeHostPlayer As W3Player
         Private flagHasPlayerLeft As Boolean
-        Private adminPlayer As IW3Player
-        Private ReadOnly players As New List(Of IW3Player)
+        Private adminPlayer As W3Player
+        Private ReadOnly players As New List(Of W3Player)
         Private ReadOnly index_map(0 To 12) As Byte
 
         Private Event Updated(ByVal sender As IW3Game, ByVal slots As List(Of W3Slot)) Implements IW3Game.Updated
-        Private Event PlayerTalked(ByVal sender As IW3Game, ByVal speaker As IW3Player, ByVal text As String) Implements IW3Game.PlayerTalked
-        Private Event PlayerLeft(ByVal sender As IW3Game, ByVal state As W3GameStates, ByVal leaver As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Game.PlayerLeft
+        Private Event PlayerTalked(ByVal sender As IW3Game, ByVal speaker As W3Player, ByVal text As String) Implements IW3Game.PlayerTalked
+        Private Event PlayerLeft(ByVal sender As IW3Game, ByVal state As W3GameStates, ByVal leaver As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Game.PlayerLeft
         Private Event StateChanged(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates) Implements IW3Game.ChangedState
 
         <ContractInvariantMethod()> Protected Sub Invariant()
@@ -78,7 +78,7 @@ Namespace Warcraft3
                     Throw New UnreachableException()
             End Select
         End Sub
-        Private Function CommandProcessText(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Private Function CommandProcessText(ByVal player As W3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
             Contract.Requires(arguments IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Dim user = New BotUser(player.name)
@@ -109,7 +109,7 @@ Namespace Warcraft3
             End If
         End Function
 
-        Private Sub ReceiveChat(ByVal sender As IW3Player,
+        Private Sub ReceiveChat(ByVal sender As W3Player,
                                 ByVal text As String,
                                 ByVal type As W3Packet.ChatType,
                                 ByVal receiverType As W3Packet.ChatReceiverType,
@@ -141,7 +141,7 @@ Namespace Warcraft3
                 End If
             Next receiver
         End Sub
-        Private Sub ReceiveNonGameAction(ByVal sender As IW3Player, ByVal vals As Dictionary(Of String, Object))
+        Private Sub ReceiveNonGameAction(ByVal sender As W3Player, ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Dim command_type = CType(vals("command type"), W3Packet.NonGameAction)
@@ -231,13 +231,13 @@ Namespace Warcraft3
                 Dim host = players.Max(Function(p1, p2)
                                            If p1 Is Nothing Then  Return -1
                                            If p2 Is Nothing Then  Return 1
-                                           If p1.IsFake Then  Return -1
-                                           If p2.IsFake Then  Return 1
+                                           If p1.isFake Then  Return -1
+                                           If p2.isFake Then  Return 1
 
                                            'Can they host? Are they connected to more people? Are they on a better connection?
-                                           Dim signs = {Math.Sign(p1.canHost - p2.canHost),
-                                                        Math.Sign(p1.numPeerConnections - p2.numPeerConnections),
-                                                        Math.Sign(p1.latency() - p2.latency())}
+                                           Dim signs = {Math.Sign(p1.CanHost - p2.CanHost),
+                                                        Math.Sign(p1.GetNumPeerConnections - p2.GetNumPeerConnections),
+                                                        Math.Sign(p1.GetLatency - p2.GetLatency)}
                                            Return (From sign In signs Where sign <> 0).FirstOrDefault
                                        End Function)
 
@@ -268,12 +268,12 @@ Namespace Warcraft3
                                                                               RaiseEvent Updated(Me, slots)
                                                                           End Sub))
         End Sub
-        Private Sub ThrowPlayerTalked(ByVal speaker As IW3Player, ByVal text As String)
+        Private Sub ThrowPlayerTalked(ByVal speaker As W3Player, ByVal text As String)
             eventRef.QueueAction(Sub()
                                      RaiseEvent PlayerTalked(Me, speaker, text)
                                  End Sub)
         End Sub
-        Private Sub ThrowPlayerLeft(ByVal leaver As IW3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
+        Private Sub ThrowPlayerLeft(ByVal leaver As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
             Dim state = Me.state
             eventRef.QueueAction(Sub()
                                      RaiseEvent PlayerLeft(Me, state, leaver, leaveType, reason)
@@ -325,7 +325,7 @@ Namespace Warcraft3
 
         '''<summary>Broadcasts a packet to all players. Requires a packer for the packet, and values matching the packer.</summary>
         Private Sub BroadcastPacket(ByVal pk As W3Packet,
-                                    Optional ByVal source As IW3Player = Nothing)
+                                    Optional ByVal source As W3Player = Nothing)
             Contract.Requires(pk IsNot Nothing)
             For Each player In (From _player In players
                                 Where _player IsNot source)
@@ -357,7 +357,7 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Returns the slot containing the given player.</summary>
-        <Pure()> Private Function FindPlayerSlot(ByVal player As IW3Player) As W3Slot
+        <Pure()> Private Function FindPlayerSlot(ByVal player As W3Player) As W3Slot
             Contract.Requires(player IsNot Nothing)
             Dim player_ = player 'avoids problems with contract verification on hoisted arguments
             Return (From slot In slots
@@ -369,7 +369,7 @@ Namespace Warcraft3
 #Region "Messaging"
         '''<summary>Sends text to all players. Uses spoof chat if necessary.</summary>
         Private Sub BroadcastMessage(ByVal message As String,
-                                     Optional ByVal playerToAvoid As IW3Player = Nothing)
+                                     Optional ByVal playerToAvoid As W3Player = Nothing)
             Contract.Requires(message IsNot Nothing)
             For Each player In (From _player In players Where _player IsNot playerToAvoid)
                 Contract.Assume(player IsNot Nothing)
@@ -380,7 +380,7 @@ Namespace Warcraft3
 
         '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
         Private Sub SendMessageTo(ByVal message As String,
-                                  ByVal player As IW3Player,
+                                  ByVal player As W3Player,
                                   Optional ByVal display As Boolean = True)
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
@@ -401,7 +401,7 @@ Namespace Warcraft3
 
 #Region "Players"
         '''<summary>Removes the given player from the instance</summary>
-        Private Function RemovePlayer(ByVal player As IW3Player,
+        Private Function RemovePlayer(ByVal player As W3Player,
                                       ByVal wasExpected As Boolean,
                                       ByVal leaveType As W3PlayerLeaveTypes,
                                       ByVal reason As String) As Outcome
@@ -479,12 +479,12 @@ Namespace Warcraft3
             Return Success("'{0}' is now the admin.".Frmt(name))
         End Function
 
-        Private Function FindPlayer(ByVal username As String) As IW3Player
+        Private Function FindPlayer(ByVal username As String) As W3Player
             Contract.Requires(username IsNot Nothing)
             Dim username_ = username 'avoids contract verification problem on hoisted arguments
             Return (From x In players Where x.name.ToLower = username_.ToLower).FirstOrDefault
         End Function
-        Private Function FindPlayer(ByVal index As Byte) As IW3Player
+        Private Function FindPlayer(ByVal index As Byte) As W3Player
             Return (From x In players Where x.index = index).FirstOrDefault
         End Function
 
@@ -518,13 +518,13 @@ Namespace Warcraft3
 #End Region
 
 #Region "Invisible Players"
-        <Pure()> Private Function IsPlayerVisible(ByVal player As IW3Player) As Boolean
+        <Pure()> Private Function IsPlayerVisible(ByVal player As W3Player) As Boolean
             Contract.Requires(player IsNot Nothing)
             Return index_map(player.index) = player.index
         End Function
-        <Pure()> Private Function GetVisiblePlayer(ByVal player As IW3Player) As IW3Player
+        <Pure()> Private Function GetVisiblePlayer(ByVal player As W3Player) As W3Player
             Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IW3Player)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
             If IsPlayerVisible(player) Then Return player
             Dim visibleIndex = index_map(player.index)
             Dim visiblePlayer = (From p In players Where p.index = visibleIndex).First
@@ -569,10 +569,10 @@ Namespace Warcraft3
             End Get
         End Property
 
-        Private Function _f_AdminPlayer() As IFuture(Of IW3Player) Implements IW3Game.QueueGetAdminPlayer
+        Private Function _f_AdminPlayer() As IFuture(Of W3Player) Implements IW3Game.QueueGetAdminPlayer
             Return ref.QueueFunc(Function() adminPlayer)
         End Function
-        Private Function _f_FakeHostPlayer() As IFuture(Of IW3Player) Implements IW3Game.QueueGetFakeHostPlayer
+        Private Function _f_FakeHostPlayer() As IFuture(Of W3Player) Implements IW3Game.QueueGetFakeHostPlayer
             Return ref.QueueFunc(Function() fakeHostPlayer)
         End Function
         Private Function _f_CommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture Implements IW3Game.QueueCommandProcessLocalText
@@ -582,7 +582,7 @@ Namespace Warcraft3
                                        CommandProcessLocalText(text, logger)
                                    End Sub)
         End Function
-        Private Function _f_CommandProcessText(ByVal player As IW3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements IW3Game.QueueProcessCommand
+        Private Function _f_CommandProcessText(ByVal player As W3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements IW3Game.QueueProcessCommand
             Return ref.QueueFunc(Function()
                                      Contract.Assume(player IsNot Nothing)
                                      Contract.Assume(arguments IsNot Nothing)
@@ -596,13 +596,13 @@ Namespace Warcraft3
                                      Return TryElevatePlayer(name, password)
                                  End Function)
         End Function
-        Private Function _f_FindPlayer(ByVal username As String) As IFuture(Of IW3Player) Implements IW3Game.QueueFindPlayer
+        Private Function _f_FindPlayer(ByVal username As String) As IFuture(Of W3Player) Implements IW3Game.QueueFindPlayer
             Return ref.QueueFunc(Function()
                                      Contract.Assume(username IsNot Nothing)
                                      Return FindPlayer(username)
                                  End Function)
         End Function
-        Private Function _f_RemovePlayer(ByVal player As IW3Player,
+        Private Function _f_RemovePlayer(ByVal player As W3Player,
                                          ByVal expected As Boolean,
                                          ByVal leaveType As W3PlayerLeaveTypes,
                                          ByVal reason As String) As IFuture(Of Outcome) Implements IW3Game.QueueRemovePlayer
@@ -612,7 +612,7 @@ Namespace Warcraft3
                                      Return RemovePlayer(player, expected, leaveType, reason)
                                  End Function)
         End Function
-        Private Function _f_EnumPlayers() As IFuture(Of List(Of IW3Player)) Implements IW3Game.QueueGetPlayers
+        Private Function _f_EnumPlayers() As IFuture(Of List(Of W3Player)) Implements IW3Game.QueueGetPlayers
             Return ref.QueueFunc(Function() players.ToList)
         End Function
         Private Function _f_ThrowUpdated() As IFuture Implements IW3Game.QueueThrowUpdated
@@ -627,7 +627,7 @@ Namespace Warcraft3
                                        BroadcastMessage(message)
                                    End Sub)
         End Function
-        Private Function _f_SendMessageTo(ByVal message As String, ByVal player As IW3Player) As IFuture Implements IW3Game.QueueSendMessageTo
+        Private Function _f_SendMessageTo(ByVal message As String, ByVal player As W3Player) As IFuture Implements IW3Game.QueueSendMessageTo
             Return ref.QueueAction(Sub()
                                        Contract.Assume(message IsNot Nothing)
                                        Contract.Assume(player IsNot Nothing)
@@ -643,7 +643,7 @@ Namespace Warcraft3
         Private Function _f_State() As IFuture(Of W3GameStates) Implements IW3Game.QueueGetState
             Return ref.QueueFunc(Function() Me.state)
         End Function
-        Private Function _f_ReceiveNonGameAction(ByVal player As IW3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveNonGameAction
+        Private Function _f_ReceiveNonGameAction(ByVal player As W3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveNonGameAction
             Return ref.QueueAction(Sub()
                                        Contract.Assume(player IsNot Nothing)
                                        Contract.Assume(vals IsNot Nothing)

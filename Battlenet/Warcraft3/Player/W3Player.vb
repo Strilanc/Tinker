@@ -5,25 +5,24 @@
         Playing
     End Enum
     Partial Public NotInheritable Class W3Player
-        Implements IW3Player
         Private state As W3PlayerStates = W3PlayerStates.Lobby
-        Private ReadOnly index As Byte
-        Private ReadOnly game As IW3Game
-        Private ReadOnly name As String
-        Private ReadOnly listenPort As UShort
-        Private ReadOnly peerKey As UInteger
-        Private ReadOnly isFake As Boolean
+        Public ReadOnly index As Byte
+        Public ReadOnly game As IW3Game
+        Public ReadOnly name As String
+        Public ReadOnly listenPort As UShort
+        Public ReadOnly peerKey As UInteger
+        Public ReadOnly isFake As Boolean
         Private ReadOnly testCanHost As IFuture(Of Boolean)
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
-        Private ReadOnly logger As Logger
+        Public ReadOnly logger As Logger
         Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly eref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly pingQueue As New Queue(Of W3PlayerPingRecord)
         Private numPeerConnections As Integer
         Private latency As Double
-        Private hasVotedToStart As Boolean
-        Private numAdminTries As Integer
+        Public hasVotedToStart As Boolean
+        Public numAdminTries As Integer
 
         <ContractInvariantMethod()> Protected Sub Invariant()
             Contract.Invariant(numPeerConnections >= 0)
@@ -141,7 +140,7 @@
             Contract.Assume(Not Double.IsInfinity(latency))
         End Sub
 
-        Private ReadOnly Property CanHost() As HostTestResults
+        Public ReadOnly Property CanHost() As HostTestResults
             Get
                 If Not testCanHost.IsReady Then
                     Return HostTestResults.Test
@@ -195,86 +194,45 @@
         End Sub
 
 #Region "Interface"
-        Private ReadOnly Property _RemoteEndPoint As Net.IPEndPoint Implements IW3Player.RemoteEndPoint
+        Public ReadOnly Property GetRemoteEndPoint As Net.IPEndPoint
             Get
+                Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address IsNot Nothing)
                 Return socket.RemoteEndPoint
             End Get
         End Property
-        Private ReadOnly Property _latency() As Double Implements IW3Player.latency
+        Public ReadOnly Property GetLatency() As Double
             Get
                 Return latency
             End Get
         End Property
-        Private ReadOnly Property _index() As Byte Implements IW3Player.index
+        Public ReadOnly Property GetNumPeerConnections() As Integer
             Get
-                Return index
-            End Get
-        End Property
-        Private ReadOnly Property _name() As String Implements IW3Player.name
-            Get
-                Return name
-            End Get
-        End Property
-        Private ReadOnly Property _ListenPort() As UShort Implements IW3Player.ListenPort
-            Get
-                Return listenPort
-            End Get
-        End Property
-        Private ReadOnly Property _canHost() As HostTestResults Implements IW3Player.canHost
-            Get
-                Return CanHost
-            End Get
-        End Property
-        Private ReadOnly Property _IsFake() As Boolean Implements IW3Player.IsFake
-            Get
-                Return isFake
-            End Get
-        End Property
-        Private ReadOnly Property _numPeerConnections() As Integer Implements IW3Player.numPeerConnections
-            Get
+                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
                 Return numPeerConnections
             End Get
         End Property
-        Protected ReadOnly Property _peerKey() As UInteger Implements IW3Player.peerKey
-            Get
-                Return peerKey
-            End Get
-        End Property
-        Private Property _HasVotedToStart() As Boolean Implements IW3Player.HasVotedToStart
-            Get
-                Return hasVotedToStart
-            End Get
-            Set(ByVal value As Boolean)
-                hasVotedToStart = value
-            End Set
-        End Property
-        Private Property _NumAdminTries() As Integer Implements IW3Player.NumAdminTries
-            Get
-                Return numAdminTries
-            End Get
-            Set(ByVal value As Integer)
-                numAdminTries = value
-            End Set
-        End Property
-        Private Function _QueueDisconnect(ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes, ByVal reason As String) As IFuture Implements IW3Player.QueueDisconnect
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes, ByVal reason As String) As IFuture
+            Contract.Requires(reason IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Dim reason_ = reason
             Return ref.QueueAction(Sub()
                                        Contract.Assume(reason_ IsNot Nothing)
                                        Disconnect(expected, leave_type, reason_)
                                    End Sub)
         End Function
-        Public ReadOnly Property _game() As IW3Game Implements IW3Player.game
-            Get
-                Return game
-            End Get
-        End Property
-        Private Function _QueueSendPacket(ByVal pk As W3Packet) As IFuture(Of Outcome) Implements IW3Player.QueueSendPacket
+        Public Function QueueSendPacket(ByVal pk As W3Packet) As IFuture(Of Outcome)
+            Contract.Requires(pk IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
             Return ref.QueueFunc(Function()
                                      Contract.Assume(pk IsNot Nothing)
                                      Return SendPacket(pk)
                                  End Function)
         End Function
-        Private Function _QueuePing(ByVal record As W3PlayerPingRecord) As IFuture Implements IW3Player.QueuePing
+        Public Function QueuePing(ByVal record As W3PlayerPingRecord) As IFuture
+            Contract.Requires(record IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(record IsNot Nothing)
                                        Ping(record)

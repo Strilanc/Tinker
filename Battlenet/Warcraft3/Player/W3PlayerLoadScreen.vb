@@ -1,7 +1,6 @@
 ﻿Namespace Warcraft3
     Partial Public Class W3Player
-        Implements IW3Player
-        Public Property ready As Boolean Implements IW3Player.Ready
+        Public Property ready As Boolean
 
         Public Sub LoadScreenStart()
             LobbyStop()
@@ -28,7 +27,9 @@
                              End Sub)
         End Sub
 
-        Private Function _f_start() As IFuture Implements IW3Player.QueueStartLoading
+        Public Function QueueStartLoading() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf LoadScreenStart)
         End Function
     End Class

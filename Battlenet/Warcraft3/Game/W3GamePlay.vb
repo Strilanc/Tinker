@@ -2,15 +2,15 @@
     Partial Class W3Game
         Implements IW3Game
         Private Class GameTickDatum
-            Private ReadOnly _source As IW3Player
+            Private ReadOnly _source As W3Player
             Private ReadOnly _data As Byte()
             <ContractInvariantMethod()> Protected Sub Invariant()
                 Contract.Invariant(_source IsNot Nothing)
                 Contract.Invariant(_data IsNot Nothing)
             End Sub
-            Public ReadOnly Property Source As IW3Player
+            Public ReadOnly Property Source As W3Player
                 Get
-                    Contract.Ensures(Contract.Result(Of IW3Player)() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
                     Return _source
                 End Get
             End Property
@@ -20,7 +20,7 @@
                     Return _data
                 End Get
             End Property
-            Public Sub New(ByVal source As IW3Player, ByVal data As Byte())
+            Public Sub New(ByVal source As W3Player, ByVal data As Byte())
                 Contract.Requires(source IsNot Nothing)
                 Contract.Requires(data IsNot Nothing)
                 Me._source = source
@@ -30,7 +30,7 @@
 
         Private ReadOnly tickTimer As New Timers.Timer(My.Settings.game_tick_period)
         Private lastTickTime As ModInt32
-        Private laggingPlayers As New List(Of IW3Player)
+        Private laggingPlayers As New List(Of W3Player)
         Private lagStartTime As ModInt32
         Private gameDataQueue As New Queue(Of GameTickDatum)
         Private gameTime As Integer
@@ -39,7 +39,7 @@
         Private Property settingTickPeriod As Double Implements IW3Game.SettingTickPeriod
         Private Property settingLagLimit As Double Implements IW3Game.SettingLagLimit
 
-        Private Event PlayerSentData(ByVal game As IW3Game, ByVal player As IW3Player, ByVal data As Byte()) Implements IW3Game.PlayerSentData
+        Private Event PlayerSentData(ByVal game As IW3Game, ByVal player As W3Player, ByVal data As Byte()) Implements IW3Game.PlayerSentData
 
         Private Sub GamePlayNew()
             Dim gsf As Double = My.Settings.game_speed_factor
@@ -69,7 +69,7 @@
             tickTimer.Stop()
         End Sub
 
-        Private Sub e_ThrowPlayerSentData(ByVal player As IW3Player, ByVal data As Byte())
+        Private Sub e_ThrowPlayerSentData(ByVal player As W3Player, ByVal data As Byte())
             eventRef.QueueAction(Sub()
                                      RaiseEvent PlayerSentData(Me, player, data)
                                  End Sub)
@@ -77,7 +77,7 @@
 
 #Region "Play"
         '''<summary>Adds data to broadcast to all clients in the next tick</summary>
-        Private Sub QueueGameData(ByVal sender As IW3Player, ByVal data() As Byte)
+        Private Sub QueueGameData(ByVal sender As W3Player, ByVal data() As Byte)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             e_ThrowPlayerSentData(sender, data)
@@ -123,7 +123,7 @@
                 For Each p In laggingPlayers.ToList()
                     If Not players.Contains(p) Then
                         laggingPlayers.Remove(p)
-                    ElseIf p.TockTime >= gameTime OrElse p.IsFake Then
+                    ElseIf p.GetTockTime >= gameTime OrElse p.isFake Then
                         laggingPlayers.Remove(p)
                         Contract.Assume(p IsNot Nothing)
                         Dim p_ = p
@@ -139,8 +139,8 @@
                 Next p
             Else
                 laggingPlayers = (From p In players
-                                   Where Not p.IsFake _
-                                   AndAlso p.TockTime < gameTime - Me.settingLagLimit).ToList()
+                                   Where Not p.isFake _
+                                   AndAlso p.GetTockTime < gameTime - Me.settingLagLimit).ToList()
                 If laggingPlayers.Count > 0 Then
                     BroadcastPacket(W3Packet.MakeShowLagScreen(laggingPlayers), Nothing)
                     lagStartTime = lastTickTime
@@ -179,7 +179,7 @@
             Next receiver
         End Sub
         <Pure()>
-        Private Function CreateTickDataForInvisiblePlayer(ByVal receiver As IW3Player,
+        Private Function CreateTickDataForInvisiblePlayer(ByVal receiver As W3Player,
                                                           ByVal data As IEnumerable(Of GameTickDatum)) As Byte()
             Contract.Requires(receiver IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
@@ -202,7 +202,7 @@
         Private Function _f_DropLagger() As IFuture Implements IW3Game.QueueDropLagger
             Return ref.QueueAction(AddressOf DropLagger)
         End Function
-        Private Function _f_QueueGameData(ByVal sender As IW3Player, ByVal data() As Byte) As IFuture Implements IW3Game.QueueSendGameData
+        Private Function _f_QueueGameData(ByVal sender As W3Player, ByVal data() As Byte) As IFuture Implements IW3Game.QueueSendGameData
             Return ref.QueueAction(Sub()
                                        Contract.Assume(sender IsNot Nothing)
                                        Contract.Assume(data IsNot Nothing)
