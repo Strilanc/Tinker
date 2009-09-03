@@ -190,278 +190,6 @@ Namespace Warcraft3
         End Sub
 #End Region
 
-#Region "Jar"
-        Public Shared Function MakeW3PacketJar() As ManualSwitchJar
-            Dim jar = New ManualSwitchJar
-            reg_general(jar)
-            reg_leave(jar)
-            reg_new(jar)
-            reg_lobby_to_play(jar)
-            reg_lobby(jar)
-            reg_play(jar)
-            reg_lan(jar)
-            RegPeer(jar)
-            reg_dl(jar)
-            Return jar
-        End Function
-        Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal id As W3PacketId, ByVal ParamArray subjars() As IJar(Of Object))
-            jar.reg(id, New TupleJar(id.ToString(), subjars).Weaken)
-        End Sub
-        Private Shared Sub reg1(ByVal jar As ManualSwitchJar, ByVal id As W3PacketId, ByVal subjar As IJar(Of Object))
-            jar.reg(id, subjar)
-        End Sub
-        Private Shared Sub reg_general(ByVal jar As ManualSwitchJar)
-            reg(jar, W3PacketId.Ping,
-                    New UInt32Jar("salt").Weaken)
-
-            reg(jar, W3PacketId.Pong,
-                    New UInt32Jar("salt").Weaken)
-
-            '[server receive] [Informs the server when the set of clients a client is interconnected with changes]
-            reg(jar, W3PacketId.PeerConnectionInfo,
-                    New UInt16Jar("player bitflags").Weaken)
-
-            '[server send] [Tells clients to display a message]
-            Dim chatJar = New InteriorSwitchJar(Of Dictionary(Of String, Object))(W3PacketId.Text.ToString,
-                                                                                  Function(val) CByte(val("type")),
-                                                                                  Function(data) data(data(0) + 2))
-            chatJar.reg(ChatType.Game, New TupleJar(W3PacketId.Text.ToString,
-                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
-                    New ByteJar("sending player index").Weaken,
-                    New EnumByteJar(Of ChatType)("type").Weaken,
-                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
-                    New StringJar("message").Weaken))
-            chatJar.reg(ChatType.Lobby, New TupleJar(W3PacketId.Text.ToString,
-                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
-                    New ByteJar("sending player index").Weaken,
-                    New EnumByteJar(Of ChatType)("type").Weaken,
-                    New StringJar("message").Weaken))
-            reg1(jar, W3PacketId.Text, chatJar.Weaken)
-
-            '[server receive] [Tells the server a client wants to perform a slot action or talk]
-            Dim commandJar = New InteriorSwitchJar(Of Dictionary(Of String, Object))(W3PacketId.NonGameAction.ToString,
-                                                                                     Function(val) CByte(val("command type")),
-                                                                                     Function(data) data(data(0) + 2))
-            commandJar.reg(NonGameAction.GameChat, New TupleJar(W3PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
-                    New StringJar("message").Weaken))
-            commandJar.reg(NonGameAction.LobbyChat, New TupleJar(W3PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New StringJar("message").Weaken))
-            commandJar.reg(NonGameAction.SetTeam, New TupleJar(W3PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New ByteJar("new value").Weaken))
-            commandJar.reg(NonGameAction.SetHandicap, New TupleJar(W3PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New ByteJar("new value").Weaken))
-            commandJar.reg(NonGameAction.SetRace, New TupleJar(W3PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", , 1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumByteJar(Of W3Slot.RaceFlags)("new value", flags:=True).Weaken))
-            commandJar.reg(NonGameAction.SetColor, New TupleJar(W3PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumByteJar(Of W3Slot.PlayerColor)("new value").Weaken))
-            reg1(jar, W3PacketId.NonGameAction, commandJar.Weaken)
-        End Sub
-        Private Shared Sub reg_leave(ByVal jar As ManualSwitchJar)
-            'EXPERIMENTAL
-            reg(jar, W3PacketId.ConfirmHost)
-            reg(jar, W3PacketId.SetHost,
-                    New ByteJar("player index").Weaken)
-            reg(jar, W3PacketId.AcceptHost)
-
-            '[server receive] [Informs the server a client is leaving the game]
-            reg(jar, W3PacketId.Leaving,
-                    New EnumUInt32Jar(Of W3PlayerLeaveTypes)("leave type").Weaken)
-
-            '[server send; broadcast when a player leaves] [informs other players a player has left]
-            reg(jar, W3PacketId.OtherPlayerLeft,
-                    New ByteJar("player index").Weaken,
-                    New EnumUInt32Jar(Of W3PlayerLeaveTypes)("leave type").Weaken)
-        End Sub
-        Private Shared Sub reg_new(ByVal jar As ManualSwitchJar)
-            reg(jar, W3PacketId.Knock,
-                    New UInt32Jar("game id").Weaken,
-                    New UInt32Jar("entry key").Weaken,
-                    New ByteJar("unknown2").Weaken,
-                    New UInt16Jar("listen port").Weaken,
-                    New UInt32Jar("peer key").Weaken,
-                    New StringJar("name", , , , "max 15 characters + terminator").Weaken,
-                    New UInt16Jar("unknown3").Weaken,
-                    New AddressJar("internal address").Weaken)
-            'peer key: value other players must provide when interconnecting
-
-            reg(jar, W3PacketId.Greet,
-                    New UInt16Jar("slot layout included").Weaken,
-                    New ByteJar("player index").Weaken,
-                    New AddressJar("external address").Weaken)
-
-            reg(jar, W3PacketId.HostMapInfo,
-                    New UInt32Jar("unknown").Weaken,
-                    New StringJar("path").Weaken,
-                    New UInt32Jar("size").Weaken,
-                    New ArrayJar("crc32", 4).Weaken,
-                    New ArrayJar("xoro checksum", 4).Weaken,
-                    New ArrayJar("sha1 checksum", 20).Weaken)
-
-            reg(jar, W3PacketId.RejectEntry,
-                    New EnumUInt32Jar(Of RejectReason)("reason").Weaken)
-        End Sub
-        Private Shared Sub reg_lobby_to_play(ByVal jar As ManualSwitchJar)
-            '[server send; broadcast when a player becomes ready to play] [informs other players a player is ready] [players auto start when all others ready]
-            reg(jar, W3PacketId.OtherPlayerReady,
-                    New ByteJar("player index").Weaken)
-
-            reg(jar, W3PacketId.StartLoading)
-            reg(jar, W3PacketId.StartCountdown)
-            reg(jar, W3PacketId.Ready)
-        End Sub
-        Private Shared Sub reg_lobby(ByVal jar As ManualSwitchJar)
-            reg(jar, W3PacketId.OtherPlayerJoined,
-                    New UInt32Jar("peer key").Weaken,
-                    New ByteJar("index").Weaken,
-                    New StringJar("name", , , , "max 15 chars + terminator").Weaken,
-                    New UInt16Jar("unknown[0x01]").Weaken,
-                    New AddressJar("external address").Weaken,
-                    New AddressJar("internal address").Weaken)
-
-            reg(jar, W3PacketId.LobbyState,
-                    New UInt16Jar("state size").Weaken,
-                    New ListJar(Of Dictionary(Of String, Object))("slots", New SlotJar("slot")).Weaken,
-                    New UInt32Jar("time").Weaken,
-                    New ByteJar("layout style").Weaken,
-                    New ByteJar("num player slots").Weaken)
-        End Sub
-        Private Shared Sub reg_play(ByVal jar As ManualSwitchJar)
-            reg(jar, W3PacketId.ShowLagScreen,
-                    New ListJar(Of Dictionary(Of String, Object))("laggers",
-                        New TupleJar("lagger",
-                            New ByteJar("player index").Weaken,
-                            New UInt32Jar("initial milliseconds used").Weaken)).Weaken)
-            reg(jar, W3PacketId.RemovePlayerFromLagScreen,
-                    New ByteJar("player index").Weaken,
-                    New UInt32Jar("marginal milliseconds used").Weaken)
-            reg(jar, W3PacketId.ClientDropLagger)
-
-            reg(jar, W3PacketId.Tick,
-                    New UInt16Jar("time span").Weaken,
-                    New ArrayJar("subpacket", takerest:=True).Weaken)
-            reg(jar, W3PacketId.Tock,
-                    New ArrayJar("game state checksum", 5).Weaken)
-
-            reg(jar, W3PacketId.GameAction,
-                    New ArrayJar("crc32", expectedSize:=4).Weaken,
-                    New RepeatingJar(Of W3GameAction)("actions", New W3GameActionJar("action")).Weaken)
-        End Sub
-        Private Shared Sub reg_lan(ByVal jar As ManualSwitchJar)
-            reg(jar, W3PacketId.LanRequestGame,
-                    New StringJar("product id", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
-                    New UInt32Jar("major version").Weaken,
-                    New UInt32Jar("unknown1").Weaken)
-
-            reg(jar, W3PacketId.LanRefreshGame,
-                    New UInt32Jar("game id").Weaken,
-                    New UInt32Jar("num players").Weaken,
-                    New UInt32Jar("free slots").Weaken)
-
-            reg(jar, W3PacketId.LanCreateGame,
-                    New StringJar("product id", False, True, 4).Weaken,
-                    New UInt32Jar("major version").Weaken,
-                    New UInt32Jar("game id").Weaken)
-
-            reg(jar, W3PacketId.LanDestroyGame,
-                    New UInt32Jar("game id").Weaken)
-
-            reg(jar, W3PacketId.LanDescribeGame,
-                    New StringJar("product id", False, True, 4).Weaken,
-                    New UInt32Jar("major version").Weaken,
-                    New UInt32Jar("game id").Weaken,
-                    New UInt32Jar("entry key").Weaken,
-                    New StringJar("name", True).Weaken,
-                    New StringJar("password", True, , , "unused").Weaken,
-                    New W3MapSettingsJar("statstring"),
-                    New UInt32Jar("num slots").Weaken,
-                    New EnumUInt32Jar(Of GameTypeFlags)("game type", flags:=True).Weaken,
-                    New UInt32Jar("num players + 1").Weaken,
-                    New UInt32Jar("free slots + 1").Weaken,
-                    New UInt32Jar("age").Weaken,
-                    New UInt16Jar("listen port").Weaken)
-        End Sub
-        Private Shared Sub RegPeer(ByVal jar As ManualSwitchJar)
-            '[Peer introduction]
-            reg(jar, W3PacketId.PeerKnock,
-                    New UInt32Jar("receiver peer key").Weaken,
-                    New UInt32Jar("unknown1").Weaken,
-                    New ByteJar("sender player id").Weaken,
-                    New ByteJar("unknown3").Weaken,
-                    New UInt32Jar("sender peer connection flags").Weaken)
-            'receiver peer key given by host in OTHER_PLAYER_JOINED
-
-            '[Periodic update and keep-alive]
-            reg(jar, W3PacketId.PeerPing,
-                    New ArrayJar("salt", 4).Weaken,
-                    New UInt32Jar("sender peer connection flags").Weaken,
-                    New UInt32Jar("unknown2").Weaken)
-
-            '[Response to periodic keep-alive]
-            reg(jar, W3PacketId.PeerPong,
-                    New ArrayJar("salt", 4).Weaken)
-        End Sub
-        Private Shared Sub reg_dl(ByVal jar As ManualSwitchJar)
-            reg(jar, W3PacketId.ClientMapInfo,
-                    New UInt32Jar("unknown").Weaken,
-                    New EnumByteJar(Of DownloadState)("dl state").Weaken,
-                    New UInt32Jar("total downloaded").Weaken)
-
-            reg(jar, W3PacketId.SetUploadTarget,
-                    New UInt32Jar("unknown1").Weaken,
-                    New ByteJar("receiving player index").Weaken,
-                    New UInt32Jar("starting file pos").Weaken)
-
-            reg(jar, W3PacketId.SetDownloadSource,
-                    New UInt32Jar("unknown").Weaken,
-                    New ByteJar("sending player index").Weaken)
-
-            reg(jar, W3PacketId.MapFileData,
-                    New ByteJar("receiving player index").Weaken,
-                    New ByteJar("sending player index").Weaken,
-                    New UInt32Jar("unknown").Weaken,
-                    New UInt32Jar("file position").Weaken,
-                    New ArrayJar("crc32", 4).Weaken,
-                    New ArrayJar("file data", takerest:=True).Weaken)
-
-            reg(jar, W3PacketId.MapFileDataReceived,
-                    New ByteJar("sender index").Weaken,
-                    New ByteJar("receiver index").Weaken,
-                    New UInt32Jar("unknown").Weaken,
-                    New UInt32Jar("total downloaded").Weaken)
-
-            reg(jar, W3PacketId.MapFileDataProblem,
-                    New ByteJar("sender index").Weaken,
-                    New ByteJar("receiver index").Weaken,
-                    New UInt32Jar("unknown").Weaken)
-        End Sub
-#End Region
-
-#Region "Parsing"
-        Public Shared Function FromData(ByVal id As W3PacketId, ByVal data As ViewableList(Of Byte)) As W3Packet
-            If data Is Nothing Then Throw New ArgumentException()
-            Return New W3Packet(id, packetJar.Parse(id, data))
-        End Function
-#End Region
-
 #Region "Enums"
         Public Enum DownloadState As Byte
             NotDownloading = 1
@@ -502,6 +230,237 @@ Namespace Warcraft3
             Player11 = 13
             Player12 = 14
         End Enum
+#End Region
+
+#Region "Definition"
+        Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal id As W3PacketId, ByVal ParamArray subjars() As IJar(Of Object))
+            jar.reg(id, New TupleJar(id.ToString(), subjars).Weaken)
+        End Sub
+        Private Shared Function MakeW3PacketJar() As ManualSwitchJar
+            Dim jar = New ManualSwitchJar
+
+            'Misc
+            reg(jar, W3PacketId.Ping,
+                    New UInt32Jar("salt").Weaken)
+            reg(jar, W3PacketId.Pong,
+                    New UInt32Jar("salt").Weaken)
+
+            'Chat
+            Dim chatJar = New InteriorSwitchJar(Of Dictionary(Of String, Object))(
+                        W3PacketId.Text.ToString,
+                        Function(val) CByte(val("type")),
+                        Function(data) data(data(0) + 2))
+            chatJar.reg(ChatType.Game, New TupleJar(W3PacketId.Text.ToString,
+                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
+                    New ByteJar("sending player index").Weaken,
+                    New EnumByteJar(Of ChatType)("type").Weaken,
+                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
+                    New StringJar("message").Weaken))
+            chatJar.reg(ChatType.Lobby, New TupleJar(W3PacketId.Text.ToString,
+                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
+                    New ByteJar("sending player index").Weaken,
+                    New EnumByteJar(Of ChatType)("type").Weaken,
+                    New StringJar("message").Weaken))
+            jar.reg(W3PacketId.Text, chatJar.Weaken)
+
+            'NonGameAction commands
+            Dim commandJar = New InteriorSwitchJar(Of Dictionary(Of String, Object))(
+                        W3PacketId.NonGameAction.ToString,
+                        Function(val) CByte(val("command type")),
+                        Function(data) data(data(0) + 2))
+            commandJar.reg(NonGameAction.GameChat, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ByteJar("sending player").Weaken,
+                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
+                    New StringJar("message").Weaken))
+            commandJar.reg(NonGameAction.LobbyChat, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ByteJar("sending player").Weaken,
+                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New StringJar("message").Weaken))
+            commandJar.reg(NonGameAction.SetTeam, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ByteJar("sending player").Weaken,
+                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New ByteJar("new value").Weaken))
+            commandJar.reg(NonGameAction.SetHandicap, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ByteJar("sending player").Weaken,
+                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New ByteJar("new value").Weaken))
+            commandJar.reg(NonGameAction.SetRace, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", , 1).Weaken,
+                    New ByteJar("sending player").Weaken,
+                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New EnumByteJar(Of W3Slot.RaceFlags)("new value", flags:=True).Weaken))
+            commandJar.reg(NonGameAction.SetColor, New TupleJar(W3PacketId.NonGameAction.ToString,
+                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                    New ByteJar("sending player").Weaken,
+                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New EnumByteJar(Of W3Slot.PlayerColor)("new value").Weaken))
+            jar.reg(W3PacketId.NonGameAction, commandJar.Weaken)
+
+            'Player Exit
+            reg(jar, W3PacketId.Leaving,
+                    New EnumUInt32Jar(Of W3PlayerLeaveTypes)("leave type").Weaken)
+            reg(jar, W3PacketId.OtherPlayerLeft,
+                    New ByteJar("player index").Weaken,
+                    New EnumUInt32Jar(Of W3PlayerLeaveTypes)("leave type").Weaken)
+
+            'Player Entry
+            reg(jar, W3PacketId.Knock,
+                    New UInt32Jar("game id").Weaken,
+                    New UInt32Jar("entry key").Weaken,
+                    New ByteJar("unknown2").Weaken,
+                    New UInt16Jar("listen port").Weaken,
+                    New UInt32Jar("peer key").Weaken,
+                    New StringJar("name", , , , "max 15 characters + terminator").Weaken,
+                    New UInt16Jar("unknown3").Weaken,
+                    New AddressJar("internal address").Weaken)
+            reg(jar, W3PacketId.Greet,
+                    New UInt16Jar("slot layout included").Weaken,
+                    New ByteJar("player index").Weaken,
+                    New AddressJar("external address").Weaken)
+            reg(jar, W3PacketId.HostMapInfo,
+                    New UInt32Jar("unknown").Weaken,
+                    New StringJar("path").Weaken,
+                    New UInt32Jar("size").Weaken,
+                    New ArrayJar("crc32", 4).Weaken,
+                    New ArrayJar("xoro checksum", 4).Weaken,
+                    New ArrayJar("sha1 checksum", 20).Weaken)
+            reg(jar, W3PacketId.RejectEntry,
+                    New EnumUInt32Jar(Of RejectReason)("reason").Weaken)
+            reg(jar, W3PacketId.OtherPlayerJoined,
+                    New UInt32Jar("peer key").Weaken,
+                    New ByteJar("index").Weaken,
+                    New StringJar("name", , , , "max 15 chars + terminator").Weaken,
+                    New UInt16Jar("unknown[0x01]").Weaken,
+                    New AddressJar("external address").Weaken,
+                    New AddressJar("internal address").Weaken)
+
+            'Lobby
+            reg(jar, W3PacketId.OtherPlayerReady,
+                    New ByteJar("player index").Weaken)
+            reg(jar, W3PacketId.StartLoading)
+            reg(jar, W3PacketId.StartCountdown)
+            reg(jar, W3PacketId.Ready)
+            reg(jar, W3PacketId.LobbyState,
+                    New UInt16Jar("state size").Weaken,
+                    New ListJar(Of Dictionary(Of String, Object))("slots", New SlotJar("slot")).Weaken,
+                    New UInt32Jar("time").Weaken,
+                    New ByteJar("layout style").Weaken,
+                    New ByteJar("num player slots").Weaken)
+            reg(jar, W3PacketId.PeerConnectionInfo,
+                    New UInt16Jar("player bitflags").Weaken)
+
+            'Gameplay
+            reg(jar, W3PacketId.ShowLagScreen,
+                    New ListJar(Of Dictionary(Of String, Object))("laggers",
+                        New TupleJar("lagger",
+                            New ByteJar("player index").Weaken,
+                            New UInt32Jar("initial milliseconds used").Weaken)).Weaken)
+            reg(jar, W3PacketId.RemovePlayerFromLagScreen,
+                    New ByteJar("player index").Weaken,
+                    New UInt32Jar("marginal milliseconds used").Weaken)
+            reg(jar, W3PacketId.ClientDropLagger)
+            reg(jar, W3PacketId.Tick,
+                    New UInt16Jar("time span").Weaken,
+                    New ArrayJar("subpacket", takerest:=True).Weaken)
+            reg(jar, W3PacketId.Tock,
+                    New ArrayJar("game state checksum", 5).Weaken)
+            reg(jar, W3PacketId.GameAction,
+                    New ArrayJar("crc32", expectedSize:=4).Weaken,
+                    New RepeatingJar(Of W3GameAction)("actions", New W3GameActionJar("action")).Weaken)
+
+            'Lan
+            reg(jar, W3PacketId.LanRequestGame,
+                    New StringJar("product id", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
+                    New UInt32Jar("major version").Weaken,
+                    New UInt32Jar("unknown1").Weaken)
+            reg(jar, W3PacketId.LanRefreshGame,
+                    New UInt32Jar("game id").Weaken,
+                    New UInt32Jar("num players").Weaken,
+                    New UInt32Jar("free slots").Weaken)
+            reg(jar, W3PacketId.LanCreateGame,
+                    New StringJar("product id", False, True, 4).Weaken,
+                    New UInt32Jar("major version").Weaken,
+                    New UInt32Jar("game id").Weaken)
+            reg(jar, W3PacketId.LanDestroyGame,
+                    New UInt32Jar("game id").Weaken)
+            reg(jar, W3PacketId.LanDescribeGame,
+                    New StringJar("product id", False, True, 4).Weaken,
+                    New UInt32Jar("major version").Weaken,
+                    New UInt32Jar("game id").Weaken,
+                    New UInt32Jar("entry key").Weaken,
+                    New StringJar("name", True).Weaken,
+                    New StringJar("password", True, , , "unused").Weaken,
+                    New W3MapSettingsJar("statstring"),
+                    New UInt32Jar("num slots").Weaken,
+                    New EnumUInt32Jar(Of GameTypeFlags)("game type", flags:=True).Weaken,
+                    New UInt32Jar("num players + 1").Weaken,
+                    New UInt32Jar("free slots + 1").Weaken,
+                    New UInt32Jar("age").Weaken,
+                    New UInt16Jar("listen port").Weaken)
+
+            'Peer
+            reg(jar, W3PacketId.PeerKnock,
+                    New UInt32Jar("receiver peer key").Weaken,
+                    New UInt32Jar("unknown1").Weaken,
+                    New ByteJar("sender player id").Weaken,
+                    New ByteJar("unknown3").Weaken,
+                    New UInt32Jar("sender peer connection flags").Weaken)
+            reg(jar, W3PacketId.PeerPing,
+                    New ArrayJar("salt", 4).Weaken,
+                    New UInt32Jar("sender peer connection flags").Weaken,
+                    New UInt32Jar("unknown2").Weaken)
+            reg(jar, W3PacketId.PeerPong,
+                    New ArrayJar("salt", 4).Weaken)
+
+            'Map Download
+            reg(jar, W3PacketId.ClientMapInfo,
+                    New UInt32Jar("unknown").Weaken,
+                    New EnumByteJar(Of DownloadState)("dl state").Weaken,
+                    New UInt32Jar("total downloaded").Weaken)
+            reg(jar, W3PacketId.SetUploadTarget,
+                    New UInt32Jar("unknown1").Weaken,
+                    New ByteJar("receiving player index").Weaken,
+                    New UInt32Jar("starting file pos").Weaken)
+            reg(jar, W3PacketId.SetDownloadSource,
+                    New UInt32Jar("unknown").Weaken,
+                    New ByteJar("sending player index").Weaken)
+            reg(jar, W3PacketId.MapFileData,
+                    New ByteJar("receiving player index").Weaken,
+                    New ByteJar("sending player index").Weaken,
+                    New UInt32Jar("unknown").Weaken,
+                    New UInt32Jar("file position").Weaken,
+                    New ArrayJar("crc32", 4).Weaken,
+                    New ArrayJar("file data", takerest:=True).Weaken)
+            reg(jar, W3PacketId.MapFileDataReceived,
+                    New ByteJar("sender index").Weaken,
+                    New ByteJar("receiver index").Weaken,
+                    New UInt32Jar("unknown").Weaken,
+                    New UInt32Jar("total downloaded").Weaken)
+            reg(jar, W3PacketId.MapFileDataProblem,
+                    New ByteJar("sender index").Weaken,
+                    New ByteJar("receiver index").Weaken,
+                    New UInt32Jar("unknown").Weaken)
+
+            'EXPERIMENTAL
+            reg(jar, W3PacketId.ConfirmHost)
+            reg(jar, W3PacketId.SetHost,
+                    New ByteJar("player index").Weaken)
+            reg(jar, W3PacketId.AcceptHost)
+
+            Return jar
+        End Function
+#End Region
+
+#Region "Parsing"
+        Public Shared Function FromData(ByVal id As W3PacketId, ByVal data As ViewableList(Of Byte)) As W3Packet
+            If data Is Nothing Then Throw New ArgumentException()
+            Return New W3Packet(id, packetJar.Parse(id, data))
+        End Function
 #End Region
 
 #Region "Packing: Misc Packets"

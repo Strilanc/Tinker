@@ -20,6 +20,7 @@ Namespace Bnet
     '''<source>BNETDocs.org</source>
     Public Enum BnetPacketID As Byte
         Null = &H0
+        '''<summary>Client requests server close the client's listed game.</summary>
         CloseGame3 = &H2
         ServerList = &H4
         ClientId = &H5
@@ -27,8 +28,10 @@ Namespace Bnet
         ReportVersion = &H7
         StartAdvex = &H8
         QueryGamesList = &H9
+        '''<summary>Request/response for entering chat.</summary>
         EnterChat = &HA
         GetChannelList = &HB
+        '''<summary>Request/response for joining a channel ... duh</summary>
         JoinChannel = &HC
         ChatCommand = &HE
         ChatEvent = &HF
@@ -42,6 +45,7 @@ Namespace Bnet
         MessageBox = &H19
         StartAdvex2 = &H1A
         GameDataAddress = &H1B
+        '''<summary>Request/response for listing a game.</summary>
         CreateGame3 = &H1C
         LogonChallengeEx = &H1D
         ClientId2 = &H1E
@@ -74,16 +78,20 @@ Namespace Bnet
         QueryRealms2 = &H40
         QueryAdUrl = &H41
         WarcraftGeneral = &H44
+        '''<summary>Client tells server what port it will listen for other clients on when hosting games.</summary>
         NetGamePort = &H45
         NewsInfo = &H46
         OptionalWork = &H4A
         ExtraWork = &H4B
         RequiredWork = &H4C
         Tournament = &H4E
+        '''<summary>Introductions, server authentication, and server challenge to client.</summary>
         AuthenticationBegin = &H50
+        '''<summary>The client authenticates itself against the server's challenge</summary>
         AuthenticationFinish = &H51
         AccountCreate = &H52
         AccountLogonBegin = &H53
+        '''<summary>Exchange of password proofs</summary>
         AccountLogonFinish = &H54
         AccountChange = &H55
         AccountChangeProof = &H56
@@ -130,221 +138,20 @@ Namespace Bnet
             Contract.Invariant(payload IsNot Nothing)
         End Sub
 
-#Region "New"
         Private Sub New(ByVal id As BnetPacketID, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
             Me.payload = payload
             Me.id = id
         End Sub
         Private Sub New(ByVal id As BnetPacketID, ByVal value As Object)
-            Me.New(id, packetJar.pack(id, value))
+            Me.New(id, packetJar.Pack(id, value))
             Contract.Requires(value IsNot Nothing)
         End Sub
-#End Region
-
-
-#Region "Jar"
-        Private Shared Sub regPack(ByVal jar As ManualSwitchJar,
-                                   ByVal id As BnetPacketID,
-                                   ByVal ParamArray subjars() As IPackJar(Of Object))
-            jar.regPacker(id, New TuplePackJar(id.ToString(), subjars).Weaken)
-        End Sub
-        Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As BnetPacketID, ByVal ParamArray subjars() As IParseJar(Of Object))
-            jar.regParser(id, New TupleParseJar(id.ToString(), subjars))
-        End Sub
-        Private Shared Sub reg_login(ByVal jar As ManualSwitchJar)
-            'AUTHENTICATION_BEGIN [Introductions, server authentication, and server challenge to client]
-            '[client send] [the client introduces itself]
-            regPack(jar, BnetPacketID.AuthenticationBegin,
-                    New UInt32Jar("protocol").Weaken,
-                    New StringJar("platform", False, True, 4).Weaken,
-                    New StringJar("product", False, True, 4).Weaken,
-                    New UInt32Jar("product version").Weaken,
-                    New StringJar("product language", False, , 4).Weaken,
-                    New IpBytesJar("internal ip").Weaken,
-                    New UInt32Jar("time zone offset").Weaken,
-                    New UInt32Jar("location id").Weaken,
-                    New UInt32Jar("language id").Weaken,
-                    New StringJar("country abrev").Weaken,
-                    New StringJar("country name").Weaken)
-            '[client receive] [the server introduces itself, authenticates itself, and challenges the client for authentication]
-            regParse(jar, BnetPacketID.AuthenticationBegin,
-                    New EnumUInt32Jar(Of AuthenticationBeginLogonType)("logon type").Weaken,
-                    New ArrayJar("server cd key salt", 4),
-                    New ArrayJar("udp value", 4),
-                    New ArrayJar("mpq file time", 8),
-                    New StringJar("mpq number string"),
-                    New StringJar("mpq hash challenge"),
-                    New ArrayJar("server signature", 128))
-
-            'AUTHENTICATION_FINISH [Client authentication]
-            '[client send] [the client authenticates itself against the server's challenge]
-            regPack(jar, BnetPacketID.AuthenticationFinish,
-                    New ArrayJar("client cd key salt", 4).Weaken,
-                    New ArrayJar("exe version", 4).Weaken,
-                    New ArrayJar("mpq challenge response", 4).Weaken,
-                    New UInt32Jar("# cd keys").Weaken,
-                    New ValueJar("spawn [unused]", 4, "0=false, 1=true").Weaken,
-                    New CDKeyJar("ROC cd key").Weaken,
-                    New CDKeyJar("TFT cd key").Weaken,
-                    New StringJar("exe info").Weaken,
-                    New StringJar("owner").Weaken)
-            '[client receive] [the server informs the client whether or not it was authenticated]
-            regParse(jar, BnetPacketID.AuthenticationFinish,
-                    New EnumUInt32Jar(Of AuthenticationFinishResult)("result").Weaken,
-                    New StringJar("info"))
-
-            'ACCOUNT_LOGON_BEGIN [Account check and cryptographic key transfer]
-            '[client send]
-            regPack(jar, BnetPacketID.AccountLogonBegin,
-                    New ArrayJar("client public key", 32).Weaken,
-                    New StringJar("username").Weaken)
-            '[client receive]
-            regParse(jar, BnetPacketID.AccountLogonBegin,
-                    New EnumUInt32Jar(Of AccountLogonBeginResult)("result").Weaken,
-                    New ArrayJar("account password salt", 32),
-                    New ArrayJar("server public key", 32))
-
-            'ACCOUNT_LOGON_FINISH [exchange of password proofs]
-            '[client receive]
-            regParse(jar, BnetPacketID.AccountLogonFinish,
-                    New EnumUInt32Jar(Of AccountLogonFinishResult)("result").Weaken,
-                    New ArrayJar("server password proof", 20),
-                    New StringJar("custom error info"))
-            '[client send]
-            regPack(jar, BnetPacketID.AccountLogonFinish,
-                    New ArrayJar("client password proof", 20).Weaken)
-
-
-            'ENTER_CHAT [Request/response for entering chat]
-            '[client send]
-            regPack(jar, BnetPacketID.EnterChat,
-                    New StringJar("username", , , , "[unused]").Weaken,
-                    New StringJar("statstring", , , , "[unused]").Weaken)
-            '[client receive]
-            regParse(jar, BnetPacketID.EnterChat,
-                    New StringJar("chat username"),
-                    New StringJar("statstring", , True),
-                    New StringJar("account username"))
-        End Sub
-        Private Shared Sub reg_state(ByVal jar As ManualSwitchJar)
-            regPack(jar, BnetPacketID.QueryGamesList,
-                    New EnumUInt32Jar(Of GameTypeFlags)("filter", flags:=True).Weaken,
-                    New EnumUInt32Jar(Of GameTypeFlags)("filter mask", flags:=True).Weaken,
-                    New UInt32Jar("unknown0").Weaken,
-                    New UInt32Jar("list count").Weaken,
-                    New StringJar("game name", True, , , "empty means list games").Weaken,
-                    New StringJar("game password", True).Weaken,
-                    New StringJar("game stats", True).Weaken)
-            regParse(jar, BnetPacketID.QueryGamesList, New ListParseJar(Of Dictionary(Of String, Object))("games", numSizePrefixBytes:=4, subjar:=New TupleParseJar("game",
-                     New EnumUInt32Jar(Of GameTypeFlags)("game type", flags:=True).Weaken,
-                     New UInt32Jar("language id").Weaken,
-                     New AddressJar("host address"),
-                     New EnumUInt32Jar(Of GameStateFlags)("game state", flags:=True).Weaken,
-                     New UInt32Jar("elapsed seconds").Weaken,
-                     New StringJar("game name", True),
-                     New StringJar("game password", True),
-                     New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian).Weaken,
-                     New TextHexValueJar("game id", 8, ByteOrder.LittleEndian).Weaken,
-                     New W3MapSettingsJar("game statstring"))))
-
-            'CREATE_GAME_3 [Request/response for listing a game]
-            '[client send]
-            regPack(jar, BnetPacketID.CreateGame3,
-                    New EnumUInt32Jar(Of GameStateFlags)("game state", flags:=True).Weaken,
-                    New UInt32Jar("seconds since creation").Weaken,
-                    New EnumUInt32Jar(Of GameTypeFlags)("game type", flags:=True).Weaken,
-                    New UInt32Jar("unknown1=1023").Weaken,
-                    New ValueJar("ladder", 4, "0=false, 1=true)").Weaken,
-                    New StringJar("name").Weaken,
-                    New StringJar("password").Weaken,
-                    New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian).Weaken,
-                    New TextHexValueJar("game id", 8, ByteOrder.LittleEndian).Weaken,
-                    New W3MapSettingsJar("statstring"))
-            '[client receive]
-            regParse(jar, BnetPacketID.CreateGame3,
-                    New ValueJar("result", 4, "0=success").Weaken)
-
-            'CLOSE_GAME_3 [Client requests server close the client's listed game]
-            '[client send]
-            regPack(jar, BnetPacketID.CloseGame3)
-
-            'JOIN_CHANNEL [Client requests joining a channel]
-            '[client send]
-            regPack(jar, BnetPacketID.JoinChannel,
-                    New ArrayJar("flags", 4, , , "0=no create, 1=first join, 2=forced join, 3=diablo2 join").Weaken,
-                    New StringJar("channel").Weaken)
-
-            'NET_GAME_PORT [Client tells server what port it will listen for other clients on when hosting games]
-            '[client send]
-            regPack(jar, BnetPacketID.NetGamePort,
-                    New UInt16Jar("port").Weaken)
-        End Sub
-        Private Shared Sub reg_misc(ByVal jar As ManualSwitchJar)
-            'CHAT_EVENT [Informs the client what other clients are doing (talking, leaving, etc)]
-            '[client receive]
-            regParse(jar, BnetPacketID.ChatEvent,
-                    New EnumUInt32Jar(Of ChatEventId)("event id").Weaken,
-                    New ArrayJar("flags", 4),
-                    New UInt32Jar("ping").Weaken,
-                    New IpBytesJar("ip", "[unused]"),
-                    New ArrayJar("acc#", 4, , , "[unused]"),
-                    New ArrayJar("authority", 4, , , "[unused]"),
-                    New StringJar("username").Weaken,
-                    New StringJar("text").Weaken)
-
-            'NULL [ignored keep-alive packet]
-            '[client receive]
-            regParse(jar, BnetPacketID.Null)
-            '[client send]
-            regPack(jar, BnetPacketID.Null)
-
-            'PING [sent periodically by server]
-            '[client receive]
-            regParse(jar, BnetPacketID.Ping,
-                    New UInt32Jar("salt").Weaken)
-            '[client send]
-            regPack(jar, BnetPacketID.Ping,
-                    New UInt32Jar("salt").Weaken)
-
-            'MESSAGE_BOX [server yells at client]
-            '[client receive]
-            regParse(jar, BnetPacketID.MessageBox,
-                    New UInt32Jar("style").Weaken,
-                    New StringJar("text"),
-                    New StringJar("caption"))
-
-            'CHAT_COMMAND [client sends text to server]
-            '[client send]
-            regPack(jar, BnetPacketID.ChatCommand,
-                    New StringJar("text").Weaken)
-
-            'FRIENDS_UPDATE
-            '[client receive]
-            regParse(jar, BnetPacketID.FriendsUpdate,
-                    New ByteJar("entry number").Weaken,
-                    New ByteJar("location id").Weaken,
-                    New ByteJar("status").Weaken,
-                    New StringJar("product id", False, True, 4),
-                    New StringJar("location"))
-
-            'REQUIRED_WORKD
-            '[client receive]
-            regParse(jar, BnetPacketID.RequiredWork,
-                    New StringJar("filename"))
-
-            'WARDEN
-            regParse(jar, BnetPacketID.Warden, New ArrayJar("encrypted data", , , True))
-            regPack(jar, BnetPacketID.Warden, New ArrayJar("encrypted data", , , True).Weaken)
-        End Sub
-        Public Shared Function MakeBnetPacketJar() As ManualSwitchJar
-            Dim jar As New ManualSwitchJar
-            reg_login(jar)
-            reg_misc(jar)
-            reg_state(jar)
-            Return jar
+        Public Shared Function FromData(ByVal id As BnetPacketID, ByVal data As ViewableList(Of Byte)) As BnetPacket
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
+            Return New BnetPacket(id, packetJar.Parse(id, data))
         End Function
-#End Region
 
 #Region "Enums"
         Public Enum AuthenticationBeginLogonType As Byte
@@ -403,6 +210,155 @@ Namespace Bnet
         End Enum
 #End Region
 
+#Region "Definition"
+        Private Shared Sub regPack(ByVal jar As ManualSwitchJar,
+                                   ByVal id As BnetPacketID,
+                                   ByVal ParamArray subjars() As IPackJar(Of Object))
+            jar.regPacker(id, New TuplePackJar(id.ToString(), subjars).Weaken)
+        End Sub
+        Private Shared Sub regParse(ByVal jar As ManualSwitchJar, ByVal id As BnetPacketID, ByVal ParamArray subjars() As IParseJar(Of Object))
+            jar.regParser(id, New TupleParseJar(id.ToString(), subjars))
+        End Sub
+
+        Private Shared Function MakeBnetPacketJar() As ManualSwitchJar
+            Dim jar As New ManualSwitchJar
+
+            'Connection
+            regPack(jar, BnetPacketID.AuthenticationBegin,
+                    New UInt32Jar("protocol").Weaken,
+                    New StringJar("platform", False, True, 4).Weaken,
+                    New StringJar("product", False, True, 4).Weaken,
+                    New UInt32Jar("product version").Weaken,
+                    New StringJar("product language", False, , 4).Weaken,
+                    New IpBytesJar("internal ip").Weaken,
+                    New UInt32Jar("time zone offset").Weaken,
+                    New UInt32Jar("location id").Weaken,
+                    New UInt32Jar("language id").Weaken,
+                    New StringJar("country abrev").Weaken,
+                    New StringJar("country name").Weaken)
+            regParse(jar, BnetPacketID.AuthenticationBegin,
+                    New EnumUInt32Jar(Of AuthenticationBeginLogonType)("logon type").Weaken,
+                    New ArrayJar("server cd key salt", 4),
+                    New ArrayJar("udp value", 4),
+                    New ArrayJar("mpq file time", 8),
+                    New StringJar("mpq number string"),
+                    New StringJar("mpq hash challenge"),
+                    New ArrayJar("server signature", 128))
+            regPack(jar, BnetPacketID.AuthenticationFinish,
+                    New ArrayJar("client cd key salt", 4).Weaken,
+                    New ArrayJar("exe version", 4).Weaken,
+                    New ArrayJar("mpq challenge response", 4).Weaken,
+                    New UInt32Jar("# cd keys").Weaken,
+                    New ValueJar("spawn [unused]", 4, "0=false, 1=true").Weaken,
+                    New CDKeyJar("ROC cd key").Weaken,
+                    New CDKeyJar("TFT cd key").Weaken,
+                    New StringJar("exe info").Weaken,
+                    New StringJar("owner").Weaken)
+            regParse(jar, BnetPacketID.AuthenticationFinish,
+                    New EnumUInt32Jar(Of AuthenticationFinishResult)("result").Weaken,
+                    New StringJar("info"))
+            regPack(jar, BnetPacketID.AccountLogonBegin,
+                    New ArrayJar("client public key", 32).Weaken,
+                    New StringJar("username").Weaken)
+            regParse(jar, BnetPacketID.AccountLogonBegin,
+                    New EnumUInt32Jar(Of AccountLogonBeginResult)("result").Weaken,
+                    New ArrayJar("account password salt", 32),
+                    New ArrayJar("server public key", 32))
+            regParse(jar, BnetPacketID.AccountLogonFinish,
+                    New EnumUInt32Jar(Of AccountLogonFinishResult)("result").Weaken,
+                    New ArrayJar("server password proof", 20),
+                    New StringJar("custom error info"))
+            regPack(jar, BnetPacketID.AccountLogonFinish,
+                    New ArrayJar("client password proof", 20).Weaken)
+            regParse(jar, BnetPacketID.RequiredWork,
+                    New StringJar("filename"))
+
+            'Interaction
+            regParse(jar, BnetPacketID.ChatEvent,
+                    New EnumUInt32Jar(Of ChatEventId)("event id").Weaken,
+                    New ArrayJar("flags", 4),
+                    New UInt32Jar("ping").Weaken,
+                    New IpBytesJar("ip"),
+                    New ArrayJar("acc#", 4),
+                    New ArrayJar("authority", 4),
+                    New StringJar("username"),
+                    New StringJar("text"))
+            regParse(jar, BnetPacketID.MessageBox,
+                    New UInt32Jar("style").Weaken,
+                    New StringJar("text"),
+                    New StringJar("caption"))
+            regPack(jar, BnetPacketID.ChatCommand,
+                    New StringJar("text").Weaken)
+            regParse(jar, BnetPacketID.FriendsUpdate,
+                    New ByteJar("entry number").Weaken,
+                    New ByteJar("location id").Weaken,
+                    New ByteJar("status").Weaken,
+                    New StringJar("product id", False, True, 4),
+                    New StringJar("location"))
+            regPack(jar, BnetPacketID.QueryGamesList,
+                    New EnumUInt32Jar(Of GameTypeFlags)("filter", flags:=True).Weaken,
+                    New EnumUInt32Jar(Of GameTypeFlags)("filter mask", flags:=True).Weaken,
+                    New UInt32Jar("unknown0").Weaken,
+                    New UInt32Jar("list count").Weaken,
+                    New StringJar("game name", True, , , "empty means list games").Weaken,
+                    New StringJar("game password", True).Weaken,
+                    New StringJar("game stats", True).Weaken)
+            regParse(jar, BnetPacketID.QueryGamesList, New ListParseJar(Of Dictionary(Of String, Object))("games", numSizePrefixBytes:=4, subjar:=New TupleParseJar("game",
+                    New EnumUInt32Jar(Of GameTypeFlags)("game type", flags:=True).Weaken,
+                    New UInt32Jar("language id").Weaken,
+                    New AddressJar("host address"),
+                    New EnumUInt32Jar(Of GameStateFlags)("game state", flags:=True).Weaken,
+                    New UInt32Jar("elapsed seconds").Weaken,
+                    New StringJar("game name", True),
+                    New StringJar("game password", True),
+                    New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian).Weaken,
+                    New TextHexValueJar("game id", 8, ByteOrder.LittleEndian).Weaken,
+                    New W3MapSettingsJar("game statstring"))))
+
+            'State
+            regPack(jar, BnetPacketID.EnterChat,
+                    New StringJar("username", , , , "[unused]").Weaken,
+                    New StringJar("statstring", , , , "[unused]").Weaken)
+            regParse(jar, BnetPacketID.EnterChat,
+                    New StringJar("chat username"),
+                    New StringJar("statstring", , True),
+                    New StringJar("account username"))
+            regPack(jar, BnetPacketID.CreateGame3,
+                    New EnumUInt32Jar(Of GameStateFlags)("game state", flags:=True).Weaken,
+                    New UInt32Jar("seconds since creation").Weaken,
+                    New EnumUInt32Jar(Of GameTypeFlags)("game type", flags:=True).Weaken,
+                    New UInt32Jar("unknown1=1023").Weaken,
+                    New ValueJar("ladder", 4, "0=false, 1=true)").Weaken,
+                    New StringJar("name").Weaken,
+                    New StringJar("password").Weaken,
+                    New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian).Weaken,
+                    New TextHexValueJar("game id", 8, ByteOrder.LittleEndian).Weaken,
+                    New W3MapSettingsJar("statstring"))
+            regParse(jar, BnetPacketID.CreateGame3,
+                    New ValueJar("result", 4, "0=success").Weaken)
+            regPack(jar, BnetPacketID.CloseGame3)
+            regPack(jar, BnetPacketID.JoinChannel,
+                    New ArrayJar("flags", 4, , , "0=no create, 1=first join, 2=forced join, 3=diablo2 join").Weaken,
+                    New StringJar("channel").Weaken)
+            regPack(jar, BnetPacketID.NetGamePort,
+                    New UInt16Jar("port").Weaken)
+
+            'Periodic
+            regParse(jar, BnetPacketID.Null)
+            regPack(jar, BnetPacketID.Null)
+            regParse(jar, BnetPacketID.Ping,
+                    New UInt32Jar("salt").Weaken)
+            regPack(jar, BnetPacketID.Ping,
+                    New UInt32Jar("salt").Weaken)
+            regParse(jar, BnetPacketID.Warden,
+                    New ArrayJar("encrypted data", takeRest:=True))
+            regPack(jar, BnetPacketID.Warden,
+                    New ArrayJar("encrypted data", takeRest:=True).Weaken)
+
+            Return jar
+        End Function
+#End Region
+
 #Region "Packers: Logon"
         Public Shared Function MakeAuthenticationBegin(ByVal version As UInteger, ByVal local_ip() As Byte) As BnetPacket
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
@@ -447,7 +403,7 @@ Namespace Bnet
             Return New BnetPacket(BnetPacketID.AuthenticationFinish, New Dictionary(Of String, Object) From {
                     {"client cd key salt", clientCdKeySalt},
                     {"exe version", version},
-                    {"mpq challenge response", Bnet.Crypt.GenerateRevisionCheck(mpqFolder, mpqNumberString, mpqHashChallenge).bytes(ByteOrder.LittleEndian)},
+                    {"mpq challenge response", Bnet.Crypt.GenerateRevisionCheck(mpqFolder, mpqNumberString, mpqHashChallenge).Bytes(ByteOrder.LittleEndian)},
                     {"# cd keys", 2},
                     {"spawn [unused]", 0},
                     {"ROC cd key", CDKeyJar.packCDKey(rocKey, clientCdKeySalt.ToView, serverCdKeySalt.ToView)},
@@ -481,6 +437,7 @@ Namespace Bnet
                 })
         End Function
 #End Region
+
 #Region "Packers: State"
         Public Shared Function MakeNetGamePort(ByVal port As UShort) As BnetPacket
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
@@ -505,7 +462,7 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Dim vals As New Dictionary(Of String, Object)
             Return New BnetPacket(BnetPacketID.JoinChannel, New Dictionary(Of String, Object) From {
-                    {"flags", CUInt(flags).bytes(ByteOrder.LittleEndian)},
+                    {"flags", CUInt(flags).Bytes(ByteOrder.LittleEndian)},
                     {"channel", channel}})
         End Function
         Public Shared Function MakeCreateGame3(ByVal game As IW3GameStateDescription,
@@ -533,6 +490,7 @@ Namespace Bnet
             Return New BnetPacket(BnetPacketID.CloseGame3, New Dictionary(Of String, Object))
         End Function
 #End Region
+
 #Region "Packers: CKL"
         Public Shared Function MakeCklAuthenticationFinish(ByVal Version As Byte(),
                                                            ByVal MpqFolder As String,
@@ -560,7 +518,7 @@ Namespace Bnet
 
             vals("client cd key salt") = clientCdKeySalt
             vals("exe version") = Version
-            vals("mpq challenge response") = Bnet.Crypt.GenerateRevisionCheck(MpqFolder, MpqNumberString, MpqHashChallenge).bytes(ByteOrder.LittleEndian)
+            vals("mpq challenge response") = Bnet.Crypt.GenerateRevisionCheck(MpqFolder, MpqNumberString, MpqHashChallenge).Bytes(ByteOrder.LittleEndian)
             vals("# cd keys") = 2
             vals("spawn [unused]") = 0
             vals("exe info") = ExeInformation
@@ -577,6 +535,7 @@ Namespace Bnet
             )
         End Function
 #End Region
+
 #Region "Packers: Misc"
         Public Shared Function MakeChatCommand(ByVal text As String) As BnetPacket
             Contract.Requires(text IsNot Nothing)
@@ -604,12 +563,6 @@ Namespace Bnet
                     {"encrypted data", encryptedData}})
         End Function
 #End Region
-
-        Public Shared Function FromData(ByVal id As BnetPacketID, ByVal data As ViewableList(Of Byte)) As BnetPacket
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
-            Return New BnetPacket(id, packetJar.Parse(id, data))
-        End Function
 
 #Region "Jars"
         Public Class TextHexValueJar
