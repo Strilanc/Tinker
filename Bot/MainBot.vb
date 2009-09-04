@@ -549,45 +549,64 @@ Public Class PortPool
     End Sub
 
     Public Function EnumPorts() As IEnumerable(Of UShort)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of UShort))() IsNot Nothing)
         SyncLock lock
-            Return PortPool.ToList()
+            Return PortPool.ToArray()
         End SyncLock
     End Function
     Public Function EnumUsedPorts() As IEnumerable(Of UShort)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of UShort))() IsNot Nothing)
         SyncLock lock
-            Return OutPorts.ToList()
+            Return OutPorts.ToArray()
         End SyncLock
     End Function
     Public Function EnumAvailablePorts() As IEnumerable(Of UShort)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of UShort))() IsNot Nothing)
         SyncLock lock
-            Return InPorts.ToList()
+            Return InPorts.ToArray()
         End SyncLock
     End Function
 
-    Public Function TryAddPort(ByVal port As UShort) As Outcome
+    Public Enum TryAddPortOutcome
+        AlreadyInPool
+        AddedToPool
+        '''<summary>The port was still in used when removed from the pool, and was still in use now after being re-added.</summary>
+        ReAddedToPoolWhileStillInUse
+    End Enum
+    Public Function TryAddPort(ByVal port As UShort) As TryAddPortOutcome
         SyncLock lock
-            If PortPool.Contains(port) Then Return failure("Port {0} is already in the pool.".frmt(port))
+            If PortPool.Contains(port) Then Return TryAddPortOutcome.AlreadyInPool
             PortPool.Add(port)
-            If OutPorts.Contains(port) Then Return success("Port {0} re-added to the pool, but was still in use.".frmt(port))
+            If OutPorts.Contains(port) Then Return TryAddPortOutcome.ReAddedToPoolWhileStillInUse
             InPorts.Add(port)
-            Return success("Port {0} added to the pool.".frmt(port))
-        End SyncLock
-    End Function
-    Public Function TryRemovePort(ByVal port As UShort) As Outcome
-        SyncLock lock
-            If Not PortPool.Contains(port) Then Return failure("Port {0} is not in the pool.".frmt(port))
-            PortPool.Remove(port)
-            If OutPorts.Contains(port) Then Return success("Port {0} removed from the pool, but is still in use.".frmt(port))
-            InPorts.Remove(port)
-            Return success("Port {0} removed from the pool.".frmt(port))
+            Return TryAddPortOutcome.AddedToPool
         End SyncLock
     End Function
 
-    Public Function TryTakePortFromPool() As PortHandle
+    Public Enum TryRemovePortOutcome
+        WasNotInPool
+        RemovedFromPool
+        '''<summary>The port was in use, but it is 'removed' in that it will not return to the pool when it is released.</summary>
+        RemovedFromPoolButStillInUse
+    End Enum
+    Public Function TryRemovePort(ByVal port As UShort) As TryRemovePortOutcome
+        SyncLock lock
+            If Not PortPool.Contains(port) Then Return TryRemovePortOutcome.WasNotInPool
+            PortPool.Remove(port)
+            If OutPorts.Contains(port) Then Return TryRemovePortOutcome.RemovedFromPoolButStillInUse
+            InPorts.Remove(port)
+            Return TryRemovePortOutcome.RemovedFromPool
+        End SyncLock
+    End Function
+
+    Public Function TryAcquireAnyPort() As PortHandle
+        Contract.Ensures(Contract.Result(Of PortHandle)() Is Nothing OrElse Not InPorts.Contains(Contract.Result(Of PortHandle).Port))
+        Contract.Ensures(Contract.Result(Of PortHandle)() Is Nothing OrElse OutPorts.Contains(Contract.Result(Of PortHandle).Port))
         SyncLock lock
             If InPorts.Count = 0 Then Return Nothing
             Dim port = New PortHandle(Me, InPorts.First)
             InPorts.Remove(port.Port)
+            OutPorts.Add(port.Port)
             Return port
         End SyncLock
     End Function
@@ -604,15 +623,15 @@ Public Class PortPool
 
         Public ReadOnly Property Port() As UShort
             Get
-                If IsDisposed Then Throw New ObjectDisposedException(GetType(PortHandle).Name)
+                If IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
                 Return _port
             End Get
         End Property
 
         Protected Overrides Sub Dispose(ByVal disposing As Boolean)
             SyncLock pool.lock
-                If pool.InPorts.Contains(_port) Then Throw New InvalidStateException("Unreturned Port was still in pool.")
-                If Not pool.OutPorts.Contains(_port) Then Throw New InvalidStateException("Unreturned Port was not checked out from pool.")
+                Contract.Assume(pool.OutPorts.Contains(_port))
+                Contract.Assume(Not pool.InPorts.Contains(_port))
                 pool.OutPorts.Remove(_port)
                 If pool.PortPool.Contains(_port) Then
                     pool.InPorts.Add(_port)

@@ -127,7 +127,7 @@ Namespace Commands.Specializations
                 If arguments.Count >= 3 Then remote_host = arguments(2)
 
                 If listen_port = 0 Then
-                    Dim out = target.portPool.TryTakePortFromPool()
+                    Dim out = target.portPool.TryAcquireAnyPort()
                     If out Is Nothing Then Return failure("Failed to get a port from pool.").Futurize()
                     Return target.QueueAddWidget(New W3LanAdvertiser(target, name, out, remote_host))
                 Else
@@ -162,9 +162,9 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 Return target.QueueFindClient(arguments(0)).EvalWhenValueReady(
                     Function(client)
-                                                                                   If client Is Nothing Then  Return failure("No matching client").Futurize()
-                                                                                   Return target.ClientCommands.ProcessCommand(client, user, arguments.SubToArray(1))
-                                                                               End Function
+                        If client Is Nothing Then  Return failure("No matching client").Futurize()
+                        Return target.ClientCommands.ProcessCommand(client, user, arguments.SubToArray(1))
+                    End Function
                 ).Defuturize()
             End Function
         End Class
@@ -432,7 +432,7 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
                 If arguments.Count < 2 Then
-                    Dim port = target.portPool.TryTakePortFromPool()
+                    Dim port = target.portPool.TryAcquireAnyPort()
                     If port Is Nothing Then Return failure("Failed to get a port from pool.").Futurize
                     Return target.QueueAddWidget(New CKL.BotCKLServer(arguments(0), port))
                 Else

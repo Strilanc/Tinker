@@ -15,7 +15,7 @@ Public Class FrmClient
             'prep bot
             CacheIPAddresses()
             bot = New MainBot(New InvokedCallQueue(Me))
-            For Each port In FrmSettings.parse_port_list(My.Settings.port_pool, "")
+            For Each port In FrmSettings.parsePortList(My.Settings.port_pool, "")
                 bot.portPool.TryAddPort(port)
             Next port
             botcMain.logBot.SetLogUnexpected(True)

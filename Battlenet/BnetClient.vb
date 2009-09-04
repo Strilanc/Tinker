@@ -247,7 +247,7 @@ Namespace Bnet
 
                 'Allocate port
                 If Me.listenPort = 0 Then
-                    Dim out = parent.portPool.TryTakePortFromPool()
+                    Dim out = parent.portPool.TryAcquireAnyPort()
                     If out Is Nothing Then
                         Return Failure("No listen port specified, and no ports available in the pool.").Futurize()
                     End If

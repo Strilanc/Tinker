@@ -34,7 +34,7 @@ Public Class FrmSettings
         txtInitialPlugins.Text = My.Settings.initial_plugins
     End Sub
 
-    Public Shared Function parse_port_list(ByVal text As String, ByRef out_text As String) As IEnumerable(Of UShort)
+    Public Shared Function parsePortList(ByVal text As String, ByRef out_text As String) As IEnumerable(Of UShort)
         Dim ports As New List(Of UShort)
         Dim out_words As New List(Of String)
         For Each word In text.Replace(" "c, "").Split(","c)
@@ -140,8 +140,8 @@ Public Class FrmSettings
         Next tab
 
         'Sync desired port pool with bot port pool
-        Dim port_pool_text = txtPortPool.Text
-        Dim ports = parse_port_list(port_pool_text, port_pool_text)
+        Dim portPoolText = txtPortPool.Text
+        Dim ports = parsePortList(portPoolText, portPoolText)
         For Each port In bot.portPool.EnumPorts
             If Not ports.Contains(port) Then
                 bot.portPool.TryRemovePort(port)
@@ -161,7 +161,7 @@ Public Class FrmSettings
         My.Settings.game_tick_period = CUShort(numTickPeriod.Value)
         My.Settings.ingame_name = txtInGameName.Text
         My.Settings.initial_plugins = txtInitialPlugins.Text
-        My.Settings.port_pool = port_pool_text
+        My.Settings.port_pool = portPoolText
 
         Using m As New IO.MemoryStream()
             Using w As New IO.BinaryWriter(m)

@@ -95,7 +95,7 @@ Namespace Warcraft3
                     FutureWait(3.Seconds).CallWhenReady(
                         Sub()
                             For i = 1 To 3
-                                Dim receivedPort = parent.portPool.TryTakePortFromPool()
+                                Dim receivedPort = parent.portPool.TryAcquireAnyPort()
                                 If receivedPort Is Nothing Then
                                     logger.Log("Failed to get port for fake player.", LogMessageTypes.Negative)
                                     Exit For
@@ -118,7 +118,7 @@ Namespace Warcraft3
                         Throw New InvalidOperationException("Server has no port for Grab player to connect on.")
                     End If
 
-                    Dim grabPort = parent.portPool.TryTakePortFromPool()
+                    Dim grabPort = parent.portPool.TryAcquireAnyPort()
                     If grabPort Is Nothing Then
                         Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
                     End If

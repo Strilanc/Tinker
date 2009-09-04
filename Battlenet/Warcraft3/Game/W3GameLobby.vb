@@ -3,10 +3,9 @@
         Implements IW3Game
 
         Public Const SELF_DOWNLOAD_ID As Byte = 255
-        Private Const DOWNLOAD_UPDATE_PERIOD As UShort = 3000
 
         Private downloadScheduler As TransferScheduler(Of Byte)
-        Private ReadOnly downloadTimer As New Timers.Timer(DOWNLOAD_UPDATE_PERIOD)
+        Private ReadOnly downloadTimer As New Timers.Timer(1000.Milliseconds.TotalSeconds)
         Private ReadOnly freeIndexes As New List(Of Byte)
         Private ReadOnly slotStateUpdateThrottle As New Throttle(250.MilliSeconds)
         Private ReadOnly updateEventThrottle As New Throttle(100.MilliSeconds)
@@ -120,7 +119,7 @@
                     Throw New InvalidOperationException("Server has no port for Grab player to connect on.")
                 End If
 
-                Dim grabPort = server.parent.portPool.TryTakePortFromPool()
+                Dim grabPort = server.parent.portPool.TryAcquireAnyPort()
                 If grabPort Is Nothing Then
                     Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
                 End If
