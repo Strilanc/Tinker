@@ -624,7 +624,7 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             subdata = If(subdata, {})
             If subdata.Length > 0 Then
-                subdata = Concat(Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).bytes(ByteOrder.LittleEndian).SubArray(0, 2), subdata)
+                subdata = Concat(Bnet.Crypt.crc32(New IO.MemoryStream(subdata)).Bytes().SubArray(0, 2), subdata)
             End If
 
             Return New W3Packet(W3PacketId.Tick, New Dictionary(Of String, Object) From {
@@ -656,7 +656,7 @@ Namespace Warcraft3
                     {"sending player index", senderIndex},
                     {"unknown", 1},
                     {"file position", filePosition},
-                    {"crc32", Bnet.Crypt.crc32(New IO.MemoryStream(filedata)).bytes(ByteOrder.LittleEndian)},
+                    {"crc32", Bnet.Crypt.crc32(New IO.MemoryStream(filedata)).Bytes()},
                     {"file data", filedata}})
         End Function
         Public Shared Function MakeSetUploadTarget(ByVal receiverIndex As Byte,

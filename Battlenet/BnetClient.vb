@@ -686,7 +686,7 @@ Namespace Bnet
                                     Dim rocKeyData = CType(CType(out.Value.payload.Value, Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
                                     Dim rocHash = CType(rocKeyData("hash"), Byte())
                                     Contract.Assume(rocHash IsNot Nothing)
-                                    BeginConnectBnlsServer(rocHash.SubArray(0, 4).ToUInt32(ByteOrder.LittleEndian))
+                                    BeginConnectBnlsServer(rocHash.SubArray(0, 4).ToUInt32())
                                     logger.Log(out.Message, LogMessageTypes.Positive)
                                     SendPacket(out.Value)
                                 Else
@@ -716,7 +716,7 @@ Namespace Bnet
                 Dim rocKeyData = CType(CType(p.payload.Value, Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
                 Dim rocHash = CType(rocKeyData("hash"), Byte())
                 Contract.Assume(rocHash IsNot Nothing)
-                BeginConnectBnlsServer(rocHash.SubArray(0, 4).ToUInt32(ByteOrder.LittleEndian))
+                BeginConnectBnlsServer(rocHash.SubArray(0, 4).ToUInt32())
                 SendPacket(p)
             End If
         End Sub

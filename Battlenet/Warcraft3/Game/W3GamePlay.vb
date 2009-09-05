@@ -159,7 +159,7 @@
 
                 'append client data to broadcast game data
                 Dim data = Concat({GetVisiblePlayer(e.Source).index},
-                                  CUShort(e.Data.Length).bytes(ByteOrder.LittleEndian),
+                                  CUShort(e.Data.Length).Bytes(),
                                   e.Data)
                 dataList.Add(Data)
                 dataLength += Data.Length
@@ -188,7 +188,7 @@
             Dim data_ = data
             Return Concat((From e In data_
                            Select Concat({If(e.Source Is receiver_, receiver_, GetVisiblePlayer(e.Source)).index},
-                                         CUShort(e.Data.Length).bytes(ByteOrder.LittleEndian),
+                                         CUShort(e.Data.Length).Bytes(),
                                          e.Data)))
         End Function
 #End Region

@@ -110,7 +110,7 @@
             Return New BnlsWardenPacket(BnlsWardenPacketId.FullServiceConnect, New Dictionary(Of String, Object) From {
                     {"cookie", cookie},
                     {"client type", BnlsClientType.Warcraft3TFT},
-                    {"seed", seed.Bytes(ByteOrder.LittleEndian)},
+                    {"seed", seed.Bytes()},
                     {"username", ""},
                     {"password", New Byte() {}},
                     {"unspecified", New Byte() {}}})

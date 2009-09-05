@@ -221,12 +221,12 @@ Namespace Warcraft3
             Me._folder = folder
             Using f = New IO.BufferedStream(New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
                 Me._fileSize = CUInt(f.Length)
-                Me._crc32 = Bnet.Crypt.crc32(f).bytes(ByteOrder.LittleEndian)
+                Me._crc32 = Bnet.Crypt.crc32(f).Bytes()
             End Using
             Dim mpqa = New Mpq.MpqArchive(fullPath)
             Dim mpq_war3path = OpenWar3PatchArchive(w3patch_folder)
             Me._checksumSha1 = ComputeMapSha1Checksum(mpqa, mpq_war3path)
-            Me._checksumXoro = CUInt(ComputeMapXoro(mpqa, mpq_war3path)).bytes(ByteOrder.LittleEndian)
+            Me._checksumXoro = CUInt(ComputeMapXoro(mpqa, mpq_war3path)).Bytes()
 
             ReadMapInfo(mpqa)
 

@@ -311,8 +311,8 @@ Namespace Bnet
                     New UInt32Jar("elapsed seconds").Weaken,
                     New StringJar("game name", True),
                     New StringJar("game password", True),
-                    New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian).Weaken,
-                    New TextHexValueJar("game id", 8, ByteOrder.LittleEndian).Weaken,
+                    New TextHexValueJar("num free slots", numdigits:=1).Weaken,
+                    New TextHexValueJar("game id", numdigits:=8).Weaken,
                     New W3MapSettingsJar("game statstring"))))
 
             'State
@@ -331,8 +331,8 @@ Namespace Bnet
                     New ValueJar("ladder", 4, "0=false, 1=true)").Weaken,
                     New StringJar("name").Weaken,
                     New StringJar("password").Weaken,
-                    New TextHexValueJar("num free slots", 1, ByteOrder.LittleEndian).Weaken,
-                    New TextHexValueJar("game id", 8, ByteOrder.LittleEndian).Weaken,
+                    New TextHexValueJar("num free slots", numdigits:=1).Weaken,
+                    New TextHexValueJar("game id", numdigits:=8).Weaken,
                     New W3MapSettingsJar("statstring"))
             regParse(jar, BnetPacketID.CreateGame3,
                     New ValueJar("result", 4, "0=success").Weaken)
@@ -403,7 +403,7 @@ Namespace Bnet
             Return New BnetPacket(BnetPacketID.AuthenticationFinish, New Dictionary(Of String, Object) From {
                     {"client cd key salt", clientCdKeySalt},
                     {"exe version", version},
-                    {"mpq challenge response", Bnet.Crypt.GenerateRevisionCheck(mpqFolder, mpqNumberString, mpqHashChallenge).Bytes(ByteOrder.LittleEndian)},
+                    {"mpq challenge response", Bnet.Crypt.GenerateRevisionCheck(mpqFolder, mpqNumberString, mpqHashChallenge).Bytes()},
                     {"# cd keys", 2},
                     {"spawn [unused]", 0},
                     {"ROC cd key", CDKeyJar.packCDKey(rocKey, clientCdKeySalt.ToView, serverCdKeySalt.ToView)},
@@ -462,7 +462,7 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Dim vals As New Dictionary(Of String, Object)
             Return New BnetPacket(BnetPacketID.JoinChannel, New Dictionary(Of String, Object) From {
-                    {"flags", CUInt(flags).Bytes(ByteOrder.LittleEndian)},
+                    {"flags", CUInt(flags).Bytes()},
                     {"channel", channel}})
         End Function
         Public Shared Function MakeCreateGame3(ByVal game As IW3GameStateDescription,
@@ -518,7 +518,7 @@ Namespace Bnet
 
             vals("client cd key salt") = clientCdKeySalt
             vals("exe version") = Version
-            vals("mpq challenge response") = Bnet.Crypt.GenerateRevisionCheck(MpqFolder, MpqNumberString, MpqHashChallenge).Bytes(ByteOrder.LittleEndian)
+            vals("mpq challenge response") = Bnet.Crypt.GenerateRevisionCheck(MpqFolder, MpqNumberString, MpqHashChallenge).Bytes()
             vals("# cd keys") = 2
             vals("spawn [unused]") = 0
             vals("exe info") = ExeInformation
@@ -576,7 +576,7 @@ Namespace Bnet
 
             Public Sub New(ByVal name As String,
                            ByVal numDigits As Integer,
-                           ByVal byteOrder As ByteOrder)
+                           Optional ByVal byteOrder As ByteOrder = Strilbrary.ByteOrder.LittleEndian)
                 MyBase.New(name)
                 Contract.Requires(name IsNot Nothing)
                 Contract.Requires(numDigits > 0)
@@ -600,7 +600,7 @@ Namespace Bnet
                             u >>= 4
                         Next i
                     Case Else
-                        Throw New UnreachableException()
+                        Throw byteOrder.ValueShouldBeImpossibleException
                 End Select
 
                 Return New Pickling.Pickle(Of R)(Me.Name, value, New String(digits).ToAscBytes().ToView())
@@ -651,10 +651,10 @@ Namespace Bnet
                 Contract.Requires(data.Length = 36)
 
                 Return New Dictionary(Of String, Object) From {
-                        {"length", data.SubArray(0, 4).ToUInt32(ByteOrder.LittleEndian)},
+                        {"length", data.SubArray(0, 4).ToUInt32()},
                         {"product key", data.SubArray(4, 4)},
                         {"public key", data.SubArray(8, 4)},
-                        {"unknown", data.SubArray(12, 4).ToUInt32(ByteOrder.LittleEndian)},
+                        {"unknown", data.SubArray(12, 4).ToUInt32()},
                         {"hash", data.SubArray(16, 20)}}
             End Function
         End Class

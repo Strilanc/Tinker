@@ -224,7 +224,7 @@ Public Class PacketStreamer
                     If readSize < packetData.Length Then 'need more data
                         Return True.Futurize
                     ElseIf totalSize = 0 Then 'finished reading packet header
-                        totalSize = CInt(packetData.SubArray(numBytesBeforeSize, numSizeBytes).ToUInt32(ByteOrder.LittleEndian))
+                        totalSize = CInt(packetData.SubArray(numBytesBeforeSize, numSizeBytes).ToUInt32())
                         If totalSize < headerSize Then 'too small
                             f.SetValue(New IO.IOException("Invalid packet size (less than header size)."))
                         ElseIf totalSize > maxPacketSize Then 'too large
@@ -292,7 +292,7 @@ Public Class PacketStreamer
         If packetData.Length < headerSize Then Throw New ArgumentException("Data didn't include header data.")
 
         'Encode size
-        System.Array.Copy(CULng(packetData.Length).bytes(ByteOrder.LittleEndian, numSizeBytes), 0, packetData, numBytesBeforeSize, numSizeBytes)
+        System.Array.Copy(CULng(packetData.Length).Bytes(size:=numSizeBytes), 0, packetData, numBytesBeforeSize, numSizeBytes)
 
         substream.Write(packetData, 0, packetData.Length)
     End Sub

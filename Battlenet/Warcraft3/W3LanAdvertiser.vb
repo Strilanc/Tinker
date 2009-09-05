@@ -233,7 +233,7 @@ Public NotInheritable Class W3LanAdvertiser
         Try
             'pack
             Dim data = pk.payload.Data.ToArray()
-            data = Concat({W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).bytes(ByteOrder.LittleEndian), data)
+            data = Concat({W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).Bytes(), data)
 
             'Log
             logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageTypes.DataEvent)

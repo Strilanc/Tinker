@@ -44,7 +44,7 @@ Namespace Pickling.Jars
             Dim data(0 To size - 1) As Byte
             If sizePrefixSize > 0 Then
                 size -= sizePrefixSize
-                Dim ds = CUInt(size).Bytes(ByteOrder.LittleEndian, size:=sizePrefixSize)
+                Dim ds = CUInt(size).Bytes(size:=sizePrefixSize)
                 If ds.Length <> sizePrefixSize Then Throw New PicklingException("Unable to fit size into prefix.")
                 For i = 0 To sizePrefixSize - 1
                     data(i) = ds(i)
@@ -70,7 +70,7 @@ Namespace Pickling.Jars
                     Throw New PicklingException("Not enough data to parse array. Data ended before size prefix could be read.")
                 End If
                 'Read size prefix
-                outputSize = CInt(data.SubView(pos, sizePrefixSize).ToUInt32(ByteOrder.LittleEndian))
+                outputSize = CInt(data.SubView(pos, sizePrefixSize).ToUInt32())
                 inputSize = outputSize + sizePrefixSize
                 If expectedSize <> 0 And expectedSize <> inputSize Then
                     Throw New PicklingException("Array size doesn't match expected size")
@@ -359,7 +359,7 @@ Namespace Pickling.Jars
 
         Public Overrides Function Pack(Of R As List(Of T))(ByVal value As R) As IPickle(Of R)
             Dim pickles = (From e In value Select CType(subjar.Pack(e), IPickle(Of T))).ToList()
-            Dim data = Concat(CUInt(value.Count).Bytes(ByteOrder.LittleEndian, size:=prefixSize), Concat(From p In pickles Select p.Data.ToArray))
+            Dim data = Concat(CUInt(value.Count).Bytes(size:=prefixSize), Concat(From p In pickles Select p.Data.ToArray))
             Return New Pickle(Of R)(Me.Name, value, data.ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
         End Function
     End Class

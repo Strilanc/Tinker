@@ -10,10 +10,11 @@
             VisibilityAlwaysVisible = 1 << 10
             VisibilityDefault = 1 << 11
             'ObserversNone = 0 'no flags set
-            ObserversFull = 1 << 12 Or 1 << 13
+            ObserversFull = 1 << 12
             ObserversOnDefeat = 1 << 13
             OptionTeamsTogether = 1 << 14
-            OptionLockTeams = 1 << 17 Or 1 << 18
+            OptionLockTeams = 1 << 17
+            OptionLockTeams2 = 1 << 18
             OptionAllowFullSharedControl = 1 << 24
             OptionRandomRace = 1 << 25
             OptionRandomHero = 1 << 26
@@ -25,10 +26,11 @@
                     New ByteJar("unknown1").Weaken,
                     New UInt16Jar("playable width").Weaken,
                     New UInt16Jar("playable height").Weaken,
-                    New ArrayJar("xoro checksum", 4).Weaken,
+                    New ArrayJar("xoro checksum", expectedSize:=4).Weaken,
                     New StringJar("relative path").Weaken,
                     New StringJar("username").Weaken,
-                    New StringJar("unknown2").Weaken)
+                    New StringJar("unknown2").Weaken,
+                    New ArrayJar("sha1 checksum", expectedSize:=20).Weaken)
 
         Public Sub New(ByVal name As String)
             MyBase.New(name)
@@ -82,6 +84,7 @@
                     {"playable height", settings.playableHeight},
                     {"settings", u},
                     {"xoro checksum", settings.xoroChecksum.ToArray},
+                    {"sha1 checksum", settings.sha1Checksum.ToArray},
                     {"relative path", settings.relativePath},
                     {"username", username},
                     {"unknown1", 0},
@@ -138,6 +141,7 @@
             Dim playableWidth = CInt(vals("playable width"))
             Dim playableHeight = CInt(vals("playable height"))
             Dim xoroChecksum = CType(vals("xoro checksum"), Byte())
+            Dim sha1Checksum = CType(vals("sha1 checksum"), Byte())
             Dim relativePath = CStr(vals("relative path"))
 
             Dim ms = New W3MapSettings(Nothing,
@@ -153,6 +157,7 @@
                                        playableWidth,
                                        playableHeight,
                                        xoroChecksum,
+                                       sha1Checksum,
                                        relativePath)
             Dim dd = New Dictionary(Of String, Object) From {{"settings", ms}, {"username", CStr(vals("username"))}}
             Return New Pickling.Pickle(Of Object)(dd, data, p.Description)
@@ -205,6 +210,7 @@
         Public ReadOnly playableWidth As Integer
         Public ReadOnly playableHeight As Integer
         Public ReadOnly xoroChecksum As ViewableList(Of Byte)
+        Public ReadOnly sha1Checksum As ViewableList(Of Byte)
         Public ReadOnly relativePath As String
         Public ReadOnly gameType As GameTypeFlags
 
@@ -221,6 +227,7 @@
                        Optional ByVal playableWidth As Integer = 0,
                        Optional ByVal playableHeight As Integer = 0,
                        Optional ByVal xoroChecksum As Byte() = Nothing,
+                       Optional ByVal sha1Checksum As Byte() = Nothing,
                        Optional ByVal relativePath As String = Nothing,
                        Optional ByVal gameType As GameTypeFlags = 0)
             Me.randomHero = randomHero
@@ -234,12 +241,14 @@
             Me.playableWidth = playableWidth
             Me.playableHeight = playableHeight
             If xoroChecksum IsNot Nothing Then Me.xoroChecksum = xoroChecksum.ToView
+            If sha1Checksum IsNot Nothing Then Me.xoroChecksum = sha1Checksum.ToView
             Me.relativePath = relativePath
             Me.gameType = gameType
             If map IsNot Nothing Then
                 Me.playableWidth = map.playableWidth
                 Me.playableHeight = map.playableHeight
                 Me.xoroChecksum = map.ChecksumXoro.ToView
+                Me.sha1Checksum = map.ChecksumSha1.ToView
                 Me.relativePath = "Maps\" + map.RelativePath
                 Me.gameType = map.gameType
             Else

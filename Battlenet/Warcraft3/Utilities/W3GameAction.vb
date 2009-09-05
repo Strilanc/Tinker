@@ -423,14 +423,14 @@
 
             Public NotOverridable Overrides Function Pack(Of R As IdPair)(ByVal value As R) As IPickle(Of R)
                 Dim valued As IdPair = value
-                Dim data = Concat(valued.AllocatedId.Bytes(ByteOrder.LittleEndian), valued.CounterId.Bytes(ByteOrder.LittleEndian)).ToView
+                Dim data = Concat(valued.AllocatedId.Bytes(), valued.CounterId.Bytes()).ToView
                 Return New Pickle(Of R)(Me.Name, value, data, Function() ValueToString(valued))
             End Function
 
             Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of IdPair)
                 data = data.SubView(0, 8)
-                Dim value = New IdPair(data.SubView(0, 4).ToUInt32(ByteOrder.LittleEndian),
-                                       data.SubView(4, 4).ToUInt32(ByteOrder.LittleEndian))
+                Dim value = New IdPair(data.SubView(0, 4).ToUInt32(),
+                                       data.SubView(4, 4).ToUInt32())
                 Return New Pickle(Of IdPair)(Me.Name, value, data, Function() ValueToString(value))
             End Function
 
@@ -464,7 +464,7 @@
             End Sub
 
             Public Shared Function IdString(ByVal value As UInteger) As String
-                Dim bytes = value.Bytes(ByteOrder.LittleEndian)
+                Dim bytes = value.Bytes()
                 If (From b In bytes Where b < 32 Or b >= 128).None Then
                     'Ascii identifier (eg. 'hfoo' for human footman)
                     Return bytes.Reverse.ParseChrString(nullTerminated:=False)
