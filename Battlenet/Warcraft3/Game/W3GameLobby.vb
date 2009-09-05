@@ -352,8 +352,8 @@
             slots.MaxPair(Function(slot) slot.contents.WantPlayer(connecting_player.Name),
                                bestSlot,
                                bestMatch)
-            If bestMatch <= W3SlotContents.WantPlayerPriority.Reluctant Then
-                Return failure("No slot available for player.")
+            If bestMatch < W3SlotContents.WantPlayerPriority.Accept Then
+                Return Failure("No slot available for player.")
             End If
 
             'Assign index
@@ -835,7 +835,7 @@
                     Contract.Assume(nextIndex >= 0)
                     Dim nextSlot = slots(nextIndex)
                     Contract.Assume(nextSlot IsNot Nothing)
-                    If nextSlot.team = new_team AndAlso nextSlot.contents.WantPlayer(player.name) > W3SlotContents.WantPlayerPriority.Accept Then
+                    If nextSlot.team = new_team AndAlso nextSlot.contents.WantPlayer(player.name) >= W3SlotContents.WantPlayerPriority.Accept Then
                         SwapSlotContents(nextSlot, slot)
                         Exit For
                     End If

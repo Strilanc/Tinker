@@ -144,40 +144,42 @@ Namespace Warcraft3
         Private Sub ReceiveNonGameAction(ByVal sender As W3Player, ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
-            Dim command_type = CType(vals("command type"), W3Packet.NonGameAction)
+            Dim commandType = CType(vals("command type"), W3Packet.NonGameAction)
 
             'Player Chat
-            Select Case command_type
+            Select Case commandType
                 Case W3Packet.NonGameAction.GameChat, W3Packet.NonGameAction.LobbyChat
                     Dim message = CStr(vals("message"))
-                    Dim type = If(command_type = W3Packet.NonGameAction.GameChat, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby)
+                    Dim chatType = If(commandType = W3Packet.NonGameAction.GameChat, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby)
                     Dim receiverType As W3Packet.ChatReceiverType
-                    If type = W3Packet.ChatType.Game Then receiverType = CType(vals("receiver type"), W3Packet.ChatReceiverType)
-                    Dim receivePlayerIndexes = CType(vals("receiving player indexes"), IList(Of Byte))
+                    If chatType = W3Packet.ChatType.Game Then
+                        receiverType = CType(vals("receiver type"), W3Packet.ChatReceiverType)
+                    End If
+                    Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IList(Of Byte))
+
                     Contract.Assume(message IsNot Nothing)
-                    Contract.Assume(receivePlayerIndexes IsNot Nothing)
+                    Contract.Assume(receivingPlayerIndexes IsNot Nothing)
+
                     ReceiveChat(sender,
                                 message,
-                                type,
+                                chatType,
                                 receiverType,
-                                receivePlayerIndexes)
+                                receivingPlayerIndexes)
 
                 Case W3Packet.NonGameAction.SetTeam
-                    ReceiveSetTeam(sender, CByte(vals("command val")))
+                    ReceiveSetTeam(sender, CByte(vals("new value")))
 
                 Case W3Packet.NonGameAction.SetHandicap
-                    ReceiveSetHandicap(sender, CByte(vals("command val")))
+                    ReceiveSetHandicap(sender, CByte(vals("new value")))
 
                 Case W3Packet.NonGameAction.SetRace
-                    ReceiveSetRace(sender, CType(vals("command val"), W3Slot.RaceFlags))
+                    ReceiveSetRace(sender, CType(vals("new value"), W3Slot.RaceFlags))
 
                 Case W3Packet.NonGameAction.SetColor
-                    ReceiveSetColor(sender, CType(vals("command val"), W3Slot.PlayerColor))
+                    ReceiveSetColor(sender, CType(vals("new value"), W3Slot.PlayerColor))
 
                 Case Else
-                    Dim msg = "{0} sent unrecognized client command type: {1}".Frmt(sender.name, command_type)
-                    logger.Log(msg, LogMessageTypes.Negative)
-                    RemovePlayer(sender, True, W3PlayerLeaveTypes.Disconnect, msg)
+                    RemovePlayer(sender, True, W3PlayerLeaveTypes.Disconnect, "Sent unrecognized client command type: {0}".Frmt(commandType))
             End Select
         End Sub
 #End Region

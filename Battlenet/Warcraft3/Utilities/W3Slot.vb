@@ -162,9 +162,13 @@
 
 #Region "Player Methods"
         Public Enum WantPlayerPriority
+            '''<summary>This slot is already in use.</summary>
             Reject = 0
+            '''<summary>This slot could technically accept a player, but shouldn't (eg. closed).</summary>
             Reluctant = 1
+            '''<summary>This slot is available for players to enter.</summary>
             Accept = 2
+            '''<summary>This slot is reserved for the player. Pick it before the just-acceptable slots.</summary>
             AcceptReservation = 3
         End Enum
         Public Overridable Function WantPlayer(ByVal name As String) As WantPlayerPriority
