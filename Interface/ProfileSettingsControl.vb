@@ -2,12 +2,12 @@
     Public last_loaded_profile As ClientProfile
     Public Event delete(ByVal sender As ProfileSettingsControl)
 
-    Private Sub repair_values()
+    Private Sub RepairValues()
         txtTftKey.Text = txtTftKey.Text.Replace("-", "").ToUpper()
         txtRocKey.Text = txtRocKey.Text.Replace("-", "").ToUpper()
     End Sub
 
-    Public Sub load_from_profile(ByVal p As ClientProfile)
+    Public Sub LoadFromProfile(ByVal p As ClientProfile)
         If p Is Nothing Then Return
 
         txtUsername.Text = p.username
@@ -29,9 +29,9 @@
 
         last_loaded_profile = p
     End Sub
-    Public Sub save_to_profile(ByVal p As ClientProfile)
+    Public Sub SaveToProfile(ByVal p As ClientProfile)
         If p Is Nothing Then Return
-        repair_values()
+        RepairValues()
 
         p.username = txtUsername.Text
         p.password = txtPassword.Text

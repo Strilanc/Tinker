@@ -62,7 +62,7 @@
     </CodeContractsCustomRewriterAssembly>
     <CodeContractsCustomRewriterClass>
     </CodeContractsCustomRewriterClass>
-    <CodeContractsRuntimeCheckingLevel>Preconditions</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsRuntimeCheckingLevel>Pre and Post</CodeContractsRuntimeCheckingLevel>
     <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
     <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
     <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
@@ -180,12 +180,8 @@
     <Compile Include="Battlenet\Warcraft3\Utilities\W3MapSettings.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Slot.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Socket.vb" />
-    <Compile Include="Battlenet\Warcraft3\Warden\Warden BSha1.vb" />
-    <Compile Include="Battlenet\Warcraft3\Warden\Warden Packet.vb" />
-    <Compile Include="Battlenet\Warcraft3\Warden\Warden RC4.vb" />
-    <Compile Include="Battlenet\Warcraft3\Warden\Warden PRNG.vb" />
-    <Compile Include="Battlenet\Warcraft3\Warden\Warden Tester.vb" />
-    <Compile Include="BNLS\BNLS.vb" />
+    <Compile Include="BNLS\BnlsClient.vb" />
+    <Compile Include="BNLS\BnlsWardenPacket.vb" />
     <Compile Include="Bot\Commands\CKL Commands.vb" />
     <Compile Include="Bot\Commands\Lan Commands.vb" />
     <Compile Include="Bot\Widgets\CKL Client.vb" />
@@ -242,7 +238,6 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Bot\Plugins.vb" />
-    <Compile Include="Battlenet\Warcraft3\Warden\Warden Packet Handler.vb" />
     <Compile Include="Bot\Widgets\CKL Server.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Packet.vb" />
     <Compile Include="Bot\BotUser.vb" />

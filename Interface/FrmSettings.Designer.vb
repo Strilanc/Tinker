@@ -62,6 +62,8 @@ Partial Class FrmSettings
         Me.btnSave = New System.Windows.Forms.Button()
         Me.btnUserHelp = New System.Windows.Forms.Button()
         Me.OpenFileDialog = New System.Windows.Forms.OpenFileDialog()
+        Me.txtBnlsServer = New System.Windows.Forms.TextBox()
+        Me.lblBnlsServer = New System.Windows.Forms.Label()
         CType(Me.numTickPeriod, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.numLagLimit, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.tabsSettings.SuspendLayout()
@@ -206,6 +208,8 @@ Partial Class FrmSettings
         'tabGlobalSettings
         '
         Me.tabGlobalSettings.AutoScroll = True
+        Me.tabGlobalSettings.Controls.Add(Me.txtBnlsServer)
+        Me.tabGlobalSettings.Controls.Add(Me.lblBnlsServer)
         Me.tabGlobalSettings.Controls.Add(Me.lblPortPool)
         Me.tabGlobalSettings.Controls.Add(Me.txtPortPool)
         Me.tabGlobalSettings.Controls.Add(Me.Label1)
@@ -474,6 +478,26 @@ Partial Class FrmSettings
         '
         Me.OpenFileDialog.Title = "Select Plugin"
         '
+        'txtBnlsServer
+        '
+        Me.txtBnlsServer.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtBnlsServer.Location = New System.Drawing.Point(6, 253)
+        Me.txtBnlsServer.Name = "txtBnlsServer"
+        Me.txtBnlsServer.Size = New System.Drawing.Size(220, 20)
+        Me.txtBnlsServer.TabIndex = 60
+        Me.tipNormal.SetToolTip(Me.txtBnlsServer, "The address:port of a bnls server which supports warden responses (eg. example.com:9999)." _
+                                                    & vbNewLine & "The server is not given your username, password, or CD Keys." _
+                                                    & vbNewLine & "However, if the server accidentally or purposefully returns incorrect responses, bnet will think you are cheating.")
+        '
+        'lblBnlsServer
+        '
+        Me.lblBnlsServer.AutoSize = True
+        Me.lblBnlsServer.Location = New System.Drawing.Point(3, 237)
+        Me.lblBnlsServer.Name = "lblBnlsServer"
+        Me.lblBnlsServer.Size = New System.Drawing.Size(165, 13)
+        Me.lblBnlsServer.TabIndex = 61
+        Me.lblBnlsServer.Text = "BattleNet Logon Server (Warden)"
+        '
         'FrmSettings
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -542,4 +566,6 @@ Partial Class FrmSettings
     Friend WithEvents txtInitialPlugins As System.Windows.Forms.TextBox
     Friend WithEvents lblPortPool As System.Windows.Forms.Label
     Friend WithEvents txtPortPool As System.Windows.Forms.TextBox
+    Friend WithEvents txtBnlsServer As System.Windows.Forms.TextBox
+    Friend WithEvents lblBnlsServer As System.Windows.Forms.Label
 End Class

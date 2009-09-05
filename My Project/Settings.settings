@@ -44,5 +44,8 @@
     <Setting Name="port_pool" Type="System.String" Scope="User">
       <Value Profile="(Default)">6115-6119</Value>
     </Setting>
+    <Setting Name="bnls" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
   </Settings>
 </SettingsFile>

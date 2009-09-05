@@ -221,6 +221,18 @@ Namespace My
                 Me("port_pool") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property bnls() As String
+            Get
+                Return CType(Me("bnls"),String)
+            End Get
+            Set
+                Me("bnls") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

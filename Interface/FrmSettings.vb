@@ -32,6 +32,7 @@ Public Class FrmSettings
         numTickPeriod.Value = CDec(My.Settings.game_tick_period).Between(numTickPeriod.Minimum, numTickPeriod.Maximum)
         txtInGameName.Text = My.Settings.ingame_name
         txtInitialPlugins.Text = My.Settings.initial_plugins
+        txtBnlsServer.Text = My.Settings.bnls
     End Sub
 
     Public Shared Function parsePortList(ByVal text As String, ByRef out_text As String) As IEnumerable(Of UShort)
@@ -85,7 +86,7 @@ Public Class FrmSettings
     Private Sub add_profile_tab(ByVal profile As ClientProfile)
         Dim tab = New TabPage("Profile:" + profile.name)
         Dim cntrl = New ProfileSettingsControl()
-        cntrl.load_from_profile(profile)
+        cntrl.LoadFromProfile(profile)
         tab.Controls.Add(cntrl)
         cntrl.Dock = DockStyle.Fill
         With tabsSettings.TabPages
@@ -135,7 +136,7 @@ Public Class FrmSettings
             If tab Is tabNewProfile Then Continue For
             If tab Is tabPlugins Then Continue For
             For Each c As ProfileSettingsControl In tab.Controls
-                c.save_to_profile(c.last_loaded_profile)
+                c.SaveToProfile(c.last_loaded_profile)
             Next c
         Next tab
 
@@ -162,6 +163,7 @@ Public Class FrmSettings
         My.Settings.ingame_name = txtInGameName.Text
         My.Settings.initial_plugins = txtInitialPlugins.Text
         My.Settings.port_pool = portPoolText
+        My.Settings.bnls = txtBnlsServer.Text
 
         Using m As New IO.MemoryStream()
             Using w As New IO.BinaryWriter(m)

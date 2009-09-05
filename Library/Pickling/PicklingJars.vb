@@ -562,7 +562,7 @@ Namespace Pickling.Jars
         End Function
         Public Overloads Function Pack(Of R)(ByVal index As Byte, ByVal value As R) As IPickle(Of R)
             Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of R))() IsNot Nothing)
             If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + index.ToString())
             Return packers(index).Pack(value)
         End Function
