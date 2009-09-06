@@ -46,7 +46,7 @@ Namespace Warcraft3
         End Sub
 #End Region
 
-        <ContractInvariantMethod()> Protected Overrides Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(parent IsNot Nothing)
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(settings IsNot Nothing)
@@ -89,7 +89,7 @@ Namespace Warcraft3
                 For i = 1 To settings.instances
                     CreateGame()
                 Next i
-                parent.logger.Log("Server started for map {0}.".Frmt(settings.map.RelativePath), LogMessageTypes.Positive)
+                parent.logger.Log("Server started for map {0}.".Frmt(settings.map.RelativePath), LogMessageType.Positive)
 
                 If settings.testFakePlayers AndAlso settings.default_listen_ports.Any Then
                     FutureWait(3.Seconds).CallWhenReady(
@@ -97,7 +97,7 @@ Namespace Warcraft3
                             For i = 1 To 3
                                 Dim receivedPort = parent.portPool.TryAcquireAnyPort()
                                 If receivedPort Is Nothing Then
-                                    logger.Log("Failed to get port for fake player.", LogMessageTypes.Negative)
+                                    logger.Log("Failed to get port for fake player.", LogMessageType.Negative)
                                     Exit For
                                 End If
 
@@ -106,7 +106,7 @@ Namespace Warcraft3
                                 Dim i_ = i
                                 p.QueueConnect("localhost", settings.default_listen_ports.FirstOrDefault).CallWhenValueReady(
                                     Sub(succeeded)
-                                        Me.logger.Log("Fake player {0}: {1}".Frmt(i_, succeeded.Message), If(succeeded.succeeded, LogMessageTypes.Positive, LogMessageTypes.Negative))
+                                        Me.logger.Log("Fake player {0}: {1}".Frmt(i_, succeeded.Message), If(succeeded.succeeded, LogMessageType.Positive, LogMessageType.Negative))
                                     End Sub)
                             Next i
                         End Sub)
@@ -165,7 +165,7 @@ Namespace Warcraft3
             RaiseEvent PlayerSentData(Me, game, player, data)
         End Sub
         Private Sub c_PlayerLeft(ByVal game As IW3Game, ByVal game_state As W3GameStates, ByVal player As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
-            logger.Log("{0} left game {1}. ({2})".Frmt(player.name, game.name, reason), LogMessageTypes.Negative)
+            logger.Log("{0} left game {1}. ({2})".Frmt(player.name, game.name, reason), LogMessageType.Negative)
             RaiseEvent PlayerLeft(Me, game, game_state, player, leaveType, reason)
         End Sub
         Private Sub c_PlayerEntered(ByVal game As IW3Game, ByVal player As W3Player)
@@ -178,15 +178,15 @@ Namespace Warcraft3
 
                     Select Case new_state
                         Case W3GameStates.Loading
-                            logger.Log(sender.name + " has begun loading.", LogMessageTypes.Positive)
+                            logger.Log(sender.name + " has begun loading.", LogMessageType.Positive)
                             games_lobby.Remove(sender)
                             games_load_screen.Add(sender)
                         Case W3GameStates.Playing
-                            logger.Log(sender.name + " has started play.", LogMessageTypes.Positive)
+                            logger.Log(sender.name + " has started play.", LogMessageType.Positive)
                             games_load_screen.Remove(sender)
                             games_gameplay.Add(sender)
                         Case W3GameStates.Closed
-                            logger.Log(sender.name + " has closed.", LogMessageTypes.Negative)
+                            logger.Log(sender.name + " has closed.", LogMessageType.Negative)
                             RemoveGame(sender.name)
                     End Select
 
@@ -280,7 +280,7 @@ Namespace Warcraft3
             End If
 
             game = New W3Game(Me, game_name, settings.map, If(arguments, settings.header.Options))
-            logger.Log(game.name + " opened.", LogMessageTypes.Positive)
+            logger.Log(game.name + " opened.", LogMessageType.Positive)
             total_instances_created_P += 1
             games_all.Add(game)
             games_lobby.Add(game)

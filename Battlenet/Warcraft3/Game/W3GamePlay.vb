@@ -4,7 +4,7 @@
         Private Class GameTickDatum
             Private ReadOnly _source As W3Player
             Private ReadOnly _data As Byte()
-            <ContractInvariantMethod()> Protected Sub Invariant()
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_source IsNot Nothing)
                 Contract.Invariant(_data IsNot Nothing)
             End Sub

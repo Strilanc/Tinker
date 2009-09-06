@@ -42,7 +42,7 @@ Namespace Warcraft3
         Private Event PlayerLeft(ByVal sender As IW3Game, ByVal state As W3GameStates, ByVal leaver As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Game.PlayerLeft
         Private Event StateChanged(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates) Implements IW3Game.ChangedState
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(server IsNot Nothing)
             Contract.Invariant(map IsNot Nothing)
             Contract.Invariant(name IsNot Nothing)
@@ -119,7 +119,7 @@ Namespace Warcraft3
             Contract.Requires(requestedReceiverIndexes IsNot Nothing)
 
             'Log
-            logger.Log(sender.name + ": " + text, LogMessageTypes.Typical)
+            logger.Log(sender.name + ": " + text, LogMessageType.Typical)
             ThrowPlayerTalked(sender, text)
 
             'Forward to requested players
@@ -245,9 +245,9 @@ Namespace Warcraft3
 
                 If host IsNot Nothing AndAlso Not host.IsFake Then
                     BroadcastPacket(W3Packet.MakeSetHost(host.index), Nothing)
-                    logger.Log(name + " has handed off hosting to " + host.name, LogMessageTypes.Positive)
+                    logger.Log(name + " has handed off hosting to " + host.name, LogMessageType.Positive)
                 Else
-                    logger.Log(name + " has failed to hand off hosting", LogMessageTypes.Negative)
+                    logger.Log(name + " has failed to hand off hosting", LogMessageType.Negative)
                 End If
             End If
 
@@ -377,7 +377,7 @@ Namespace Warcraft3
                 Contract.Assume(player IsNot Nothing)
                 SendMessageTo(message, player, display:=False)
             Next player
-            logger.Log("{0}: {1}".Frmt(My.Resources.ProgramName, message), LogMessageTypes.Typical)
+            logger.Log("{0}: {1}".Frmt(My.Resources.ProgramName, message), LogMessageType.Typical)
         End Sub
 
         '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
@@ -396,7 +396,7 @@ Namespace Warcraft3
                                                      sender:=If(fakeHostPlayer, player)))
 
             If display Then
-                logger.Log("(Private to {0}): {1}".Frmt(player.name, message), LogMessageTypes.Typical)
+                logger.Log("(Private to {0}): {1}".Frmt(player.name, message), LogMessageType.Typical)
             End If
         End Sub
 #End Region
@@ -449,13 +449,13 @@ Namespace Warcraft3
 
             'Log
             If player.IsFake Then
-                logger.Log("{0} has been removed from the game. ({1})".Frmt(player.name, reason), LogMessageTypes.Negative)
+                logger.Log("{0} has been removed from the game. ({1})".Frmt(player.name, reason), LogMessageType.Negative)
             Else
                 flagHasPlayerLeft = True
                 If wasExpected Then
-                    logger.Log("{0} has left the game. ({1})".Frmt(player.name, reason), LogMessageTypes.Negative)
+                    logger.Log("{0} has left the game. ({1})".Frmt(player.name, reason), LogMessageType.Negative)
                 Else
-                    logger.Log("{0} has disconnected. ({1})".Frmt(player.name, reason), LogMessageTypes.Problem)
+                    logger.Log("{0} has disconnected. ({1})".Frmt(player.name, reason), LogMessageType.Problem)
                 End If
                 ThrowPlayerLeft(player, leaveType, reason)
             End If

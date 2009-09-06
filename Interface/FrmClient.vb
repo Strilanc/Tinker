@@ -42,9 +42,9 @@ Public Class FrmClient
                 Dim loaded = pluginLoadOutcomes(i)
 
                 If loaded.succeeded Then
-                    bot.logger.log("Loaded plugin '" + plugin + "'.", LogMessageTypes.Positive)
+                    bot.logger.log("Loaded plugin '" + plugin + "'.", LogMessageType.Positive)
                 Else
-                    bot.logger.log("Failed to load plugin '" + plugin + "': " + loaded.message, LogMessageTypes.Problem)
+                    bot.logger.log("Failed to load plugin '" + plugin + "': " + loaded.message, LogMessageType.Problem)
                 End If
             Next i
 

@@ -1,6 +1,6 @@
 Public Class LoggerControl
-    Private callbackModeMap As New Dictionary(Of LogMessageTypes, CallbackMode)
-    Private callbackColorMap As New Dictionary(Of LogMessageTypes, Color)
+    Private callbackModeMap As New Dictionary(Of LogMessageType, CallbackMode)
+    Private callbackColorMap As New Dictionary(Of LogMessageType, Color)
     Private WithEvents _logger As Logger
     Private blockEvents As Boolean
     Private ReadOnly uiRef As New InvokedCallQueue(Me)
@@ -40,20 +40,20 @@ Public Class LoggerControl
 #Region "Life"
     Public Sub New()
         InitializeComponent()
-        callbackModeMap(LogMessageTypes.Typical) = CallbackMode.On
-        callbackModeMap(LogMessageTypes.Problem) = CallbackMode.On
-        callbackModeMap(LogMessageTypes.Negative) = CallbackMode.On
-        callbackModeMap(LogMessageTypes.Positive) = CallbackMode.On
-        callbackModeMap(LogMessageTypes.DataEvent) = CallbackMode.Off
-        callbackModeMap(LogMessageTypes.DataParsed) = CallbackMode.Off
-        callbackModeMap(LogMessageTypes.DataRaw) = CallbackMode.Off
-        callbackColorMap(LogMessageTypes.Typical) = Color.Black
-        callbackColorMap(LogMessageTypes.DataEvent) = Color.DarkBlue
-        callbackColorMap(LogMessageTypes.DataParsed) = Color.DarkBlue
-        callbackColorMap(LogMessageTypes.DataRaw) = Color.DarkBlue
-        callbackColorMap(LogMessageTypes.Problem) = Color.Red
-        callbackColorMap(LogMessageTypes.Positive) = Color.DarkGreen
-        callbackColorMap(LogMessageTypes.Negative) = Color.DarkOrange
+        callbackModeMap(LogMessageType.Typical) = CallbackMode.On
+        callbackModeMap(LogMessageType.Problem) = CallbackMode.On
+        callbackModeMap(LogMessageType.Negative) = CallbackMode.On
+        callbackModeMap(LogMessageType.Positive) = CallbackMode.On
+        callbackModeMap(LogMessageType.DataEvent) = CallbackMode.Off
+        callbackModeMap(LogMessageType.DataParsed) = CallbackMode.Off
+        callbackModeMap(LogMessageType.DataRaw) = CallbackMode.Off
+        callbackColorMap(LogMessageType.Typical) = Color.Black
+        callbackColorMap(LogMessageType.DataEvent) = Color.DarkBlue
+        callbackColorMap(LogMessageType.DataParsed) = Color.DarkBlue
+        callbackColorMap(LogMessageType.DataRaw) = Color.DarkBlue
+        callbackColorMap(LogMessageType.Problem) = Color.Red
+        callbackColorMap(LogMessageType.Positive) = Color.DarkGreen
+        callbackColorMap(LogMessageType.Negative) = Color.DarkOrange
     End Sub
 #End Region
 
@@ -93,16 +93,16 @@ Public Class LoggerControl
                                              "Current Target File: '(My Documents)\HostBot\Logs\" + filename + "'")
             End If
             If dataEventsMode <> CallbackMode.Unspecified Then
-                callbackModeMap(LogMessageTypes.DataEvent) = dataEventsMode
-                sync_to_checkbox(chkDataEvents, LogMessageTypes.DataEvent)
+                callbackModeMap(LogMessageType.DataEvent) = dataEventsMode
+                sync_to_checkbox(chkDataEvents, LogMessageType.DataEvent)
             End If
             If parsedDataMode <> CallbackMode.Unspecified Then
-                callbackModeMap(LogMessageTypes.DataParsed) = parsedDataMode
-                sync_to_checkbox(chkParsedData, LogMessageTypes.DataParsed)
+                callbackModeMap(LogMessageType.DataParsed) = parsedDataMode
+                sync_to_checkbox(chkParsedData, LogMessageType.DataParsed)
             End If
             If rawDataMode <> CallbackMode.Unspecified Then
-                callbackModeMap(LogMessageTypes.DataRaw) = rawDataMode
-                sync_to_checkbox(chkRawData, LogMessageTypes.DataRaw)
+                callbackModeMap(LogMessageType.DataRaw) = rawDataMode
+                sync_to_checkbox(chkRawData, LogMessageType.DataRaw)
             End If
             blockEvents = False
         End SyncLock
@@ -241,7 +241,7 @@ Public Class LoggerControl
         message.CallWhenValueReady(
             Sub(out)
                 SyncLock lock
-                    Dim color = callbackColorMap(If(out.succeeded, LogMessageTypes.Positive, LogMessageTypes.Problem))
+                    Dim color = callbackColorMap(If(out.succeeded, LogMessageType.Positive, LogMessageType.Problem))
                     LogMessage(New QueuedMessage(out.Message, color, m))
                 End SyncLock
             End Sub
@@ -250,7 +250,7 @@ Public Class LoggerControl
 #End Region
 
 #Region "Log Events"
-    Private Sub c_LoggedMessage(ByVal type As LogMessageTypes, ByVal message As ExpensiveValue(Of String)) Handles _logger.LoggedMessage
+    Private Sub c_LoggedMessage(ByVal type As LogMessageType, ByVal message As ExpensiveValue(Of String)) Handles _logger.LoggedMessage
         Dim color As Color
         Dim fileOnly As Boolean
         SyncLock lock
@@ -270,16 +270,16 @@ Public Class LoggerControl
 
 #Region "UI Events"
     Private Sub chkDataEvents_CheckedChanged() Handles chkDataEvents.CheckStateChanged
-        sync_from_checkbox(chkDataEvents, LogMessageTypes.DataEvent)
+        sync_from_checkbox(chkDataEvents, LogMessageType.DataEvent)
     End Sub
     Private Sub chkParsedData_CheckedChanged() Handles chkParsedData.CheckStateChanged
-        sync_from_checkbox(chkParsedData, LogMessageTypes.DataParsed)
+        sync_from_checkbox(chkParsedData, LogMessageType.DataParsed)
     End Sub
     Private Sub chkRawData_CheckedChanged() Handles chkRawData.CheckStateChanged
-        sync_from_checkbox(chkRawData, LogMessageTypes.DataRaw)
+        sync_from_checkbox(chkRawData, LogMessageType.DataRaw)
     End Sub
 
-    Private Sub sync_from_checkbox(ByVal c As CheckBox, ByVal e As LogMessageTypes)
+    Private Sub sync_from_checkbox(ByVal c As CheckBox, ByVal e As LogMessageType)
         SyncLock lock
             Select Case c.CheckState
                 Case CheckState.Checked : callbackModeMap(e) = CallbackMode.On
@@ -288,7 +288,7 @@ Public Class LoggerControl
             End Select
         End SyncLock
     End Sub
-    Private Sub sync_to_checkbox(ByVal c As CheckBox, ByVal e As LogMessageTypes)
+    Private Sub sync_to_checkbox(ByVal c As CheckBox, ByVal e As LogMessageType)
         SyncLock lock
             Select Case callbackModeMap(e)
                 Case CallbackMode.On : c.CheckState = CheckState.Checked

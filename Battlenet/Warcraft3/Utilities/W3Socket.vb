@@ -108,8 +108,8 @@ Namespace Warcraft3
                 End If
 
                 'Log
-                Logger.log(Function() "Sending {0} to {1}".frmt(pk.id, Name), LogMessageTypes.DataEvent)
-                Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+                Logger.log(Function() "Sending {0} to {1}".frmt(pk.id, Name), LogMessageType.DataEvent)
+                Logger.log(pk.payload.Description, LogMessageType.DataParsed)
 
                 'Send
                 socket.WritePacket(Concat({W3Packet.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray))
@@ -117,7 +117,7 @@ Namespace Warcraft3
 
             Catch e As Pickling.PicklingException
                 Dim msg = "Error packing {0} for {1}: {2}".Frmt(pk.id, Name, e)
-                Logger.log(msg, LogMessageTypes.Problem)
+                Logger.log(msg, LogMessageType.Problem)
                 Return failure(msg)
 
             Catch e As Exception
@@ -171,17 +171,17 @@ Namespace Warcraft3
                         End If
 
                         'Handle
-                        Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageTypes.DataEvent)
+                        Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageType.DataEvent)
                         Dim pk = W3Packet.FromData(id, data)
                         If pk.payload.Data.Length <> data.Length Then
                             Throw New Pickling.PicklingException("Data left over after parsing.")
                         End If
-                        Logger.Log(pk.payload.Description, LogMessageTypes.DataParsed)
+                        Logger.Log(pk.payload.Description, LogMessageType.DataParsed)
                         f.SetValue(pk)
 
                     Catch e As Pickling.PicklingException
                         Dim msg = "Error parsing {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
-                        Logger.Log(msg, LogMessageTypes.Negative)
+                        Logger.Log(msg, LogMessageType.Negative)
                         f.SetValue(e)
 
                     Catch e As Exception
@@ -191,7 +191,7 @@ Namespace Warcraft3
                             LogUnexpectedException("Error receiving {0} from {1} ({2}).".Frmt(id, Name, data.ToHexString()), e)
                         End If
                         Dim msg = "Error receiving {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
-                        Logger.Log(msg, LogMessageTypes.Problem)
+                        Logger.Log(msg, LogMessageType.Problem)
                         socket.Disconnect(reason:=msg)
                         f.SetValue(e)
                     End Try

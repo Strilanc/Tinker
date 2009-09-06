@@ -328,7 +328,7 @@ Namespace Bnet.Crypt
         Public ReadOnly privateKey As ViewableList(Of Byte)
         Public ReadOnly publicKey As ViewableList(Of Byte)
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(key IsNot Nothing)
             Contract.Invariant(productKey IsNot Nothing)
             Contract.Invariant(privateKey IsNot Nothing)

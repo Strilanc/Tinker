@@ -56,7 +56,7 @@
     Public MustInherit Class PackJar(Of T)
         Implements IPackJar(Of T)
         Private ReadOnly _name As String
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_name IsNot Nothing)
         End Sub
 
@@ -76,7 +76,7 @@
     Public MustInherit Class ParseJar(Of T)
         Implements IParseJar(Of T)
         Private ReadOnly _name As String
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_name IsNot Nothing)
         End Sub
 
@@ -96,7 +96,7 @@
     Public MustInherit Class Jar(Of T)
         Implements IJar(Of T)
         Private ReadOnly _name As String
-        <ContractInvariantMethod()> Protected Overridable Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_name IsNot Nothing)
         End Sub
 

@@ -363,14 +363,14 @@ Namespace Commands
                 Contract.Assume(words.Count > 0)
                 Dim name = words(0).ToLower()
                 If Not commandMap.ContainsKey(name) Then
-                    logger.log("Unrecognized Command: " + name, LogMessageTypes.Problem)
+                    logger.log("Unrecognized Command: " + name, LogMessageType.Problem)
                     Return
                 End If
                 Dim hide_args = commandMap(name).ShouldHideArguments
                 If hide_args Then
-                    logger.log("Command [arguments hidden]: {0}".frmt(name), LogMessageTypes.Typical)
+                    logger.log("Command [arguments hidden]: {0}".frmt(name), LogMessageType.Typical)
                 Else
-                    logger.log("Command: {0}".frmt(text), LogMessageTypes.Typical)
+                    logger.log("Command: {0}".frmt(text), LogMessageType.Typical)
                 End If
 
                 logger.futurelog("[running command '{0}'...]".frmt(name),

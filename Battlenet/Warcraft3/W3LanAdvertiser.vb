@@ -129,13 +129,13 @@ Public NotInheritable Class W3LanAdvertiser
         parent.QueueRemoveWidget(TYPE_NAME, name)
 
         If Me.pool_port IsNot Nothing Then
-            logger.log("Returned port {0} to the pool.".frmt(Me.server_listen_port), LogMessageTypes.Positive)
+            logger.log("Returned port {0} to the pool.".frmt(Me.server_listen_port), LogMessageType.Positive)
             Me.pool_port.Dispose()
             Me.pool_port = Nothing
         End If
 
         'Log
-        logger.log("Shutdown Advertiser", LogMessageTypes.Negative)
+        logger.log("Shutdown Advertiser", LogMessageType.Negative)
         RaiseEvent ClearStateStrings()
     End Sub
 #End Region
@@ -163,7 +163,7 @@ Public NotInheritable Class W3LanAdvertiser
         End SyncLock
 
         'Log
-        logger.log("Added game " + game.header.Name, LogMessageTypes.Positive)
+        logger.log("Added game " + game.header.Name, LogMessageType.Positive)
         RaiseEvent AddStateString(id.ToString + "=" + gameHeader.Name, False)
 
         Return id
@@ -187,7 +187,7 @@ Public NotInheritable Class W3LanAdvertiser
         End SyncLock
 
         'Log
-        logger.log("Removed game " + game.header.Name, LogMessageTypes.Negative)
+        logger.log("Removed game " + game.header.Name, LogMessageType.Negative)
         RaiseEvent RemoveStateString(game.id.ToString + "=" + game.header.Name)
         Return True
     End Function
@@ -236,19 +236,19 @@ Public NotInheritable Class W3LanAdvertiser
             data = Concat({W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).Bytes(), data)
 
             'Log
-            logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageTypes.DataEvent)
-            logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
-            logger.log(Function() "Sending {0} to {1}: {2}".frmt(data.ToHexString, remote_host, remote_port), LogMessageTypes.DataRaw)
+            logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageType.DataEvent)
+            logger.log(pk.payload.Description, LogMessageType.DataParsed)
+            logger.log(Function() "Sending {0} to {1}: {2}".frmt(data.ToHexString, remote_host, remote_port), LogMessageType.DataRaw)
 
             'Send
             socket.Send(data, data.Length, remote_host, remote_port)
 
         Catch e As Pickling.PicklingException
             'Ignore
-            logger.log("Error packing {0}: {1} (skipped)".frmt(pk.id, e), LogMessageTypes.Negative)
+            logger.log("Error packing {0}: {1} (skipped)".frmt(pk.id, e), LogMessageType.Negative)
         Catch e As Exception
             'Fail
-            logger.log("Error sending {0}: {1}".frmt(pk.id, e), LogMessageTypes.Problem)
+            logger.log("Error sending {0}: {1}".frmt(pk.id, e), LogMessageType.Problem)
             LogUnexpectedException("Exception rose past {0}.send".frmt(Me.GetType.Name), e)
         End Try
     End Sub

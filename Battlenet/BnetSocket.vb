@@ -64,8 +64,8 @@ Public Class BnetSocket
 
             'Log
             Dim pk_ = pk
-            Logger.log(Function() "Sending {0} to {1}".frmt(pk_.id, Name), LogMessageTypes.DataEvent)
-            Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+            Logger.log(Function() "Sending {0} to {1}".frmt(pk_.id, Name), LogMessageType.DataEvent)
+            Logger.log(pk.payload.Description, LogMessageType.DataParsed)
 
             'Send
             socket.WritePacket(Concat({Bnet.BnetPacket.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray))
@@ -73,12 +73,12 @@ Public Class BnetSocket
 
         Catch e As Pickling.PicklingException
             Dim msg = "Error packing {0} for {1}: {2}".frmt(pk.id, Name, e)
-            Logger.log(msg, LogMessageTypes.Problem)
+            Logger.log(msg, LogMessageType.Problem)
             Return failure(msg)
         Catch e As Exception
             Dim msg = "Error sending {0} to {1}: {2}".frmt(pk.id, Name, e)
             LogUnexpectedException(msg, e)
-            Logger.log(msg, LogMessageTypes.Problem)
+            Logger.log(msg, LogMessageType.Problem)
             Return failure(msg)
         End Try
     End Function
@@ -102,22 +102,22 @@ Public Class BnetSocket
 
                 Try
                     'Handle
-                    Logger.log(Function() "Received {0} from {1}".frmt(id, Name), LogMessageTypes.DataEvent)
+                    Logger.log(Function() "Received {0} from {1}".frmt(id, Name), LogMessageType.DataEvent)
                     Dim pk = Bnet.BnetPacket.FromData(id, data)
                     If pk.payload.Data.Length <> data.Length Then
                         Throw New Pickling.PicklingException("Data left over after parsing.")
                     End If
-                    Logger.log(pk.payload.Description, LogMessageTypes.DataParsed)
+                    Logger.log(pk.payload.Description, LogMessageType.DataParsed)
                     f.SetValue(pk)
 
                 Catch e As Pickling.PicklingException
                     Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".frmt(id, Name, e)
-                    Logger.log(msg, LogMessageTypes.Negative)
+                    Logger.log(msg, LogMessageType.Negative)
                     f.SetValue(e)
 
                 Catch e As Exception
                     Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".frmt(id, Name, e)
-                    Logger.log(msg, LogMessageTypes.Problem)
+                    Logger.log(msg, LogMessageType.Problem)
                     LogUnexpectedException(msg, e)
                     f.SetValue(e)
                 End Try
@@ -141,7 +141,7 @@ Public Class PacketSocket
     Public Event Disconnected(ByVal sender As PacketSocket, ByVal reason As String)
     Private WithEvents deadManSwitch As DeadManSwitch
 
-    <ContractInvariantMethod()> Protected Sub Invariant()
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(substream IsNot Nothing)
         Contract.Invariant(packetStreamer IsNot Nothing)
         Contract.Invariant(_remoteEndPoint IsNot Nothing)
@@ -217,7 +217,7 @@ Public Class PacketSocket
                                  If result.Exception IsNot Nothing Then
                                      Disconnect(result.Exception.ToString)
                                  ElseIf result.Value IsNot Nothing Then
-                                     logger.log(Function() "Received from {0}: {1}".frmt(Name, result.Value.ToHexString), LogMessageTypes.DataRaw)
+                                     logger.log(Function() "Received from {0}: {1}".frmt(Name, result.Value.ToHexString), LogMessageType.DataRaw)
                                  End If
                              End Sub)
         Return f
@@ -227,13 +227,13 @@ Public Class PacketSocket
         Contract.Requires(data IsNot Nothing)
         packetStreamer.WritePacket(data)
         Dim data_ = data
-        logger.log(Function() "Sending to {0}: {1}".frmt(Name, data_.ToHexString), LogMessageTypes.DataRaw)
+        logger.log(Function() "Sending to {0}: {1}".frmt(Name, data_.ToHexString), LogMessageType.DataRaw)
     End Sub
 
     Public Sub WriteRawData(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
         substream.Write(data, 0, data.Length)
         Dim data_ = data
-        logger.log(Function() "Sending to {0}: {1}".frmt(Name, data_.ToHexString), LogMessageTypes.DataRaw)
+        logger.log(Function() "Sending to {0}: {1}".frmt(Name, data_.ToHexString), LogMessageType.DataRaw)
     End Sub
 End Class

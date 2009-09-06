@@ -98,12 +98,12 @@ Namespace CKL
                     Next key
                 End Sub
             )
-            logger.log("Started.", LogMessageTypes.Negative)
+            logger.log("Started.", LogMessageType.Negative)
         End Sub
         Public Overrides Sub [stop]() Implements IBotWidget.[Stop]
             MyBase.[stop]()
             RaiseEvent ClearStateStrings()
-            logger.log("Stopped.", LogMessageTypes.Negative)
+            logger.log("Stopped.", LogMessageType.Negative)
         End Sub
     End Class
 End Namespace

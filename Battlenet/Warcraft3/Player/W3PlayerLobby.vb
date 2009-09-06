@@ -65,7 +65,7 @@
                 game.DownloadScheduler.SetLink(index, W3Game.SELF_DOWNLOAD_ID, True)
                 knowMapState = True
             ElseIf mapDownloadPosition = game.map.FileSize Then
-                logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageTypes.Positive)
+                logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
                 game.DownloadScheduler.StopTransfer(index, True)
             Else
                 Dim d = CDbl(mapDownloadPosition)

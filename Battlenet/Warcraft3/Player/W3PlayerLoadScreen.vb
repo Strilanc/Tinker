@@ -19,7 +19,7 @@
             If game.server.settings.loadInGame Then
                 handlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
             End If
-            logger.Log(name + " is ready", LogMessageTypes.Positive)
+            logger.Log(name + " is ready", LogMessageType.Positive)
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'
             eref.QueueAction(Sub()
                                  Contract.Assume(vals IsNot Nothing)

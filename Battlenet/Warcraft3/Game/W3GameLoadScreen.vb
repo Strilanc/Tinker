@@ -20,7 +20,7 @@
             Next player
 
             'Load
-            logger.log("Players Loading", LogMessageTypes.Positive)
+            logger.log("Players Loading", LogMessageType.Positive)
 
             'Ready any lingering fake players
             For Each player In (From p In players Where p.IsFake _
@@ -57,7 +57,7 @@
         '''<summary>Starts the in-game play</summary>
         Private Function Launch() As Outcome
             ChangeState(W3GameStates.Playing)
-            logger.log("Launching", LogMessageTypes.Positive)
+            logger.log("Launching", LogMessageType.Positive)
 
             'start gameplay
             Me.LoadScreenStop()

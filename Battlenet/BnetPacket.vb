@@ -134,7 +134,7 @@ Namespace Bnet
         Public ReadOnly id As BnetPacketID
         Private Shared ReadOnly packetJar As ManualSwitchJar = MakeBnetPacketJar()
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(payload IsNot Nothing)
         End Sub
 
@@ -570,7 +570,7 @@ Namespace Bnet
             Private ReadOnly numDigits As Integer
             Private ReadOnly byteOrder As ByteOrder
 
-            <ContractInvariantMethod()> Protected Overrides Sub Invariant()
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(numDigits > 0)
             End Sub
 
@@ -609,7 +609,7 @@ Namespace Bnet
             Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
                 If data.Length < numDigits Then Throw New PicklingException("Not enough data")
                 data = data.SubView(0, numDigits)
-                Return New Pickling.Pickle(Of ULong)(Me.Name, data.ParseChrString(nullTerminated:=False).ParseAsUnsignedHexNumber(byteOrder), data)
+                Return New Pickling.Pickle(Of ULong)(Me.Name, data.ParseChrString(nullTerminated:=False).FromHexStringToBytes(byteOrder), data)
             End Function
         End Class
 

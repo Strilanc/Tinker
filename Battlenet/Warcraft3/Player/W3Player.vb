@@ -24,7 +24,7 @@
         Public hasVotedToStart As Boolean
         Public numAdminTries As Integer
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(numPeerConnections >= 0)
             Contract.Invariant(numPeerConnections <= 12)
             Contract.Invariant(latency >= 0)
@@ -115,13 +115,13 @@
                     Try
                         If handlers(result.Value.id) Is Nothing Then
                             Dim msg = "Ignored a packet of type {0} from {1} because there is no parser for that packet type.".Frmt(result.Value.id, name)
-                            logger.Log(msg, LogMessageTypes.Negative)
+                            logger.Log(msg, LogMessageType.Negative)
                         Else
                             Call handlers(result.Value.id)(result.Value)
                         End If
                     Catch e As Exception
                         Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".Frmt(result.Value.id, name, e)
-                        logger.Log(msg, LogMessageTypes.Problem)
+                        logger.Log(msg, LogMessageType.Problem)
                         LogUnexpectedException(msg, e)
                     End Try
 
@@ -173,7 +173,7 @@
             If Me.isFake Then Return
             pingQueue.Enqueue(record)
             If pingQueue.Count > 20 Then
-                logger.log(name + " has not responded to pings for a significant amount of time.", LogMessageTypes.Problem)
+                logger.log(name + " has not responded to pings for a significant amount of time.", LogMessageType.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "No response to pings.")
             End If
             SendPacket(W3Packet.MakePing(record.salt))

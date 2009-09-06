@@ -11,7 +11,7 @@ Namespace Warcraft3
         Private ReadOnly _remoteEndPoint As Net.IPEndPoint
         Private ReadOnly _socket As W3Socket
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(_remoteEndPoint IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)

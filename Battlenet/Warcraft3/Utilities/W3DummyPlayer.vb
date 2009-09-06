@@ -20,7 +20,7 @@ Namespace Warcraft3
         End Enum
         Private mode As Modes
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
@@ -123,7 +123,7 @@ Namespace Warcraft3
                             End Select
                         Catch e As Exception
                             Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".frmt(id, name, e)
-                            logger.log(msg, LogMessageTypes.Problem)
+                            logger.log(msg, LogMessageType.Problem)
                             LogUnexpectedException(msg, e)
                         End Try
 
@@ -184,10 +184,10 @@ Namespace Warcraft3
                     Dim socket = acceptedPlayer.socket
                     If player Is Nothing Then
                         Dim msg = "{0} was not another player in the game.".frmt(socket.Name)
-                        logger.log(msg, LogMessageTypes.Negative)
+                        logger.log(msg, LogMessageType.Negative)
                         socket.disconnect(msg)
                     Else
-                        logger.log("{0} is a peer connection from {1}.".frmt(socket.Name, player.name), LogMessageTypes.Positive)
+                        logger.log("{0} is a peer connection from {1}.".frmt(socket.Name, player.name), LogMessageType.Positive)
                         socket.Name = player.name
                         player.SetSocket(socket)
                         socket.SendPacket(W3Packet.MakePeerKnock(player.peerKey, Me.index, 0))
@@ -199,7 +199,7 @@ Namespace Warcraft3
         Private Sub c_PeerDisconnection(ByVal sender As W3Peer, ByVal reason As String)
             ref.QueueAction(
                 Sub()
-                    logger.log("{0}'s peer connection has closed ({1}).".frmt(sender.name, reason), LogMessageTypes.Negative)
+                    logger.log("{0}'s peer connection has closed ({1}).".frmt(sender.name, reason), LogMessageType.Negative)
                     sender.SetSocket(Nothing)
                     SendPlayersConnected()
                 End Sub
@@ -226,7 +226,7 @@ Namespace Warcraft3
                         End Select
                     Catch e As Exception
                         Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".frmt(id, name, e)
-                        logger.log(msg, LogMessageTypes.Problem)
+                        logger.log(msg, LogMessageType.Problem)
                         LogUnexpectedException(msg, e)
                     End Try
                 End Sub

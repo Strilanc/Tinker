@@ -161,7 +161,7 @@
                     End If
 
                     'Inform players autostart has begun
-                    logger.log("Preparing to launch", LogMessageTypes.Positive)
+                    logger.log("Preparing to launch", LogMessageType.Positive)
                     BroadcastMessage("Game is Full. Waiting 5 seconds for stability.")
 
                     'Give jittery players a few seconds to leave
@@ -174,7 +174,7 @@
                             End If
 
                             'Start the countdown
-                            logger.log("Starting Countdown", LogMessageTypes.Positive)
+                            logger.log("Starting Countdown", LogMessageType.Positive)
                             TryStartCountdown()
                         End Sub
                     ))
@@ -210,7 +210,7 @@
 
             'Abort if a player left
             If flagHasPlayerLeft Then
-                logger.log("Countdown Aborted", LogMessageTypes.Negative)
+                logger.log("Countdown Aborted", LogMessageType.Negative)
                 TryRestoreFakeHost()
                 BroadcastMessage("===============================================")
                 BroadcastMessage("A player left. Launch is held.")
@@ -225,7 +225,7 @@
 
             If ticks_left > 0 Then
                 'Next tick
-                logger.log("Game starting in {0}".frmt(ticks_left), LogMessageTypes.Positive)
+                logger.log("Game starting in {0}".frmt(ticks_left), LogMessageType.Positive)
                 For Each player In (From p In players Where p.GetOvercounted)
                     Contract.Assume(player IsNot Nothing)
                     SendMessageTo("Game starting in {0}...".Frmt(ticks_left), player, display:=False)
@@ -317,7 +317,7 @@
 
             'Inform bot
             ThrowPlayerEntered(newPlayer)
-            logger.log(newPlayer.name + " has been placed in the game.", LogMessageTypes.Positive)
+            logger.log(newPlayer.name + " has been placed in the game.", LogMessageType.Positive)
 
             'Update state
             ChangedLobbyState()
@@ -408,7 +408,7 @@
 
             'Inform bot
             ThrowPlayerEntered(newPlayer)
-            logger.log("{0} has entered the game.".frmt(newPlayer.name), LogMessageTypes.Positive)
+            logger.log("{0} has entered the game.".frmt(newPlayer.name), LogMessageType.Positive)
 
             'Update state
             ChangedLobbyState()
@@ -446,11 +446,11 @@
 
                         'Apply
                         If e.src = SELF_DOWNLOAD_ID Then
-                            logger.Log("Initiating map upload to {0}.".Frmt(dst.name), LogMessageTypes.Positive)
+                            logger.Log("Initiating map upload to {0}.".Frmt(dst.name), LogMessageType.Positive)
                             dst.IsGettingMapFromBot = True
                             dst.QueueBufferMap()
                         ElseIf src IsNot Nothing Then
-                            logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageTypes.Positive)
+                            logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageType.Positive)
                             src.QueueSendPacket(W3Packet.MakeSetUploadTarget(dst.index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
                             dst.QueueSendPacket(W3Packet.MakeSetDownloadSource(src.index))
                         End If
@@ -465,10 +465,10 @@
 
                         'Apply
                         If e.src = SELF_DOWNLOAD_ID Then
-                            logger.Log("Stopping map upload to {0}.".Frmt(dst.name), LogMessageTypes.Positive)
+                            logger.Log("Stopping map upload to {0}.".Frmt(dst.name), LogMessageType.Positive)
                             dst.IsGettingMapFromBot = False
                         ElseIf src IsNot Nothing Then
-                            logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageTypes.Positive)
+                            logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageType.Positive)
                             src.QueueSendPacket(W3Packet.MakeOtherPlayerLeft(dst, W3PlayerLeaveTypes.Disconnect))
                             src.QueueSendPacket(W3Packet.MakeOtherPlayerJoined(dst))
                             dst.QueueSendPacket(W3Packet.MakeOtherPlayerLeft(src, W3PlayerLeaveTypes.Disconnect))

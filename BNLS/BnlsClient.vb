@@ -145,8 +145,8 @@ Namespace BattleNetLogonServer
             Contract.Requires(pk IsNot Nothing)
 
             Try
-                logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, socket.Name), LogMessageTypes.DataEvent)
-                logger.Log(pk.payload.Description, LogMessageTypes.DataParsed)
+                logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, socket.Name), LogMessageType.DataEvent)
+                logger.Log(pk.payload.Description, LogMessageType.DataParsed)
                 socket.WritePacket(Concat(Of Byte)({0, 0, BnlsPacketId.Warden, pk.id}, pk.payload.Data.ToArray))
                 Return Nothing
 
@@ -157,7 +157,7 @@ Namespace BattleNetLogonServer
                         TypeOf e Is PicklingException) Then
                     LogUnexpectedException("Error sending {0} to {1}.".Frmt(pk.id, socket.Name), e)
                 End If
-                logger.Log("Error sending {0} for {1}: {2}".Frmt(pk.id, socket.Name, e), LogMessageTypes.Problem)
+                logger.Log("Error sending {0} for {1}: {2}".Frmt(pk.id, socket.Name, e), LogMessageType.Problem)
                 Return e
             End Try
         End Function
@@ -176,8 +176,8 @@ Namespace BattleNetLogonServer
                     End If
                     Try
                         Dim pk = BnlsWardenPacket.FromServerData(result.Value.SubView(3))
-                        logger.Log(Function() "Received {0} from {1}".Frmt(pk.id, socket.Name), LogMessageTypes.DataEvent)
-                        logger.Log(pk.payload.Description, LogMessageTypes.DataParsed)
+                        logger.Log(Function() "Received {0} from {1}".Frmt(pk.id, socket.Name), LogMessageType.DataEvent)
+                        logger.Log(pk.payload.Description, LogMessageType.DataParsed)
                         f.SetValue(pk)
                     Catch e As Exception
                         f.SetValue(e)

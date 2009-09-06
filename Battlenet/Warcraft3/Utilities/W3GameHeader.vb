@@ -134,7 +134,7 @@
             End Get
         End Property
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_numPlayerSlots > 0)
             Contract.Invariant(_numPlayerSlots <= 12)
             Contract.Invariant(_map IsNot Nothing)

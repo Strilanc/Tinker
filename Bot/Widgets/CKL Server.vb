@@ -75,7 +75,7 @@ Namespace CKL
                                     If keyIndex >= keys.Count Then  keyIndex = 0
                                     responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4),
                                                                         serverToken:=data.SubView(4, 4))
-                                    logger.log("Provided key '{0}' to {1}".frmt(keys(keyIndex).name, socket.Name), LogMessageTypes.Positive)
+                                    logger.log("Provided key '{0}' to {1}".frmt(keys(keyIndex).name, socket.Name), LogMessageType.Positive)
                                     keyIndex += 1
                                 End If
                             Case Else
@@ -87,13 +87,13 @@ Namespace CKL
                         socket.WritePacket(Concat({PACKET_ID, id, 0, 0}, responseData))
                     End If
                     If errorMessage IsNot Nothing Then
-                        logger.log("Error parsing data from client: " + errorMessage, LogMessageTypes.Negative)
+                        logger.log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
                         socket.WritePacket(Concat({PACKET_ID, CklPacketId.error}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
                     End If
                     Return True
                 End Function
             ))
-            logger.log("Connection from " + socket.Name, LogMessageTypes.Positive)
+            logger.log("Connection from " + socket.Name, LogMessageType.Positive)
         End Sub
 
         Public Overridable Sub [stop]()

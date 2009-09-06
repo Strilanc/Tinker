@@ -11,7 +11,7 @@ Namespace Warcraft3
         Private xoro() As Byte
         Private sha1() As Byte
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(downloadPath IsNot Nothing)
             Contract.Invariant(destinationPath IsNot Nothing)
             Contract.Invariant(crc IsNot Nothing)

@@ -76,7 +76,7 @@
                             SyncLock lock
                                 connectingPlayers.Remove(player)
                             End SyncLock
-                            logger.Log("Player {0} entered game {1}.".Frmt(player.Name, gameSelected.Value.name), LogMessageTypes.Positive)
+                            logger.Log("Player {0} entered game {1}.".Frmt(player.Name, gameSelected.Value.name), LogMessageType.Positive)
                         End If
                     End If
                 End Sub
@@ -86,7 +86,7 @@
             SyncLock lock
                 connectingPlayers.Remove(player)
             End SyncLock
-            logger.log("Couldn't find a game for player {0}.".frmt(player.Name), LogMessageTypes.Negative)
+            logger.log("Couldn't find a game for player {0}.".frmt(player.Name), LogMessageType.Negative)
             player.Socket.SendPacket(W3Packet.MakeReject(W3Packet.RejectReason.GameFull))
             player.Socket.disconnect("No Game")
         End Sub

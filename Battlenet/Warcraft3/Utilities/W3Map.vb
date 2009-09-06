@@ -16,7 +16,7 @@ Namespace Warcraft3
         Public fileAvailable As Boolean
         Public slots As New List(Of W3Slot)
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_fileSize > 0)
             Contract.Invariant(_checksumSha1 IsNot Nothing)
             Contract.Invariant(_checksumSha1.Length = 20)
@@ -152,7 +152,7 @@ Namespace Warcraft3
                 Try
                     Dim hexData(0 To arg.Length \ 2 - 1 - 1) As Byte
                     For i = 0 To hexData.Length - 1
-                        hexData(i) = CByte(arg.Substring(i * 2 + 2, 2).ParseAsUnsignedHexNumber(ByteOrder.BigEndian))
+                        hexData(i) = CByte(arg.Substring(i * 2 + 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
                     Next i
 
                     Dim packet = W3Packet.FromData(W3PacketId.HostMapInfo, hexData.ToView())

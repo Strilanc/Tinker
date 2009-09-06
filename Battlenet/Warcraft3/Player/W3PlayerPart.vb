@@ -19,14 +19,14 @@ Namespace Warcraft3
             Dim salt = CUInt(vals("salt"))
 
             If pingQueue.Count <= 0 Then
-                logger.Log("Banned behavior: {0} responded to a ping which wasn't sent.".Frmt(name), LogMessageTypes.Problem)
+                logger.Log("Banned behavior: {0} responded to a ping which wasn't sent.".Frmt(name), LogMessageType.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "no pings for pong")
                 Return
             End If
 
             Dim stored = pingQueue.Dequeue()
             If salt <> stored.salt Then
-                logger.Log("Banned behavior: {0} responded incorrectly to a ping. {1} was returned instead of {2}.".Frmt(name, salt, stored.salt), LogMessageTypes.Problem)
+                logger.Log("Banned behavior: {0} responded incorrectly to a ping. {1} was returned instead of {2}.".Frmt(name, salt, stored.salt), LogMessageType.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "incorrect pong")
                 Return
             End If

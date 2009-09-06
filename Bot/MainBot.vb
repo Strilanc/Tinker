@@ -92,7 +92,7 @@ Public NotInheritable Class MainBot
     End Sub
 #End Region
 
-    <ContractInvariantMethod()> Protected Sub Invariant()
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(ref IsNot Nothing)
         Contract.Invariant(eref IsNot Nothing)
         Contract.Invariant(wardenRef IsNot Nothing)
@@ -214,18 +214,18 @@ Public NotInheritable Class MainBot
         ThrowAddedClient(client)
         Return Success(client, "Created client with name '{0}'.".Frmt(name))
     End Function
-    Private Function KillClient(ByVal name As String) As Outcome
+    Private Function KillClient(ByVal name As String, ByVal reason As String) As Outcome
         Dim client = FindClient(name)
         If client Is Nothing Then
-            Return failure("No client with name {0}.".frmt(name))
+            Return Failure("No client with name {0}.".Frmt(name))
         End If
 
         RemoveHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
         RemoveHandler client.StateChanged, AddressOf CatchClientStateChanged
-        client.QueueDisconnect("Killed by MainBot")
+        client.QueueDisconnect(reason)
         clients.Remove(client)
         ThrowRemovedClient(client)
-        Return success("Removed client with name {0}.".frmt(name))
+        Return Success("Removed client with name {0}.".Frmt(name))
     End Function
 
     Private Function HaveClient(ByVal name As String) As Boolean
@@ -254,7 +254,7 @@ Public NotInheritable Class MainBot
     Private Function Kill() As Outcome
         'Kill clients
         For Each client In clients.ToList
-            KillClient(client.Name)
+            KillClient(client.name, "Bot Killed")
         Next client
 
         'Kill servers
@@ -282,7 +282,7 @@ Public NotInheritable Class MainBot
         Return loaded
     End Function
     Private Sub CatchUnloadedPlugin(ByVal name As String, ByVal plugin As Plugins.IPlugin, ByVal reason As String) Handles pluginManager.UnloadedPlugin
-        logger.log("Plugin '{0}' was unloaded ({1})".frmt(name, reason), LogMessageTypes.Negative)
+        logger.Log("Plugin '{0}' was unloaded ({1})".Frmt(name, reason), LogMessageType.Negative)
     End Sub
 #End Region
 
@@ -515,8 +515,8 @@ Public NotInheritable Class MainBot
     Public Function QueueFindClient(ByVal name As String) As IFuture(Of BnetClient)
         Return ref.QueueFunc(Function() FindClient(name))
     End Function
-    Public Function QueueRemoveClient(ByVal name As String) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() KillClient(name))
+    Public Function QueueRemoveClient(ByVal name As String, ByVal reason As String) As IFuture(Of Outcome)
+        Return ref.QueueFunc(Function() KillClient(name, reason))
     End Function
     Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of Outcome(Of BnetClient))
         Return ref.QueueFunc(Function() CreateClient(name, profileName))
@@ -542,7 +542,7 @@ Public Class PortPool
     Private ReadOnly PortPool As New HashSet(Of UShort)
     Private ReadOnly lock As New Object()
 
-    <ContractInvariantMethod()> Protected Sub Invariant()
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(InPorts IsNot Nothing)
         Contract.Invariant(OutPorts IsNot Nothing)
         Contract.Invariant(PortPool IsNot Nothing)

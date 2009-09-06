@@ -8,7 +8,7 @@ Public Class TransferScheduler(Of TClientKey)
 
     Public Event actions(ByVal started As List(Of TransferEndPoints), ByVal stopped As List(Of TransferEndPoints))
 
-    <ContractInvariantMethod()> Protected Sub Invariant()
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(clients IsNot Nothing)
         Contract.Invariant(ref IsNot Nothing)
         Contract.Invariant(fileSize > 0)
@@ -70,9 +70,9 @@ Public Class TransferScheduler(Of TClientKey)
         Dim expectedRate_ = expectedRate 'avoids hoisted argument contract verification flaw
         Return ref.QueueFunc(
             Function()
-                If clients.ContainsKey(clientKey) Then  Return failure("client key already exists")
+                If clients.ContainsKey(clientKey) Then  Return Failure("client key already exists")
                 clients(clientKey) = New Client(clientKey, completed, If(expectedRate_ = 0, typicalRate, expectedRate_))
-                Return success("added")
+                Return Success("added")
             End Function
         )
     End Function
@@ -83,11 +83,11 @@ Public Class TransferScheduler(Of TClientKey)
                             ByVal linked As Boolean) As IFuture(Of Outcome)
         Return ref.QueueFunc(
             Function()
-                If Not clients.ContainsKey(clientKey1) Then  Return failure("No such client key")
-                If Not clients.ContainsKey(clientKey2) Then  Return failure("No such client key")
+                If Not clients.ContainsKey(clientKey1) Then  Return Failure("No such client key")
+                If Not clients.ContainsKey(clientKey2) Then  Return Failure("No such client key")
                 Dim client1 = clients(clientKey1)
                 Dim client2 = clients(clientKey2)
-                If client1.links.Contains(client2) = linked Then  Return success("Already set.")
+                If client1.links.Contains(client2) = linked Then  Return Success("Already set.")
                 If linked Then
                     client1.links.Add(client2)
                     client2.links.Add(client1)
@@ -98,7 +98,7 @@ Public Class TransferScheduler(Of TClientKey)
                         StopTransfer(clientKey1, False)
                     End If
                 End If
-                Return success("Set.")
+                Return Success("Set.")
             End Function
         )
     End Function
@@ -107,7 +107,7 @@ Public Class TransferScheduler(Of TClientKey)
     Public Function RemoveClient(ByVal clientKey As TClientKey) As IFuture(Of Outcome)
         Return ref.QueueFunc(
             Function()
-                If Not clients.ContainsKey(clientKey) Then  Return failure("No such client.")
+                If Not clients.ContainsKey(clientKey) Then  Return Failure("No such client.")
                 Dim client = clients(clientKey)
                 If client.busy Then
                     Dim other = client.other
@@ -118,7 +118,7 @@ Public Class TransferScheduler(Of TClientKey)
                 For Each linkedClient In client.links
                     linkedClient.links.Remove(client)
                 Next linkedClient
-                Return success("removed")
+                Return Success("removed")
             End Function
         )
     End Function
@@ -135,7 +135,7 @@ Public Class TransferScheduler(Of TClientKey)
                 For Each s In {"B", "KiB", "MiB", "GiB", "TiB", "PiB"}
                     Dim f2 = f * 1024
                     If d < f2 Then
-                        Return "{0:0.0} {1}/s".frmt(d / f, s)
+                        Return "{0:0.0} {1}/s".Frmt(d / f, s)
                     End If
                     f = f2
                 Next s
@@ -154,12 +154,12 @@ Public Class TransferScheduler(Of TClientKey)
         Dim progress_ = progress 'avoids hoisted argument contract verification flaw
         Return ref.QueueFunc(
             Function()
-                If Not clients.ContainsKey(clientKey) Then  Return failure("No such client key.")
+                If Not clients.ContainsKey(clientKey) Then  Return Failure("No such client key.")
                 Dim client = clients(clientKey)
-                If Not client.busy Then  Return failure("Client isn't transfering.")
+                If Not client.busy Then  Return Failure("Client isn't transfering.")
                 client.UpdateProgress(progress_)
                 client.other.UpdateProgress(progress_)
-                Return success("Updated")
+                Return Success("Updated")
             End Function
         )
     End Function
@@ -169,7 +169,7 @@ Public Class TransferScheduler(Of TClientKey)
                                  ByVal complete As Boolean) As IFuture(Of Outcome)
         Return ref.QueueFunc(
             Function()
-                If Not clients.ContainsKey(clientKey) Then  Return failure("No such client key.")
+                If Not clients.ContainsKey(clientKey) Then  Return Failure("No such client key.")
 
                 Dim client = clients(clientKey)
                 If client.busy Then
@@ -177,7 +177,7 @@ Public Class TransferScheduler(Of TClientKey)
                     client.SetNotTransfering(complete)
                     other.SetNotTransfering(complete)
                 End If
-                Return success("Stopped")
+                Return Success("Stopped")
             End Function
         )
     End Function
@@ -256,7 +256,7 @@ Public Class TransferScheduler(Of TClientKey)
                 Return _links
             End Get
         End Property
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(maxRateEstimate > 0)
             Contract.Invariant(Not Double.IsInfinity(maxRateEstimate))
             Contract.Invariant(Not Double.IsNaN(maxRateEstimate))

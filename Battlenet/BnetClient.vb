@@ -101,7 +101,7 @@ Namespace Bnet
         Private state As States
 #End Region
 
-        <ContractInvariantMethod()> Protected Overrides Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(parent IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
@@ -196,10 +196,10 @@ Namespace Bnet
                     If poolPort IsNot Nothing Then
                         poolPort.Dispose()
                         poolPort = Nothing
-                        logger.Log("Returned port {0} to pool.".Frmt(Me.listenPort), LogMessageTypes.Positive)
+                        logger.Log("Returned port {0} to pool.".Frmt(Me.listenPort), LogMessageType.Positive)
                     End If
                     listenPort = new_port
-                    logger.Log("Changed listen port to {0}.".Frmt(new_port), LogMessageTypes.Typical)
+                    logger.Log("Changed listen port to {0}.".Frmt(new_port), LogMessageType.Typical)
                     If state <> States.Disconnected Then
                         SendPacket(BnetPacket.MakeNetGamePort(listenPort))
                     End If
@@ -226,7 +226,7 @@ Namespace Bnet
 #Region "State"
         Protected Overrides Sub Dispose(ByVal disposing As Boolean)
             ref.QueueAction(Sub() Disconnect("{0} Disposed".Frmt(Me.GetType.Name)))
-            parent.QueueRemoveClient(Me.name)
+            parent.QueueRemoveClient(Me.name, "Client Disposed")
         End Sub
         Private Sub ChangeState(ByVal newState As States)
             Dim oldState = state
@@ -252,11 +252,11 @@ Namespace Bnet
                     End If
                     Me.poolPort = out
                     Me.listenPort = Me.poolPort.Port
-                    logger.Log("Took port {0} from pool.".Frmt(Me.listenPort), LogMessageTypes.Positive)
+                    logger.Log("Took port {0} from pool.".Frmt(Me.listenPort), LogMessageType.Positive)
                 End If
 
                 'Establish connection
-                logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageTypes.Typical)
+                logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
                 Dim port = BNET_PORT
                 If remoteHost Like "*:*" Then
                     Dim remotePortTemp = remoteHost.Split(":"c)(1)
@@ -344,24 +344,24 @@ Namespace Bnet
         Private Sub BeginConnectBnlsServer(ByVal seed As ModInt32)
             Dim address = My.Settings.bnls
             If address = "" Then
-                logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageTypes.Problem)
+                logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
                 Return
             End If
             Dim hostPortPair = address.Split(":"c)
             Dim port As UShort
             If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), port) Then
-                logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageTypes.Problem)
+                logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
                 Return
             End If
 
-            logger.Log("Connecting to bnls server at {0}...".Frmt(address), LogMessageTypes.Positive)
+            logger.Log("Connecting to bnls server at {0}...".Frmt(address), LogMessageType.Positive)
             wardenHandler = BattleNetLogonServer.BnlsClient.FutureConnectToBnlsServer(hostPortPair(0), port, seed, logger).EvalWhenValueReady(
                 Function(result)
                     If result.Exception IsNot Nothing Then
-                        logger.Log("Error connecting to bnls server: {0}".Frmt(result.Exception), LogMessageTypes.Problem)
+                        logger.Log("Error connecting to bnls server: {0}".Frmt(result.Exception), LogMessageType.Problem)
                         Return Nothing
                     End If
-                    logger.Log("Connected to bnls server.", LogMessageTypes.Positive)
+                    logger.Log("Connected to bnls server.", LogMessageType.Positive)
                     AddHandler result.Value.Send, AddressOf OnWardenSend
                     AddHandler result.Value.Fail, AddressOf OnWardenFail
                     Return result.Value
@@ -383,7 +383,7 @@ Namespace Bnet
             Me.password = password
             ChangeState(States.Logon)
             SendPacket(BnetPacket.MakeAccountLogonBegin(username, clientPublicKey))
-            logger.Log("Initiating logon with username " + username, LogMessageTypes.Typical)
+            logger.Log("Initiating logon with username " + username, LogMessageType.Typical)
             Return futureLoggedIn
         End Function
 
@@ -403,7 +403,7 @@ Namespace Bnet
             futureCreatedGame.TrySetValue(Failure("Disconnected before game creation completed ({0}).".Frmt(reason)))
 
             ChangeState(States.Disconnected)
-            logger.Log("Disconnected ({0})".Frmt(reason), LogMessageTypes.Negative)
+            logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
             If wardenHandler IsNot Nothing Then
                 wardenHandler.CallWhenValueReady(
                     Sub(value)
@@ -419,7 +419,7 @@ Namespace Bnet
             If poolPort IsNot Nothing Then
                 poolPort.Dispose()
                 poolPort = Nothing
-                logger.Log("Returned port {0} to pool.".Frmt(Me.listenPort), LogMessageTypes.Positive)
+                logger.Log("Returned port {0} to pool.".Frmt(Me.listenPort), LogMessageType.Positive)
                 Me.listenPort = 0
             End If
 
@@ -687,10 +687,10 @@ Namespace Bnet
                                     Dim rocHash = CType(rocKeyData("hash"), Byte())
                                     Contract.Assume(rocHash IsNot Nothing)
                                     BeginConnectBnlsServer(rocHash.SubArray(0, 4).ToUInt32())
-                                    logger.Log(out.Message, LogMessageTypes.Positive)
+                                    logger.Log(out.Message, LogMessageType.Positive)
                                     SendPacket(out.Value)
                                 Else
-                                    logger.Log(out.Message, LogMessageTypes.Negative)
+                                    logger.Log(out.Message, LogMessageType.Negative)
                                     futureConnected.TrySetValue(Failure("Failed to borrow keys: '{0}'.".Frmt(out.Message)))
                                     Disconnect("Error borrowing keys.")
                                 End If
@@ -840,11 +840,11 @@ Namespace Bnet
                     DisposeLink.CreateOneWayLink(Me, lan)
                     AdvertisingLink.CreateMultiWayLink({Me, lan.MakeAdvertisingLinkMember})
                 Catch e As Exception
-                    logger.Log("Error creating lan advertiser: {0}".Frmt(e.ToString), LogMessageTypes.Problem)
+                    logger.Log("Error creating lan advertiser: {0}".Frmt(e.ToString), LogMessageType.Problem)
                 End Try
             End If
             'log
-            logger.Log("Logged on with username {0}.".Frmt(username), LogMessageTypes.Typical)
+            logger.Log("Logged on with username {0}.".Frmt(username), LogMessageType.Typical)
             futureLoggedIn.TrySetValue(Success("Succesfully logged on with username {0}.".Frmt(username)))
             'respond
             SendPacket(BnetPacket.MakeNetGamePort(listenPort))
@@ -853,7 +853,7 @@ Namespace Bnet
 
         Private Sub ReceiveEnterChat(ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(vals IsNot Nothing)
-            logger.Log("Entered chat", LogMessageTypes.Typical)
+            logger.Log("Entered chat", LogMessageType.Typical)
             EnterChannel(profile.initialChannel)
         End Sub
 #End Region
@@ -877,7 +877,7 @@ Namespace Bnet
         End Sub
         Private Sub OnWardenFail(ByVal e As Exception)
             LogUnexpectedException("Warden", e)
-            logger.Log("Error dealing with Warden packet. Disconnecting to be safe.", LogMessageTypes.Problem)
+            logger.Log("Error dealing with Warden packet. Disconnecting to be safe.", LogMessageType.Problem)
             ref.QueueAction(Sub() Disconnect("Error dealing with Warden packet."))
         End Sub
 #End Region
@@ -889,7 +889,7 @@ Namespace Bnet
 
             If succeeded Then
                 If state = States.CreatingGame Then
-                    logger.Log("Finished creating game.", LogMessageTypes.Positive)
+                    logger.Log("Finished creating game.", LogMessageType.Positive)
                     ChangeState(States.Game)
                     If Not advertisedGameSettings.private Then gameRefreshTimer.Start()
                     futureCreatedGame.TrySetValue(Success("Succesfully created game {0} for map {1}.".Frmt(advertisedGameSettings.header.Name, advertisedGameSettings.header.Map.relativePath)))
@@ -930,7 +930,7 @@ Namespace Bnet
 
         Private Sub ReceiveMessageBox(ByVal vals As Dictionary(Of String, Object))
             Dim msg = "MESSAGE BOX FROM BNET: " + CStr(vals("caption")) + ": " + CStr(vals("text"))
-            logger.Log(msg, LogMessageTypes.Problem)
+            logger.Log(msg, LogMessageType.Problem)
         End Sub
 #End Region
 

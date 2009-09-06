@@ -96,7 +96,7 @@
 
     Public MustInherit Class W3SlotContents
         Private ReadOnly _parent As W3Slot
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_parent IsNot Nothing)
         End Sub
 

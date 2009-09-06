@@ -14,7 +14,7 @@
         Private ReadOnly costRecoveredPerSecond As Double
         Private ReadOnly initialSlack As Double
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(initialSlack >= 0)
             Contract.Invariant(costPerPacket >= 0)
             Contract.Invariant(costPerPacketData >= 0)
@@ -87,7 +87,7 @@
                                           costPerNonGameActionData,
                                           costLimit,
                                           costRecoveredPerSecond)
-                logger.log("New player connecting from {0}.".frmt(socket.Name), LogMessageTypes.Positive)
+                logger.log("New player connecting from {0}.".frmt(socket.Name), LogMessageType.Positive)
 
                 SyncLock lock
                     sockets.Add(socket)
@@ -97,7 +97,7 @@
                         If Not TryRemoveSocket(socket) Then  Return
                         If result.Exception IsNot Nothing Then
                             socket.disconnect(result.Exception.ToString)
-                            logger.log(result.Exception.ToString, LogMessageTypes.Problem)
+                            logger.log(result.Exception.ToString, LogMessageType.Problem)
                             Return
                         End If
 
@@ -105,7 +105,7 @@
                             GetConnectingPlayer(socket, result.Value)
                         Catch e As Exception
                             Dim msg = "Error receiving {0} from {1}: {2}".frmt(result.Value.id, socket.Name, e)
-                            logger.log(msg, LogMessageTypes.Problem)
+                            logger.log(msg, LogMessageType.Problem)
                             socket.disconnect(msg)
                         End Try
                     End Sub
@@ -117,7 +117,7 @@
                     End Sub
                 )
             Catch e As Exception
-                logger.log("Error accepting connection: " + e.ToString, LogMessageTypes.Problem)
+                logger.log("Error accepting connection: " + e.ToString, LogMessageType.Problem)
             End Try
         End Sub
 

@@ -119,7 +119,7 @@ Public Class PacketStream
 
         Dim buffer_ = buffer 'avoids problems with contract verification on hoisted arguments
         Dim offset_ = offset
-        logger.log(Function() "Received from {0}: {1}".frmt(logDestination, buffer_.SubArray(offset_, totalSize).ToHexString), LogMessageTypes.DataRaw)
+        logger.log(Function() "Received from {0}: {1}".frmt(logDestination, buffer_.SubArray(offset_, totalSize).ToHexString), LogMessageType.DataRaw)
         Return totalSize
     End Function
 
@@ -162,7 +162,7 @@ Public Class PacketStream
         Dim buffer_ = buffer 'fixes contract verification error due to hoisting
         Dim offset_ = offset
         Dim count_ = count
-        logger.log(Function() "Sending to {0}: {1}".frmt(logDestination, buffer_.SubArray(offset_, count_).ToHexString), LogMessageTypes.DataRaw)
+        logger.log(Function() "Sending to {0}: {1}".frmt(logDestination, buffer_.SubArray(offset_, count_).ToHexString), LogMessageType.DataRaw)
         substream.Write(buffer, offset, count)
     End Sub
 

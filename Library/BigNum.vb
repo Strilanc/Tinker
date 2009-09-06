@@ -25,7 +25,7 @@ Public Class BigNum
     Public Shared ReadOnly Zero As New BigNum(0)
     Public Shared ReadOnly Unit As New BigNum(1)
 
-    <ContractInvariantMethod()> Protected Sub Invariant()
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(_words IsNot Nothing)
         Contract.Invariant(_sign >= -1)
         Contract.Invariant(_sign <= 1)
@@ -489,7 +489,7 @@ Public Class BigNum
             End Get
         End Property
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_quotient IsNot Nothing)
             Contract.Invariant(_remainder IsNot Nothing)
         End Sub
@@ -523,7 +523,7 @@ Public Class BigNum
             End Get
         End Property
 
-        <ContractInvariantMethod()> Protected Sub Invariant()
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_x IsNot Nothing)
             Contract.Invariant(_y IsNot Nothing)
         End Sub

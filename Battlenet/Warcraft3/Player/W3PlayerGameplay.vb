@@ -76,7 +76,7 @@
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             If tickQueue.Count <= 0 Then
-                logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageTypes.Problem)
+                logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageType.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "overticked")
                 Return
             End If

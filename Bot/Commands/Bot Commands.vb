@@ -214,7 +214,7 @@ Namespace Commands.Specializations
                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.QueueRemoveClient(arguments(0))
+                Return target.QueueRemoveClient(arguments(0), "KillClient Command")
             End Function
         End Class
 
@@ -323,7 +323,7 @@ Namespace Commands.Specializations
                         connectedAndLoggedIn.CallWhenValueReady(
                             Sub(finished)
                                 If Not finished.succeeded Then
-                                    target.QueueRemoveClient(arguments(0))
+                                    target.QueueRemoveClient(arguments(0), "Failed to Connect")
                                 End If
                             End Sub
                         )
