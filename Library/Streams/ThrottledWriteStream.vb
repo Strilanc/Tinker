@@ -92,7 +92,7 @@ Public Class ThrottledReader
     End Function
 End Class
 Public Class ThrottledWriter
-    Inherits BaseLockFreeConsumer(Of Byte())
+    Inherits AbstractLockFreeConsumer(Of Byte())
 
     Private ReadOnly destinationStream As IO.Stream
     Private ReadOnly consumptionQueue As New Queue(Of Byte())

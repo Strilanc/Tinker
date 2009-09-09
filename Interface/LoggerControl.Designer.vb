@@ -19,15 +19,15 @@ Partial Class LoggerControl
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.components = New System.ComponentModel.Container
-        Me.txtLog = New System.Windows.Forms.RichTextBox
-        Me.chkDataEvents = New System.Windows.Forms.CheckBox
-        Me.chkParsedData = New System.Windows.Forms.CheckBox
-        Me.chkRawData = New System.Windows.Forms.CheckBox
-        Me.btnClear = New System.Windows.Forms.Button
-        Me.lblBuffering = New System.Windows.Forms.Label
-        Me.lblNumBuffered = New System.Windows.Forms.Label
-        Me.chkSaveFile = New System.Windows.Forms.CheckBox
+        Me.components = New System.ComponentModel.Container()
+        Me.txtLog = New System.Windows.Forms.RichTextBox()
+        Me.chkDataEvents = New System.Windows.Forms.CheckBox()
+        Me.chkParsedData = New System.Windows.Forms.CheckBox()
+        Me.chkRawData = New System.Windows.Forms.CheckBox()
+        Me.btnClear = New System.Windows.Forms.Button()
+        Me.lblBuffering = New System.Windows.Forms.Label()
+        Me.lblNumBuffered = New System.Windows.Forms.Label()
+        Me.chkSaveFile = New System.Windows.Forms.CheckBox()
         Me.tips = New System.Windows.Forms.ToolTip(Me.components)
         Me.SuspendLayout()
         '
@@ -56,7 +56,6 @@ Partial Class LoggerControl
         Me.chkDataEvents.TabIndex = 1
         Me.chkDataEvents.Text = "Data Events"
         Me.chkDataEvents.ThreeState = True
-        Me.tips.SetToolTip(Me.chkDataEvents, "Shows data events such as packet arrivals." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Half-check to only save to file.")
         Me.chkDataEvents.UseVisualStyleBackColor = False
         '
         'chkParsedData
@@ -70,7 +69,6 @@ Partial Class LoggerControl
         Me.chkParsedData.TabIndex = 2
         Me.chkParsedData.Text = "Parsed Data"
         Me.chkParsedData.ThreeState = True
-        Me.tips.SetToolTip(Me.chkParsedData, "Shows parsed data such as packet contents." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Half-check to only save to file.")
         Me.chkParsedData.UseVisualStyleBackColor = False
         '
         'chkRawData
@@ -84,7 +82,6 @@ Partial Class LoggerControl
         Me.chkRawData.TabIndex = 3
         Me.chkRawData.Text = "Raw Data"
         Me.chkRawData.ThreeState = True
-        Me.tips.SetToolTip(Me.chkRawData, "Shows raw data such as received packet data." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Half-check to only save  to file.")
         Me.chkRawData.UseVisualStyleBackColor = False
         '
         'btnClear
@@ -95,7 +92,6 @@ Partial Class LoggerControl
         Me.btnClear.Size = New System.Drawing.Size(94, 22)
         Me.btnClear.TabIndex = 4
         Me.btnClear.Text = "Clear"
-        Me.tips.SetToolTip(Me.btnClear, "Clears the displayed text. Doesn't clear text from log file.")
         Me.btnClear.UseVisualStyleBackColor = True
         '
         'lblBuffering
@@ -136,7 +132,6 @@ Partial Class LoggerControl
         Me.chkSaveFile.Size = New System.Drawing.Size(51, 17)
         Me.chkSaveFile.TabIndex = 7
         Me.chkSaveFile.Text = "Save"
-        Me.tips.SetToolTip(Me.chkSaveFile, "TOOLTIP")
         Me.chkSaveFile.UseVisualStyleBackColor = False
         '
         'LoggerControl

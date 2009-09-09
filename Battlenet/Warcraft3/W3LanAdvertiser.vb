@@ -3,7 +3,7 @@ Imports System.Net.Sockets
 Imports HostBot.Links
 
 Public NotInheritable Class W3LanAdvertiser
-    Inherits NotifyingDisposable
+    Inherits FutureDisposable
     Implements IBotWidget
 
     Private ReadOnly games1 As New HashSet(Of LanGame)
@@ -15,15 +15,15 @@ Public NotInheritable Class W3LanAdvertiser
     Private ReadOnly logger As Logger
     Public ReadOnly name As String
 
-    Public ReadOnly server_listen_port As UShort
-    Private ReadOnly remote_host As String
-    Private ReadOnly remote_port As UShort
+    Public ReadOnly serverListenPort As UShort
+    Private ReadOnly remoteHost As String
+    Private ReadOnly remotePort As UShort
     Private ReadOnly lock As New Object()
     Public ReadOnly parent As MainBot
-    Private pool_port As PortPool.PortHandle
+    Private portHandle As PortPool.PortHandle
 
-    Private create_count As UInteger = 0
-    Private WithEvents refresh_timer As New System.Timers.Timer(3000)
+    Private createCount As UInteger = 0
+    Private WithEvents refreshTimer As New System.Timers.Timer(3000)
 
 #Region "Inner"
     Private Class LanGame
@@ -37,7 +37,7 @@ Public NotInheritable Class W3LanAdvertiser
         End Sub
     End Class
     Private Class AdvertisingLinkMember
-        Inherits NotifyingDisposable
+        Inherits FutureDisposable
         Implements IGameSourceSink
 
         Private ReadOnly parent As W3LanAdvertiser
@@ -61,7 +61,7 @@ Public NotInheritable Class W3LanAdvertiser
             parent.AddGame(game)
             RaiseEvent AddedGame(Me, game, server)
             If server IsNot Nothing Then
-                server.QueueOpenPort(parent.server_listen_port).CallWhenValueReady(
+                server.QueueOpenPort(parent.serverListenPort).CallWhenValueReady(
                     Sub(listened)
                         If Not listened.succeeded Then
                             RemoveGame(game, listened.Message)
@@ -80,8 +80,10 @@ Public NotInheritable Class W3LanAdvertiser
             'no distinction between public/private on lan
         End Sub
 
-        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-            RaiseEvent DisposedLink(Me, Nothing)
+        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+            If Not finalizing Then
+                RaiseEvent DisposedLink(Me, Nothing)
+            End If
         End Sub
     End Class
 #End Region
@@ -94,8 +96,8 @@ Public NotInheritable Class W3LanAdvertiser
                    Optional ByVal remote_port As UShort = 6112,
                    Optional ByVal logger As Logger = Nothing)
         Me.New(parent, name, server_listen_pool_port.Port, remote_host, remote_port, logger)
-        Me.server_listen_port = server_listen_pool_port.Port
-        Me.pool_port = server_listen_pool_port
+        Me.serverListenPort = server_listen_pool_port.Port
+        Me.portHandle = server_listen_pool_port
     End Sub
     Public Sub New(ByVal parent As MainBot,
                    ByVal name As String,
@@ -106,37 +108,39 @@ Public NotInheritable Class W3LanAdvertiser
         Me.logger = If(logger, New Logger)
         Me.name = name
         Me.parent = parent
-        Me.remote_host = remote_host
-        Me.remote_port = remote_port
-        Me.server_listen_port = server_listen_port
+        Me.remoteHost = remote_host
+        Me.remotePort = remote_port
+        Me.serverListenPort = server_listen_port
         Me.socket = New UdpClient()
-        Me.refresh_timer.Start()
+        Me.refreshTimer.Start()
     End Sub
 
     Private Sub _Stop() Implements IBotWidget.[Stop]
         Dispose()
     End Sub
-    Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-        SyncLock lock
-            ClearGames()
+    Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+        If Not finalizing Then
+            SyncLock lock
+                ClearGames()
 
-            'stop sending data
-            refresh_timer.Stop()
-            socket.Close()
-        End SyncLock
+                'stop sending data
+                refreshTimer.Stop()
+                socket.Close()
+            End SyncLock
 
-        'break links with other components
-        parent.QueueRemoveWidget(TYPE_NAME, name)
+            'break links with other components
+            parent.QueueRemoveWidget(TYPE_NAME, name)
 
-        If Me.pool_port IsNot Nothing Then
-            logger.log("Returned port {0} to the pool.".frmt(Me.server_listen_port), LogMessageType.Positive)
-            Me.pool_port.Dispose()
-            Me.pool_port = Nothing
+            If Me.portHandle IsNot Nothing Then
+                logger.Log("Returned port {0} to the pool.".Frmt(Me.serverListenPort), LogMessageType.Positive)
+                Me.portHandle.Dispose()
+                Me.portHandle = Nothing
+            End If
+
+            'Log
+            logger.Log("Shutdown Advertiser", LogMessageType.Negative)
+            RaiseEvent ClearStateStrings()
         End If
-
-        'Log
-        logger.log("Shutdown Advertiser", LogMessageType.Negative)
-        RaiseEvent ClearStateStrings()
     End Sub
 #End Region
 
@@ -154,8 +158,8 @@ Public NotInheritable Class W3LanAdvertiser
         'Create
         SyncLock lock
             If headermap.ContainsKey(gameHeader) Then Return headermap(gameHeader).id
-            create_count += CByte(1)
-            id = create_count
+            createCount += CByte(1)
+            id = createCount
             game = New LanGame(id, gameHeader)
             idmap(id) = game
             headermap(gameHeader) = game
@@ -183,7 +187,7 @@ Public NotInheritable Class W3LanAdvertiser
 
             'Notify
             Dim pk = W3Packet.MakeLanDestroyGame(id)
-            send(pk, remote_host, remote_port)
+            send(pk, remoteHost, remotePort)
         End SyncLock
 
         'Log
@@ -214,7 +218,7 @@ Public NotInheritable Class W3LanAdvertiser
 
 #Region "Networking"
     '''<summary>Resends game data to the target address.</summary>
-    Public Sub refresh() Handles refresh_timer.Elapsed
+    Public Sub refresh() Handles refreshTimer.Elapsed
         SyncLock lock
             For Each game In games1
                 Dim pk = W3Packet.MakeLanDescribeGame(
@@ -222,8 +226,8 @@ Public NotInheritable Class W3LanAdvertiser
                                 MainBot.Wc3MajorVersion,
                                 game.id,
                                 game.header,
-                                server_listen_port)
-                send(pk, remote_host, remote_port)
+                                serverListenPort)
+                send(pk, remoteHost, remotePort)
             Next game
         End SyncLock
     End Sub

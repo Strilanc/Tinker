@@ -485,7 +485,7 @@ Namespace Warcraft3
         End Function
         <Pure()>
         Public Shared Function MakeText(ByVal text As String,
-                                        ByVal type As ChatType,
+                                        ByVal chatType As ChatType,
                                         ByVal receiverType As ChatReceiverType,
                                         ByVal receivingPlayers As IEnumerable(Of W3Player),
                                         ByVal sender As W3Player) As W3Packet
@@ -493,22 +493,22 @@ Namespace Warcraft3
             Contract.Requires(receivingPlayers IsNot Nothing)
             Contract.Requires(sender IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Select Case type
+            Select Case chatType
                 Case ChatType.Game
                     Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
                             {"receiving player indexes", (From p In receivingPlayers Select p.index).ToList},
                             {"sending player index", sender.index},
-                            {"type", type},
+                            {"type", chatType},
                             {"message", text},
                             {"receiver type", receiverType}})
                 Case ChatType.Lobby
                     Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
                             {"receiving player indexes", (From p In receivingPlayers Select p.index).ToList},
                             {"sending player index", sender.index},
-                            {"type", type},
+                            {"type", chatType},
                             {"message", text}})
                 Case Else
-                    Throw type.ValueShouldBeImpossibleException
+                    Throw chatType.MakeArgumentValueException("chatType")
             End Select
         End Function
         <Pure()>

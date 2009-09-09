@@ -390,7 +390,7 @@ Namespace Warcraft3
             'Send Text
             'text comes from fake host or spoofs from the receiving player
             player.QueueSendPacket(W3Packet.MakeText(text:=If(fakeHostPlayer Is Nothing, My.Resources.ProgramName + ": ", "") + message,
-                                                     type:=If(state >= W3GameStates.Loading, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby),
+                                                     chatType:=If(state >= W3GameStates.Loading, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby),
                                                      receiverType:=W3Packet.ChatReceiverType.AllPlayers,
                                                      receivingPlayers:=players,
                                                      sender:=If(fakeHostPlayer, player)))

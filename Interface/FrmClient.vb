@@ -5,7 +5,7 @@ Public Class FrmClient
     Private WithEvents bot As MainBot
     Private WithEvents client As BnetClient
 
-    Private Sub c_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+    Private Shadows Sub OnLoad() Handles Me.Load
         Try
             'prep form
             Thread.CurrentThread.Name = "UI Thread"
@@ -23,13 +23,6 @@ Public Class FrmClient
 
             Me.Show()
 
-            Try
-                Dim x = New Warden_Module_Lib.ModuleHandler
-                x.UnloadModule()
-            Catch ex As Exception
-                botcMain.logBot.LogMessage("Error loading warden module library:{0}{1}".frmt(vbNewLine, ex), Color.Red)
-            End Try
-
             'load initial plugins
             Dim pluginNames = (From x In My.Settings.initial_plugins.Split(";"c) Where x <> "").ToList
             Dim futureLoadedPlugins = (From x In pluginNames Select bot.QueueLoadPlugin(x)).ToList
@@ -42,9 +35,9 @@ Public Class FrmClient
                 Dim loaded = pluginLoadOutcomes(i)
 
                 If loaded.succeeded Then
-                    bot.logger.log("Loaded plugin '" + plugin + "'.", LogMessageType.Positive)
+                    bot.logger.Log("Loaded plugin '" + plugin + "'.", LogMessageType.Positive)
                 Else
-                    bot.logger.log("Failed to load plugin '" + plugin + "': " + loaded.message, LogMessageType.Problem)
+                    bot.logger.Log("Failed to load plugin '" + plugin + "': " + loaded.Message, LogMessageType.Problem)
                 End If
             Next i
 
@@ -61,7 +54,7 @@ Public Class FrmClient
                 My.Settings.mapPath = My.Settings.war3path + "Maps" + IO.Path.DirectorySeparatorChar
             End If
             If My.Settings.botstore = "" Then
-                btnSettings_Click(Nothing, Nothing)
+                ShowSettings()
             End If
         Catch ex As Exception
             MessageBox.Show(GenerateUnexpectedExceptionDescription("Error loading " + My.Resources.ProgramName, ex))
@@ -69,7 +62,7 @@ Public Class FrmClient
         End Try
     End Sub
 
-    Private Sub c_Closing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
+    Private Shadows Sub OnClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
         If bot Is Nothing Then Return
 
         If e.CloseReason = CloseReason.UserClosing Then
@@ -94,11 +87,11 @@ Public Class FrmClient
         My.Settings.Save()
     End Sub
 
-    Private Sub btnSettings_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSettings.Click
+    Private Sub ShowSettings() Handles btnSettings.Click
         FrmSettings.ShowBotSettings(bot)
     End Sub
 
-    Private Sub mnuShowHide_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuShowHide.Click
+    Private Sub ShowHide() Handles mnuShowHide.Click, trayIcon.MouseDoubleClick
         mnuShowHide.Checked = Not mnuShowHide.Checked
         If mnuShowHide.Checked Then
             Me.Show()
@@ -108,18 +101,7 @@ Public Class FrmClient
         End If
     End Sub
 
-    Private Sub trayIcon_MouseDoubleClick(ByVal sender As System.Object, ByVal e As System.Windows.Forms.MouseEventArgs) Handles trayIcon.MouseDoubleClick
-        Call mnuShowHide_Click(Nothing, Nothing)
-    End Sub
-
-    Private Sub FrmClient_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Resize
-        If Me.WindowState = FormWindowState.Minimized Then
-            Me.Hide()
-            mnuShowHide.Checked = False
-        End If
-    End Sub
-
-    Private Sub mnuClose_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles mnuClose.Click
+    Private Sub OnMenuClickClose() Handles mnuClose.Click
         Me.Close()
     End Sub
 End Class

@@ -142,9 +142,9 @@
 
         Public ReadOnly Property CanHost() As HostTestResults
             Get
-                If Not testCanHost.IsReady Then
+                If testCanHost.State <> FutureState.Ready Then
                     Return HostTestResults.Test
-                ElseIf testCanHost.Value() Then
+                ElseIf testCanHost.Value Then
                     Return HostTestResults.Pass
                 Else
                     Return HostTestResults.Fail

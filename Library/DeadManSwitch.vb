@@ -1,5 +1,5 @@
 ﻿Public Class DeadManSwitch
-    Inherits NotifyingDisposable
+    Inherits FutureDisposable
 
     Private ReadOnly timer As Timers.Timer
     Private flipped As Boolean
@@ -11,7 +11,7 @@
         Me.timer = New Timers.Timer(period.TotalMilliseconds)
         Me.timer.AutoReset = True
         Me.timer.Enabled = initiallyArmed
-        AddHandler timer.Elapsed, Sub() c_Elapsed()
+        AddHandler timer.Elapsed, Sub() OnTimerElapsed()
     End Sub
 
     Public Sub Arm()
@@ -25,12 +25,14 @@
     Public Sub Disarm()
         Me.timer.Stop()
     End Sub
-    Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-        Me.timer.Stop()
-        Me.timer.Dispose()
+    Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+        If Not finalizing Then
+            Me.timer.Stop()
+            Me.timer.Dispose()
+        End If
     End Sub
 
-    Private Sub c_Elapsed()
+    Private Sub OnTimerElapsed()
         If flipped Then
             flipped = False
         Else

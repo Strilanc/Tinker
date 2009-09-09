@@ -42,8 +42,8 @@ Namespace Commands.Specializations
                 Dim header = New W3GameHeader(arguments(0),
                                               If(user Is Nothing, My.Resources.ProgramName, user.name),
                                               New W3MapSettings(arguments, map),
-                                              target.server_listen_port, 0, 0, arguments, map.NumPlayerSlots)
-                Dim settings = New ServerSettings(map, header, default_listen_ports:={target.server_listen_port})
+                                              target.serverListenPort, 0, 0, arguments, map.NumPlayerSlots)
+                Dim settings = New ServerSettings(map, header, default_listen_ports:={target.serverListenPort})
                 Dim f_server = target.parent.QueueCreateServer(target.name, settings, "[Not Linked]", True)
 
                 'Create the server, then advertise the game

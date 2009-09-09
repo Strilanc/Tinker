@@ -18,11 +18,11 @@ Namespace Links
     End Interface
 
     Public Class AdvertisingLink
-        Inherits NotifyingDisposable
+        Inherits FutureDisposable
         Private ReadOnly master As IGameSource
         Private ReadOnly servant As IGameSink
 
-        Public Shared Function CreateMultiWayLink(ByVal members As IEnumerable(Of IGameSourceSink)) As INotifyingDisposable
+        Public Shared Function CreateMultiWayLink(ByVal members As IEnumerable(Of IGameSourceSink)) As IFutureDisposable
             Contract.Requires(members IsNot Nothing)
             Dim members_ = members
             Return DisposeLink.CreateMultiWayLink(From m1 In members_, m2 In members_
@@ -30,7 +30,7 @@ Namespace Links
                                                   Select AdvertisingLink.CreateOneWayLink(m1, m2))
         End Function
         Public Shared Function CreateOneWayLink(ByVal master As IGameSource,
-                                                ByVal servant As IGameSink) As INotifyingDisposable
+                                                ByVal servant As IGameSink) As IFutureDisposable
             Return New AdvertisingLink(master, servant)
         End Function
         Private Sub New(ByVal master As IGameSource,
@@ -47,10 +47,12 @@ Namespace Links
             AddHandler master.DisposedLink, AddressOf c_DisposedLink
         End Sub
 
-        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-            RemoveHandler master.AddedGame, AddressOf c_StartedAdvertising
-            RemoveHandler master.RemovedGame, AddressOf c_StoppedAdvertising
-            RemoveHandler master.DisposedLink, AddressOf c_DisposedLink
+        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+            If Not finalizing Then
+                RemoveHandler master.AddedGame, AddressOf c_StartedAdvertising
+                RemoveHandler master.RemovedGame, AddressOf c_StoppedAdvertising
+                RemoveHandler master.DisposedLink, AddressOf c_DisposedLink
+            End If
         End Sub
 
         Private Sub c_DisposedLink(ByVal sender As IGameSource,
@@ -72,7 +74,7 @@ Namespace Links
     End Class
 
     Public Class AdvertisingDisposeNotifier
-        Inherits NotifyingDisposable
+        Inherits FutureDisposable
         Private ReadOnly member As IGameSourceSink
 
         Public Sub New(ByVal member As IGameSourceSink)
@@ -86,19 +88,21 @@ Namespace Links
             Dispose()
         End Sub
 
-        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-            RemoveHandler Me.member.RemovedGame, AddressOf CatchStoppedAdvertising
+        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+            If Not finalizing Then
+                RemoveHandler Me.member.RemovedGame, AddressOf CatchStoppedAdvertising
+            End If
         End Sub
     End Class
 
     Public Class DisposeLink
-        Inherits NotifyingDisposable
-        Private ReadOnly master As INotifyingDisposable
-        Private ReadOnly servant As INotifyingDisposable
+        Inherits FutureDisposable
+        Private ReadOnly master As IFutureDisposable
+        Private ReadOnly servant As IFutureDisposable
 
-        Public Shared Function CreateMultiWayLink(ByVal members As IEnumerable(Of INotifyingDisposable)) As INotifyingDisposable
+        Public Shared Function CreateMultiWayLink(ByVal members As IEnumerable(Of IFutureDisposable)) As IFutureDisposable
             Contract.Requires(members IsNot Nothing)
-            Dim center As New NotifyingDisposable
+            Dim center As New FutureDisposable
             For Each member In members
                 Contract.Assume(member IsNot Nothing)
                 DisposeLink.CreateOneWayLink(member, center)
@@ -106,8 +110,8 @@ Namespace Links
             Next member
             Return center
         End Function
-        Public Shared Function CreateOneWayLink(ByVal master As INotifyingDisposable,
-                                                ByVal servant As INotifyingDisposable) As INotifyingDisposable
+        Public Shared Function CreateOneWayLink(ByVal master As IFutureDisposable,
+                                                ByVal servant As IFutureDisposable) As IFutureDisposable
             'contract bug wrt interface event implementation requires this:
             'Contract.Requires(master IsNot Nothing)
             'Contract.Requires(servant IsNot Nothing)
@@ -116,8 +120,8 @@ Namespace Links
             Return New DisposeLink(master, servant)
         End Function
 
-        Private Sub New(ByVal master As INotifyingDisposable,
-                        ByVal servant As INotifyingDisposable)
+        Private Sub New(ByVal master As IFutureDisposable,
+                        ByVal servant As IFutureDisposable)
             'contract bug wrt interface event implementation requires this:
             'Contract.Requires(master IsNot Nothing)
             'Contract.Requires(servant IsNot Nothing)
@@ -125,26 +129,8 @@ Namespace Links
             Contract.Assume(servant IsNot Nothing)
             Me.master = master
             Me.servant = servant
-            AddHandler master.Disposed, AddressOf CatchMasterDisposed
-            AddHandler servant.Disposed, AddressOf CatchServantDisposed
-            If servant.IsDisposed Then
-                CatchServantDisposed()
-            ElseIf master.IsDisposed Then
-                CatchMasterDisposed()
-            End If
-        End Sub
-
-        Private Sub CatchMasterDisposed()
-            Me.Dispose()
-            servant.Dispose()
-        End Sub
-        Private Sub CatchServantDisposed()
-            Me.Dispose()
-        End Sub
-
-        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-            RemoveHandler master.Disposed, AddressOf CatchMasterDisposed
-            RemoveHandler servant.Disposed, AddressOf CatchServantDisposed
+            master.FutureDisposed.CallWhenReady(AddressOf servant.Dispose)
+            servant.FutureDisposed.CallWhenReady(AddressOf Me.Dispose)
         End Sub
     End Class
 End Namespace

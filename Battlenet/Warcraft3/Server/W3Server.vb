@@ -5,7 +5,7 @@ Imports HostBot.Links
 
 Namespace Warcraft3
     Public NotInheritable Class W3Server
-        Inherits NotifyingDisposable
+        Inherits FutureDisposable
 #Region "Properties"
         Public ReadOnly parent As MainBot
         Public ReadOnly name As String
@@ -261,8 +261,10 @@ Namespace Warcraft3
             parent.QueueRemoveServer(Me.name)
             Return Success("Server killed.")
         End Function
-        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-            ref.QueueAction(Function() Kill())
+        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+            If Not finalizing Then
+                ref.QueueAction(Function() Kill())
+            End If
         End Sub
 #End Region
 
@@ -369,7 +371,7 @@ Namespace Warcraft3
             )
         End Sub
         Private Class AdvertisingDependency
-            Inherits NotifyingDisposable
+            Inherits FutureDisposable
             Private WithEvents server As W3Server
 
             Public Sub New(ByVal server As W3Server)
@@ -379,9 +381,11 @@ Namespace Warcraft3
                 Me.server = server
             End Sub
 
-            Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-                server.QueueStopAcceptingPlayers()
-                server = Nothing
+            Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+                If Not finalizing Then
+                    server.QueueStopAcceptingPlayers()
+                    server = Nothing
+                End If
             End Sub
 
             Private Sub c_ServerStateChanged(ByVal sender As W3Server,
@@ -442,8 +446,8 @@ Namespace Warcraft3
         Public Function QueueAddAvertiser(ByVal m As IGameSourceSink) As IFuture(Of outcome)
             Return ref.QueueFunc(Function() AddAdvertiser(m))
         End Function
-        Public Function CreateAdvertisingDependency() As INotifyingDisposable
-            Contract.Ensures(Contract.Result(Of INotifyingDisposable)() IsNot Nothing)
+        Public Function CreateAdvertisingDependency() As FutureDisposable
+            Contract.Ensures(Contract.Result(Of FutureDisposable)() IsNot Nothing)
             Return New AdvertisingDependency(Me)
         End Function
         Public ReadOnly Property GetSuffix As String

@@ -126,7 +126,7 @@
         Public ReadOnly payload As IPickle(Of Object)
         Public Shared ReadOnly packetJar As PrefixSwitchJar(Of W3GameActionId) = MakeJar()
 
-        Private Sub New(ByVal payload As IPickle(Of PrefixSwitchJar(Of W3GameActionId).PrefixPickle))
+        Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of W3GameActionId)))
             Contract.Requires(payload IsNot Nothing)
             Me.payload = payload.Value.payload
             Me.id = payload.Value.index
@@ -379,11 +379,20 @@
             Smart = &HD0003 'right-click
             [Stop] = &HD0004
             SetRallyPoint = &HD000C
+            GetItem = &HD000D
             Attack = &HD000F
             AttackGround = &HD0010
+            AttackOnce = &HD0011
             Move = &HD0012
+            AIMove = &HD0014
             Patrol = &HD0016
             HoldPosition = &HD0019
+            Build = &HD001A
+            HumanBuild = &HD001B
+            OrcBuild = &HD001C
+            NightElfBuild = &HD001D
+            UndeadBuild = &HD001E
+            ResumeBuild = &HD001F
             GiveOrDropItem = &HD0021
             SwapItemWithItemInSlot1 = &HD0022
             SwapItemWithItemInSlot2 = &HD0023
@@ -397,8 +406,15 @@
             UseItemInSlot4 = &HD002B
             UseItemInSlot5 = &HD002C
             UseItemInSlot6 = &HD002D
-            ReturnResources = &HD0031
-            Gather = &HD0032
+            ResumeHarvest = &HD0031
+            Harvest = &HD0032
+            ReturnResources = &HD0034
+            AutoHarvestGold = &HD0035
+            AutoHarvestLumber = &HD0036
+            NeutralDetectAoe = &HD0037
+            Repair = &HD0038
+            RepairOn = &HD0039
+            RepairOff = &HD003A
             '... many many more ...
         End Enum
 #End Region

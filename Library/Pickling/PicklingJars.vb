@@ -482,31 +482,31 @@ Namespace Pickling.Jars
             packers(index) = packer
         End Sub
     End Class
+    Public Class PrefixPickle(Of T)
+        Public ReadOnly index As T
+        Public ReadOnly payload As IPickle(Of Object)
+        Public Sub New(ByVal index As T, ByVal payload As IPickle(Of Object))
+            Contract.Requires(payload IsNot Nothing)
+            Me.index = index
+            Me.payload = payload
+        End Sub
+    End Class
     Public Class PrefixSwitchJar(Of T)
-        Inherits Jar(Of PrefixPickle)
+        Inherits Jar(Of PrefixPickle(Of T))
         Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
         Public Sub New(ByVal name As String)
             MyBase.new(name)
         End Sub
 
-        Public Class PrefixPickle
-            Public ReadOnly index As T
-            Public ReadOnly payload As IPickle(Of Object)
-            Public Sub New(ByVal index As T, ByVal payload As IPickle(Of Object))
-                Contract.Requires(payload IsNot Nothing)
-                Me.index = index
-                Me.payload = payload
-            End Sub
-        End Class
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of PrefixPickle)
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of PrefixPickle(Of T))
             Dim index = CByte(data(0))
             Dim vindex = CType(CType(index, Object), T)
             If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to " + vindex.ToString())
-            Dim payload = New PrefixPickle(vindex, parsers(index).Parse(data.SubView(1)))
-            Return New Pickle(Of PrefixPickle)(Name, payload, data.SubView(0, payload.payload.Data.Length + 1))
+            Dim payload = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
+            Return New Pickle(Of PrefixPickle(Of T))(Name, payload, data.SubView(0, payload.payload.Data.Length + 1))
         End Function
-        Public Overrides Function Pack(Of R As PrefixPickle)(ByVal value As R) As IPickle(Of R)
+        Public Overrides Function Pack(Of R As PrefixPickle(Of T))(ByVal value As R) As IPickle(Of R)
             Dim index = CByte(CType(value.index, Object))
             If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.index.ToString())
             Return New Pickle(Of R)(Name, value, Concat({index}, packers(index).Pack(value.payload.Value).Data.ToArray).ToView)

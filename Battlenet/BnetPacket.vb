@@ -581,6 +581,7 @@ Namespace Bnet
                 Contract.Requires(name IsNot Nothing)
                 Contract.Requires(numDigits > 0)
                 Contract.Requires(numDigits <= 16)
+                Contract.Requires(byteOrder.EnumValueIsDefined())
                 Me.numDigits = numDigits
                 Me.byteOrder = byteOrder
             End Sub
@@ -600,7 +601,7 @@ Namespace Bnet
                             u >>= 4
                         Next i
                     Case Else
-                        Throw byteOrder.ValueShouldBeImpossibleException
+                        Throw byteOrder.MakeImpossibleValueException()
                 End Select
 
                 Return New Pickling.Pickle(Of R)(Me.Name, value, New String(digits).ToAscBytes().ToView())

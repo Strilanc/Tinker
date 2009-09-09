@@ -94,15 +94,15 @@ Public Class LoggerControl
             End If
             If dataEventsMode <> CallbackMode.Unspecified Then
                 callbackModeMap(LogMessageType.DataEvent) = dataEventsMode
-                sync_to_checkbox(chkDataEvents, LogMessageType.DataEvent)
+                SyncToCheckbox(chkDataEvents, LogMessageType.DataEvent)
             End If
             If parsedDataMode <> CallbackMode.Unspecified Then
                 callbackModeMap(LogMessageType.DataParsed) = parsedDataMode
-                sync_to_checkbox(chkParsedData, LogMessageType.DataParsed)
+                SyncToCheckbox(chkParsedData, LogMessageType.DataParsed)
             End If
             If rawDataMode <> CallbackMode.Unspecified Then
                 callbackModeMap(LogMessageType.DataRaw) = rawDataMode
-                sync_to_checkbox(chkRawData, LogMessageType.DataRaw)
+                SyncToCheckbox(chkRawData, LogMessageType.DataRaw)
             End If
             blockEvents = False
         End SyncLock
@@ -270,16 +270,16 @@ Public Class LoggerControl
 
 #Region "UI Events"
     Private Sub chkDataEvents_CheckedChanged() Handles chkDataEvents.CheckStateChanged
-        sync_from_checkbox(chkDataEvents, LogMessageType.DataEvent)
+        SyncFromCheckbox(chkDataEvents, LogMessageType.DataEvent)
     End Sub
     Private Sub chkParsedData_CheckedChanged() Handles chkParsedData.CheckStateChanged
-        sync_from_checkbox(chkParsedData, LogMessageType.DataParsed)
+        SyncFromCheckbox(chkParsedData, LogMessageType.DataParsed)
     End Sub
     Private Sub chkRawData_CheckedChanged() Handles chkRawData.CheckStateChanged
-        sync_from_checkbox(chkRawData, LogMessageType.DataRaw)
+        SyncFromCheckbox(chkRawData, LogMessageType.DataRaw)
     End Sub
 
-    Private Sub sync_from_checkbox(ByVal c As CheckBox, ByVal e As LogMessageType)
+    Private Sub SyncFromCheckbox(ByVal c As CheckBox, ByVal e As LogMessageType)
         SyncLock lock
             Select Case c.CheckState
                 Case CheckState.Checked : callbackModeMap(e) = CallbackMode.On
@@ -288,7 +288,7 @@ Public Class LoggerControl
             End Select
         End SyncLock
     End Sub
-    Private Sub sync_to_checkbox(ByVal c As CheckBox, ByVal e As LogMessageType)
+    Private Sub SyncToCheckbox(ByVal c As CheckBox, ByVal e As LogMessageType)
         SyncLock lock
             Select Case callbackModeMap(e)
                 Case CallbackMode.On : c.CheckState = CheckState.Checked
@@ -335,4 +335,8 @@ Public Class LoggerControl
         End If
     End Sub
 #End Region
+
+    Private Sub chkDataEvents_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkDataEvents.CheckStateChanged
+
+    End Sub
 End Class

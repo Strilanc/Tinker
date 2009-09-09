@@ -226,7 +226,7 @@ Public Module Common
                                    If Not enumerator.MoveNext Then  Return Failure(Of T)("No matches").Futurize
                                    Dim futureAccept = filterFunction_(enumerator.Current)
                                    Contract.Assume(futureAccept IsNot Nothing)
-                                   If Not futureAccept.IsReady Then  Return futureAccept.EvalWhenValueReady(self).Defuturize()
+                                   If futureAccept.State <> FutureState.Ready Then  Return futureAccept.EvalWhenValueReady(self).Defuturize()
                                    accept = futureAccept.Value
                                Loop
                            End Function)).Defuturize()

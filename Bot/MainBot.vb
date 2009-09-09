@@ -439,11 +439,11 @@ Public NotInheritable Class MainBot
         commandOutcocme.CallWhenValueReady(
             Sub(output) client.QueueSendWhisper(user.name, If(output.succeeded, "", "(Failed) ") + output.Message)
         )
-        If Not commandOutcocme.IsReady Then
+        If commandOutcocme.State <> FutureState.Ready Then
             FutureWait(2.Seconds).CallWhenReady(
                 Sub()
-                    If Not commandOutcocme.IsReady Then
-                        client.QueueSendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".frmt(text))
+                    If commandOutcocme.State <> FutureState.Ready Then
+                        client.QueueSendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
                     End If
                 End Sub
             )
@@ -612,7 +612,7 @@ Public Class PortPool
     End Function
 
     Public Class PortHandle
-        Inherits NotifyingDisposable
+        Inherits FutureDisposable
         Private ReadOnly pool As PortPool
         Private ReadOnly _port As UShort
 
@@ -623,12 +623,12 @@ Public Class PortPool
 
         Public ReadOnly Property Port() As UShort
             Get
-                If IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
+                If FutureDisposed.State = FutureState.Ready Then Throw New ObjectDisposedException(Me.GetType.Name)
                 Return _port
             End Get
         End Property
 
-        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
+        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
             SyncLock pool.lock
                 Contract.Assume(pool.OutPorts.Contains(_port))
                 Contract.Assume(Not pool.InPorts.Contains(_port))

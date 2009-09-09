@@ -27,7 +27,7 @@
             'prepare connect and receive
             FutureConnectTo(remoteHost, remotePort).QueueCallWhenValueReady(ref,
                 Sub(result)
-                    If future.IsReady Then
+                    If future.State = FutureState.Ready Then
                         If result.Value IsNot Nothing Then  result.Value.Close()
                     ElseIf result.Exception IsNot Nothing Then
                         future.SetValue(Failure("Failed to connect: {0}".Frmt(result.Exception.Message)))
@@ -41,7 +41,7 @@
                                     Dim flag = result2.Value(0)
                                     Dim id = result2.Value(1)
                                     Dim data = result2.Value.SubView(4)
-                                    If future.IsReady Then  Return
+                                    If future.State = FutureState.Ready Then  Return
 
                                     socket.Disconnect("Received response")
 

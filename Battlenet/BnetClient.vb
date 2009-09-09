@@ -20,7 +20,7 @@ Imports System.Net.Sockets
 
 Namespace Bnet
     Public NotInheritable Class BnetClient
-        Inherits NotifyingDisposable
+        Inherits FutureDisposable
         Implements IGameSourceSink
 #Region "Inner"
         Public Enum States
@@ -224,9 +224,11 @@ Namespace Bnet
 #End Region
 
 #Region "State"
-        Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-            ref.QueueAction(Sub() Disconnect("{0} Disposed".Frmt(Me.GetType.Name)))
-            parent.QueueRemoveClient(Me.name, "Client Disposed")
+        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+            If Not finalizing Then
+                ref.QueueAction(Sub() Disconnect("{0} Disposed".Frmt(Me.GetType.Name)))
+                parent.QueueRemoveClient(Me.name, "Client Disposed")
+            End If
         End Sub
         Private Sub ChangeState(ByVal newState As States)
             Dim oldState = state
@@ -565,7 +567,7 @@ Namespace Bnet
         End Sub
 
         Private Class ClientServerUserLink
-            Inherits NotifyingDisposable
+            Inherits FutureDisposable
             Public ReadOnly client As BnetClient
             Public ReadOnly server As W3Server
             Public ReadOnly user As BotUser
@@ -585,8 +587,10 @@ Namespace Bnet
                 DisposeLink.CreateOneWayLink(server, Me)
             End Sub
 
-            Protected Overrides Sub Dispose(ByVal disposing As Boolean)
-                client.QueueSetUserServer(user, Nothing)
+            Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+                If Not finalizing Then
+                    client.QueueSetUserServer(user, Nothing)
+                End If
             End Sub
         End Class
 
