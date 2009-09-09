@@ -7,12 +7,11 @@ Public Class LoggerControl
     Private lastQueuedMessage As New QueuedMessage(Nothing, Color.Black)
     Private nextQueuedMessage As QueuedMessage
     Private numQueuedMessages As Integer
-    Private lock As New Object()
+    Protected lock As New Object()
     Private filename As String
     Private filestream As IO.Stream
     Private isLoggingUnexpectedExceptions As Boolean
 
-#Region "Inner"
     Private Class QueuedMessage
         Public ReadOnly message As String
         Public ReadOnly color As Color
@@ -35,9 +34,7 @@ Public Class LoggerControl
         File = 2
         Off = 3
     End Enum
-#End Region
 
-#Region "Life"
     Public Sub New()
         InitializeComponent()
         callbackModeMap(LogMessageType.Typical) = CallbackMode.On
@@ -55,7 +52,6 @@ Public Class LoggerControl
         callbackColorMap(LogMessageType.Positive) = Color.DarkGreen
         callbackColorMap(LogMessageType.Negative) = Color.DarkOrange
     End Sub
-#End Region
 
 #Region "State"
     Public Sub SetLogUnexpected(ByVal b As Boolean)
@@ -63,9 +59,9 @@ Public Class LoggerControl
             If b = isLoggingUnexpectedExceptions Then Return
             isLoggingUnexpectedExceptions = b
             If isLoggingUnexpectedExceptions Then
-                AddHandler CaughtUnexpectedException, AddressOf c_LoggedUnexpectedException
+                AddHandler CaughtUnexpectedException, AddressOf OnLoggedUnexpectedException
             Else
-                RemoveHandler CaughtUnexpectedException, AddressOf c_LoggedUnexpectedException
+                RemoveHandler CaughtUnexpectedException, AddressOf OnLoggedUnexpectedException
             End If
         End SyncLock
     End Sub
@@ -250,7 +246,8 @@ Public Class LoggerControl
 #End Region
 
 #Region "Log Events"
-    Private Sub c_LoggedMessage(ByVal type As LogMessageType, ByVal message As ExpensiveValue(Of String)) Handles _logger.LoggedMessage
+    Private Sub OnLoggedMessage(ByVal type As LogMessageType,
+                                ByVal message As ExpensiveValue(Of String)) Handles _logger.LoggedMessage
         Dim color As Color
         Dim fileOnly As Boolean
         SyncLock lock
@@ -260,22 +257,24 @@ Public Class LoggerControl
         End SyncLock
         LogMessage(message, color, fileOnly)
     End Sub
-    Private Sub c_LoggedFutureMessage(ByVal placeholder As String, ByVal out As IFuture(Of Outcome)) Handles _logger.LoggedFutureMessage
+    Private Sub OnLoggedFutureMessage(ByVal placeholder As String,
+                                      ByVal out As IFuture(Of Outcome)) Handles _logger.LoggedFutureMessage
         uiRef.QueueAction(Sub() LogFutureMessage(placeholder, out))
     End Sub
-    Private Sub c_LoggedUnexpectedException(ByVal context As String, ByVal e As Exception)
-        LogMessage(GenerateUnexpectedExceptionDescription(context, e), Color.Red)
+    Private Sub OnLoggedUnexpectedException(ByVal context As String,
+                                            ByVal exception As Exception)
+        LogMessage(GenerateUnexpectedExceptionDescription(context, exception), Color.Red)
     End Sub
 #End Region
 
 #Region "UI Events"
-    Private Sub chkDataEvents_CheckedChanged() Handles chkDataEvents.CheckStateChanged
+    Private Sub OnCheckedChangedDataEvents() Handles chkDataEvents.CheckStateChanged
         SyncFromCheckbox(chkDataEvents, LogMessageType.DataEvent)
     End Sub
-    Private Sub chkParsedData_CheckedChanged() Handles chkParsedData.CheckStateChanged
+    Private Sub OnCheckChangedParsedData() Handles chkParsedData.CheckStateChanged
         SyncFromCheckbox(chkParsedData, LogMessageType.DataParsed)
     End Sub
-    Private Sub chkRawData_CheckedChanged() Handles chkRawData.CheckStateChanged
+    Private Sub OnCheckChangedRawData() Handles chkRawData.CheckStateChanged
         SyncFromCheckbox(chkRawData, LogMessageType.DataRaw)
     End Sub
 
@@ -298,7 +297,7 @@ Public Class LoggerControl
         End SyncLock
     End Sub
 
-    Private Sub chkSaveFile_CheckStateChanged() Handles chkSaveFile.CheckStateChanged
+    Private Sub OnCheckChangedSaveFile() Handles chkSaveFile.CheckStateChanged
         SyncLock lock
             If chkSaveFile.Checked Then
                 If Not OpenSaveFile() Then
@@ -314,16 +313,16 @@ Public Class LoggerControl
         End SyncLock
     End Sub
 
-    Private Sub btnClear_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnClear.Click
+    Private Sub OnClickClear() Handles btnClear.Click
         txtLog.Clear()
     End Sub
 
-    Private Sub LoggerControl_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
+    Private Sub OnDisposed() Handles Me.Disposed
         SetLogger(Nothing, Nothing)
         SetLogUnexpected(False)
     End Sub
 
-    Private Sub txtLog_SelectionChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles txtLog.SelectionChanged
+    Private Sub OnSelectionChangedLog() Handles txtLog.SelectionChanged
         If txtLog.SelectionStart = txtLog.TextLength AndAlso lblBuffering.Visible Then
             lblBuffering.Visible = False
             lblNumBuffered.Visible = False
@@ -335,8 +334,4 @@ Public Class LoggerControl
         End If
     End Sub
 #End Region
-
-    Private Sub chkDataEvents_CheckedChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles chkDataEvents.CheckStateChanged
-
-    End Sub
 End Class

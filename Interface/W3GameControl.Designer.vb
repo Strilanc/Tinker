@@ -19,10 +19,10 @@ Partial Class W3GameControl
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.txtInput = New System.Windows.Forms.TextBox
-        Me.txtCommand = New System.Windows.Forms.TextBox
-        Me.lstSlots = New System.Windows.Forms.ListBox
-        Me.logInstance = New HostBot.LoggerControl
+        Me.txtInput = New System.Windows.Forms.TextBox()
+        Me.txtCommand = New System.Windows.Forms.TextBox()
+        Me.lstSlots = New System.Windows.Forms.ListBox()
+        Me.logGame = New HostBot.GameLoggerControl()
         Me.SuspendLayout()
         '
         'txtInput
@@ -57,25 +57,25 @@ Partial Class W3GameControl
         Me.lstSlots.Size = New System.Drawing.Size(783, 172)
         Me.lstSlots.TabIndex = 0
         '
-        'logInstance
+        'logGame
         '
-        Me.logInstance.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+        Me.logGame.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
                     Or System.Windows.Forms.AnchorStyles.Left) _
                     Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.logInstance.Location = New System.Drawing.Point(0, 178)
-        Me.logInstance.Name = "logInstance"
-        Me.logInstance.Size = New System.Drawing.Size(783, 303)
-        Me.logInstance.TabIndex = 2
+        Me.logGame.Location = New System.Drawing.Point(0, 178)
+        Me.logGame.Name = "logGame"
+        Me.logGame.Size = New System.Drawing.Size(782, 303)
+        Me.logGame.TabIndex = 5
         '
         'W3GameControl
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
+        Me.Controls.Add(Me.logGame)
         Me.Controls.Add(Me.lstSlots)
         Me.Controls.Add(Me.txtCommand)
         Me.Controls.Add(Me.txtInput)
-        Me.Controls.Add(Me.logInstance)
         Me.Name = "W3GameControl"
         Me.Size = New System.Drawing.Size(783, 533)
         Me.ResumeLayout(False)
@@ -83,7 +83,8 @@ Partial Class W3GameControl
 
     End Sub
     Friend WithEvents txtInput As System.Windows.Forms.TextBox
-    Friend WithEvents logInstance As HostBot.LoggerControl
+
     Friend WithEvents txtCommand As System.Windows.Forms.TextBox
     Friend WithEvents lstSlots As System.Windows.Forms.ListBox
+    Friend WithEvents logGame As HostBot.GameLoggerControl
 End Class

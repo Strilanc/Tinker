@@ -21,9 +21,9 @@ Public Class W3GameControl
                 Next i
                 Me.game = game
                 If game Is Nothing Then
-                    logInstance.SetLogger(Nothing, Nothing)
+                    logGame.SetGame(Nothing)
                 Else
-                    logInstance.SetLogger(game.logger, "Game")
+                    logGame.SetGame(game)
                     game.QueueThrowUpdated()
                 End If
             End Sub
@@ -44,7 +44,7 @@ Public Class W3GameControl
         If txtCommand.Text = "" Then Return
         If game Is Nothing Then Return
         e.Handled = True
-        game.QueueCommandProcessLocalText(txtCommand.Text, logInstance.Logger())
+        game.QueueCommandProcessLocalText(txtCommand.Text, logGame.Logger())
         txtCommand.Text = ""
     End Sub
 

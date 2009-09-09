@@ -189,6 +189,12 @@
     <Compile Include="Bot\Commands\Lan Commands.vb" />
     <Compile Include="Bot\Widgets\CKL Client.vb" />
     <Compile Include="Bot\Widgets\CKL Interface.vb" />
+    <Compile Include="Interface\GameLoggerControl.Designer.vb">
+      <DependentUpon>GameLoggerControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\GameLoggerControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Interface\ProfileSettingsControl.Designer.vb">
       <DependentUpon>ProfileSettingsControl.vb</DependentUpon>
     </Compile>
@@ -346,6 +352,9 @@
     <EmbeddedResource Include="Interface\BotWidgetControl.resx">
       <DependentUpon>BotWidgetControl.vb</DependentUpon>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\GameLoggerControl.resx">
+      <DependentUpon>GameLoggerControl.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\ProfileSettingsControl.resx">
       <DependentUpon>ProfileSettingsControl.vb</DependentUpon>

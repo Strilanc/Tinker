@@ -83,6 +83,11 @@
             e_ThrowPlayerSentData(sender, data)
             gameDataQueue.Enqueue(New GameTickDatum(sender, data))
         End Sub
+        Private Sub QueueReceiveGameAction(ByVal player As W3Player, ByVal action As W3GameAction) Implements IW3Game.QueueReceiveGameAction
+            eventRef.QueueAction(Sub()
+                                     RaiseEvent PlayerAction(Me, player, action)
+                                 End Sub)
+        End Sub
 
         '''<summary>Drops the players currently lagging.</summary>
         Private Sub DropLagger()
@@ -161,8 +166,8 @@
                 Dim data = Concat({GetVisiblePlayer(e.Source).index},
                                   CUShort(e.Data.Length).Bytes(),
                                   e.Data)
-                dataList.Add(Data)
-                dataLength += Data.Length
+                dataList.Add(data)
+                dataLength += data.Length
             End While
 
             'Send data

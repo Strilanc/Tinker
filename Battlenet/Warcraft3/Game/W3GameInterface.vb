@@ -28,11 +28,13 @@
         Function QueueThrowUpdated() As IFuture
         Function QueueRemovePlayer(ByVal p As W3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) As IFuture(Of Outcome)
         Function QueueReceiveNonGameAction(ByVal player As W3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
+        Sub QueueReceiveGameAction(ByVal player As W3Player, ByVal action As W3GameAction)
 
         Event ChangedState(ByVal sender As IW3Game, ByVal oldState As W3GameStates, ByVal newState As W3GameStates)
         Event Updated(ByVal sender As IW3Game, ByVal slots As List(Of W3Slot))
         Event PlayerTalked(ByVal sender As IW3Game, ByVal player As W3Player, ByVal text As String)
         Event PlayerLeft(ByVal sender As IW3Game, ByVal gameState As W3GameStates, ByVal player As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
+        Event PlayerAction(ByVal sender As IW3Game, ByVal player As W3Player, ByVal action As W3GameAction)
 
         Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture
         Function QueueProcessCommand(ByVal player As W3Player, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
@@ -381,5 +383,13 @@
                 Throw New NotSupportedException
             End Set
         End Property
+
+        Public Event PlayerAction(ByVal sender As IW3Game, ByVal player As W3Player, ByVal action As W3GameAction) Implements IW3Game.PlayerAction
+
+        Public Sub QueueReceiveGameAction(ByVal player As W3Player, ByVal action As W3GameAction) Implements IW3Game.QueueReceiveGameAction
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(action IsNot Nothing)
+            Throw New InvalidOperationException()
+        End Sub
     End Class
 End Namespace

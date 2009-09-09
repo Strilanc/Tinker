@@ -37,6 +37,7 @@ Namespace Warcraft3
         Private ReadOnly players As New List(Of W3Player)
         Private ReadOnly index_map(0 To 12) As Byte
 
+        Private Event PlayerAction(ByVal sender As IW3Game, ByVal player As W3Player, ByVal action As W3GameAction) Implements IW3Game.PlayerAction
         Private Event Updated(ByVal sender As IW3Game, ByVal slots As List(Of W3Slot)) Implements IW3Game.Updated
         Private Event PlayerTalked(ByVal sender As IW3Game, ByVal speaker As W3Player, ByVal text As String) Implements IW3Game.PlayerTalked
         Private Event PlayerLeft(ByVal sender As IW3Game, ByVal state As W3GameStates, ByVal leaver As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Game.PlayerLeft

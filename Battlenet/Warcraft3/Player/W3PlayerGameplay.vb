@@ -67,10 +67,12 @@
         Private Sub ReceiveGameAction(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
 
-            'queued because otherwise the static verifier whines about invariants due to passing out 'me'
-            eref.QueueAction(Sub()
-                                 game.QueueSendGameData(Me, packet.payload.Data.SubView(4).ToArray)
-                             End Sub)
+            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Dim actions = CType(vals("actions"), IEnumerable(Of W3GameAction))
+            For Each action In actions
+                game.QueueReceiveGameAction(Me, action)
+            Next action
+            game.QueueSendGameData(Me, packet.payload.Data.SubView(4).ToArray)
         End Sub
         Private Sub ReceiveTock(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)

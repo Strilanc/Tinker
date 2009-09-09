@@ -146,7 +146,7 @@
         Private Shared Sub reg(ByVal jar As PrefixSwitchJar(Of W3GameActionId),
                                ByVal id As W3GameActionId,
                                ByVal ParamArray subjars() As IJar(Of Object))
-            jar.reg(id, New TupleJar("data", subjars).Weaken)
+            jar.reg(id, New TupleJar(id.ToString, subjars).Weaken)
         End Sub
 
         Private Shared Function MakeJar() As PrefixSwitchJar(Of W3GameActionId)
