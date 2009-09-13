@@ -452,7 +452,7 @@
 
             Protected Overridable Function ValueToString(ByVal value As IdPair) As String
                 If value.AllocatedId = UInt32.MaxValue AndAlso value.CounterId = UInt32.MaxValue Then Return "[none]"
-                If value.AllocatedId = value.CounterId Then Return "preplaced object #{0}".Frmt(value.AllocatedId)
+                If value.AllocatedId = value.CounterId Then Return "preplaced id = {0}".Frmt(value.AllocatedId)
                 Return "allocated id = {0}, counter id = {1}".Frmt(value.AllocatedId, value.CounterId)
             End Function
         End Class
