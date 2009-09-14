@@ -832,7 +832,7 @@ Namespace Bnet
             Dim removeServerPasswordProof = CType(vals("server password proof"), Byte())
             If serverPasswordProof Is Nothing Then Throw New InvalidStateException("Received AccountLogonFinish before server password proof computed.")
             Contract.Assume(removeServerPasswordProof IsNot Nothing)
-            If Not ArraysEqual(Me.serverPasswordProof, removeServerPasswordProof) Then
+            If Not Me.serverPasswordProof.HasSameItemsAs(removeServerPasswordProof) Then
                 futureLoggedIn.TrySetValue(Failure("Failed to logon: Server didn't give correct password proof"))
                 Throw New IO.InvalidDataException("Server didn't give correct password proof.")
             End If

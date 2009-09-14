@@ -168,8 +168,8 @@ Public Class PacketSocket
         Me.packetStreamer = New PacketStreamer(Me.substream, numByteBeforeSize, numSizeBytes, maxPacketSize:=bufferSize)
         Me.expectConnected = client.Connected
         _remoteEndPoint = CType(client.Client.RemoteEndPoint, Net.IPEndPoint)
-        If ArraysEqual(RemoteEndPoint.Address.GetAddressBytes(), GetCachedIpAddressBytes(external:=False)) OrElse
-           ArraysEqual(RemoteEndPoint.Address.GetAddressBytes(), {127, 0, 0, 1}) Then
+        If RemoteEndPoint.Address.GetAddressBytes().HasSameItemsAs(GetCachedIpAddressBytes(external:=False)) OrElse
+           RemoteEndPoint.Address.GetAddressBytes().HasSameItemsAs({127, 0, 0, 1}) Then
             _remoteEndPoint = New Net.IPEndPoint(New Net.IPAddress(GetCachedIpAddressBytes(external:=True)), RemoteEndPoint.Port)
         End If
         Contract.Assume(_remoteEndPoint IsNot Nothing)

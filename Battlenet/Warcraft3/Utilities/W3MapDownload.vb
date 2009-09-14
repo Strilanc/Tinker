@@ -75,9 +75,9 @@ Namespace Warcraft3
                 file.Close()
                 file = Nothing
                 Dim map As New W3Map(My.Settings.mapPath, downloadPath.Substring(My.Settings.mapPath.Length), My.Settings.war3path)
-                If Not ArraysEqual(map.ChecksumSha1, sha1) Then Throw New IO.IOException("Invalid data.")
-                If Not ArraysEqual(map.ChecksumXoro, xoro) Then Throw New IO.IOException("Invalid data.")
-                If Not ArraysEqual(map.crc32, crc) Then Throw New IO.IOException("Invalid data.")
+                If Not map.ChecksumSha1.HasSameItemsAs(sha1) Then Throw New IO.IOException("Invalid data.")
+                If Not map.ChecksumXoro.HasSameItemsAs(xoro) Then Throw New IO.IOException("Invalid data.")
+                If Not map.Crc32.HasSameItemsAs(crc) Then Throw New IO.IOException("Invalid data.")
                 IO.File.Move(downloadPath, destinationPath)
                 Return True
             End If
