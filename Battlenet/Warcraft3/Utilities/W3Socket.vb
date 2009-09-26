@@ -6,7 +6,7 @@ Imports System.Net.Sockets
 Namespace Warcraft3
     Public Class W3Socket
         Private WithEvents socket As PacketSocket
-        Public Event Disconnected(ByVal sender As W3Socket, ByVal reason As String)
+        Public Event Disconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
 
         Private ReadOnly costPerPacket As Double
         Private ReadOnly costPerPacketData As Double
@@ -27,23 +27,14 @@ Namespace Warcraft3
                        Optional ByVal costPerNonGameActionData As Double = 0,
                        Optional ByVal costLimit As Double = 0,
                        Optional ByVal costRecoveredPerSecond As Double = 1)
-            'contract bug wrt interface event implementation requires this:
-            'Contract.Requires(socket IsNot Nothing)
-            'Contract.Requires(initialSlack >= 0)
-            'Contract.Requires(costPerPacket >= 0)
-            'Contract.Requires(costPerPacketData >= 0)
-            'Contract.Requires(costPerNonGameAction >= 0)
-            'Contract.Requires(costPerNonGameActionData >= 0)
-            'Contract.Requires(costLimit >= 0)
-            'Contract.Requires(costRecoveredPerSecond > 0)
-            Contract.Assume(socket IsNot Nothing)
-            Contract.Assume(initialSlack >= 0)
-            Contract.Assume(costPerPacket >= 0)
-            Contract.Assume(costPerPacketData >= 0)
-            Contract.Assume(costPerNonGameAction >= 0)
-            Contract.Assume(costPerNonGameActionData >= 0)
-            Contract.Assume(costLimit >= 0)
-            Contract.Assume(costRecoveredPerSecond > 0)
+            Contract.Requires(socket IsNot Nothing)
+            Contract.Requires(initialSlack >= 0)
+            Contract.Requires(costPerPacket >= 0)
+            Contract.Requires(costPerPacketData >= 0)
+            Contract.Requires(costPerNonGameAction >= 0)
+            Contract.Requires(costPerNonGameActionData >= 0)
+            Contract.Requires(costLimit >= 0)
+            Contract.Requires(costRecoveredPerSecond > 0)
 
             Me.socket = socket
             Me.availableSlack = initialSlack
@@ -90,68 +81,59 @@ Namespace Warcraft3
             Return socket.IsConnected
         End Function
 
-        Private Sub CatchDisconnected(ByVal sender As PacketSocket, ByVal reason As String) Handles socket.Disconnected
-            RaiseEvent Disconnected(Me, reason)
+        Private Sub OnSocketDisconnect(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+            RaiseEvent Disconnected(Me, expected, reason)
         End Sub
-        Public Sub disconnect(ByVal reason As String)
+        Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
-            socket.Disconnect(reason)
+            socket.Disconnect(expected, reason)
         End Sub
 
-        Public Function SendPacket(ByVal pk As W3Packet) As Outcome
+        Public Sub SendPacket(ByVal pk As W3Packet)
             Contract.Requires(pk IsNot Nothing)
 
             Try
                 'Validate
                 If socket Is Nothing OrElse Not socket.IsConnected OrElse pk Is Nothing Then
-                    Return failure("Socket is not connected")
+                    Throw New InvalidOperationException("Socket is not connected")
                 End If
 
                 'Log
-                Logger.log(Function() "Sending {0} to {1}".frmt(pk.id, Name), LogMessageType.DataEvent)
-                Logger.log(pk.payload.Description, LogMessageType.DataParsed)
+                Logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, Name), LogMessageType.DataEvent)
+                Logger.Log(pk.payload.Description, LogMessageType.DataParsed)
 
                 'Send
                 socket.WritePacket(Concat({W3Packet.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray))
-                Return success("Sent")
 
             Catch e As Pickling.PicklingException
                 Dim msg = "Error packing {0} for {1}: {2}".Frmt(pk.id, Name, e)
-                Logger.log(msg, LogMessageType.Problem)
-                Return failure(msg)
+                Logger.Log(msg, LogMessageType.Problem)
+                Throw
 
             Catch e As Exception
                 If Not (TypeOf e Is SocketException OrElse
                         TypeOf e Is ObjectDisposedException OrElse
                         TypeOf e Is IO.IOException) Then
-                    LogUnexpectedException("Error sending {0} to {1}.".frmt(pk.id, Name), e)
+                    LogUnexpectedException("Error sending {0} to {1}.".Frmt(pk.id, Name), e)
                 End If
-                Dim msg = "Error sending {0} to {1}: {2}".frmt(pk.id, Name, e)
-                socket.Disconnect(reason:=msg)
-                Return failure(msg)
+                Dim msg = "Error sending {0} to {1}: {2}".Frmt(pk.id, Name, e)
+                socket.Disconnect(expected:=False, reason:=msg)
+                Throw
             End Try
-        End Function
+        End Sub
 
-        Public Function FutureReadPacket() As IFuture(Of PossibleException(Of W3Packet, Exception))
-            Dim f = New Future(Of PossibleException(Of W3Packet, Exception))
-            socket.FutureReadPacket().CallWhenValueReady(
-                Sub(result)
-                    If result.Exception IsNot Nothing Then
-                        f.SetValue(result.Exception)
-                        Return
-                    End If
-
-                    Dim data = result.Value
+        Public Function FutureReadPacket() As IFuture(Of W3Packet)
+            Return socket.FutureReadPacket().Select(
+                Function(data)
                     If data(0) <> W3Packet.PACKET_PREFIX OrElse data.Length < 4 Then
-                        disconnect("Invalid packet prefix")
-                        f.SetValue(New IO.IOException("Invalid packet prefix"))
-                        Return
+                        Disconnect(expected:=False, reason:="Invalid packet prefix")
+                        Throw New IO.IOException("Invalid packet prefix")
                     End If
                     Dim id = CType(data(1), W3PacketId)
                     data = data.SubView(4)
 
                     Try
-                        'Anti-flood
+                        'Anti-flood [uh... is this half done?]
                         If id = NonGameAction Then
                             usedCost += costPerNonGameAction
                             usedCost += costPerNonGameActionData * data.Length
@@ -177,12 +159,12 @@ Namespace Warcraft3
                             Throw New Pickling.PicklingException("Data left over after parsing.")
                         End If
                         Logger.Log(pk.payload.Description, LogMessageType.DataParsed)
-                        f.SetValue(pk)
+                        Return pk
 
                     Catch e As Pickling.PicklingException
                         Dim msg = "Error parsing {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
                         Logger.Log(msg, LogMessageType.Negative)
-                        f.SetValue(e)
+                        Throw
 
                     Catch e As Exception
                         If Not (TypeOf e Is SocketException OrElse
@@ -192,12 +174,11 @@ Namespace Warcraft3
                         End If
                         Dim msg = "Error receiving {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
                         Logger.Log(msg, LogMessageType.Problem)
-                        socket.Disconnect(reason:=msg)
-                        f.SetValue(e)
+                        socket.Disconnect(expected:=False, reason:=msg)
+                        Throw
                     End Try
-                End Sub
+                End Function
             )
-            Return f
         End Function
     End Class
 End Namespace

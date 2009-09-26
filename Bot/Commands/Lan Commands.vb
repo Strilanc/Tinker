@@ -22,11 +22,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Host_Access,
                            My.Resources.Command_Client_Host_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                'Map
-                Dim map_out = W3Map.FromArgument(arguments(1))
-                If Not map_out.succeeded Then Return map_out.Outcome.Futurize
-                Dim map = map_out.Value
+            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Dim map = W3Map.FromArgument(arguments(1))
 
                 'Server settings
                 arguments = arguments.ToList
@@ -47,15 +44,10 @@ Namespace Commands.Specializations
                 Dim f_server = target.parent.QueueCreateServer(target.name, settings, "[Not Linked]", True)
 
                 'Create the server, then advertise the game
-                Return f_server.EvalWhenValueReady(
-                    Function(created_server)
-                        If Not created_server.succeeded Then
-                            Return created_server.Outcome
-                        End If
-
-                        'Start advertising
+                Return f_server.EvalOnSuccess(
+                    Function()
                         target.AddGame(header)
-                        Return Success("Server created.")
+                        Return "Server created."
                     End Function
                 )
             End Function
@@ -69,16 +61,14 @@ Namespace Commands.Specializations
                             2, ArgumentLimits.exact,
                             "[--Add GameName Map] Adds a game to be advertised.")
             End Sub
-            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Dim map_out = W3Map.FromArgument(arguments(1))
-                If Not map_out.succeeded Then Return map_out.Outcome.Futurize
-                Dim map = map_out.Value
+            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Dim name = arguments(0)
+                Dim map = W3Map.FromArgument(arguments(1))
                 Dim id = target.AddGame(New W3GameHeader(arguments(0),
                                                          My.Resources.ProgramName,
                                                          New W3MapSettings(arguments, map),
-                                                         0, 0, 0, arguments, map.numPlayerSlots))
-                Return success("Started advertising game '{0}' for map '{1}'.".frmt(name, map.RelativePath, id)).Futurize
+                                                         0, 0, 0, arguments, map.NumPlayerSlots))
+                Return "Started advertising game '{0}' for map '{1}'.".Frmt(name, map.RelativePath, id).Futurized
             End Function
         End Class
 
@@ -90,15 +80,15 @@ Namespace Commands.Specializations
                             1, ArgumentLimits.exact,
                             "[--Remove GameId] Removes a game being advertised.")
             End Sub
-            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Dim id As UInteger
                 If Not UInteger.TryParse(arguments(0), id) Then
-                    Return failure("Invalid game id.").Futurize
+                    Throw New InvalidOperationException("Invalid game id.")
                 End If
                 If target.RemoveGame(id) Then
-                    Return success("Removed game with id " + id.ToString).Futurize
+                    Return "Removed game with id {0}".Frmt(id).Futurized
                 Else
-                    Return failure("Invalid game id.").Futurize
+                    Throw New InvalidOperationException("Invalid game id.")
                 End If
             End Function
         End Class

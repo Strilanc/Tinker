@@ -52,57 +52,69 @@ Public Module NetworkingCommon
         Return String.Join(".", (From b In bytes Select CStr(b)).ToArray)
     End Function
 
-    Public Function FutureConnectTo(ByVal address As IPAddress, ByVal port As UShort) As IFuture(Of PossibleException(Of TcpClient, SocketException))
-        Contract.Requires(address IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of PossibleException(Of TcpClient, SocketException)))() IsNot Nothing)
-        Dim f = New Future(Of PossibleException(Of TcpClient, SocketException))
+    '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
+    Public Function FutureCreateConnectedTcpClient(ByVal host As String,
+                                                   ByVal port As UShort) As IFuture(Of TcpClient)
+        Dim result = New FutureFunction(Of TcpClient)
+        Dim client = New TcpClient
         Try
-            Dim client = New TcpClient
-            client.BeginConnect(address, port, Sub(ar)
-                                                   Try
-                                                       client.EndConnect(ar)
-                                                       f.SetValue(client)
-                                                   Catch e As SocketException
-                                                       f.SetValue(e)
-                                                   End Try
-                                               End Sub, Nothing)
-        Catch e As SocketException
-            f.SetValue(e)
+            client.BeginConnect(host:=host, port:=port, state:=Nothing,
+                requestCallback:=Sub(ar)
+                                     Try
+                                         client.EndConnect(ar)
+                                         result.SetSucceeded(client)
+                                     Catch e As Exception
+                                         client.Close()
+                                         result.SetFailed(e)
+                                     End Try
+                                 End Sub)
+        Catch e As Exception
+            client.Close()
+            result.SetFailed(e)
         End Try
-        Return f
+        Return result
     End Function
-    Public Function FutureConnectTo(ByVal hostname As String, ByVal port As UShort) As IFuture(Of PossibleException(Of TcpClient, SocketException))
-        Contract.Requires(hostname IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of PossibleException(Of TcpClient, SocketException)))() IsNot Nothing)
-        Dim f = New Future(Of PossibleException(Of TcpClient, SocketException))
+
+    '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
+    Public Function FutureCreateConnectedTcpClient(ByVal address As Net.IPAddress,
+                                                   ByVal port As UShort) As IFuture(Of TcpClient)
+        Dim result = New FutureFunction(Of TcpClient)
+        Dim client = New TcpClient
         Try
-            Dim client = New TcpClient
-            client.BeginConnect(hostname, port, Sub(ar)
-                                                    Try
-                                                        client.EndConnect(ar)
-                                                        f.SetValue(client)
-                                                    Catch e As SocketException
-                                                        f.SetValue(e)
-                                                    End Try
-                                                End Sub, Nothing)
-        Catch e As SocketException
-            f.SetValue(e)
+            client.BeginConnect(address:=address, port:=port, state:=Nothing,
+                requestCallback:=Sub(ar)
+                                     Try
+                                         client.EndConnect(ar)
+                                         result.SetSucceeded(client)
+                                     Catch e As Exception
+                                         client.Close()
+                                         result.SetFailed(e)
+                                     End Try
+                                 End Sub)
+        Catch e As Exception
+            client.Close()
+            result.SetFailed(e)
         End Try
-        Return f
+        Return result
     End Function
+
     <Extension()>
-    Public Function FutureAcceptConnection(ByVal listener As TcpListener) As IFuture(Of PossibleException(Of TcpClient, Exception))
+    Public Function FutureAcceptConnection(ByVal listener As TcpListener) As IFuture(Of TcpClient)
         Contract.Requires(listener IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of PossibleException(Of TcpClient, Exception)))() IsNot Nothing)
-        Dim listener_ = listener 'fixes contract verification issue with hoisted arguments
-        Dim f As New Future(Of PossibleException(Of TcpClient, Exception))
-        listener_.BeginAcceptTcpClient(Sub(ar)
-                                           Try
-                                               f.SetValue(listener_.EndAcceptTcpClient(ar))
-                                           Catch e As Exception
-                                               f.SetValue(e)
-                                           End Try
-                                       End Sub, Nothing)
-        Return f
+        Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
+        Dim result = New FutureFunction(Of TcpClient)
+        Try
+            listener.BeginAcceptTcpClient(state:=Nothing,
+                callback:=Sub(ar)
+                              Try
+                                  result.SetSucceeded(listener.EndAcceptTcpClient(ar))
+                              Catch e As Exception
+                                  result.SetFailed(e)
+                              End Try
+                          End Sub)
+        Catch e As Exception
+            result.SetFailed(e)
+        End Try
+        Return result
     End Function
 End Module

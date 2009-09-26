@@ -129,8 +129,8 @@ Namespace Links
             Contract.Assume(servant IsNot Nothing)
             Me.master = master
             Me.servant = servant
-            master.FutureDisposed.CallWhenReady(AddressOf servant.Dispose)
-            servant.FutureDisposed.CallWhenReady(AddressOf Me.Dispose)
+            master.FutureDisposed.CallOnSuccess(AddressOf servant.Dispose)
+            servant.FutureDisposed.CallOnSuccess(AddressOf Me.Dispose)
         End Sub
     End Class
 End Namespace

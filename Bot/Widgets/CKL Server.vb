@@ -23,41 +23,40 @@ Namespace CKL
         Public Sub New(ByVal name As String,
                        ByVal listenPort As UShort)
             Me.name = name
-            Dim out = accepter.OpenPort(listenPort)
-            If Not out.succeeded Then Throw New Exception(out.message)
+            accepter.OpenPort(listenPort)
         End Sub
 
-        Public Function AddKey(ByVal name As String, ByVal rocKey As String, ByVal tftKey As String) As IFuture(Of Outcome)
-            Return ref.QueueFunc(
-                Function()
-                    If (From k In keys Where k.name.ToLower() = name.ToLower()).Any Then  Return failure("A key with the name '{0}' already exists.".frmt(name))
+        Public Function AddKey(ByVal name As String, ByVal rocKey As String, ByVal tftKey As String) As IFuture
+            Return ref.QueueAction(
+                Sub()
+                    If (From k In keys Where k.name.ToLower() = name.ToLower()).Any Then
+                        Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(name))
+                    End If
                     Dim key = New CklKey(name, rocKey, tftKey)
                     keys.Add(key)
                     RaiseEvent KeyAdded(Me, key)
-                    Return success("Key '{0}' added.".frmt(name))
-                End Function
+                End Sub
             )
         End Function
-        Public Function RemoveKey(ByVal name As String) As IFuture(Of Outcome)
-            Return ref.QueueFunc(
-                Function()
+        Public Function RemoveKey(ByVal name As String) As IFuture
+            Return ref.QueueAction(
+                Sub()
                     Dim key = (From k In keys Where k.name.ToLower() = name.ToLower()).FirstOrDefault
-                    If key Is Nothing Then  Return failure("No key found with the name '{0}'.".frmt(name))
+                    If key Is Nothing Then  Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(name))
                     keys.Remove(key)
                     RaiseEvent KeyRemoved(Me, key)
-                    Return success("Key '{0}' removed.".frmt(name))
-                End Function
+                End Sub
             )
         End Function
 
-        Private Sub c_AcceptedConnection(ByVal sender As ConnectionAccepter, ByVal acceptedClient As Net.Sockets.TcpClient) Handles accepter.AcceptedConnection
+        Private Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
+                                         ByVal acceptedClient As Net.Sockets.TcpClient) Handles accepter.AcceptedConnection
             Dim socket = New PacketSocket(acceptedClient, 10.Seconds, Me.logger)
-            FutureIterate(AddressOf socket.FutureReadPacket, Function(result) ref.QueueFunc(
-                Function()
-                    If result.Exception IsNot Nothing Then  Return False
-                    Dim flag = result.Value(0)
-                    Dim id = result.Value(0)
-                    Dim data = result.Value.SubView(4)
+            FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packetData) ref.QueueAction(
+                Sub()
+                    Dim flag = packetData(0)
+                    Dim id = packetData(0)
+                    Dim data = packetData.SubView(4)
                     Dim responseData As Byte() = Nothing
                     Dim errorMessage As String = Nothing
                     If flag <> PACKET_ID Then
@@ -75,7 +74,7 @@ Namespace CKL
                                     If keyIndex >= keys.Count Then  keyIndex = 0
                                     responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4),
                                                                         serverToken:=data.SubView(4, 4))
-                                    logger.log("Provided key '{0}' to {1}".frmt(keys(keyIndex).name, socket.Name), LogMessageType.Positive)
+                                    logger.Log("Provided key '{0}' to {1}".Frmt(keys(keyIndex).name, socket.Name), LogMessageType.Positive)
                                     keyIndex += 1
                                 End If
                             Case Else
@@ -87,13 +86,12 @@ Namespace CKL
                         socket.WritePacket(Concat({PACKET_ID, id, 0, 0}, responseData))
                     End If
                     If errorMessage IsNot Nothing Then
-                        logger.log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
+                        logger.Log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
                         socket.WritePacket(Concat({PACKET_ID, CklPacketId.error}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
                     End If
-                    Return True
-                End Function
+                End Sub
             ))
-            logger.log("Connection from " + socket.Name, LogMessageType.Positive)
+            logger.Log("Connection from " + socket.Name, LogMessageType.Positive)
         End Sub
 
         Public Overridable Sub [stop]()

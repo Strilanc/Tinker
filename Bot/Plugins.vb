@@ -62,11 +62,11 @@ Namespace Plugins
                 End Try
             End Sub
 
-            Public Function load_plugin() As plug
+            Public Function LoadPlugin() As plug
                 Return New Plug(Me)
             End Function
-            Private Sub unload_plugin(ByVal plug As Plug, ByVal reason As String)
-                manager.unload_plugin(plug, reason)
+            Private Sub UnloadPlugin(ByVal plug As Plug, ByVal reason As String)
+                manager.UnloadPlugin(plug, reason)
             End Sub
 
             Friend Class Plug
@@ -89,7 +89,7 @@ Namespace Plugins
                     Return socket.manager.bot
                 End Function
                 Public Sub pull_the_plug(ByVal reason As String) Implements IPlugout.pull_the_plug
-                    socket.unload_plugin(Me, reason)
+                    socket.UnloadPlugin(Me, reason)
                 End Sub
 
 #Region "IDisposable"
@@ -112,36 +112,31 @@ Namespace Plugins
             End Class
         End Class
 
-        Public Function LoadPlugin(ByVal name As String, ByVal path As String) As Outcome(Of IPlugin)
-            Try
+        Public Function LoadPlugin(ByVal name As String, ByVal path As String) As IPlugin
+            If Not IO.File.Exists(path) Then
+                path = Application.StartupPath + IO.Path.DirectorySeparatorChar + path
                 If Not IO.File.Exists(path) Then
-                    path = Application.StartupPath + IO.Path.DirectorySeparatorChar + path
-                    If Not IO.File.Exists(path) Then
-                        Return failure("No file exists at plugin's specified path.")
-                    End If
+                    Throw New IO.IOException("No plugin exists at the specified path.")
                 End If
-                path = path.ToLower
-                If Not sockets.ContainsKey(path) Then
-                    sockets(path) = New Socket(name, Me, path)
-                End If
-                Dim plug = sockets(path).load_plugin()
-                loaded_plugs.Add(plug)
-                Return Success(plug.plugin, "Loaded plugin succesfully. Plugin Description is: '" + plug.plugin.description + "'")
-            Catch e As Exception
-                Return failure("Error loading plugin: " + e.ToString)
-            End Try
+            End If
+            path = path.ToLower
+            If Not sockets.ContainsKey(path) Then
+                sockets(path) = New Socket(name, Me, path)
+            End If
+            Dim plug = sockets(path).LoadPlugin()
+            loaded_plugs.Add(plug)
+            Return plug.plugin
         End Function
-        Private Function unload_plugin(ByVal plug As Socket.Plug, ByVal reason As String) As Outcome
-            If Not loaded_plugs.Contains(plug) Then Return failure("That plugin is not loaded.")
+        Private Sub UnloadPlugin(ByVal plug As Socket.Plug, ByVal reason As String)
+            If Not loaded_plugs.Contains(plug) Then Throw New InvalidOperationException("No such plugin loaded.")
             plug.Dispose()
             RaiseEvent UnloadedPlugin(plug.socket.name, plug.plugin, reason)
-            Return success("Unloaded plugin.")
-        End Function
-        Public Function unload_plugin(ByVal name As String, ByVal reason As String) As Outcome
+        End Sub
+        Public Sub UnloadPlugin(ByVal name As String, ByVal reason As String)
             Dim plug = (From x In loaded_plugs Where x.socket.name.ToLower = name.ToLower).FirstOrDefault
-            If plug Is Nothing Then Return failure("No loaded plugin by that name.")
-            Return unload_plugin(plug, reason)
-        End Function
+            If plug Is Nothing Then Throw New InvalidOperationException("No such plugin loaded.")
+            UnloadPlugin(plug, reason)
+        End Sub
 
         Public Sub finish()
             For Each pi In loaded_plugs

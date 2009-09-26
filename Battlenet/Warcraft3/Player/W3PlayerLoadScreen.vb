@@ -29,7 +29,6 @@
 
         Public Function QueueStartLoading() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf LoadScreenStart)
         End Function
     End Class

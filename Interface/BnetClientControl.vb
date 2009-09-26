@@ -12,7 +12,7 @@ Public Class BnetClientControl
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
     Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of BnetClient).QueueGetCaption
-        Return ref.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".frmt(client.Name)))
+        Return ref.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".Frmt(client.name)))
     End Function
     Public Function QueueHook(ByVal client As BnetClient) As IFuture Implements IHookable(Of BnetClient).QueueHook
         Return ref.QueueAction(
@@ -27,7 +27,7 @@ Public Class BnetClientControl
                     txtTalk.Enabled = False
                 Else
                     logClient.SetLogger(client.logger, "Client")
-                    client.QueueGetState.CallWhenValueReady(Sub(state) CatchClientStateChanged(client, state, state))
+                    client.QueueGetState.CallOnValueSuccess(Sub(state) CatchClientStateChanged(client, state, state))
                 End If
             End Sub
         )

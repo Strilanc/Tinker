@@ -35,7 +35,7 @@ Namespace Commands.Specializations
                             0, ArgumentLimits.free,
                             "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.")
             End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Return target.parent.BotCommands.ProcessCommand(target.parent, user, arguments)
             End Function
         End Class
@@ -61,10 +61,10 @@ Namespace Commands.Specializations
                             "[--Listen port]",
                             "root=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Dim port As UShort
-                If Not UShort.TryParse(arguments(0), port) Then Return failure("Invalid port").Futurize
-                Return target.QueueOpenPort(port)
+                If Not UShort.TryParse(arguments(0), port) Then Throw New ArgumentException("Invalid port")
+                Return target.QueueOpenPort(port).EvalOnSuccess(Function() "Port opened.")
             End Function
         End Class
 
@@ -77,15 +77,15 @@ Namespace Commands.Specializations
                             "[--StopListening, --StopListening port] Tells the server to stop listening on a port or all ports.",
                             "root=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 If arguments.Count = 0 Then
-                    Return target.QueueCloseAllPorts()
+                    Return target.QueueCloseAllPorts().EvalOnSuccess(Function() "Ports closed.")
                 Else
                     Dim port As UShort
                     If Not UShort.TryParse(arguments(0), port) Then
-                        Return failure("Invalid port").Futurize
+                        Throw New InvalidOperationException("Invalid port")
                     End If
-                    Return target.QueueClosePort(port)
+                    Return target.QueueClosePort(port).EvalOnSuccess(Function() "Port closed.")
                 End If
             End Function
         End Class
@@ -98,8 +98,8 @@ Namespace Commands.Specializations
                             "[--Open name=generated_name]",
                             "root=4;games=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return stripFutureOutcome(target.QueueCreateGame(arguments(0)))
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueCreateGame(arguments(0)).EvalOnSuccess(Function() "Created instance.")
             End Function
         End Class
         Private Class com_CloseInstance
@@ -110,8 +110,8 @@ Namespace Commands.Specializations
                             "[--Close name]",
                             "root=4;games=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.QueueRemoveGame(arguments(0), ignorePermanent:=True)
+            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueRemoveGame(arguments(0), ignorePermanent:=True).EvalOnSuccess(Function() "Closed instance.")
             End Function
         End Class
     End Class

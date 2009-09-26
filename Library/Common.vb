@@ -68,54 +68,54 @@ Public Module Common
 #End Region
 
 #Region "Filepaths"
-    Public Function findFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As Outcome(Of String)
+    Public Function findFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As String
         Contract.Requires(fileQuery IsNot Nothing)
         Contract.Requires(likeQuery IsNot Nothing)
         Contract.Requires(directory IsNot Nothing)
-        Dim out = findFilesMatching(fileQuery, likeQuery, directory, 1)
-        If out.Value.Count = 0 Then
-            Return Failure(out.Message)
-        End If
-        Return Success(out.Value(0), "{0} matched {1}".Frmt(fileQuery, out.Value(0)))
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return findFilesMatching(fileQuery, likeQuery, directory, 1).First
     End Function
 
-    Public Function findFilesMatching(ByVal search_pattern As String, ByVal like_pattern As String, ByVal directory As String, ByVal max_results As Integer) As Outcome(Of List(Of String))
+    Public Function findFilesMatching(ByVal fileQuery As String,
+                                      ByVal likeQuery As String,
+                                      ByVal directory As String,
+                                      ByVal maxResults As Integer) As IList(Of String)
+        Contract.Requires(fileQuery IsNot Nothing)
+        Contract.Requires(likeQuery IsNot Nothing)
+        Contract.Requires(directory IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
         Dim matches As New List(Of String)
 
-        Try
-            'Normalize input
-            directory = directory.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
-            If directory(directory.Length - 1) <> DirectorySeparatorChar Then
-                directory += DirectorySeparatorChar
+        'Normalize input
+        directory = directory.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
+        If directory(directory.Length - 1) <> DirectorySeparatorChar Then
+            directory += DirectorySeparatorChar
+        End If
+
+        'Separate directory and filename patterns
+        fileQuery = fileQuery.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
+        Dim dir_pattern = "*"
+        If fileQuery.Contains(DirectorySeparatorChar) Then
+            Dim words = fileQuery.Split(DirectorySeparatorChar)
+            Dim file_pattern = words(words.Length - 1)
+            dir_pattern = fileQuery.Substring(0, fileQuery.Length - file_pattern.Length) + "*"
+            fileQuery = "*" + file_pattern
+        End If
+
+        'patterns are not case-sensitive
+        dir_pattern = dir_pattern.ToLower()
+        likeQuery = likeQuery.ToLower
+
+        'Check files in folder
+        For Each filename In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
+            filename = filename.Substring(directory.Length)
+            If filename.ToLower() Like likeQuery AndAlso filename.ToLower Like dir_pattern Then
+                matches.Add(filename)
+                If matches.Count >= maxResults Then Exit For
             End If
+        Next filename
 
-            'Separate directory and filename patterns
-            search_pattern = search_pattern.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
-            Dim dir_pattern = "*"
-            If search_pattern.Contains(DirectorySeparatorChar) Then
-                Dim words = search_pattern.Split(DirectorySeparatorChar)
-                Dim file_pattern = words(words.Length - 1)
-                dir_pattern = search_pattern.Substring(0, search_pattern.Length - file_pattern.Length) + "*"
-                search_pattern = "*" + file_pattern
-            End If
-
-            'patterns are not case-sensitive
-            dir_pattern = dir_pattern.ToLower()
-            like_pattern = like_pattern.ToLower
-
-            'Check files in folder
-            For Each filename In IO.Directory.GetFiles(directory, search_pattern, IO.SearchOption.AllDirectories)
-                filename = filename.Substring(directory.Length)
-                If filename.ToLower() Like like_pattern AndAlso filename.ToLower Like dir_pattern Then
-                    matches.Add(filename)
-                    If matches.Count >= max_results Then Exit For
-                End If
-            Next filename
-
-            Return Success(matches, "Matched {0} files.".frmt(matches.Count))
-        Catch e As Exception
-            Return Failure(matches, "Matched {0} files before hitting error: {1}.".Frmt(matches.Count, e.ToString))
-        End Try
+        Return matches
     End Function
     Public Function GetDataFolderPath(ByVal sub_folder As String) As String
         Dim folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
@@ -127,7 +127,7 @@ Public Module Common
             folder += IO.Path.DirectorySeparatorChar
             Return folder
         Catch e As Exception
-            LogUnexpectedException("Error getting folder My Documents\HostBot\{0}.".frmt(sub_folder), e)
+            LogUnexpectedException("Error getting folder My Documents\HostBot\{0}.".Frmt(sub_folder), e)
             Throw
         End Try
     End Function
@@ -182,112 +182,6 @@ Public Module Common
             data(n) = b
             n += 1
         Loop
-    End Function
-
-
-
-
-
-
-
-
-
-    '''<summary>Returns a future sequence for the outcomes of applying a futurizing function to a sequence.</summary>
-    <Extension()>
-    Public Function FutureMap(Of TDomain, TImage)(ByVal sequence As IEnumerable(Of TDomain),
-                                                  ByVal mappingFunction As Func(Of TDomain, IFuture(Of TImage))) As IFuture(Of IEnumerable(Of TImage))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(mappingFunction IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of IEnumerable(Of TImage)))() IsNot Nothing)
-
-        Dim mappingFunction_ = mappingFunction
-        Dim futureVals = (From item In sequence Select mappingFunction_(item)).ToList()
-        Return FutureCompress(futureVals).EvalWhenReady(
-                               Function() From item In futureVals Select item.Value)
-    End Function
-
-    '''<summary>Returns a future for the first value which is not filtered out of the sequence.</summary>
-    <Extension()>
-    Public Function FutureSelect(Of T)(ByVal sequence As IEnumerable(Of T),
-                                       ByVal filterFunction As Func(Of T, IFuture(Of Boolean))) As IFuture(Of Outcome(Of T))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(filterFunction IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of T)))() IsNot Nothing)
-
-        Dim enumerator = sequence.GetEnumerator
-        If Not enumerator.MoveNext Then Return Failure(Of T)("No matches").Futurize
-        Dim f = filterFunction(enumerator.Current)
-        Contract.Assume(f IsNot Nothing)
-        Dim filterFunction_ = filterFunction
-        Return f.EvalWhenValueReady(YCombinator(Of Boolean, IFuture(Of Outcome(Of T)))(
-            Function(self) Function(accept)
-                               Do
-                                   If accept Then  Return Success(enumerator.Current, "Matched").Futurize
-                                   If Not enumerator.MoveNext Then  Return Failure(Of T)("No matches").Futurize
-                                   Dim futureAccept = filterFunction_(enumerator.Current)
-                                   Contract.Assume(futureAccept IsNot Nothing)
-                                   If futureAccept.State <> FutureState.Ready Then  Return futureAccept.EvalWhenValueReady(self).Defuturize()
-                                   accept = futureAccept.Value
-                               Loop
-                           End Function)).Defuturize()
-    End Function
-
-    '''<summary>Returns a future sequence for the values accepted by the filter.</summary>
-    <Extension()>
-    Public Function FutureFilter(Of T)(ByVal sequence As IEnumerable(Of T),
-                                       ByVal filterFunction As Func(Of T, IFuture(Of Boolean))) As IFuture(Of IEnumerable(Of T))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(filterFunction IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of IEnumerable(Of T)))() IsNot Nothing)
-
-        Dim pairs = (From item In sequence Select value = item, futureIncluded = filterFunction(item)).ToList()
-        Return FutureCompress(From item In pairs Select item.futureIncluded).EvalWhenReady(
-                           Function() From item In pairs Where item.futureIncluded.Value Select item.value)
-    End Function
-
-    <Extension()>
-    Public Function FutureAggregate(Of T, V)(ByVal sequence As IEnumerable(Of T),
-                                             ByVal aggregator As Func(Of V, T, IFuture(Of V)),
-                                             Optional ByVal initialValue As V = Nothing) As IFuture(Of V)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(aggregator IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of V))() IsNot Nothing)
-
-        Dim enumerator = sequence.GetEnumerator()
-        Dim aggregator_ = aggregator
-        Return YCombinator(Of V, IFuture(Of V))(
-            Function(self) Function(current)
-                               If Not enumerator.MoveNext Then  Return current.Futurize
-                               Return aggregator_(current, enumerator.Current).EvalWhenValueReady(self).Defuturize
-                           End Function)(initialValue)
-    End Function
-
-    '''<summary>Returns a future for the value obtained by recursively reducing the sequence.</summary>
-    <Extension()>
-    Public Function FutureReduce(Of T)(ByVal sequence As IEnumerable(Of T),
-                                       ByVal reductionFunction As Func(Of T, T, IFuture(Of T)),
-                                       Optional ByVal defaultValue As T = Nothing) As IFuture(Of T)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(reductionFunction IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of T))() IsNot Nothing)
-
-        Dim reductionFunction_ = reductionFunction
-        Select Case sequence.CountUpTo(2)
-            Case 0
-                Return defaultValue.Futurize
-            Case 1
-                Return sequence.First.Futurize
-            Case Else
-                Dim futurePartialReduction = sequence.EnumBlocks(2).FutureMap(
-                    Function(block)
-                        If block.Count = 1 Then  Return block(0).Futurize
-                        Return reductionFunction_(block(0), block(1))
-                    End Function
-                )
-
-                Return futurePartialReduction.EvalWhenValueReady(
-                            Function(partialReduction) partialReduction.FutureReduce(reductionFunction_)).Defuturize
-        End Select
     End Function
 End Module
 

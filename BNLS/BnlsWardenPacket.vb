@@ -1,6 +1,4 @@
 ﻿Namespace BattleNetLogonServer
-    '''<summary>Game actions which can be performed by players.</summary>
-    '''<original-source>http://www.wc3c.net/tools/specs/W3GActions.txt</original-source>
     Public Enum BnlsWardenPacketId As Byte
         FullServiceConnect = 0
         FullServiceHandleWardenPacket = 1

@@ -47,23 +47,25 @@
         End Sub
 
         '''<summary>Starts the in-game play if all players are ready</summary>
-        Private Function TryLaunch() As Outcome
-            If (From x In players Where Not x.Ready AndAlso Not x.IsFake).Any Then
-                Return failure("Not all players are ready.")
+        Private Function TryLaunch() As Boolean
+            If (From x In players Where Not x.ready AndAlso Not x.isFake).Any Then
+                Return False
             End If
-            Return Launch()
-        End Function
-
-        '''<summary>Starts the in-game play</summary>
-        Private Function Launch() As Outcome
             ChangeState(W3GameStates.Playing)
-            logger.log("Launching", LogMessageType.Positive)
+            logger.Log("Launching", LogMessageType.Positive)
 
             'start gameplay
             Me.LoadScreenStop()
             GameplayStart()
-            Return success(My.Resources.Instance_Launched_f0name.frmt(name))
+            Return True
         End Function
+
+        '''<summary>Starts the in-game play</summary>
+        Private Sub Launch()
+            If Not TryLaunch() Then
+                Throw New InvalidOperationException("Not all players are ready.")
+            End If
+        End Sub
 
         Private Sub ReceiveReady(ByVal sendingPlayer As W3Player, ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(sendingPlayer IsNot Nothing)

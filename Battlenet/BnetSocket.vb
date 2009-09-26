@@ -3,7 +3,7 @@ Imports System.Net.Sockets
 
 Public Class BnetSocket
     Private WithEvents socket As PacketSocket
-    Public Event Disconnected(ByVal sender As BnetSocket, ByVal reason As String)
+    Public Event Disconnected(ByVal sender As BnetSocket, ByVal expected As Boolean, ByVal reason As String)
 
     Public Sub New(ByVal socket As PacketSocket)
         Contract.Assume(socket IsNot Nothing)
@@ -45,56 +45,48 @@ Public Class BnetSocket
         Return socket.IsConnected
     End Function
 
-    Private Sub CatchDisconnected(ByVal sender As PacketSocket, ByVal reason As String) Handles socket.Disconnected
-        RaiseEvent Disconnected(Me, reason)
+    Private Sub CatchDisconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+        RaiseEvent Disconnected(Me, expected, reason)
     End Sub
-    Public Sub disconnect(ByVal reason As String)
+    Public Sub disconnect(ByVal expected As Boolean, ByVal reason As String)
         Contract.Requires(reason IsNot Nothing)
-        socket.Disconnect(reason)
+        socket.Disconnect(expected, reason)
     End Sub
 
-    Public Function SendPacket(ByVal pk As Bnet.BnetPacket) As Outcome
+    Public Sub SendPacket(ByVal pk As Bnet.BnetPacket)
         Contract.Requires(pk IsNot Nothing)
 
-        Try
-            'Validate
-            If socket Is Nothing OrElse Not socket.IsConnected OrElse pk Is Nothing Then
-                Return failure("Socket is not connected")
-            End If
+        'Validate
+        If socket Is Nothing OrElse Not socket.IsConnected OrElse pk Is Nothing Then
+            Throw New InvalidOperationException("Socket is not connected")
+        End If
 
+        Try
             'Log
             Dim pk_ = pk
-            Logger.log(Function() "Sending {0} to {1}".frmt(pk_.id, Name), LogMessageType.DataEvent)
-            Logger.log(pk.payload.Description, LogMessageType.DataParsed)
+            Logger.Log(Function() "Sending {0} to {1}".Frmt(pk_.id, Name), LogMessageType.DataEvent)
+            Logger.Log(pk.payload.Description, LogMessageType.DataParsed)
 
             'Send
             socket.WritePacket(Concat({Bnet.BnetPacket.PACKET_PREFIX, pk.id, 0, 0}, pk.payload.Data.ToArray))
-            Return success("Sent")
 
         Catch e As Pickling.PicklingException
-            Dim msg = "Error packing {0} for {1}: {2}".frmt(pk.id, Name, e)
-            Logger.log(msg, LogMessageType.Problem)
-            Return failure(msg)
+            Dim msg = "Error packing {0} for {1}: {2}".Frmt(pk.id, Name, e)
+            Logger.Log(msg, LogMessageType.Problem)
+            Throw
         Catch e As Exception
-            Dim msg = "Error sending {0} to {1}: {2}".frmt(pk.id, Name, e)
+            Dim msg = "Error sending {0} to {1}: {2}".Frmt(pk.id, Name, e)
             LogUnexpectedException(msg, e)
-            Logger.log(msg, LogMessageType.Problem)
-            Return failure(msg)
+            Logger.Log(msg, LogMessageType.Problem)
+            Throw
         End Try
-    End Function
+    End Sub
 
-    Public Function FutureReadPacket() As IFuture(Of PossibleException(Of Bnet.BnetPacket, Exception))
-        Dim f = New Future(Of PossibleException(Of Bnet.BnetPacket, Exception))
-        socket.FutureReadPacket().CallWhenValueReady(
-            Sub(result)
-                If result.Exception IsNot Nothing Then
-                    f.SetValue(result.Exception)
-                    Return
-                End If
-
-                Dim data = result.Value
+    Public Function FutureReadPacket() As IFuture(Of Bnet.BnetPacket)
+        Return socket.FutureReadPacket().Select(
+            Function(data)
                 If data(0) <> Bnet.BnetPacket.PACKET_PREFIX Then
-                    disconnect("Invalid packet prefix")
+                    disconnect(expected:=False, reason:="Invalid packet prefix")
                     Throw New IO.IOException("Invalid packet prefix")
                 End If
                 Dim id = CType(data(1), Bnet.BnetPacketID)
@@ -102,28 +94,27 @@ Public Class BnetSocket
 
                 Try
                     'Handle
-                    Logger.log(Function() "Received {0} from {1}".frmt(id, Name), LogMessageType.DataEvent)
+                    Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageType.DataEvent)
                     Dim pk = Bnet.BnetPacket.FromData(id, data)
                     If pk.payload.Data.Length <> data.Length Then
                         Throw New Pickling.PicklingException("Data left over after parsing.")
                     End If
-                    Logger.log(pk.payload.Description, LogMessageType.DataParsed)
-                    f.SetValue(pk)
+                    Logger.Log(pk.payload.Description, LogMessageType.DataParsed)
+                    Return pk
 
                 Catch e As Pickling.PicklingException
-                    Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".frmt(id, Name, e)
-                    Logger.log(msg, LogMessageType.Negative)
-                    f.SetValue(e)
+                    Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".Frmt(id, Name, e)
+                    Logger.Log(msg, LogMessageType.Negative)
+                    Throw
 
                 Catch e As Exception
-                    Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".frmt(id, Name, e)
-                    Logger.log(msg, LogMessageType.Problem)
+                    Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".Frmt(id, Name, e)
+                    Logger.Log(msg, LogMessageType.Problem)
                     LogUnexpectedException(msg, e)
-                    f.SetValue(e)
+                    Throw
                 End Try
-            End Sub
+            End Function
         )
-        Return f
     End Function
 End Class
 
@@ -138,7 +129,7 @@ Public Class PacketSocket
 
     Public Const DefaultBufferSize As Integer = 1460 '[sending more data in a packet causes wc3 clients to disc; happens to be maximum ethernet header size]
     Public ReadOnly bufferSize As Integer
-    Public Event Disconnected(ByVal sender As PacketSocket, ByVal reason As String)
+    Public Event Disconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String)
     Private WithEvents deadManSwitch As DeadManSwitch
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -154,7 +145,8 @@ Public Class PacketSocket
                    Optional ByVal WrappedStream As Func(Of IO.Stream, IO.Stream) = Nothing,
                    Optional ByVal bufferSize As Integer = DefaultBufferSize,
                    Optional ByVal numByteBeforeSize As Integer = 2,
-                   Optional ByVal numSizeBytes As Integer = 2)
+                   Optional ByVal numSizeBytes As Integer = 2,
+                   Optional ByVal name As String = Nothing)
         'contract bug wrt interface event implementation requires this:
         'Contract.Requires(client IsNot Nothing)
         Contract.Assume(client IsNot Nothing)
@@ -174,7 +166,7 @@ Public Class PacketSocket
         End If
         Contract.Assume(_remoteEndPoint IsNot Nothing)
         Contract.Assume(_remoteEndPoint.Address IsNot Nothing)
-        Me.Name = Me.RemoteEndPoint.ToString
+        Me.Name = If(name, Me.RemoteEndPoint.ToString)
     End Sub
 
     Public ReadOnly Property RemoteEndPoint As IPEndPoint
@@ -194,33 +186,35 @@ Public Class PacketSocket
     Public Function IsConnected() As Boolean
         Return client.Connected
     End Function
-    Public Sub Disconnect(ByVal reason As String)
+    Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
         Contract.Requires(reason IsNot Nothing)
-        Dim _reason = reason  'avoid problems with contract verification on hoisted arguments
         If Not expectConnected Then Return
         expectConnected = False
         client.Close()
         deadManSwitch.Dispose()
         substream.Close()
         ThreadPooledAction(Sub()
-                               RaiseEvent Disconnected(Me, _reason)
+                               RaiseEvent Disconnected(Me, expected, reason)
                            End Sub)
     End Sub
     Private Sub DeadManSwitch_Triggered(ByVal sender As DeadManSwitch) Handles deadManSwitch.Triggered
-        Disconnect("Connection went idle.")
+        Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
 
-    Public Function FutureReadPacket() As IFuture(Of PossibleException(Of ViewableList(Of Byte), Exception))
-        Dim f = packetStreamer.FutureReadPacket()
-        f.CallWhenValueReady(Sub(result)
-                                 deadManSwitch.Reset()
-                                 If result.Exception IsNot Nothing Then
-                                     Disconnect(result.Exception.ToString)
-                                 ElseIf result.Value IsNot Nothing Then
-                                     logger.log(Function() "Received from {0}: {1}".frmt(Name, result.Value.ToHexString), LogMessageType.DataRaw)
-                                 End If
-                             End Sub)
-        Return f
+    Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
+        'Async read packet
+        Dim result = packetStreamer.FutureReadPacket()
+        'Async handle receiving packet
+        result.CallWhenValueReady(
+            Sub(data, dataException)
+                deadManSwitch.Reset()
+                If dataException IsNot Nothing Then
+                    Disconnect(expected:=False, reason:=dataException.ToString)
+                Else
+                    logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
+                End If
+            End Sub)
+        Return result
     End Function
 
     Public Sub WritePacket(ByVal data() As Byte)

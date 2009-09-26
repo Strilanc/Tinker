@@ -150,8 +150,6 @@
     <Import Include="Strilbrary.Numerics" />
     <Import Include="Strilbrary.Streams" />
     <Import Include="Strilbrary.Threading" />
-    <Import Include="Strilbrary.Threading.Futures" />
-    <Import Include="Strilbrary.Threading.Queueing" />
     <Import Include="System" />
     <Import Include="System.Collections.Generic" />
     <Import Include="System.Data" />
@@ -227,7 +225,6 @@
     <Compile Include="Library\Common.vb" />
     <Compile Include="Library\ConnectionAccepter.vb" />
     <Compile Include="Library\DeadManSwitch.vb" />
-    <Compile Include="Library\MStack.vb" />
     <Compile Include="Library\Networking.vb" />
     <Compile Include="Library\Pickling\Jars Enum.vb" />
     <Compile Include="Library\Pickling\PicklingBase.vb" />
@@ -333,6 +330,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="Library\Future Common.vb" />
     <Compile Include="Test\Test.vb" />
     <Compile Include="RecyclingBin\BotStats.vb" />
     <Compile Include="RecyclingBin\W3StatsControl.Designer.vb">

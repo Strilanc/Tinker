@@ -48,95 +48,84 @@ Namespace Warcraft3
 #End Region
 
 #Region "Networking"
-        Public Function QueueConnect(ByVal hostname As String, ByVal port As UShort) As IFuture(Of Outcome)
+        Public Function QueueConnect(ByVal hostname As String, ByVal port As UShort) As IFuture
             Contract.Requires(hostname IsNot Nothing)
             Dim hostname_ = hostname
-            Return ref.QueueFunc(Function()
-                                     Contract.Assume(hostname_ IsNot Nothing)
-                                     Return Connect(hostname_, port)
-                                 End Function)
+            Return ref.QueueAction(Sub()
+                                       Contract.Assume(hostname_ IsNot Nothing)
+                                       Connect(hostname_, port)
+                                   End Sub)
         End Function
-        Private Function Connect(ByVal hostname As String, ByVal port As UShort) As Outcome
+        Private Sub Connect(ByVal hostname As String, ByVal port As UShort)
             Contract.Requires(hostname IsNot Nothing)
 
-            Try
-                Dim tcp = New Net.Sockets.TcpClient()
-                tcp.Connect(hostname, port)
-                socket = New W3Socket(New PacketSocket(tcp, 60.Seconds, Me.logger))
+            Dim tcp = New Net.Sockets.TcpClient()
+            tcp.Connect(hostname, port)
+            socket = New W3Socket(New PacketSocket(tcp, 60.Seconds, Me.logger))
 
-                FutureIterate(AddressOf socket.FutureReadPacket, Function(result) ref.QueueFunc(
-                    Function()
-                        If result.Exception IsNot Nothing Then
-                            Return False
-                        End If
+            FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packet) ref.QueueAction(
+                Sub()
+                    Dim id = packet.id
+                    Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+                    Contract.Assume(vals IsNot Nothing)
+                    Try
+                        Select Case id
+                            Case Greet
+                                index = CByte(vals("player index"))
+                            Case HostMapInfo
+                                If mode = Modes.DownloadMap Then
+                                    dl = New W3MapDownload(CStr(vals("path")), CUInt(vals("size")), CType(vals("crc32"), Byte()), CType(vals("xoro checksum"), Byte()), CType(vals("sha1 checksum"), Byte()))
+                                    socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, 0))
+                                Else
+                                    socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, CUInt(vals("size"))))
+                                End If
+                            Case Ping
+                                socket.SendPacket(W3Packet.MakePong(CUInt(vals("salt"))))
+                            Case OtherPlayerJoined
+                                Dim ext_addr = CType(vals("external address"), Dictionary(Of String, Object))
+                                Dim player = New W3Peer(CStr(vals("name")),
+                                                        CByte(vals("index")),
+                                                        CUShort(ext_addr("port")),
+                                                        New Net.IPAddress(CType(ext_addr("ip"), Byte())),
+                                                        CUInt(vals("peer key")))
+                                otherPlayers.Add(player)
+                                AddHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
+                                AddHandler player.Disconnected, AddressOf OnPeerDisconnect
+                            Case OtherPlayerLeft
+                                Dim player = (From p In otherPlayers Where p.index = CByte(vals("player index"))).FirstOrDefault
+                                If player IsNot Nothing Then
+                                    otherPlayers.Remove(player)
+                                    RemoveHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
+                                    RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect
+                                End If
+                            Case StartLoading
+                                If mode = Modes.DownloadMap Then
+                                    Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
+                                ElseIf mode = Modes.EnterGame Then
+                                    FutureWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(W3Packet.MakeReady()))
+                                End If
+                            Case Tick
+                                If CUShort(vals("time span")) > 0 Then
+                                    socket.SendPacket(W3Packet.MakeTock())
+                                End If
+                            Case MapFileData
+                                Dim pos = CUInt(dl.file.Position)
+                                If ReceiveDLMapChunk(vals) Then
+                                    Disconnect(expected:=True, reason:="Download finished.")
+                                Else
+                                    socket.SendPacket(W3Packet.MakeMapFileDataReceived(1, Me.index, pos))
+                                End If
+                        End Select
+                    Catch e As Exception
+                        Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".Frmt(id, name, e)
+                        logger.Log(msg, LogMessageType.Problem)
+                        LogUnexpectedException(msg, e)
+                    End Try
+                End Sub
+            ))
 
-                        Dim id = result.Value.id
-                        Dim vals = CType(result.Value.payload.Value, Dictionary(Of String, Object))
-                        Contract.Assume(vals IsNot Nothing)
-                        Try
-                            Select Case id
-                                Case Greet
-                                    index = CByte(vals("player index"))
-                                Case HostMapInfo
-                                    If mode = Modes.DownloadMap Then
-                                        dl = New W3MapDownload(CStr(vals("path")), CUInt(vals("size")), CType(vals("crc32"), Byte()), CType(vals("xoro checksum"), Byte()), CType(vals("sha1 checksum"), Byte()))
-                                        socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, 0))
-                                    Else
-                                        socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, CUInt(vals("size"))))
-                                    End If
-                                Case Ping
-                                    socket.SendPacket(W3Packet.MakePong(CUInt(vals("salt"))))
-                                Case OtherPlayerJoined
-                                    Dim ext_addr = CType(vals("external address"), Dictionary(Of String, Object))
-                                    Dim player = New W3Peer(CStr(vals("name")),
-                                                            CByte(vals("index")),
-                                                            CUShort(ext_addr("port")),
-                                                            New Net.IPAddress(CType(ext_addr("ip"), Byte())),
-                                                            CUInt(vals("peer key")))
-                                    otherPlayers.Add(player)
-                                    AddHandler player.ReceivedPacket, AddressOf c_PeerReceivedPacket
-                                    AddHandler player.Disconnected, AddressOf c_PeerDisconnection
-                                Case OtherPlayerLeft
-                                    Dim player = (From p In otherPlayers Where p.index = CByte(vals("player index"))).FirstOrDefault
-                                    If player IsNot Nothing Then
-                                        otherPlayers.Remove(player)
-                                        RemoveHandler player.ReceivedPacket, AddressOf c_PeerReceivedPacket
-                                        RemoveHandler player.Disconnected, AddressOf c_PeerDisconnection
-                                    End If
-                                Case StartLoading
-                                    If mode = Modes.DownloadMap Then
-                                        Disconnect("Dummy player is in download mode but game is starting.")
-                                    ElseIf mode = Modes.EnterGame Then
-                                        FutureWait(readyDelay).CallWhenReady(Function() socket.SendPacket(W3Packet.MakeReady()))
-                                    End If
-                                Case Tick
-                                    If CUShort(vals("time span")) > 0 Then
-                                        socket.SendPacket(W3Packet.MakeTock())
-                                    End If
-                                Case MapFileData
-                                    Dim pos = CUInt(dl.file.Position)
-                                    If ReceiveDLMapChunk(vals) Then
-                                        Disconnect("Download finished.")
-                                    Else
-                                        socket.SendPacket(W3Packet.MakeMapFileDataReceived(1, Me.index, pos))
-                                    End If
-                            End Select
-                        Catch e As Exception
-                            Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".frmt(id, name, e)
-                            logger.log(msg, LogMessageType.Problem)
-                            LogUnexpectedException(msg, e)
-                        End Try
-
-                        Return socket.connected
-                    End Function
-                ))
-
-                socket.SendPacket(W3Packet.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
-                Return success("Connection established.")
-            Catch e As Exception
-                Return failure(e.ToString)
-            End Try
-        End Function
+            socket.SendPacket(W3Packet.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
+        End Sub
 
         Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of String, Object)) As Boolean
             If dl Is Nothing OrElse dl.file Is Nothing Then Throw New InvalidOperationException()
@@ -153,18 +142,18 @@ Namespace Warcraft3
             socket.SendPacket(W3Packet.MakePeerConnectionInfo(From p In otherPlayers Where p.socket IsNot Nothing Select p.index))
         End Sub
 
-        Private Sub c_Disconnect(ByVal sender As W3Socket, ByVal reason As String) Handles socket.Disconnected
-            ref.QueueAction(Sub() Disconnect(reason))
+        Private Sub c_Disconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+            ref.QueueAction(Sub() Disconnect(expected, reason))
         End Sub
-        Private Sub Disconnect(ByVal reason As String)
-            socket.disconnect(reason)
+        Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
+            socket.Disconnect(expected, reason)
             accepter.Accepter.CloseAllPorts()
             For Each player In otherPlayers
-                If player.socket IsNot Nothing Then
-                    player.socket.disconnect(reason)
+                If player.Socket IsNot Nothing Then
+                    player.Socket.Disconnect(expected, reason)
                     player.SetSocket(Nothing)
-                    RemoveHandler player.ReceivedPacket, AddressOf c_PeerReceivedPacket
-                    RemoveHandler player.Disconnected, AddressOf c_PeerDisconnection
+                    RemoveHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
+                    RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect
                 End If
             Next player
             otherPlayers.Clear()
@@ -183,11 +172,11 @@ Namespace Warcraft3
                     Dim player = (From p In otherPlayers Where p.index = acceptedPlayer.index).FirstOrDefault
                     Dim socket = acceptedPlayer.socket
                     If player Is Nothing Then
-                        Dim msg = "{0} was not another player in the game.".frmt(socket.Name)
-                        logger.log(msg, LogMessageType.Negative)
-                        socket.disconnect(msg)
+                        Dim msg = "{0} was not another player in the game.".Frmt(socket.Name)
+                        logger.Log(msg, LogMessageType.Negative)
+                        socket.Disconnect(expected:=True, reason:=msg)
                     Else
-                        logger.log("{0} is a peer connection from {1}.".frmt(socket.Name, player.name), LogMessageType.Positive)
+                        logger.Log("{0} is a peer connection from {1}.".Frmt(socket.Name, player.name), LogMessageType.Positive)
                         socket.Name = player.name
                         player.SetSocket(socket)
                         socket.SendPacket(W3Packet.MakePeerKnock(player.peerKey, Me.index, 0))
@@ -196,37 +185,38 @@ Namespace Warcraft3
             )
         End Sub
 
-        Private Sub c_PeerDisconnection(ByVal sender As W3Peer, ByVal reason As String)
+        Private Sub OnPeerDisconnect(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
             ref.QueueAction(
                 Sub()
-                    logger.log("{0}'s peer connection has closed ({1}).".frmt(sender.name, reason), LogMessageType.Negative)
+                    logger.Log("{0}'s peer connection has closed ({1}).".Frmt(sender.name, reason), LogMessageType.Negative)
                     sender.SetSocket(Nothing)
                     SendPlayersConnected()
                 End Sub
             )
         End Sub
 
-        Private Sub c_PeerReceivedPacket(ByVal sender As W3Peer,
-                                        ByVal id As W3PacketId,
-                                        ByVal vals As Dictionary(Of String, Object))
+        Private Sub OnPeerReceivePacket(ByVal sender As W3Peer,
+                                         ByVal packet As W3Packet)
             ref.QueueAction(
                 Sub()
                     Try
-                        Select Case id
+                        Select Case packet.id
                             Case PeerPing
-                                sender.socket.SendPacket(W3Packet.MakePeerPing(CType(vals("salt"), Byte()), 1))
-                                sender.socket.SendPacket(W3Packet.MakePeerPong(CType(vals("salt"), Byte())))
+                                Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+                                sender.Socket.SendPacket(W3Packet.MakePeerPing(CType(vals("salt"), Byte()), 1))
+                                sender.Socket.SendPacket(W3Packet.MakePeerPong(CType(vals("salt"), Byte())))
                             Case MapFileData
+                                Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
                                 Dim pos = CUInt(dl.file.Position)
                                 If ReceiveDLMapChunk(vals) Then
-                                    Disconnect("Download finished.")
+                                    Disconnect(expected:=True, reason:="Download finished.")
                                 Else
-                                    sender.socket.SendPacket(W3Packet.MakeMapFileDataReceived(sender.index, Me.index, pos))
+                                    sender.Socket.SendPacket(W3Packet.MakeMapFileDataReceived(sender.index, Me.index, pos))
                                 End If
                         End Select
                     Catch e As Exception
-                        Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".frmt(id, name, e)
-                        logger.log(msg, LogMessageType.Problem)
+                        Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".Frmt(packet.id, name, e)
+                        logger.Log(msg, LogMessageType.Problem)
                         LogUnexpectedException(msg, e)
                     End Try
                 End Sub

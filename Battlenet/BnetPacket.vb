@@ -492,45 +492,44 @@ Namespace Bnet
 #End Region
 
 #Region "Packers: CKL"
-        Public Shared Function MakeCklAuthenticationFinish(ByVal Version As Byte(),
-                                                           ByVal MpqFolder As String,
-                                                           ByVal MpqNumberString As String,
-                                                           ByVal MpqHashChallenge As String,
-                                                           ByVal ServerCdKeySalt As Byte(),
-                                                           ByVal CdKeyOwner As String,
-                                                           ByVal ExeInformation As String,
-                                                           ByVal CklRemoteHost As String,
-                                                           ByVal CklRemotePort As UShort,
-                                                           ByVal R As System.Security.Cryptography.RandomNumberGenerator) As IFuture(Of Outcome(Of BnetPacket))
-            Contract.Requires(Version IsNot Nothing)
-            Contract.Requires(MpqFolder IsNot Nothing)
-            Contract.Requires(MpqNumberString IsNot Nothing)
-            Contract.Requires(MpqHashChallenge IsNot Nothing)
-            Contract.Requires(ServerCdKeySalt IsNot Nothing)
-            Contract.Requires(CdKeyOwner IsNot Nothing)
-            Contract.Requires(ExeInformation IsNot Nothing)
-            Contract.Requires(CklRemoteHost IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of BnetPacket)))() IsNot Nothing)
-            Dim vals As New Dictionary(Of String, Object)
+        Public Shared Function MakeCklAuthenticationFinish(ByVal version As Byte(),
+                                                           ByVal mpqFolder As String,
+                                                           ByVal mpqNumberString As String,
+                                                           ByVal mpqHashChallenge As String,
+                                                           ByVal serverCdKeySalt As Byte(),
+                                                           ByVal cdKeyOwner As String,
+                                                           ByVal exeInformation As String,
+                                                           ByVal cklRemoteHost As String,
+                                                           ByVal cklRemotePort As UShort,
+                                                           ByVal rng As System.Security.Cryptography.RandomNumberGenerator) As IFuture(Of BnetPacket)
+            Contract.Requires(version IsNot Nothing)
+            Contract.Requires(mpqFolder IsNot Nothing)
+            Contract.Requires(mpqNumberString IsNot Nothing)
+            Contract.Requires(mpqHashChallenge IsNot Nothing)
+            Contract.Requires(serverCdKeySalt IsNot Nothing)
+            Contract.Requires(cdKeyOwner IsNot Nothing)
+            Contract.Requires(exeInformation IsNot Nothing)
+            Contract.Requires(cklRemoteHost IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of BnetPacket))() IsNot Nothing)
 
             Dim clientCdKeySalt(0 To 3) As Byte
-            R.GetBytes(clientCdKeySalt)
+            rng.GetBytes(clientCdKeySalt)
 
-            vals("client cd key salt") = clientCdKeySalt
-            vals("exe version") = Version
-            vals("mpq challenge response") = Bnet.Crypt.GenerateRevisionCheck(MpqFolder, MpqNumberString, MpqHashChallenge).Bytes()
-            vals("# cd keys") = 2
-            vals("spawn [unused]") = 0
-            vals("exe info") = ExeInformation
-            vals("owner") = CdKeyOwner
+            Dim vals As New Dictionary(Of String, Object) From {
+                {"client cd key salt", clientCdKeySalt},
+                {"exe version", version},
+                {"mpq challenge response", Bnet.Crypt.GenerateRevisionCheck(mpqFolder, mpqNumberString, mpqHashChallenge).Bytes()},
+                {"# cd keys", 2},
+                {"spawn [unused]", 0},
+                {"exe info", exeInformation},
+                {"owner", cdKeyOwner}}
 
-            Return CKL.CklClient.BeginBorrowKeys(CklRemoteHost, CklRemotePort, clientCdKeySalt, ServerCdKeySalt).EvalWhenValueReady(
-                Function(borrowed) As Outcome(Of BnetPacket)
-                    If Not borrowed.succeeded Then  Return Failure(borrowed.Message)
-
-                    vals("ROC cd key") = borrowed.Value.rocKey
-                    vals("TFT cd key") = borrowed.Value.tftKey
-                    Return Success(New BnetPacket(BnetPacketID.AuthenticationFinish, vals), borrowed.Message)
+            'Asynchronously borrow keys from server and return completed packet
+            Return CKL.CklClient.BeginBorrowKeys(cklRemoteHost, CklRemotePort, clientCdKeySalt, serverCdKeySalt).Select(
+                Function(borrowedKeys)
+                    vals("ROC cd key") = borrowedKeys.rocKey
+                    vals("TFT cd key") = borrowedKeys.tftKey
+                    Return New BnetPacket(BnetPacketID.AuthenticationFinish, vals)
                 End Function
             )
         End Function
@@ -576,7 +575,7 @@ Namespace Bnet
 
             Public Sub New(ByVal name As String,
                            ByVal numDigits As Integer,
-                           Optional ByVal byteOrder As ByteOrder = Strilbrary.ByteOrder.LittleEndian)
+                           Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
                 MyBase.New(name)
                 Contract.Requires(name IsNot Nothing)
                 Contract.Requires(numDigits > 0)

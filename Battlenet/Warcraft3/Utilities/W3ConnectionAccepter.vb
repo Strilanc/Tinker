@@ -48,7 +48,7 @@
             Me.costPerPacketData = costPerPacketData
             Me.costLimit = costLimit
             Me.costRecoveredPerSecond = costRecoveredPerSecond
-            AddHandler _accepter.AcceptedConnection, AddressOf c_Connection
+            AddHandler _accepter.AcceptedConnection, AddressOf OnAcceptConnection
         End Sub
 
         ''' <summary>
@@ -60,7 +60,7 @@
             SyncLock lock
                 Accepter.CloseAllPorts()
                 For Each socket In sockets
-                    socket.disconnect("Accepter Reset")
+                    socket.Disconnect(expected:=True, reason:="Accepter Reset")
                 Next socket
                 sockets.Clear()
             End SyncLock
@@ -75,7 +75,7 @@
         End Property
 
         '''<summary>Handles new connections.</summary>
-        Private Sub c_Connection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
+        Private Sub OnAcceptConnection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
             Try
@@ -93,27 +93,27 @@
                     sockets.Add(socket)
                 End SyncLock
                 socket.FutureReadPacket().CallWhenValueReady(
-                    Sub(result)
-                        If Not TryRemoveSocket(socket) Then  Return
-                        If result.Exception IsNot Nothing Then
-                            socket.disconnect(result.Exception.ToString)
-                            logger.log(result.Exception.ToString, LogMessageType.Problem)
-                            Return
-                        End If
+                    Sub(packet, packetException)
+                                                                 If Not TryRemoveSocket(socket) Then  Return
+                                                                 If packetException IsNot Nothing Then
+                                                                     socket.Disconnect(expected:=False, reason:=packetException.ToString)
+                                                                     logger.Log(packetException.ToString, LogMessageType.Problem)
+                                                                     Return
+                                                                 End If
 
-                        Try
-                            GetConnectingPlayer(socket, result.Value)
-                        Catch e As Exception
-                            Dim msg = "Error receiving {0} from {1}: {2}".frmt(result.Value.id, socket.Name, e)
-                            logger.log(msg, LogMessageType.Problem)
-                            socket.disconnect(msg)
-                        End Try
-                    End Sub
+                                                                 Try
+                                                                     GetConnectingPlayer(socket, packet)
+                                                                 Catch e As Exception
+                                                                     Dim msg = "Error receiving {0} from {1}: {2}".Frmt(packet.id, socket.Name, e)
+                                                                     logger.Log(msg, LogMessageType.Problem)
+                                                                     socket.Disconnect(expected:=False, reason:=msg)
+                                                                 End Try
+                                                             End Sub
                 )
                 FutureWait(EXPIRY_PERIOD).CallWhenReady(
                     Sub()
                         If Not TryRemoveSocket(socket) Then  Return
-                        socket.disconnect("Idle")
+                        socket.Disconnect(expected:=False, reason:="Idle")
                     End Sub
                 )
             Catch e As Exception

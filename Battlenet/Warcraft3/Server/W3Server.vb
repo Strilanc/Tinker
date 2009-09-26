@@ -83,8 +83,7 @@ Namespace Warcraft3
                 Me.ref = New ThreadPooledCallQueue
 
                 For Each port In settings.default_listen_ports
-                    Dim out = door.accepter.Accepter.OpenPort(port)
-                    If Not out.succeeded Then Throw New InvalidOperationException(out.Message)
+                    door.accepter.Accepter.OpenPort(port)
                 Next port
                 For i = 1 To settings.instances
                     CreateGame()
@@ -104,9 +103,13 @@ Namespace Warcraft3
                                 Dim p = New W3DummyPlayer("Wait {0}min".Frmt(i), receivedPort, logger, W3DummyPlayer.Modes.EnterGame)
                                 p.readyDelay = i.Minutes
                                 Dim i_ = i
-                                p.QueueConnect("localhost", settings.default_listen_ports.FirstOrDefault).CallWhenValueReady(
-                                    Sub(succeeded)
-                                        Me.logger.Log("Fake player {0}: {1}".Frmt(i_, succeeded.Message), If(succeeded.succeeded, LogMessageType.Positive, LogMessageType.Negative))
+                                p.QueueConnect("localhost", settings.default_listen_ports.FirstOrDefault).CallWhenReady(
+                                    Sub(exception)
+                                        If exception Is Nothing Then
+                                            Me.logger.Log("Fake player {0} Connected", LogMessageType.Positive)
+                                        Else
+                                            Me.logger.Log("Fake player {0}: {1}".Frmt(i_, exception.Message), LogMessageType.Negative)
+                                        End If
                                     End Sub)
                             Next i
                         End Sub)
@@ -221,8 +224,8 @@ Namespace Warcraft3
 
 #Region "Access"
         '''<summary>Stops listening for connections and kills all non-started instances.</summary>
-        Private Function StopAcceptingPlayers() As Outcome
-            If state > W3ServerStates.accepting_and_playing Then Return Success("Already not accepting players.")
+        Private Sub StopAcceptingPlayers()
+            If state > W3ServerStates.accepting_and_playing Then Return
             change_state(W3ServerStates.only_playing_out)
 
             door.Reset()
@@ -234,16 +237,15 @@ Namespace Warcraft3
                 For Each adv In linkedAdvertisers
                     adv.RemoveGame(Me.settings.header, "Server no longer accepting players.")
                 Next adv
-                Return Success("No longer accepting players.")
             Else
-                Return Kill()
+                Kill()
             End If
-        End Function
+        End Sub
 
         '''<summary>Stops listening for connections, kills all instances, and shuts down the server.</summary>
-        Private Function Kill() As Outcome
+        Private Sub Kill()
             If state >= W3ServerStates.killed Then
-                Return Success("Server is already killed.")
+                Return
             End If
 
             For Each game In games_all.ToList
@@ -259,29 +261,28 @@ Namespace Warcraft3
             change_state(W3ServerStates.killed)
             Me.Dispose()
             parent.QueueRemoveServer(Me.name)
-            Return Success("Server killed.")
-        End Function
+        End Sub
         Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
             If Not finalizing Then
-                ref.QueueAction(Function() Kill())
+                ref.QueueAction(Sub() Kill())
             End If
         End Sub
 #End Region
 
 #Region "Games"
         '''<summary>Adds a game to the server.</summary>
-        Private Function CreateGame(Optional ByVal game_name As String = Nothing,
-                                    Optional ByVal arguments As IEnumerable(Of String) = Nothing) As Outcome(Of IW3Game)
-            game_name = If(game_name, total_instances_created_P.ToString())
+        Private Function CreateGame(Optional ByVal gameName As String = Nothing,
+                                    Optional ByVal arguments As IEnumerable(Of String) = Nothing) As IW3Game
+            gameName = If(gameName, total_instances_created_P.ToString())
             If state > W3ServerStates.accepting_and_playing Then
-                Return Failure("No longer accepting players. Can't create new instances.")
+                Throw New InvalidOperationException("No longer accepting players. Can't create new instances.")
             End If
-            Dim game = FindGame(game_name)
+            Dim game = FindGame(gameName)
             If game IsNot Nothing Then
-                Return Failure("A game called '{0}' already exists.".Frmt(game_name))
+                Throw New InvalidOperationException("A game called '{0}' already exists.".Frmt(gameName))
             End If
 
-            game = New W3Game(Me, game_name, settings.map, If(arguments, settings.header.Options))
+            game = New W3Game(Me, gameName, settings.map, If(arguments, settings.header.Options))
             logger.Log(game.name + " opened.", LogMessageType.Positive)
             total_instances_created_P += 1
             games_all.Add(game)
@@ -295,7 +296,7 @@ Namespace Warcraft3
 
             SetAdvertiserOptions(private:=False)
             e_ThrowAddedGame(game)
-            Return Success(game, "Succesfully created instance '{0}'.".Frmt(game_name))
+            Return game
         End Function
 
         '''<summary>Finds a game with the given name.</summary>
@@ -305,21 +306,25 @@ Namespace Warcraft3
 
         '''<summary>Finds a player with the given name in any of the server's games.</summary>
         Private Function f_FindPlayer(ByVal username As String) As IFuture(Of W3Player)
-            Return games_all.ToList.FutureMap(Function(game) game.QueueFindPlayer(username)).EvalWhenValueReady(
-                                   Function(players) players.FirstOrDefault)
+            Dim futureFoundPlayers = (From game In games_all Select game.QueueFindPlayer(username)).ToList.Defuturized
+            Return futureFoundPlayers.Select(
+                Function(foundPlayers)
+                    Return (From player In foundPlayers Where player IsNot Nothing).FirstOrDefault
+                End Function
+            )
         End Function
 
         '''<summary>Finds a game containing a player with the given name.</summary>
-        Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of Outcome(Of IW3Game))
-            Return games_lobby.ToList.FutureSelect(
-                                Function(game) game.QueueFindPlayer(username).EvalWhenValueReady(
-                                                               Function(player) player IsNot Nothing))
+        Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of IW3Game)
+            Return games_lobby.ToList.
+                   FutureSelect(Function(game) game.QueueFindPlayer(username).Select(Function(player) player IsNot Nothing))
         End Function
 
         '''<summary>Removes a game with the given name.</summary>
-        Private Function RemoveGame(ByVal game_name As String, Optional ByVal ignorePermanent As Boolean = False) As Outcome
-            Dim game = FindGame(game_name)
-            If game Is Nothing Then Return Failure("No game with that name.")
+        Private Sub RemoveGame(ByVal gameName As String,
+                               Optional ByVal ignorePermanent As Boolean = False)
+            Dim game = FindGame(gameName)
+            If game Is Nothing Then Throw New InvalidOperationException("No game with that name.")
 
             RemoveHandler game.PlayerTalked, AddressOf c_PlayerTalked
             RemoveHandler game.PlayerLeft, AddressOf c_PlayerLeft
@@ -339,20 +344,17 @@ Namespace Warcraft3
                                            state < W3ServerStates.only_playing_out Then
                 CreateGame()
             End If
-
-            Return Success("Game '{0}' removed from server '{1}'.".Frmt(game.name, game_name))
-        End Function
+        End Sub
 #End Region
 
 #Region "Link"
         Private ReadOnly linkedAdvertisers As New HashSet(Of IGameSourceSink)
-        Private Function AddAdvertiser(ByVal m As IGameSourceSink) As outcome
-            If state > W3ServerStates.accepting_and_playing Then Return Failure("Not accepting players anymore.")
-            If linkedAdvertisers.Contains(m) Then Return Success("Already have that advertiser.")
+        Private Sub AddAdvertiser(ByVal m As IGameSourceSink)
+            If state > W3ServerStates.accepting_and_playing Then Throw New InvalidOperationException("Not accepting players anymore.")
+            If linkedAdvertisers.Contains(m) Then Throw New InvalidOperationException("Already have that advertiser.")
             AddHandler m.RemovedGame, AddressOf c_AdvertiserRemovedGame
             linkedAdvertisers.Add(m)
-            Return Success("Added advertiser.")
-        End Function
+        End Sub
         Private Sub SetAdvertiserOptions(ByVal [private] As Boolean)
             For Each m In linkedAdvertisers
                 m.SetAdvertisingOptions([private])
@@ -405,46 +407,47 @@ Namespace Warcraft3
         End Function
         Public Function QueueFindPlayer(ByVal username As String) As IFuture(Of W3Player)
             Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
-            Return ref.QueueFunc(Function() f_FindPlayer(username)).Defuturize
+            Return ref.QueueFunc(Function() f_FindPlayer(username)).Defuturized
         End Function
-        Public Function QueueFindPlayerGame(ByVal username As String) As IFuture(Of Outcome(Of IW3Game))
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of IW3Game)))() IsNot Nothing)
-            Return ref.QueueFunc(Function() f_FindPlayerGame(username)).Defuturize
+        Public Function QueueFindPlayerGame(ByVal username As String) As IFuture(Of IW3Game)
+            Contract.Ensures(Contract.Result(Of IFuture(Of IW3Game))() IsNot Nothing)
+            Return ref.QueueFunc(Function() f_FindPlayerGame(username)).Defuturized
         End Function
         Public Function QueueGetGames() As IFuture(Of IEnumerable(Of IW3Game))
             Contract.Ensures(Contract.Result(Of IFuture(Of IEnumerable(Of IW3Game)))() IsNot Nothing)
             Return ref.QueueFunc(Function() CType(games_all.ToList, IEnumerable(Of IW3Game)))
         End Function
-        Public Function QueueCreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of Outcome(Of IW3Game))
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome(Of IW3Game)))() IsNot Nothing)
+        Public Function QueueCreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of IW3Game)
+            Contract.Ensures(Contract.Result(Of IFuture(Of IW3Game))() IsNot Nothing)
             Return ref.QueueFunc(Function() CreateGame(gameName))
         End Function
-        Public Function QueueRemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture(Of Outcome)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
-            Return ref.QueueFunc(Function() RemoveGame(gameName, ignorePermanent))
+        Public Function QueueRemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return ref.QueueAction(Sub() RemoveGame(gameName, ignorePermanent))
         End Function
-        Public Function QueueClosePort(ByVal port As UShort) As IFuture(Of Outcome)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
-            Return ref.QueueFunc(Function() door.accepter.Accepter.ClosePort(port))
+        Public Function QueueClosePort(ByVal port As UShort) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return ref.QueueAction(Sub() door.accepter.Accepter.ClosePort(port))
         End Function
-        Public Function QueueOpenPort(ByVal port As UShort) As IFuture(Of Outcome)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
-            Return ref.QueueFunc(Function() door.accepter.Accepter.OpenPort(port))
+        Public Function QueueOpenPort(ByVal port As UShort) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return ref.QueueAction(Sub() door.accepter.Accepter.OpenPort(port))
         End Function
-        Public Function QueueCloseAllPorts() As IFuture(Of Outcome)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
-            Return ref.QueueFunc(Function() door.accepter.Accepter.CloseAllPorts())
+        Public Function QueueCloseAllPorts() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return ref.QueueAction(Sub() door.accepter.Accepter.CloseAllPorts())
         End Function
-        Public Function QueueStopAcceptingPlayers() As IFuture(Of Outcome)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
-            Return ref.QueueFunc(Function() StopAcceptingPlayers())
+        Public Function QueueStopAcceptingPlayers() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return ref.QueueAction(Sub() StopAcceptingPlayers())
         End Function
-        Public Function QueueKill() As IFuture(Of Outcome)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
-            Return ref.QueueFunc(Function() Kill())
+        Public Function QueueKill() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return ref.QueueAction(Sub() Kill())
         End Function
-        Public Function QueueAddAvertiser(ByVal m As IGameSourceSink) As IFuture(Of outcome)
-            Return ref.QueueFunc(Function() AddAdvertiser(m))
+        Public Function QueueAddAvertiser(ByVal m As IGameSourceSink) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return ref.QueueAction(Sub() AddAdvertiser(m))
         End Function
         Public Function CreateAdvertisingDependency() As FutureDisposable
             Contract.Ensures(Contract.Result(Of FutureDisposable)() IsNot Nothing)

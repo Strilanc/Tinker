@@ -1,4 +1,10 @@
-﻿'''<summary>Schedules transfers for sharing a copyable resource among multiple clients.</summary>
+﻿Public Enum ClientTransferState
+    Idle
+    Downloading
+    Uploading
+End Enum
+
+'''<summary>Schedules transfers for sharing a copyable resource among multiple clients.</summary>
 Public Class TransferScheduler(Of TClientKey)
     Private ReadOnly typicalRate As Double
     Private ReadOnly clients As New Dictionary(Of TClientKey, Client)
@@ -35,25 +41,15 @@ Public Class TransferScheduler(Of TClientKey)
                    ByVal typicalSwitchTime As Double,
                    ByVal fileSize As Double,
                    Optional ByVal pq As ICallQueue = Nothing)
-        'contract bug wrt interface event implementation requires this:
-        'Contract.Requires(fileSize > 0)
-        'Contract.Requires(Not Double.IsInfinity(fileSize))
-        'Contract.Requires(Not Double.IsNaN(fileSize))
-        'Contract.Requires(typicalRate > 0)
-        'Contract.Requires(Not Double.IsInfinity(typicalRate))
-        'Contract.Requires(Not Double.IsNaN(typicalRate))
-        'Contract.Requires(typicalSwitchTime >= 0)
-        'Contract.Requires(Not Double.IsInfinity(typicalSwitchTime))
-        'Contract.Requires(Not Double.IsNaN(typicalSwitchTime))
-        Contract.Assume(fileSize > 0)
-        Contract.Assume(Not Double.IsInfinity(fileSize))
-        Contract.Assume(Not Double.IsNaN(fileSize))
-        Contract.Assume(typicalRate > 0)
-        Contract.Assume(Not Double.IsInfinity(typicalRate))
-        Contract.Assume(Not Double.IsNaN(typicalRate))
-        Contract.Assume(typicalSwitchTime >= 0)
-        Contract.Assume(Not Double.IsInfinity(typicalSwitchTime))
-        Contract.Assume(Not Double.IsNaN(typicalSwitchTime))
+        Contract.Requires(fileSize > 0)
+        Contract.Requires(Not Double.IsInfinity(fileSize))
+        Contract.Requires(Not Double.IsNaN(fileSize))
+        Contract.Requires(typicalRate > 0)
+        Contract.Requires(Not Double.IsInfinity(typicalRate))
+        Contract.Requires(Not Double.IsNaN(typicalRate))
+        Contract.Requires(typicalSwitchTime >= 0)
+        Contract.Requires(Not Double.IsInfinity(typicalSwitchTime))
+        Contract.Requires(Not Double.IsNaN(typicalSwitchTime))
         Me.ref = If(pq, New ThreadPooledCallQueue)
         Me.typicalRate = typicalRate
         Me.typicalSwitchTime = typicalSwitchTime
@@ -63,31 +59,29 @@ Public Class TransferScheduler(Of TClientKey)
     '''<summary>Adds a new client to the pool.</summary>
     Public Function AddClient(ByVal clientKey As TClientKey,
                               ByVal completed As Boolean,
-                              Optional ByVal expectedRate As Double = 0) As IFuture(Of Outcome)
+                              Optional ByVal expectedRate As Double = 0) As IFuture
         Contract.Requires(expectedRate >= 0)
         Contract.Requires(expectedRate = 0 OrElse Not Double.IsInfinity(expectedRate))
         Contract.Requires(expectedRate = 0 OrElse Not Double.IsNaN(expectedRate))
-        Dim expectedRate_ = expectedRate 'avoids hoisted argument contract verification flaw
-        Return ref.QueueFunc(
-            Function()
-                If clients.ContainsKey(clientKey) Then  Return Failure("client key already exists")
-                clients(clientKey) = New Client(clientKey, completed, If(expectedRate_ = 0, typicalRate, expectedRate_))
-                Return Success("added")
-            End Function
+        Return ref.QueueAction(
+            Sub()
+                If clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("client key already exists")
+                clients(clientKey) = New Client(clientKey, completed, If(expectedRate = 0, typicalRate, expectedRate))
+            End Sub
         )
     End Function
 
     '''<summary>Adds a link between two clients.</summary>
     Public Function SetLink(ByVal clientKey1 As TClientKey,
                             ByVal clientKey2 As TClientKey,
-                            ByVal linked As Boolean) As IFuture(Of Outcome)
-        Return ref.QueueFunc(
-            Function()
-                If Not clients.ContainsKey(clientKey1) Then  Return Failure("No such client key")
-                If Not clients.ContainsKey(clientKey2) Then  Return Failure("No such client key")
+                            ByVal linked As Boolean) As IFuture
+        Return ref.QueueAction(
+            Sub()
+                If Not clients.ContainsKey(clientKey1) Then  Throw New InvalidOperationException("No such client key")
+                If Not clients.ContainsKey(clientKey2) Then  Throw New InvalidOperationException("No such client key")
                 Dim client1 = clients(clientKey1)
                 Dim client2 = clients(clientKey2)
-                If client1.links.Contains(client2) = linked Then  Return Success("Already set.")
+                If client1.links.Contains(client2) = linked Then  Return
                 If linked Then
                     client1.links.Add(client2)
                     client2.links.Add(client1)
@@ -98,16 +92,15 @@ Public Class TransferScheduler(Of TClientKey)
                         StopTransfer(clientKey1, False)
                     End If
                 End If
-                Return Success("Set.")
-            End Function
+            End Sub
         )
     End Function
 
     '''<summary>Removes a client from the pool.</summary>
-    Public Function RemoveClient(ByVal clientKey As TClientKey) As IFuture(Of Outcome)
-        Return ref.QueueFunc(
-            Function()
-                If Not clients.ContainsKey(clientKey) Then  Return Failure("No such client.")
+    Public Function RemoveClient(ByVal clientKey As TClientKey) As IFuture
+        Return ref.QueueAction(
+            Sub()
+                If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client.")
                 Dim client = clients(clientKey)
                 If client.busy Then
                     Dim other = client.other
@@ -118,58 +111,73 @@ Public Class TransferScheduler(Of TClientKey)
                 For Each linkedClient In client.links
                     linkedClient.links.Remove(client)
                 Next linkedClient
-                Return Success("removed")
-            End Function
+            End Sub
         )
     End Function
 
-    Public ReadOnly Property GenerateRateDescription(ByVal clientKey As TClientKey) As String
+    Public ReadOnly Property GenerateRateDescription(ByVal clientKey As TClientKey) As IFuture(Of String)
         Get
-            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-            If Not clients.ContainsKey(clientKey) Then Return "?"
-            With clients(clientKey)
-                If Not .HasRateBeenMeasured AndAlso Not .busy Then Return "?"
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+            Return ref.QueueFunc(
+                Function()
+                    If Not clients.ContainsKey(clientKey) Then  Return "?"
+                    With clients(clientKey)
+                        If Not .HasRateBeenMeasured AndAlso Not .busy Then  Return "?"
 
-                Dim d = .GetCurRateEstimate * 1000
-                Dim f = 1
-                For Each s In {"B", "KiB", "MiB", "GiB", "TiB", "PiB"}
-                    Dim f2 = f * 1024
-                    If d < f2 Then
-                        Return "{0:0.0} {1}/s".Frmt(d / f, s)
-                    End If
-                    f = f2
-                Next s
+                        Dim d = .GetCurRateEstimate * 1000
+                        Dim f = 1
+                        For Each s In {"B", "KiB", "MiB", "GiB", "TiB", "PiB"}
+                            Dim f2 = f * 1024
+                            If d < f2 Then
+                                Return "{0:0.0} {1}/s".Frmt(d / f, s)
+                            End If
+                            f = f2
+                        Next s
 
-                Return ">HiB/s" '... It could happen.
-            End With
+                        Return ">HiB/s" '... It could happen.
+                    End With
+                End Function)
         End Get
     End Property
 
+    Public Function GetClientState(ByVal clientKey As TClientKey) As IFuture(Of ClientTransferState)
+        Return ref.QueueFunc(Function()
+                                 If Not clients.ContainsKey(clientKey) Then  Return ClientTransferState.Idle
+                                 Dim client = clients(clientKey)
+                                 If Not client.busy Then
+                                     Return ClientTransferState.Idle
+                                 ElseIf client.completed Then
+                                     Return ClientTransferState.Uploading
+                                 Else
+                                     Return ClientTransferState.Downloading
+                                 End If
+                             End Function)
+    End Function
+
     '''<summary>Updates the progress of a transfer to or from the given client.</summary>
     Public Function UpdateProgress(ByVal clientKey As TClientKey,
-                                   ByVal progress As Double) As IFuture(Of Outcome)
+                                   ByVal progress As Double) As IFuture
         Contract.Requires(progress >= 0)
         Contract.Requires(Not Double.IsInfinity(progress))
         Contract.Requires(Not Double.IsNaN(progress))
         Dim progress_ = progress 'avoids hoisted argument contract verification flaw
-        Return ref.QueueFunc(
-            Function()
-                If Not clients.ContainsKey(clientKey) Then  Return Failure("No such client key.")
+        Return ref.QueueAction(
+            Sub()
+                If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client key.")
                 Dim client = clients(clientKey)
-                If Not client.busy Then  Return Failure("Client isn't transfering.")
+                If Not client.busy Then  Throw New InvalidOperationException("Client isn't transfering.")
                 client.UpdateProgress(progress_)
                 client.other.UpdateProgress(progress_)
-                Return Success("Updated")
-            End Function
+            End Sub
         )
     End Function
 
     '''<summary>Stops any transfers to or from the given client.</summary>
     Public Function StopTransfer(ByVal clientKey As TClientKey,
-                                 ByVal complete As Boolean) As IFuture(Of Outcome)
-        Return ref.QueueFunc(
-            Function()
-                If Not clients.ContainsKey(clientKey) Then  Return Failure("No such client key.")
+                                 ByVal complete As Boolean) As IFuture
+        Return ref.QueueAction(
+            Sub()
+                If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client key.")
 
                 Dim client = clients(clientKey)
                 If client.busy Then
@@ -177,8 +185,7 @@ Public Class TransferScheduler(Of TClientKey)
                     client.SetNotTransfering(complete)
                     other.SetNotTransfering(complete)
                 End If
-                Return Success("Stopped")
-            End Function
+            End Sub
         )
     End Function
 

@@ -42,24 +42,23 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
     Private Sub UpdateText(ByVal element As T)
         Dim control = controls(element)
         Dim page = tabs(element)
-        control.QueueGetCaption.CallWhenValueReady(
+        control.QueueGetCaption.CallOnValueSuccess(
             Sub(text)
-                ref.QueueAction(
-                    Sub()
-                        Try
-                            page.Text = text
-                        Catch e As Exception
-                        End Try
-                    End Sub
-                )
-            End Sub
+                                                       ref.QueueAction(
+                                                           Sub()
+                                                               Try
+                                                                   page.Text = text
+                                                               Catch e As Exception
+                                                               End Try
+                                                           End Sub
+                                                       )
+                                                   End Sub
         )
     End Sub
-    Public Function Update(ByVal element As T) As Outcome
-        If Not tabs.ContainsKey(element) Then Return failure("Don't have a control to update for element.")
+    Public Sub Update(ByVal element As T)
+        If Not tabs.ContainsKey(element) Then Throw New InvalidOperationException("Don't have a control to update for element.")
         UpdateText(element)
-        Return success("Element updated.")
-    End Function
+    End Sub
 
     Public Function Contains(ByVal element As T) As Boolean
         Return tabs.ContainsKey(element)

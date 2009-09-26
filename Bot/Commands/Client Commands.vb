@@ -13,7 +13,7 @@ Namespace Commands.Specializations
         Private com_offline As New ClientOfflineCommands()
 
         Private Function GetCurrentCommandSet(ByVal target As BnetClient) As IFuture(Of BaseClientCommands)
-            Return target.QueueGetState.EvalWhenValueReady(Of BaseClientCommands)(
+            Return target.QueueGetState.Select(Of BaseClientCommands)(
                 Function(state)
                     Select Case state
                         Case States.Channel, States.CreatingGame, States.Game
@@ -28,11 +28,11 @@ Namespace Commands.Specializations
                 End Function
             )
         End Function
-        Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-            Return GetCurrentCommandSet(target).EvalWhenValueReady(Function(x) x.Process(target, user, arguments)).Defuturize()
+        Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+            Return GetCurrentCommandSet(target).Select(Function(x) x.Process(target, user, arguments)).Defuturized()
         End Function
         Public Overrides Sub ProcessLocalText(ByVal target As Bnet.BnetClient, ByVal text As String, ByVal logger As Logger)
-            GetCurrentCommandSet(target).CallWhenValueReady(Sub(x) x.ProcessLocalText(target, text, logger))
+            GetCurrentCommandSet(target).CallOnValueSuccess(Sub(x) x.ProcessLocalText(target, text, logger))
         End Sub
     End Class
 
@@ -63,19 +63,21 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_AdLink_Access,
                            My.Resources.Command_Client_AdLink_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Dim client = target
-                Dim other_client = target.Parent.QueueFindClient(arguments(0))
-                Return other_client.EvalWhenValueReady(
+                Dim other_client = target.parent.QueueFindClient(arguments(0))
+                Return other_client.Select(
                     Function(client2)
                         If client2 Is Nothing Then
-                            Return Failure("No client matching that name.")
+                            Throw New InvalidOperationException("No client matching that name.")
                         ElseIf client2 Is client Then
-                            Return Failure("Can't link to self.")
+                            Throw New InvalidOperationException("Can't link to self.")
                         End If
 
                         AdvertisingLink.CreateMultiWayLink({client, client2})
-                        Return Success("Created an advertising link between client {0} and client {1}.".Frmt(client.Name, client2.Name))
+                        Return "Created an advertising link between client {0} and client {1}.".Frmt(client.name, client2.name)
                     End Function
                 )
             End Function
@@ -89,17 +91,19 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_AdUnlink_Access,
                            My.Resources.Command_Client_AdUnlink_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal client As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return client.parent.QueueFindClient(arguments(0)).EvalWhenValueReady(
+            Public Overrides Function Process(ByVal client As BnetClient,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return client.parent.QueueFindClient(arguments(0)).Select(
                     Function(client2)
                         If client2 Is Nothing Then
-                            Return Failure("No client matching that name.")
+                            Throw New ArgumentException("No client matching that name.")
                         ElseIf client2 Is client Then
-                            Return Failure("Can't link to self.")
+                            Throw New ArgumentException("Can't link to self.")
                         End If
 
                         client.QueueRemoveAdvertisingPartner(client2)
-                        Return Success("Any link between client {0} and client {1} has been removed.".Frmt(client.name, client2.name))
+                        Return "Any link between client {0} and client {1} has been removed.".Frmt(client.name, client2.name)
                     End Function
                 )
             End Function
@@ -114,8 +118,8 @@ Namespace Commands.Specializations
                            "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.",
                            "root=1", "")
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.Parent.BotCommands.ProcessCommand(target.Parent, user, arguments)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.parent.BotCommands.ProcessCommand(target.parent, user, arguments)
             End Function
         End Class
 
@@ -126,8 +130,10 @@ Namespace Commands.Specializations
                 MyBase.New(parent_command.name, parent_command.argumentLimit, parent_command.argumentLimitType, parent_command.help, parent_command.requiredPermissions)
                 Me.parent_command = parent_command
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return parent_command.ProcessCommand(target.Parent, user, arguments)
+            Public Overrides Function Process(ByVal target As BnetClient,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return parent_command.ProcessCommand(target.parent, user, arguments)
             End Function
         End Class
 
@@ -141,8 +147,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_GetPort_Access,
                            My.Resources.Command_Client_GetPort_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return Success(target.QueueGetListenPort.ToString()).Futurize
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueGetListenPort.Select(Function(port) port.ToString())
             End Function
         End Class
 
@@ -156,10 +162,10 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_SetPort_Access,
                            My.Resources.Command_Client_SetPort_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Dim port As UShort
-                If Not UShort.TryParse(arguments(0), port) Then Return Failure("Invalid port").Futurize
-                Return target.QueueSetListenPort(port)
+                If Not UShort.TryParse(arguments(0), port) Then Throw New ArgumentException("Invalid port")
+                Return target.QueueSetListenPort(port).EvalOnSuccess(Function() "Set listen port to {0}.".Frmt(port))
             End Function
         End Class
 
@@ -167,13 +173,12 @@ Namespace Commands.Specializations
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("disconnect",
-                            0, ArgumentLimits.exact,
-                            "[--disconnect]",
-                            "root=4", "")
+                           0, ArgumentLimits.exact,
+                           "[--disconnect]",
+                           "root=4", "")
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                target.QueueDisconnect("Client Command")
-                Return Success("Disconnected").Futurize
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueDisconnect(expected:=True, reason:="Client Command").EvalOnSuccess(Function() "Disconnected")
             End Function
         End Class
 
@@ -186,13 +191,9 @@ Namespace Commands.Specializations
                             My.Resources.Command_Client_AddUser_Access,
                             My.Resources.Command_Client_AddUser_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Try
-                    Dim new_user As BotUser = target.profile.users.CreateNewUser(arguments(0))
-                    Return Success("Created " + new_user.name).Futurize
-                Catch e As InvalidOperationException
-                    Return Failure(e.ToString).Futurize
-                End Try
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Dim newUser As BotUser = target.profile.users.CreateNewUser(arguments(0))
+                Return "Created {0}".Frmt(newUser.name).Futurized
             End Function
         End Class
 
@@ -205,16 +206,16 @@ Namespace Commands.Specializations
                             My.Resources.Command_Client_RemoveUser_Access,
                             My.Resources.Command_Client_RemoveUser_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
-                    Return Failure("That user does not exist").Futurize
+                    Throw New ArgumentException("That user does not exist")
                 End If
                 Dim target_user As BotUser = target.profile.users(arguments(0))
                 If user IsNot Nothing AndAlso Not target_user < user Then
-                    Return Failure("You can only destroy users with lower permissions.").Futurize
+                    Throw New ArgumentException("You can only destroy users with lower permissions.")
                 End If
                 target.profile.users.RemoveUser(arguments(0))
-                Return Success("Removed " + arguments(0)).Futurize
+                Return "Removed {0}".Frmt(arguments(0)).Futurized
             End Function
         End Class
 
@@ -226,10 +227,10 @@ Namespace Commands.Specializations
                             "[--Promote username permission level] Increases a permissions level for a user.",
                             "users=1", "")
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 'get target user
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
-                    Return Failure("That user does not exist").Futurize
+                    Throw New ArgumentException("That user does not exist")
                 End If
                 Dim target_user As BotUser = target.profile.users(arguments(0))
 
@@ -238,21 +239,21 @@ Namespace Commands.Specializations
                 If arguments.Count < 3 Then
                     lvl = 1
                 ElseIf Not UInteger.TryParse(arguments(2), lvl) Then
-                    Return Failure("Expected numeric argument for level").Futurize
+                    Throw New ArgumentException("Expected numeric argument for level")
                 End If
 
                 'check for demotion in disguise
                 If lvl <= target_user.permission(arguments(1)) Then
-                    Return Failure("That is not a promotion. Jerk.").Futurize
+                    Throw New ArgumentException("That is not a promotion. Jerk.")
                 End If
 
                 'check for overpromotion
                 If user IsNot Nothing AndAlso lvl > user.permission(arguments(1)) Then
-                    Return Failure("You can't promote users past your own permission levels.").Futurize
+                    Throw New ArgumentException("You can't promote users past your own permission levels.")
                 End If
 
                 target_user.permission(arguments(1)) = lvl
-                Return Success(arguments(0) + " had permission in " + arguments(1) + " promoted to " + lvl.ToString()).Futurize
+                Return "{0} had permission in {1} promoted to {2}".Frmt(arguments(0), arguments(1), lvl).Futurized
             End Function
         End Class
 
@@ -264,10 +265,10 @@ Namespace Commands.Specializations
                             "[--Demote username permission level] Decreases a permissions level for a user.",
                             "users=3", "")
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 'get target user
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
-                    Return Failure("That user does not exist").Futurize
+                    Throw New ArgumentException("That user does not exist")
                 End If
                 Dim target_user As BotUser = target.profile.users(arguments(0))
 
@@ -276,21 +277,21 @@ Namespace Commands.Specializations
                 If arguments.Count < 3 Then
                     lvl = 0
                 ElseIf Not UInteger.TryParse(arguments(2), lvl) Then
-                    Return Failure("Expected numeric argument for level").Futurize
+                    Throw New ArgumentException("Expected numeric argument for level")
                 End If
 
                 'check for promotion in disguise
                 If lvl >= target_user.permission(arguments(1)) Then
-                    Return Failure("That is not a demotion.").Futurize
+                    Throw New ArgumentException("That is not a demotion.")
                 End If
 
                 'check for overdemotion
                 If user IsNot Nothing AndAlso Not target_user < user Then
-                    Return Failure("You can only demote users with lower permissions.").Futurize
+                    Throw New ArgumentException("You can only demote users with lower permissions.")
                 End If
 
                 target_user.permission(arguments(1)) = lvl
-                Return Success(arguments(0) + " had permission in " + arguments(1) + " demoted to " + lvl.ToString()).Futurize
+                Return "{0} had permission in {1} demoted to {2}".Frmt(arguments(0), arguments(1), lvl).Futurized
             End Function
         End Class
 
@@ -303,15 +304,15 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_User_Access,
                            My.Resources.Command_Client_User_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                If arguments.Count = 0 And user Is Nothing Then Return Failure("No user specified.").Futurize
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                If arguments.Count = 0 And user Is Nothing Then Throw New ArgumentException("No user specified.")
                 Dim username = If(arguments.Count = 0, user.name, arguments(0))
                 If target.profile.users.ContainsUser(username) Then
-                    Return Success(target.profile.users(username).ToString()).Futurize
+                    Return target.profile.users(username).ToString().Futurized
                 ElseIf target.profile.users.ContainsUser(BotUserSet.NAME_UNKNOWN_USER) Then
-                    Return Success("{0} is an unknown user with the permissions of the user '*unknown'".Frmt(username)).Futurize
+                    Return "{0} is an unknown user with the permissions of the user '*unknown'".Frmt(username).Futurized
                 Else
-                    Return Success("{0} is an ignored unknown user.".Frmt(username)).Futurize
+                    Return "{0} is an ignored unknown user.".Frmt(username).Futurized
                 End If
             End Function
         End Class
@@ -333,10 +334,12 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Login_Help,
                            My.Resources.Command_Client_Login_Access,
                            My.Resources.Command_Client_Login_ExtraHelp,
-                           True)
+                           shouldHideArguments:=True)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.QueueLogin(arguments(0), arguments(1))
+            Public Overrides Function Process(ByVal target As BnetClient,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueLogin(arguments(0), arguments(1)).EvalOnSuccess(Function() "Logged in as {0}".Frmt(arguments(0)))
             End Function
         End Class
     End Class
@@ -365,11 +368,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Host_Access,
                            My.Resources.Command_Client_Host_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                'Map
-                Dim map_out = W3Map.FromArgument(arguments(1))
-                If Not map_out.succeeded Then Return map_out.Outcome.Futurize
-                Dim map = map_out.Value
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Dim map = W3Map.FromArgument(arguments(1))
 
                 'Server settings
                 arguments = arguments.ToList
@@ -383,39 +383,34 @@ Namespace Commands.Specializations
                             End If
                     End Select
                     If arguments(i).ToLower Like "-port=*" AndAlso user IsNot Nothing AndAlso user.permission("root") < 5 Then
-                        Return Failure("You need root=5 to use -port.").Futurize
+                        Throw New InvalidOperationException("You need root=5 to use -port.")
                     End If
                 Next i
                 Dim header = New W3GameHeader(arguments(0),
                                               If(user Is Nothing, My.Resources.ProgramName, user.name),
                                               New W3MapSettings(arguments, map),
                                               0, 0, 0, arguments, map.NumPlayerSlots)
-                Dim f_settings = target.QueueGetListenPort.EvalWhenValueReady(Function(port) New ServerSettings(map, header, default_listen_ports:={port}))
-                Dim f_server = f_settings.EvalWhenValueReady(Function(settings) target.Parent.QueueCreateServer(target.Name, settings, "[Linked]", True)).Defuturize()
+                Dim f_settings = target.QueueGetListenPort.Select(Function(port) New ServerSettings(map, header, default_listen_ports:={port}))
+                Dim f_server = f_settings.Select(Function(settings) target.parent.QueueCreateServer(target.name, settings, "[Linked]", True)).Defuturized()
 
                 'Create the server, then advertise the game
                 Dim client = target
-                Return f_server.EvalWhenValueReady(
-                    Function(created_server)
-                        If Not created_server.succeeded Then
-                            Return created_server.Outcome.Futurize
-                        End If
-
+                Return f_server.Select(
+                    Function(server)
                         'Start advertising
-                        Dim server = created_server.Value
                         client.QueueSetUserServer(user, server)
-                        Return client.QueueStartAdvertisingGame(header, server).EvalWhenValueReady(
-                            Function(advertised)
-                                If advertised.succeeded Then
-                                    Return Success("Game hosted succesfully. Admin code is '{0}'.".Frmt(server.settings.adminPassword))
-                                Else
+                        Return client.QueueStartAdvertisingGame(header, server).EvalWhenReady(
+                            Function(advertiseException)
+                                If advertiseException IsNot Nothing Then
                                     server.QueueKill()
-                                    Return advertised
+                                    Throw New OperationFailedException(innerException:=advertiseException)
+                                Else
+                                    Return "Succesfully created game {0} for map {1}.".Frmt(header.Name, header.Map.relativePath)
                                 End If
                             End Function
                         )
                     End Function
-                ).Defuturize()
+                ).Defuturized()
             End Function
         End Class
 
@@ -423,11 +418,13 @@ Namespace Commands.Specializations
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("RefreshGamesList",
-                        0, ArgumentLimits.exact,
-                        "[RefreshGamesList] Refreshes the bot's game list display. No useful effect from bnet.")
+                           0, ArgumentLimits.exact,
+                           "[RefreshGamesList] Refreshes the bot's game list display. No useful effect from bnet.")
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.QueueSendPacket(BnetPacket.MakeQueryGamesList())
+            Public Overrides Function Process(ByVal target As BnetClient,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueSendPacket(BnetPacket.MakeQueryGamesList()).EvalOnSuccess(Function() "Sent request.")
             End Function
         End Class
         Public Class com_Game
@@ -437,27 +434,27 @@ Namespace Commands.Specializations
                         1, ArgumentLimits.min,
                         "[Game name command..., Game boot red] Forwards commands to a game of your hosted server.")
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 'Find hosted server, then find game, then pass command
-                Return target.QueueGetUserServer(user).EvalWhenValueReady(
+                Return target.QueueGetUserServer(user).Select(
                     Function(server)
                         If server Is Nothing Then
-                            Return Failure("You don't have a hosted game to forward that command to.").Futurize
+                            Throw New InvalidOperationException("You don't have a hosted game to forward that command to.")
                         End If
 
                         'Find game, then pass command
-                        Return server.QueueFindGame(arguments(0)).EvalWhenValueReady(
+                        Return server.QueueFindGame(arguments(0)).Select(
                             Function(game)
                                 If game Is Nothing Then
-                                    Return Failure("No game with that name.").Futurize
+                                    Throw New InvalidOperationException("No game with that name.")
                                 End If
 
                                 'Pass command
                                 Return game.QueueProcessCommand(Nothing, arguments.SubToArray(1))
                             End Function
-                        ).Defuturize()
+                        ).Defuturized()
                     End Function
-                ).Defuturize()
+                ).Defuturized()
             End Function
         End Class
 
@@ -468,15 +465,17 @@ Namespace Commands.Specializations
                            0, ArgumentLimits.exact,
                            "[--CancelHost] Cancels the last hosting command.")
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.QueueGetUserServer(user).EvalWhenValueReady(
+            Public Overrides Function Process(ByVal target As BnetClient,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueGetUserServer(user).Select(
                     Function(server)
                         If server Is Nothing Then
-                            Return Failure("You don't have a hosted game to cancel.")
+                            Throw New InvalidOperationException("You don't have a hosted game to cancel.")
                         End If
 
                         server.QueueKill()
-                        Return Success("Cancelled hosting.")
+                        Return "Cancelled hosting."
                     End Function
                 )
             End Function
@@ -491,14 +490,14 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient,
                                               ByVal user As BotUser,
-                                              ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.QueueGetUserServer(user).EvalWhenValueReady(
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueGetUserServer(user).Select(
                     Function(server)
                         If server Is Nothing Then
-                            Return Failure("You don't have a hosted game to cancel.")
+                            Throw New InvalidOperationException("You don't have a hosted game to cancel.")
                         End If
 
-                        Return Success(server.settings.adminPassword)
+                        Return server.settings.adminPassword
                     End Function
                 )
             End Function
@@ -513,9 +512,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Say_Access,
                            My.Resources.Command_Client_Say_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 target.QueueSendText(arguments(0))
-                Return Success("Said {0}".Frmt(arguments(0))).Futurize
+                Return "Said {0}".Frmt(arguments(0)).Futurized
             End Function
         End Class
 
@@ -529,17 +528,15 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_StartAdvertising_Access,
                            My.Resources.Command_Client_StartAdvertising_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                'Map
-                Dim map_out = W3Map.FromArgument(arguments(1))
-                If Not map_out.succeeded Then Return map_out.Outcome.Futurize
-                Dim map = map_out.Value
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Dim map = W3Map.FromArgument(arguments(1))
 
                 'create
-                Return target.QueueStartAdvertisingGame(New W3GameHeader(arguments(0),
-                                                                      My.Resources.ProgramName,
-                                                                      New W3MapSettings(arguments, map),
-                                                                      0, 0, 0, arguments, map.NumPlayerSlots), Nothing)
+                Return target.QueueStartAdvertisingGame(
+                    New W3GameHeader(arguments(0),
+                                     My.Resources.ProgramName,
+                                     New W3MapSettings(arguments, map),
+                                     0, 0, 0, arguments, map.NumPlayerSlots), Nothing).EvalOnSuccess(Function() "Started advertising")
             End Function
         End Class
 
@@ -553,8 +550,10 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_StopAdvertising_Access,
                            My.Resources.Command_Client_StopAdvertising_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.QueueStopAdvertisingGame("Advertising stopped manually.")
+            Public Overrides Function Process(ByVal target As BnetClient,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueStopAdvertisingGame("Advertising stopped manually.").EvalOnSuccess(Function() "Stopped advertising.")
             End Function
         End Class
 
@@ -567,32 +566,32 @@ Namespace Commands.Specializations
                         My.Resources.Command_Client_Elevate_Access,
                         My.Resources.Command_Client_Elevate_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 If arguments.Count = 0 AndAlso user Is Nothing Then
-                    Return Failure("You didn't specify a player to elevate.").Futurize
+                    Throw New ArgumentException("You didn't specify a player to elevate.")
                 End If
                 Dim username = If(arguments.Count = 0, user.name, arguments(0))
 
                 'Find hosted server, then find player's game, then elevate player
-                Return target.QueueGetUserServer(user).EvalWhenValueReady(
+                Return target.QueueGetUserServer(user).Select(
                     Function(server)
                         If server Is Nothing Then
-                            Return Failure("You don't have a hosted game.").Futurize
+                            Throw New InvalidOperationException("You don't have a hosted game.")
                         End If
 
                         'Find player's game, then elevate player
-                        Return server.QueueFindPlayerGame(username).EvalWhenValueReady(
+                        Return server.QueueFindPlayerGame(username).Select(
                             Function(game)
-                                If game.Value Is Nothing Then
-                                    Return Failure("No matching user found.").Futurize
+                                If game Is Nothing Then
+                                    Throw New InvalidOperationException("No matching user found.")
                                 End If
 
                                 'Elevate player
-                                Return game.Value.QueueTryElevatePlayer(username)
+                                Return game.QueueTryElevatePlayer(username)
                             End Function
-                        ).Defuturize()
+                        )
                     End Function
-                ).Defuturize()
+                ).Defuturized.Defuturized.EvalOnSuccess(Function() "'{0}' is now the admin.".Frmt(username))
             End Function
         End Class
     End Class
@@ -613,8 +612,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Connect_Access,
                            My.Resources.Command_Client_Connect_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.QueueConnect(arguments(0))
+            Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Return target.QueueConnect(arguments(0)).EvalOnSuccess(Function() "Established connection to {0}".Frmt(arguments(0)))
             End Function
         End Class
     End Class

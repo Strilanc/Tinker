@@ -140,13 +140,13 @@ Namespace Warcraft3
 #End Region
 
 #Region "New"
-        Public Shared Function FromArgument(ByVal arg As String) As Outcome(Of W3Map)
+        Public Shared Function FromArgument(ByVal arg As String) As W3Map
             If arg(0) = "-"c Then
-                Return failure("Map argument begins with '-', is probably an option. (did you forget an argument?)")
+                Throw New ArgumentException("Map argument begins with '-', is probably an option. (did you forget an argument?)")
             ElseIf arg Like "0[xX]*" Then
-                Dim out_fail = failure("Invalid map meta data. [0x prefix should be followed by hex MAP_INFO packet data].")
-                If arg Like "0x*[!0-9a-fA-F]" Then Return out_fail
-                If arg.Length Mod 2 <> 0 Then Return out_fail
+                Dim out_fail = New ArgumentException("Invalid map meta data. [0x prefix should be followed by hex MAP_INFO packet data].")
+                If arg Like "0x*[!0-9a-fA-F]" Then Throw out_fail
+                If arg.Length Mod 2 <> 0 Then Throw out_fail
 
                 Dim vals As Dictionary(Of String, Object)
                 Try
@@ -158,7 +158,7 @@ Namespace Warcraft3
                     Dim packet = W3Packet.FromData(W3PacketId.HostMapInfo, hexData.ToView())
                     vals = CType(packet.payload.Value, Dictionary(Of String, Object))
                 Catch e As Exception
-                    Return out_fail
+                    Throw out_fail
                 End Try
 
                 Dim path = CStr(vals("path"))
@@ -166,11 +166,11 @@ Namespace Warcraft3
                 Dim crc32 = CType(vals("crc32"), Byte())
                 Dim xoro = CType(vals("xoro checksum"), Byte())
                 Dim sha1 = CType(vals("sha1 checksum"), Byte())
-                Return Success(New W3Map(My.Settings.mapPath, path, size, crc32, sha1, xoro, 3), "Loaded map meta data.")
+                Return New W3Map(My.Settings.mapPath, path, size, crc32, sha1, xoro, 3)
             Else
-                Dim out = findFileMatching("*" + arg + "*", "*.[wW]3[mxMX]", My.Settings.mapPath)
-                If Not out.succeeded Then Return CType(out, Outcome)
-                Return Success(New W3Map(My.Settings.mapPath, out.Value, My.Settings.war3path), "Loaded map file.")
+                Return New W3Map(My.Settings.mapPath,
+                                 findFileMatching("*" + arg + "*", "*.[wW]3[mxMX]", My.Settings.mapPath),
+                                 My.Settings.war3path)
             End If
         End Function
         Public Sub New(ByVal folder As String,

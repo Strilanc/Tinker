@@ -26,7 +26,7 @@ Namespace Commands
         '''<param name="target">The object the command is being run from.</param>
         '''<param name="user">The user running the command. Local user is nothing.</param>
         '''<param name="arguments">The arguments passed to the command</param>
-        Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
         '''<summary>Determines if a user is allowed to use the command.</summary>
         Function IsUserAllowed(ByVal user As BotUser) As Boolean
         ReadOnly Property ExtraHelp() As Dictionary(Of String, String)
@@ -35,10 +35,10 @@ Namespace Commands
     Public Class ContractClassICommand(Of T)
         Implements ICommand(Of T)
 
-        Public Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements ICommand(Of T).Process
+        Public Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String) Implements ICommand(Of T).Process
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(arguments IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
 
@@ -181,43 +181,45 @@ Namespace Commands
         End Function
 
         '''<summary>Checks user permissions, number of arguments, and delegates processing to child implementation.</summary>
-        Public Function ProcessCommand(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome) Implements ICommand(Of T).Process
-            'Check permissions
-            If Not IsUserAllowed(user) Then
-                Return failure("You do not have sufficient permissions to use that command.").Futurize()
-            End If
-
-            'Check arguments
-            Select Case argumentLimitType
-                Case ArgumentLimits.exact
-                    If arguments.Count > argumentLimit Then
-                        Return failure("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".frmt(argumentLimit)).Futurize()
-                    ElseIf arguments.Count < argumentLimit Then
-                        Return failure("Not enough arguments, expected at least {0}.".frmt(argumentLimit)).Futurize()
-                    End If
-                Case ArgumentLimits.max
-                    If arguments.Count > argumentLimit Then
-                        Return failure("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".frmt(argumentLimit)).Futurize()
-                    End If
-                Case ArgumentLimits.min
-                    If arguments.Count < argumentLimit Then
-                        Return failure("Not enough arguments, expected at least {0}.".frmt(argumentLimit)).Futurize()
-                    End If
-            End Select
-
-            'Run
+        Public Function ProcessCommand(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String) Implements ICommand(Of T).Process
             Try
+                'Check permissions
+                If Not IsUserAllowed(user) Then
+                    Throw New InvalidOperationException("You do not have sufficient permissions to use that command.")
+                End If
+
+                'Check arguments
+                Select Case argumentLimitType
+                    Case ArgumentLimits.exact
+                        If arguments.Count > argumentLimit Then
+                            Throw New IO.IOException("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".Frmt(argumentLimit))
+                        ElseIf arguments.Count < argumentLimit Then
+                            Throw New IO.IOException("Not enough arguments, expected at least {0}.".Frmt(argumentLimit))
+                        End If
+                    Case ArgumentLimits.max
+                        If arguments.Count > argumentLimit Then
+                            Throw New IO.IOException("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".Frmt(argumentLimit))
+                        End If
+                    Case ArgumentLimits.min
+                        If arguments.Count < argumentLimit Then
+                            Throw New IO.IOException("Not enough arguments, expected at least {0}.".Frmt(argumentLimit))
+                        End If
+                End Select
+
+                'Run
                 Return Process(target, user, arguments)
             Catch e As Exception
                 LogUnexpectedException("Processing text for command.", e)
-                Return failure("Unexpected exception encountered ({0}).".frmt(e)).Futurize()
+                Dim result = New FutureFunction(Of String)
+                result.SetFailed(e)
+                Return result
             End Try
         End Function
 
-        Public Overridable Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public Overridable Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(arguments IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
     End Class
@@ -264,7 +266,7 @@ Namespace Commands
             Next key
         End Sub
 
-        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
             Dim arg As String = Nothing
             If arguments.Count > 0 Then arg = arguments(0)
             If arguments.Count = 2 Then arg += " " + arguments(1)
@@ -277,13 +279,13 @@ Namespace Commands
                         command_list += c.name
                     End If
                 Next c
-                Return success(command_list).Futurize()
+                Return command_list.Futurized
             ElseIf help_map.ContainsKey(arg.ToLower()) Then
                 '[specific command help]
-                Return success(help_map(arg.ToLower())).Futurize()
+                Return help_map(arg.ToLower()).Futurized
             Else
                 '[no matching command]
-                Return failure("{0} is not a recognized help topic.".frmt(arg)).Futurize()
+                Throw New ArgumentException("{0} is not a recognized help topic.".Frmt(arg))
             End If
         End Function
     End Class
@@ -319,11 +321,11 @@ Namespace Commands
             helpCommand.RemoveCommand(command)
         End Sub
 
-        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
+        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
             'Get subcommand
             Dim name As String = arguments(0).ToLower()
             If Not commandMap.ContainsKey(name) Then
-                Return failure("Unrecognized Command: " + name).Futurize()
+                Throw New ArgumentException("Unrecognized Command: " + name)
             End If
             Dim subcommand As ICommand(Of T) = commandMap(name)
 
@@ -336,18 +338,8 @@ Namespace Commands
     Public Class ThreadedCommandSet(Of T)
         Inherits CommandSet(Of T)
 
-        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-            Dim f As New Future(Of Outcome)
-            Return ThreadPooledFunc(
-                Function()
-                    Try
-                        Return MyBase.Process(target, user, arguments)
-                    Catch e As Exception
-                        LogUnexpectedException("Exception rose past {0}.Process".frmt(Me.GetType.Name), e)
-                        Return failure("Error processing command: " + e.ToString).Futurize()
-                    End Try
-                End Function
-            ).Defuturize
+        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+            Return ThreadPooledFunc(Function() MyBase.Process(target, user, arguments)).Defuturized
         End Function
     End Class
 
@@ -373,21 +365,20 @@ Namespace Commands
                     logger.log("Command: {0}".frmt(text), LogMessageType.Typical)
                 End If
 
-                logger.futurelog("[running command '{0}'...]".frmt(name),
-                                 ProcessCommand(target, Nothing, words).EvalWhenValueReady(
-                                                             AddressOf output_of_command))
+                logger.FutureLog("[running command '{0}'...]".Frmt(name), ProcessCommand(target, Nothing, words).EvalWhenValueReady(
+                    Function(message, commandException)
+                        If commandException IsNot Nothing Then
+                            Return "Failed: {0}".Frmt(commandException.Message)
+                        ElseIf message Is Nothing OrElse message = "" Then
+                            Return "Command succeeded."
+                        Else
+                            Return message
+                        End If
+                    End Function))
             Catch e As Exception
                 LogUnexpectedException("Exception rose past " + Me.GetType.Name + "[" + Me.name + "].processLocalText", e)
             End Try
         End Sub
-
-        Private Function output_of_command(ByVal out As Outcome) As Outcome
-            Dim message = out.Message
-            If message Is Nothing Or message = "" Then
-                message = "Command {0}.".frmt(If(out.succeeded, "Succeeded", "Failed"))
-            End If
-            Return New Outcome(out.succeeded, "({0}) {1}".frmt(If(out.succeeded, "Succeeded", "Failed"), message))
-        End Function
     End Class
 #End Region
 End Namespace

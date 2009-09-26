@@ -231,14 +231,15 @@ Public Class LoggerControl
         End Try
     End Sub
     Private Sub LogFutureMessage(ByVal placeholder As String,
-                                 ByVal message As IFuture(Of Outcome))
+                                 ByVal futureMessage As IFuture(Of String))
         Dim m = New QueuedMessage(placeholder, Color.DarkGoldenrod)
         LogMessage(m)
-        message.CallWhenValueReady(
-            Sub(out)
+        futureMessage.CallWhenValueReady(
+            Sub(message, messageException)
                 SyncLock lock
-                    Dim color = callbackColorMap(If(out.succeeded, LogMessageType.Positive, LogMessageType.Problem))
-                    LogMessage(New QueuedMessage(out.Message, color, m))
+                    If messageException IsNot Nothing Then  message = messageException.Message
+                    Dim color = callbackColorMap(If(messageException Is Nothing, LogMessageType.Positive, LogMessageType.Problem))
+                    LogMessage(New QueuedMessage(message, color, m))
                 End SyncLock
             End Sub
         )
@@ -258,7 +259,7 @@ Public Class LoggerControl
         LogMessage(message, color, fileOnly)
     End Sub
     Private Sub OnLoggedFutureMessage(ByVal placeholder As String,
-                                      ByVal out As IFuture(Of Outcome)) Handles _logger.LoggedFutureMessage
+                                      ByVal out As IFuture(Of String)) Handles _logger.LoggedFutureMessage
         uiRef.QueueAction(Sub() LogFutureMessage(placeholder, out))
     End Sub
     Private Sub OnLoggedUnexpectedException(ByVal context As String,

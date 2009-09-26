@@ -153,7 +153,7 @@ Public Class BigNum
         If Me = 0 Then Return 0
 
         'Warning: Loses up to 1 bit of entropy due to partial wrap-around
-        Dim data(0 To ModCeiling(Me.NumBits, 8) \ 8 - 1) As Byte
+        Dim data(0 To CInt(Math.Ceiling(Me.NumBits / 8)) - 1) As Byte
         rand.GetBytes(data)
         Return BigNum.FromBytes(data, ByteOrder.LittleEndian) Mod Me
     End Function

@@ -99,8 +99,8 @@ Namespace Warcraft3
         Public ReadOnly ip As Net.IPAddress
         Public ReadOnly peerKey As UInteger
         Private WithEvents _socket As W3Socket
-        Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal id As W3PacketId, ByVal vals As Dictionary(Of String, Object))
-        Public Event Disconnected(ByVal sender As W3Peer, ByVal reason As String)
+        Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal packet As W3Packet)
+        Public Event Disconnected(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
 
         Public Sub New(ByVal name As String,
                        ByVal index As Byte,
@@ -121,15 +121,14 @@ Namespace Warcraft3
         Public Sub SetSocket(ByVal socket As W3Socket)
             Me._socket = socket
             If socket Is Nothing Then Return
-            FutureIterate(AddressOf socket.FutureReadPacket,
-                Function(result)
-                    RaiseEvent ReceivedPacket(Me, result.Value.id, CType(result.Value.payload, Dictionary(Of String, Object)))
-                    Return socket.connected.Futurize
-                End Function)
+            FutureIterateExcept(AddressOf socket.FutureReadPacket,
+                Sub(packet)
+                                                                       RaiseEvent ReceivedPacket(Me, packet)
+                                                                   End Sub)
         End Sub
 
-        Private Sub socket_Disconnected(ByVal sender As Warcraft3.W3Socket, ByVal reason As String) Handles _socket.Disconnected
-            RaiseEvent Disconnected(Me, reason)
+        Private Sub socket_Disconnected(ByVal sender As Warcraft3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
+            RaiseEvent Disconnected(Me, expected, reason)
         End Sub
     End Class
 End Namespace

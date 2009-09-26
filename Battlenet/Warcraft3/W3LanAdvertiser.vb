@@ -61,10 +61,10 @@ Public NotInheritable Class W3LanAdvertiser
             parent.AddGame(game)
             RaiseEvent AddedGame(Me, game, server)
             If server IsNot Nothing Then
-                server.QueueOpenPort(parent.serverListenPort).CallWhenValueReady(
-                    Sub(listened)
-                        If Not listened.succeeded Then
-                            RemoveGame(game, listened.Message)
+                server.QueueOpenPort(parent.serverListenPort).CallWhenReady(
+                    Sub(listenException)
+                        If listenException IsNot Nothing Then
+                            RemoveGame(game, reason:=listenException.Message)
                         End If
                     End Sub
                 )

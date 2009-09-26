@@ -8,7 +8,7 @@
     End Function
 
     Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of IBotWidget).QueueGetCaption
-        Return ref.QueueFunc(Function() If(widget Is Nothing, "[No Widget]", "{0} {1}".frmt(widget.TypeName, widget.Name)))
+        Return ref.QueueFunc(Function() If(widget Is Nothing, "[No Widget]", "{0} {1}".Frmt(widget.TypeName, widget.Name)))
     End Function
 
     Public Function QueueHook(ByVal widget As IBotWidget) As IFuture Implements IHookable(Of IBotWidget).QueueHook

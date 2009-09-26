@@ -61,18 +61,18 @@
                     Return
                 End If
 
-                game.DownloadScheduler.AddClient(index, hasMap)
-                game.DownloadScheduler.SetLink(index, W3Game.SELF_DOWNLOAD_ID, True)
+                game.DownloadScheduler.AddClient(index, hasMap).MarkAnyExceptionAsHandled()
+                game.DownloadScheduler.SetLink(index, W3Game.SELF_DOWNLOAD_ID, True).MarkAnyExceptionAsHandled()
                 knowMapState = True
             ElseIf mapDownloadPosition = game.map.FileSize Then
                 logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
-                game.DownloadScheduler.StopTransfer(index, True)
+                game.DownloadScheduler.StopTransfer(index, True).MarkAnyExceptionAsHandled()
             Else
                 Dim d = CDbl(mapDownloadPosition)
                 Contract.Assume(d >= 0)
                 Contract.Assume(Not Double.IsNaN(d))
                 Contract.Assume(Not Double.IsInfinity(d))
-                game.DownloadScheduler.UpdateProgress(index, d)
+                game.DownloadScheduler.UpdateProgress(index, d).MarkAnyExceptionAsHandled()
                 If IsGettingMapFromBot Then
                     BufferMap()
                 End If
@@ -112,8 +112,8 @@
         End Sub
 
         Private Sub BufferMap()
-            Dim f_index = game.QueueGetFakeHostPlayer.EvalWhenValueReady(Function(player) If(player Is Nothing, CByte(0), player.index))
-            f_index.CallWhenValueReady(Sub(senderIndex) ref.QueueAction(
+            Dim f_index = game.QueueGetFakeHostPlayer.Select(Function(player) If(player Is Nothing, CByte(0), player.index))
+            f_index.CallOnValueSuccess(Sub(senderIndex) ref.QueueAction(
                 Sub()
                     While mapUploadPosition < Math.Min(game.map.FileSize, mapDownloadPosition + MAX_BUFFERED_MAP_SIZE)
                         Dim out_DataSize = 0
@@ -121,9 +121,11 @@
                         Contract.Assume(senderIndex <= 12)
                         Dim pk = W3Packet.MakeMapFileData(game.map, index, mapUploadPosition, out_DataSize, senderIndex)
                         mapUploadPosition += out_DataSize
-                        If Not SendPacket(pk).succeeded Then
+                        Try
+                            SendPacket(pk)
+                        Catch e As Exception '[check this more thoroughly]
                             Exit While
-                        End If
+                        End Try
                     End While
                 End Sub
             ))

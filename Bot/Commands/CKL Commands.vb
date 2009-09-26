@@ -22,8 +22,13 @@ Namespace Commands.Specializations
                            "[--AddKey Name RocKey TftKey] Adds a key for lending.",
                            "", "", True)
             End Sub
-            Public Overrides Function Process(ByVal target As CklServer, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.AddKey(arguments(0), arguments(1), arguments(2))
+            Public Overrides Function Process(ByVal target As CklServer,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Dim name = arguments(0)
+                Dim rocKey = arguments(1)
+                Dim tftKey = arguments(2)
+                Return target.AddKey(name, rocKey, tftKey).EvalOnSuccess(Function() "Key '{0}' added.".Frmt(name))
             End Function
         End Class
 
@@ -35,8 +40,11 @@ Namespace Commands.Specializations
                            1, ArgumentLimits.exact,
                            "[--RemoveKey Name] Removes a game being advertised.")
             End Sub
-            Public Overrides Function Process(ByVal target As CklServer, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of Outcome)
-                Return target.RemoveKey(arguments(0))
+            Public Overrides Function Process(ByVal target As CklServer,
+                                              ByVal user As BotUser,
+                                              ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Dim name = arguments(0)
+                Return target.RemoveKey(name).EvalOnSuccess(Function() "Key '{0}' added.".Frmt(name))
             End Function
         End Class
     End Class

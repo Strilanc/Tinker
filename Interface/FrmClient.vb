@@ -27,17 +27,19 @@ Public Class FrmClient
             Dim pluginNames = (From x In My.Settings.initial_plugins.Split(";"c) Where x <> "").ToList
             Dim futureLoadedPlugins = (From x In pluginNames Select bot.QueueLoadPlugin(x)).ToList
             Dim t = New ManualResetEvent(False)
-            FutureCompress(futureLoadedPlugins).CallWhenReady(Sub() t.Set())
+            futureLoadedPlugins.Defuturized().CallWhenReady(Sub(loadException) t.Set())
             t.WaitOne()
-            Dim pluginLoadOutcomes = (From x In futureLoadedPlugins Select x.Value()).ToList
+            Dim pluginLoadOutcomes = (From x In futureLoadedPlugins
+                                      Select plugin = x.TryGetValue,
+                                             Exception = x.TryGetException).ToList
             For i = 0 To pluginNames.Count - 1
-                Dim plugin = pluginNames(i)
-                Dim loaded = pluginLoadOutcomes(i)
+                Dim pluginName = pluginNames(i)
+                Dim pluginOutcome = pluginLoadOutcomes(i)
 
-                If loaded.succeeded Then
-                    bot.logger.Log("Loaded plugin '" + plugin + "'.", LogMessageType.Positive)
+                If pluginOutcome.Exception Is Nothing Then
+                    bot.logger.Log("Loaded plugin '{0}'.".Frmt(pluginName), LogMessageType.Positive)
                 Else
-                    bot.logger.Log("Failed to load plugin '" + plugin + "': " + loaded.Message, LogMessageType.Problem)
+                    bot.logger.Log("Failed to load plugin '{0}': {1}".Frmt(pluginName, pluginOutcome.Exception), LogMessageType.Problem)
                 End If
             Next i
 

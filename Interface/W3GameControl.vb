@@ -49,13 +49,14 @@ Public Class W3GameControl
     End Sub
 
     Private Sub CatchGameUpdated(ByVal sender As IW3Game, ByVal slots As List(Of W3Slot)) Handles game.Updated
-        ref.QueueAction(
+        Dim descriptions = (From slot In slots Select slot.GenerateDescription).ToList
+        descriptions.Defuturized.QueueCallWhenReady(ref,
             Sub()
-                If sender IsNot game Then  Return
-                For i = 0 To slots.Count - 1
-                    lstSlots.Items(i) = slots(i).toString()
-                Next i
-            End Sub
+                                                             If sender IsNot game Then  Return
+                                                             For i = 0 To descriptions.Count - 1
+                                                                 lstSlots.Items(i) = descriptions(i).Value
+                                                             Next i
+                                                         End Sub
          )
     End Sub
 End Class

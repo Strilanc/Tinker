@@ -77,12 +77,12 @@
             slot.locked = locked
             Return slot
         End Function
-        Public Overrides Function toString() As String
+        Public Function GenerateDescription() As IFuture(Of String)
             Dim s = ""
             If team = OBS_TEAM Then
                 s = "Observer"
             Else
-                s = "Team {0}, {1}, {2}".frmt(team + 1, race, color)
+                s = "Team {0}, {1}, {2}".Frmt(team + 1, race, color)
             End If
             Select Case locked
                 Case W3Slot.Lock.frozen
@@ -90,7 +90,7 @@
                 Case W3Slot.Lock.sticky
                     s = "(STICKY) " + s
             End Select
-            Return Padded(s, 30) + contents.ToString()
+            Return contents.GenerateDescription.Select(Function(desc) Padded(s, 30) + desc)
         End Function
     End Class
 
@@ -189,7 +189,7 @@
 #End Region
 
 #Region "Misc Methods"
-        Public MustOverride Overrides Function ToString() As String
+        Public MustOverride Function GenerateDescription() As IFuture(Of String)
         Public Overridable Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Contract.Requires(parent IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3SlotContents)() IsNot Nothing)
@@ -213,8 +213,8 @@
         Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
             Return WantPlayerPriority.Accept
         End Function
-        Public Overrides Function ToString() As String
-            Return "Open"
+        Public Overrides Function GenerateDescription() As IFuture(Of String)
+            Return "Open".Futurized
         End Function
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsOpen(parent)
@@ -230,8 +230,8 @@
         Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
             Return WantPlayerPriority.Reluctant
         End Function
-        Public Overrides Function ToString() As String
-            Return "Closed"
+        Public Overrides Function GenerateDescription() As IFuture(Of String)
+            Return "Closed".Futurized
         End Function
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsClosed(parent)
@@ -251,8 +251,8 @@
             Contract.Requires(parent IsNot Nothing)
             Me.level = level
         End Sub
-        Public Overrides Function ToString() As String
-            Return "Computer ({0})".frmt(DataComputerLevel)
+        Public Overrides Function GenerateDescription() As IFuture(Of String)
+            Return "Computer ({0})".Frmt(DataComputerLevel).Futurized
         End Function
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsComputer(parent, DataComputerLevel)
@@ -286,8 +286,8 @@
         Public Overrides Function EnumPlayers() As IEnumerable(Of W3Player)
             Return New W3Player() {player}
         End Function
-        Public Overrides Function ToString() As String
-            Return If(player.IsFake, "(Fake)" + player.name, player.Description)
+        Public Overrides Function GenerateDescription() As IFuture(Of String)
+            Return If(player.isFake, "(Fake){0}".Frmt(player.name).Futurized, player.Description)
         End Function
         Public Overrides ReadOnly Property PlayerIndex() As Byte
             Get
@@ -295,7 +295,7 @@
             End Get
         End Property
         Public Overrides Function WantPlayer(ByVal name As String) As W3SlotContents.WantPlayerPriority
-            If player IsNot Nothing AndAlso name IsNot Nothing AndAlso player.IsFake AndAlso player.name.ToLower = name.ToLower Then
+            If player IsNot Nothing AndAlso name IsNot Nothing AndAlso player.isFake AndAlso player.name.ToLower = name.ToLower Then
                 Return WantPlayerPriority.AcceptReservation
             Else
                 Return WantPlayerPriority.Reject
@@ -309,7 +309,7 @@
         End Function
         Public Overrides Function RemovePlayer(ByVal player As W3Player) As W3SlotContents
             If Me.player Is player Then
-                Return New W3SlotContentsOpen(parent)
+                Return New W3SlotContentsOpen(Parent)
             Else
                 Throw New InvalidOperationException()
             End If
@@ -346,8 +346,8 @@
             Contract.Requires(coveredSlot IsNot Nothing)
             Me.coveredSlot = coveredSlot
         End Sub
-        Public Overrides Function ToString() As String
-            Return "[Covering {0}] {1}".frmt(coveredSlot.color, MyBase.ToString)
+        Public Overrides Function GenerateDescription() As IFuture(Of String)
+            Return MyBase.GenerateDescription.Select(Function(desc) "[Covering {0}] {1}".Frmt(coveredSlot.color, desc))
         End Function
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsCovering(parent, coveredSlot, player)
@@ -380,19 +380,19 @@
             Me.players = players.ToList
             Me._playerIndex = playerIndex
         End Sub
-        Public Overrides Function ToString() As String
-            Return "[Covered by {0}] Players: {1}".frmt(coveringSlot.color, String.Join(", ", (From player In players Select player.name).ToArray()))
+        Public Overrides Function GenerateDescription() As IFuture(Of String)
+            Return "[Covered by {0}] Players: {1}".Frmt(coveringSlot.color, (From player In players Select player.name).StringJoin(", ")).Futurized
         End Function
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, players)
         End Function
         Public Overrides Function RemovePlayer(ByVal player As W3Player) As W3SlotContents
             If Not players.Contains(player) Then Throw New InvalidOperationException()
-            Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, (From p In players Where p IsNot player))
+            Return New W3SlotContentsCovered(Parent, coveringSlot, _playerIndex, (From p In players Where p IsNot player))
         End Function
         Public Overrides Function TakePlayer(ByVal player As W3Player) As W3SlotContents
             If players.Contains(player) Then Throw New InvalidOperationException()
-            Return New W3SlotContentsCovered(parent, coveringSlot, _playerIndex, players.Concat(New W3Player() {player}))
+            Return New W3SlotContentsCovered(Parent, coveringSlot, _playerIndex, players.Concat(New W3Player() {player}))
         End Function
         Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As W3Player) As Byte
             Get

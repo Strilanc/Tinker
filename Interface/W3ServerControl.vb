@@ -33,39 +33,39 @@ Public Class W3ServerControl
                 If server Is Nothing Then
                     logServer.SetLogger(Nothing, Nothing)
                 Else
-                    logServer.SetLogger(server.Logger, "Server")
-                    server.QueueGetGames().CallWhenValueReady(Sub(games) ref.QueueAction(
-                        Sub()
-                            If server IsNot Me.server Then  Return
-                            For Each game In games
-                                If Me.games.Contains(game) Then  Continue For
-                                Me.games.Add(game)
-                            Next game
-                        End Sub
-                    ))
+                    logServer.SetLogger(server.logger, "Server")
+                    server.QueueGetGames().CallOnValueSuccess(Sub(games) ref.QueueAction(
+    Sub()
+        If server IsNot Me.server Then  Return
+        For Each game In games
+            If Me.games.Contains(game) Then  Continue For
+            Me.games.Add(game)
+        Next game
+    End Sub
+))
                     Dim map = server.settings.map
 
                     Dim info = "Map Name\n{0}\n\n" +
-                               "Relative Path\n{1}\n\n" +
-                               "Map Type\n{2}\n\n" +
-                               "Player Count\n{3}\n\n" +
-                               "Force Count\n{4}\n\n" +
-                               "Playable Size\n{5} x {6}\n\n" +
-                               "File Size\n{7:###,###,###,###} bytes\n\n" +
-                               "File Checksum (crc32)\n{8}\n\n" +
-                               "Map Checksum (xoro)\n{9}\n\n" +
-                               "Map Checksum (sha1)\n{10}\n"
+           "Relative Path\n{1}\n\n" +
+           "Map Type\n{2}\n\n" +
+           "Player Count\n{3}\n\n" +
+           "Force Count\n{4}\n\n" +
+           "Playable Size\n{5} x {6}\n\n" +
+           "File Size\n{7:###,###,###,###} bytes\n\n" +
+           "File Checksum (crc32)\n{8}\n\n" +
+           "Map Checksum (xoro)\n{9}\n\n" +
+           "Map Checksum (sha1)\n{10}\n"
                     info = info.Replace("\n", Environment.NewLine)
-                    info = info.frmt(map.name,
-                                     map.RelativePath,
-                                     If(map.isMelee, "Melee", "Custom"),
-                                     map.NumPlayerSlots,
-                                     map.numForces,
-                                     map.playableWidth, map.playableHeight,
-                                     map.FileSize,
-                                     map.Crc32.ToHexString,
-                                     map.ChecksumXoro.ToHexString,
-                                     map.ChecksumSha1.ToHexString)
+                    info = info.Frmt(map.name,
+                 map.RelativePath,
+                 If(map.isMelee, "Melee", "Custom"),
+                 map.NumPlayerSlots,
+                 map.numForces,
+                 map.playableWidth, map.playableHeight,
+                 map.FileSize,
+                 map.Crc32.ToHexString,
+                 map.ChecksumXoro.ToHexString,
+                 map.ChecksumSha1.ToHexString)
                     txtInfo.Text = info
                 End If
             End Sub

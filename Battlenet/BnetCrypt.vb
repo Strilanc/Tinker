@@ -299,7 +299,7 @@ Namespace Bnet.Crypt
             For Each filename In {"War3.exe", "Storm.dll", "Game.dll"}
                 'Open file
                 Dim f = New IO.FileStream(folder + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
-                Dim n = ModCeiling(CInt(f.Length), 1024)
+                Dim n = CInt(f.Length).ModCeiling(1024)
                 Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({f, tail_stream})))
 
                 'Apply operations using each dword in stream

@@ -12,7 +12,7 @@
         Public ReadOnly listenPort As UShort
         Public ReadOnly peerKey As UInteger
         Public ReadOnly isFake As Boolean
-        Private ReadOnly testCanHost As IFuture(Of Boolean)
+        Private ReadOnly testCanHost As IFuture
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
         Public ReadOnly logger As Logger
@@ -64,7 +64,9 @@
             Me.name = name
             isFake = True
             LobbyStart()
-            Me.testCanHost = False.Futurize()
+            Dim hostFail = New FutureAction
+            hostFail.SetFailed(New ArgumentException("Fake players can't host."))
+            Me.testCanHost = hostFail
 
             Contract.Assume(Not Double.IsNaN(latency))
             Contract.Assume(Not Double.IsInfinity(latency))
@@ -103,52 +105,46 @@
             handlers(W3PacketId.MapFileDataProblem) = AddressOf IgnorePacket
 
             LobbyStart()
-            FutureIterate(AddressOf socket.FutureReadPacket, Function(result) ref.QueueFunc(
-                Function()
-                    If result.Exception IsNot Nothing Then
-                        Me.Disconnect(expected:=False,
-                                      leaveType:=W3PlayerLeaveTypes.Disconnect,
-                                      reason:="Error receiving packet from {0}: {1}".Frmt(name, result.Exception))
-                        Return False
-                    End If
-
+            Dim readLoop = FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packet) ref.QueueAction(
+                Sub()
                     Try
-                        If handlers(result.Value.id) Is Nothing Then
-                            Dim msg = "Ignored a packet of type {0} from {1} because there is no parser for that packet type.".Frmt(result.Value.id, name)
+                        If handlers(packet.id) Is Nothing Then
+                            Dim msg = "Ignored a packet of type {0} from {1} because there is no parser for that packet type.".Frmt(packet.id, name)
                             logger.Log(msg, LogMessageType.Negative)
                         Else
-                            Call handlers(result.Value.id)(result.Value)
+                            Call handlers(packet.id)(packet)
                         End If
                     Catch e As Exception
-                        Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".Frmt(result.Value.id, name, e)
+                        Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".Frmt(packet.id, name, e)
                         logger.Log(msg, LogMessageType.Problem)
                         LogUnexpectedException(msg, e)
                     End Try
-
-                    Return socket.connected
-                End Function
+                End Sub
             ))
+            readLoop.CallWhenReady(Sub(exception) ref.QueueAction(
+                Sub()
+                    Me.Disconnect(expected:=False,
+                                  leaveType:=W3PlayerLeaveTypes.Disconnect,
+                                  reason:="Error receiving packet from {0}: {1}".Frmt(name, exception.Message))
+                End Sub))
 
 
             'Test hosting
-            If isFake Then
-                Me.testCanHost = False.Futurize
-            Else
-                Me.testCanHost = FutureConnectTo(socket.RemoteEndPoint.Address, listenPort).EvalWhenValueReady(Function(result) result.Value IsNot Nothing)
-            End If
+            Me.testCanHost = FutureCreateConnectedTcpClient(socket.RemoteEndPoint.Address, listenPort)
+            Me.testCanHost.MarkAnyExceptionAsHandled()
             Contract.Assume(Not Double.IsNaN(latency))
             Contract.Assume(Not Double.IsInfinity(latency))
         End Sub
 
         Public ReadOnly Property CanHost() As HostTestResults
             Get
-                If testCanHost.State <> FutureState.Ready Then
-                    Return HostTestResults.Test
-                ElseIf testCanHost.Value Then
-                    Return HostTestResults.Pass
-                Else
-                    Return HostTestResults.Fail
-                End If
+                Dim state = testCanHost.State
+                Select Case state
+                    Case FutureState.Failed : Return HostTestResults.Fail
+                    Case FutureState.Succeeded : Return HostTestResults.Pass
+                    Case FutureState.Unknown : Return HostTestResults.Test
+                    Case Else : Throw state.MakeImpossibleValueException()
+                End Select
             End Get
         End Property
 
@@ -158,7 +154,7 @@
                                ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
             If Not Me.isFake Then
-                socket.disconnect(reason)
+                socket.Disconnect(expected, reason)
             End If
             'this queueing is just to get the verifier to stop whining about passing 'me' out breaking invariants
             Dim reason_ = reason
@@ -173,23 +169,22 @@
             If Me.isFake Then Return
             pingQueue.Enqueue(record)
             If pingQueue.Count > 20 Then
-                logger.log(name + " has not responded to pings for a significant amount of time.", LogMessageType.Problem)
+                logger.Log(name + " has not responded to pings for a significant amount of time.", LogMessageType.Problem)
                 Disconnect(True, W3PlayerLeaveTypes.Disconnect, "No response to pings.")
             End If
             SendPacket(W3Packet.MakePing(record.salt))
         End Sub
 
-        Private Function SendPacket(ByVal pk As W3Packet) As Outcome
+        Private Sub SendPacket(ByVal pk As W3Packet)
             Contract.Requires(pk IsNot Nothing)
-            If Me.isFake Then Return success("Fake player doesn't need to have packets sent.")
-            Return socket.SendPacket(pk)
-        End Function
+            If Me.isFake Then Return
+            socket.SendPacket(pk)
+        End Sub
 
-        Private Sub CatchSocketDisconnected(ByVal sender As W3Socket, ByVal reason As String)
-            Dim reason_ = reason
+        Private Sub CatchSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
             ref.QueueAction(Sub()
-                                Contract.Assume(reason_ IsNot Nothing)
-                                Disconnect(False, W3PlayerLeaveTypes.Disconnect, reason_)
+                                Contract.Assume(reason IsNot Nothing)
+                                Disconnect(expected, W3PlayerLeaveTypes.Disconnect, reason)
                             End Sub)
         End Sub
 
@@ -206,6 +201,19 @@
                 Return latency
             End Get
         End Property
+        Public ReadOnly Property GetLatencyDescription As IFuture(Of String)
+            Get
+                Return Me.game.DownloadScheduler.GetClientState(Me.index).QueueEvalOnValueSuccess(ref,
+                    Function(downloadState)
+                        Select Case downloadState
+                            Case ClientTransferState.Downloading : Return "(dl)"
+                            Case ClientTransferState.Uploading : Return "(ul)"
+                            Case ClientTransferState.Idle : Return If(latency = 0, "?", "{0:0}ms".Frmt(latency))
+                            Case Else : Throw downloadState.MakeImpossibleValueException()
+                        End Select
+                    End Function)
+            End Get
+        End Property
         Public ReadOnly Property GetNumPeerConnections() As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
@@ -216,19 +224,18 @@
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leave_type As W3PlayerLeaveTypes, ByVal reason As String) As IFuture
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Dim reason_ = reason
             Return ref.QueueAction(Sub()
-                                       Contract.Assume(reason_ IsNot Nothing)
-                                       Disconnect(expected, leave_type, reason_)
+                                       Contract.Assume(reason IsNot Nothing)
+                                       Disconnect(expected, leave_type, reason)
                                    End Sub)
         End Function
-        Public Function QueueSendPacket(ByVal pk As W3Packet) As IFuture(Of Outcome)
+        Public Function QueueSendPacket(ByVal pk As W3Packet) As IFuture
             Contract.Requires(pk IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Outcome))() IsNot Nothing)
-            Return ref.QueueFunc(Function()
-                                     Contract.Assume(pk IsNot Nothing)
-                                     Return SendPacket(pk)
-                                 End Function)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return ref.QueueAction(Sub()
+                                       Contract.Assume(pk IsNot Nothing)
+                                       SendPacket(pk)
+                                   End Sub)
         End Function
         Public Function QueuePing(ByVal record As W3PlayerPingRecord) As IFuture
             Contract.Requires(record IsNot Nothing)

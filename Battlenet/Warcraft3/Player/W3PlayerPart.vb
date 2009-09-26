@@ -14,7 +14,7 @@ Namespace Warcraft3
         Private Sub ReceivePong(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
-            Dim lambda = 0.5
+            Dim lambda = 0.9
             Dim tick As ModInt32 = Environment.TickCount
             Dim salt = CUInt(vals("salt"))
 
@@ -33,6 +33,7 @@ Namespace Warcraft3
 
             latency *= 1 - lambda
             latency += lambda * CUInt(tick - stored.time)
+            If latency = 0 Then latency = Double.Epsilon
             Contract.Assume(latency >= 0)
             Contract.Assume(Not Double.IsNaN(latency))
             Contract.Assume(Not Double.IsInfinity(latency))
@@ -57,29 +58,29 @@ Namespace Warcraft3
             End Get
         End Property
 
-        Public Overridable Function Description() As String
+        Public Overridable Function Description() As IFuture(Of String)
             Dim base = name.Padded(20) +
                        "Host={0}".Frmt(CanHost()).Padded(12) +
                        "{0}c".Frmt(numPeerConnections).Padded(5) +
-                       "RTT={0:0}ms".Frmt(latency).Padded(12)
+                       If(latency = 0, "RTT=?", "RTT={0:0}ms".Frmt(latency)).Padded(12)
             Select Case state
                 Case W3PlayerStates.Lobby
                     Dim dl = GetPercentDl().ToString
                     Select Case dl
-                        Case "255"
-                            dl = "?"
-                        Case "254"
-                            dl = "fake"
-                        Case Else
-                            dl += "%"
+                        Case "255" : dl = "?"
+                        Case "254" : dl = "fake"
+                        Case Else : dl += "%"
                     End Select
-                    Return base +
-                           Padded("DL={0}".Frmt(dl), 9) +
-                           "EB={0}".Frmt(game.DownloadScheduler.GenerateRateDescription(index))
+                    Return game.DownloadScheduler.GenerateRateDescription(index).Select(
+                        Function(rateDescription)
+                            Return base +
+                                   Padded("DL={0}".Frmt(dl), 9) +
+                                   "EB={0}".Frmt(rateDescription)
+                        End Function)
                 Case W3PlayerStates.Loading
-                    Return base + "Ready={0}".Frmt(ready)
+                    Return (base + "Ready={0}".Frmt(ready)).Futurized
                 Case W3PlayerStates.Playing
-                    Return base + "DT={0}gms".Frmt(game.GameTime - Me.totalTockTime)
+                    Return (base + "DT={0}gms".Frmt(game.GameTime - Me.totalTockTime)).Futurized
                 Case Else
                     Throw New UnreachableException
             End Select

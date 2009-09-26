@@ -140,36 +140,33 @@ Public NotInheritable Class MainBot
     Private Function CreateServer(ByVal name As String,
                                   ByVal serverSettings As ServerSettings,
                                   Optional ByVal suffix As String = "",
-                                  Optional ByVal avoidNameCollision As Boolean = False) As Outcome(Of W3Server)
-        Try
-            If name.Trim = "" Then
-                Return failure("Invalid server name.")
-            ElseIf HaveServer(name) Then
-                If Not avoidNameCollision Then
-                    Return Failure(FindServer(name), "Server with name '{0}' already exists.".Frmt(name))
-                End If
-                Dim i = 2
-                While HaveServer(name + i.ToString())
-                    i += 1
-                End While
-                name += i.ToString()
+                                  Optional ByVal avoidNameCollision As Boolean = False) As W3Server
+        Contract.Ensures(Contract.Result(Of W3Server)() IsNot Nothing)
+        If name.Trim = "" Then
+            Throw New ArgumentException("Invalid server name.")
+        ElseIf HaveServer(name) Then
+            If Not avoidNameCollision Then
+                Throw New InvalidOperationException("Server with name '{0}' already exists.".Frmt(name))
             End If
+            Dim i = 2
+            While HaveServer(name + i.ToString())
+                i += 1
+            End While
+            name += i.ToString()
+        End If
 
-            Dim server As W3Server = New W3Server(name, Me, serverSettings, suffix)
-            AddHandler server.PlayerTalked, AddressOf CatchServerPlayerTalked
-            AddHandler server.ChangedState, AddressOf CatchServerStateChanged
-            servers.Add(server)
-            ThrowAddedServer(server)
+        Dim server As W3Server = New W3Server(name, Me, serverSettings, suffix)
+        AddHandler server.PlayerTalked, AddressOf CatchServerPlayerTalked
+        AddHandler server.ChangedState, AddressOf CatchServerStateChanged
+        servers.Add(server)
+        ThrowAddedServer(server)
 
-            Return Success(server, "Created server with name '{0}'. Admin password is {1}.".Frmt(name, server.settings.adminPassword))
-        Catch e As Exception
-            Return Failure("Failed to create server: " + e.ToString)
-        End Try
+        Return server
     End Function
-    Private Function KillServer(ByVal name As String) As Outcome
+    Private Sub KillServer(ByVal name As String)
         Dim server = FindServer(name)
         If server Is Nothing Then
-            Return Failure("No server with name {0}.".Frmt(name))
+            Throw New InvalidOperationException("No server with name {0}.".Frmt(name))
         End If
 
         RemoveHandler server.PlayerTalked, AddressOf CatchServerPlayerTalked
@@ -177,33 +174,32 @@ Public NotInheritable Class MainBot
         servers.Remove(server)
         server.QueueKill()
         ThrowRemovedServer(server)
-        Return Success("Removed server with name {0}.".Frmt(name))
-    End Function
+    End Sub
 
-    Private Function AddWidget(ByVal widget As IBotWidget) As Outcome
+    Private Sub AddWidget(ByVal widget As IBotWidget)
         If FindWidget(widget.TypeName, widget.Name) IsNot Nothing Then
-            Return Success("{0} with name {1} already exists.".Frmt(widget.TypeName, widget.Name))
+            Throw New InvalidOperationException("A {0} named {1} already exists.".Frmt(widget.TypeName, widget.Name))
         End If
         widgets.Add(widget)
         ThrowAddedWidget(widget)
-        Return Success("Added {0} with name {1}.".Frmt(widget.TypeName, widget.Name))
-    End Function
-    Private Function RemoveWidget(ByVal typeName As String, ByVal name As String) As Outcome
+    End Sub
+    Private Sub RemoveWidget(ByVal typeName As String, ByVal name As String)
         Dim widget = FindWidget(name, typeName)
-        If widget Is Nothing Then Return Failure("No {0} with name {1}.".Frmt(typeName, name))
+        If widget Is Nothing Then Throw New InvalidOperationException("No {0} with name {1}.".Frmt(typeName, name))
         widgets.Remove(widget)
         widget.[Stop]()
         ThrowRemovedWidget(widget)
-        Return Success("Removed {0} with name {1}.".Frmt(typeName, name))
-    End Function
+    End Sub
 
-    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As Outcome(Of BnetClient)
+    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As BnetClient
+        Contract.Ensures(Contract.Result(Of BnetClient)() IsNot Nothing)
+
         If name.Trim = "" Then
-            Return Failure("Invalid client name.")
+            Throw New ArgumentException("Invalid client name.")
         ElseIf HaveClient(name) Then
-            Return Failure(FindClient(name), "Client with name '{0}' already exists.".Frmt(name))
+            Throw New ArgumentException("Client named '{0}' already exists.".Frmt(name))
         ElseIf FindClientProfile(profileName) Is Nothing Then
-            Return Failure("Invalid profile.")
+            Throw New ArgumentException("Invalid profile.")
         End If
 
         Dim client = New BnetClient(Me, FindClientProfile(profileName), name, wardenRef)
@@ -212,21 +208,20 @@ Public NotInheritable Class MainBot
         clients.Add(client)
 
         ThrowAddedClient(client)
-        Return Success(client, "Created client with name '{0}'.".Frmt(name))
+        Return client
     End Function
-    Private Function KillClient(ByVal name As String, ByVal reason As String) As Outcome
+    Private Sub KillClient(ByVal name As String, ByVal expected As Boolean, ByVal reason As String)
         Dim client = FindClient(name)
         If client Is Nothing Then
-            Return Failure("No client with name {0}.".Frmt(name))
+            Throw New InvalidOperationException("No client named {0}.".Frmt(name))
         End If
 
         RemoveHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
         RemoveHandler client.StateChanged, AddressOf CatchClientStateChanged
-        client.QueueDisconnect(reason)
+        client.QueueDisconnect(expected, reason)
         clients.Remove(client)
         ThrowRemovedClient(client)
-        Return Success("Removed client with name {0}.".Frmt(name))
-    End Function
+    End Sub
 
     Private Function HaveClient(ByVal name As String) As Boolean
         Return FindClient(name) IsNot Nothing
@@ -251,35 +246,31 @@ Public NotInheritable Class MainBot
         Return (From x In pluginProfiles Where x.name.ToLower = name.ToLower).FirstOrDefault
     End Function
 
-    Private Function Kill() As Outcome
+    Private Sub Kill()
         'Kill clients
         For Each client In clients.ToList
-            KillClient(client.name, "Bot Killed")
+            KillClient(client.name, expected:=True, reason:="Bot Killed")
         Next client
 
         'Kill servers
         For Each server In servers.ToList
-            KillServer(server.Name)
+            KillServer(server.name)
         Next server
 
         'Kill widgets
         For Each widget In widgets.ToList
             RemoveWidget(widget.TypeName, widget.Name)
         Next widget
-
-        Return success("Killed bot")
-    End Function
+    End Sub
 
     Private ReadOnly loadedPluginNames As New HashSet(Of String)
-    Private Function LoadPlugin(ByVal name As String) As Outcome
-        If loadedPluginNames.Contains(name) Then Return success("Plugin '{0}' is already loaded.".frmt(name))
+    Private Function LoadPlugin(ByVal name As String) As Plugins.IPlugin
+        If loadedPluginNames.Contains(name) Then Throw New InvalidOperationException("Plugin already loaded.")
 
         Dim profile = FindPluginProfile(name)
-        If profile Is Nothing Then Return failure("No plugin matches the name '{0}'.".frmt(name))
+        If profile Is Nothing Then Throw New InvalidOperationException("No plugin matches the name '{0}'.".Frmt(name))
 
-        Dim loaded = pluginManager.LoadPlugin(profile.name, profile.location)
-        If loaded.succeeded Then loadedPluginNames.Add(name)
-        Return loaded
+        Return pluginManager.LoadPlugin(profile.name, profile.location)
     End Function
     Private Sub CatchUnloadedPlugin(ByVal name As String, ByVal plugin As Plugins.IPlugin, ByVal reason As String) Handles pluginManager.UnloadedPlugin
         logger.Log("Plugin '{0}' was unloaded ({1})".Frmt(name, reason), LogMessageType.Negative)
@@ -313,7 +304,7 @@ Public NotInheritable Class MainBot
     Private Function CreateLanAdmin(ByVal name As String,
                                     ByVal password As String,
                                     Optional ByVal remoteHost As String = "localhost",
-                                    Optional ByVal listenPort As UShort = 0) As IFuture(Of Outcome)
+                                    Optional ByVal listenPort As UShort = 0) As IFuture
         Dim map = New W3Map("Maps\",
                             "AdminGame.w3x",
                             filesize:=1,
@@ -337,40 +328,30 @@ Public NotInheritable Class MainBot
                                           instances:=0,
                                           password:=password,
                                           is_admin_game:=True)
-        Dim server_out = CreateServer(name, settings)
-        If Not server_out.succeeded Then
-            Return failure("Failed to create server.").Futurize
-        End If
-        Dim server = server_out.Value
-
+        Dim server = CreateServer(name, settings)
         Dim lan As W3LanAdvertiser
+        lan = New W3LanAdvertiser(Me, name, listenPort, remoteHost)
         Try
-            lan = New W3LanAdvertiser(Me, name, listenPort, remoteHost)
+            AddWidget(lan)
+            lan.AddGame(header)
         Catch e As Exception
-            Return failure("Error creating lan advertiser: {0}".frmt(e.ToString)).Futurize
+            lan.Dispose()
+            Throw
         End Try
-        Dim added = AddWidget(lan)
-        If Not added.succeeded Then
-            Return failure("Failed to create lan advertiser.").Futurize
-        End If
-        lan.AddGame(header)
 
-        Dim f = New Future(Of Outcome)
-        server.QueueOpenPort(listenPort).CallWhenValueReady(
-            Sub(listened)
-                If Not listened.succeeded Then
+        Dim result = server.QueueOpenPort(listenPort)
+        result.CallWhenReady(
+            Sub(exception)
+                If exception IsNot Nothing Then
                     server.QueueKill()
                     lan.Dispose()
-                    f.SetValue(failure("Failed to listen on tcp port."))
-                    Return
+                Else
+                    DisposeLink.CreateOneWayLink(lan, server)
+                    DisposeLink.CreateOneWayLink(server, lan)
                 End If
-
-                DisposeLink.CreateOneWayLink(lan, server)
-                DisposeLink.CreateOneWayLink(server, lan)
-                f.SetValue(success("Created lan Admin Game"))
             End Sub
         )
-        Return f
+        Return result
     End Function
 #End Region
 
@@ -435,19 +416,25 @@ Public NotInheritable Class MainBot
 
         'Process prefixed commands
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
-        Dim commandOutcocme = ClientCommands.ProcessCommand(client, user, breakQuotedWords(commandText))
-        commandOutcocme.CallWhenValueReady(
-            Sub(output) client.QueueSendWhisper(user.name, If(output.succeeded, "", "(Failed) ") + output.Message)
+        Dim commandResult = ClientCommands.ProcessCommand(client, user, breakQuotedWords(commandText))
+        commandResult.CallWhenValueReady(
+            Sub(message, messageException)
+                If messageException IsNot Nothing Then
+                    client.QueueSendWhisper(user.name, "Failed: {0}".Frmt(messageException.Message))
+                ElseIf message IsNot Nothing Then
+                    client.QueueSendWhisper(user.name, message)
+                Else
+                    client.QueueSendWhisper(user.name, "Command Succeeded")
+                End If
+            End Sub
         )
-        If commandOutcocme.State <> FutureState.Ready Then
-            FutureWait(2.Seconds).CallWhenReady(
-                Sub()
-                    If commandOutcocme.State <> FutureState.Ready Then
-                        client.QueueSendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
-                    End If
-                End Sub
+        FutureWait(2.Seconds).CallWhenReady(
+            Sub()
+                If commandResult.State = FutureState.Unknown Then
+                    client.QueueSendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
+                End If
+            End Sub
             )
-        End If
     End Sub
 
     Private Sub CatchServerPlayerTalked(ByVal sender As W3Server,
@@ -469,9 +456,14 @@ Public NotInheritable Class MainBot
         'Process prefixed commands
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
         game.QueueProcessCommand(player, breakQuotedWords(commandText)).CallWhenValueReady(
-            Sub(commandOutcome)
-                Dim msg = If(commandOutcome.succeeded, "", "Failed: ") + commandOutcome.Message
-                game.QueueSendMessageTo(msg, player)
+            Sub(message, messageException)
+                If messageException IsNot Nothing Then
+                    game.QueueSendMessageTo("Failed: {0}".Frmt(messageException.Message), player)
+                ElseIf message IsNot Nothing Then
+                    game.QueueSendMessageTo(message, player)
+                Else
+                    game.QueueSendMessageTo("Command Succeeded", player)
+                End If
             End Sub
         )
     End Sub
@@ -488,37 +480,37 @@ Public NotInheritable Class MainBot
     Public Function QueueFindServer(ByVal name As String) As IFuture(Of W3Server)
         Return ref.QueueFunc(Function() FindServer(name))
     End Function
-    Public Function QueueKill() As IFuture(Of Outcome)
-        Return ref.QueueFunc(AddressOf Kill)
+    Public Function QueueKill() As IFuture
+        Return ref.QueueAction(AddressOf Kill)
     End Function
     Public Function QueueCreateLanAdmin(ByVal name As String,
                                        ByVal password As String,
                                        Optional ByVal remote_host As String = "localhost",
-                                       Optional ByVal listen_port As UShort = 0) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() CreateLanAdmin(name, password, remote_host, listen_port)).Defuturize
+                                       Optional ByVal listen_port As UShort = 0) As IFuture
+        Return ref.QueueFunc(Function() CreateLanAdmin(name, password, remote_host, listen_port)).Defuturized
     End Function
-    Public Function QueueAddWidget(ByVal widget As IBotWidget) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() AddWidget(widget))
+    Public Function QueueAddWidget(ByVal widget As IBotWidget) As IFuture
+        Return ref.QueueAction(Sub() AddWidget(widget))
     End Function
-    Public Function QueueRemoveWidget(ByVal type_name As String, ByVal name As String) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() RemoveWidget(type_name, name))
+    Public Function QueueRemoveWidget(ByVal type_name As String, ByVal name As String) As IFuture
+        Return ref.QueueAction(Sub() RemoveWidget(type_name, name))
     End Function
-    Public Function QueueRemoveServer(ByVal name As String) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() KillServer(name))
+    Public Function QueueRemoveServer(ByVal name As String) As IFuture
+        Return ref.QueueAction(Sub() KillServer(name))
     End Function
     Public Function QueueCreateServer(ByVal name As String,
                                       ByVal defaultSettings As ServerSettings,
                                       Optional ByVal suffix As String = "",
-                                      Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of Outcome(Of W3Server))
+                                      Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of W3Server)
         Return ref.QueueFunc(Function() CreateServer(name, defaultSettings, suffix, avoidNameCollisions))
     End Function
     Public Function QueueFindClient(ByVal name As String) As IFuture(Of BnetClient)
         Return ref.QueueFunc(Function() FindClient(name))
     End Function
-    Public Function QueueRemoveClient(ByVal name As String, ByVal reason As String) As IFuture(Of Outcome)
-        Return ref.QueueFunc(Function() KillClient(name, reason))
+    Public Function QueueRemoveClient(ByVal name As String, ByVal expected As Boolean, ByVal reason As String) As IFuture
+        Return ref.QueueAction(Sub() KillClient(name, expected, reason))
     End Function
-    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of Outcome(Of BnetClient))
+    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of BnetClient)
         Return ref.QueueFunc(Function() CreateClient(name, profileName))
     End Function
     Public Function QueueGetServers() As IFuture(Of List(Of W3Server))
@@ -530,7 +522,7 @@ Public NotInheritable Class MainBot
     Public Function QueueGetWidgets() As IFuture(Of List(Of IBotWidget))
         Return ref.QueueFunc(Function() widgets.ToList)
     End Function
-    Public Function QueueLoadPlugin(ByVal name As String) As IFuture(Of Outcome)
+    Public Function QueueLoadPlugin(ByVal name As String) As IFuture(Of Plugins.IPlugin)
         Return ref.QueueFunc(Function() LoadPlugin(name))
     End Function
 #End Region
@@ -623,7 +615,7 @@ Public Class PortPool
 
         Public ReadOnly Property Port() As UShort
             Get
-                If FutureDisposed.State = FutureState.Ready Then Throw New ObjectDisposedException(Me.GetType.Name)
+                If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
                 Return _port
             End Get
         End Property

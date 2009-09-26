@@ -91,7 +91,7 @@ Namespace CKL
                 RaiseEvent AddStateString("port " + port.ToString(), False)
             Next port
             RaiseEvent AddStateString("----------", False)
-            ref.QueueFunc(Function() keys.ToList()).CallWhenValueReady(
+            ref.QueueFunc(Function() keys.ToList()).CallOnValueSuccess(
                 Sub(keys)
                     For Each key In keys
                         RaiseEvent AddStateString(key.name, False)
