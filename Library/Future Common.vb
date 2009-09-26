@@ -11,19 +11,12 @@ Public Module FutureExtensionsEx
         Dim result = New FutureFunction(Of Integer)
         Try
             this.BeginRead(buffer:=buffer, offset:=offset, count:=count, state:=Nothing,
-                 callback:=Sub(ar)
-                               Try
-                                   result.SetSucceeded(this.EndRead(ar))
-                               Catch e As Exception
-                                   result.SetFailed(e)
-                               End Try
-                           End Sub)
+                 callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar)))
         Catch e As Exception
             result.SetFailed(e)
         End Try
         Return result
     End Function
-
 
     ''' <summary>
     ''' Passes a produced future into a consumer, waits for the consumer to finish, and repeats while the consumer outputs true.

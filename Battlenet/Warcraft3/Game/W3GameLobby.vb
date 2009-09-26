@@ -323,7 +323,8 @@
             Dim pname = My.Settings.ingame_name
             Contract.Assume(pname IsNot Nothing)
             Try
-                Return AddFakePlayer(pname)
+                fakeHostPlayer = AddFakePlayer(pname)
+                Return fakeHostPlayer
             Catch ex As InvalidOperationException
                 Return Nothing
             End Try
@@ -477,7 +478,7 @@
             If slot Is Nothing OrElse slot.contents.PlayerIndex <> p.index Then
                 freeIndexes.Add(p.index)
             End If
-            downloadScheduler.RemoveClient(p.index)
+            downloadScheduler.RemoveClient(p.index).MarkAnyExceptionAsHandled()
             If p IsNot fakeHostPlayer Then TryRestoreFakeHost()
             ChangedLobbyState()
         End Sub

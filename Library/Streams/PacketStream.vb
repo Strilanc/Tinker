@@ -212,48 +212,49 @@ Public Class PacketStreamer
 
         FutureIterate(Function() substream.FutureRead(packetData, readSize, packetData.Length - readSize),
             Function(numBytesRead, readException)
-                                                                                                               'Check result
-                                                                                                               If readException IsNot Nothing Then 'read failed
-                                                                                                                   result.SetFailed(readException)
-                                                                                                                   Return False.Futurized
-                                                                                                               ElseIf numBytesRead <= 0 Then 'substream ended
-                                                                                                                   If readSize = 0 Then
-                                                                                                                       result.SetFailed(New IO.IOException("End of stream."))
-                                                                                                                   Else
-                                                                                                                       result.SetFailed(New IO.IOException("Fragmented packet (stream ended in the middle of a packet)."))
-                                                                                                                   End If
-                                                                                                                   Return False.Futurized
-                                                                                                               End If
+                'Check result
+                If readException IsNot Nothing Then 'read failed
+                    result.SetFailed(readException)
+                    Return False.Futurized
+                ElseIf numBytesRead <= 0 Then 'substream ended
+                    If readSize = 0 Then
+                        result.SetFailed(New IO.IOException("End of stream."))
+                    Else
+                        result.SetFailed(New IO.IOException("Fragmented packet (stream ended in the middle of a packet)."))
+                    End If
+                    Return False.Futurized
+                End If
 
-                                                                                                               'Read until whole header or whole body has arrived
-                                                                                                               readSize += numBytesRead
-                                                                                                               If readSize < packetData.Length Then
-                                                                                                                   Return True.Futurized
-                                                                                                               End If
+                'Read until whole header or whole body has arrived
+                readSize += numBytesRead
+                If readSize < packetData.Length Then
+                    Return True.Futurized
+                End If
 
-                                                                                                               'Parse header
-                                                                                                               If readSize = headerSize Then
-                                                                                                                   totalSize = CInt(packetData.SubArray(numBytesBeforeSize, numSizeBytes).ToUInt32())
-                                                                                                                   If totalSize < headerSize Then
-                                                                                                                       'too small
-                                                                                                                       result.SetFailed(New IO.IOException("Invalid packet size (less than header size)."))
-                                                                                                                       Return False.Futurized
-                                                                                                                   ElseIf totalSize > maxPacketSize Then
-                                                                                                                       'too large
-                                                                                                                       result.SetFailed(New IO.IOException("Packet exceeded maximum size."))
-                                                                                                                       Return False.Futurized
-                                                                                                                   ElseIf totalSize > headerSize Then
-                                                                                                                       'begin reading packet body
-                                                                                                                       ReDim Preserve packetData(0 To totalSize - 1)
-                                                                                                                       Return True.Futurized
-                                                                                                                   End If
-                                                                                                               End If
+                'Parse header
+                If readSize = headerSize Then
+                    totalSize = CInt(packetData.SubArray(numBytesBeforeSize, numSizeBytes).ToUInt32())
+                    If totalSize < headerSize Then
+                        'too small
+                        result.SetFailed(New IO.IOException("Invalid packet size (less than header size)."))
+                        Return False.Futurized
+                    ElseIf totalSize > maxPacketSize Then
+                        'too large
+                        result.SetFailed(New IO.IOException("Packet exceeded maximum size."))
+                        Return False.Futurized
+                    ElseIf totalSize > headerSize Then
+                        'begin reading packet body
+                        ReDim Preserve packetData(0 To totalSize - 1)
+                        Return True.Futurized
+                    End If
+                End If
 
-                                                                                                               'Finished reading
-                                                                                                               result.SetSucceeded(packetData.ToView)
-                                                                                                               Return False.Futurized
-                                                                                                           End Function
+                'Finished reading
+                result.SetSucceeded(packetData.ToView)
+                Return False.Futurized
+            End Function
         )
+
         Return result
     End Function
     Public Function ReadPacket() As ViewableList(Of Byte)

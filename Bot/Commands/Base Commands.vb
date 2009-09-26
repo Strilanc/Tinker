@@ -368,7 +368,7 @@ Namespace Commands
                 logger.FutureLog("[running command '{0}'...]".Frmt(name), ProcessCommand(target, Nothing, words).EvalWhenValueReady(
                     Function(message, commandException)
                         If commandException IsNot Nothing Then
-                            Return "Failed: {0}".Frmt(commandException.Message)
+                            Return "Failed: {0}".Frmt(commandException.ToString)
                         ElseIf message Is Nothing OrElse message = "" Then
                             Return "Command succeeded."
                         Else

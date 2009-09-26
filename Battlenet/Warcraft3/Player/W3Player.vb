@@ -67,6 +67,7 @@
             Dim hostFail = New FutureAction
             hostFail.SetFailed(New ArgumentException("Fake players can't host."))
             Me.testCanHost = hostFail
+            Me.testCanHost.MarkAnyExceptionAsHandled()
 
             Contract.Assume(Not Double.IsNaN(latency))
             Contract.Assume(Not Double.IsInfinity(latency))
@@ -160,7 +161,7 @@
             Dim reason_ = reason
             eref.QueueAction(Sub()
                                  Contract.Assume(reason_ IsNot Nothing)
-                                 game.QueueRemovePlayer(Me, expected, leaveType, reason_)
+                                 game.QueueRemovePlayer(Me, expected, leaveType, reason_).MarkAnyExceptionAsHandled()
                              End Sub)
         End Sub
 

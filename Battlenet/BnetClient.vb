@@ -124,15 +124,13 @@ Namespace Bnet
                        ByVal name As String,
                        ByVal wardenRef As ICallQueue,
                        Optional ByVal logger As Logger = Nothing)
-            'contract bug wrt interface event implementation requires this:
-            'Contract.Requires(parent IsNot Nothing)
-            'Contract.Requires(profile IsNot Nothing)
-            'Contract.Requires(name IsNot Nothing)
-            'Contract.Requires(wardenRef IsNot Nothing)
-            Contract.Assume(parent IsNot Nothing)
-            Contract.Assume(profile IsNot Nothing)
-            Contract.Assume(name IsNot Nothing)
-            Contract.Assume(wardenRef IsNot Nothing)
+            Contract.Requires(parent IsNot Nothing)
+            Contract.Requires(profile IsNot Nothing)
+            Contract.Requires(name IsNot Nothing)
+            Contract.Requires(wardenRef IsNot Nothing)
+            Me.futureConnected.MarkAnyExceptionAsHandled()
+            Me.futureLoggedIn.MarkAnyExceptionAsHandled()
+            Me.futureCreatedGame.MarkAnyExceptionAsHandled()
 
             'Pass values
             Me.wardenRef = wardenRef
@@ -293,6 +291,7 @@ Namespace Bnet
                             'Replace connection future
                             Me.futureConnected.TrySetFailed(New InvalidStateException("Another connection was initiated."))
                             Me.futureConnected = New FutureAction
+                            Me.futureConnected.MarkAnyExceptionAsHandled()
 
                             'Start log-on process
                             tcpClient.GetStream.Write({1}, 0, 1)
@@ -383,8 +382,9 @@ Namespace Bnet
                 Throw New InvalidOperationException("Incorrect state for login.")
             End If
 
-            futureLoggedIn.TrySetFailed(New InvalidStateException("Another login was initiated."))
-            futureLoggedIn = New FutureAction
+            Me.futureLoggedIn.TrySetFailed(New InvalidStateException("Another login was initiated."))
+            Me.futureLoggedIn = New FutureAction
+            Me.futureLoggedIn.MarkAnyExceptionAsHandled()
             Me.username = username
             Me.password = password
             ChangeState(States.Logon)
@@ -453,7 +453,7 @@ Namespace Bnet
         End Sub
 
         Private Sub EnterChannel(ByVal channel As String)
-            futureCreatedGame.TrySetFailed(New InvalidOperationException("Re-entered channel."))
+            futureCreatedGame.TrySetFailed(New InvalidOperationException("Re-entered channel before game was created."))
             SendPacket(BnetPacket.MakeJoinChannel(BnetPacket.JoinChannelType.ForcedJoin, channel))
             ChangeState(States.Channel)
         End Sub
@@ -472,8 +472,9 @@ Namespace Bnet
                     Throw New InvalidOperationException("Already advertising a game.")
                 Case States.Channel
                     advertisedGameSettings = New GameSettings(game)
-                    futureCreatedGame.TrySetFailed(New OperationFailedException("Started advertising another game."))
-                    futureCreatedGame = New FutureAction
+                    Me.futureCreatedGame.TrySetFailed(New OperationFailedException("Started advertising another game."))
+                    Me.futureCreatedGame = New FutureAction
+                    Me.futureCreatedGame.MarkAnyExceptionAsHandled()
                     ChangeState(States.CreatingGame)
                     hostCount += 1
                     Try
@@ -488,16 +489,16 @@ Namespace Bnet
                                          RaiseEvent AddedGame(Me, game, server)
                                      End Sub)
                     If server IsNot Nothing Then
-                        server.QueueAddAvertiser(Me)
+                        server.QueueAddAvertiser(Me).MarkAnyExceptionAsHandled()
                         DisposeLink.CreateOneWayLink(New AdvertisingDisposeNotifier(Me), server.CreateAdvertisingDependency)
-                        server.QueueOpenPort(Me.listenPort).CallWhenReady(Sub(listenException) ref.QueueAction(
-                            Sub()
+                        server.QueueOpenPort(Me.listenPort).QueueCallWhenReady(ref,
+                            Sub(listenException)
                                 If listenException IsNot Nothing Then
                                     futureCreatedGame.TrySetFailed(listenException)
                                     StopAdvertisingGame(reason:=listenException.Message)
                                 End If
                             End Sub
-                        ))
+                        ).MarkAnyExceptionAsHandled()
                     End If
                     '[verifier fails to realize passing 'Me' out won't ruin these variables]
                     Contract.Assume(futureCreatedGame IsNot Nothing)
@@ -551,9 +552,8 @@ Namespace Bnet
                     gameRefreshTimer.Stop()
                     EnterChannel(lastChannel)
                     futureCreatedGame.TrySetFailed(New OperationFailedException("Advertising cancelled."))
-                    Dim reason_ = reason
                     eref.QueueAction(Sub()
-                                         RaiseEvent RemovedGame(Me, advertisedGameSettings.header, reason_)
+                                         RaiseEvent RemovedGame(Me, advertisedGameSettings.header, reason)
                                      End Sub)
 
                 Case Else
@@ -612,19 +612,19 @@ Namespace Bnet
         Private Event DisposedAdvertisingLink(ByVal sender As IGameSource, ByVal partner As IGameSink) Implements IGameSource.DisposedLink
         Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSource.AddedGame
         Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSource.RemovedGame
-        Private Sub _f_AddGame(ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSourceSink.AddGame
+        Private Sub _QueueAddGame(ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSourceSink.AddGame
             ref.QueueAction(Sub()
                                 Contract.Assume(game IsNot Nothing)
                                 BeginAdvertiseGame(game, server)
-                            End Sub)
+                            End Sub).MarkAnyExceptionAsHandled()
         End Sub
-        Private Sub _f_RemoveGame(ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSourceSink.RemoveGame
+        Private Sub _QueueRemoveGame(ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSourceSink.RemoveGame
             ref.QueueAction(Sub()
                                 Contract.Assume(reason IsNot Nothing)
                                 StopAdvertisingGame(reason)
-                            End Sub)
+                            End Sub).MarkAnyExceptionAsHandled()
         End Sub
-        Private Sub _f_SetAdvertisingOptions(ByVal [private] As Boolean) Implements Links.IGameSourceSink.SetAdvertisingOptions
+        Private Sub _QueueSetAdvertisingOptions(ByVal [private] As Boolean) Implements Links.IGameSourceSink.SetAdvertisingOptions
             ref.QueueAction(
                 Sub()
                     If state <> States.Game And state <> States.CreatingGame Then
@@ -643,9 +643,8 @@ Namespace Bnet
         End Sub
         <Pure()>
         Public Sub QueueRemoveAdvertisingPartner(ByVal other As IGameSourceSink)
-            Dim other_ = other
             eref.QueueAction(Sub()
-                                 RaiseEvent DisposedAdvertisingLink(Me, other_)
+                                 RaiseEvent DisposedAdvertisingLink(Me, other)
                              End Sub)
         End Sub
 #End Region

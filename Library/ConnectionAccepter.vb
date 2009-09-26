@@ -11,9 +11,9 @@ Public Class ConnectionAccepter
     '''<summary>Tries to start listening for connections on the given port.</summary>
     Public Sub OpenPort(ByVal port As UShort)
         SyncLock lock
-            'already listening?
+            'already open?
             If TryGetListenerOnPort(port) IsNot Nothing Then
-                Throw New InvalidOperationException("Already listening on port {0}.".Frmt(port))
+                Return
             End If
 
             'listen and accept connections
@@ -22,25 +22,25 @@ Public Class ConnectionAccepter
             listeners.Add(listener)
             FutureIterate(AddressOf listener.FutureAcceptConnection,
                 Function(client, clientException)
-                                                                         SyncLock lock
-                                                                             'succeeded?
-                                                                             If clientException IsNot Nothing Then
-                                                                                 listener.Stop()
-                                                                                 listeners.Remove(listener)
-                                                                                 Return False.Futurized
-                                                                             End If
+                    SyncLock lock
+                        'succeeded?
+                        If clientException IsNot Nothing Then
+                            listener.Stop()
+                            listeners.Remove(listener)
+                            Return False.Futurized
+                        End If
 
-                                                                             'still supposed to be listening?
-                                                                             If Not listeners.Contains(listener) Then
-                                                                                 client.Close()
-                                                                                 Return False.Futurized
-                                                                             End If
-                                                                         End SyncLock
+                        'still supposed to be listening?
+                        If Not listeners.Contains(listener) Then
+                            client.Close()
+                            Return False.Futurized
+                        End If
+                    End SyncLock
 
-                                                                         'report
-                                                                         RaiseEvent AcceptedConnection(Me, client)
-                                                                         Return True.Futurized
-                                                                     End Function
+                    'report
+                    RaiseEvent AcceptedConnection(Me, client)
+                    Return True.Futurized
+                End Function
             )
         End SyncLock
     End Sub
@@ -62,7 +62,7 @@ Public Class ConnectionAccepter
             'already not listening?
             Dim listener = TryGetListenerOnPort(port)
             If listener Is Nothing Then
-                Throw New InvalidOperationException("Wasn't listening on port {0}.".Frmt(port))
+                Return 'already closed
             End If
 
             'stop listening

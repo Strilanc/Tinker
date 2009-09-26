@@ -237,8 +237,10 @@ Public Class LoggerControl
         futureMessage.CallWhenValueReady(
             Sub(message, messageException)
                 SyncLock lock
-                    If messageException IsNot Nothing Then  message = messageException.Message
-                    Dim color = callbackColorMap(If(messageException Is Nothing, LogMessageType.Positive, LogMessageType.Problem))
+                    If messageException IsNot Nothing Then  message = messageException.ToString
+                    Dim color = callbackColorMap(If(messageException Is Nothing AndAlso Not message Like "Failed: *",
+                                                    LogMessageType.Positive,
+                                                    LogMessageType.Problem))
                     LogMessage(New QueuedMessage(message, color, m))
                 End SyncLock
             End Sub

@@ -31,7 +31,7 @@
 
             If state = W3PlayerStates.Lobby Then
                 For Each flag In flags
-                    game.DownloadScheduler.SetLink(Me.index, flag.pid, flag.connected)
+                    game.DownloadScheduler.SetLink(Me.index, flag.pid, flag.connected).MarkAnyExceptionAsHandled()
                 Next flag
             End If
             game.QueueThrowUpdated()

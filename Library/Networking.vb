@@ -64,12 +64,10 @@ Public Module NetworkingCommon
                                          client.EndConnect(ar)
                                          result.SetSucceeded(client)
                                      Catch e As Exception
-                                         client.Close()
                                          result.SetFailed(e)
                                      End Try
                                  End Sub)
         Catch e As Exception
-            client.Close()
             result.SetFailed(e)
         End Try
         Return result
@@ -87,12 +85,10 @@ Public Module NetworkingCommon
                                          client.EndConnect(ar)
                                          result.SetSucceeded(client)
                                      Catch e As Exception
-                                         client.Close()
                                          result.SetFailed(e)
                                      End Try
                                  End Sub)
         Catch e As Exception
-            client.Close()
             result.SetFailed(e)
         End Try
         Return result
@@ -105,13 +101,7 @@ Public Module NetworkingCommon
         Dim result = New FutureFunction(Of TcpClient)
         Try
             listener.BeginAcceptTcpClient(state:=Nothing,
-                callback:=Sub(ar)
-                              Try
-                                  result.SetSucceeded(listener.EndAcceptTcpClient(ar))
-                              Catch e As Exception
-                                  result.SetFailed(e)
-                              End Try
-                          End Sub)
+                callback:=Sub(ar) result.SetByEvaluating(Function() listener.EndAcceptTcpClient(ar)))
         Catch e As Exception
             result.SetFailed(e)
         End Try
