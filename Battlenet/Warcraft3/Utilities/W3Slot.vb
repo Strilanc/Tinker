@@ -1,7 +1,7 @@
 ﻿Namespace Warcraft3
     Public Class W3Slot
         Public ReadOnly index As Byte
-        Public ReadOnly game As IW3Game
+        Public ReadOnly game As W3Game
         Public color As PlayerColor
         Public team As Byte
         Public handicap As Byte = 100
@@ -45,7 +45,7 @@
         End Enum
 #End Region
 
-        Public Sub New(ByVal game As IW3Game, ByVal index As Byte)
+        Public Sub New(ByVal game As W3Game, ByVal index As Byte)
             Me.game = game
             Me.index = index
             Me.contents = New W3SlotContentsOpen(Me)

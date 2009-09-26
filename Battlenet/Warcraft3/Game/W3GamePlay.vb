@@ -1,6 +1,5 @@
 ﻿Namespace Warcraft3
     Partial Class W3Game
-        Implements IW3Game
         Private Class GameTickDatum
             Private ReadOnly _source As W3Player
             Private ReadOnly _data As Byte()
@@ -33,13 +32,13 @@
         Private laggingPlayers As New List(Of W3Player)
         Private lagStartTime As ModInt32
         Private gameDataQueue As New Queue(Of GameTickDatum)
-        Private gameTime As Integer
+        Private _gameTime As Integer
         Private gameTimeBuffer As Double
-        Private Property settingSpeedFactor As Double Implements IW3Game.SettingGameRate
-        Private Property settingTickPeriod As Double Implements IW3Game.SettingTickPeriod
-        Private Property settingLagLimit As Double Implements IW3Game.SettingLagLimit
+        Public Property settingSpeedFactor As Double
+        Public Property settingTickPeriod As Double
+        Public Property settingLagLimit As Double
 
-        Private Event PlayerSentData(ByVal game As IW3Game, ByVal player As W3Player, ByVal data As Byte()) Implements IW3Game.PlayerSentData
+        Public Event PlayerSentData(ByVal game As W3Game, ByVal player As W3Player, ByVal data As Byte())
 
         Private Sub GamePlayNew()
             Dim gsf As Double = My.Settings.game_speed_factor
@@ -83,11 +82,15 @@
             e_ThrowPlayerSentData(sender, data)
             gameDataQueue.Enqueue(New GameTickDatum(sender, data))
         End Sub
-        Private Sub QueueReceiveGameAction(ByVal player As W3Player, ByVal action As W3GameAction) Implements IW3Game.QueueReceiveGameAction
-            eventRef.QueueAction(Sub()
-                                     RaiseEvent PlayerAction(Me, player, action)
-                                 End Sub)
-        End Sub
+        Public Function QueueReceiveGameAction(ByVal player As W3Player,
+                                               ByVal action As W3GameAction) As ifuture
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(action IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Return eventRef.QueueAction(Sub()
+                                            RaiseEvent PlayerAction(Me, player, action)
+                                        End Sub)
+        End Function
 
         '''<summary>Drops the players currently lagging.</summary>
         Private Sub DropLagger()
@@ -118,8 +121,8 @@
                     tickTimer.Interval = (dgt - gameTimeBuffer).Between(dgt / 2, dgt * 2)
 
                     'Send
-                    SendQueuedGameData(New TickRecord(dgt, gameTime))
-                    gameTime += dgt
+                    SendQueuedGameData(New TickRecord(dgt, _gameTime))
+                    _gameTime += dgt
                 End Sub
             )
         End Sub
@@ -128,7 +131,7 @@
                 For Each p In laggingPlayers.ToList()
                     If Not players.Contains(p) Then
                         laggingPlayers.Remove(p)
-                    ElseIf p.GetTockTime >= gameTime OrElse p.isFake Then
+                    ElseIf p.GetTockTime >= _gameTime OrElse p.isFake Then
                         laggingPlayers.Remove(p)
                         Contract.Assume(p IsNot Nothing)
                         Dim p_ = p
@@ -145,7 +148,7 @@
             Else
                 laggingPlayers = (From p In players
                                    Where Not p.isFake _
-                                   AndAlso p.GetTockTime < gameTime - Me.settingLagLimit).ToList()
+                                   AndAlso p.GetTockTime < _gameTime - Me.settingLagLimit).ToList()
                 If laggingPlayers.Count > 0 Then
                     BroadcastPacket(W3Packet.MakeShowLagScreen(laggingPlayers), Nothing)
                     lagStartTime = lastTickTime
@@ -199,15 +202,21 @@
 #End Region
 
 #Region "Interface"
-        Private ReadOnly Property _game_time() As Integer Implements IW3Game.GameTime
+        Public ReadOnly Property GameTime() As Integer
             Get
-                Return gameTime
+                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                Return _gameTime
             End Get
         End Property
-        Private Function _f_DropLagger() As IFuture Implements IW3Game.QueueDropLagger
+        Public Function QueueDropLagger() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf DropLagger)
         End Function
-        Private Function _f_QueueGameData(ByVal sender As W3Player, ByVal data() As Byte) As IFuture Implements IW3Game.QueueSendGameData
+        Public Function QueueSendGameData(ByVal sender As W3Player,
+                                          ByVal data() As Byte) As IFuture
+            Contract.Requires(sender IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Ifuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(sender IsNot Nothing)
                                        Contract.Assume(data IsNot Nothing)

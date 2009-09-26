@@ -46,7 +46,7 @@
         End Sub
 
         Private Sub FindGameForPlayer(ByVal player As W3ConnectingPlayer)
-            Dim addedPlayerFilter = Function(game As IW3Game)
+            Dim addedPlayerFilter = Function(game As W3Game)
                                         Return game.QueueTryAddPlayer(player).EvalWhenValueReady(
                                             Function(addedPlayer, playerException)
                                                 Return addedPlayer IsNot Nothing

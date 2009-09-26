@@ -450,7 +450,7 @@ Namespace Commands.Specializations
                                 End If
 
                                 'Pass command
-                                Return game.QueueProcessCommand(Nothing, arguments.SubToArray(1))
+                                Return game.QueueCommandProcessText(Nothing, arguments.SubToArray(1))
                             End Function
                         ).Defuturized()
                     End Function

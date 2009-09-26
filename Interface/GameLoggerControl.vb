@@ -1,9 +1,9 @@
 ﻿Imports HostBot.Warcraft3
 
 Public Class GameLoggerControl
-    Private WithEvents game As IW3Game
+    Private WithEvents game As W3Game
     Private actionMode As CallbackMode = CallbackMode.Off
-    Public Sub SetGame(ByVal game As IW3Game)
+    Public Sub SetGame(ByVal game As W3Game)
         SyncLock lock
             If Me.game Is game Then Return
             Me.game = game
@@ -21,7 +21,7 @@ Public Class GameLoggerControl
         End Select
     End Sub
 
-    Private Sub OnPlayerAction(ByVal sender As Warcraft3.IW3Game,
+    Private Sub OnPlayerAction(ByVal sender As Warcraft3.W3Game,
                                ByVal player As Warcraft3.W3Player,
                                ByVal action As W3GameAction) Handles game.PlayerAction
         Dim mode = actionMode

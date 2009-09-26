@@ -29,7 +29,7 @@ Public NotInheritable Class MainBot
     Public ReadOnly ClientCommands As New ClientCommands
     Public ReadOnly ServerCommands As New ServerCommands()
     Public ReadOnly LanCommands As New LanCommands()
-    Public ReadOnly GameCommandsLoadScreen As New Commands.UICommandSet(Of IW3Game)
+    Public ReadOnly GameCommandsLoadScreen As New Commands.UICommandSet(Of W3Game)
     Public ReadOnly GameGuestCommandsLobby As New InstanceGuestSetupCommands
     Public ReadOnly GameGuestCommandsLoadScreen As New InstanceGuestLoadCommands
     Public ReadOnly GameGuestCommandsGamePlay As New InstanceGuestPlayCommands
@@ -438,7 +438,7 @@ Public NotInheritable Class MainBot
     End Sub
 
     Private Sub CatchServerPlayerTalked(ByVal sender As W3Server,
-                                        ByVal game As IW3Game,
+                                        ByVal game As W3Game,
                                         ByVal player As W3Player,
                                         ByVal text As String)
         If text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
@@ -455,7 +455,7 @@ Public NotInheritable Class MainBot
 
         'Process prefixed commands
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
-        game.QueueProcessCommand(player, breakQuotedWords(commandText)).CallWhenValueReady(
+        game.QueueCommandProcessText(player, breakQuotedWords(commandText)).CallWhenValueReady(
             Sub(message, messageException)
                 If messageException IsNot Nothing Then
                     game.QueueSendMessageTo("Failed: {0}".Frmt(messageException.Message), player)

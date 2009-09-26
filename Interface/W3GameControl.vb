@@ -1,19 +1,19 @@
 Imports HostBot.Warcraft3
 
 Public Class W3GameControl
-    Implements IHookable(Of IW3Game)
-    Private WithEvents game As IW3Game
+    Implements IHookable(Of W3Game)
+    Private WithEvents game As W3Game
     Private ReadOnly ref As New InvokedCallQueue(Me)
 
-    Private Function QueueDispose() As IFuture Implements IHookable(Of IW3Game).QueueDispose
+    Private Function QueueDispose() As IFuture Implements IHookable(Of W3Game).QueueDispose
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
 
-    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of Warcraft3.IW3Game).QueueGetCaption
-        Return ref.QueueFunc(Function() If(game Is Nothing, "[No Game]", game.name))
+    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of Warcraft3.W3Game).QueueGetCaption
+        Return ref.QueueFunc(Function() If(game Is Nothing, "[No Game]", game.Name))
     End Function
 
-    Public Function QueueHook(ByVal game As IW3Game) As IFuture Implements IHookable(Of Warcraft3.IW3Game).QueueHook
+    Public Function QueueHook(ByVal game As W3Game) As IFuture Implements IHookable(Of Warcraft3.W3Game).QueueHook
         Return ref.QueueAction(
             Sub()
                 For i = 0 To lstSlots.Items.Count - 1
@@ -48,15 +48,15 @@ Public Class W3GameControl
         txtCommand.Text = ""
     End Sub
 
-    Private Sub CatchGameUpdated(ByVal sender As IW3Game, ByVal slots As List(Of W3Slot)) Handles game.Updated
+    Private Sub CatchGameUpdated(ByVal sender As W3Game, ByVal slots As List(Of W3Slot)) Handles game.Updated
         Dim descriptions = (From slot In slots Select slot.GenerateDescription).ToList
         descriptions.Defuturized.QueueCallWhenReady(ref,
             Sub()
-                                                             If sender IsNot game Then  Return
-                                                             For i = 0 To descriptions.Count - 1
-                                                                 lstSlots.Items(i) = descriptions(i).Value
-                                                             Next i
-                                                         End Sub
+                If sender IsNot game Then  Return
+                For i = 0 To descriptions.Count - 1
+                    lstSlots.Items(i) = descriptions(i).Value
+                Next i
+            End Sub
          )
     End Sub
 End Class

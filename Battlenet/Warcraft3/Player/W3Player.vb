@@ -7,7 +7,7 @@
     Partial Public NotInheritable Class W3Player
         Private state As W3PlayerStates = W3PlayerStates.Lobby
         Public ReadOnly index As Byte
-        Public ReadOnly game As IW3Game
+        Public ReadOnly game As W3Game
         Public ReadOnly name As String
         Public ReadOnly listenPort As UShort
         Public ReadOnly peerKey As UInteger
@@ -47,7 +47,7 @@
 
         '''<summary>Creates a fake player.</summary>
         Public Sub New(ByVal index As Byte,
-                       ByVal game As IW3Game,
+                       ByVal game As W3Game,
                        ByVal name As String,
                        Optional ByVal logger As Logger = Nothing)
             Contract.Requires(index > 0)
@@ -76,7 +76,7 @@
         '''<summary>Creates a real player.</summary>
         '''<remarks>Real players are assigned a game by the lobby.</remarks>
         Public Sub New(ByVal index As Byte,
-                       ByVal game As IW3Game,
+                       ByVal game As W3Game,
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        Optional ByVal logging As Logger = Nothing)
             'Contract.Requires(index > 0)

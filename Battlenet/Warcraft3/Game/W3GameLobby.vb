@@ -1,16 +1,14 @@
 ﻿Namespace Warcraft3
     Partial Public Class W3Game
-        Implements IW3Game
-
         Public Const SELF_DOWNLOAD_ID As Byte = 255
 
-        Private downloadScheduler As TransferScheduler(Of Byte)
+        Private _downloadScheduler As TransferScheduler(Of Byte)
         Private ReadOnly downloadTimer As New Timers.Timer(1000.Milliseconds.TotalSeconds)
         Private ReadOnly freeIndexes As New List(Of Byte)
         Private ReadOnly slotStateUpdateThrottle As New Throttle(250.MilliSeconds)
         Private ReadOnly updateEventThrottle As New Throttle(100.MilliSeconds)
 
-        Private Event PlayerEntered(ByVal sender As IW3Game, ByVal player As W3Player) Implements IW3Game.PlayerEntered
+        Public Event PlayerEntered(ByVal sender As W3Game, ByVal player As W3Player)
 
 #Region "Life"
         Private Sub LobbyNew(ByVal arguments As IEnumerable(Of String))
@@ -22,9 +20,9 @@
             Contract.Assume(Not Double.IsNaN(rate) AndAlso Not Double.IsInfinity(rate))
             Contract.Assume(Not Double.IsNaN(switchTime) AndAlso Not Double.IsInfinity(switchTime))
             Contract.Assume(Not Double.IsNaN(size) AndAlso Not Double.IsInfinity(size))
-            Me.downloadScheduler = New TransferScheduler(Of Byte)(typicalRate:=rate,
-                                                                  typicalSwitchTime:=3000,
-                                                                  filesize:=size)
+            Me._downloadScheduler = New TransferScheduler(Of Byte)(typicalRate:=rate,
+                                                                   typicalSwitchTime:=3000,
+                                                                   filesize:=size)
             AddHandler downloadScheduler.actions, AddressOf OnDownloadSchedulerActions
             AddHandler downloadTimer.Elapsed, Sub() OnScheduleDownloadsTick()
 
@@ -821,36 +819,48 @@
 #End Region
 
 #Region "Interface"
-        Private ReadOnly Property _DownloadScheduler() As TransferScheduler(Of Byte) Implements IW3Game.DownloadScheduler
+        Public ReadOnly Property DownloadScheduler() As TransferScheduler(Of Byte)
             Get
-                Return downloadScheduler
+                Contract.Ensures(Contract.Result(Of TransferScheduler(Of Byte))() IsNot Nothing)
+                Return _downloadScheduler
             End Get
         End Property
 
-        Private Function _QueueUpdatedGameState() As IFuture Implements IW3Game.QueueUpdatedGameState
+        Public Function QueueUpdatedGameState() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf ChangedLobbyState)
         End Function
 
-        Private Function _QueueOpenSlot(ByVal query As String) As IFuture Implements IW3Game.QueueOpenSlot
+        Public Function QueueOpenSlot(ByVal query As String) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        OpenSlot(query)
                                    End Sub)
         End Function
-        Private Function _QueueCloseSlot(ByVal query As String) As IFuture Implements IW3Game.QueueCloseSlot
+        Public Function QueueCloseSlot(ByVal query As String) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        CloseSlot(query)
                                    End Sub)
         End Function
-        Private Function _QueueReserveSlot(ByVal query As String, ByVal username As String) As IFuture Implements IW3Game.QueueReserveSlot
+        Public Function QueueReserveSlot(ByVal query As String, ByVal username As String) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Requires(username IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        Contract.Assume(username IsNot Nothing)
                                        ReserveSlot(query, username)
                                    End Sub)
         End Function
-        Private Function _QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture Implements IW3Game.QueueSwapSlotContents
+        Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture
+            Contract.Requires(query1 IsNot Nothing)
+            Contract.Requires(query2 IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query1 IsNot Nothing)
                                        Contract.Assume(query2 IsNot Nothing)
@@ -858,59 +868,78 @@
                                    End Sub)
         End Function
 
-        Private Function _QueueSetSlotCpu(ByVal query As String, ByVal newCpuLevel As W3Slot.ComputerLevel) As IFuture Implements IW3Game.QueueSetSlotCpu
+        Public Function QueueSetSlotCpu(ByVal query As String, ByVal newCpuLevel As W3Slot.ComputerLevel) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        ComputerizeSlot(query, newCpuLevel)
                                    End Sub)
         End Function
-        Private Function _QueueSetSlotLocked(ByVal query As String, ByVal newLockState As W3Slot.Lock) As IFuture Implements IW3Game.QueueSetSlotLocked
+        Public Function QueueSetSlotLocked(ByVal query As String, ByVal newLockState As W3Slot.Lock) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        SetSlotLocked(query, newLockState)
                                    End Sub)
         End Function
-        Private Function _QueueSetAllSlotsLocked(ByVal newLockState As W3Slot.Lock) As IFuture Implements IW3Game.QueueSetAllSlotsLocked
+        Public Function QueueSetAllSlotsLocked(ByVal newLockState As W3Slot.Lock) As IFuture
             Return ref.QueueAction(Sub() SetAllSlotsLocked(newLockState))
         End Function
-        Private Function _QueueSetSlotHandicap(ByVal query As String, ByVal newHandicap As Byte) As IFuture Implements IW3Game.QueueSetSlotHandicap
+        Public Function QueueSetSlotHandicap(ByVal query As String, ByVal newHandicap As Byte) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        SetSlotHandicap(query, newHandicap)
                                    End Sub)
         End Function
-        Private Function _QueueSetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture Implements IW3Game.QueueSetSlotTeam
+        Public Function QueueSetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        SetSlotTeam(query, new_team)
                                    End Sub)
         End Function
-        Private Function _QueueSetSlotRace(ByVal query As String, ByVal newRace As W3Slot.RaceFlags) As IFuture Implements IW3Game.QueueSetSlotRace
+        Public Function QueueSetSlotRace(ByVal query As String, ByVal newRace As W3Slot.RaceFlags) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        SetSlotRace(query, newRace)
                                    End Sub)
         End Function
-        Private Function _QueueSetSlotColor(ByVal query As String, ByVal newColor As W3Slot.PlayerColor) As IFuture Implements IW3Game.QueueSetSlotColor
+        Public Function QueueSetSlotColor(ByVal query As String, ByVal newColor As W3Slot.PlayerColor) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
                                        SetSlotColor(query, newColor)
                                    End Sub)
         End Function
 
-        Private Function _QueueTryAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of W3Player) Implements IW3Game.QueueTryAddPlayer
+        Public Function QueueTryAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of W3Player)
+            Contract.Requires(newPlayer IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() AddPlayer(newPlayer))
         End Function
-        Private Function _QueuePlayerVoteToStart(ByVal name As String, ByVal val As Boolean) As IFuture Implements IW3Game.QueuePlayerVoteToStart
+        Public Function QueuePlayerVoteToStart(ByVal name As String, ByVal val As Boolean) As IFuture
+            Contract.Requires(name IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(name IsNot Nothing)
                                        PlayerVoteToStart(name, val)
                                    End Sub)
         End Function
-        Private Function _QueueStartCountdown() As IFuture Implements IW3Game.QueueStartCountdown
+        Public Function QueueStartCountdown() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Function() TryStartCountdown())
         End Function
-        Private Function _QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture Implements IW3Game.QueueTrySetTeamSizes
+        Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture
+            Contract.Requires(sizes IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(sizes IsNot Nothing)
                                        TrySetTeamSizes(sizes)

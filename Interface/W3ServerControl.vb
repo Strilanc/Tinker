@@ -4,7 +4,7 @@ Public Class W3ServerControl
     Implements IHookable(Of W3Server)
     Private WithEvents server As W3Server = Nothing
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
-    Private games As TabControlIHookableSet(Of IW3Game, W3GameControl)
+    Private games As TabControlIHookableSet(Of W3Game, W3GameControl)
 
     Private Function QueueDispose() As IFuture Implements IHookable(Of W3Server).QueueDispose
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
@@ -25,7 +25,7 @@ Public Class W3ServerControl
                 If games IsNot Nothing Then
                     games.Clear()
                 Else
-                    games = New TabControlIHookableSet(Of IW3Game, W3GameControl)(tabsServer)
+                    games = New TabControlIHookableSet(Of W3Game, W3GameControl)(tabsServer)
                 End If
                 Me.server = server
 
@@ -72,7 +72,7 @@ Public Class W3ServerControl
         )
     End Function
 
-    Private Sub CatchAddedGame(ByVal sender As W3Server, ByVal instance As IW3Game) Handles server.AddedGame
+    Private Sub CatchAddedGame(ByVal sender As W3Server, ByVal instance As W3Game) Handles server.AddedGame
         ref.QueueAction(
             Sub()
                 If sender IsNot server Then  Return
@@ -83,7 +83,7 @@ Public Class W3ServerControl
         )
     End Sub
 
-    Private Sub CatchRemovedGame(ByVal sender As W3Server, ByVal instance As IW3Game) Handles server.RemovedGame
+    Private Sub CatchRemovedGame(ByVal sender As W3Server, ByVal instance As W3Game) Handles server.RemovedGame
         ref.QueueAction(
             Sub()
                 If sender IsNot server Then  Return

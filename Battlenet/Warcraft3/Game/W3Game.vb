@@ -18,16 +18,14 @@ Imports System.Runtime.CompilerServices
 
 Namespace Warcraft3
     Partial Public NotInheritable Class W3Game
-        Implements IW3Game
-
-        Private ReadOnly server As W3Server
-        Private ReadOnly map As W3Map
-        Private ReadOnly name As String
+        Private ReadOnly _server As W3Server
+        Private ReadOnly _map As W3Map
+        Private ReadOnly _name As String
         Private ReadOnly rand As New Random()
         Private ReadOnly slots As New List(Of W3Slot)
         Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly eventRef As ICallQueue = New ThreadPooledCallQueue
-        Private ReadOnly logger As Logger
+        Private ReadOnly _logger As Logger
         Private Const PING_PERIOD As UShort = 5000
         Private ReadOnly pingTimer As New Timers.Timer(PING_PERIOD)
         Private state As W3GameStates = W3GameStates.AcceptingPlayers
@@ -37,11 +35,11 @@ Namespace Warcraft3
         Private ReadOnly players As New List(Of W3Player)
         Private ReadOnly index_map(0 To 12) As Byte
 
-        Private Event PlayerAction(ByVal sender As IW3Game, ByVal player As W3Player, ByVal action As W3GameAction) Implements IW3Game.PlayerAction
-        Private Event Updated(ByVal sender As IW3Game, ByVal slots As List(Of W3Slot)) Implements IW3Game.Updated
-        Private Event PlayerTalked(ByVal sender As IW3Game, ByVal speaker As W3Player, ByVal text As String) Implements IW3Game.PlayerTalked
-        Private Event PlayerLeft(ByVal sender As IW3Game, ByVal state As W3GameStates, ByVal leaver As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String) Implements IW3Game.PlayerLeft
-        Private Event StateChanged(ByVal sender As IW3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates) Implements IW3Game.ChangedState
+        Public Event PlayerAction(ByVal sender As W3Game, ByVal player As W3Player, ByVal action As W3GameAction)
+        Public Event Updated(ByVal sender As W3Game, ByVal slots As List(Of W3Slot))
+        Public Event PlayerTalked(ByVal sender As W3Game, ByVal speaker As W3Player, ByVal text As String)
+        Public Event PlayerLeft(ByVal sender As W3Game, ByVal state As W3GameStates, ByVal leaver As W3Player, ByVal leaveType As W3PlayerLeaveTypes, ByVal reason As String)
+        Public Event ChangedState(ByVal sender As W3Game, ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(server IsNot Nothing)
@@ -61,7 +59,7 @@ Namespace Warcraft3
             Contract.Invariant(visibleUnreadyPlayers IsNot Nothing)
             Contract.Invariant(fakeTickTimer IsNot Nothing)
             Contract.Invariant(downloadScheduler IsNot Nothing)
-            Contract.Invariant(gameTime >= 0)
+            Contract.Invariant(_gameTime >= 0)
         End Sub
 
 #Region "Commands"
@@ -199,10 +197,10 @@ Namespace Warcraft3
             Contract.Assume(parent IsNot Nothing)
             Contract.Assume(name IsNot Nothing)
 
-            Me.map = map
-            Me.server = parent
-            Me.name = name
-            Me.logger = If(logger, New Logger)
+            Me._map = map
+            Me._server = parent
+            Me._name = name
+            Me._logger = If(logger, New Logger)
             For i = 0 To index_map.Length - 1
                 index_map(i) = CByte(i)
             Next i
@@ -282,7 +280,7 @@ Namespace Warcraft3
         End Sub
         Private Sub ThrowStateChanged(ByVal old_state As W3GameStates, ByVal new_state As W3GameStates)
             eventRef.QueueAction(Sub()
-                                     RaiseEvent StateChanged(Me, old_state, new_state)
+                                     RaiseEvent ChangedState(Me, old_state, new_state)
                                  End Sub)
         End Sub
 
@@ -544,102 +542,141 @@ Namespace Warcraft3
 #End Region
 
 #Region "Interface"
-        Private ReadOnly Property _parent() As W3Server Implements IW3Game.server
+        Public ReadOnly Property Logger As Logger
             Get
-                Return server
-            End Get
-        End Property
-        Private ReadOnly Property _map() As W3Map Implements IW3Game.map
-            Get
-                Return map
-            End Get
-        End Property
-        Private ReadOnly Property _name() As String Implements IW3Game.name
-            Get
-                Return name
-            End Get
-        End Property
-        Private ReadOnly Property _logger() As Logger Implements IW3Game.logger
-            Get
-                Return logger
+                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
+                Return _logger
             End Get
         End Property
 
-        Private Function _f_AdminPlayer() As IFuture(Of W3Player) Implements IW3Game.QueueGetAdminPlayer
+        Public ReadOnly Property Map As W3Map
+            Get
+                Contract.Ensures(Contract.Result(Of W3Map)() IsNot Nothing)
+                Return _map
+            End Get
+        End Property
+
+        Public ReadOnly Property Name As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _name
+            End Get
+        End Property
+
+        Public ReadOnly Property Server As W3Server
+            Get
+                Contract.Ensures(Contract.Result(Of W3Server)() IsNot Nothing)
+                Return _server
+            End Get
+        End Property
+
+        Public Function QueueGetAdminPlayer() As IFuture(Of W3Player)
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() adminPlayer)
         End Function
-        Private Function _f_FakeHostPlayer() As IFuture(Of W3Player) Implements IW3Game.QueueGetFakeHostPlayer
+        Public Function QueueGetFakeHostPlayer() As IFuture(Of W3Player)
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() fakeHostPlayer)
         End Function
-        Private Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture Implements IW3Game.QueueCommandProcessLocalText
+        Public Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture
+            Contract.Requires(text IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(text IsNot Nothing)
                                        Contract.Assume(logger IsNot Nothing)
                                        CommandProcessLocalText(text, logger)
                                    End Sub)
         End Function
-        Private Function _QueueCommandProcessText(ByVal player As W3Player, ByVal arguments As IList(Of String)) As IFuture(Of String) Implements IW3Game.QueueProcessCommand
+        Public Function QueueCommandProcessText(ByVal player As W3Player,
+                                                ByVal arguments As IList(Of String)) As IFuture(Of String)
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(arguments IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueFunc(Function()
                                      Contract.Assume(player IsNot Nothing)
                                      Contract.Assume(arguments IsNot Nothing)
                                      Return CommandProcessText(player, arguments)
                                  End Function).Defuturized
         End Function
-        Private Function _QueueTryElevatePlayer(ByVal name As String, Optional ByVal password As String = Nothing) As IFuture Implements IW3Game.QueueTryElevatePlayer
+        Public Function QueueTryElevatePlayer(ByVal name As String,
+                                              Optional ByVal password As String = Nothing) As IFuture
+            Contract.Requires(name IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(name IsNot Nothing)
                                        Contract.Assume(password IsNot Nothing)
                                        TryElevatePlayer(name, password)
                                    End Sub)
         End Function
-        Private Function _QueueFindPlayer(ByVal username As String) As IFuture(Of W3Player) Implements IW3Game.QueueFindPlayer
+        Public Function QueueFindPlayer(ByVal username As String) As IFuture(Of W3Player)
+            Contract.Requires(username IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Return ref.QueueFunc(Function()
                                      Contract.Assume(username IsNot Nothing)
                                      Return FindPlayer(username)
                                  End Function)
         End Function
-        Private Function _QueueRemovePlayer(ByVal player As W3Player,
-                                         ByVal expected As Boolean,
-                                         ByVal leaveType As W3PlayerLeaveTypes,
-                                         ByVal reason As String) As IFuture Implements IW3Game.QueueRemovePlayer
+        Public Function QueueRemovePlayer(ByVal player As W3Player,
+                                          ByVal expected As Boolean,
+                                          ByVal leaveType As W3PlayerLeaveTypes,
+                                          ByVal reason As String) As IFuture
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(reason IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(player IsNot Nothing)
                                        Contract.Assume(reason IsNot Nothing)
                                        RemovePlayer(player, expected, leaveType, reason)
                                    End Sub)
         End Function
-        Private Function _QueueEnumPlayers() As IFuture(Of List(Of W3Player)) Implements IW3Game.QueueGetPlayers
+        Public Function QueueGetPlayers() As IFuture(Of List(Of W3Player))
+            Contract.Ensures(Contract.Result(Of IFuture(Of List(Of W3Player)))() IsNot Nothing)
             Return ref.QueueFunc(Function() players.ToList)
         End Function
-        Private Function _QueueThrowUpdated() As IFuture Implements IW3Game.QueueThrowUpdated
+        Public Function QueueThrowUpdated() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf ThrowUpdated)
         End Function
-        Private Function _QueueClose() As IFuture Implements IW3Game.QueueClose
+        Public Function QueueClose() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub() Close())
         End Function
-        Private Function _QueueBroadcastMessage(ByVal message As String) As IFuture Implements IW3Game.QueueBroadcastMessage
+        Public Function QueueBroadcastMessage(ByVal message As String) As IFuture
+            Contract.Requires(message IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(message IsNot Nothing)
                                        BroadcastMessage(message)
                                    End Sub)
         End Function
-        Private Function _QueueSendMessageTo(ByVal message As String, ByVal player As W3Player) As IFuture Implements IW3Game.QueueSendMessageTo
+        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As W3Player) As IFuture
+            Contract.Requires(message IsNot Nothing)
+            Contract.Requires(player IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(message IsNot Nothing)
                                        Contract.Assume(player IsNot Nothing)
                                        SendMessageTo(message, player)
                                    End Sub)
         End Function
-        Private Function _QueueBootSlot(ByVal slotQuery As String) As IFuture Implements IW3Game.QueueBootSlot
+        Public Function QueueBootSlot(ByVal slotQuery As String) As IFuture
+            Contract.Requires(slotQuery IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(slotQuery IsNot Nothing)
                                        Boot(slotQuery)
                                    End Sub)
         End Function
-        Private Function _QueueGetState() As IFuture(Of W3GameStates) Implements IW3Game.QueueGetState
+        Public Function QueueGetState() As IFuture(Of W3GameStates)
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3GameStates))() IsNot Nothing)
             Return ref.QueueFunc(Function() Me.state)
         End Function
-        Private Function _f_ReceiveNonGameAction(ByVal player As W3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture Implements IW3Game.QueueReceiveNonGameAction
+        Public Function QueueReceiveNonGameAction(ByVal player As W3Player,
+                                                  ByVal vals As Dictionary(Of String, Object)) As IFuture
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(vals IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(player IsNot Nothing)
                                        Contract.Assume(vals IsNot Nothing)
