@@ -5,24 +5,25 @@
         Public color As PlayerColor
         Public team As Byte
         Public handicap As Byte = 100
-        Public race As RaceFlags = RaceFlags.Random
+        Public race As Races = Races.Random
         Public contents As W3SlotContents
         Public locked As Lock
 
 #Region "Enums"
-        Public Const OBS_TEAM As Byte = 12
+        Public Const ObserverTeamIndex As Byte = 12
         Public Enum ComputerLevel As Byte
             Easy = 0
             Normal = 1
             Insane = 2
         End Enum
-        Public Enum RaceFlags As Byte
-            Human = 1
-            Orc = 2
-            NightElf = 4
-            Undead = 8
-            Random = 32
-            Unlocked = 64
+        <Flags()>
+        Public Enum Races As Byte
+            Human = 1 << 0
+            Orc = 1 << 1
+            NightElf = 1 << 2
+            Undead = 1 << 3
+            Random = 1 << 5
+            Unlocked = 1 << 6
         End Enum
         Public Enum PlayerColor As Byte
             Red = 0
@@ -39,9 +40,9 @@
             Brown = 11
         End Enum
         Public Enum Lock
-            unlocked = 0
-            sticky = 1
-            frozen = 2
+            Unlocked = 0
+            Sticky = 1
+            Frozen = 2
         End Enum
 #End Region
 
@@ -58,12 +59,12 @@
         End Enum
         Public ReadOnly Property MatchableId() As String
             Get
-                Return (index + 1).ToString
+                Return (index + 1).ToString(CultureInfo.InvariantCulture)
             End Get
         End Property
         Public Function Matches(ByVal query As String) As Match
-            If query = (index + 1).ToString Then Return Match.Index
-            If query.ToLower = color.ToString.ToLower Then Return Match.Color
+            If query = (index + 1).ToString(CultureInfo.InvariantCulture) Then Return Match.Index
+            If query.ToUpperInvariant = color.ToString.ToUpperInvariant Then Return Match.Color
             If contents.Matches(query) Then Return Match.Contents
             Return Match.None
         End Function
@@ -79,41 +80,41 @@
         End Function
         Public Function GenerateDescription() As IFuture(Of String)
             Dim s = ""
-            If team = OBS_TEAM Then
+            If team = ObserverTeamIndex Then
                 s = "Observer"
             Else
                 s = "Team {0}, {1}, {2}".Frmt(team + 1, race, color)
             End If
             Select Case locked
-                Case W3Slot.Lock.frozen
+                Case W3Slot.Lock.Frozen
                     s = "(LOCKED) " + s
-                Case W3Slot.Lock.sticky
+                Case W3Slot.Lock.Sticky
                     s = "(STICKY) " + s
             End Select
             Return contents.GenerateDescription.Select(Function(desc) Padded(s, 30) + desc)
         End Function
     End Class
 
+    Public Enum SlotContentType
+        Empty
+        Computer
+        Player
+    End Enum
     Public MustInherit Class W3SlotContents
         Private ReadOnly _parent As W3Slot
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_parent IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal parent As W3Slot)
+        Protected Sub New(ByVal parent As W3Slot)
             Contract.Requires(parent IsNot Nothing)
             Me._parent = parent
         End Sub
 
 #Region "Properties"
-        Public Enum ContentType
-            Empty
-            Computer
-            Player
-        End Enum
-        Public Overridable ReadOnly Property Type() As ContentType
+        Public Overridable ReadOnly Property ContentType() As SlotContentType
             Get
-                Return ContentType.Empty
+                Return SlotContentType.Empty
             End Get
         End Property
         Public ReadOnly Property Parent As W3Slot
@@ -257,9 +258,9 @@
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents
             Return New W3SlotContentsComputer(parent, DataComputerLevel)
         End Function
-        Public Overrides ReadOnly Property Type() As ContentType
+        Public Overrides ReadOnly Property ContentType() As SlotContentType
             Get
-                Return ContentType.Computer
+                Return SlotContentType.Computer
             End Get
         End Property
         Public Overrides ReadOnly Property DataComputerLevel() As W3Slot.ComputerLevel
@@ -295,7 +296,9 @@
             End Get
         End Property
         Public Overrides Function WantPlayer(ByVal name As String) As W3SlotContents.WantPlayerPriority
-            If player IsNot Nothing AndAlso name IsNot Nothing AndAlso player.isFake AndAlso player.name.ToLower = name.ToLower Then
+            If player IsNot Nothing AndAlso name IsNot Nothing AndAlso
+                                            player.isFake AndAlso
+                                            player.name.ToUpperInvariant = name.ToUpperInvariant Then
                 Return WantPlayerPriority.AcceptReservation
             Else
                 Return WantPlayerPriority.Reject
@@ -305,18 +308,18 @@
             Return New W3SlotContentsPlayer(parent, player)
         End Function
         Public Overrides Function Matches(ByVal query As String) As Boolean
-            Return query.ToLower = player.name.ToLower
+            Return query.ToUpperInvariant = player.name.ToUpperInvariant
         End Function
-        Public Overrides Function RemovePlayer(ByVal player As W3Player) As W3SlotContents
-            If Me.player Is player Then
+        Public Overrides Function RemovePlayer(ByVal targetPlayer As W3Player) As W3SlotContents
+            If Me.player Is targetPlayer Then
                 Return New W3SlotContentsOpen(Parent)
             Else
                 Throw New InvalidOperationException()
             End If
         End Function
-        Public Overrides ReadOnly Property Type() As ContentType
+        Public Overrides ReadOnly Property ContentType() As SlotContentType
             Get
-                Return ContentType.Player
+                Return SlotContentType.Player
             End Get
         End Property
         Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As W3Player) As Byte
@@ -326,7 +329,7 @@
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As W3Player) As Byte
             Get
-                Return player.GetPercentDl
+                Return player.GetDownloadPercent
             End Get
         End Property
         Public Overrides ReadOnly Property DataState(ByVal receiver As W3Player) As State
@@ -407,7 +410,7 @@
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As W3Player) As Byte
             Get
                 If players.Contains(receiver) Then
-                    Return receiver.GetPercentDl
+                    Return receiver.GetDownloadPercent
                 Else
                     Return 100
                 End If
@@ -418,9 +421,9 @@
                 Return If(players.Contains(receiver), State.Occupied, State.Closed)
             End Get
         End Property
-        Public Overrides ReadOnly Property Type() As ContentType
+        Public Overrides ReadOnly Property ContentType() As SlotContentType
             Get
-                Return ContentType.Player
+                Return SlotContentType.Player
             End Get
         End Property
         Public Overrides ReadOnly Property Moveable() As Boolean

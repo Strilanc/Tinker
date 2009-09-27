@@ -6,12 +6,12 @@
             MyBase.New(name)
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of R As Single)(ByVal value As R) As IPickle(Of R)
+        Public NotOverridable Overrides Function Pack(Of TValue As Single)(ByVal value As TValue) As IPickle(Of TValue)
             Dim buffer(0 To 3) As Byte
             Using bw = New IO.BinaryWriter(New IO.MemoryStream(buffer))
                 bw.Write(value)
             End Using
-            Return New Pickle(Of R)(Name, value, buffer.ToArray.ToView, Function() ValueToString(value))
+            Return New Pickle(Of TValue)(Name, value, buffer.ToArray.ToView, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As IPickle(Of Single)
@@ -24,7 +24,7 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As Single) As String
-            Return value.ToString
+            Return value.ToString(CultureInfo.InvariantCulture)
         End Function
     End Class
 
@@ -39,8 +39,8 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of R As UInt32)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, value.Bytes(byteOrder).ToView(), Function() ValueToString(value))
+        Public NotOverridable Overrides Function Pack(Of TValue As UInt32)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Me.Name, value, value.Bytes(byteOrder).ToView(), Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of UInt32)
@@ -50,7 +50,7 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As UInt32) As String
-            Return value.ToString
+            Return value.ToString(CultureInfo.InvariantCulture)
         End Function
     End Class
 
@@ -65,8 +65,8 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of R As UInt16)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, value.Bytes(byteOrder).ToView(), Function() ValueToString(value))
+        Public NotOverridable Overrides Function Pack(Of TValue As UInt16)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Me.Name, value, value.Bytes(byteOrder).ToView(), Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of UInt16)
@@ -76,7 +76,7 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As UInt16) As String
-            Return value.ToString
+            Return value.ToString(CultureInfo.InvariantCulture)
         End Function
     End Class
 
@@ -88,8 +88,8 @@
             Contract.Requires(name IsNot Nothing)
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of R As Byte)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, {CByte(value)}.ToView(), Function() ValueToString(value))
+        Public NotOverridable Overrides Function Pack(Of TValue As Byte)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Me.Name, value, {CByte(value)}.ToView(), Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Byte)
@@ -99,35 +99,35 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As Byte) As String
-            Return value.ToString
+            Return value.ToString(CultureInfo.InvariantCulture)
         End Function
     End Class
 
     '''<summary>Pickles fixed-size unsigned integers</summary>
     Public Class ValueJar
         Inherits Jar(Of ULong)
-        Private ReadOnly numBytes As Integer
+        Private ReadOnly byteCount As Integer
         Private ReadOnly byteOrder As ByteOrder
 
         Public Sub New(ByVal name As String,
-                       ByVal numBytes As Integer,
+                       ByVal byteCount As Integer,
                        Optional ByVal info As String = "No Info",
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(info IsNot Nothing)
-            Contract.Requires(numBytes > 0)
-            Contract.Requires(numBytes <= 8)
-            Me.numBytes = numBytes
+            Contract.Requires(byteCount > 0)
+            Contract.Requires(byteCount <= 8)
+            Me.byteCount = byteCount
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(Of R As ULong)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, value.Bytes(byteOrder, numBytes).ToView())
+        Public Overrides Function Pack(Of TValue As ULong)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Me.Name, value, value.Bytes(byteOrder, byteCount).ToView())
         End Function
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
-            data = data.SubView(0, numBytes)
+            data = data.SubView(0, byteCount)
             Return New Pickle(Of ULong)(Me.Name, data.ToUInt64(byteOrder), data)
         End Function
     End Class

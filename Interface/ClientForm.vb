@@ -1,7 +1,7 @@
 Imports System.Threading
 Imports HostBot.Bnet
 
-Public Class FrmClient
+Public Class ClientForm
     Private WithEvents bot As MainBot
     Private WithEvents client As BnetClient
 
@@ -14,8 +14,8 @@ Public Class FrmClient
 
             'prep bot
             CacheIPAddresses()
-            bot = New MainBot(New InvokedCallQueue(Me))
-            For Each port In FrmSettings.parsePortList(My.Settings.port_pool, "")
+            bot = New MainBot()
+            For Each port In SettingsForm.ParsePortList(My.Settings.port_pool, "")
                 bot.portPool.TryAddPort(port)
             Next port
             botcMain.logBot.SetLogUnexpected(True)
@@ -59,7 +59,7 @@ Public Class FrmClient
                 ShowSettings()
             End If
         Catch ex As Exception
-            MessageBox.Show(GenerateUnexpectedExceptionDescription("Error loading " + My.Resources.ProgramName, ex))
+            MessageBox.Show(GenerateUnexpectedExceptionDescription("Error loading program.", ex))
             Me.Close()
         End Try
     End Sub
@@ -90,7 +90,7 @@ Public Class FrmClient
     End Sub
 
     Private Sub ShowSettings() Handles btnSettings.Click
-        FrmSettings.ShowBotSettings(bot)
+        SettingsForm.ShowBotSettings(bot)
     End Sub
 
     Private Sub ShowHide() Handles mnuShowHide.Click, trayIcon.MouseDoubleClick

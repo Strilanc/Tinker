@@ -6,9 +6,9 @@ Imports HostBot.Links
 
 Namespace Commands.Specializations
     Public Class ClientCommands
-        Inherits UICommandSet(Of BnetClient)
+        Inherits CommandSet(Of BnetClient)
 
-        Private com_login As New ClientLoginCommands()
+        Private com_login As New ClientLogOnCommands()
         Private com_online As New ClientOnlineCommands()
         Private com_offline As New ClientOfflineCommands()
 
@@ -16,11 +16,11 @@ Namespace Commands.Specializations
             Return target.QueueGetState.Select(Of BaseClientCommands)(
                 Function(state)
                     Select Case state
-                        Case States.Channel, States.CreatingGame, States.Game
+                        Case BnetClientState.Channel, BnetClientState.CreatingGame, BnetClientState.Game
                             Return com_online
-                        Case States.Connecting, States.Disconnected
+                        Case BnetClientState.Connecting, BnetClientState.Disconnected
                             Return com_offline
-                        Case States.Logon, States.EnterUsername
+                        Case BnetClientState.LogOn, BnetClientState.EnterUserName
                             Return com_login
                         Case Else
                             Throw New UnreachableException()
@@ -31,34 +31,34 @@ Namespace Commands.Specializations
         Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
             Return GetCurrentCommandSet(target).Select(Function(x) x.Process(target, user, arguments)).Defuturized()
         End Function
-        Public Overrides Sub ProcessLocalText(ByVal target As Bnet.BnetClient, ByVal text As String, ByVal logger As Logger)
+        Public Sub ProcessLocalText(ByVal target As Bnet.BnetClient, ByVal text As String, ByVal logger As Logger)
             GetCurrentCommandSet(target).CallOnValueSuccess(Sub(x) x.ProcessLocalText(target, text, logger))
         End Sub
     End Class
 
     Public MustInherit Class BaseClientCommands
-        Inherits UICommandSet(Of BnetClient)
+        Inherits CommandSet(Of BnetClient)
 
-        Public Sub New()
-            AddCommand(New com_AdLink)
-            AddCommand(New com_AdUnlink)
-            AddCommand(New com_Bot)
-            AddCommand(New com_AddUser)
-            AddCommand(New com_Demote)
-            AddCommand(New com_RemoveUser)
-            AddCommand(New com_Disconnect)
-            AddCommand(New com_ParentCommand(New BotCommands.com_FindMaps))
-            AddCommand(New com_GetPort)
-            AddCommand(New com_SetPort)
-            AddCommand(New com_Promote)
-            AddCommand(New com_User)
+        Protected Sub New()
+            AddCommand(New CommandAdLink)
+            AddCommand(New CommandAdUnlink)
+            AddCommand(New CommandBot)
+            AddCommand(New CommandAddUser)
+            AddCommand(New CommandDemote)
+            AddCommand(New CommandRemoveUser)
+            AddCommand(New CommandDisconnect)
+            AddCommand(New CommandParentCommand(New BotCommands.CommandFindMaps))
+            AddCommand(New CommandGetPort)
+            AddCommand(New CommandSetPort)
+            AddCommand(New CommandPromote)
+            AddCommand(New CommandUser)
         End Sub
 
-        Public Class com_AdLink
+        Public Class CommandAdLink
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AdLink,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Client_AdLink_Help,
                            My.Resources.Command_Client_AdLink_Access,
                            My.Resources.Command_Client_AdLink_ExtraHelp)
@@ -82,39 +82,39 @@ Namespace Commands.Specializations
                 )
             End Function
         End Class
-        Public Class com_AdUnlink
+        Public Class CommandAdUnlink
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AdUnlink,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Client_AdUnlink_Help,
                            My.Resources.Command_Client_AdUnlink_Access,
                            My.Resources.Command_Client_AdUnlink_ExtraHelp)
             End Sub
-            Public Overrides Function Process(ByVal client As BnetClient,
+            Public Overrides Function Process(ByVal target As BnetClient,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return client.parent.QueueFindClient(arguments(0)).Select(
+                Return target.parent.QueueFindClient(arguments(0)).Select(
                     Function(client2)
                         If client2 Is Nothing Then
                             Throw New ArgumentException("No client matching that name.")
-                        ElseIf client2 Is client Then
+                        ElseIf client2 Is target Then
                             Throw New ArgumentException("Can't link to self.")
                         End If
 
-                        client.QueueRemoveAdvertisingPartner(client2)
-                        Return "Any link between client {0} and client {1} has been removed.".Frmt(client.name, client2.name)
+                        target.QueueRemoveAdvertisingPartner(client2)
+                        Return "Any link between client {0} and client {1} has been removed.".Frmt(target.name, client2.name)
                     End Function
                 )
             End Function
         End Class
 
         '''<summary>A command which forwards sub-commands to the main bot command set</summary>
-        Public Class com_Bot
+        Public Class CommandBot
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Bot",
-                           0, ArgumentLimits.free,
+                           0, ArgumentLimitType.Free,
                            "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.",
                            "root=1", "")
             End Sub
@@ -123,41 +123,41 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_ParentCommand
+        Public Class CommandParentCommand
             Inherits BaseCommand(Of BnetClient)
-            Private parent_command As BaseCommand(Of MainBot)
-            Public Sub New(ByVal parent_command As BaseCommand(Of MainBot))
-                MyBase.New(parent_command.name, parent_command.argumentLimit, parent_command.argumentLimitType, parent_command.help, parent_command.requiredPermissions)
-                Me.parent_command = parent_command
+            Private subCommand As BaseCommand(Of MainBot)
+            Public Sub New(ByVal subCommand As BaseCommand(Of MainBot))
+                MyBase.New(subCommand.Name, subCommand.ArgumentLimit, subCommand.ArgumentLimitType, subCommand.Help, subCommand.requiredPermissions)
+                Me.subCommand = subCommand
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return parent_command.ProcessCommand(target.parent, user, arguments)
+                Return subCommand.ProcessCommand(target.parent, user, arguments)
             End Function
         End Class
 
         '''<summary>A command which returns the port the client is set to tell bnet it is listening on.</summary>
-        Private Class com_GetPort
+        Private Class CommandGetPort
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_GetPort,
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            My.Resources.Command_Client_GetPort_Help,
                            My.Resources.Command_Client_GetPort_Access,
                            My.Resources.Command_Client_GetPort_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.QueueGetListenPort.Select(Function(port) port.ToString())
+                Return target.QueueGetListenPort.Select(Function(port) port.ToString(CultureInfo.InvariantCulture))
             End Function
         End Class
 
         '''<summary>A command which changes the port the client is set to tell bnet it is listening on.</summary>
-        Private Class com_SetPort
+        Private Class CommandSetPort
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_SetPort,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Client_SetPort_Help,
                            My.Resources.Command_Client_SetPort_Access,
                            My.Resources.Command_Client_SetPort_ExtraHelp)
@@ -169,11 +169,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Private Class com_Disconnect
+        Private Class CommandDisconnect
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("disconnect",
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            "[--disconnect]",
                            "root=4", "")
             End Sub
@@ -182,11 +182,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_AddUser
+        Public Class CommandAddUser
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AddUser,
-                            1, ArgumentLimits.exact,
+                            1, ArgumentLimitType.Exact,
                             My.Resources.Command_Client_AddUser_Help,
                             My.Resources.Command_Client_AddUser_Access,
                             My.Resources.Command_Client_AddUser_ExtraHelp)
@@ -197,11 +197,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_RemoveUser
+        Public Class CommandRemoveUser
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_RemoveUser,
-                            1, ArgumentLimits.exact,
+                            1, ArgumentLimitType.Exact,
                             My.Resources.Command_Client_RemoveUser_Help,
                             My.Resources.Command_Client_RemoveUser_Access,
                             My.Resources.Command_Client_RemoveUser_ExtraHelp)
@@ -219,11 +219,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_Promote
+        Public Class CommandPromote
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Promote",
-                            2, ArgumentLimits.min,
+                            2, ArgumentLimitType.Min,
                             "[--Promote username permission level] Increases a permissions level for a user.",
                             "users=1", "")
             End Sub
@@ -243,25 +243,25 @@ Namespace Commands.Specializations
                 End If
 
                 'check for demotion in disguise
-                If lvl <= target_user.permission(arguments(1)) Then
+                If lvl <= target_user.Permission(arguments(1)) Then
                     Throw New ArgumentException("That is not a promotion. Jerk.")
                 End If
 
                 'check for overpromotion
-                If user IsNot Nothing AndAlso lvl > user.permission(arguments(1)) Then
+                If user IsNot Nothing AndAlso lvl > user.Permission(arguments(1)) Then
                     Throw New ArgumentException("You can't promote users past your own permission levels.")
                 End If
 
-                target_user.permission(arguments(1)) = lvl
+                target_user.Permission(arguments(1)) = lvl
                 Return "{0} had permission in {1} promoted to {2}".Frmt(arguments(0), arguments(1), lvl).Futurized
             End Function
         End Class
 
-        Public Class com_Demote
+        Public Class CommandDemote
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Demote",
-                            2, ArgumentLimits.min,
+                            2, ArgumentLimitType.Min,
                             "[--Demote username permission level] Decreases a permissions level for a user.",
                             "users=3", "")
             End Sub
@@ -281,7 +281,7 @@ Namespace Commands.Specializations
                 End If
 
                 'check for promotion in disguise
-                If lvl >= target_user.permission(arguments(1)) Then
+                If lvl >= target_user.Permission(arguments(1)) Then
                     Throw New ArgumentException("That is not a demotion.")
                 End If
 
@@ -290,16 +290,16 @@ Namespace Commands.Specializations
                     Throw New ArgumentException("You can only demote users with lower permissions.")
                 End If
 
-                target_user.permission(arguments(1)) = lvl
+                target_user.Permission(arguments(1)) = lvl
                 Return "{0} had permission in {1} demoted to {2}".Frmt(arguments(0), arguments(1), lvl).Futurized
             End Function
         End Class
 
-        Public Class com_User
+        Public Class CommandUser
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_User,
-                           1, ArgumentLimits.max,
+                           1, ArgumentLimitType.Max,
                            My.Resources.Command_Client_User_Help,
                            My.Resources.Command_Client_User_Access,
                            My.Resources.Command_Client_User_ExtraHelp)
@@ -309,7 +309,7 @@ Namespace Commands.Specializations
                 Dim username = If(arguments.Count = 0, user.name, arguments(0))
                 If target.profile.users.ContainsUser(username) Then
                     Return target.profile.users(username).ToString().Futurized
-                ElseIf target.profile.users.ContainsUser(BotUserSet.NAME_UNKNOWN_USER) Then
+                ElseIf target.profile.users.ContainsUser(BotUserSet.UnknownUserKey) Then
                     Return "{0} is an unknown user with the permissions of the user '*unknown'".Frmt(username).Futurized
                 Else
                     Return "{0} is an ignored unknown user.".Frmt(username).Futurized
@@ -318,28 +318,28 @@ Namespace Commands.Specializations
         End Class
     End Class
 
-    Public Class ClientLoginCommands
+    Public Class ClientLogOnCommands
         Inherits BaseClientCommands
 
         Public Sub New()
             MyBase.New()
-            AddCommand(New com_Login)
+            AddCommand(New CommandLogOn)
         End Sub
 
-        Private Class com_Login
+        Private Class CommandLogOn
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
-                MyBase.New(My.Resources.Command_Client_Login,
-                           2, ArgumentLimits.exact,
-                           My.Resources.Command_Client_Login_Help,
-                           My.Resources.Command_Client_Login_Access,
-                           My.Resources.Command_Client_Login_ExtraHelp,
-                           shouldHideArguments:=True)
+                MyBase.New(My.Resources.Command_Client_LogOn,
+                           2, ArgumentLimitType.Exact,
+                           My.Resources.Command_Client_LogOn_Help,
+                           My.Resources.Command_Client_LogOn_Access,
+                           My.Resources.Command_Client_LogOn_ExtraHelp,
+                           ShouldHideArguments:=True)
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.QueueLogin(arguments(0), arguments(1)).EvalOnSuccess(Function() "Logged in as {0}".Frmt(arguments(0)))
+                Return target.QueueLogOn(arguments(0), arguments(1)).EvalOnSuccess(Function() "Logged in as {0}".Frmt(arguments(0)))
             End Function
         End Class
     End Class
@@ -348,22 +348,22 @@ Namespace Commands.Specializations
         Inherits BaseClientCommands
 
         Public Sub New()
-            AddCommand(New com_AdminCode)
-            AddCommand(New com_CancelHost)
-            AddCommand(New com_Elevate)
-            AddCommand(New com_Game)
-            AddCommand(New com_Host)
-            AddCommand(New com_Say)
-            AddCommand(New com_StartAdvertising)
-            AddCommand(New com_StopAdvertising)
-            AddCommand(New com_RefreshGamesList)
+            AddCommand(New CommandAdminCode)
+            AddCommand(New CommandCancelHost)
+            AddCommand(New CommandElevate)
+            AddCommand(New CommandGame)
+            AddCommand(New CommandHost)
+            AddCommand(New CommandSay)
+            AddCommand(New CommandStartAdvertising)
+            AddCommand(New CommandStopAdvertising)
+            AddCommand(New CommandRefreshGamesList)
         End Sub
 
-        Public Class com_Host
+        Public Class CommandHost
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Host,
-                           2, ArgumentLimits.min,
+                           2, ArgumentLimitType.Min,
                            My.Resources.Command_Client_Host_Help,
                            My.Resources.Command_Client_Host_Access,
                            My.Resources.Command_Client_Host_ExtraHelp)
@@ -374,15 +374,15 @@ Namespace Commands.Specializations
                 'Server settings
                 arguments = arguments.ToList
                 For i = 0 To arguments.Count - 1
-                    Select Case arguments(i).ToLower()
-                        Case "-reserve", "-r"
+                    Select Case arguments(i).ToUpperInvariant
+                        Case "-RESERVE", "-R"
                             If user IsNot Nothing Then
                                 arguments(i) += "=" + user.name
                             Else
                                 arguments(i) = ""
                             End If
                     End Select
-                    If arguments(i).ToLower Like "-port=*" AndAlso user IsNot Nothing AndAlso user.permission("root") < 5 Then
+                    If arguments(i).ToUpperInvariant Like "-PORT=*" AndAlso user IsNot Nothing AndAlso user.Permission("root") < 5 Then
                         Throw New InvalidOperationException("You need root=5 to use -port.")
                     End If
                 Next i
@@ -390,7 +390,7 @@ Namespace Commands.Specializations
                                               If(user Is Nothing, My.Resources.ProgramName, user.name),
                                               New W3MapSettings(arguments, map),
                                               0, 0, 0, arguments, map.NumPlayerSlots)
-                Dim f_settings = target.QueueGetListenPort.Select(Function(port) New ServerSettings(map, header, default_listen_ports:={port}))
+                Dim f_settings = target.QueueGetListenPort.Select(Function(port) New ServerSettings(map, header, defaultListenPorts:={port}))
                 Dim f_server = f_settings.Select(Function(settings) target.parent.QueueCreateServer(target.name, settings, "[Linked]", True)).Defuturized()
 
                 'Create the server, then advertise the game
@@ -414,11 +414,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_RefreshGamesList
+        Public Class CommandRefreshGamesList
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("RefreshGamesList",
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            "[RefreshGamesList] Refreshes the bot's game list display. No useful effect from bnet.")
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient,
@@ -427,11 +427,11 @@ Namespace Commands.Specializations
                 Return target.QueueSendPacket(BnetPacket.MakeQueryGamesList()).EvalOnSuccess(Function() "Sent request.")
             End Function
         End Class
-        Public Class com_Game
+        Public Class CommandGame
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Game",
-                        1, ArgumentLimits.min,
+                        1, ArgumentLimitType.Min,
                         "[Game name command..., Game boot red] Forwards commands to a game of your hosted server.")
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -458,11 +458,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_CancelHost
+        Public Class CommandCancelHost
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("CancelHost",
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            "[--CancelHost] Cancels the last hosting command.")
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient,
@@ -481,11 +481,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_AdminCode
+        Public Class CommandAdminCode
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("AdminCode",
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            "[--AdminCode] Repeats the admin code for a game you have hosted.")
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient,
@@ -503,11 +503,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_Say
+        Public Class CommandSay
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Say,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Client_Say_Help,
                            My.Resources.Command_Client_Say_Access,
                            My.Resources.Command_Client_Say_ExtraHelp)
@@ -519,11 +519,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which tells the client to start advertising a game.</summary>
-        Public Class com_StartAdvertising
+        Public Class CommandStartAdvertising
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_StartAdvertising,
-                           2, ArgumentLimits.min,
+                           2, ArgumentLimitType.Min,
                            My.Resources.Command_Client_StartAdvertising_Help,
                            My.Resources.Command_Client_StartAdvertising_Access,
                            My.Resources.Command_Client_StartAdvertising_ExtraHelp)
@@ -541,11 +541,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which tells the client to stop advertising a game.</summary>
-        Public Class com_StopAdvertising
+        Public Class CommandStopAdvertising
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_StopAdvertising,
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            My.Resources.Command_Client_StopAdvertising_Help,
                            My.Resources.Command_Client_StopAdvertising_Access,
                            My.Resources.Command_Client_StopAdvertising_ExtraHelp)
@@ -557,11 +557,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_Elevate
+        Public Class CommandElevate
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Elevate,
-                        1, ArgumentLimits.max,
+                        1, ArgumentLimitType.Max,
                         My.Resources.Command_Client_Elevate_Help,
                         My.Resources.Command_Client_Elevate_Access,
                         My.Resources.Command_Client_Elevate_ExtraHelp)
@@ -600,14 +600,14 @@ Namespace Commands.Specializations
         Inherits BaseClientCommands
 
         Public Sub New()
-            AddCommand(New com_Connect)
+            AddCommand(New CommandConnect)
         End Sub
 
-        Private Class com_Connect
+        Private Class CommandConnect
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Connect,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Client_Connect_Help,
                            My.Resources.Command_Client_Connect_Access,
                            My.Resources.Command_Client_Connect_ExtraHelp)

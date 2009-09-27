@@ -7,35 +7,35 @@ Namespace Warcraft3
         Private destinationPath As String
         Private downloadPath As String
         Public ReadOnly size As UInteger
-        Private crc() As Byte
-        Private xoro() As Byte
-        Private sha1() As Byte
+        Private ReadOnly contentChecksumCRC32 As ViewableList(Of Byte)
+        Private ReadOnly contentChecksumXORO As ViewableList(Of Byte)
+        Private ReadOnly contentChecksumSHA1 As ViewableList(Of Byte)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(downloadPath IsNot Nothing)
             Contract.Invariant(destinationPath IsNot Nothing)
-            Contract.Invariant(crc IsNot Nothing)
-            Contract.Invariant(xoro IsNot Nothing)
-            Contract.Invariant(sha1 IsNot Nothing)
-            Contract.Invariant(crc.Length = 4)
-            Contract.Invariant(xoro.Length = 4)
-            Contract.Invariant(sha1.Length = 20)
+            Contract.Invariant(contentChecksumCRC32 IsNot Nothing)
+            Contract.Invariant(contentChecksumXORO IsNot Nothing)
+            Contract.Invariant(contentChecksumSHA1 IsNot Nothing)
+            Contract.Invariant(contentChecksumCRC32.Length = 4)
+            Contract.Invariant(contentChecksumXORO.Length = 4)
+            Contract.Invariant(contentChecksumSHA1.Length = 20)
             Contract.Invariant(size > 0)
         End Sub
 
         Public Sub New(ByVal path As String,
                        ByVal size As UInteger,
-                       ByVal crc() As Byte,
-                       ByVal xoro As Byte(),
-                       ByVal sha1 As Byte())
+                       ByVal contentChecksumCRC32 As ViewableList(Of Byte),
+                       ByVal contentChecksumXORO As ViewableList(Of Byte),
+                       ByVal contentChecksumSHA1 As ViewableList(Of Byte))
             Contract.Requires(path IsNot Nothing)
             Contract.Requires(size > 0)
-            Contract.Requires(crc IsNot Nothing)
-            Contract.Requires(xoro IsNot Nothing)
-            Contract.Requires(sha1 IsNot Nothing)
-            Contract.Requires(crc.Length = 4)
-            Contract.Requires(xoro.Length = 4)
-            Contract.Requires(sha1.Length = 20)
+            Contract.Requires(contentChecksumCRC32 IsNot Nothing)
+            Contract.Requires(contentChecksumXORO IsNot Nothing)
+            Contract.Requires(contentChecksumSHA1 IsNot Nothing)
+            Contract.Requires(contentChecksumCRC32.Length = 4)
+            Contract.Requires(contentChecksumXORO.Length = 4)
+            Contract.Requires(contentChecksumSHA1.Length = 20)
 
             If Not IO.Directory.Exists(My.Settings.mapPath + "HostBot") Then
                 IO.Directory.CreateDirectory(My.Settings.mapPath + "HostBot")
@@ -45,19 +45,19 @@ Namespace Warcraft3
             Dim fileExtension = IO.Path.GetExtension(filename)
             Dim n = 1
             Do
-                Me.destinationPath = "{0}{1}{2}{3}{4}{5}".frmt(My.Settings.mapPath,
+                Me.destinationPath = "{0}{1}{2}{3}{4}{5}".Frmt(My.Settings.mapPath,
                                                                "HostBot",
                                                                IO.Path.DirectorySeparatorChar,
                                                                filenameWithoutExtension,
-                                                               If(n = 1, "", " " + n.ToString),
+                                                               If(n = 1, "", " " + n.ToString(CultureInfo.InvariantCulture)),
                                                                fileExtension)
                 Me.downloadPath = Me.destinationPath + ".dl"
                 n += 1
             Loop While IO.File.Exists(Me.destinationPath) Or IO.File.Exists(Me.downloadPath)
             Me.size = size
-            Me.crc = crc
-            Me.xoro = xoro
-            Me.sha1 = sha1
+            Me.contentChecksumCRC32 = contentChecksumCRC32
+            Me.contentChecksumXORO = contentChecksumXORO
+            Me.contentChecksumSHA1 = contentChecksumSHA1
             Me.file = New IO.FileStream(Me.downloadPath, IO.FileMode.OpenOrCreate, IO.FileAccess.Write, IO.FileShare.None)
         End Sub
 
@@ -75,9 +75,9 @@ Namespace Warcraft3
                 file.Close()
                 file = Nothing
                 Dim map As New W3Map(My.Settings.mapPath, downloadPath.Substring(My.Settings.mapPath.Length), My.Settings.war3path)
-                If Not map.ChecksumSha1.HasSameItemsAs(sha1) Then Throw New IO.IOException("Invalid data.")
-                If Not map.ChecksumXoro.HasSameItemsAs(xoro) Then Throw New IO.IOException("Invalid data.")
-                If Not map.Crc32.HasSameItemsAs(crc) Then Throw New IO.IOException("Invalid data.")
+                If Not map.ChecksumSHA1.HasSameItemsAs(contentChecksumSHA1) Then Throw New IO.IOException("Invalid data.")
+                If Not map.ChecksumXORO.HasSameItemsAs(contentChecksumXORO) Then Throw New IO.IOException("Invalid data.")
+                If Not map.ChecksumCRC32.HasSameItemsAs(contentChecksumCRC32) Then Throw New IO.IOException("Invalid data.")
                 IO.File.Move(downloadPath, destinationPath)
                 Return True
             End If

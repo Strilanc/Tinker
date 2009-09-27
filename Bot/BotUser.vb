@@ -1,152 +1,146 @@
 Public Class BotUser
     Public ReadOnly name As String
-    Private setting_map As New Dictionary(Of String, String)
-    Private permission_map As New Dictionary(Of String, UInteger)
+    Private settingMap As New Dictionary(Of String, String)
+    Private permissionMap As New Dictionary(Of String, UInteger)
     Private Const MAX_PERMISSION_VALUE As UInteger = 10
     Private Const MIN_PERMISSION_VALUE As UInteger = 0
     Private Const SEPARATION_CHAR As Char = ";"c
 
-    Public Shared Function pack2(ByVal s As String) As String
-        s = s.Replace("\", "\/")
-        s = s.Replace(SEPARATION_CHAR, "\sep/")
-        s = s.Replace(Environment.NewLine, "\n")
-        s = s.Replace(vbTab, "\t")
-        s = s.Replace("=", "\eq/")
-        Return s
+    Public Shared Function Pack(ByVal value As String) As String
+        value = value.Replace("\", "\/")
+        value = value.Replace(SEPARATION_CHAR, "\sep/")
+        value = value.Replace(Environment.NewLine, "\n")
+        value = value.Replace(vbTab, "\t")
+        value = value.Replace("=", "\eq/")
+        Return value
     End Function
-    Public Shared Function unpack2(ByVal s As String) As String
-        s = s.Replace("\eq/", "=")
-        s = s.Replace("\t", vbTab)
-        s = s.Replace("\n", Environment.NewLine)
-        s = s.Replace("\sep/", SEPARATION_CHAR)
-        s = s.Replace("\/", "\")
-        Return s
-    End Function
-
-    Public Function packPermissions() As String
-        Dim packed_vals As String = ""
-        For Each permission As String In permission_map.Keys
-            If packed_vals <> "" Then packed_vals += SEPARATION_CHAR
-            packed_vals += pack2(permission) + "=" + permission_map(permission).ToString()
-        Next permission
-        Return packed_vals
-    End Function
-    Public Function packSettings() As String
-        Dim packed_vals As String = ""
-        For Each setting As String In setting_map.Keys
-            If packed_vals <> "" Then packed_vals += SEPARATION_CHAR
-            packed_vals += pack2(setting) + "=" + pack2(setting_map(setting))
-        Next setting
-        Return packed_vals
+    Public Shared Function Unpack(ByVal value As String) As String
+        value = value.Replace("\eq/", "=")
+        value = value.Replace("\t", vbTab)
+        value = value.Replace("\n", Environment.NewLine)
+        value = value.Replace("\sep/", SEPARATION_CHAR)
+        value = value.Replace("\/", "\")
+        Return value
     End Function
 
-    Public Shared Function unpackPermissions(ByVal packed_permissions As String) As Dictionary(Of String, UInteger)
-        Dim permission_map As New Dictionary(Of String, UInteger)
-        For Each permission As String In packed_permissions.Split(";"c)
-            Dim pair() As String = permission.Split("="c)
+    Public Function PackPermissions() As String
+        Dim packedVals = ""
+        For Each key In permissionMap.Keys
+            If packedVals <> "" Then packedVals += SEPARATION_CHAR
+            packedVals += "{0}={1}".Frmt(Pack(key), permissionMap(key))
+        Next key
+        Return packedVals
+    End Function
+    Public Function PackSettings() As String
+        Dim packedVals As String = ""
+        For Each key In settingMap.Keys
+            If packedVals <> "" Then packedVals += SEPARATION_CHAR
+            packedVals += Pack(key) + "=" + Pack(settingMap(key))
+        Next key
+        Return packedVals
+    End Function
+
+    Public Shared Function UnpackPermissions(ByVal packedPermissions As String) As Dictionary(Of String, UInteger)
+        Dim permissionMap = New Dictionary(Of String, UInteger)
+        For Each key In packedPermissions.Split(";"c)
+            Dim pair = key.Split("="c)
             If pair.Length <> 2 Then Continue For
-            Dim v As UInteger
-            If Not UInteger.TryParse(pair(1), v) Then Continue For
-            v = v.Between(MIN_PERMISSION_VALUE, MAX_PERMISSION_VALUE)
-            permission_map(unpack2(pair(0))) = v
-        Next permission
-        Return permission_map
+            Dim value As UInteger
+            If Not UInteger.TryParse(pair(1), value) Then Continue For
+            value = value.Between(MIN_PERMISSION_VALUE, MAX_PERMISSION_VALUE)
+            permissionMap(Unpack(pair(0))) = value
+        Next key
+        Return permissionMap
     End Function
-    Public Shared Function unpackSettings(ByVal packed_settings As String) As Dictionary(Of String, String)
-        Dim setting_map As New Dictionary(Of String, String)
-        For Each setting As String In packed_settings.Split(";"c)
-            Dim pair() As String = setting.Split("="c)
+    Public Shared Function UnpackSettings(ByVal packedSettings As String) As Dictionary(Of String, String)
+        Dim settingMap As New Dictionary(Of String, String)
+        For Each key In packedSettings.Split(";"c)
+            Dim pair = key.Split("="c)
             If pair.Length <> 2 Then Continue For
-            setting_map(unpack2(pair(0))) = unpack2(pair(1))
-        Next setting
-        Return setting_map
+            settingMap(Unpack(pair(0))) = Unpack(pair(1))
+        Next key
+        Return settingMap
     End Function
 
-    Public Sub New(ByVal name As String, Optional ByVal packed_permissions As String = Nothing, Optional ByVal packed_settings As String = Nothing)
+    Public Sub New(ByVal name As String,
+                   Optional ByVal packedPermissions As String = Nothing,
+                   Optional ByVal packedSettings As String = Nothing)
         Me.name = name
-        If packed_permissions IsNot Nothing Then
-            updatePermissions(packed_permissions)
+        If packedPermissions IsNot Nothing Then
+            UpdatePermissions(packedPermissions)
         End If
-        If packed_settings IsNot Nothing Then
-            updateSettings(packed_settings)
+        If packedSettings IsNot Nothing Then
+            UpdateSettings(packedSettings)
         End If
     End Sub
 
-    Public Sub updatePermissions(ByVal packed_permissions As String)
-        permission_map = unpackPermissions(packed_permissions)
+    Public Sub UpdatePermissions(ByVal packedPermissions As String)
+        permissionMap = UnpackPermissions(packedPermissions)
     End Sub
-    Public Sub updateSettings(ByVal packed_settings As String)
-        setting_map = unpackSettings(packed_settings)
+    Public Sub UpdateSettings(ByVal packedSettings As String)
+        settingMap = UnpackSettings(packedSettings)
     End Sub
 
-    Public Property permission(ByVal key As String) As UInteger
+    Public Property Permission(ByVal key As String) As UInteger
         Get
-            If Not permission_map.ContainsKey(key) Then Return 0
-            Return permission_map(key)
+            If Not permissionMap.ContainsKey(key) Then Return 0
+            Return permissionMap(key)
         End Get
         Set(ByVal value As UInteger)
-            permission_map(key) = value
+            permissionMap(key) = value
         End Set
     End Property
-    Public Property setting(ByVal key As String) As String
+    Public Property Setting(ByVal key As String) As String
         Get
-            If Not setting_map.ContainsKey(key) Then Return Nothing
-            Return setting_map(key)
+            If Not settingMap.ContainsKey(key) Then Return Nothing
+            Return settingMap(key)
         End Get
         Set(ByVal value As String)
-            setting_map(key) = value
+            settingMap(key) = value
         End Set
     End Property
-    Public Function getSettings() As IEnumerable(Of String)
-        Return setting_map.Keys
-    End Function
-    Public Function getPermissions() As IEnumerable(Of String)
-        Return permission_map.Keys
-    End Function
 
-    Public Sub save(ByVal w As IO.BinaryWriter)
-        w.Write(name)
-        w.Write(CUShort(setting_map.Keys.Count))
-        For Each key As String In setting_map.Keys
-            w.Write(key)
-            w.Write(setting_map(key))
+    Public Sub Save(ByVal bw As IO.BinaryWriter)
+        bw.Write(name)
+        bw.Write(CUShort(settingMap.Keys.Count))
+        For Each key As String In settingMap.Keys
+            bw.Write(key)
+            bw.Write(settingMap(key))
         Next key
-        w.Write(CUShort(permission_map.Keys.Count))
-        For Each key As String In permission_map.Keys
-            w.Write(key)
-            w.Write(permission_map(key))
+        bw.Write(CUShort(permissionMap.Keys.Count))
+        For Each key As String In permissionMap.Keys
+            bw.Write(key)
+            bw.Write(permissionMap(key))
         Next key
     End Sub
-    Public Sub New(ByVal r As IO.BinaryReader)
-        name = r.ReadString()
-        For i As Integer = 1 To r.ReadUInt16()
-            Dim key As String = r.ReadString()
-            setting_map(key) = r.ReadString()
+    Public Sub New(ByVal reader As IO.BinaryReader)
+        name = reader.ReadString()
+        For i = 1 To reader.ReadUInt16()
+            settingMap(reader.ReadString()) = reader.ReadString()
         Next i
-        For i As Integer = 1 To r.ReadUInt16()
-            Dim key As String = r.ReadString()
-            permission_map(key) = r.ReadUInt32()
+        For i = 1 To reader.ReadUInt16()
+            permissionMap(reader.ReadString()) = reader.ReadUInt32()
         Next i
     End Sub
 
-    Public Function clone(Optional ByVal new_name As String = Nothing) As BotUser
-        If new_name Is Nothing Then new_name = name
-        Dim new_user As New BotUser(new_name)
-        For Each key As String In setting_map.Keys
-            new_user.setting_map(key) = setting_map(key)
+    Public Function Clone(Optional ByVal newName As String = Nothing) As BotUser
+        If newName Is Nothing Then newName = name
+        Dim newUser As New BotUser(newName)
+        For Each key As String In settingMap.Keys
+            newUser.settingMap(key) = settingMap(key)
         Next key
-        For Each key As String In permission_map.Keys
-            new_user.permission_map(key) = permission_map(key)
+        For Each key As String In permissionMap.Keys
+            newUser.permissionMap(key) = permissionMap(key)
         Next key
-        Return new_user
+        Return newUser
     End Function
 
     Public Shared Operator <(ByVal user1 As BotUser, ByVal user2 As BotUser) As Boolean
         If Not user1 <= user2 Then Return False
 
         For Each user As BotUser In New BotUser() {user1, user2}
-            For Each key As String In user.permission_map.Keys
-                If user1.permission(key) < user2.permission(key) Then Return True
+            For Each key As String In user.permissionMap.Keys
+                If user1.Permission(key) < user2.Permission(key) Then Return True
             Next key
         Next user
 
@@ -157,8 +151,8 @@ Public Class BotUser
     End Operator
     Public Shared Operator <=(ByVal user1 As BotUser, ByVal user2 As BotUser) As Boolean
         For Each user As BotUser In New BotUser() {user1, user2}
-            For Each key As String In user.permission_map.Keys
-                If user1.permission(key) > user2.permission(key) Then Return False
+            For Each key As String In user.permissionMap.Keys
+                If user1.Permission(key) > user2.Permission(key) Then Return False
             Next key
         Next user
 
@@ -170,9 +164,9 @@ Public Class BotUser
 
     Public Overrides Function ToString() As String
         ToString = name + ":"
-        For Each key As String In permission_map.Keys
-            If permission_map(key) = 0 Then Continue For
-            ToString += " " + key + "=" + permission_map(key).ToString()
+        For Each key As String In permissionMap.Keys
+            If permissionMap(key) = 0 Then Continue For
+            ToString += " {0}={1}".Frmt(key, permissionMap(key))
         Next key
     End Function
 End Class
@@ -180,20 +174,20 @@ End Class
 Public Class BotUserSet
     Private ReadOnly userMap As New Dictionary(Of String, BotUser)
     Private ReadOnly tempUserMap As New Dictionary(Of String, BotUser)
-    Public Const NAME_UNKNOWN_USER As String = "*unknown"
-    Public Const NAME_NEW_USER As String = "*new"
+    Public Const UnknownUserKey As String = "*unknown"
+    Public Const NewUserKey As String = "*new"
 
-    Public Function users() As IEnumerable(Of BotUser)
+    Public Function Users() As IEnumerable(Of BotUser)
         Return userMap.Values()
     End Function
 
     Public Function CreateNewUser(ByVal name As String) As BotUser
         Contract.Requires(name IsNot Nothing)
-        Dim key = name.ToLower
+        Dim key = name.ToUpperInvariant
         If userMap.ContainsKey(key) Then
             Throw New InvalidOperationException("User already exists")
-        ElseIf userMap.ContainsKey(NAME_NEW_USER) Then
-            Dim user = userMap(NAME_NEW_USER).clone(name)
+        ElseIf userMap.ContainsKey(NewUserKey) Then
+            Dim user = userMap(NewUserKey).Clone(name)
             AddUser(user)
             Return user
         Else
@@ -206,18 +200,18 @@ Public Class BotUserSet
     Public Sub RemoveUser(ByVal name As String)
         Contract.Requires(name IsNot Nothing)
         If Not ContainsUser(name) Then Throw New InvalidOperationException("That user doesn't exist")
-        userMap.Remove(name.ToLower)
+        userMap.Remove(name.ToUpperInvariant)
     End Sub
-    Default Public ReadOnly Property user(ByVal name As String) As BotUser
+    Default Public ReadOnly Property User(ByVal name As String) As BotUser
         Get
             Contract.Requires(name IsNot Nothing)
-            Dim key As String = name.ToLower
+            Dim key = name.ToUpperInvariant
             If userMap.ContainsKey(key) Then
                 Return userMap(key)
             ElseIf tempUserMap.ContainsKey(key) Then
                 Return tempUserMap(key)
-            ElseIf userMap.ContainsKey(NAME_UNKNOWN_USER) Then
-                tempUserMap(name) = userMap(NAME_UNKNOWN_USER).clone(name)
+            ElseIf userMap.ContainsKey(UnknownUserKey) Then
+                tempUserMap(name) = userMap(UnknownUserKey).Clone(name)
                 Return tempUserMap(name)
             Else
                 Return Nothing
@@ -227,26 +221,26 @@ Public Class BotUserSet
 
     Public Function ContainsUser(ByVal name As String) As Boolean
         Contract.Requires(name IsNot Nothing)
-        Return userMap.ContainsKey(name.ToLower())
+        Return userMap.ContainsKey(name.ToUpperInvariant)
     End Function
 
-    Public Sub RemoveOtherUsers(ByVal usernames As IList(Of String))
-        Contract.Requires(usernames IsNot Nothing)
+    Public Sub RemoveOtherUsers(ByVal userNames As IList(Of String))
+        Contract.Requires(userNames IsNot Nothing)
         'Find users not in the usernames list
-        Dim removed_users = New List(Of String)
-        For Each existing_name In userMap.Keys
+        Dim removedUsers = New List(Of String)
+        For Each key In userMap.Keys
             Dim keep = False
-            For Each kept_name In usernames
-                If kept_name.ToLower() = existing_name.ToLower() Then
+            For Each keptName In userNames
+                If keptName.ToUpperInvariant = key.ToUpperInvariant Then
                     keep = True
                     Exit For
                 End If
-            Next kept_name
-            If Not keep Then removed_users.Add(existing_name)
-        Next existing_name
+            Next keptName
+            If Not keep Then removedUsers.Add(key)
+        Next key
 
         'Remove those users
-        For Each name In removed_users
+        For Each name In removedUsers
             RemoveUser(name)
         Next name
     End Sub
@@ -254,8 +248,8 @@ Public Class BotUserSet
         Contract.Requires(user IsNot Nothing)
         If ContainsUser(user.name) Then
             Dim oldUser = Me(user.name)
-            oldUser.updatePermissions(user.packPermissions)
-            oldUser.updateSettings(user.packSettings)
+            oldUser.UpdatePermissions(user.PackPermissions)
+            oldUser.UpdateSettings(user.PackSettings)
         Else
             AddUser(user)
         End If
@@ -264,28 +258,27 @@ Public Class BotUserSet
     Public Sub AddUser(ByVal user As BotUser)
         Contract.Requires(user IsNot Nothing)
         If ContainsUser(user.name) Then Throw New InvalidOperationException("That user already exists")
-        userMap(user.name.ToLower) = user
+        userMap(user.name.ToUpperInvariant) = user
     End Sub
 
-    Public Sub Load(ByVal r As IO.BinaryReader)
-        Contract.Requires(r IsNot Nothing)
-        For i As Integer = 1 To r.ReadUInt16()
-            Dim new_user As New BotUser(r)
-            AddUser(new_user)
+    Public Sub Load(ByVal reader As IO.BinaryReader)
+        Contract.Requires(reader IsNot Nothing)
+        For i = 1 To reader.ReadUInt16()
+            AddUser(New BotUser(reader))
         Next i
     End Sub
-    Public Sub Save(ByVal w As IO.BinaryWriter)
-        Contract.Requires(w IsNot Nothing)
-        w.Write(CUShort(userMap.Keys.Count))
-        For Each user As BotUser In userMap.Values
-            user.save(w)
-        Next user
+    Public Sub Save(ByVal bw As IO.BinaryWriter)
+        Contract.Requires(bw IsNot Nothing)
+        bw.Write(CUShort(userMap.Keys.Count))
+        For Each e In userMap.Values
+            e.Save(bw)
+        Next e
     End Sub
 
     Public Function Clone() As BotUserSet
         Dim newUserSet As New BotUserSet
         For Each user As BotUser In userMap.Values
-            newUserSet.AddUser(user.clone())
+            newUserSet.AddUser(user.Clone())
         Next user
         Return newUserSet
     End Function

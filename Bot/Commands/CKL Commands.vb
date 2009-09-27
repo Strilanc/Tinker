@@ -6,23 +6,23 @@ Imports HostBot.CKL
 
 Namespace Commands.Specializations
     Public Class CKLCommands
-        Inherits UICommandSet(Of CklServer)
+        Inherits CommandSet(Of CKLServer)
 
         Public Sub New()
-            AddCommand(New com_AddKey)
-            AddCommand(New com_RemoveKey)
+            AddCommand(New CommandAddKey)
+            AddCommand(New CommandRemoveKey)
         End Sub
 
         '''<summary>Starts advertising a game.</summary>
-        Private Class com_AddKey
-            Inherits BaseCommand(Of CklServer)
+        Private Class CommandAddKey
+            Inherits BaseCommand(Of CKLServer)
             Public Sub New()
                 MyBase.New("AddKey",
-                           3, ArgumentLimits.exact,
+                           3, ArgumentLimitType.Exact,
                            "[--AddKey Name RocKey TftKey] Adds a key for lending.",
                            "", "", True)
             End Sub
-            Public Overrides Function Process(ByVal target As CklServer,
+            Public Overrides Function Process(ByVal target As CKLServer,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Dim name = arguments(0)
@@ -33,14 +33,14 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>Stops advertising a game.</summary>
-        Private Class com_RemoveKey
-            Inherits BaseCommand(Of CklServer)
+        Private Class CommandRemoveKey
+            Inherits BaseCommand(Of CKLServer)
             Public Sub New()
                 MyBase.New("RemoveKey",
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            "[--RemoveKey Name] Removes a game being advertised.")
             End Sub
-            Public Overrides Function Process(ByVal target As CklServer,
+            Public Overrides Function Process(ByVal target As CKLServer,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Dim name = arguments(0)

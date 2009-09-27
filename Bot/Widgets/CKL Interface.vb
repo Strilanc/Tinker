@@ -1,44 +1,45 @@
-﻿Imports HostBot.Bnet.BnetPacket
+﻿Imports HostBot.Commands
+Imports HostBot.Bnet.BnetPacket
 
 Namespace CKL
-    Public Enum CklPacketId As Byte
-        [error] = 0
-        keys = 1
+    Public Enum CKLPacketId As Byte
+        [Error] = 0
+        Keys = 1
     End Enum
 
-    Public Class CklKey
+    Public Class CKLKey
         Private Shared ReadOnly cdKeyJar As New CDKeyJar("cdkey data")
         Public ReadOnly name As String
-        Public ReadOnly rocKey As String
-        Public ReadOnly tftKey As String
+        Public ReadOnly cdKeyROC As String
+        Public ReadOnly cdKeyTFT As String
         Public Sub New(ByVal name As String,
-                       ByVal rocKey As String,
-                       ByVal tftKey As String)
+                       ByVal cdKeyROC As String,
+                       ByVal cdKeyTFT As String)
             Me.name = name
-            Me.rocKey = rocKey
-            Me.tftKey = tftKey
+            Me.cdKeyROC = cdKeyROC
+            Me.cdKeyTFT = cdKeyTFT
         End Sub
         Public Function Pack(ByVal clientToken As ViewableList(Of Byte),
                              ByVal serverToken As ViewableList(Of Byte)) As Byte()
-            Return Concat(From key In {rocKey, tftKey}
-                          Select cdKeyJar.pack(cdKeyJar.packCDKey(key, clientToken, serverToken)).Data.ToArray)
+            Return Concat(From key In {cdKeyROC, cdKeyTFT}
+                          Select cdKeyJar.pack(cdKeyJar.PackCDKey(key, clientToken, serverToken)).Data.ToArray)
         End Function
     End Class
-    Public Class CklEncodedKey
-        Public ReadOnly rocKey As Dictionary(Of String, Object)
-        Public ReadOnly tftKey As Dictionary(Of String, Object)
-        Public Sub New(ByVal rocKey As Dictionary(Of String, Object),
-                       ByVal tftKey As Dictionary(Of String, Object))
-            Me.rocKey = rocKey
-            Me.tftKey = tftKey
+    Public Class CKLEncodedKey
+        Public ReadOnly CDKeyROC As Dictionary(Of String, Object)
+        Public ReadOnly CDKeyTFT As Dictionary(Of String, Object)
+        Public Sub New(ByVal cdKeyROC As Dictionary(Of String, Object),
+                       ByVal cdKeyTFT As Dictionary(Of String, Object))
+            Me.CDKeyROC = cdKeyROC
+            Me.CDKeyTFT = cdKeyTFT
         End Sub
     End Class
 
     Public NotInheritable Class BotCKLServer
-        Inherits CKL.CklServer
+        Inherits CKL.CKLServer
         Implements IBotWidget
 
-        Public Const WIDGET_TYPE_NAME As String = "W3KeyServer"
+        Public Const WidgetTypeName As String = "W3KeyServer"
 
         Private Shared ReadOnly commander As New Commands.Specializations.CKLCommands()
 
@@ -47,28 +48,28 @@ Namespace CKL
         Private Event RemoveStateString(ByVal state As String) Implements IBotWidget.RemoveStateString
 
         Public Sub New(ByVal name As String,
-                       ByVal listen_port As PortPool.PortHandle)
-            MyBase.New(name, listen_port)
+                       ByVal listenPort As PortPool.PortHandle)
+            MyBase.New(name, listenPort)
             AddHandler KeyAdded, AddressOf c_KeyAdded
             AddHandler KeyRemoved, AddressOf c_KeyRemoved
         End Sub
         Public Sub New(ByVal name As String,
-                       ByVal listen_port As UShort)
-            MyBase.New(name, listen_port)
+                       ByVal listenPort As UShort)
+            MyBase.New(name, listenPort)
             AddHandler KeyAdded, AddressOf c_KeyAdded
             AddHandler KeyRemoved, AddressOf c_KeyRemoved
         End Sub
 
-        Private Sub c_KeyAdded(ByVal sender As CklServer, ByVal key As CklKey)
+        Private Sub c_KeyAdded(ByVal sender As CKLServer, ByVal key As CKLKey)
             RaiseEvent AddStateString(key.name, False)
         End Sub
-        Private Sub c_KeyRemoved(ByVal sender As CklServer, ByVal key As CklKey)
+        Private Sub c_KeyRemoved(ByVal sender As CKLServer, ByVal key As CKLKey)
             RaiseEvent RemoveStateString(key.name)
         End Sub
 
         Private ReadOnly Property _Logger() As Logger Implements IBotWidget.Logger
             Get
-                Return logger
+                Return Logger
             End Get
         End Property
         Private ReadOnly Property _Name() As String Implements IBotWidget.Name
@@ -78,17 +79,17 @@ Namespace CKL
         End Property
         Private ReadOnly Property _TypeName() As String Implements IBotWidget.TypeName
             Get
-                Return WIDGET_TYPE_NAME
+                Return WidgetTypeName
             End Get
         End Property
         Private Sub command(ByVal text As String) Implements IBotWidget.ProcessCommand
-            commander.ProcessLocalText(Me, text, logger)
+            commander.ProcessLocalText(Me, text, Logger)
         End Sub
         Private Sub hooked() Implements IBotWidget.Hooked
             RaiseEvent ClearStateStrings()
-            RaiseEvent AddStateString(GetReadableIpFromBytes(GetCachedIpAddressBytes(external:=True)), False)
-            For Each port In accepter.EnumPorts
-                RaiseEvent AddStateString("port " + port.ToString(), False)
+            RaiseEvent AddStateString(GetReadableIPFromBytes(GetCachedIPAddressBytes(external:=True)), False)
+            For Each port In Accepter.EnumPorts
+                RaiseEvent AddStateString("port {0}".Frmt(port), False)
             Next port
             RaiseEvent AddStateString("----------", False)
             ref.QueueFunc(Function() keys.ToList()).CallOnValueSuccess(
@@ -98,12 +99,12 @@ Namespace CKL
                     Next key
                 End Sub
             )
-            logger.log("Started.", LogMessageType.Negative)
+            Logger.Log("Started.", LogMessageType.Negative)
         End Sub
-        Public Overrides Sub [stop]() Implements IBotWidget.[Stop]
-            MyBase.[stop]()
+        Public Overrides Sub [Stop]() Implements IBotWidget.[Stop]
+            MyBase.[Stop]()
             RaiseEvent ClearStateStrings()
-            logger.log("Stopped.", LogMessageType.Negative)
+            Logger.Log("Stopped.", LogMessageType.Negative)
         End Sub
     End Class
 End Namespace

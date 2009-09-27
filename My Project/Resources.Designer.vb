@@ -133,42 +133,6 @@ Namespace My.Resources
         End Property
         
         '''<summary>
-        '''  Looks up a localized string similar to CreateAdmin.
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_CreateAdmin() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_CreateAdmin", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to root=5;games=5;users=5.
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_CreateAdmin_Access() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_CreateAdmin_Access", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to .
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_CreateAdmin_ExtraHelp() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_CreateAdmin_ExtraHelp", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to [--CreateAdmin name password server_port receiver=localhost] Creates a server with an admin game and a LAN advertiser for the server..
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_CreateAdmin_Help() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_CreateAdmin_Help", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
         '''  Looks up a localized string similar to CreateCKL.
         '''</summary>
         Friend ReadOnly Property Command_Bot_CreateCKL() As String
@@ -201,42 +165,6 @@ Namespace My.Resources
         Friend ReadOnly Property Command_Bot_CreateClient_Help() As String
             Get
                 Return ResourceManager.GetString("Command_Bot_CreateClient_Help", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to CreateLan.
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_CreateLan() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_CreateLan", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to root=5.
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_CreateLan_Access() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_CreateLan_Access", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to .
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_CreateLan_ExtraHelp() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_CreateLan_ExtraHelp", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to [CreateLan name server_port receiver=localhost] Creates a lan advertiser..
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_CreateLan_Help() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_CreateLan_Help", resourceCulture)
             End Get
         End Property
         
@@ -318,24 +246,6 @@ Namespace My.Resources
         End Property
         
         '''<summary>
-        '''  Looks up a localized string similar to GetSetting.
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_GetSetting() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_GetSetting", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to [--GetSetting setting] Returns the value of a global setting. Supported settings are tickperiod, laglimit, commandprefix..
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_GetSetting_Help() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_GetSetting_Help", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
         '''  Looks up a localized string similar to KillCKL.
         '''</summary>
         Friend ReadOnly Property Command_Bot_KillCKL() As String
@@ -368,42 +278,6 @@ Namespace My.Resources
         Friend ReadOnly Property Command_Bot_KillClient_Help() As String
             Get
                 Return ResourceManager.GetString("Command_Bot_KillClient_Help", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to KillLan.
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_KillLan() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_KillLan", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to root=5.
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_KillLan_Access() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_KillLan_Access", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to .
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_KillLan_ExtraHelp() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_KillLan_ExtraHelp", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to [KillLan name] Removes a lan advertiser..
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_KillLan_Help() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_KillLan_Help", resourceCulture)
             End Get
         End Property
         
@@ -458,24 +332,6 @@ Namespace My.Resources
         Friend ReadOnly Property Command_Bot_Server_Help() As String
             Get
                 Return ResourceManager.GetString("Command_Bot_Server_Help", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to SetSetting.
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_SetSetting() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_SetSetting", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to [--SetSetting setting value] Sets a global setting. Supported settings are tickperiod, laglimit, commandprefix..
-        '''</summary>
-        Friend ReadOnly Property Command_Bot_SetSetting_Help() As String
-            Get
-                Return ResourceManager.GetString("Command_Bot_SetSetting_Help", resourceCulture)
             End Get
         End Property
         
@@ -740,36 +596,36 @@ Namespace My.Resources
         '''<summary>
         '''  Looks up a localized string similar to login.
         '''</summary>
-        Friend ReadOnly Property Command_Client_Login() As String
+        Friend ReadOnly Property Command_Client_LogOn() As String
             Get
-                Return ResourceManager.GetString("Command_Client_Login", resourceCulture)
+                Return ResourceManager.GetString("Command_Client_LogOn", resourceCulture)
             End Get
         End Property
         
         '''<summary>
         '''  Looks up a localized string similar to root=4.
         '''</summary>
-        Friend ReadOnly Property Command_Client_Login_Access() As String
+        Friend ReadOnly Property Command_Client_LogOn_Access() As String
             Get
-                Return ResourceManager.GetString("Command_Client_Login_Access", resourceCulture)
+                Return ResourceManager.GetString("Command_Client_LogOn_Access", resourceCulture)
             End Get
         End Property
         
         '''<summary>
         '''  Looks up a localized string similar to .
         '''</summary>
-        Friend ReadOnly Property Command_Client_Login_ExtraHelp() As String
+        Friend ReadOnly Property Command_Client_LogOn_ExtraHelp() As String
             Get
-                Return ResourceManager.GetString("Command_Client_Login_ExtraHelp", resourceCulture)
+                Return ResourceManager.GetString("Command_Client_LogOn_ExtraHelp", resourceCulture)
             End Get
         End Property
         
         '''<summary>
         '''  Looks up a localized string similar to [--login username password].
         '''</summary>
-        Friend ReadOnly Property Command_Client_Login_Help() As String
+        Friend ReadOnly Property Command_Client_LogOn_Help() As String
             Get
-                Return ResourceManager.GetString("Command_Client_Login_Help", resourceCulture)
+                Return ResourceManager.GetString("Command_Client_LogOn_Help", resourceCulture)
             End Get
         End Property
         

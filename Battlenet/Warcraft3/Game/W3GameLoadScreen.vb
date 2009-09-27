@@ -41,16 +41,16 @@
             fakeTickTimer.Stop()
         End Sub
 
-        Private Sub LoadScreenCatchRemovedPlayer(ByVal p As W3Player, ByVal slot As W3Slot)
+        Private Sub OnLoadScreenRemovedPlayer(ByVal player As W3Player, ByVal slot As W3Slot)
             TryLaunch()
         End Sub
 
         '''<summary>Starts the in-game play if all players are ready</summary>
         Private Function TryLaunch() As Boolean
-            If (From x In players Where Not x.ready AndAlso Not x.isFake).Any Then
+            If (From x In players Where Not x.Ready AndAlso Not x.isFake).Any Then
                 Return False
             End If
-            ChangeState(W3GameStates.Playing)
+            ChangeState(W3GameState.Playing)
             logger.Log("Launching", LogMessageType.Positive)
 
             'start gameplay
@@ -66,9 +66,9 @@
             End If
         End Sub
 
-        Private Sub ReceiveReady(ByVal sendingPlayer As W3Player, ByVal vals As Dictionary(Of String, Object))
+        Private Sub ReceiveReady(ByVal sendingPlayer As W3Player, ByVal values As Dictionary(Of String, Object))
             Contract.Requires(sendingPlayer IsNot Nothing)
-            Contract.Requires(vals IsNot Nothing)
+            Contract.Requires(values IsNot Nothing)
 
             'Get if there is a visible readied player
             Dim visibleReadiedPlayer As W3Player = Nothing
@@ -130,7 +130,7 @@
         Private Sub c_FakeTick()
             ref.QueueAction(
                 Sub()
-                    If state > W3GameStates.Loading Then  Return
+                    If state > W3GameState.Loading Then  Return
                     If readyPlayers.Count = 0 Then  Return
 
                     numFakeTicks += 1
@@ -145,14 +145,15 @@
             )
         End Sub
 
-        Public Function QueueReceiveReady(ByVal player As W3Player, ByVal vals As Dictionary(Of String, Object)) As IFuture
+        Public Function QueueReceiveReady(ByVal player As W3Player,
+                                          ByVal values As Dictionary(Of String, Object)) As IFuture
             Contract.Requires(player IsNot Nothing)
-            Contract.Requires(vals IsNot Nothing)
+            Contract.Requires(values IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(player IsNot Nothing)
-                                       Contract.Assume(vals IsNot Nothing)
-                                       ReceiveReady(player, vals)
+                                       Contract.Assume(values IsNot Nothing)
+                                       ReceiveReady(player, values)
                                    End Sub)
         End Function
     End Class

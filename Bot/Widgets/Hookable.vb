@@ -4,10 +4,10 @@
     Function QueueDispose() As IFuture
 End Interface
 
-Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
-    Private ReadOnly tabs As New Dictionary(Of T, TabPage)
-    Private ReadOnly controls As New Dictionary(Of T, C)
-    Private ReadOnly elements As New List(Of T)
+Public Class TabControlIHookableSet(Of TElement, TControl As {Control, New, IHookable(Of TElement)})
+    Private ReadOnly tabs As New Dictionary(Of TElement, TabPage)
+    Private ReadOnly controls As New Dictionary(Of TElement, TControl)
+    Private ReadOnly elements As New List(Of TElement)
     Private ReadOnly tabCollection As TabControl.TabPageCollection
     Private ReadOnly ref As ICallQueue
 
@@ -16,12 +16,12 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         Me.ref = New InvokedCallQueue(tabControl)
     End Sub
 
-    Public Sub Add(ByVal element As T)
+    Public Sub Add(ByVal element As TElement)
         If tabs.ContainsKey(element) Then Throw New InvalidOperationException("Already have a control added for element.")
 
         'create
         Dim page = New TabPage()
-        Dim control = New C()
+        Dim control = New TControl()
         tabCollection.Add(page)
         page.Controls.Add(control)
 
@@ -39,38 +39,38 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
         UpdateText(element)
     End Sub
 
-    Private Sub UpdateText(ByVal element As T)
+    Private Sub UpdateText(ByVal element As TElement)
         Dim control = controls(element)
         Dim page = tabs(element)
         control.QueueGetCaption.CallOnValueSuccess(
             Sub(text)
-                                                       ref.QueueAction(
-                                                           Sub()
-                                                               Try
-                                                                   page.Text = text
-                                                               Catch e As Exception
-                                                               End Try
-                                                           End Sub
-                                                       )
-                                                   End Sub
+                ref.QueueAction(
+                    Sub()
+                        Try
+                            page.Text = text
+                        Catch e As Exception
+                        End Try
+                    End Sub
+                )
+            End Sub
         )
     End Sub
-    Public Sub Update(ByVal element As T)
+    Public Sub Update(ByVal element As TElement)
         If Not tabs.ContainsKey(element) Then Throw New InvalidOperationException("Don't have a control to update for element.")
         UpdateText(element)
     End Sub
 
-    Public Function Contains(ByVal element As T) As Boolean
+    Public Function Contains(ByVal element As TElement) As Boolean
         Return tabs.ContainsKey(element)
     End Function
 
-    Public Sub Replace(ByVal old_element As T, ByVal new_element As T)
-        If Not tabs.ContainsKey(old_element) Then Throw New InvalidOperationException("Don't have a control to replace for element.")
-        Dim control = controls(old_element)
-        control.QueueHook(new_element)
+    Public Sub Replace(ByVal oldElement As TElement, ByVal newElement As TElement)
+        If Not tabs.ContainsKey(oldElement) Then Throw New InvalidOperationException("Don't have a control to replace for element.")
+        Dim control = controls(oldElement)
+        control.QueueHook(newElement)
     End Sub
 
-    Public Sub Remove(ByVal element As T)
+    Public Sub Remove(ByVal element As TElement)
         If Not tabs.ContainsKey(element) Then Throw New InvalidOperationException("Don't have a control to remove for element.")
 
         'retrieve
@@ -101,7 +101,7 @@ Public Class TabControlIHookableSet(Of T, C As {Control, New, IHookable(Of T)})
 End Class
 
 Public Interface IBotWidget
-    Event AddStateString(ByVal state As String, ByVal insert_at_top As Boolean)
+    Event AddStateString(ByVal state As String, ByVal shouldInsertAtTop As Boolean)
     Event RemoveStateString(ByVal state As String)
     Event ClearStateStrings()
 

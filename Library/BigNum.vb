@@ -108,39 +108,6 @@ Public Class BigNum
         End Get
     End Property
 
-    Public Shared Function GreatestCommonDivisor(ByVal a As BigNum, ByVal b As BigNum) As BigNum
-        Contract.Requires(a IsNot Nothing)
-        Contract.Requires(b IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-        If b = 0 Then Return a
-        Return GreatestCommonDivisor(b, a Mod b)
-    End Function
-    Public Shared Function Lcm(ByVal a As BigNum, ByVal b As BigNum) As BigNum
-        Contract.Requires(a IsNot Nothing)
-        Contract.Requires(b IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-        Lcm = (a * b) \ GreatestCommonDivisor(a, b)
-    End Function
-    Public Shared Function GcdEx(ByVal a As BigNum, ByVal b As BigNum) As GcdExResult
-        Contract.Requires(a IsNot Nothing)
-        Contract.Requires(b IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of GcdExResult)() IsNot Nothing)
-
-        Dim division = DivMod(a, b)
-        If division.remainder = 0 Then Return New GcdExResult(0, 1)
-
-        Dim recursion = GcdEx(b, division.remainder)
-        Return New GcdExResult(recursion.Y, recursion.X - (recursion.Y * division.quotient))
-    End Function
-    Public Function MultiplicativeInverseMod(ByVal divisor As BigNum) As BigNum
-        Contract.Requires(divisor IsNot Nothing)
-        Contract.Ensures((Contract.Result(Of BigNum)() * Me) Mod divisor = 1)
-        Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-        If divisor <= 0 Then Throw New ArgumentException("Divisor must be positive", "divisor")
-        If Me < 0 Or Me >= divisor Then Return (Me Mod divisor).MultiplicativeInverseMod(divisor)
-        If Me = 0 Then Throw New InvalidOperationException("No multiplicate inverse exists, because this value is a multiple of the divisor.")
-        Return GcdEx(Me, divisor).X
-    End Function
     Public Function RandomUniformUpTo(ByVal rand As System.Security.Cryptography.RandomNumberGenerator,
                                       Optional ByVal allowEqual As Boolean = False,
                                       Optional ByVal allowZero As Boolean = True) As BigNum
@@ -460,14 +427,14 @@ Public Class BigNum
         Contract.Requires(value IsNot Nothing)
         Contract.Requires(divisor IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-        Return DivMod(value, divisor).quotient
+        Return DivMod(value, divisor).Quotient
     End Operator
     '''<summary>Returns the remainder of b1\b2</summary>
     Public Shared Operator Mod(ByVal value As BigNum, ByVal divisor As BigNum) As BigNum
         Contract.Requires(value IsNot Nothing)
         Contract.Requires(divisor IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-        Return DivMod(value, divisor).remainder
+        Return DivMod(value, divisor).Remainder
     End Operator
 #End Region
 
@@ -476,13 +443,13 @@ Public Class BigNum
     Public Class DivModResult
         Private ReadOnly _quotient As BigNum
         Private ReadOnly _remainder As BigNum
-        Public ReadOnly Property quotient As BigNum
+        Public ReadOnly Property Quotient As BigNum
             Get
                 Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
                 Return _quotient
             End Get
         End Property
-        Public ReadOnly Property remainder As BigNum
+        Public ReadOnly Property Remainder As BigNum
             Get
                 Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
                 Return _remainder
@@ -503,37 +470,9 @@ Public Class BigNum
 
         Public ReadOnly Property ToDecimal() As String
             Get
-                Return quotient.ToDecimal + " R=" + remainder.ToDecimal
+                Return Quotient.ToDecimal + " R=" + Remainder.ToDecimal
             End Get
         End Property
-    End Class
-    Public Class GcdExResult
-        Private ReadOnly _x As BigNum
-        Private ReadOnly _y As BigNum
-        Public ReadOnly Property X As BigNum
-            Get
-                Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-                Return _x
-            End Get
-        End Property
-        Public ReadOnly Property Y As BigNum
-            Get
-                Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-                Return _y
-            End Get
-        End Property
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_x IsNot Nothing)
-            Contract.Invariant(_y IsNot Nothing)
-        End Sub
-
-        Public Sub New(ByVal x As BigNum, ByVal y As BigNum)
-            Contract.Requires(x IsNot Nothing)
-            Contract.Requires(y IsNot Nothing)
-            Me._x = x
-            Me._y = y
-        End Sub
     End Class
 
     ''' <summary>
@@ -553,8 +492,8 @@ Public Class BigNum
         If numerator < 0 Then
             'Truncated division
             Dim d = DivMod(-numerator, denominator)
-            Dim q = -d.quotient
-            Dim r = -d.remainder
+            Dim q = -d.Quotient
+            Dim r = -d.Remainder
             'Switch to floored division
             If r < 0 Then
                 q -= 1
@@ -563,7 +502,7 @@ Public Class BigNum
             Return New DivModResult(q, r)
         ElseIf denominator < 0 Then
             Dim d = DivMod(numerator, -denominator)
-            Return New DivModResult(-d.quotient, d.remainder)
+            Return New DivModResult(-d.Quotient, d.Remainder)
         ElseIf denominator = 1 << (denominator.NumBits - 1) Then 'Power-of-2 division
             'Perform with shifts and masks
             Return New DivModResult(numerator >> (denominator.NumBits - 1), numerator And (denominator - 1))
@@ -591,20 +530,21 @@ Public Class BigNum
     End Function
 
     '''<summary>Returns a BigNum equal to this BigNum raised to the power p, mod m.</summary>
-    Public Function PowerMod(ByVal p As BigNum, ByVal m As BigNum) As BigNum
-        Contract.Requires(p IsNot Nothing)
-        Contract.Requires(m IsNot Nothing)
+    Public Function PowerMod(ByVal power As BigNum,
+                             ByVal divisor As BigNum) As BigNum
+        Contract.Requires(power IsNot Nothing)
+        Contract.Requires(divisor IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-        If Me < 0 OrElse p < 0 OrElse m < 0 Then Throw New ArgumentException("All arguments to PowerMod must be non-negative.")
-        If m = 0 Then Throw New ArgumentException("Denominator must be non-zero.", "denominator")
-        If m = 1 Then Return 0
-        If p = 0 Then Return 1
+        If Me < 0 OrElse power < 0 OrElse divisor < 0 Then Throw New ArgumentException("All arguments to PowerMod must be non-negative.")
+        If divisor = 0 Then Throw New ArgumentException("Denominator must be non-zero.", "divisor")
+        If divisor = 1 Then Return 0
+        If power = 0 Then Return 1
 
-        Dim factor = Me Mod m
+        Dim factor = Me Mod divisor
         Dim total = Unit
-        For i = 0 To p.NumBits() - 1
-            If p.Bit(i) Then total = (total * factor) Mod m
-            factor = (factor * factor) Mod m
+        For i = 0 To power.NumBits() - 1
+            If power.Bit(i) Then total = (total * factor) Mod divisor
+            factor = (factor * factor) Mod divisor
         Next i
 
         Return total
@@ -654,9 +594,9 @@ Public Class BigNum
 
         Dim L = New List(Of UInteger)
         Dim d = New DivModResult(Me.Abs(), 0)
-        While d.quotient > 0
-            d = BigNum.DivMod(d.quotient, base)
-            L.Add(CUInt(d.remainder))
+        While d.Quotient > 0
+            d = BigNum.DivMod(d.Quotient, base)
+            L.Add(CUInt(d.Remainder))
         End While
 
         Select Case byteOrder
@@ -717,18 +657,18 @@ Public Class BigNum
         If Me = 0 Then Return "0"
         If Me < 0 Then Return "-" + Me.Abs().ToString(base, byteOrder)
         Dim digits = ToBase(base, byteOrder)
-        Dim s As New System.Text.StringBuilder()
+        Dim result = New System.Text.StringBuilder()
         For i = 0 To digits.Count - 1
             Select Case digits(i)
                 Case 0 To 9
-                    s.Append(digits(i).ToString)
+                    result.Append(digits(i).ToString(CultureInfo.InvariantCulture))
                 Case 10 To 35
-                    s.Append(Chr(CByte(Asc("A"c) + digits(i) - 10)))
+                    result.Append(Chr(CByte(Asc("A"c) + digits(i) - 10)))
                 Case Else
-                    s.Append("?")
+                    result.Append("?")
             End Select
         Next i
-        Return s.ToString
+        Return result.ToString
     End Function
     Public Shared Function FromString(ByVal number As String,
                                       ByVal base As UInteger,
@@ -737,50 +677,50 @@ Public Class BigNum
         Contract.Requires(base >= 2)
         Contract.Requires(base <= 36)
         Contract.Ensures(Contract.Result(Of BigNum)() IsNot Nothing)
-        Dim L As New List(Of UInteger)
+        Dim digits = New List(Of UInteger)
         For Each c In number
             Select Case c
                 Case "0"c To "9"c
                     Dim s = CStr(c)
                     Contract.Assume(s IsNot Nothing)
-                    L.Add(Byte.Parse(s, Globalization.CultureInfo.InvariantCulture))
+                    digits.Add(Byte.Parse(s, CultureInfo.InvariantCulture))
                 Case "A"c To "Z"c
-                    L.Add(CUInt(Asc(c) - Asc("A") + 10))
+                    digits.Add(CUInt(Asc(c) - Asc("A") + 10))
                 Case "a"c To "z"c
-                    L.Add(CUInt(Asc(c) - Asc("a") + 10))
+                    digits.Add(CUInt(Asc(c) - Asc("a") + 10))
                 Case Else
                     Throw New ArgumentException("Invalid string.")
             End Select
         Next c
-        Return FromBase(L, base, byteOrder)
+        Return FromBase(digits, base, byteOrder)
     End Function
 #End Region
 
-#Region "Testing"
-    Friend Shared Sub RunTests(ByVal rand As Random)
-        Debug.Print("Testing BigNum")
-        Dim b = BigNum.FromString("B3500005D3AF30059ED523B65CCE3C442710DA2C566985346AD4835F1E122338", 16, ByteOrder.BigEndian)
-        Dim p = BigNum.FromString("BEE2CA68607F273D7C5A53196CB0B8E5E4A92CA677E6841D1ECBAF0CB0A85F15", 16, ByteOrder.BigEndian)
-        Dim m = BigNum.FromString("F8FF1A8B619918032186B68CA092B5557E976C78C73212D91216F6658523C787", 16, ByteOrder.BigEndian)
-        Dim r = BigNum.FromString("A0B0FBE45B9679E962D87055524385E122C70011D6D4636624A690741A381171", 16, ByteOrder.BigEndian)
-        If b <> b Then Throw New Exception("Incorrect result.")
-        If b.PowerMod(p, m) <> r Then Throw New Exception("Incorrect result.")
-        If b + r <> r + b Then Throw New Exception("Incorrect result.")
-        If b * r <> r * b Then Throw New Exception("Incorrect result.")
-        If -(-b) <> b Then Throw New Exception("Incorrect result.")
-        If b - r <> -(r - b) Then Throw New Exception("Incorrect result.")
-        If b - r <> b + -r Then Throw New Exception("Incorrect result.")
-        If (p * r) \ r <> p Then Throw New Exception("Incorrect result.")
-        If (p * r) Mod r <> 0 Then Throw New Exception("Incorrect result.")
-        If (p * r) * b <> p * (r * b) Then Throw New Exception("Incorrect result.")
-        If (p + r) + b <> p + (r + b) Then Throw New Exception("Incorrect result.")
-        If (p + r) * b <> p * b + r * b Then Throw New Exception("Incorrect result.")
-        If p * p <= p Then Throw New Exception("Incorrect result.")
-        If p + p <= p Then Throw New Exception("Incorrect result.")
-        If p - p <> 0 Then Throw New Exception("Incorrect result.")
-        If p \ p <> 1 Then Throw New Exception("Incorrect result.")
-        If p + p <> 2 * p Then Throw New Exception("Incorrect result.")
-        Debug.Print("BigNum Passed")
-    End Sub
-#End Region
+    '#Region "Testing"
+    '    Friend Shared Sub RunTests(ByVal rand As Random)
+    '        Debug.Print("Testing BigNum")
+    '        Dim b = BigNum.FromString("B3500005D3AF30059ED523B65CCE3C442710DA2C566985346AD4835F1E122338", 16, ByteOrder.BigEndian)
+    '        Dim p = BigNum.FromString("BEE2CA68607F273D7C5A53196CB0B8E5E4A92CA677E6841D1ECBAF0CB0A85F15", 16, ByteOrder.BigEndian)
+    '        Dim m = BigNum.FromString("F8FF1A8B619918032186B68CA092B5557E976C78C73212D91216F6658523C787", 16, ByteOrder.BigEndian)
+    '        Dim r = BigNum.FromString("A0B0FBE45B9679E962D87055524385E122C70011D6D4636624A690741A381171", 16, ByteOrder.BigEndian)
+    '        If b <> b Then Throw New Exception("Incorrect result.")
+    '        If b.PowerMod(p, m) <> r Then Throw New Exception("Incorrect result.")
+    '        If b + r <> r + b Then Throw New Exception("Incorrect result.")
+    '        If b * r <> r * b Then Throw New Exception("Incorrect result.")
+    '        If -(-b) <> b Then Throw New Exception("Incorrect result.")
+    '        If b - r <> -(r - b) Then Throw New Exception("Incorrect result.")
+    '        If b - r <> b + -r Then Throw New Exception("Incorrect result.")
+    '        If (p * r) \ r <> p Then Throw New Exception("Incorrect result.")
+    '        If (p * r) Mod r <> 0 Then Throw New Exception("Incorrect result.")
+    '        If (p * r) * b <> p * (r * b) Then Throw New Exception("Incorrect result.")
+    '        If (p + r) + b <> p + (r + b) Then Throw New Exception("Incorrect result.")
+    '        If (p + r) * b <> p * b + r * b Then Throw New Exception("Incorrect result.")
+    '        If p * p <= p Then Throw New Exception("Incorrect result.")
+    '        If p + p <= p Then Throw New Exception("Incorrect result.")
+    '        If p - p <> 0 Then Throw New Exception("Incorrect result.")
+    '        If p \ p <> 1 Then Throw New Exception("Incorrect result.")
+    '        If p + p <> 2 * p Then Throw New Exception("Incorrect result.")
+    '        Debug.Print("BigNum Passed")
+    '    End Sub
+    '#End Region
 End Class

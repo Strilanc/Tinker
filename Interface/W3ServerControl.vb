@@ -1,3 +1,4 @@
+Imports HostBot.Commands
 Imports HostBot.Warcraft3
 
 Public Class W3ServerControl
@@ -16,34 +17,34 @@ Public Class W3ServerControl
         Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".Frmt(server.name, server.GetSuffix)))
     End Function
 
-    Public Function QueueHook(ByVal server As W3Server) As IFuture Implements IHookable(Of W3Server).QueueHook
+    Public Function QueueHook(ByVal child As W3Server) As IFuture Implements IHookable(Of W3Server).QueueHook
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
-                If Me.server Is server Then  Return
+                If Me.server Is child Then  Return
                 Me.server = Nothing
                 If games IsNot Nothing Then
                     games.Clear()
                 Else
                     games = New TabControlIHookableSet(Of W3Game, W3GameControl)(tabsServer)
                 End If
-                Me.server = server
+                Me.server = child
 
                 Me.txtInfo.Text = ""
-                If server Is Nothing Then
+                If child Is Nothing Then
                     logServer.SetLogger(Nothing, Nothing)
                 Else
-                    logServer.SetLogger(server.logger, "Server")
-                    server.QueueGetGames().CallOnValueSuccess(Sub(games) ref.QueueAction(
+                    logServer.SetLogger(child.logger, "Server")
+                    child.QueueGetGames().CallOnValueSuccess(Sub(games) ref.QueueAction(
     Sub()
-        If server IsNot Me.server Then  Return
+        If child IsNot Me.server Then  Return
         For Each game In games
             If Me.games.Contains(game) Then  Continue For
             Me.games.Add(game)
         Next game
     End Sub
 ))
-                    Dim map = server.settings.map
+                    Dim map = child.settings.map
 
                     Dim info = "Map Name\n{0}\n\n" +
            "Relative Path\n{1}\n\n" +
@@ -63,9 +64,9 @@ Public Class W3ServerControl
                  map.numForces,
                  map.playableWidth, map.playableHeight,
                  map.FileSize,
-                 map.Crc32.ToHexString,
-                 map.ChecksumXoro.ToHexString,
-                 map.ChecksumSha1.ToHexString)
+                 map.ChecksumCRC32.ToHexString,
+                 map.ChecksumXORO.ToHexString,
+                 map.ChecksumSHA1.ToHexString)
                     txtInfo.Text = info
                 End If
             End Sub

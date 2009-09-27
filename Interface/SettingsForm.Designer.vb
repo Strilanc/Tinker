@@ -1,5 +1,5 @@
 <Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
-Partial Class FrmSettings
+Partial Class SettingsForm
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
@@ -20,7 +20,7 @@ Partial Class FrmSettings
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
-        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FrmSettings))
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(SettingsForm))
         Me.tipNormal = New System.Windows.Forms.ToolTip(Me.components)
         Me.txtMapPath = New System.Windows.Forms.TextBox()
         Me.txtProgramPath = New System.Windows.Forms.TextBox()
@@ -485,7 +485,7 @@ Partial Class FrmSettings
         Me.txtBnlsServer.Name = "txtBnlsServer"
         Me.txtBnlsServer.Size = New System.Drawing.Size(220, 20)
         Me.txtBnlsServer.TabIndex = 60
-        Me.tipNormal.SetToolTip(Me.txtBnlsServer, "The address:port of a bnls server which supports warden responses (eg. example.com:9999)." _
+        Me.tipNormal.SetToolTip(Me.txtBnlsServer, "The address:port of a BNLS server which supports warden responses (e.g. example.com:9999)." _
                                                     & vbNewLine & "The server is not given your username, password, or CD Keys." _
                                                     & vbNewLine & "However, if the server accidentally or purposefully returns incorrect responses, bnet will think you are cheating.")
         '
@@ -496,7 +496,7 @@ Partial Class FrmSettings
         Me.lblBnlsServer.Name = "lblBnlsServer"
         Me.lblBnlsServer.Size = New System.Drawing.Size(165, 13)
         Me.lblBnlsServer.TabIndex = 61
-        Me.lblBnlsServer.Text = "BattleNet Logon Server (Warden)"
+        Me.lblBnlsServer.Text = "BattleNet Login Server (Warden)"
         '
         'FrmSettings
         '

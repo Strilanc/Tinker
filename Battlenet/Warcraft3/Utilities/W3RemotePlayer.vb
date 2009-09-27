@@ -58,7 +58,7 @@ Namespace Warcraft3
 
         Public Sub New(ByVal name As String,
                        ByVal gameId As UInteger,
-                       ByVal entrykey As UInteger,
+                       ByVal entryKey As UInteger,
                        ByVal peerKey As UInteger,
                        ByVal listenPort As UShort,
                        ByVal remoteEndPoint As Net.IPEndPoint,
@@ -72,7 +72,7 @@ Namespace Warcraft3
             Me._remoteEndPoint = remoteEndPoint
             Me._socket = socket
             Me._gameId = gameId
-            Me._entryKey = entrykey
+            Me._entryKey = entryKey
         End Sub
     End Class
 

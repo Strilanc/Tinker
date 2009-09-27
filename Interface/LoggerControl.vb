@@ -2,7 +2,6 @@ Public Class LoggerControl
     Private callbackModeMap As New Dictionary(Of LogMessageType, CallbackMode)
     Private callbackColorMap As New Dictionary(Of LogMessageType, Color)
     Private WithEvents _logger As Logger
-    Private blockEvents As Boolean
     Private ReadOnly uiRef As New InvokedCallQueue(Me)
     Private lastQueuedMessage As New QueuedMessage(Nothing, Color.Black)
     Private nextQueuedMessage As QueuedMessage
@@ -54,10 +53,10 @@ Public Class LoggerControl
     End Sub
 
 #Region "State"
-    Public Sub SetLogUnexpected(ByVal b As Boolean)
+    Public Sub SetLogUnexpected(ByVal value As Boolean)
         SyncLock lock
-            If b = isLoggingUnexpectedExceptions Then Return
-            isLoggingUnexpectedExceptions = b
+            If value = isLoggingUnexpectedExceptions Then Return
+            isLoggingUnexpectedExceptions = value
             If isLoggingUnexpectedExceptions Then
                 AddHandler CaughtUnexpectedException, AddressOf OnLoggedUnexpectedException
             Else
@@ -72,7 +71,6 @@ Public Class LoggerControl
                          Optional ByVal parsedDataMode As CallbackMode = CallbackMode.Unspecified,
                          Optional ByVal rawDataMode As CallbackMode = CallbackMode.Unspecified)
         SyncLock lock
-            blockEvents = True
             If Me._logger IsNot Nothing Then
                 If filestream IsNot Nothing Then
                     filestream.Dispose()
@@ -83,10 +81,10 @@ Public Class LoggerControl
             End If
             Me._logger = logger
             If logger IsNot Nothing Then
-                filename = name + " " + DateTime.Now().ToString("MMM d, yyyy, HH-mm-ss") + ".txt"
+                filename = name + " " + DateTime.Now().ToString("MMM d, yyyy, HH-mm-ss", CultureInfo.InvariantCulture) + ".txt"
                 tips.SetToolTip(chkSaveFile, "Outputs logged messages to a file." + vbNewLine + _
                                              "Unchecking does not remove messages from the file." + vbNewLine + _
-                                             "Current Target File: '(My Documents)\HostBot\Logs\" + filename + "'")
+                                             "Current Target File: '(Documents)\HostBot\Logs\" + filename + "'")
             End If
             If dataEventsMode <> CallbackMode.Unspecified Then
                 callbackModeMap(LogMessageType.DataEvent) = dataEventsMode
@@ -100,7 +98,6 @@ Public Class LoggerControl
                 callbackModeMap(LogMessageType.DataRaw) = rawDataMode
                 SyncToCheckbox(chkRawData, LogMessageType.DataRaw)
             End If
-            blockEvents = False
         End SyncLock
     End Sub
 
@@ -121,7 +118,7 @@ Public Class LoggerControl
                 filestream = New IO.FileStream(folder + IO.Path.DirectorySeparatorChar + filename, IO.FileMode.Append, IO.FileAccess.Write, IO.FileShare.Read)
             Catch e As Exception
                 LogUnexpectedException("Error opening log file '" + filename + "' in My Documents\HostBot Logs.", e)
-                LogMessage("Error opening log file '" + filename + "' in My Documents\HostBot Logs.", Color.Red)
+                LogMessage("Error opening log file '" + filename + "' in Documents.", Color.Red)
                 Return False
             End Try
             Dim bb = ("-------------------------" + Environment.NewLine).ToAscBytes
@@ -155,7 +152,7 @@ Public Class LoggerControl
                 numQueuedMessages += 1
             End If
             If filestream IsNot Nothing Then
-                Dim data = (("[{0}]: {1}{2}").Frmt(DateTime.Now().ToString("dd/MM/yy HH:mm:ss.ffff"), message.message, Environment.NewLine)).ToAscBytes
+                Dim data = (("[{0}]: {1}{2}").Frmt(DateTime.Now().ToString("dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture), message.message, Environment.NewLine)).ToAscBytes
                 filestream.Write(data, 0, data.Length)
             End If
         End SyncLock

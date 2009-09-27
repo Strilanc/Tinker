@@ -1,9 +1,9 @@
 Public Class ClientProfile
     Public name As String
     Public users As New BotUserSet()
-    Public rocCdKey As String = ""
-    Public tftCdKey As String = ""
-    Public username As String = ""
+    Public cdKeyROC As String = ""
+    Public cdKeyTFT As String = ""
+    Public userName As String = ""
     Public password As String = ""
     Public server As String = "useast.battle.net (Azeroth)"
     Public listenPort As UShort = 6113
@@ -19,63 +19,63 @@ Public Class ClientProfile
         Contract.Requires(name IsNot Nothing)
         Me.name = name
     End Sub
-    Public Sub New(ByVal r As IO.BinaryReader)
-        Contract.Requires(r IsNot Nothing)
-        load(r)
+    Public Sub New(ByVal reader As IO.BinaryReader)
+        Contract.Requires(reader IsNot Nothing)
+        Load(reader)
     End Sub
 
-    Public Sub load(ByVal r As IO.BinaryReader)
-        Contract.Requires(r IsNot Nothing)
-        Dim version = r.ReadUInt16()
-        name = r.ReadString()
-        users.Load(r)
-        rocCdKey = r.ReadString()
-        tftCdKey = r.ReadString()
-        username = r.ReadString()
-        password = r.ReadString()
-        server = r.ReadString()
-        listenPort = r.ReadUInt16()
-        initialChannel = r.ReadString()
-        keyServerAddress = r.ReadString()
+    Public Sub Load(ByVal reader As IO.BinaryReader)
+        Contract.Requires(reader IsNot Nothing)
+        Dim version = reader.ReadUInt16()
+        name = reader.ReadString()
+        users.Load(reader)
+        cdKeyROC = reader.ReadString()
+        cdKeyTFT = reader.ReadString()
+        userName = reader.ReadString()
+        password = reader.ReadString()
+        server = reader.ReadString()
+        listenPort = reader.ReadUInt16()
+        initialChannel = reader.ReadString()
+        keyServerAddress = reader.ReadString()
         If version >= 1 Then
-            r.ReadString() 'lan_admin_host
-            r.ReadUInt16() 'lan_admin_port
-            lanHost = r.ReadString()
-            r.ReadString() 'lan_admin_password
+            reader.ReadString() 'lan_admin_host
+            reader.ReadUInt16() 'lan_admin_port
+            lanHost = reader.ReadString()
+            reader.ReadString() 'lan_admin_password
         End If
     End Sub
 
-    Public Sub save(ByVal w As IO.BinaryWriter)
-        Contract.Requires(w IsNot Nothing)
-        w.Write(version)
-        w.Write(name)
-        users.Save(w)
-        w.Write(rocCdKey)
-        w.Write(tftCdKey)
-        w.Write(username)
-        w.Write(password)
-        w.Write(server)
-        w.Write(listenPort)
-        w.Write(initialChannel)
-        w.Write(keyServerAddress)
+    Public Sub Save(ByVal bw As IO.BinaryWriter)
+        Contract.Requires(bw IsNot Nothing)
+        bw.Write(version)
+        bw.Write(name)
+        users.Save(bw)
+        bw.Write(cdKeyROC)
+        bw.Write(cdKeyTFT)
+        bw.Write(userName)
+        bw.Write(password)
+        bw.Write(server)
+        bw.Write(listenPort)
+        bw.Write(initialChannel)
+        bw.Write(keyServerAddress)
         If version >= 1 Then
-            w.Write(" (None)") 'old default lan_admin_host
-            w.Write(CUShort(6114)) 'old default lan_admin_port
-            w.Write(lanHost)
-            w.Write("") 'old default lan_admin_password
+            bw.Write(" (None)") 'old default lan_admin_host
+            bw.Write(CUShort(6114)) 'old default lan_admin_port
+            bw.Write(lanHost)
+            bw.Write("") 'old default lan_admin_password
         End If
     End Sub
 
-    Public Function clone(Optional ByVal name As String = Nothing) As ClientProfile
-        Dim newProfile As New ClientProfile
+    Public Function Clone(Optional ByVal newName As String = Nothing) As ClientProfile
+        Dim newProfile = New ClientProfile
         With newProfile
             .users = users.Clone()
-            .rocCdKey = rocCdKey
-            .tftCdKey = tftCdKey
-            .username = username
+            .cdKeyROC = cdKeyROC
+            .cdKeyTFT = cdKeyTFT
+            .userName = userName
             .password = password
             .server = server
-            .name = If(name, Me.name)
+            .name = If(newName, Me.name)
             .listenPort = listenPort
             .initialChannel = initialChannel
             .keyServerAddress = keyServerAddress

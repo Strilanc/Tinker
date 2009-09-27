@@ -28,7 +28,7 @@
     <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
     <TargetFrameworkSubset>
     </TargetFrameworkSubset>
-    <SignAssembly>false</SignAssembly>
+    <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>HostBot_TemporaryKey.pfx</AssemblyOriginatorKeyFile>
     <TargetFrameworkProfile />
     <LangVersion />
@@ -80,7 +80,7 @@
     <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
     <CodeContractsShowSquigglies>False</CodeContractsShowSquigglies>
     <PlatformTarget>x86</PlatformTarget>
-    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>Code Analysis Rules.ruleset</CodeAnalysisRuleSet>
     <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
     <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
     <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
@@ -156,6 +156,7 @@
     <Import Include="System.Diagnostics.Contracts" />
     <Import Include="System.Drawing" />
     <Import Include="System.Diagnostics" />
+    <Import Include="System.Globalization" />
     <Import Include="System.Linq" />
     <Import Include="System.Runtime.CompilerServices" />
     <Import Include="System.Windows.Forms" />
@@ -166,7 +167,6 @@
     <Compile Include="Battlenet\Warcraft3\Utilities\W3GameHeader.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3RemotePlayer.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3MapDownload.vb" />
-    <Compile Include="Battlenet\Warcraft3\Game\W3GameInterface.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GameLoadScreen.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GameLobby.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GamePlay.vb" />
@@ -233,36 +233,15 @@
     <Compile Include="Library\Pickling\Jars Numeric.vb" />
     <Compile Include="Library\Streams\PacketStream.vb" />
     <Compile Include="Library\Streams\ProducerConsumerStream.vb" />
-    <Compile Include="Library\Streams\SeekableStream.vb" />
     <Compile Include="Library\Streams\ThrottledWriteStream.vb" />
-    <Compile Include="RecyclingBin\Settings.vb" />
-    <Compile Include="RecyclingBin\SettingsList.Designer.vb">
-      <DependentUpon>SettingsList.vb</DependentUpon>
-    </Compile>
-    <Compile Include="RecyclingBin\SettingsList.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="Bot\Plugins.vb" />
     <Compile Include="Bot\Widgets\CKL Server.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Packet.vb" />
     <Compile Include="Bot\BotUser.vb" />
-    <Compile Include="RecyclingBin\FrmLogger.Designer.vb">
-      <DependentUpon>FrmLogger.vb</DependentUpon>
-    </Compile>
-    <Compile Include="RecyclingBin\FrmLogger.vb">
-      <SubType>Form</SubType>
-    </Compile>
     <Compile Include="Interface\LoggerControl.Designer.vb">
       <DependentUpon>LoggerControl.vb</DependentUpon>
     </Compile>
     <Compile Include="Interface\LoggerControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="RecyclingBin\RateList.vb" />
-    <Compile Include="RecyclingBin\TimeGraphControl.Designer.vb">
-      <DependentUpon>TimeGraphControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="RecyclingBin\TimeGraphControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Interface\BnetClientControl.Designer.vb">
@@ -277,38 +256,26 @@
     <Compile Include="Interface\W3ServerControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="RecyclingBin\W3TextControl.Designer.vb">
-      <DependentUpon>W3TextControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="RecyclingBin\W3TextControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="Bot\MainBot.vb" />
     <Compile Include="Battlenet\BnetClient.vb" />
     <Compile Include="Battlenet\BnetCrypt.vb" />
     <Compile Include="Battlenet\BnetSocket.vb" />
-    <Compile Include="RecyclingBin\W3SlotControl.Designer.vb">
-      <DependentUpon>W3SlotControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="RecyclingBin\W3SlotControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="Interface\W3GameControl.Designer.vb">
       <DependentUpon>W3GameControl.vb</DependentUpon>
     </Compile>
     <Compile Include="Interface\W3GameControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\FrmClient.Designer.vb">
-      <DependentUpon>FrmClient.vb</DependentUpon>
+    <Compile Include="Interface\ClientForm.Designer.vb">
+      <DependentUpon>ClientForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="Interface\FrmClient.vb">
+    <Compile Include="Interface\ClientForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Interface\FrmSettings.Designer.vb">
-      <DependentUpon>FrmSettings.vb</DependentUpon>
+    <Compile Include="Interface\SettingsForm.Designer.vb">
+      <DependentUpon>SettingsForm.vb</DependentUpon>
     </Compile>
-    <Compile Include="Interface\FrmSettings.vb">
+    <Compile Include="Interface\SettingsForm.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Battlenet\Warcraft3\Game\W3Game.vb" />
@@ -332,15 +299,7 @@
     </Compile>
     <Compile Include="Library\Future Common.vb" />
     <Compile Include="Test\Test.vb" />
-    <Compile Include="RecyclingBin\BotStats.vb" />
-    <Compile Include="RecyclingBin\W3StatsControl.Designer.vb">
-      <DependentUpon>W3StatsControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="RecyclingBin\W3StatsControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="Bot\Widgets\Hookable.vb" />
-    <Compile Include="RecyclingBin\RelayServer.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Interface\BotControl.resx">
@@ -358,17 +317,9 @@
       <DependentUpon>ProfileSettingsControl.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="RecyclingBin\FrmLogger.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>FrmLogger.vb</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Interface\LoggerControl.resx">
       <SubType>Designer</SubType>
       <DependentUpon>LoggerControl.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="RecyclingBin\TimeGraphControl.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>TimeGraphControl.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\BnetClientControl.resx">
       <SubType>Designer</SubType>
@@ -378,39 +329,23 @@
       <SubType>Designer</SubType>
       <DependentUpon>W3ServerControl.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="RecyclingBin\W3SlotControl.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>W3SlotControl.vb</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Interface\W3GameControl.resx">
       <SubType>Designer</SubType>
       <DependentUpon>W3GameControl.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\FrmClient.resx">
-      <DependentUpon>FrmClient.vb</DependentUpon>
+    <EmbeddedResource Include="Interface\ClientForm.resx">
+      <DependentUpon>ClientForm.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\FrmSettings.resx">
+    <EmbeddedResource Include="Interface\SettingsForm.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>FrmSettings.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="RecyclingBin\W3TextControl.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>W3TextControl.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="RecyclingBin\SettingsList.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>SettingsList.vb</DependentUpon>
+      <DependentUpon>SettingsForm.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.vb</LastGenOutput>
       <CustomToolNamespace>My.Resources</CustomToolNamespace>
       <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="RecyclingBin\W3StatsControl.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>W3StatsControl.vb</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

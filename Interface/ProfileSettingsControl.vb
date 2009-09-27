@@ -1,47 +1,47 @@
 ﻿Public Class ProfileSettingsControl
-    Public last_loaded_profile As ClientProfile
-    Public Event delete(ByVal sender As ProfileSettingsControl)
+    Public lastLoadedProfile As ClientProfile
+    Public Event Delete(ByVal sender As ProfileSettingsControl)
 
     Private Sub RepairValues()
-        txtTftKey.Text = txtTftKey.Text.Replace("-", "").ToUpper()
-        txtRocKey.Text = txtRocKey.Text.Replace("-", "").ToUpper()
+        txtTftKey.Text = txtTftKey.Text.Replace("-", "").ToUpperInvariant
+        txtRocKey.Text = txtRocKey.Text.Replace("-", "").ToUpperInvariant
     End Sub
 
-    Public Sub LoadFromProfile(ByVal p As ClientProfile)
-        If p Is Nothing Then Return
+    Public Sub LoadFromProfile(ByVal profile As ClientProfile)
+        If profile Is Nothing Then Return
 
-        txtUsername.Text = p.username
-        txtPassword.Text = p.password
-        txtTftKey.Text = p.tftCdKey
-        txtRocKey.Text = p.rocCdKey
-        cboGateway.Text = p.server
-        numLocalPort.Value = p.listenPort
-        txtInitialChannel.Text = p.initialChannel
-        txtCKLServer.Text = p.keyServerAddress
-        cboLanHost.Text = p.lanHost
+        txtUsername.Text = profile.userName
+        txtPassword.Text = profile.password
+        txtTftKey.Text = profile.cdKeyTFT
+        txtRocKey.Text = profile.cdKeyROC
+        cboGateway.Text = profile.server
+        numLocalPort.Value = profile.listenPort
+        txtInitialChannel.Text = profile.initialChannel
+        txtCKLServer.Text = profile.keyServerAddress
+        cboLanHost.Text = profile.lanHost
 
         gridUsers.Rows.Clear()
-        For Each user As BotUser In p.users.users
-            gridUsers.Rows.Add(user.name, user.packPermissions(), user.packSettings())
+        For Each user As BotUser In profile.users.Users
+            gridUsers.Rows.Add(user.name, user.PackPermissions(), user.PackSettings())
         Next user
 
-        btnDeleteProfile.Enabled = p.name <> "Default"
+        btnDeleteProfile.Enabled = profile.name <> "Default"
 
-        last_loaded_profile = p
+        lastLoadedProfile = profile
     End Sub
-    Public Sub SaveToProfile(ByVal p As ClientProfile)
-        If p Is Nothing Then Return
+    Public Sub SaveToProfile(ByVal profile As ClientProfile)
+        If profile Is Nothing Then Return
         RepairValues()
 
-        p.username = txtUsername.Text
-        p.password = txtPassword.Text
-        p.tftCdKey = txtTftKey.Text
-        p.rocCdKey = txtRocKey.Text
-        p.server = cboGateway.Text
-        p.listenPort = CUShort(numLocalPort.Value)
-        p.initialChannel = txtInitialChannel.Text
-        p.keyServerAddress = txtCKLServer.Text
-        p.lanHost = cboLanHost.Text
+        profile.userName = txtUsername.Text
+        profile.password = txtPassword.Text
+        profile.cdKeyTFT = txtTftKey.Text
+        profile.cdKeyROC = txtRocKey.Text
+        profile.server = cboGateway.Text
+        profile.listenPort = CUShort(numLocalPort.Value)
+        profile.initialChannel = txtInitialChannel.Text
+        profile.keyServerAddress = txtCKLServer.Text
+        profile.lanHost = cboLanHost.Text
 
         Dim existing_users As New List(Of String)
         For i = 0 To gridUsers.RowCount - 1
@@ -49,16 +49,16 @@
                 If .Cells(0).Value Is Nothing Then Continue For
                 Dim s = CStr(.Cells(0).Value)
                 existing_users.Add(s)
-                p.users.UpdateUser(New BotUser( _
+                profile.users.UpdateUser(New BotUser( _
                             s,
                             CStr(.Cells(1).Value),
                             CStr(.Cells(2).Value)))
             End With
         Next i
-        p.users.RemoveOtherUsers(existing_users)
+        profile.users.RemoveOtherUsers(existing_users)
     End Sub
 
     Private Sub btnDeleteProfile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnDeleteProfile.Click
-        RaiseEvent delete(Me)
+        RaiseEvent Delete(Me)
     End Sub
 End Class

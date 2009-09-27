@@ -12,7 +12,7 @@ Public Class TransferScheduler(Of TClientKey)
     Private ReadOnly fileSize As Double
     Private ReadOnly typicalSwitchTime As Double
 
-    Public Event actions(ByVal started As List(Of TransferEndPoints), ByVal stopped As List(Of TransferEndPoints))
+    Public Event Actions(ByVal started As List(Of TransferEndpoints), ByVal stopped As List(Of TransferEndpoints))
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(clients IsNot Nothing)
@@ -28,12 +28,13 @@ Public Class TransferScheduler(Of TClientKey)
         Contract.Invariant(Not Double.IsNaN(typicalSwitchTime))
     End Sub
 
-    Public Class TransferEndPoints
-        Public ReadOnly src As TClientKey
-        Public ReadOnly dst As TClientKey
-        Public Sub New(ByVal src As TClientKey, ByVal dst As TClientKey)
-            Me.src = src
-            Me.dst = dst
+    Public Class TransferEndpoints
+        Public ReadOnly source As TClientKey
+        Public ReadOnly destination As TClientKey
+        Public Sub New(ByVal source As TClientKey,
+                       ByVal destination As TClientKey)
+            Me.source = source
+            Me.destination = destination
         End Sub
     End Class
 
@@ -192,8 +193,8 @@ Public Class TransferScheduler(Of TClientKey)
     Public Sub Update()
         ref.QueueAction(
             Sub()
-                Dim transfers = New List(Of TransferEndPoints)
-                Dim breaks = New List(Of TransferEndPoints)
+                Dim transfers = New List(Of TransferEndpoints)
+                Dim breaks = New List(Of TransferEndpoints)
 
                 'Match downloaders to uploaders
                 For Each downloader In (From client In clients.Values Where Not client.completed)
@@ -211,14 +212,14 @@ Public Class TransferScheduler(Of TClientKey)
                         'Start transfer
                         bestUploader.SetTransfering(downloader.GetLastProgress, downloader)
                         downloader.SetTransfering(downloader.GetLastProgress, bestUploader)
-                        transfers.Add(New TransferEndPoints(bestUploader.key, downloader.key))
+                        transfers.Add(New TransferEndpoints(bestUploader.key, downloader.key))
                     ElseIf Math.Min(downloader.GetTransferingTime, curUploader.GetTransferingTime) > Client.MIN_SWITCH_PERIOD Then
                         'Stop transfer if a significantly better uploader is available
                         Dim remaining = (fileSize - downloader.GetLastProgress)
                         Dim curExpectedTime = remaining / downloader.GetCurRateEstimate()
                         Dim newExpectedTime = typicalSwitchTime + 1.25 * remaining / Math.Min(downloader.GetMaxRateEstimate, bestUploader.GetMaxRateEstimate())
                         If curUploader.IsProbablyFrozen OrElse newExpectedTime < curExpectedTime Then
-                            breaks.Add(New TransferEndPoints(curUploader.key, downloader.key))
+                            breaks.Add(New TransferEndpoints(curUploader.key, downloader.key))
                         End If
                     End If
                 Next downloader
@@ -226,12 +227,12 @@ Public Class TransferScheduler(Of TClientKey)
                 'Stop transfers seen as improvable
                 '[Done here instead of in the above loop to avoid potentially giving two commands to clients at the same time]
                 For Each e In breaks
-                    StopTransfer(e.src, False)
+                    StopTransfer(e.source, False)
                 Next e
 
                 'Report actions to the outside
                 If transfers.Any OrElse breaks.Any Then
-                    RaiseEvent actions(transfers, breaks)
+                    RaiseEvent Actions(transfers, breaks)
                 End If
             End Sub
         )
@@ -338,7 +339,7 @@ Public Class TransferScheduler(Of TClientKey)
 #End Region
 
 #Region "State"
-        Public Sub SetTransfering(ByVal progress As Double, ByVal other As Client)
+        Public Sub SetTransfering(ByVal progress As Double, ByVal destinationClient As Client)
             Contract.Requires(progress >= 0)
             Contract.Requires(Not Double.IsInfinity(progress))
             Contract.Requires(Not Double.IsNaN(progress))
@@ -346,7 +347,7 @@ Public Class TransferScheduler(Of TClientKey)
 
             'Update state
             busy = True
-            Me.other = other
+            Me.other = destinationClient
 
             'Prep measure
             lastStartProgress = progress

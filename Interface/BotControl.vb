@@ -1,5 +1,6 @@
 Imports HostBot.Bnet
 Imports HostBot.Warcraft3
+Imports HostBot.Commands
 
 Public Class BotControl
     Implements IHookable(Of MainBot)
@@ -17,10 +18,10 @@ Public Class BotControl
         Return ref.QueueFunc(Function() If(bot Is Nothing, "[No Bot]", "Bot"))
     End Function
 
-    Public Function QueueHook(ByVal bot As MainBot) As IFuture Implements IHookable(Of MainBot).QueueHook
+    Public Function QueueHook(ByVal child As MainBot) As IFuture Implements IHookable(Of MainBot).QueueHook
         Return ref.QueueAction(
             Sub()
-                If Me.bot Is bot Then  Return
+                If Me.bot Is child Then  Return
 
                 If clients Is Nothing Then
                     clients = New TabControlIHookableSet(Of BnetClient, BnetClientControl)(tabsBot)
@@ -31,12 +32,12 @@ Public Class BotControl
                     servers.Clear()
                     widgets.Clear()
                 End If
-                Me.bot = bot
+                Me.bot = child
 
-                If bot Is Nothing Then
+                If child Is Nothing Then
                     logBot.SetLogger(Nothing, Nothing)
                 Else
-                    logBot.SetLogger(bot.logger, "Main")
+                    logBot.SetLogger(child.logger, "Main")
                 End If
             End Sub
         )
@@ -74,7 +75,7 @@ Public Class BotControl
         ref.QueueAction(Sub() widgets.Remove(widget))
     End Sub
 
-    Private Sub CatchBotServerStateChanged(ByVal server As W3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates) Handles bot.ServerStateChanged
+    Private Sub CatchBotServerStateChanged(ByVal server As W3Server, ByVal oldState As W3ServerState, ByVal newState As W3ServerState) Handles bot.ServerStateChanged
         ref.QueueAction(Sub() servers.Update(server))
     End Sub
 End Class

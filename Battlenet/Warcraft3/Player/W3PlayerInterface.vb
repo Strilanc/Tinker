@@ -1,5 +1,5 @@
 ﻿Namespace Warcraft3
-    Public Enum HostTestResults As Integer
+    Public Enum HostTestResult As Integer
         Fail = -1
         Test = 0
         Pass = 1
@@ -12,7 +12,7 @@
             Me.time = time
         End Sub
     End Class
-    Public Enum W3PlayerLeaveTypes As Byte
+    Public Enum W3PlayerLeaveType As Byte
         Disconnect = 1
         Lose = 7
         MeleeLose = 8

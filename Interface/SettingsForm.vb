@@ -1,23 +1,23 @@
 Imports System.IO.Path
 
-Public Class FrmSettings
+Public Class SettingsForm
     Private bot As MainBot
     Dim profiles As List(Of ClientProfile)
 
     Public Shared Sub ShowBotSettings(ByVal bot As MainBot)
-        Using f = New FrmSettings
-            f.load_from_bot(bot)
+        Using f = New SettingsForm
+            f.LoadFromBot(bot)
             f.ShowDialog()
         End Using
     End Sub
 
-    Public Sub load_from_bot(ByVal bot As MainBot)
-        Me.bot = bot
-        Me.profiles = bot.clientProfiles.ToList
+    Public Sub LoadFromBot(ByVal target As MainBot)
+        Me.bot = target
+        Me.profiles = target.clientProfiles.ToList
         For Each profile In profiles
-            add_profile_tab(profile)
+            AddTabForProfile(profile)
         Next profile
-        For Each profile In bot.pluginProfiles
+        For Each profile In target.pluginProfiles
             gridPlugins.Rows.Add(profile.name, profile.location, profile.argument)
         Next profile
 
@@ -35,7 +35,7 @@ Public Class FrmSettings
         txtBnlsServer.Text = My.Settings.bnls
     End Sub
 
-    Public Shared Function parsePortList(ByVal text As String, ByRef out_text As String) As IEnumerable(Of UShort)
+    Public Shared Function ParsePortList(ByVal text As String, ByRef refText As String) As IEnumerable(Of UShort)
         Dim ports As New List(Of UShort)
         Dim out_words As New List(Of String)
         For Each word In text.Replace(" "c, "").Split(","c)
@@ -57,12 +57,12 @@ Public Class FrmSettings
             End If
         Next word
 
-        out_text = String.Join(",", out_words.ToArray())
+        refText = String.Join(",", out_words.ToArray())
         Return ports
     End Function
     Private Function get_profile_with_name(ByVal name As String) As ClientProfile
         For Each profile In profiles
-            If profile.name.ToLower = name.ToLower Then Return profile
+            If profile.name.ToUpperInvariant = name.ToUpperInvariant Then Return profile
         Next profile
         Return Nothing
     End Function
@@ -70,20 +70,23 @@ Public Class FrmSettings
         Dim name = txtNewProfileName.Text
         name = name.Trim()
         If name = "" Then
-            MessageBox.Show("""{0}"" is not a valid profile name.".frmt(name), "Notice", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show(text:="""{0}"" is not a valid profile name.".Frmt(name),
+                            caption:="Notice",
+                            buttons:=MessageBoxButtons.OK,
+                            icon:=MessageBoxIcon.Exclamation)
             Return
         ElseIf get_profile_with_name(name) IsNot Nothing Then
-            MessageBox.Show("The profile name ""{0}"" is already used.".frmt(name), "Notice", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
+            MessageBox.Show("The profile name ""{0}"" is already used.".Frmt(name), "Notice", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Return
-        ElseIf MessageBox.Show("Create profile '{0}'?".frmt(name), "Confirm", MessageBoxButtons.YesNo) = Windows.Forms.DialogResult.No Then
+        ElseIf MessageBox.Show("Create profile '{0}'?".Frmt(name), "Confirm", MessageBoxButtons.YesNo) = Windows.Forms.DialogResult.No Then
             Return
         End If
 
         Dim new_profile = New ClientProfile(name)
         profiles.Add(new_profile)
-        add_profile_tab(new_profile)
+        AddTabForProfile(new_profile)
     End Sub
-    Private Sub add_profile_tab(ByVal profile As ClientProfile)
+    Private Sub AddTabForProfile(ByVal profile As ClientProfile)
         Dim tab = New TabPage("Profile:" + profile.name)
         Dim cntrl = New ProfileSettingsControl()
         cntrl.LoadFromProfile(profile)
@@ -95,21 +98,21 @@ Public Class FrmSettings
             .Item(.Count - 1) = .Item(.Count - 2)
             .Item(.Count - 2) = t
         End With
-        AddHandler cntrl.delete, AddressOf remove_profile_tab
+        AddHandler cntrl.Delete, AddressOf remove_profile_tab
     End Sub
     Private Sub remove_profile_tab(ByVal sender As ProfileSettingsControl)
-        If sender.last_loaded_profile.name = "Default" Then
+        If sender.lastLoadedProfile.name = "Default" Then
             MessageBox.Show("You can't delete the default profile.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Return
-        ElseIf MessageBox.Show("Delete profile '{0}'?".frmt(sender.last_loaded_profile.name), "Confirm", MessageBoxButtons.YesNo) = Windows.Forms.DialogResult.No Then
+        ElseIf MessageBox.Show("Delete profile '{0}'?".Frmt(sender.lastLoadedProfile.name), "Confirm", MessageBoxButtons.YesNo) = Windows.Forms.DialogResult.No Then
             Return
         End If
 
         For Each tab As TabPage In tabsSettings.TabPages
             If tab.Controls.Contains(sender) Then
-                profiles.Remove(sender.last_loaded_profile)
+                profiles.Remove(sender.lastLoadedProfile)
                 tabsSettings.TabPages.Remove(tab)
-                RemoveHandler sender.delete, AddressOf remove_profile_tab
+                RemoveHandler sender.Delete, AddressOf remove_profile_tab
                 Return
             End If
         Next tab
@@ -136,13 +139,13 @@ Public Class FrmSettings
             If tab Is tabNewProfile Then Continue For
             If tab Is tabPlugins Then Continue For
             For Each c As ProfileSettingsControl In tab.Controls
-                c.SaveToProfile(c.last_loaded_profile)
+                c.SaveToProfile(c.lastLoadedProfile)
             Next c
         Next tab
 
         'Sync desired port pool with bot port pool
         Dim portPoolText = txtPortPool.Text
-        Dim ports = parsePortList(portPoolText, portPoolText)
+        Dim ports = ParsePortList(portPoolText, portPoolText)
         For Each port In bot.portPool.EnumPorts
             If Not ports.Contains(port) Then
                 bot.portPool.TryRemovePort(port)
@@ -200,7 +203,7 @@ Public Class FrmSettings
     End Sub
 
     Private Sub btnPluginsHelp_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnPluginsHelp.Click
-        MessageBox.Show(("Plugins placed in the 'available plugins' list can be loaded with the 'loadplugin' command, or loaded at startup.\n" _
+        MessageBox.Show(("Plugins placed in the 'available plugins' list can be loaded with the 'LoadPlugin' command, or loaded at startup.\n" _
                     + "Use the import button to browse for a dll file and copy it to the plugins folder.\n\n" _
                     + "Name: \n" _
                         + "\tThe name of the plugin. Used to referense the plugin in commands such as loadplugin.\n" _
@@ -222,23 +225,23 @@ Public Class FrmSettings
                 Try
                     Dim path = .FileName
                     My.Settings.last_plugin_dir = IO.Path.GetDirectoryName(path)
-                    Dim plugin_name = IO.Path.GetFileNameWithoutExtension(path)
-                    If plugin_name.Substring(plugin_name.Length - "plugin".Length).ToLower = "plugin" Then
-                        plugin_name = plugin_name.Substring(0, plugin_name.Length - "plugin".Length)
+                    Dim pluginName = IO.Path.GetFileNameWithoutExtension(path)
+                    If pluginName.Substring(pluginName.Length - "PLUGIN".Length).ToUpperInvariant = "PLUGIN" Then
+                        pluginName = pluginName.Substring(0, pluginName.Length - "PLUGIN".Length)
                     End If
-                    Dim rel_path = "Plugins{0}{1}".frmt(IO.Path.DirectorySeparatorChar, IO.Path.GetFileName(path))
-                    Dim new_path = Application.StartupPath + IO.Path.DirectorySeparatorChar + rel_path
-                    If new_path = path Then
-                        gridPlugins.Rows.Add(plugin_name, rel_path, "")
-                    ElseIf IO.File.Exists(new_path) Then
+                    Dim rel_path = "Plugins{0}{1}".Frmt(IO.Path.DirectorySeparatorChar, IO.Path.GetFileName(path))
+                    Dim newPath = Application.StartupPath + IO.Path.DirectorySeparatorChar + rel_path
+                    If newPath = path Then
+                        gridPlugins.Rows.Add(pluginName, rel_path, "")
+                    ElseIf IO.File.Exists(newPath) Then
                         If MessageBox.Show("There is already a plugin with that filename in the plugins folder. Do you want to replace it?", "Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = Windows.Forms.DialogResult.No Then
                             Return
                         End If
-                        IO.File.Delete(new_path)
-                        IO.File.Copy(path, new_path)
+                        IO.File.Delete(newPath)
+                        IO.File.Copy(path, newPath)
                     Else
-                        IO.File.Copy(path, new_path)
-                        gridPlugins.Rows.Add(plugin_name, rel_path, "")
+                        IO.File.Copy(path, newPath)
+                        gridPlugins.Rows.Add(pluginName, rel_path, "")
                     End If
                 Catch ex As Exception
                     LogUnexpectedException("Importing plugin from settings form.", ex)

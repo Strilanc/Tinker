@@ -19,24 +19,24 @@ Namespace Plugins
             Me.location = location
             Me.argument = argument
         End Sub
-        Public Sub New(ByVal br As IO.BinaryReader)
-            Dim ver = br.ReadUInt32()
+        Public Sub New(ByVal reader As IO.BinaryReader)
+            Dim ver = reader.ReadUInt32()
             If ver > format_version Then Throw New IO.IOException("Saved PlayerRecord has an unrecognized format version.")
-            name = br.ReadString()
-            location = br.ReadString()
-            argument = br.ReadString()
+            name = reader.ReadString()
+            location = reader.ReadString()
+            argument = reader.ReadString()
         End Sub
-        Public Function save(ByVal bw As IO.BinaryWriter) As Boolean
-            bw.Write(format_version)
-            bw.Write(name)
-            bw.Write(location)
-            bw.Write(argument)
+        Public Function Save(ByVal writer As IO.BinaryWriter) As Boolean
+            writer.Write(format_version)
+            writer.Write(name)
+            writer.Write(location)
+            writer.Write(argument)
         End Function
     End Class
 
     Friend Class PluginManager
         Public ReadOnly bot As MainBot
-        Public ReadOnly loaded_plugs As New List(Of Socket.Plug)
+        Public ReadOnly loadedPlugins As New List(Of Socket.Plug)
         Private ReadOnly sockets As New Dictionary(Of String, Socket)
         Public Event UnloadedPlugin(ByVal name As String, ByVal plugin As IPlugin, ByVal reason As String)
 
@@ -48,15 +48,16 @@ Namespace Plugins
             Public ReadOnly path As String
             Public ReadOnly asm As Assembly
             Public ReadOnly manager As PluginManager
-            Public ReadOnly class_type As Type
+            Public ReadOnly classType As Type
             Public ReadOnly name As String
 
             Public Sub New(ByVal name As String, ByVal manager As PluginManager, ByVal path As String)
                 Me.name = name
+                Me.path = path
                 Me.manager = manager
                 Try
                     asm = Assembly.LoadFrom(path)
-                    class_type = asm.GetType("HostBotPlugin")
+                    classType = asm.GetType("HostBotPlugin")
                 Catch e As Exception
                     Throw New PluginException("Error loading plugin assembly from '{1}'".frmt(path), e)
                 End Try
@@ -78,17 +79,19 @@ Namespace Plugins
                 Public Sub New(ByVal socket As Socket)
                     Me.socket = socket
                     Try
-                        plugin = CType(Activator.CreateInstance(socket.class_type), IPlugin)
-                        plugin.init(Me)
+                        plugin = CType(Activator.CreateInstance(socket.classType), IPlugin)
+                        plugin.Init(Me)
                     Catch e As Exception
                         Throw New PluginException("Error creating instance of plugin class: " + e.ToString, e)
                     End Try
                 End Sub
 
-                Public Function getBot() As MainBot Implements IPlugout.getBot
-                    Return socket.manager.bot
-                End Function
-                Public Sub pull_the_plug(ByVal reason As String) Implements IPlugout.pull_the_plug
+                Public ReadOnly Property Bot() As MainBot Implements IPlugout.Bot
+                    Get
+                        Return socket.manager.bot
+                    End Get
+                End Property
+                Public Sub DisposePlugin(ByVal reason As String) Implements IPlugout.DisposePlugin
                     socket.UnloadPlugin(Me, reason)
                 End Sub
 
@@ -98,7 +101,7 @@ Namespace Plugins
                     If Not Me.disposedValue Then
                         Me.disposedValue = True
                         If disposing Then
-                            plugin.finish()
+                            plugin.Dispose()
                         End If
                     End If
                 End Sub
@@ -119,42 +122,43 @@ Namespace Plugins
                     Throw New IO.IOException("No plugin exists at the specified path.")
                 End If
             End If
-            path = path.ToLower
+            path = path.ToUpperInvariant
             If Not sockets.ContainsKey(path) Then
                 sockets(path) = New Socket(name, Me, path)
             End If
             Dim plug = sockets(path).LoadPlugin()
-            loaded_plugs.Add(plug)
+            loadedPlugins.Add(plug)
             Return plug.plugin
         End Function
         Private Sub UnloadPlugin(ByVal plug As Socket.Plug, ByVal reason As String)
-            If Not loaded_plugs.Contains(plug) Then Throw New InvalidOperationException("No such plugin loaded.")
+            If Not loadedPlugins.Contains(plug) Then Throw New InvalidOperationException("No such plugin loaded.")
             plug.Dispose()
             RaiseEvent UnloadedPlugin(plug.socket.name, plug.plugin, reason)
         End Sub
         Public Sub UnloadPlugin(ByVal name As String, ByVal reason As String)
-            Dim plug = (From x In loaded_plugs Where x.socket.name.ToLower = name.ToLower).FirstOrDefault
+            Dim plug = (From x In loadedPlugins
+                        Where x.socket.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault
             If plug Is Nothing Then Throw New InvalidOperationException("No such plugin loaded.")
             UnloadPlugin(plug, reason)
         End Sub
 
         Public Sub finish()
-            For Each pi In loaded_plugs
+            For Each pi In loadedPlugins
                 pi.Dispose()
             Next pi
-            loaded_plugs.Clear()
+            loadedPlugins.Clear()
             sockets.Clear()
         End Sub
     End Class
 
     Public Interface IPlugout
-        Function getBot() As MainBot
-        Sub pull_the_plug(ByVal reason As String)
+        ReadOnly Property Bot() As MainBot
+        Sub DisposePlugin(ByVal reason As String)
     End Interface
 
     Public Interface IPlugin
-        Sub init(ByVal plugout As IPlugout)
-        Sub finish()
-        Function description() As String
+        Inherits IDisposable
+        Sub Init(ByVal plugout As IPlugout)
+        ReadOnly Property Description() As String
     End Interface
 End Namespace

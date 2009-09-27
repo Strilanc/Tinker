@@ -1,17 +1,16 @@
 ﻿Namespace Pickling.Jars
     Public Class EnumByteJar(Of T)
         Inherits Jar(Of T)
-        Private ReadOnly flags As Boolean
+        Private ReadOnly isFlagEnum As Boolean
 
-        Public Sub New(ByVal name As String,
-                       Optional ByVal flags As Boolean = False)
+        Public Sub New(ByVal name As String)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
-            Me.flags = flags
+            Me.isFlagEnum = GetType(T).GetCustomAttributes(GetType(FlagsAttribute), inherit:=False).Any
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, {CByte(CType(value, Object))}.ToView(), Function() ValueToString(value))
+        Public NotOverridable Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Me.Name, value, {CByte(CType(value, Object))}.ToView(), Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
@@ -21,26 +20,25 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As T) As String
-            Return If(flags, value.EnumFlagsToString(), value.ToString)
+            Return If(isFlagEnum, value.EnumFlagsToString(), value.ToString)
         End Function
     End Class
 
     Public Class EnumUInt16Jar(Of T)
         Inherits Jar(Of T)
         Private ReadOnly byteOrder As ByteOrder
-        Private ReadOnly flags As Boolean
+        Private ReadOnly isFlagEnum As Boolean
 
         Public Sub New(ByVal name As String,
-                       Optional ByVal flags As Boolean = False,
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
             Me.byteOrder = byteOrder
-            Me.flags = flags
+            Me.isFlagEnum = GetType(T).GetCustomAttributes(GetType(FlagsAttribute), inherit:=False).Any
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, CUShort(CType(value, Object)).Bytes(byteOrder).ToView(), Function() ValueToString(value))
+        Public NotOverridable Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Me.Name, value, CUShort(CType(value, Object)).Bytes(byteOrder).ToView(), Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
@@ -50,26 +48,25 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As T) As String
-            Return If(flags, value.EnumFlagsToString(), value.ToString)
+            Return If(isFlagEnum, value.EnumFlagsToString(), value.ToString)
         End Function
     End Class
 
     Public Class EnumUInt32Jar(Of T)
         Inherits Jar(Of T)
         Private ReadOnly byteOrder As ByteOrder
-        Private ReadOnly flags As Boolean
+        Private ReadOnly isFlagEnum As Boolean
 
         Public Sub New(ByVal name As String,
-                       Optional ByVal flags As Boolean = False,
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
             Me.byteOrder = byteOrder
-            Me.flags = flags
+            Me.isFlagEnum = GetType(T).GetCustomAttributes(GetType(FlagsAttribute), inherit:=False).Any
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, value, CUInt(CType(value, Object)).Bytes(byteOrder).ToView(), Function() ValueToString(value))
+        Public NotOverridable Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Me.Name, value, CUInt(CType(value, Object)).Bytes(byteOrder).ToView(), Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
@@ -79,7 +76,7 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As T) As String
-            Return If(flags, value.EnumFlagsToString(), value.ToString)
+            Return If(isFlagEnum, value.EnumFlagsToString(), value.ToString)
         End Function
     End Class
 End Namespace

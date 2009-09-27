@@ -1,4 +1,5 @@
-﻿Imports HostBot.Warcraft3
+﻿Imports HostBot.Commands
+Imports HostBot.Warcraft3
 Imports System.Net.Sockets
 Imports HostBot.Links
 
@@ -10,7 +11,7 @@ Public NotInheritable Class W3LanAdvertiser
     Private ReadOnly idmap As New Dictionary(Of UInteger, LanGame)
     Private ReadOnly headermap As New Dictionary(Of W3GameHeader, LanGame)
     Private ReadOnly socket As UdpClient
-    Public Const TYPE_NAME As String = "LanAdvertiser"
+    Public Const WidgetTypeName As String = "LanAdvertiser"
 
     Private ReadOnly logger As Logger
     Public ReadOnly name As String
@@ -22,7 +23,7 @@ Public NotInheritable Class W3LanAdvertiser
     Public ReadOnly parent As MainBot
     Private portHandle As PortPool.PortHandle
 
-    Private createCount As UInteger = 0
+    Private createCount As UInteger
     Private WithEvents refreshTimer As New System.Timers.Timer(3000)
 
 #Region "Inner"
@@ -91,26 +92,26 @@ Public NotInheritable Class W3LanAdvertiser
 #Region "Life"
     Public Sub New(ByVal parent As MainBot,
                    ByVal name As String,
-                   ByVal server_listen_pool_port As PortPool.PortHandle,
-                   Optional ByVal remote_host As String = "localhost",
-                   Optional ByVal remote_port As UShort = 6112,
+                   ByVal serverListenPortHandle As PortPool.PortHandle,
+                   Optional ByVal remoteHostName As String = "localhost",
+                   Optional ByVal remotePort As UShort = 6112,
                    Optional ByVal logger As Logger = Nothing)
-        Me.New(parent, name, server_listen_pool_port.Port, remote_host, remote_port, logger)
-        Me.serverListenPort = server_listen_pool_port.Port
-        Me.portHandle = server_listen_pool_port
+        Me.New(parent, name, serverListenPortHandle.Port, remoteHostName, remotePort, logger)
+        Me.serverListenPort = serverListenPortHandle.Port
+        Me.portHandle = serverListenPortHandle
     End Sub
     Public Sub New(ByVal parent As MainBot,
                    ByVal name As String,
-                   ByVal server_listen_port As UShort,
-                   Optional ByVal remote_host As String = "localhost",
-                   Optional ByVal remote_port As UShort = 6112,
+                   ByVal serverListenPort As UShort,
+                   Optional ByVal remoteHostName As String = "localhost",
+                   Optional ByVal remotePort As UShort = 6112,
                    Optional ByVal logger As Logger = Nothing)
         Me.logger = If(logger, New Logger)
         Me.name = name
         Me.parent = parent
-        Me.remoteHost = remote_host
-        Me.remotePort = remote_port
-        Me.serverListenPort = server_listen_port
+        Me.remoteHost = remoteHostName
+        Me.remotePort = remotePort
+        Me.serverListenPort = serverListenPort
         Me.socket = New UdpClient()
         Me.refreshTimer.Start()
     End Sub
@@ -129,7 +130,7 @@ Public NotInheritable Class W3LanAdvertiser
             End SyncLock
 
             'break links with other components
-            parent.QueueRemoveWidget(TYPE_NAME, name)
+            parent.QueueRemoveWidget(WidgetTypeName, name)
 
             If Me.portHandle IsNot Nothing Then
                 logger.Log("Returned port {0} to the pool.".Frmt(Me.serverListenPort), LogMessageType.Positive)
@@ -168,7 +169,7 @@ Public NotInheritable Class W3LanAdvertiser
 
         'Log
         logger.log("Added game " + game.header.Name, LogMessageType.Positive)
-        RaiseEvent AddStateString(id.ToString + "=" + gameHeader.Name, False)
+        RaiseEvent AddStateString("{0}={1}".Frmt(id, gameHeader.Name), False)
 
         Return id
     End Function
@@ -192,7 +193,7 @@ Public NotInheritable Class W3LanAdvertiser
 
         'Log
         logger.log("Removed game " + game.header.Name, LogMessageType.Negative)
-        RaiseEvent RemoveStateString(game.id.ToString + "=" + game.header.Name)
+        RaiseEvent RemoveStateString("{0}={1}".Frmt(game.id, game.header.Name))
         Return True
     End Function
     Public Function RemoveGame(ByVal header As W3GameHeader) As Boolean
@@ -218,12 +219,12 @@ Public NotInheritable Class W3LanAdvertiser
 
 #Region "Networking"
     '''<summary>Resends game data to the target address.</summary>
-    Public Sub refresh() Handles refreshTimer.Elapsed
+    Public Sub Refresh() Handles refreshTimer.Elapsed
         SyncLock lock
             For Each game In games1
                 Dim pk = W3Packet.MakeLanDescribeGame(
                                 game.creation_time,
-                                MainBot.Wc3MajorVersion,
+                                MainBot.WC3MajorVersion,
                                 game.id,
                                 game.header,
                                 serverListenPort)
@@ -237,7 +238,7 @@ Public NotInheritable Class W3LanAdvertiser
         Try
             'pack
             Dim data = pk.payload.Data.ToArray()
-            data = Concat({W3Packet.PACKET_PREFIX, pk.id}, CUShort(data.Length + 4).Bytes(), data)
+            data = Concat({W3Packet.PacketPrefixValue, pk.id}, CUShort(data.Length + 4).Bytes(), data)
 
             'Log
             logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageType.DataEvent)
@@ -286,7 +287,7 @@ Public NotInheritable Class W3LanAdvertiser
     End Property
     Private ReadOnly Property _typeName() As String Implements IBotWidget.TypeName
         Get
-            Return TYPE_NAME
+            Return WidgetTypeName
         End Get
     End Property
 #End Region

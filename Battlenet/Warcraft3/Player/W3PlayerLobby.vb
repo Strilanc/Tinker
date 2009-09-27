@@ -9,7 +9,7 @@
         Private ReadOnly handlers(0 To 255) As Action(Of W3Packet)
 
         Private Sub LobbyStart()
-            state = W3PlayerStates.Lobby
+            state = W3PlayerState.Lobby
             handlers(W3PacketId.ClientMapInfo) = AddressOf ReceiveClientMapInfo
             handlers(W3PacketId.PeerConnectionInfo) = AddressOf ReceivePeerConnectionInfo
         End Sub
@@ -29,7 +29,7 @@
             Contract.Assume(numPeerConnections >= 0)
             Contract.Assume(numPeerConnections <= 12)
 
-            If state = W3PlayerStates.Lobby Then
+            If state = W3PlayerState.Lobby Then
                 For Each flag In flags
                     game.DownloadScheduler.SetLink(Me.index, flag.pid, flag.connected).MarkAnyExceptionAsHandled()
                 Next flag
@@ -42,10 +42,10 @@
             Dim newMapDownloadPosition = CInt(CUInt(vals("total downloaded")))
             Dim delta = newMapDownloadPosition - mapDownloadPosition
             If delta < 0 Then
-                Disconnect(True, W3PlayerLeaveTypes.Disconnect, "auto-booted: moved download position backwards from {1} to {2}.".Frmt(mapDownloadPosition, newMapDownloadPosition))
+                Disconnect(True, W3PlayerLeaveType.Disconnect, "auto-booted: moved download position backwards from {1} to {2}.".Frmt(mapDownloadPosition, newMapDownloadPosition))
                 Return
             ElseIf newMapDownloadPosition > game.map.FileSize Then
-                Disconnect(True, W3PlayerLeaveTypes.Disconnect, "auto-booted: moved download position past file size")
+                Disconnect(True, W3PlayerLeaveType.Disconnect, "auto-booted: moved download position past file size")
                 Return
             ElseIf mapDownloadPosition = game.map.FileSize Then
                 '[previously finished download]
@@ -57,12 +57,12 @@
             If Not knowMapState Then
                 Dim hasMap = mapDownloadPosition = game.map.FileSize
                 If Not hasMap AndAlso Not game.server.settings.allowDownloads Then
-                    Disconnect(True, W3PlayerLeaveTypes.Disconnect, "no dls allowed")
+                    Disconnect(True, W3PlayerLeaveType.Disconnect, "no dls allowed")
                     Return
                 End If
 
                 game.DownloadScheduler.AddClient(index, hasMap).MarkAnyExceptionAsHandled()
-                game.DownloadScheduler.SetLink(index, W3Game.SELF_DOWNLOAD_ID, True).MarkAnyExceptionAsHandled()
+                game.DownloadScheduler.SetLink(index, W3Game.LocalTransferClientKey, True).MarkAnyExceptionAsHandled()
                 knowMapState = True
             ElseIf mapDownloadPosition = game.map.FileSize Then
                 logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
@@ -89,7 +89,7 @@
                 Return mapDownloadPosition
             End Get
         End Property
-        Public ReadOnly Property GetOvercounted() As Boolean
+        Public ReadOnly Property IsOverCounted() As Boolean
             Get
                 Return countdowns > 1
             End Get

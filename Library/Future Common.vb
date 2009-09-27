@@ -4,10 +4,11 @@ Imports System.Threading
 
 Public Module FutureExtensionsEx
     <Extension()>
+    <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
     Public Function FutureRead(ByVal this As IO.Stream,
-                               ByVal buffer() As Byte,
-                               ByVal offset As Integer,
-                               ByVal count As Integer) As IFuture(Of Integer)
+                                   ByVal buffer() As Byte,
+                                   ByVal offset As Integer,
+                                   ByVal count As Integer) As IFuture(Of Integer)
         Dim result = New FutureFunction(Of Integer)
         Try
             this.BeginRead(buffer:=buffer, offset:=offset, count:=count, state:=Nothing,
@@ -44,6 +45,7 @@ Public Module FutureExtensionsEx
     ''' <summary>
     ''' Passes a produced future into a consumer, waits for the consumer to finish, and continues until an exception occurs.
     ''' </summary>
+    <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
     Public Function FutureIterateExcept(Of T)(ByVal producer As Func(Of IFuture(Of T)),
                                               ByVal consumer As Action(Of T)) As IFuture
         Contract.Requires(producer IsNot Nothing)

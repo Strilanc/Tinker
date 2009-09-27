@@ -22,7 +22,7 @@
     <ContractClass(GetType(ContractClassIPackJar(Of )))>
     Public Interface IPackJar(Of In T)
         Inherits IJarInfo
-        Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
+        Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
     End Interface
     <ContractClass(GetType(ContractClassIParseJar(Of )))>
     Public Interface IParseJar(Of Out T)
@@ -76,8 +76,8 @@
                 Throw New NotSupportedException()
             End Get
         End Property
-        Public Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R) Implements IPackJar(Of T).Pack
-            Contract.Ensures(Contract.Result(Of IPickle(Of R))() IsNot Nothing)
+        Public Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
+            Contract.Ensures(Contract.Result(Of IPickle(Of TValue))() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
     End Class

@@ -26,7 +26,7 @@
             Me.new(value, data, New ExpensiveValue(Of String)(Function() "{0}: {1}".Frmt(jarName, valueDescription())))
         End Sub
 
-        Public Shared Function MakeListDescription(Of X)(ByVal pickles As IEnumerable(Of IPickle(Of X))) As String
+        Public Shared Function MakeListDescription(ByVal pickles As IEnumerable(Of IPickle(Of T))) As String
             Return "{{\n{0}\n}}".Linefy.Frmt((From e In pickles
                                               Select e.Description.Value
                                               ).StringJoin(Environment.NewLine).Indent("    "))
@@ -60,7 +60,7 @@
             Contract.Invariant(_name IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String)
+        Protected Sub New(ByVal name As String)
             Contract.Requires(name IsNot Nothing)
             Me._name = name
         End Sub
@@ -71,7 +71,7 @@
             End Get
         End Property
 
-        Public MustOverride Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R) Implements IPackJar(Of T).Pack
+        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
     End Class
     Public MustInherit Class ParseJar(Of T)
         Implements IParseJar(Of T)
@@ -80,7 +80,7 @@
             Contract.Invariant(_name IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String)
+        Protected Sub New(ByVal name As String)
             Contract.Requires(name IsNot Nothing)
             Me._name = name
         End Sub
@@ -100,7 +100,7 @@
             Contract.Invariant(_name IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String)
+        Protected Sub New(ByVal name As String)
             Contract.Requires(name IsNot Nothing)
             Me._name = name
         End Sub
@@ -111,7 +111,7 @@
             End Get
         End Property
 
-        Public MustOverride Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R) Implements IPackJar(Of T).Pack
+        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
     End Class
 
@@ -128,7 +128,7 @@
 
         Private Class WeakJar(Of T)
             Inherits Jar(Of Object)
-            Private ReadOnly subjar As IJar(Of T)
+            Private ReadOnly subJar As IJar(Of T)
             Public Sub New(ByVal jar As IJar(Of T))
                 MyBase.New(jar.Name)
                 Me.subjar = jar
@@ -144,7 +144,7 @@
         End Class
         Private Class WeakPackJar(Of T)
             Inherits PackJar(Of Object)
-            Private ReadOnly subjar As IPackJar(Of T)
+            Private ReadOnly subJar As IPackJar(Of T)
             Public Sub New(ByVal jar As IPackJar(Of T))
                 MyBase.New(jar.Name)
                 Me.subjar = jar
@@ -156,7 +156,7 @@
         End Class
         Private Class WeakParseJar(Of T)
             Inherits ParseJar(Of Object)
-            Private ReadOnly subjar As IParseJar(Of T)
+            Private ReadOnly subJar As IParseJar(Of T)
             Public Sub New(ByVal jar As IParseJar(Of T))
                 MyBase.New(jar.Name)
                 Me.subjar = jar

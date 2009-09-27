@@ -2,47 +2,48 @@
 
 Namespace CKL
     '''<summary>Provides answers to bnet cd key authentication challenges, allowing clients to login to bnet once with the server's keys.</summary>
-    Public Class CklServer
-        Public Const PACKET_ID As Byte = 1
+    Public Class CKLServer
+        Public Const PacketPrefixValue As Byte = 1
 
         Public ReadOnly name As String
-        Protected WithEvents accepter As New ConnectionAccepter()
+        Protected WithEvents Accepter As New ConnectionAccepter()
         Protected ReadOnly logger As New Logger()
-        Protected ReadOnly keys As New List(Of CklKey)
+        Protected ReadOnly keys As New List(Of CKLKey)
         Protected ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
         Private keyIndex As Integer
         Private ReadOnly portHandle As PortPool.PortHandle
-        Public Event KeyAdded(ByVal sender As CklServer, ByVal key As CklKey)
-        Public Event KeyRemoved(ByVal sender As CklServer, ByVal key As CklKey)
+        Public Event KeyAdded(ByVal sender As CKLServer, ByVal key As CKLKey)
+        Public Event KeyRemoved(ByVal sender As CKLServer, ByVal key As CKLKey)
 
         Public Sub New(ByVal name As String,
                        ByVal listenPort As PortPool.PortHandle)
-            Me.new(name, listenPort.Port)
+            Me.name = name
             Me.portHandle = listenPort
+            Me.Accepter.OpenPort(listenPort.Port)
         End Sub
         Public Sub New(ByVal name As String,
                        ByVal listenPort As UShort)
             Me.name = name
-            accepter.OpenPort(listenPort)
+            Me.Accepter.OpenPort(listenPort)
         End Sub
 
-        Public Function AddKey(ByVal name As String, ByVal rocKey As String, ByVal tftKey As String) As IFuture
+        Public Function AddKey(ByVal keyName As String, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As IFuture
             Return ref.QueueAction(
                 Sub()
-                    If (From k In keys Where k.name.ToLower() = name.ToLower()).Any Then
-                        Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(name))
+                    If (From k In keys Where k.name.ToUpperInvariant = keyName.ToUpperInvariant).Any Then
+                        Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(keyName))
                     End If
-                    Dim key = New CklKey(name, rocKey, tftKey)
+                    Dim key = New CKLKey(keyName, cdKeyROC, cdKeyTFT)
                     keys.Add(key)
                     RaiseEvent KeyAdded(Me, key)
                 End Sub
             )
         End Function
-        Public Function RemoveKey(ByVal name As String) As IFuture
+        Public Function RemoveKey(ByVal keyName As String) As IFuture
             Return ref.QueueAction(
                 Sub()
-                    Dim key = (From k In keys Where k.name.ToLower() = name.ToLower()).FirstOrDefault
-                    If key Is Nothing Then  Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(name))
+                    Dim key = (From k In keys Where k.name.ToUpperInvariant = keyName.ToUpperInvariant).FirstOrDefault
+                    If key Is Nothing Then  Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(keyName))
                     keys.Remove(key)
                     RaiseEvent KeyRemoved(Me, key)
                 End Sub
@@ -50,8 +51,8 @@ Namespace CKL
         End Function
 
         Private Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
-                                         ByVal acceptedClient As Net.Sockets.TcpClient) Handles accepter.AcceptedConnection
-            Dim socket = New PacketSocket(acceptedClient, 10.Seconds, Me.logger)
+                                         ByVal acceptedClient As Net.Sockets.TcpClient) Handles Accepter.AcceptedConnection
+            Dim socket = New PacketSocket(acceptedClient, 10.Seconds, Me.Logger)
             FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packetData) ref.QueueAction(
                 Sub()
                     Dim flag = packetData(0)
@@ -59,13 +60,13 @@ Namespace CKL
                     Dim data = packetData.SubView(4)
                     Dim responseData As Byte() = Nothing
                     Dim errorMessage As String = Nothing
-                    If flag <> PACKET_ID Then
+                    If flag <> PacketPrefixValue Then
                         errorMessage = "Invalid header id."
                     Else
-                        Select Case CType(id, CklPacketId)
-                            Case CklPacketId.error
+                        Select Case CType(id, CKLPacketId)
+                            Case CKLPacketId.[Error]
                                 'ignore
-                            Case CklPacketId.keys
+                            Case CKLPacketId.Keys
                                 If keys.Count <= 0 Then
                                     errorMessage = "No keys to lend."
                                 ElseIf data.Length <> 8 Then
@@ -74,7 +75,7 @@ Namespace CKL
                                     If keyIndex >= keys.Count Then  keyIndex = 0
                                     responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4),
                                                                         serverToken:=data.SubView(4, 4))
-                                    logger.Log("Provided key '{0}' to {1}".Frmt(keys(keyIndex).name, socket.Name), LogMessageType.Positive)
+                                    Logger.Log("Provided key '{0}' to {1}".Frmt(keys(keyIndex).name, socket.Name), LogMessageType.Positive)
                                     keyIndex += 1
                                 End If
                             Case Else
@@ -83,19 +84,19 @@ Namespace CKL
                     End If
 
                     If responseData IsNot Nothing Then
-                        socket.WritePacket(Concat({PACKET_ID, id, 0, 0}, responseData))
+                        socket.WritePacket(Concat({PacketPrefixValue, id, 0, 0}, responseData))
                     End If
                     If errorMessage IsNot Nothing Then
-                        logger.Log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
-                        socket.WritePacket(Concat({PACKET_ID, CklPacketId.error}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
+                        Logger.Log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
+                        socket.WritePacket(Concat({PacketPrefixValue, CKLPacketId.[Error]}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
                     End If
                 End Sub
             ))
-            logger.Log("Connection from " + socket.Name, LogMessageType.Positive)
+            Logger.Log("Connection from " + socket.Name, LogMessageType.Positive)
         End Sub
 
-        Public Overridable Sub [stop]()
-            accepter.CloseAllPorts()
+        Public Overridable Sub [Stop]()
+            Accepter.CloseAllPorts()
             portHandle.Dispose()
         End Sub
     End Class

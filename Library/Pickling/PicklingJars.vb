@@ -26,11 +26,11 @@ Namespace Pickling.Jars
             Me.takeRest = takeRest
         End Sub
 
-        Protected Overridable Function DescribeValue(ByVal val As Byte()) As String
-            Return "[{0}]".Frmt(val.ToHexString)
+        Protected Overridable Function DescribeValue(ByVal value As Byte()) As String
+            Return "[{0}]".Frmt(value.ToHexString)
         End Function
 
-        Public Overrides Function Pack(Of R As Byte())(ByVal value As R) As IPickle(Of R)
+        Public Overrides Function Pack(Of TValue As Byte())(ByVal value As TValue) As IPickle(Of TValue)
             Dim val = CType(value, Byte())
             Dim offset = 0
             Dim size = val.Length
@@ -54,7 +54,7 @@ Namespace Pickling.Jars
                 data(i + offset) = val(i)
             Next i
 
-            Return New Pickle(Of R)(Me.Name, value, data.ToView(), Function() DescribeValue(val))
+            Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() DescribeValue(val))
         End Function
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Byte())
             'Sizes
@@ -114,7 +114,7 @@ Namespace Pickling.Jars
             Me.reversed = reversed
         End Sub
 
-        Public Overrides Function Pack(Of R As String)(ByVal value As R) As IPickle(Of R)
+        Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
             Dim size = value.Length + If(nullTerminated, 1, 0)
             If expectedSize <> 0 And size <> expectedSize Then Throw New PicklingException("Size doesn't match expected size")
 
@@ -128,7 +128,7 @@ Namespace Pickling.Jars
                 i += 1
             End While
 
-            Return New Pickle(Of R)(Me.Name, value, data.ToView(), Function() """{0}""".Frmt(value))
+            Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() """{0}""".Frmt(value))
         End Function
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of String)
@@ -171,12 +171,12 @@ Namespace Pickling.Jars
         Public ReadOnly parser As IParseJar(Of T)
         Public Sub New(ByVal packer As IPackJar(Of T), ByVal parser As IParseJar(Of T))
             MyBase.New(packer.Name)
-            If packer.Name <> parser.Name Then Throw New ArgumentException()
+            If packer.Name <> parser.Name Then Throw New ArgumentException("Parser must match packer.", "parser")
             Me.packer = packer
             Me.parser = parser
         End Sub
 
-        Public Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
+        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
             Return packer.Pack(value)
         End Function
 
@@ -188,94 +188,48 @@ Namespace Pickling.Jars
     '''<summary>Combines jars to pickle ordered tuples of objects</summary>
     Public Class TuplePackJar
         Inherits PackJar(Of Dictionary(Of String, Object))
-        Private ReadOnly subjars() As IPackJar(Of Object)
+        Private ReadOnly subJars() As IPackJar(Of Object)
 
         Public Sub New(ByVal name As String)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
-            Me.subjars = New IPackJar(Of Object)() {}
+            Me.subJars = New IPackJar(Of Object)() {}
         End Sub
-        Public Sub New(ByVal name As String, ByVal ParamArray subjars() As IPackJar(Of Object))
+        Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IPackJar(Of Object))
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
-            Me.subjars = subjars
+            Me.subJars = subJars
         End Sub
-        Public Function Extend(Of R)(ByVal jar As IPackJar(Of R)) As TuplePackJar
-            Return New TuplePackJar(Name, Concat(subjars, New IPackJar(Of Object)() {jar.Weaken}))
+        Public Function Extend(Of T)(ByVal jar As IPackJar(Of T)) As TuplePackJar
+            Return New TuplePackJar(Name, Concat(subJars, New IPackJar(Of Object)() {jar.Weaken}))
         End Function
 
-        Public Overrides Function Pack(Of R As Dictionary(Of String, Object))(ByVal value As R) As IPickle(Of R)
-            If value.Keys.Count > subjars.Count Then Throw New PicklingException("Too many keys in dictionary")
+        Public Overrides Function Pack(Of TValue As Dictionary(Of String, Object))(ByVal value As TValue) As IPickle(Of TValue)
+            If value.Keys.Count > subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
 
             'Pack
             Dim pickles = New List(Of IPickle(Of Object))
-            For Each j In subjars
+            For Each j In subJars
                 If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(j.Name))
                 pickles.Add(j.Pack(value(j.Name)))
             Next j
-            Return New Pickle(Of R)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
+            Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
     Public Class TupleParseJar
         Inherits ParseJar(Of Dictionary(Of String, Object))
-        Private ReadOnly subjars() As IParseJar(Of Object)
+        Private ReadOnly subJars() As IParseJar(Of Object)
 
-        Public Sub New(ByVal name As String, ByVal ParamArray subjars() As IParseJar(Of Object))
+        Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IParseJar(Of Object))
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
-            Me.subjars = subjars
+            Me.subJars = subJars
         End Sub
         Public Function Extend(ByVal jar As IParseJar(Of Object)) As TupleParseJar
-            Return New TupleParseJar(Name, Concat(subjars, {jar}))
+            Return New TupleParseJar(Name, Concat(subJars, {jar}))
         End Function
-        Public Function ExWeak(Of R)(ByVal jar As IParseJar(Of R)) As TupleParseJar
-            Return New TupleParseJar(Name, Concat(subjars, {jar.Weaken}))
-        End Function
-
-        Public Overrides Function parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of String, Object))
-            'Parse
-            Dim vals = New Dictionary(Of String, Object)
-            Dim pickles = New List(Of IPickle(Of Object))
-            Dim curCount = data.Length
-            Dim curOffset = 0
-            For Each j In subjars
-                'Value
-                Dim p = j.Parse(data.SubView(curOffset, curCount))
-                vals(j.Name) = p.Value
-                pickles.Add(p)
-                'Size
-                Dim n = p.Data.Length
-                curCount -= n
-                curOffset += n
-            Next j
-
-            Return New Pickle(Of Dictionary(Of String, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Dictionary(Of String, Object)).MakeListDescription(pickles))
-        End Function
-    End Class
-
-    Public Class TupleJar
-        Inherits FusionJar(Of Dictionary(Of String, Object))
-        Private ReadOnly subjars() As IJar(Of Object)
-
-        Public Sub New(ByVal name As String, ByVal ParamArray subjars() As IJar(Of Object))
-            MyBase.New(New TuplePackJar(name, subjars), New TupleParseJar(name, subjars))
-            Contract.Requires(name IsNot Nothing)
-            Me.subjars = subjars
-        End Sub
-        Public Function Extend(Of R)(ByVal jar As IJar(Of R)) As TupleJar
-            Return New TupleJar(Name, Concat(subjars, {jar.Weaken}))
-        End Function
-
-        Public Overrides Function Pack(Of R As Dictionary(Of String, Object))(ByVal value As R) As IPickle(Of R)
-            If value.Keys.Count > subjars.Count Then Throw New PicklingException("Too many keys in dictionary")
-
-            'Pack
-            Dim pickles = New List(Of IPickle(Of Object))
-            For Each j In subjars
-                If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(j.Name))
-                pickles.Add(j.Pack(value(j.Name)))
-            Next j
-            Return New Pickle(Of R)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
+        Public Function ExWeak(Of T)(ByVal jar As IParseJar(Of T)) As TupleParseJar
+            Return New TupleParseJar(Name, Concat(subJars, {jar.Weaken}))
         End Function
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of String, Object))
@@ -284,7 +238,7 @@ Namespace Pickling.Jars
             Dim pickles = New List(Of IPickle(Of Object))
             Dim curCount = data.Length
             Dim curOffset = 0
-            For Each j In subjars
+            For Each j In subJars
                 'Value
                 Dim p = j.Parse(data.SubView(curOffset, curCount))
                 vals(j.Name) = p.Value
@@ -295,24 +249,70 @@ Namespace Pickling.Jars
                 curOffset += n
             Next j
 
-            Return New Pickle(Of Dictionary(Of String, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Dictionary(Of String, Object)).MakeListDescription(pickles))
+            Return New Pickle(Of Dictionary(Of String, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
+        End Function
+    End Class
+
+    Public Class TupleJar
+        Inherits FusionJar(Of Dictionary(Of String, Object))
+        Private ReadOnly subJars() As IJar(Of Object)
+
+        Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IJar(Of Object))
+            MyBase.New(New TuplePackJar(name, subJars), New TupleParseJar(name, subJars))
+            Contract.Requires(name IsNot Nothing)
+            Me.subJars = subJars
+        End Sub
+        Public Function Extend(Of T)(ByVal jar As IJar(Of T)) As TupleJar
+            Return New TupleJar(Name, Concat(subJars, {jar.Weaken}))
+        End Function
+
+        Public Overrides Function Pack(Of TValue As Dictionary(Of String, Object))(ByVal value As TValue) As IPickle(Of TValue)
+            If value.Keys.Count > subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
+
+            'Pack
+            Dim pickles = New List(Of IPickle(Of Object))
+            For Each j In subJars
+                If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(j.Name))
+                pickles.Add(j.Pack(value(j.Name)))
+            Next j
+            Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of Object).MakeListDescription(pickles))
+        End Function
+
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of String, Object))
+            'Parse
+            Dim vals = New Dictionary(Of String, Object)
+            Dim pickles = New List(Of IPickle(Of Object))
+            Dim curCount = data.Length
+            Dim curOffset = 0
+            For Each j In subJars
+                'Value
+                Dim p = j.Parse(data.SubView(curOffset, curCount))
+                vals(j.Name) = p.Value
+                pickles.Add(p)
+                'Size
+                Dim n = p.Data.Length
+                curCount -= n
+                curOffset += n
+            Next j
+
+            Return New Pickle(Of Dictionary(Of String, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
 
     Public Class ListParseJar(Of T)
         Inherits ParseJar(Of List(Of T))
         Private ReadOnly sizeJar As ValueJar
-        Private ReadOnly subjar As IParseJar(Of T)
+        Private ReadOnly subJar As IParseJar(Of T)
 
         Public Sub New(ByVal name As String,
-                       ByVal subjar As IParseJar(Of T),
+                       ByVal subJar As IParseJar(Of T),
                        Optional ByVal numSizePrefixBytes As Integer = 1)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
-            Contract.Requires(subjar IsNot Nothing)
+            Contract.Requires(subJar IsNot Nothing)
             Contract.Requires(numSizePrefixBytes > 0)
             Contract.Requires(numSizePrefixBytes <= 8)
-            Me.subjar = subjar
+            Me.subJar = subJar
             Me.sizeJar = New ValueJar("size prefix", numSizePrefixBytes)
         End Sub
 
@@ -330,7 +330,7 @@ Namespace Pickling.Jars
             'List Elements
             For i = 1UL To numElements
                 'Value
-                Dim p = subjar.Parse(data.SubView(curOffset, curCount))
+                Dim p = subJar.Parse(data.SubView(curOffset, curCount))
                 vals.Add(p.Value)
                 pickles.Add(New Pickle(Of Object)(p.Value, p.Data, p.Description))
                 'Size
@@ -339,54 +339,50 @@ Namespace Pickling.Jars
                 curOffset += n
             Next i
 
-            Return New Pickle(Of List(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of List(Of T)).MakeListDescription(pickles))
+            Return New Pickle(Of List(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
     Public Class ListPackJar(Of T)
         Inherits PackJar(Of List(Of T))
-        Private ReadOnly subjar As IPackJar(Of T)
+        Private ReadOnly subJar As IPackJar(Of T)
         Private ReadOnly prefixSize As Integer
 
         Public Sub New(ByVal name As String,
-                       ByVal subjar As IPackJar(Of T),
+                       ByVal subJar As IPackJar(Of T),
                        Optional ByVal prefixSize As Integer = 1)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
-            Contract.Requires(subjar IsNot Nothing)
-            Me.subjar = subjar
+            Contract.Requires(subJar IsNot Nothing)
+            Me.subJar = subJar
             Me.prefixSize = prefixSize
         End Sub
 
-        Public Overrides Function Pack(Of R As List(Of T))(ByVal value As R) As IPickle(Of R)
-            Dim pickles = (From e In value Select CType(subjar.Pack(e), IPickle(Of T))).ToList()
+        Public Overrides Function Pack(Of TValue As List(Of T))(ByVal value As TValue) As IPickle(Of TValue)
+            Dim pickles = (From e In value Select CType(subJar.Pack(e), IPickle(Of T))).ToList()
             Dim data = Concat(CUInt(value.Count).Bytes(size:=prefixSize), Concat(From p In pickles Select p.Data.ToArray))
-            Return New Pickle(Of R)(Me.Name, value, data.ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
+            Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() Pickle(Of T).MakeListDescription(pickles))
         End Function
     End Class
     Public Class ListJar(Of T)
         Inherits FusionJar(Of List(Of T))
-        Private ReadOnly sizeJar As ValueJar
-        Private ReadOnly subjar As IJar(Of T)
-
         Public Sub New(ByVal name As String,
-                       ByVal subjar As IJar(Of T),
+                       ByVal subJar As IJar(Of T),
                        Optional ByVal prefixSize As Integer = 1)
-            MyBase.New(New ListPackJar(Of T)(name, subjar, prefixSize), New ListParseJar(Of T)(name, subjar, prefixSize))
+            MyBase.New(New ListPackJar(Of T)(name, subJar, prefixSize), New ListParseJar(Of T)(name, subJar, prefixSize))
             Contract.Requires(name IsNot Nothing)
-            Contract.Requires(subjar IsNot Nothing)
         End Sub
     End Class
 
     Public Class RepeatingParseJar(Of T)
         Inherits ParseJar(Of List(Of T))
-        Private ReadOnly subjar As IParseJar(Of T)
+        Private ReadOnly subJar As IParseJar(Of T)
 
         Public Sub New(ByVal name As String,
-                       ByVal subjar As IParseJar(Of T))
+                       ByVal subJar As IParseJar(Of T))
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
-            Contract.Requires(subjar IsNot Nothing)
-            Me.subjar = subjar
+            Contract.Requires(subJar IsNot Nothing)
+            Me.subJar = subJar
         End Sub
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of List(Of T))
@@ -399,7 +395,7 @@ Namespace Pickling.Jars
             'List Elements
             While curOffset < data.Length
                 'Value
-                Dim p = subjar.Parse(data.SubView(curOffset, curCount))
+                Dim p = subJar.Parse(data.SubView(curOffset, curCount))
                 vals.Add(p.Value)
                 pickles.Add(New Pickle(Of Object)(p.Value, p.Data, p.Description))
                 'Size
@@ -408,36 +404,34 @@ Namespace Pickling.Jars
                 curOffset += n
             End While
 
-            Return New Pickle(Of List(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of List(Of T)).MakeListDescription(pickles))
+            Return New Pickle(Of List(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
     Public Class RepeatingPackJar(Of T)
         Inherits PackJar(Of List(Of T))
-        Private ReadOnly subjar As IPackJar(Of T)
+        Private ReadOnly subJar As IPackJar(Of T)
 
         Public Sub New(ByVal name As String,
-                       ByVal subjar As IPackJar(Of T))
+                       ByVal subJar As IPackJar(Of T))
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
-            Contract.Requires(subjar IsNot Nothing)
-            Me.subjar = subjar
+            Contract.Requires(subJar IsNot Nothing)
+            Me.subJar = subJar
         End Sub
 
-        Public Overrides Function Pack(Of R As List(Of T))(ByVal value As R) As IPickle(Of R)
-            Dim pickles = (From e In value Select CType(subjar.Pack(e), IPickle(Of T))).ToList()
+        Public Overrides Function Pack(Of TValue As List(Of T))(ByVal value As TValue) As IPickle(Of TValue)
+            Dim pickles = (From e In value Select CType(subJar.Pack(e), IPickle(Of T))).ToList()
             Dim data = Concat(From p In pickles Select p.Data.ToArray)
-            Return New Pickle(Of R)(Me.Name, value, data.ToView(), Function() Pickle(Of R).MakeListDescription(pickles))
+            Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() Pickle(Of T).MakeListDescription(pickles))
         End Function
     End Class
     Public Class RepeatingJar(Of T)
         Inherits FusionJar(Of List(Of T))
-        Private ReadOnly subjar As IJar(Of T)
-
         Public Sub New(ByVal name As String,
-                       ByVal subjar As IJar(Of T))
-            MyBase.New(New RepeatingPackJar(Of T)(name, subjar), New RepeatingParseJar(Of T)(name, subjar))
+                       ByVal subJar As IJar(Of T))
+            MyBase.New(New RepeatingPackJar(Of T)(name, subJar), New RepeatingParseJar(Of T)(name, subJar))
             Contract.Requires(name IsNot Nothing)
-            Contract.Requires(subjar IsNot Nothing)
+            Contract.Requires(subJar IsNot Nothing)
         End Sub
     End Class
 
@@ -445,40 +439,42 @@ Namespace Pickling.Jars
         Inherits Jar(Of T)
         Private ReadOnly packers(0 To 255) As IPackJar(Of T)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of T)
-        Private ReadOnly f1 As Func(Of T, Byte)
-        Private ReadOnly f2 As Func(Of ViewableList(Of Byte), Byte)
-        Public Sub New(ByVal name As String, ByVal f1 As Func(Of T, Byte), ByVal f2 As Func(Of ViewableList(Of Byte), Byte))
+        Private ReadOnly valueIndexExtractor As Func(Of T, Byte)
+        Private ReadOnly dataIndexExtractor As Func(Of ViewableList(Of Byte), Byte)
+        Public Sub New(ByVal name As String,
+                       ByVal valueIndexExtractor As Func(Of T, Byte),
+                       ByVal dataIndexExtractor As Func(Of ViewableList(Of Byte), Byte))
             MyBase.new(name)
-            Me.f1 = f1
-            Me.f2 = f2
+            Me.valueIndexExtractor = valueIndexExtractor
+            Me.dataIndexExtractor = dataIndexExtractor
         End Sub
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
-            Dim index = f2(data)
-            If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to " + index.ToString())
+            Dim index = dataIndexExtractor(data)
+            If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to {0}.".Frmt(index))
             Return parsers(index).Parse(data)
         End Function
-        Public Overrides Function Pack(Of R As T)(ByVal value As R) As IPickle(Of R)
-            Dim index = f1(value)
-            If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + index.ToString())
+        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
+            Dim index = valueIndexExtractor(value)
+            If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to {0}.".Frmt(index))
             Return packers(index).Pack(value)
         End Function
 
-        Public Sub reg(ByVal index As Byte, ByVal parser_packer As IJar(Of T))
-            Contract.Requires(parser_packer IsNot Nothing)
-            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString())
-            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString())
-            parsers(index) = parser_packer
-            packers(index) = parser_packer
+        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of T))
+            Contract.Requires(jar IsNot Nothing)
+            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString(CultureInfo.InvariantCulture))
+            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString(CultureInfo.InvariantCulture))
+            parsers(index) = jar
+            packers(index) = jar
         End Sub
-        Public Sub regParser(ByVal index As Byte, ByVal parser As IParseJar(Of T))
-            If Not (parser IsNot Nothing) Then Throw New ArgumentException()
-            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString())
+        Public Sub AddParser(ByVal index As Byte, ByVal parser As IParseJar(Of T))
+            Contract.Requires(parser IsNot Nothing)
+            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString(CultureInfo.InvariantCulture))
             parsers(index) = parser
         End Sub
-        Public Sub regPacker(ByVal index As Byte, ByVal packer As IPackJar(Of T))
-            If Not (packer IsNot Nothing) Then Throw New ArgumentException()
-            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString())
+        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IPackJar(Of T))
+            Contract.Requires(packer IsNot Nothing)
+            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString(CultureInfo.InvariantCulture))
             packers(index) = packer
         End Sub
     End Class
@@ -506,27 +502,27 @@ Namespace Pickling.Jars
             Dim payload = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
             Return New Pickle(Of PrefixPickle(Of T))(Name, payload, data.SubView(0, payload.payload.Data.Length + 1))
         End Function
-        Public Overrides Function Pack(Of R As PrefixPickle(Of T))(ByVal value As R) As IPickle(Of R)
+        Public Overrides Function Pack(Of TValue As PrefixPickle(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Dim index = CByte(CType(value.index, Object))
             If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.index.ToString())
-            Return New Pickle(Of R)(Name, value, Concat({index}, packers(index).Pack(value.payload.Value).Data.ToArray).ToView)
+            Return New Pickle(Of TValue)(Name, value, Concat({index}, packers(index).Pack(value.payload.Value).Data.ToArray).ToView)
         End Function
 
-        Public Sub reg(ByVal index As Byte, ByVal parser_packer As IJar(Of Object))
-            Contract.Requires(parser_packer IsNot Nothing)
-            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString())
-            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString())
-            parsers(index) = parser_packer
-            packers(index) = parser_packer
+        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of Object))
+            Contract.Requires(jar IsNot Nothing)
+            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
+            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
+            parsers(index) = jar
+            packers(index) = jar
         End Sub
-        Public Sub regParser(ByVal index As Byte, ByVal parser As IParseJar(Of Object))
-            If Not (parser IsNot Nothing) Then Throw New ArgumentException()
-            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString())
+        Public Sub AddParser(ByVal index As Byte, ByVal parser As IParseJar(Of Object))
+            Contract.Requires(parser IsNot Nothing)
+            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
             parsers(index) = parser
         End Sub
-        Public Sub regPacker(ByVal index As Byte, ByVal packer As IPackJar(Of Object))
-            If Not (packer IsNot Nothing) Then Throw New ArgumentException()
-            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString())
+        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IPackJar(Of Object))
+            Contract.Requires(packer IsNot Nothing)
+            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
             packers(index) = packer
         End Sub
     End Class
@@ -557,31 +553,31 @@ Namespace Pickling.Jars
         Public Overloads Function Parse(ByVal index As Byte, ByVal data As ViewableList(Of Byte)) As IPickle(Of Object)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
-            If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to " + index.ToString())
+            If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to {0}.".Frmt(index))
             Return parsers(index).Parse(data)
         End Function
-        Public Overloads Function Pack(Of R)(ByVal index As Byte, ByVal value As R) As IPickle(Of R)
+        Public Overloads Function Pack(Of TValue)(ByVal index As Byte, ByVal value As TValue) As IPickle(Of TValue)
             Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IPickle(Of R))() IsNot Nothing)
-            If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + index.ToString())
+            Contract.Ensures(Contract.Result(Of IPickle(Of TValue))() IsNot Nothing)
+            If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to {0}.".Frmt(index))
             Return packers(index).Pack(value)
         End Function
 
-        Public Sub reg(ByVal index As Byte, ByVal parser_packer As IJar(Of Object))
-            Contract.Requires(parser_packer IsNot Nothing)
-            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString())
-            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString())
-            parsers(index) = parser_packer
-            packers(index) = parser_packer
+        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of Object))
+            Contract.Requires(jar IsNot Nothing)
+            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString(CultureInfo.InvariantCulture))
+            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString(CultureInfo.InvariantCulture))
+            parsers(index) = jar
+            packers(index) = jar
         End Sub
-        Public Sub regParser(ByVal index As Byte, ByVal parser As IParseJar(Of Object))
-            If Not (parser IsNot Nothing) Then Throw New ArgumentException()
-            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString())
+        Public Sub AddParser(ByVal index As Byte, ByVal parser As IParseJar(Of Object))
+            Contract.Requires(parser IsNot Nothing)
+            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString(CultureInfo.InvariantCulture))
             parsers(index) = parser
         End Sub
-        Public Sub regPacker(ByVal index As Byte, ByVal packer As IPackJar(Of Object))
-            If Not (packer IsNot Nothing) Then Throw New ArgumentException()
-            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString())
+        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IPackJar(Of Object))
+            Contract.Requires(packer IsNot Nothing)
+            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString(CultureInfo.InvariantCulture))
             packers(index) = packer
         End Sub
     End Class
@@ -591,10 +587,10 @@ Namespace Pickling.Jars
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
         End Sub
-        Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
-            Return New Pickle(Of R)(Me.Name, Nothing, New Byte() {}.ToView(), Function() "[Field Skipped]")
+        Public Overrides Function Pack(Of TValue As Object)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Me.Name, Nothing, New Byte() {}.ToView(), Function() "[Field Skipped]")
         End Function
-        Public Overrides Function Parse(ByVal view As ViewableList(Of Byte)) As IPickle(Of Object)
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Object)
             Return New Pickle(Of Object)(Me.Name, Nothing, New Byte() {}.ToView(), Function() "[Field Skipped]")
         End Function
     End Class

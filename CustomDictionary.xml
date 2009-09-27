@@ -7,7 +7,41 @@
       <Word>Warcraft</Word>
       <Word>Mpq</Word>
       <Word>Plugin</Word>
+      <Word>Plugout</Word>
       <Word>Plugins</Word>
+      <Word>Linefy</Word>
+      <Word>Lagger</Word>
+      <Word>Laggers</Word>
+      <Word>Mana</Word>
+      <Word>Matchable</Word>
+      <Word>Hookable</Word>
+      <Word>Trackable</Word>
+      <Word>Minimap</Word>
+      <Word>Notifier</Word>
+      <Word>Orc</Word>
+      <Word>Recache</Word>
+      <Word>Rescuable</Word>
+      <Word>Advex</Word>
+      <Word>Starcraft</Word>
     </Recognized>
+    <Unrecognized>
+      <Word>Nongame</Word>
+      <Word>Subgroup</Word>
+    </Unrecognized>
   </Words>
+  <Acronyms>
+    <CasingExceptions>
+      <Acronym>XORO</Acronym>
+      <Acronym>MPQ</Acronym>
+      <Acronym>BNLS</Acronym>
+      <Acronym>WC3</Acronym>
+      <Acronym>TFT</Acronym>
+      <Acronym>ROC</Acronym>
+      <Acronym>AOE</Acronym>
+      <Acronym>CKL</Acronym>
+      <Acronym>CRC</Acronym>
+      <Acronym>HCL</Acronym>
+      <Acronym>SHA</Acronym>
+    </CasingExceptions>
+  </Acronyms>
 </Dictionary>

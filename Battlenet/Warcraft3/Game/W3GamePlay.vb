@@ -34,9 +34,9 @@
         Private gameDataQueue As New Queue(Of GameTickDatum)
         Private _gameTime As Integer
         Private gameTimeBuffer As Double
-        Public Property settingSpeedFactor As Double
-        Public Property settingTickPeriod As Double
-        Public Property settingLagLimit As Double
+        Public Property SettingSpeedFactor As Double
+        Public Property SettingTickPeriod As Double
+        Public Property SettingLagLimit As Double
 
         Public Event PlayerSentData(ByVal game As W3Game, ByVal player As W3Player, ByVal data As Byte())
 
@@ -49,9 +49,9 @@
             Contract.Assume(gll >= 0)
             Contract.Assume(Not Double.IsNaN(gll))
             Contract.Assume(Not Double.IsInfinity(gll))
-            settingSpeedFactor = gsf
-            settingTickPeriod = gtp
-            settingLagLimit = gll
+            SettingSpeedFactor = gsf
+            SettingTickPeriod = gtp
+            SettingLagLimit = gll
             AddHandler tickTimer.Elapsed, Sub() c_Tick()
         End Sub
         Private Sub GameplayStart()
@@ -96,7 +96,7 @@
         Private Sub DropLagger()
             For Each player In laggingPlayers
                 Contract.Assume(player IsNot Nothing)
-                RemovePlayer(player, True, W3PlayerLeaveTypes.Disconnect, "Lagger dropped")
+                RemovePlayer(player, True, W3PlayerLeaveType.Disconnect, "Lagger dropped")
             Next player
         End Sub
 
@@ -105,8 +105,8 @@
             ref.QueueAction(
                 Sub()
                     Dim t As ModInt32 = Environment.TickCount
-                    Dim dt = CUInt(t - lastTickTime) * Me.settingSpeedFactor
-                    Dim dgt = CUShort(Me.settingTickPeriod * Me.settingSpeedFactor)
+                    Dim dt = CUInt(t - lastTickTime) * Me.SettingSpeedFactor
+                    Dim dgt = CUShort(Me.SettingTickPeriod * Me.SettingSpeedFactor)
                     lastTickTime = t
 
                     'Stop for laggers
@@ -148,7 +148,7 @@
             Else
                 laggingPlayers = (From p In players
                                    Where Not p.isFake _
-                                   AndAlso p.GetTockTime < _gameTime - Me.settingLagLimit).ToList()
+                                   AndAlso p.GetTockTime < _gameTime - Me.SettingLagLimit).ToList()
                 If laggingPlayers.Count > 0 Then
                     BroadcastPacket(W3Packet.MakeShowLagScreen(laggingPlayers), Nothing)
                     lagStartTime = lastTickTime

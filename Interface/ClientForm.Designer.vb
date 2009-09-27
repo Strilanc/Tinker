@@ -1,5 +1,5 @@
 <Global.Microsoft.VisualBasic.CompilerServices.DesignerGenerated()> _
-Partial Class FrmClient
+Partial Class ClientForm
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
@@ -20,7 +20,7 @@ Partial Class FrmClient
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container
-        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FrmClient))
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(ClientForm))
         Me.btnSettings = New System.Windows.Forms.Button
         Me.trayIcon = New System.Windows.Forms.NotifyIcon(Me.components)
         Me.mnuTray = New System.Windows.Forms.ContextMenuStrip(Me.components)

@@ -1,39 +1,35 @@
 ﻿Imports System.Net
 Imports System.Net.Sockets
 
-Namespace BattleNetLogonServer
-    Public Enum BnlsPacketId As Byte
+Namespace BNLS
+    Public Enum BNLSPacketId As Byte
         Null = &H0
-        CdKey = &H1
-        LogonChallenge = &H2
-        LogonProof = &H3
+        CDKey = &H1
+        LogOnChallenge = &H2
+        LogOnProof = &H3
         CreateAccount = &H4
         ChangeChallenge = &H5
         ChangeProof = &H6
         UpgradeChallenge = &H7
         UpgradeProof = &H8
         VersionCheck = &H9
-        ConfirmLogon = &HA
+        ConfirmLogOn = &HA
         HashData = &HB
-        CdKeyEx = &HC
+        CDKeyEx = &HC
         ChooseNlsRevision = &HD
         Authorize = &HE
         AuthorizeProof = &HF
         RequestVersionByte = &H10
         VerifyServer = &H11
         ReserveServerSlots = &H12
-        ServerLogonChallenge = &H13
-        ServerLogonProof = &H14
-        Reserved0 = &H15
-        Reserved1 = &H16
-        Reserved2 = &H17
+        ServerLogOnChallenge = &H13
+        ServerLogOnProof = &H14
         VersionCheckEx = &H18
-        Reserved3 = &H19
         VersionCheckEx2 = &H1A
         Warden = &H7D
     End Enum
 
-    Public Class BnlsClient
+    Public Class WardenClient
         Implements IDisposable
 
         Private WithEvents socket As PacketSocket
@@ -41,7 +37,7 @@ Namespace BattleNetLogonServer
         Private ReadOnly cookie As UInteger
         Public Event Send(ByVal data As Byte())
         Public Event Fail(ByVal e As Exception)
-        Public Event Disconnect(ByVal sender As BnlsClient, ByVal expected As Boolean, ByVal reason As String)
+        Public Event Disconnect(ByVal sender As WardenClient, ByVal expected As Boolean, ByVal reason As String)
 
         Private Sub New(ByVal socket As PacketSocket,
                         ByVal cookie As UInteger,
@@ -59,7 +55,7 @@ Namespace BattleNetLogonServer
             Dim readLoop = FutureIterateExcept(Function() FutureReadBnlsPacket(socket, logger),
                 Sub(packet)
                     'Check packet type
-                    If packet.id <> BnlsWardenPacketId.FullServiceHandleWardenPacket Then
+                    If packet.id <> BNLSWardenPacketId.FullServiceHandleWardenPacket Then
                         Throw New IO.IOException("Incorrect packet type received from server.")
                     End If
 
@@ -86,26 +82,26 @@ Namespace BattleNetLogonServer
             )
         End Sub
 
-        ''' <summary>Asynchronously connects to a BNLS server.</summary>
-        Public Shared Function FutureConnectToBnlsServer(ByVal hostname As String,
+        '''<summary>Asynchronously connects to a BNLS server.</summary>
+        Public Shared Function FutureConnectToBNLSServer(ByVal hostName As String,
                                                          ByVal port As UShort,
                                                          ByVal seed As UInteger,
-                                                         Optional ByVal logger As Logger = Nothing) As IFuture(Of BnlsClient)
-            Contract.Requires(hostname IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of BnlsClient))() IsNot Nothing)
+                                                         Optional ByVal logger As Logger = Nothing) As IFuture(Of WardenClient)
+            Contract.Requires(hostName IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of WardenClient))() IsNot Nothing)
             logger = If(logger, New Logger())
             Dim cookie = seed
 
             'Connect and send first packet
-            Dim futurePacketSocket = FutureCreateConnectedTcpClient(hostname, port).Select(
+            Dim futurePacketSocket = FutureCreateConnectedTcpClient(hostName, port).Select(
                 Function(tcpClient)
                     Dim socket = New PacketSocket(tcpClient,
                                                   timeout:=5.Minutes,
-                                                  numByteBeforeSize:=0,
+                                                  numBytesBeforeSize:=0,
                                                   numSizeBytes:=2,
                                                   logger:=logger,
                                                   name:="BNLS")
-                    WritePacket(socket, logger, BnlsWardenPacket.MakeFullServiceConnect(seed, seed))
+                    WritePacket(socket, logger, BNLSWardenPacket.MakeFullServiceConnect(seed, seed))
                     Return socket
                 End Function
             )
@@ -121,7 +117,7 @@ Namespace BattleNetLogonServer
                     Dim packetSocket = futurePacketSocket.Value
 
                     'Check packet type
-                    If packet.id <> BnlsWardenPacketId.FullServiceConnect Then
+                    If packet.id <> BNLSWardenPacketId.FullServiceConnect Then
                         Dim msg = "Bnls server responded with a non-FullServiceConnect packet."
                         packetSocket.Disconnect(expected:=False, reason:=msg)
                         Throw New IO.IOException(msg)
@@ -135,7 +131,7 @@ Namespace BattleNetLogonServer
                         Throw New IO.IOException(msg)
                     End If
 
-                    Return New BnlsClient(packetSocket, cookie, logger)
+                    Return New WardenClient(packetSocket, cookie, logger)
                 End Function
             )
 
@@ -144,13 +140,13 @@ Namespace BattleNetLogonServer
 
         Private Shared Sub WritePacket(ByVal socket As PacketSocket,
                                        ByVal logger As Logger,
-                                       ByVal pk As BnlsWardenPacket)
+                                       ByVal pk As BNLSWardenPacket)
             Contract.Requires(pk IsNot Nothing)
 
             Try
                 logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, socket.Name), LogMessageType.DataEvent)
                 logger.Log(pk.payload.Description, LogMessageType.DataParsed)
-                socket.WritePacket(Concat(Of Byte)({0, 0, BnlsPacketId.Warden, pk.id}, pk.payload.Data.ToArray))
+                socket.WritePacket(Concat(Of Byte)({0, 0, BNLSPacketId.Warden, pk.id}, pk.payload.Data.ToArray))
 
             Catch e As Exception
                 If Not (TypeOf e Is SocketException OrElse
@@ -165,18 +161,18 @@ Namespace BattleNetLogonServer
         End Sub
 
         Private Shared Function FutureReadBnlsPacket(ByVal socket As PacketSocket,
-                                                     ByVal logger As Logger) As IFuture(Of BnlsWardenPacket)
+                                                     ByVal logger As Logger) As IFuture(Of BNLSWardenPacket)
             Return socket.FutureReadPacket().Select(
                 Function(packetData)
                     'Check packet
                     If packetData.Length < 3 Then
                         Throw New IO.IOException("Packet doesn't have a header.")
-                    ElseIf packetData(2) <> BnlsPacketId.Warden Then
+                    ElseIf packetData(2) <> BNLSPacketId.Warden Then
                         Throw New IO.IOException("Not a bnls warden packet.")
                     End If
 
                     'Parse, log, return
-                    Dim pk = BnlsWardenPacket.FromServerData(packetData.SubView(3))
+                    Dim pk = BNLSWardenPacket.FromServerData(packetData.SubView(3))
                     logger.Log(Function() "Received {0} from {1}".Frmt(pk.id, socket.Name), LogMessageType.DataEvent)
                     logger.Log(pk.payload.Description, LogMessageType.DataParsed)
                     Return pk
@@ -184,7 +180,7 @@ Namespace BattleNetLogonServer
         End Function
 
         Public Sub ProcessWardenPacket(ByVal data As ViewableList(Of Byte))
-            WritePacket(socket, logger, BnlsWardenPacket.MakeFullServiceHandleWardenPacket(cookie, data.ToArray))
+            WritePacket(socket, logger, BNLSWardenPacket.MakeFullServiceHandleWardenPacket(cookie, data.ToArray))
         End Sub
 
         Public Sub Dispose() Implements IDisposable.Dispose

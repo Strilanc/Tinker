@@ -6,16 +6,16 @@ Imports System.Net
 Imports System.IO
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
-Public Module Common
+Public Module PoorlyCategorizedFunctions
 #Region "Strings Extra"
     <Extension()> <Pure()>
-    Public Function Linefy(ByVal s As String) As String
-        Contract.Requires(s IsNot Nothing)
+    Public Function Linefy(ByVal text As String) As String
+        Contract.Requires(text IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return s.Replace("\n", Environment.NewLine)
+        Return text.Replace("\n", Environment.NewLine)
     End Function
     <Pure()>
-    Public Function breakQuotedWords(ByVal text As String) As List(Of String)
+    Public Function BreakQuotedWords(ByVal text As String) As List(Of String)
         Contract.Requires(text IsNot Nothing)
         Contract.Ensures(Contract.Result(Of List(Of String))() IsNot Nothing)
 
@@ -46,10 +46,10 @@ Public Module Common
         Return quoted_words
     End Function
     <Pure()>
-    Public Function DictStrT(Of T)(ByVal text As String,
-                                   ByVal parser As Func(Of String, T),
-                                   Optional ByVal pairDivider As String = ";"c,
-                                   Optional ByVal valueDivider As String = "="c) As Dictionary(Of String, T)
+    Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
+                                                    ByVal parser As Func(Of String, T),
+                                                    Optional ByVal pairDivider As String = ";"c,
+                                                    Optional ByVal valueDivider As String = "="c) As Dictionary(Of String, T)
         Contract.Requires(text IsNot Nothing)
         Contract.Requires(parser IsNot Nothing)
         Contract.Requires(pairDivider IsNot Nothing)
@@ -68,15 +68,15 @@ Public Module Common
 #End Region
 
 #Region "Filepaths"
-    Public Function findFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As String
+    Public Function FindFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As String
         Contract.Requires(fileQuery IsNot Nothing)
         Contract.Requires(likeQuery IsNot Nothing)
         Contract.Requires(directory IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return findFilesMatching(fileQuery, likeQuery, directory, 1).First
+        Return FindFilesMatching(fileQuery, likeQuery, directory, 1).First
     End Function
 
-    Public Function findFilesMatching(ByVal fileQuery As String,
+    Public Function FindFilesMatching(ByVal fileQuery As String,
                                       ByVal likeQuery As String,
                                       ByVal directory As String,
                                       ByVal maxResults As Integer) As IList(Of String)
@@ -94,22 +94,22 @@ Public Module Common
 
         'Separate directory and filename patterns
         fileQuery = fileQuery.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
-        Dim dir_pattern = "*"
+        Dim dirQuery = "*"
         If fileQuery.Contains(DirectorySeparatorChar) Then
             Dim words = fileQuery.Split(DirectorySeparatorChar)
             Dim file_pattern = words(words.Length - 1)
-            dir_pattern = fileQuery.Substring(0, fileQuery.Length - file_pattern.Length) + "*"
+            dirQuery = fileQuery.Substring(0, fileQuery.Length - file_pattern.Length) + "*"
             fileQuery = "*" + file_pattern
         End If
 
         'patterns are not case-sensitive
-        dir_pattern = dir_pattern.ToLower()
-        likeQuery = likeQuery.ToLower
+        dirQuery = dirQuery.ToUpperInvariant
+        likeQuery = likeQuery.ToUpperInvariant
 
         'Check files in folder
         For Each filename In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
             filename = filename.Substring(directory.Length)
-            If filename.ToLower() Like likeQuery AndAlso filename.ToLower Like dir_pattern Then
+            If filename.ToUpperInvariant Like likeQuery AndAlso filename.ToUpperInvariant Like dirQuery Then
                 matches.Add(filename)
                 If matches.Count >= maxResults Then Exit For
             End If
@@ -117,17 +117,17 @@ Public Module Common
 
         Return matches
     End Function
-    Public Function GetDataFolderPath(ByVal sub_folder As String) As String
+    Public Function GetDataFolderPath(ByVal subfolder As String) As String
         Dim folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
         Try
             folder += IO.Path.DirectorySeparatorChar + "HostBot"
             If Not IO.Directory.Exists(folder) Then IO.Directory.CreateDirectory(folder)
-            folder += IO.Path.DirectorySeparatorChar + sub_folder
+            folder += IO.Path.DirectorySeparatorChar + subfolder
             If Not IO.Directory.Exists(folder) Then IO.Directory.CreateDirectory(folder)
             folder += IO.Path.DirectorySeparatorChar
             Return folder
         Catch e As Exception
-            LogUnexpectedException("Error getting folder My Documents\HostBot\{0}.".Frmt(sub_folder), e)
+            LogUnexpectedException("Error getting folder My Documents\HostBot\{0}.".Frmt(subfolder), e)
             Throw
         End Try
     End Function
@@ -157,22 +157,22 @@ Public Module Common
         bw.Write(data.ToAscBytes(True))
     End Sub
     <Extension()>
-    Public Function ReadNullTerminatedString(ByVal br As BinaryReader,
+    Public Function ReadNullTerminatedString(ByVal reader As BinaryReader,
                                              ByVal maxLength As Integer) As String
         Dim result As String = Nothing
-        If Not TryReadNullTerminatedString(br, maxLength, result) Then
+        If Not TryReadNullTerminatedString(reader, maxLength, result) Then
             Throw New IOException("Null-terminated string exceeded maximum length.")
         End If
         Return result
     End Function
     <Extension()>
-    Public Function TryReadNullTerminatedString(ByVal br As BinaryReader,
+    Public Function TryReadNullTerminatedString(ByVal reader As BinaryReader,
                                                 ByVal maxLength As Integer,
                                                 ByRef result As String) As Boolean
         Dim data(0 To maxLength - 1) As Byte
         Dim n = 0
         Do
-            Dim b = br.ReadByte()
+            Dim b = reader.ReadByte()
             If b = 0 Then
                 result = data.Take(n).ParseChrString(False)
                 Return True
@@ -186,17 +186,17 @@ Public Module Common
 End Module
 
 Public Class KeyPair
-    Private ReadOnly _value1 As Byte()
-    Private ReadOnly _value2 As Byte()
-    Public ReadOnly Property Value1 As Byte()
+    Private ReadOnly _value1 As ViewableList(Of Byte)
+    Private ReadOnly _value2 As ViewableList(Of Byte)
+    Public ReadOnly Property Value1 As ViewableList(Of Byte)
         Get
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
             Return _value1
         End Get
     End Property
-    Public ReadOnly Property Value2 As Byte()
+    Public ReadOnly Property Value2 As ViewableList(Of Byte)
         Get
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
             Return _value2
         End Get
     End Property
@@ -206,7 +206,7 @@ Public Class KeyPair
         Contract.Invariant(_value2 IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal value1 As Byte(), ByVal value2 As Byte())
+    Public Sub New(ByVal value1 As ViewableList(Of Byte), ByVal value2 As ViewableList(Of Byte))
         Contract.Requires(value1 IsNot Nothing)
         Contract.Requires(value2 IsNot Nothing)
         Me._value1 = value1

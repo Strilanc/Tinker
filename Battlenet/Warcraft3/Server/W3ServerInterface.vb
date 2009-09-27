@@ -1,11 +1,11 @@
 ﻿Imports HostBot.Links
 
 Namespace Warcraft3
-    Public Enum W3ServerStates As Byte
-        only_accepting = 0
-        accepting_and_playing = 1
-        only_playing_out = 2
-        killed = 3
+    Public Enum W3ServerState As Byte
+        OnlyAcceptingPlayers = 0
+        AcceptingPlayersAndPlayingGames = 1
+        OnlyPlayingGames = 2
+        Disposed = 3
     End Enum
 
     Public Class ServerSettings
@@ -16,12 +16,12 @@ Namespace Warcraft3
         Public ReadOnly allowDownloads As Boolean
         Public ReadOnly allowUpload As Boolean
         Public ReadOnly instances As Integer
-        Public ReadOnly autostarted As Boolean
+        Public ReadOnly isAutoStarted As Boolean
         Public ReadOnly adminPassword As String
         Public ReadOnly managed_lifecycle As Boolean
         Public ReadOnly permanent As Boolean
         Public ReadOnly defaultSlotLockState As W3Slot.Lock
-        Public ReadOnly auto_elevate_username As String
+        Public ReadOnly autoElevateUserName As String
         Public ReadOnly grabMap As Boolean
         Public ReadOnly default_listen_ports As New List(Of UShort)
         Public ReadOnly loadInGame As Boolean
@@ -29,7 +29,7 @@ Namespace Warcraft3
         Public ReadOnly HCLMode As String = ""
         Public Const HCLChars As String = "abcdefghijklmnopqrstuvwxyz0123456789 -=,."
         Public Function EncodedHCLMode(ByVal handicaps As Byte()) As Byte()
-            Dim map(0 To 255) As Byte
+            Dim indexMap(0 To 255) As Byte
             Dim blocked(0 To 255) As Boolean
             blocked(50) = True
             blocked(60) = True
@@ -40,7 +40,7 @@ Namespace Warcraft3
             Dim i = 0
             For j = 1 To 255
                 If blocked(j) Then Continue For
-                map(i) = CByte(j)
+                indexMap(i) = CByte(j)
                 i += 1
             Next j
 
@@ -48,7 +48,7 @@ Namespace Warcraft3
             For i = 0 To dat.Length - 1
                 Dim v = If(blocked(handicaps(i)), handicaps(i), 100)
                 Dim c = If(HCLChars.Contains(HCLMode(i)), HCLMode(i), " ")
-                dat(i) = map((v - 50) \ 10 + HCLChars.IndexOf(c) * 6)
+                dat(i) = indexMap((v - 50) \ 10 + HCLChars.IndexOf(c, StringComparison.CurrentCultureIgnoreCase) * 6)
             Next i
             Return dat
         End Function
@@ -57,30 +57,29 @@ Namespace Warcraft3
                        ByVal header As W3GameHeader,
                        Optional ByVal allowDownloads As Boolean = True,
                        Optional ByVal allowUpload As Boolean = True,
-                       Optional ByVal autostarted As Boolean = False,
-                       Optional ByVal defaultSlotLockState As W3Slot.Lock = W3Slot.Lock.unlocked,
+                       Optional ByVal isAutoStarted As Boolean = False,
+                       Optional ByVal defaultSlotLockState As W3Slot.Lock = W3Slot.Lock.Unlocked,
                        Optional ByVal instances As Integer = 1,
                        Optional ByVal password As String = Nothing,
-                       Optional ByVal auto_elevate_user As String = Nothing,
-                       Optional ByVal managed_lifecycle As Boolean = True,
-                       Optional ByVal is_admin_game As Boolean = False,
-                       Optional ByVal grab_map As Boolean = False,
-                       Optional ByVal default_listen_ports As IEnumerable(Of UShort) = Nothing)
-            If Not (map IsNot Nothing) Then Throw New ArgumentException()
+                       Optional ByVal autoElevateUserName As String = Nothing,
+                       Optional ByVal isAdminGame As Boolean = False,
+                       Optional ByVal shouldGrabMap As Boolean = False,
+                       Optional ByVal defaultListenPorts As IEnumerable(Of UShort) = Nothing)
+            Contract.Requires(map IsNot Nothing)
             Me.map = map
             Me.header = header
             Me.creationTime = DateTime.Now()
             Me.allowDownloads = allowDownloads
             Me.allowUpload = allowUpload
             Me.instances = instances
-            Me.autostarted = autostarted
+            Me.isAutoStarted = isAutoStarted
             Me.defaultSlotLockState = defaultSlotLockState
-            If password Is Nothing Then password = New Random().Next(0, 1000).ToString("000")
+            If password Is Nothing Then password = New Random().Next(0, 1000).ToString("000", CultureInfo.InvariantCulture)
             Me.adminPassword = password
-            Me.auto_elevate_username = auto_elevate_user
-            Me.isAdminGame = is_admin_game
-            Me.grabMap = grab_map
-            Me.default_listen_ports = If(default_listen_ports, New List(Of UShort)).ToList()
+            Me.autoElevateUserName = autoElevateUserName
+            Me.isAdminGame = isAdminGame
+            Me.grabMap = shouldGrabMap
+            Me.default_listen_ports = If(defaultListenPorts, New List(Of UShort)).ToList()
 
             For Each arg In header.Options
                 Dim arg2 = ""
@@ -89,39 +88,39 @@ Namespace Warcraft3
                     arg2 = arg.Substring(n + 1)
                     arg = arg.Substring(0, n + 1)
                 End If
-                arg = arg.ToLower.Trim()
-                arg2 = arg2.ToLower.Trim()
+                arg = arg.ToUpperInvariant.Trim()
+                arg2 = arg2.ToUpperInvariant.Trim()
 
                 Select Case arg
-                    Case "-mode="
+                    Case "-MODE="
                         Me.HCLMode = arg2
-                    Case "-permanent", "-perm"
+                    Case "-PERMANENT", "-PERM"
                         Me.permanent = True
-                    Case "-autostart", "-as"
-                        Me.autostarted = True
-                    Case "-noul"
+                    Case "-AUTOSTART", "-AS"
+                        Me.isAutoStarted = True
+                    Case "-NOUL"
                         Me.allowUpload = False
-                    Case "-nodl"
+                    Case "-NODL"
                         Me.allowDownloads = False
-                    Case "-instances=", "-i="
+                    Case "-INSTANCES=", "-I="
                         Dim i = 0
                         If Integer.TryParse(arg2, i) AndAlso i >= 0 Then
                             Me.instances = i
                         End If
-                    Case "-admin=", "-a="
-                        Me.auto_elevate_username = arg2
-                    Case "-admin", "-a"
-                        Me.auto_elevate_username = header.hostUserName
-                    Case "-grab"
+                    Case "-ADMIN=", "-A="
+                        Me.autoElevateUserName = arg2
+                    Case "-ADMIN", "-A"
+                        Me.autoElevateUserName = header.hostUserName
+                    Case "-GRAB"
                         Me.grabMap = True
-                    Case "-port="
+                    Case "-PORT="
                         Dim port As UShort
                         If UShort.TryParse(arg2, port) Then
                             Me.default_listen_ports.Add(port)
                         End If
-                    Case "-loadingame", "-lig"
+                    Case "-LOADINGAME", "-LIG"
                         Me.loadInGame = True
-                    Case "-fake"
+                    Case "-FAKE"
                         Me.testFakePlayers = True
                 End Select
             Next arg

@@ -15,21 +15,21 @@
 
 ''''Implements the various cryptographic checks and algorithms blizzard uses
 Namespace Bnet.Crypt
-    Public Module common
+    Public Module CryptCommon
         Private ReadOnly G As BigNum = 47
         Private ReadOnly N As BigNum = BigNum.FromString("112624315653284427036559548610503669920632123929604336254260115573677366691719", 10, ByteOrder.BigEndian)
 
         '''<summary>Computes the crc32 value for a stream of data.</summary>
-        '''<param name="s">The stream to read data from.</param>
+        '''<param name="stream">The stream to read data from.</param>
         '''<param name="length">The total amount of data to read. -1 means read entire stream.</param>
         '''<param name="poly">The polynomial to be used, specified in a bit pattern. (Default is CRC-32-IEEE 802.3).</param>
         '''<param name="polyAlreadyReversed">Indicates whether or not the bit pattern of the polynomial is already reversed.</param>
         '''<returns>crc32 value</returns>
-        Public Function crc32(ByVal s As IO.Stream,
+        Public Function CRC32(ByVal stream As IO.Stream,
                               Optional ByVal length As Long = -1,
                               Optional ByVal poly As UInteger = &H4C11DB7,
                               Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
-            Dim r = New IO.BinaryReader(s)
+            Dim r = New IO.BinaryReader(stream)
             Dim reg As UInteger
 
             'Reverse the polynomial
@@ -59,7 +59,7 @@ Namespace Bnet.Crypt
 
             'Direct Table Algorithm
             reg = Not 0UI
-            If length = -1 Then length = s.Length - s.Position
+            If length = -1 Then length = stream.Length - stream.Position
             For i As Long = 0 To length - 1
                 reg = (reg >> 8) Xor xorTable(r.ReadByte() Xor CByte(reg And &HFF))
             Next i
@@ -67,11 +67,11 @@ Namespace Bnet.Crypt
             Return Not reg
         End Function
 
-        Public Function GeneratePublicPrivateKeyPair(ByVal r As System.Security.Cryptography.RandomNumberGenerator) As KeyPair
-            Contract.Requires(r IsNot Nothing)
+        Public Function GeneratePublicPrivateKeyPair(ByVal secureRandomNumberGenerator As System.Security.Cryptography.RandomNumberGenerator) As KeyPair
+            Contract.Requires(secureRandomNumberGenerator IsNot Nothing)
             Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
 
-            Dim privateKey = N.RandomUniformUpTo(r, False, False)
+            Dim privateKey = N.RandomUniformUpTo(secureRandomNumberGenerator, False, False)
             Dim privateKeyBytes = privateKey.ToBytes(ByteOrder.LittleEndian).ToArray()
 
             Dim publicKey = Bnet.Crypt.G.PowerMod(privateKey, N)
@@ -82,16 +82,16 @@ Namespace Bnet.Crypt
             Contract.Assume(privateKeyBytes IsNot Nothing) 'remove this once contract static verifier understands redim preserve
             Contract.Assume(publicKeyBytes IsNot Nothing) 'remove this once contract static verifier understands redim preserve
 
-            Return New KeyPair(publicKeyBytes, privateKeyBytes)
+            Return New KeyPair(publicKeyBytes.ToView, privateKeyBytes.ToView)
         End Function
 
-        Public Function GenerateClientServerPasswordProofs(ByVal username As String,
+        Public Function GenerateClientServerPasswordProofs(ByVal userName As String,
                                                            ByVal password As String,
-                                                           ByVal accountSalt As Byte(),
-                                                           ByVal serverOffsetPublicKeyBytes As Byte(),
-                                                           ByVal clientPrivateKeyBytes As Byte(),
-                                                           ByVal clientPublicKeyBytes As Byte()) As KeyPair
-            Contract.Requires(username IsNot Nothing)
+                                                           ByVal accountSalt As ViewableList(Of Byte),
+                                                           ByVal serverOffsetPublicKeyBytes As ViewableList(Of Byte),
+                                                           ByVal clientPrivateKeyBytes As ViewableList(Of Byte),
+                                                           ByVal clientPublicKeyBytes As ViewableList(Of Byte)) As KeyPair
+            Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Requires(clientPrivateKeyBytes IsNot Nothing)
             Contract.Requires(clientPublicKeyBytes IsNot Nothing)
@@ -99,18 +99,18 @@ Namespace Bnet.Crypt
             Contract.Requires(accountSalt IsNot Nothing)
             Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
 
-            username = username.ToUpper()
-            password = password.ToUpper()
+            userName = userName.ToUpperInvariant
+            password = password.ToUpperInvariant
             Dim serverOffsetPublicKey = BigNum.FromBytes(serverOffsetPublicKeyBytes, ByteOrder.LittleEndian)
             Dim clientPrivateKey = BigNum.FromBytes(clientPrivateKeyBytes, ByteOrder.LittleEndian)
             Dim clientPublicKey = BigNum.FromBytes(clientPublicKeyBytes, ByteOrder.LittleEndian)
 
             'Password private key
-            Dim x = BigNum.FromBytes(SHA1(Concat(accountSalt, SHA1((username + ":" + password).ToAscBytes()))), ByteOrder.LittleEndian)
+            Dim x = BigNum.FromBytes(SHA1(Concat(accountSalt.ToArray, SHA1((userName + ":" + password).ToAscBytes()))), ByteOrder.LittleEndian)
 
             'Verifier
             Dim v = G.PowerMod(x, N)
-            Dim u = BigNum.FromBytes(SHA1(serverOffsetPublicKeyBytes).SubArray(0, 4).Reverse().ToArray(), ByteOrder.LittleEndian)
+            Dim u = BigNum.FromBytes(SHA1(serverOffsetPublicKeyBytes.ToArray).SubArray(0, 4).Reverse().ToArray(), ByteOrder.LittleEndian)
 
             'Shared secret
             Dim shared_secret = ((N + serverOffsetPublicKey - v) Mod N).PowerMod(clientPrivateKey + u * x, N).ToBytes(ByteOrder.LittleEndian).ToArray()
@@ -142,13 +142,13 @@ Namespace Bnet.Crypt
 
             'Proofs
             Dim clientProof = SHA1(Concat(fixed_salt,
-                                          SHA1(username.ToAscBytes),
-                                          accountSalt,
-                                          clientPublicKeyBytes,
-                                          serverOffsetPublicKeyBytes,
+                                          SHA1(userName.ToAscBytes),
+                                          accountSalt.ToArray,
+                                          clientPublicKeyBytes.ToArray,
+                                          serverOffsetPublicKeyBytes.ToArray,
                                           shared_secret))
-            Dim serverProof = SHA1(Concat(clientPublicKeyBytes, clientProof, shared_secret))
-            Return New KeyPair(clientProof, serverProof)
+            Dim serverProof = SHA1(Concat(clientPublicKeyBytes.ToArray, clientProof, shared_secret))
+            Return New KeyPair(clientProof.ToView, serverProof.ToView)
         End Function
 
 #Region "MPQ Revision Check"
@@ -184,7 +184,7 @@ Namespace Bnet.Crypt
 
                 Dim u As UInteger
                 If Not UInteger.TryParse(lines.Current.Substring(2), u) Then
-                    Throw New ArgumentException("Invalid variable initialization line: {0}".frmt(lines.Current))
+                    Throw New ArgumentException("Invalid variable initialization line: {0}".Frmt(lines.Current))
                 End If
                 variables(lines.Current(0)) = u
             Loop
@@ -199,16 +199,16 @@ Namespace Bnet.Crypt
             'Operation Count
             Dim numOps As Byte 'number of operations
             If Not Byte.TryParse(lines.Current, numOps) Then
-                Throw New ArgumentException("Instructions did not include a valid operation count: {0}".frmt(lines.Current))
+                Throw New ArgumentException("Instructions did not include a valid operation count: {0}".Frmt(lines.Current))
             End If
 
             'Operations
             Dim operations = New List(Of RevisionCheckOperation)(numOps)
             For i = 0 To numOps - 1
                 If Not lines.MoveNext Then
-                    Throw New ArgumentException("Instructions did not include {0} operations as specified.".frmt(numOps))
+                    Throw New ArgumentException("Instructions did not include {0} operations as specified.".Frmt(numOps))
                 ElseIf Not lines.Current Like "?=?[-+^|&]?" Then
-                    Throw New ArgumentException("Invalid operation specified: {0}".frmt(lines.Current))
+                    Throw New ArgumentException("Invalid operation specified: {0}".Frmt(lines.Current))
                 End If
 
                 Dim op = New RevisionCheckOperation(destinationOperand:=lines.Current(0),
@@ -225,7 +225,7 @@ Namespace Bnet.Crypt
 
             'End of instructions
             If lines.MoveNext Then
-                Throw New ArgumentException("Instructions included more than {0} operations as specified.".frmt(numOps))
+                Throw New ArgumentException("Instructions included more than {0} operations as specified.".Frmt(numOps))
             End If
             Return operations
         End Function
@@ -247,7 +247,7 @@ Namespace Bnet.Crypt
                     Case "&"c : vD = vL And vR
                     Case "|"c : vD = vL Or vR
                     Case Else
-                        Throw New UnreachableException("Unrecognized operator: {0}".frmt(op.operator))
+                        Throw New UnreachableException("Unrecognized operator: {0}".Frmt(op.operator))
                 End Select
                 variables(op.destinationOperand) = vD
             Next op
@@ -274,9 +274,9 @@ Namespace Bnet.Crypt
             Dim operations = ParseRevisionCheckOperations(lines, variables)
 
             'Adjust Variable A using mpq number string [the point of this? obfuscation I guess]
-            indexString = indexString.ToLower()
-            If Not indexString Like "ver-ix86-#.mpq" AndAlso Not indexString Like "ix86ver#.mpq" Then
-                Throw New ArgumentException("Unrecognized MPQ String: {0}".frmt(indexString), "mpqNumberString")
+            indexString = indexString.ToUpperInvariant
+            If Not indexString Like "VER-IX86-#.MPQ" AndAlso Not indexString Like "IX86VER#.MPQ" Then
+                Throw New ArgumentException("Unrecognized MPQ String: {0}".Frmt(indexString), "indexString")
             End If
             Dim table = {&HE7F4CB62UI,
                          &HF6A14FFCUI,
@@ -286,7 +286,7 @@ Namespace Bnet.Crypt
                          &HC57292E6UI,
                          &H7927D27EUI,
                          &H2FEC8733UI}
-            variables("A"c) = variables("A"c) Xor table(Integer.Parse(indexString(indexString.Length - 5)))
+            variables("A"c) = variables("A"c) Xor table(Integer.Parse(indexString(indexString.Length - 5), CultureInfo.InvariantCulture))
 
             'Tail Buffer [rounds file data sizes to 1024]
             Dim tailBuffer(0 To 1023) As Byte
@@ -316,9 +316,11 @@ Namespace Bnet.Crypt
         Public Function SHA1(ByVal data() As Byte) As Byte()
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-            Dim hash = New Security.Cryptography.SHA1Managed().ComputeHash(data)
-            Contract.Assume(hash IsNot Nothing)
-            Return hash
+            Using sha = New Security.Cryptography.SHA1Managed()
+                Dim hash = sha.ComputeHash(data)
+                Contract.Assume(hash IsNot Nothing)
+                Return hash
+            End Using
         End Function
     End Module
 
@@ -404,7 +406,7 @@ Namespace Bnet.Crypt
 #Region "Decode"
         Public Sub New(ByVal key As String)
             Contract.Requires(key IsNot Nothing)
-            Dim cdkey = key.ToUpper().Replace("-", "").Replace(" ", "").ToCharArray()
+            Dim cdkey = key.ToUpperInvariant.Replace("-", "").Replace(" ", "").ToCharArray()
             If cdkey.Length <> KEY_LENGTH Then Throw New ArgumentException("Invalid cd key length.")
 
             'Shuffle the cd key into the digits of a base 5 number
@@ -442,7 +444,7 @@ Namespace Bnet.Crypt
             Dim n_digitsBase2 = BigNum.FromBaseBytes(n_digitsBase16, 16, ByteOrder.LittleEndian).ToBaseBytes(2, ByteOrder.LittleEndian).ToArray()
             ReDim Preserve n_digitsBase2(0 To 127)
             Contract.Assume(n_digitsBase2 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            swapBits11Mod120(n_digitsBase2)
+            SwapBits11Mod120(n_digitsBase2)
 
             'Extract keys
             Dim n_digitsBase256 = BigNum.FromBaseBytes(n_digitsBase2, 2, ByteOrder.LittleEndian).ToBytes(ByteOrder.LittleEndian).ToArray()
@@ -484,7 +486,7 @@ Namespace Bnet.Crypt
             Dim n_digitsBase2 = BigNum.FromBaseBytes(n_digitsBase256, 256, ByteOrder.LittleEndian).ToBaseBytes(2, ByteOrder.LittleEndian).ToArray()
             ReDim Preserve n_digitsBase2(0 To 127)
             Contract.Assume(n_digitsBase2 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            swapBits11Mod120(n_digitsBase2)
+            SwapBits11Mod120(n_digitsBase2)
 
             'Unpermute nibbles
             Dim n_digitsBase16 = BigNum.FromBaseBytes(n_digitsBase2, 2, ByteOrder.LittleEndian).ToBaseBytes(16, ByteOrder.LittleEndian).ToArray()
@@ -521,16 +523,16 @@ Namespace Bnet.Crypt
                 cdkey += invKeyMap(c)
             Next i
 
-            key = cdkey.ToUpper()
+            key = cdkey.ToUpperInvariant
         End Sub
 #End Region
 
 #Region "Misc"
         '''<summary>Swap the bits with their *11 counterpart mod 120</summary>
         '''<remarks>This transformation is its own inverse: x*11*11 = x*121 = x*1 = x (mod 120)</remarks>
-        Private Sub swapBits11Mod120(ByVal bits() As Byte)
-            If Not (bits IsNot Nothing) Then Throw New ArgumentNullException()
-            If bits.Length <> 128 Then Throw New ArgumentException("bits", "Size must be 128")
+        Private Sub SwapBits11Mod120(ByVal bits() As Byte)
+            Contract.Requires(bits IsNot Nothing)
+            If bits.Length <> 128 Then Throw New ArgumentException("Size must be 128", "bits")
 
             For i As Integer = 0 To 119
                 Dim j As Integer = (i * 11) Mod 120

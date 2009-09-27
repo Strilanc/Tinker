@@ -18,21 +18,21 @@ Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations
     Public Class ServerCommands
-        Inherits UICommandSet(Of W3Server)
+        Inherits CommandSet(Of W3Server)
 
         Public Sub New()
-            AddCommand(New com_OpenInstance)
-            AddCommand(New com_StartListening)
-            AddCommand(New com_StopListening)
-            AddCommand(New com_CloseInstance)
-            AddCommand(New com_Bot)
+            AddCommand(New CommandOpenInstance)
+            AddCommand(New CommandStartListening)
+            AddCommand(New CommandStopListening)
+            AddCommand(New CommandCloseInstance)
+            AddCommand(New CommandBot)
         End Sub
 
-        Private Class com_Bot
+        Private Class CommandBot
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("bot",
-                            0, ArgumentLimits.free,
+                            0, ArgumentLimitType.Free,
                             "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.")
             End Sub
             Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -40,7 +40,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        'Private Class com_ParentCommand
+        'Private Class CommandParentCommand
         '    Inherits BaseCommand(Of W3GameServer)
         '    Private parent_command As BaseCommand(Of MainBot)
         '    Public Sub New(ByVal parent_command As BaseCommand(Of MainBot))
@@ -53,11 +53,11 @@ Namespace Commands.Specializations
         'End Class
 
         '''<summary>A command which tells the server to stop listening on a port.</summary>
-        Private Class com_StartListening
+        Private Class CommandStartListening
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Listen",
-                            1, ArgumentLimits.exact,
+                            1, ArgumentLimitType.Exact,
                             "[--Listen port]",
                             "root=4", "")
             End Sub
@@ -69,11 +69,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which tells the server to stop listening on a port or all ports.</summary>
-        Private Class com_StopListening
+        Private Class CommandStopListening
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("StopListening",
-                            1, ArgumentLimits.max,
+                            1, ArgumentLimitType.Max,
                             "[--StopListening, --StopListening port] Tells the server to stop listening on a port or all ports.",
                             "root=4", "")
             End Sub
@@ -90,11 +90,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Private Class com_OpenInstance
+        Private Class CommandOpenInstance
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Open",
-                            1, ArgumentLimits.max,
+                            1, ArgumentLimitType.Max,
                             "[--Open name=generated_name]",
                             "root=4;games=4", "")
             End Sub
@@ -102,11 +102,11 @@ Namespace Commands.Specializations
                 Return target.QueueCreateGame(arguments(0)).EvalOnSuccess(Function() "Created instance.")
             End Function
         End Class
-        Private Class com_CloseInstance
+        Private Class CommandCloseInstance
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Close",
-                            1, ArgumentLimits.exact,
+                            1, ArgumentLimitType.Exact,
                             "[--Close name]",
                             "root=4;games=4", "")
             End Sub

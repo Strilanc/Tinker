@@ -32,7 +32,7 @@ Namespace My
         
         <Global.System.Diagnostics.DebuggerStepThroughAttribute()>  _
         Protected Overrides Sub OnCreateMainForm()
-            Me.MainForm = Global.HostBot.FrmClient
+            Me.MainForm = Global.HostBot.ClientForm
         End Sub
     End Class
 End Namespace

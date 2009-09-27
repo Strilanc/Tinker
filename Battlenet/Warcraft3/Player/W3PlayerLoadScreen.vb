@@ -1,10 +1,10 @@
 ﻿Namespace Warcraft3
     Partial Public Class W3Player
-        Public Property ready As Boolean
+        Public Property Ready As Boolean
 
         Public Sub LoadScreenStart()
             LobbyStop()
-            state = W3PlayerStates.Loading
+            state = W3PlayerState.Loading
             SendPacket(W3Packet.MakeStartLoading())
             handlers(W3PacketId.Ready) = AddressOf ReceiveReady
         End Sub
@@ -15,7 +15,7 @@
         Private Sub ReceiveReady(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
-            ready = True
+            Ready = True
             If game.server.settings.loadInGame Then
                 handlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
             End If

@@ -1,7 +1,7 @@
 ﻿Namespace Warcraft3
     Public Class W3MapSettingsJar
         Inherits Jar(Of Object)
-        Private Enum GameSettingFlags As UInteger
+        Private Enum GameSettings As UInteger
             'SpeedSlow = 0 'no flags set
             SpeedMedium = 1 << 0
             SpeedFast = 1 << 1
@@ -22,7 +22,7 @@
         End Enum
 
         Private Shared ReadOnly DataJar As New TupleJar("data",
-                    New EnumUInt32Jar(Of GameSettingFlags)("settings", flags:=True).Weaken,
+                    New EnumUInt32Jar(Of GameSettings)("settings").Weaken,
                     New ByteJar("unknown1").Weaken,
                     New UInt16Jar("playable width").Weaken,
                     New UInt16Jar("playable height").Weaken,
@@ -37,61 +37,61 @@
             Contract.Requires(name IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
+        Public Overrides Function Pack(Of TValue As Object)(ByVal value As TValue) As IPickle(Of TValue)
             Dim dd = CType(CType(value, Object), Dictionary(Of String, Object))
             Dim settings = CType(dd("settings"), W3MapSettings)
             Dim username = CStr(dd("username"))
 
             'settings
-            Dim u As GameSettingFlags
+            Dim u As GameSettings
             Select Case settings.speed
                 Case GameSpeedOption.Slow
                     'no flags set
                 Case GameSpeedOption.Medium
-                    u = u Or GameSettingFlags.SpeedMedium
+                    u = u Or GameSettings.SpeedMedium
                 Case GameSpeedOption.Fast
-                    u = u Or GameSettingFlags.SpeedFast
+                    u = u Or GameSettings.SpeedFast
             End Select
             Select Case settings.observers
                 Case GameObserverOption.FullObservers
-                    u = u Or GameSettingFlags.ObserversFull
+                    u = u Or GameSettings.ObserversFull
                 Case GameObserverOption.NoObservers
                     'no flags set
                 Case GameObserverOption.ObsOnDefeat
-                    u = u Or GameSettingFlags.ObserversOnDefeat
+                    u = u Or GameSettings.ObserversOnDefeat
                 Case GameObserverOption.Referees
-                    u = u Or GameSettingFlags.ObserversReferees
+                    u = u Or GameSettings.ObserversReferees
             End Select
             Select Case settings.visibility
                 Case GameVisibilityOption.AlwaysVisible
-                    u = u Or GameSettingFlags.VisibilityAlwaysVisible
+                    u = u Or GameSettings.VisibilityAlwaysVisible
                 Case GameVisibilityOption.Explored
-                    u = u Or GameSettingFlags.VisibilityExplored
+                    u = u Or GameSettings.VisibilityExplored
                 Case GameVisibilityOption.HideTerrain
-                    u = u Or GameSettingFlags.VisibilityHideTerrain
+                    u = u Or GameSettings.VisibilityHideTerrain
                 Case GameVisibilityOption.MapDefault
-                    u = u Or GameSettingFlags.VisibilityDefault
+                    u = u Or GameSettings.VisibilityDefault
             End Select
-            If settings.teamsTogether Then u = u Or GameSettingFlags.OptionTeamsTogether
-            If settings.lockTeams Then u = u Or GameSettingFlags.OptionLockTeams
-            If settings.randomHero Then u = u Or GameSettingFlags.OptionRandomHero
-            If settings.randomRace Then u = u Or GameSettingFlags.OptionRandomRace
-            If settings.allowFullSharedControl Then u = u Or GameSettingFlags.OptionAllowFullSharedControl
+            If settings.teamsTogether Then u = u Or GameSettings.OptionTeamsTogether
+            If settings.lockTeams Then u = u Or GameSettings.OptionLockTeams
+            If settings.randomHero Then u = u Or GameSettings.OptionRandomHero
+            If settings.randomRace Then u = u Or GameSettings.OptionRandomRace
+            If settings.allowFullSharedControl Then u = u Or GameSettings.OptionAllowFullSharedControl
 
             'values
             Dim p = DataJar.Pack(New Dictionary(Of String, Object) From {
                     {"playable width", settings.playableWidth},
                     {"playable height", settings.playableHeight},
                     {"settings", u},
-                    {"xoro checksum", settings.xoroChecksum.ToArray},
-                    {"sha1 checksum", settings.sha1Checksum.ToArray},
+                    {"xoro checksum", settings.contentChecksumXORO.ToArray},
+                    {"sha1 checksum", settings.contentChecksumSHA1.ToArray},
                     {"relative path", settings.relativePath},
                     {"username", username},
                     {"unknown1", 0},
                     {"unknown2", ""}
                 })
             Dim data = Concat(EncodeStatStringData(p.Data).ToArray(), {0})
-            Return New Pickling.Pickle(Of R)(value, data.ToView, p.Description)
+            Return New Pickling.Pickle(Of TValue)(value, data.ToView, p.Description)
         End Function
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of Object)
             Dim i As Integer
@@ -104,36 +104,36 @@
             Dim p = DataJar.Parse(DecodeStatStringData(data.SubView(0, i - 1)))
             Dim vals = CType(p.Value, Dictionary(Of String, Object))
 
-            Dim u = CType(CUInt(vals("settings")), GameSettingFlags)
-            Dim randomHero = CBool(u And GameSettingFlags.OptionRandomHero)
-            Dim randomRace = CBool(u And GameSettingFlags.OptionRandomRace)
-            Dim allowFullSharedControl = CBool(u And GameSettingFlags.OptionAllowFullSharedControl)
-            Dim lockTeams = CBool(u And GameSettingFlags.OptionLockTeams)
-            Dim teamsTogether = CBool(u And GameSettingFlags.OptionTeamsTogether)
+            Dim u = CType(CUInt(vals("settings")), GameSettings)
+            Dim randomHero = CBool(u And GameSettings.OptionRandomHero)
+            Dim randomRace = CBool(u And GameSettings.OptionRandomRace)
+            Dim allowFullSharedControl = CBool(u And GameSettings.OptionAllowFullSharedControl)
+            Dim lockTeams = CBool(u And GameSettings.OptionLockTeams)
+            Dim teamsTogether = CBool(u And GameSettings.OptionTeamsTogether)
             Dim observers As GameObserverOption
-            If CBool(u And GameSettingFlags.ObserversOnDefeat) Then
+            If CBool(u And GameSettings.ObserversOnDefeat) Then
                 observers = GameObserverOption.ObsOnDefeat
-            ElseIf CBool(u And GameSettingFlags.ObserversFull) Then
+            ElseIf CBool(u And GameSettings.ObserversFull) Then
                 observers = GameObserverOption.FullObservers
-            ElseIf CBool(u And GameSettingFlags.ObserversReferees) Then
+            ElseIf CBool(u And GameSettings.ObserversReferees) Then
                 observers = GameObserverOption.Referees
             Else
                 observers = GameObserverOption.NoObservers
             End If
             Dim visibility As GameVisibilityOption
-            If CBool(u And GameSettingFlags.VisibilityAlwaysVisible) Then
+            If CBool(u And GameSettings.VisibilityAlwaysVisible) Then
                 visibility = GameVisibilityOption.AlwaysVisible
-            ElseIf CBool(u And GameSettingFlags.VisibilityExplored) Then
+            ElseIf CBool(u And GameSettings.VisibilityExplored) Then
                 visibility = GameVisibilityOption.Explored
-            ElseIf CBool(u And GameSettingFlags.VisibilityHideTerrain) Then
+            ElseIf CBool(u And GameSettings.VisibilityHideTerrain) Then
                 visibility = GameVisibilityOption.HideTerrain
             Else
                 visibility = GameVisibilityOption.MapDefault
             End If
             Dim speed As GameSpeedOption
-            If CBool(u And GameSettingFlags.SpeedMedium) Then
+            If CBool(u And GameSettings.SpeedMedium) Then
                 speed = GameSpeedOption.Medium
-            ElseIf CBool(u And GameSettingFlags.SpeedFast) Then
+            ElseIf CBool(u And GameSettings.SpeedFast) Then
                 speed = GameSpeedOption.Fast
             Else
                 speed = GameSpeedOption.Slow
@@ -209,10 +209,10 @@
         Public ReadOnly speed As GameSpeedOption
         Public ReadOnly playableWidth As Integer
         Public ReadOnly playableHeight As Integer
-        Public ReadOnly xoroChecksum As ViewableList(Of Byte)
-        Public ReadOnly sha1Checksum As ViewableList(Of Byte)
+        Public ReadOnly contentChecksumXORO As ViewableList(Of Byte)
+        Public ReadOnly contentChecksumSHA1 As ViewableList(Of Byte)
         Public ReadOnly relativePath As String
-        Public ReadOnly gameType As GameTypeFlags
+        Public ReadOnly gameType As GameTypes
 
         Public Sub New(ByVal arguments As IList(Of String),
                        ByVal map As W3Map,
@@ -226,10 +226,10 @@
                        Optional ByVal speed As GameSpeedOption = GameSpeedOption.Fast,
                        Optional ByVal playableWidth As Integer = 0,
                        Optional ByVal playableHeight As Integer = 0,
-                       Optional ByVal xoroChecksum As Byte() = Nothing,
-                       Optional ByVal sha1Checksum As Byte() = Nothing,
+                       Optional ByVal contentChecksumXORO As Byte() = Nothing,
+                       Optional ByVal contentChecksumSHA1 As Byte() = Nothing,
                        Optional ByVal relativePath As String = Nothing,
-                       Optional ByVal gameType As GameTypeFlags = 0)
+                       Optional ByVal gameType As GameTypes = 0)
             Me.randomHero = randomHero
             Me.randomRace = randomRace
             Me.allowFullSharedControl = allowFullSharedControl
@@ -240,20 +240,20 @@
             Me.speed = speed
             Me.playableWidth = playableWidth
             Me.playableHeight = playableHeight
-            If xoroChecksum IsNot Nothing Then Me.xoroChecksum = xoroChecksum.ToView
-            If sha1Checksum IsNot Nothing Then Me.xoroChecksum = sha1Checksum.ToView
+            If contentChecksumXORO IsNot Nothing Then Me.contentChecksumXORO = contentChecksumXORO.ToView
+            If contentChecksumSHA1 IsNot Nothing Then Me.contentChecksumXORO = contentChecksumSHA1.ToView
             Me.relativePath = relativePath
             Me.gameType = gameType
             If map IsNot Nothing Then
                 Me.playableWidth = map.playableWidth
                 Me.playableHeight = map.playableHeight
-                Me.xoroChecksum = map.ChecksumXoro.ToView
-                Me.sha1Checksum = map.ChecksumSha1.ToView
+                Me.contentChecksumXORO = map.ChecksumXORO.ToView
+                Me.contentChecksumSHA1 = map.ChecksumSHA1.ToView
                 Me.relativePath = "Maps\" + map.RelativePath
-                Me.gameType = map.gameType
+                Me.gameType = map.GameType
             Else
                 If gameType = 0 Then
-                    Me.gameType = GameTypeFlags.MakerUser Or GameTypeFlags.SizeLarge Or GameTypeFlags.TypeScenario
+                    Me.gameType = GameTypes.MakerUser Or GameTypes.SizeLarge Or GameTypes.TypeScenario
                 End If
             End If
 
@@ -265,40 +265,40 @@
                         arg2 = arg.Substring(n + 1)
                         arg = arg.Substring(0, n + 1)
                     End If
-                    arg = arg.ToLower.Trim()
-                    arg2 = arg2.ToLower.Trim()
+                    arg = arg.ToUpperInvariant.Trim()
+                    arg2 = arg2.ToUpperInvariant.Trim()
 
                     Select Case arg
-                        Case "-obs", "-multiobs", "-mo", "-o"
+                        Case "-OBS", "-MULTIOBS", "-MO", "-O"
                             observers = GameObserverOption.FullObservers
-                        Case "-referees", "-ref"
+                        Case "-REFEREES", "-REF"
                             observers = GameObserverOption.Referees
-                        Case "-obsondefeat", "-od"
+                        Case "-OBSONDEFEAT", "-OD"
                             observers = GameObserverOption.ObsOnDefeat
-                        Case "-rh", "-randomhero"
+                        Case "-RH", "-RANDOMHERO"
                             randomHero = True
-                        Case "-rr", "-randomrace"
+                        Case "-RR", "-RANDOMRACE"
                             randomRace = True
-                        Case "-unlockteams"
+                        Case "-UNLOCKTEAMS"
                             lockTeams = False
-                        Case "-fullshared", "-fullshare", "-allowfullshared", "-allowfullshare", "-fullsharedcontrol", "-allowfullsharedcontrol"
+                        Case "-FULLSHARED", "-FULLSHARE", "-ALLOWFULLSHARED", "-ALLOWFULLSHARE", "-FULLSHAREDCONTROL", "-ALLOWFULLSHAREDCONTROL"
                             allowFullSharedControl = True
-                        Case "-teamsapart"
+                        Case "-TEAMSAPART"
                             teamsTogether = False
-                        Case "-speed="
+                        Case "-SPEED="
                             Select Case arg2
-                                Case "medium"
+                                Case "MEDIUM"
                                     speed = GameSpeedOption.Medium
-                                Case "slow"
+                                Case "SLOW"
                                     speed = GameSpeedOption.Slow
                             End Select
-                        Case "-visibility=", "-vis="
+                        Case "-VISIBILITY=", "-VIS="
                             Select Case arg2
-                                Case "all", "always visible", "visible", "alwaysvisible"
+                                Case "ALL", "ALWAYSVISIBLE", "VISIBLE"
                                     visibility = GameVisibilityOption.AlwaysVisible
-                                Case "explored"
+                                Case "EXPLORED"
                                     visibility = GameVisibilityOption.Explored
-                                Case "none", "hide", "hideterrain"
+                                Case "NONE", "HIDE", "HIDETERRAIN"
                                     visibility = GameVisibilityOption.HideTerrain
                             End Select
                     End Select

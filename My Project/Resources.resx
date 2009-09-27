@@ -141,12 +141,6 @@
   <data name="Command_Bot_CreateClient_Help" xml:space="preserve">
     <value>[--CreateClient name=generated] Creates a new battle.net client instance.</value>
   </data>
-  <data name="Command_Bot_CreateAdmin" xml:space="preserve">
-    <value>CreateAdmin</value>
-  </data>
-  <data name="Command_Bot_CreateAdmin_Help" xml:space="preserve">
-    <value>[--CreateAdmin name password server_port receiver=localhost] Creates a server with an admin game and a LAN advertiser for the server.</value>
-  </data>
   <data name="Command_Bot_CreateServer" xml:space="preserve">
     <value>CreateServer</value>
   </data>
@@ -164,12 +158,6 @@
   </data>
   <data name="Command_Bot_FindMaps_Help" xml:space="preserve">
     <value>[--FindMaps map_query] Returns the first five maps matching the query.</value>
-  </data>
-  <data name="Command_Bot_GetSetting" xml:space="preserve">
-    <value>GetSetting</value>
-  </data>
-  <data name="Command_Bot_GetSetting_Help" xml:space="preserve">
-    <value>[--GetSetting setting] Returns the value of a global setting. Supported settings are tickperiod, laglimit, commandprefix.</value>
   </data>
   <data name="Command_Bot_KillCKL" xml:space="preserve">
     <value>KillCKL</value>
@@ -200,12 +188,6 @@
   </data>
   <data name="Command_Bot_Server_Help" xml:space="preserve">
     <value>[--server name command, --server main stoplistening] Forwards commands to the named warcraft 3 game server run by the bot.</value>
-  </data>
-  <data name="Command_Bot_SetSetting" xml:space="preserve">
-    <value>SetSetting</value>
-  </data>
-  <data name="Command_Bot_SetSetting_Help" xml:space="preserve">
-    <value>[--SetSetting setting value] Sets a global setting. Supported settings are tickperiod, laglimit, commandprefix.</value>
   </data>
   <data name="Command_General_Help" xml:space="preserve">
     <value>help</value>
@@ -388,16 +370,16 @@ Visibility=-Visibility=X, -vis=X: Changes the default visibility option from map
   <data name="Command_Client_Host_Help" xml:space="preserve">
     <value>[--Host gamename mapname -options] Creates a game server and advertises it. Mapname is matched to whatever -FindMaps returns. Use --Help Host Options for help with options.</value>
   </data>
-  <data name="Command_Client_Login" xml:space="preserve">
+  <data name="Command_Client_LogOn" xml:space="preserve">
     <value>login</value>
   </data>
-  <data name="Command_Client_Login_Access" xml:space="preserve">
+  <data name="Command_Client_LogOn_Access" xml:space="preserve">
     <value>root=4</value>
   </data>
-  <data name="Command_Client_Login_ExtraHelp" xml:space="preserve">
+  <data name="Command_Client_LogOn_ExtraHelp" xml:space="preserve">
     <value />
   </data>
-  <data name="Command_Client_Login_Help" xml:space="preserve">
+  <data name="Command_Client_LogOn_Help" xml:space="preserve">
     <value>[--login username password]</value>
   </data>
   <data name="Command_Client_User" xml:space="preserve">
@@ -598,35 +580,5 @@ Visibility=-Visibility=X, -vis=X: Changes the default visibility option from map
   </data>
   <data name="Command_Client_StopAdvertising_Help" xml:space="preserve">
     <value>[StopAdvertising] Removes any entry in the bnet games list. Also unlinks any linked servers.</value>
-  </data>
-  <data name="Command_Bot_CreateAdmin_Access" xml:space="preserve">
-    <value>root=5;games=5;users=5</value>
-  </data>
-  <data name="Command_Bot_CreateAdmin_ExtraHelp" xml:space="preserve">
-    <value />
-  </data>
-  <data name="Command_Bot_CreateLan" xml:space="preserve">
-    <value>CreateLan</value>
-  </data>
-  <data name="Command_Bot_CreateLan_Access" xml:space="preserve">
-    <value>root=5</value>
-  </data>
-  <data name="Command_Bot_CreateLan_ExtraHelp" xml:space="preserve">
-    <value />
-  </data>
-  <data name="Command_Bot_CreateLan_Help" xml:space="preserve">
-    <value>[CreateLan name server_port receiver=localhost] Creates a lan advertiser.</value>
-  </data>
-  <data name="Command_Bot_KillLan" xml:space="preserve">
-    <value>KillLan</value>
-  </data>
-  <data name="Command_Bot_KillLan_Access" xml:space="preserve">
-    <value>root=5</value>
-  </data>
-  <data name="Command_Bot_KillLan_ExtraHelp" xml:space="preserve">
-    <value />
-  </data>
-  <data name="Command_Bot_KillLan_Help" xml:space="preserve">
-    <value>[KillLan name] Removes a lan advertiser.</value>
   </data>
 </root>

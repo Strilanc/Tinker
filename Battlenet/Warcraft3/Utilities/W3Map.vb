@@ -6,10 +6,10 @@ Namespace Warcraft3
         Public name As String
         Public numForces As Integer
         Private _numPlayerSlots As Integer
-        Private ReadOnly _crc32 As Byte()
+        Private ReadOnly _crc32 As ViewableList(Of Byte)
         Private ReadOnly _fileSize As UInteger
-        Private ReadOnly _checksumSha1 As Byte()
-        Private ReadOnly _checksumXoro As Byte()
+        Private ReadOnly _contentChecksumSha1 As ViewableList(Of Byte)
+        Private ReadOnly _contentChecksumXORO As ViewableList(Of Byte)
         Private ReadOnly _folder As String
         Private ReadOnly _relativePath As String
         Private ReadOnly _fullPath As String
@@ -18,10 +18,10 @@ Namespace Warcraft3
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_fileSize > 0)
-            Contract.Invariant(_checksumSha1 IsNot Nothing)
-            Contract.Invariant(_checksumSha1.Length = 20)
-            Contract.Invariant(_checksumXoro IsNot Nothing)
-            Contract.Invariant(_checksumXoro.Length = 4)
+            Contract.Invariant(_contentChecksumSha1 IsNot Nothing)
+            Contract.Invariant(_contentChecksumSha1.Length = 20)
+            Contract.Invariant(_contentChecksumXORO IsNot Nothing)
+            Contract.Invariant(_contentChecksumXORO.Length = 4)
             Contract.Invariant(_crc32 IsNot Nothing)
             Contract.Invariant(_crc32.Length = 4)
             Contract.Invariant(_folder IsNot Nothing)
@@ -43,25 +43,25 @@ Namespace Warcraft3
                 Return _fileSize
             End Get
         End Property
-        Public ReadOnly Property ChecksumSha1 As Byte()
+        Public ReadOnly Property ChecksumSHA1 As ViewableList(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
-                Return _checksumSha1
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))().Length = 20)
+                Return _contentChecksumSha1
             End Get
         End Property
-        Public ReadOnly Property Crc32 As Byte()
+        Public ReadOnly Property ChecksumCRC32 As ViewableList(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Byte())().Length = 4)
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))().Length = 4)
                 Return _crc32
             End Get
         End Property
-        Public ReadOnly Property ChecksumXoro As Byte()
+        Public ReadOnly Property ChecksumXORO As ViewableList(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Byte())().Length = 4)
-                Return _checksumXoro
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))().Length = 4)
+                Return _contentChecksumXORO
             End Get
         End Property
         Public ReadOnly Property Folder As String
@@ -83,53 +83,53 @@ Namespace Warcraft3
             End Get
         End Property
 
-        Public Enum SizeDescription
+        Public Enum SizeClass
             Huge
             Large
             Medium
             Small
             Tiny
         End Enum
-        Public ReadOnly Property sizeType As SizeDescription
+        Public ReadOnly Property SizeClassification As SizeClass
             Get
                 Select Case playableWidth * playableHeight
                     Case Is <= 64 * 64
-                        Return SizeDescription.Tiny
+                        Return SizeClass.Tiny
                     Case Is <= 128 * 128
-                        Return SizeDescription.Small
+                        Return SizeClass.Small
                     Case Is <= 160 * 160
-                        Return SizeDescription.Medium
+                        Return SizeClass.Medium
                     Case Is <= 192 * 192
-                        Return SizeDescription.Large
+                        Return SizeClass.Large
                     Case Else
-                        Return SizeDescription.Huge
+                        Return SizeClass.Huge
                 End Select
             End Get
         End Property
-        Public ReadOnly Property gameType As GameTypeFlags
+        Public ReadOnly Property GameType As GameTypes
             Get
-                Dim f = GameTypeFlags.MakerUser
-                Select Case sizeType
-                    Case SizeDescription.Tiny, SizeDescription.Small
-                        f = f Or GameTypeFlags.SizeSmall
-                    Case SizeDescription.Medium
-                        f = f Or GameTypeFlags.SizeMedium
-                    Case SizeDescription.Large, SizeDescription.Huge
-                        f = f Or GameTypeFlags.SizeLarge
+                Dim f = GameTypes.MakerUser
+                Select Case SizeClassification
+                    Case SizeClass.Tiny, SizeClass.Small
+                        f = f Or GameTypes.SizeSmall
+                    Case SizeClass.Medium
+                        f = f Or GameTypes.SizeMedium
+                    Case SizeClass.Large, SizeClass.Huge
+                        f = f Or GameTypes.SizeLarge
                 End Select
                 If isMelee Then
-                    f = f Or GameTypeFlags.TypeMelee
+                    f = f Or GameTypes.TypeMelee
                 Else
-                    f = f Or GameTypeFlags.TypeScenario
+                    f = f Or GameTypes.TypeScenario
                 End If
                 Return f
             End Get
         End Property
 
 #Region "Properties"
-        Public ReadOnly Property numPlayerAndObsSlots(ByVal map_settings As W3MapSettings) As Integer
+        Public ReadOnly Property PlayerAndObsSlotCount(ByVal mapSettings As W3MapSettings) As Integer
             Get
-                Select Case map_settings.observers
+                Select Case mapSettings.observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         Return 12
                     Case Else
@@ -169,43 +169,42 @@ Namespace Warcraft3
                 Return New W3Map(My.Settings.mapPath, path, size, crc32, sha1, xoro, 3)
             Else
                 Return New W3Map(My.Settings.mapPath,
-                                 findFileMatching("*" + arg + "*", "*.[wW]3[mxMX]", My.Settings.mapPath),
+                                 FindFileMatching("*" + arg + "*", "*.[wW]3[mxMX]", My.Settings.mapPath),
                                  My.Settings.war3path)
             End If
         End Function
         Public Sub New(ByVal folder As String,
-                       ByVal relPath As String,
+                       ByVal relativePath As String,
                        ByVal fileSize As UInteger,
-                       ByVal crc32 As Byte(),
-                       ByVal sha1Checksum As Byte(),
-                       ByVal xoroChecksum As Byte(),
-                       ByVal numSlots As Integer)
+                       ByVal contentChecksumCRC32 As Byte(),
+                       ByVal contentChecksumSHA1 As Byte(),
+                       ByVal contentChecksumXORO As Byte(),
+                       ByVal slotCount As Integer)
             Contract.Requires(folder IsNot Nothing)
-            Contract.Requires(relPath IsNot Nothing)
-            Contract.Requires(sha1Checksum IsNot Nothing)
-            Contract.Requires(sha1Checksum.Length = 20)
-            Contract.Requires(crc32 IsNot Nothing)
-            Contract.Requires(xoroChecksum IsNot Nothing)
-            Contract.Requires(xoroChecksum.Length = 4)
-            Contract.Requires(crc32 IsNot Nothing)
-            Contract.Requires(crc32.Length = 4)
-            Contract.Requires(numSlots > 0)
-            Contract.Requires(numSlots <= 12)
+            Contract.Requires(relativePath IsNot Nothing)
+            Contract.Requires(contentChecksumSHA1 IsNot Nothing)
+            Contract.Requires(contentChecksumSHA1.Length = 20)
+            Contract.Requires(contentChecksumCRC32 IsNot Nothing)
+            Contract.Requires(contentChecksumXORO IsNot Nothing)
+            Contract.Requires(contentChecksumXORO.Length = 4)
+            Contract.Requires(contentChecksumCRC32 IsNot Nothing)
+            Contract.Requires(contentChecksumCRC32.Length = 4)
+            Contract.Requires(slotCount > 0)
+            Contract.Requires(slotCount <= 12)
             Contract.Requires(fileSize > 0)
-            Me.fileAvailable = False
-            Me._fullPath = folder + relPath.Substring(5)
-            Me._relativePath = relPath
+            Me._fullPath = folder + relativePath.Substring(5)
+            Me._relativePath = relativePath
             Me._folder = folder
             Me.playableHeight = 256
             Me.playableWidth = 256
             Me.isMelee = True
-            Me.name = Mpq.Common.GetFileNameSlash(relPath)
-            Me._numPlayerSlots = numSlots
+            Me.name = Mpq.Common.GetFileNameSlash(relativePath)
+            Me._numPlayerSlots = slotCount
             Me._fileSize = fileSize
-            Me._crc32 = crc32
-            Me._checksumSha1 = sha1Checksum
-            Me._checksumXoro = xoroChecksum
-            For i = 1 To numSlots
+            Me._crc32 = contentChecksumCRC32.ToView
+            Me._contentChecksumSha1 = contentChecksumSHA1.ToView
+            Me._contentChecksumXORO = contentChecksumXORO.ToView
+            For i = 1 To slotCount
                 Dim slot = New W3Slot(Nothing, CByte(i))
                 slot.color = CType(i - 1, W3Slot.PlayerColor)
                 slot.contents = New W3SlotContentsOpen(slot)
@@ -213,40 +212,40 @@ Namespace Warcraft3
             Next i
         End Sub
         Public Sub New(ByVal folder As String,
-                       ByVal rel_path As String,
-                       ByVal w3patch_folder As String)
+                       ByVal relativePath As String,
+                       ByVal wc3PatchMPQFolder As String)
             Me.fileAvailable = True
-            Me._relativePath = rel_path
-            Me._fullPath = folder + rel_path
+            Me._relativePath = relativePath
+            Me._fullPath = folder + relativePath
             Me._folder = folder
             Using f = New IO.BufferedStream(New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
                 Me._fileSize = CUInt(f.Length)
-                Me._crc32 = Bnet.Crypt.crc32(f).Bytes()
+                Me._crc32 = Bnet.Crypt.CRC32(f).Bytes().ToView
             End Using
             Dim mpqa = New Mpq.MpqArchive(fullPath)
-            Dim mpq_war3path = OpenWar3PatchArchive(w3patch_folder)
-            Me._checksumSha1 = ComputeMapSha1Checksum(mpqa, mpq_war3path)
-            Me._checksumXoro = CUInt(ComputeMapXoro(mpqa, mpq_war3path)).Bytes()
+            Dim mpq_war3path = OpenWar3PatchArchive(wc3PatchMPQFolder)
+            Me._contentChecksumSha1 = ComputeMapSha1Checksum(mpqa, mpq_war3path).ToView
+            Me._contentChecksumXORO = CUInt(ComputeMapXoro(mpqa, mpq_war3path)).Bytes().ToView
 
             ReadMapInfo(mpqa)
 
             If isMelee Then
                 For i = 0 To slots.Count - 1
                     slots(i).team = CByte(i)
-                    slots(i).race = W3Slot.RaceFlags.Random
+                    slots(i).race = W3Slot.Races.Random
                 Next i
             End If
         End Sub
 #End Region
 
 #Region "Read"
-        Public Function getChunk(ByVal pos As Integer,
-                                 Optional ByVal maxLength As Integer = 1442) As Byte()
+        Public Function ReadChunk(ByVal pos As Integer,
+                                  Optional ByVal maxLength As Integer = 1442) As Byte()
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
             If Not fileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
 
             Dim buffer(0 To maxLength - 1) As Byte
-            Using f = New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+            Using f = New IO.FileStream(FullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
                 f.Seek(pos, IO.SeekOrigin.Begin)
                 Dim n = f.Read(buffer, 0, maxLength)
                 If n < buffer.Length Then ReDim Preserve buffer(0 To n - 1)
@@ -307,7 +306,9 @@ Namespace Warcraft3
             Next fileset
 
             Using f = New IO.BufferedStream(New ConcatStream(streams))
-                Return New Security.Cryptography.SHA1Managed().ComputeHash(f)
+                Using sha = New Security.Cryptography.SHA1Managed()
+                    Return sha.ComputeHash(f)
+                End Using
             End Using
         End Function
 
@@ -495,12 +496,12 @@ Namespace Warcraft3
                             Throw New IO.IOException("Unrecognized map slot type.")
                     End Select
                     'race
-                    Dim race = W3Slot.RaceFlags.Random
+                    Dim race = W3Slot.Races.Random
                     Select Case br.ReadInt32() 'race
-                        Case 1 : race = W3Slot.RaceFlags.Human
-                        Case 2 : race = W3Slot.RaceFlags.Orc
-                        Case 3 : race = W3Slot.RaceFlags.Undead
-                        Case 4 : race = W3Slot.RaceFlags.NightElf
+                        Case 1 : race = W3Slot.Races.Human
+                        Case 2 : race = W3Slot.Races.Orc
+                        Case 3 : race = W3Slot.Races.Undead
+                        Case 4 : race = W3Slot.Races.NightElf
                     End Select
                     slot.race = race
                     'player

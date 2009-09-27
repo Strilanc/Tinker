@@ -10,7 +10,7 @@ Namespace Links
     Public Interface IGameSink
         Sub AddGame(ByVal game As W3GameHeader, ByVal server As W3Server)
         Sub RemoveGame(ByVal game As W3GameHeader, ByVal reason As String)
-        Sub SetAdvertisingOptions(ByVal [private] As Boolean)
+        Sub SetAdvertisingOptions(ByVal isPrivate As Boolean)
     End Interface
     Public Interface IGameSourceSink
         Inherits IGameSource
@@ -95,42 +95,31 @@ Namespace Links
         End Sub
     End Class
 
-    Public Class DisposeLink
+    Public NotInheritable Class DisposeLink
         Inherits FutureDisposable
-        Private ReadOnly master As IFutureDisposable
-        Private ReadOnly servant As IFutureDisposable
+
+        Private Sub New()
+        End Sub
 
         Public Shared Function CreateMultiWayLink(ByVal members As IEnumerable(Of IFutureDisposable)) As IFutureDisposable
             Contract.Requires(members IsNot Nothing)
-            Dim center As New FutureDisposable
+            Dim result = New FutureDisposable
             For Each member In members
                 Contract.Assume(member IsNot Nothing)
-                DisposeLink.CreateOneWayLink(member, center)
-                DisposeLink.CreateOneWayLink(center, member)
+                DisposeLink.CreateOneWayLink(member, result)
+                DisposeLink.CreateOneWayLink(result, member)
             Next member
-            Return center
-        End Function
-        Public Shared Function CreateOneWayLink(ByVal master As IFutureDisposable,
-                                                ByVal servant As IFutureDisposable) As IFutureDisposable
-            'contract bug wrt interface event implementation requires this:
-            'Contract.Requires(master IsNot Nothing)
-            'Contract.Requires(servant IsNot Nothing)
-            Contract.Assume(master IsNot Nothing)
-            Contract.Assume(servant IsNot Nothing)
-            Return New DisposeLink(master, servant)
+            Return result
         End Function
 
-        Private Sub New(ByVal master As IFutureDisposable,
-                        ByVal servant As IFutureDisposable)
-            'contract bug wrt interface event implementation requires this:
-            'Contract.Requires(master IsNot Nothing)
-            'Contract.Requires(servant IsNot Nothing)
-            Contract.Assume(master IsNot Nothing)
-            Contract.Assume(servant IsNot Nothing)
-            Me.master = master
-            Me.servant = servant
+        Public Shared Function CreateOneWayLink(ByVal master As IFutureDisposable,
+                                                ByVal servant As IFutureDisposable) As IFutureDisposable
+            Contract.Requires(master IsNot Nothing)
+            Contract.Requires(servant IsNot Nothing)
+            Dim result = New FutureDisposable
             master.FutureDisposed.CallOnSuccess(AddressOf servant.Dispose)
-            servant.FutureDisposed.CallOnSuccess(AddressOf Me.Dispose)
-        End Sub
+            servant.FutureDisposed.CallOnSuccess(AddressOf result.Dispose)
+            Return result
+        End Function
     End Class
 End Namespace

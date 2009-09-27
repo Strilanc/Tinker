@@ -7,7 +7,7 @@
 
     Public Sub New(ByVal period As TimeSpan,
                    ByVal initiallyArmed As Boolean)
-        If period.Ticks <= 0 Then Throw New ArgumentOutOfRangeException("TimeSpan must be positive.")
+        If period.Ticks <= 0 Then Throw New ArgumentOutOfRangeException("period", "TimeSpan must be positive.")
         Me.timer = New Timers.Timer(period.TotalMilliseconds)
         Me.timer.AutoReset = True
         Me.timer.Enabled = initiallyArmed

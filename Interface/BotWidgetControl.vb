@@ -11,19 +11,19 @@
         Return ref.QueueFunc(Function() If(widget Is Nothing, "[No Widget]", "{0} {1}".Frmt(widget.TypeName, widget.Name)))
     End Function
 
-    Public Function QueueHook(ByVal widget As IBotWidget) As IFuture Implements IHookable(Of IBotWidget).QueueHook
+    Public Function QueueHook(ByVal child As IBotWidget) As IFuture Implements IHookable(Of IBotWidget).QueueHook
         Return ref.QueueAction(
             Sub()
-                If Me.widget Is widget Then  Return
+                If Me.widget Is child Then  Return
 
                 Me.widget = Nothing
                 Me.logControl.SetLogger(Nothing, Nothing)
                 lstState.Items.Clear()
 
-                Me.widget = widget
-                If widget IsNot Nothing Then
-                    Me.logControl.SetLogger(widget.Logger(), widget.TypeName)
-                    widget.Hooked()
+                Me.widget = child
+                If child IsNot Nothing Then
+                    Me.logControl.SetLogger(child.Logger(), child.TypeName)
+                    child.Hooked()
                 End If
             End Sub
         )

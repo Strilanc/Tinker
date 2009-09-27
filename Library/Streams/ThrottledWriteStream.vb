@@ -1,25 +1,25 @@
 '''<summary>
-'''Stops the substream from being written to too quickly by queueing write calls.
+'''Stops the subStream from being written to too quickly by queueing write calls.
 '''Doesn't block the caller.
 '''</summary>
 Public Class ThrottledWriteStream
     Inherits WrappedStream
     Private ReadOnly writer As ThrottledWriter
 
-    Public Sub New(ByVal substream As IO.Stream,
+    Public Sub New(ByVal subStream As IO.Stream,
                    Optional ByVal initialSlack As Double = 0,
                    Optional ByVal costPerWrite As Double = 0,
                    Optional ByVal costPerCharacter As Double = 0,
                    Optional ByVal costLimit As Double = 0,
                    Optional ByVal costRecoveredPerSecond As Double = 1)
-        MyBase.New(substream)
-        Contract.Requires(substream IsNot Nothing)
+        MyBase.New(subStream)
+        Contract.Requires(subStream IsNot Nothing)
         Contract.Requires(initialSlack >= 0)
         Contract.Requires(costPerWrite >= 0)
         Contract.Requires(costPerCharacter >= 0)
         Contract.Requires(costLimit >= 0)
         Contract.Requires(costRecoveredPerSecond > 0)
-        writer = New ThrottledWriter(substream, initialSlack, costPerWrite, costPerCharacter, costLimit, costRecoveredPerSecond)
+        writer = New ThrottledWriter(subStream, initialSlack, costPerWrite, costPerCharacter, costLimit, costRecoveredPerSecond)
     End Sub
 
     Public Overrides ReadOnly Property CanSeek() As Boolean
@@ -29,7 +29,7 @@ Public Class ThrottledWriteStream
     End Property
     Public Overrides Property Position() As Long
         Get
-            Return substream.Position
+            Return subStream.Position
         End Get
         Set(ByVal value As Long)
             Throw New NotSupportedException
@@ -42,55 +42,12 @@ Public Class ThrottledWriteStream
         Throw New NotSupportedException
     End Sub
 
-    '''<summary>Queues a write to the substream. Doesn't block.</summary>
+    '''<summary>Queues a write to the subStream. Doesn't block.</summary>
     Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
         writer.QueueWrite(SubArray(buffer, offset, count))
     End Sub
 End Class
 
-Public Class ThrottledReader
-    Inherits WrappedStream
-
-    Private ReadOnly costPerRead As Double
-    Private ReadOnly costPerCharacter As Double
-    Private ReadOnly costLimit As Double
-    Private ReadOnly recoveryRate As Double
-
-    Private availableSlack As Double
-    Private usedCost As Double
-    Private lastReadTime As Date = DateTime.Now()
-
-    Public Sub New(ByVal substream As IO.Stream,
-                   Optional ByVal initialSlack As Double = 0,
-                   Optional ByVal costPerRead As Double = 0,
-                   Optional ByVal costPerCharacter As Double = 0,
-                   Optional ByVal costLimit As Double = 0,
-                   Optional ByVal costRecoveredPerSecond As Double = 1)
-        MyBase.New(substream)
-        Contract.Requires(substream IsNot Nothing)
-        Contract.Requires(initialSlack >= 0)
-        Contract.Requires(costPerRead >= 0)
-        Contract.Requires(costPerCharacter >= 0)
-        Contract.Requires(costLimit >= 0)
-        Contract.Requires(costRecoveredPerSecond > 0)
-
-        Me.availableSlack = initialSlack
-        Me.costPerRead = costPerRead
-        Me.costPerCharacter = costPerCharacter
-        Me.costLimit = costLimit
-        Me.recoveryRate = costRecoveredPerSecond / TimeSpan.TicksPerSecond
-    End Sub
-
-    Public Overrides Function Read(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer) As Integer
-        Dim n = MyBase.Read(buffer, offset, count)
-        usedCost += costPerRead
-        usedCost += costPerCharacter * n
-        Dim t = Now()
-        Dim dt = t - lastReadTime
-        lastReadTime = t
-        usedCost -= dt.Ticks * recoveryRate
-    End Function
-End Class
 Public Class ThrottledWriter
     Inherits AbstractLockFreeConsumer(Of Byte())
 
@@ -103,8 +60,8 @@ Public Class ThrottledWriter
     Private ReadOnly costLimit As Double
     Private ReadOnly recoveryRate As Double
 
-    Private availableSlack As Double = 0
-    Private usedCost As Double = 0
+    Private availableSlack As Double
+    Private usedCost As Double
     Private lastContinueConsumeTime As Date = DateTime.Now()
     Private consuming As Boolean
 

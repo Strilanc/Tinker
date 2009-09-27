@@ -2,6 +2,11 @@
 Imports HostBot.Warcraft3
 
 Namespace Warcraft3
+    Public Enum DummyPlayerMode
+        DownloadMap
+        EnterGame
+    End Enum
+
     Public Class W3DummyPlayer
         Private ReadOnly name As String
         Private ReadOnly listenPort As UShort
@@ -14,11 +19,7 @@ Namespace Warcraft3
         Private index As Byte
         Private dl As W3MapDownload
         Private poolPort As PortPool.PortHandle
-        Public Enum Modes
-            DownloadMap
-            EnterGame
-        End Enum
-        Private mode As Modes
+        Private mode As DummyPlayerMode
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(ref IsNot Nothing)
@@ -28,39 +29,38 @@ Namespace Warcraft3
         End Sub
 #Region "Life"
         Public Sub New(ByVal name As String,
-                       ByVal pool_port As PortPool.PortHandle,
+                       ByVal poolPort As PortPool.PortHandle,
                        Optional ByVal logger As Logger = Nothing,
-                       Optional ByVal mode As Modes = Modes.DownloadMap)
-            Me.New(name, pool_port.Port, logger, mode)
-            Me.poolPort = pool_port
+                       Optional ByVal mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
+            Me.New(name, poolPort.Port, logger, mode)
+            Me.poolPort = poolPort
         End Sub
         Public Sub New(ByVal name As String,
-                       Optional ByVal listen_port As UShort = 0,
+                       Optional ByVal listenPort As UShort = 0,
                        Optional ByVal logger As Logger = Nothing,
-                       Optional ByVal mode As Modes = Modes.DownloadMap)
+                       Optional ByVal mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
             Me.name = name
             Me.mode = mode
-            Me.listenPort = listen_port
+            Me.listenPort = listenPort
             Me.ref = New ThreadPooledCallQueue
             Me.logger = If(logger, New Logger)
-            If listen_port <> 0 Then accepter.Accepter.OpenPort(listen_port)
+            If listenPort <> 0 Then accepter.Accepter.OpenPort(listenPort)
         End Sub
 #End Region
 
 #Region "Networking"
-        Public Function QueueConnect(ByVal hostname As String, ByVal port As UShort) As IFuture
-            Contract.Requires(hostname IsNot Nothing)
-            Dim hostname_ = hostname
+        Public Function QueueConnect(ByVal hostName As String, ByVal port As UShort) As IFuture
+            Contract.Requires(hostName IsNot Nothing)
             Return ref.QueueAction(Sub()
-                                       Contract.Assume(hostname_ IsNot Nothing)
-                                       Connect(hostname_, port)
+                                       Contract.Assume(hostName IsNot Nothing)
+                                       Connect(hostName, port)
                                    End Sub)
         End Function
-        Private Sub Connect(ByVal hostname As String, ByVal port As UShort)
-            Contract.Requires(hostname IsNot Nothing)
+        Private Sub Connect(ByVal hostName As String, ByVal port As UShort)
+            Contract.Requires(hostName IsNot Nothing)
 
             Dim tcp = New Net.Sockets.TcpClient()
-            tcp.Connect(hostname, port)
+            tcp.Connect(hostName, port)
             socket = New W3Socket(New PacketSocket(tcp, 60.Seconds, Me.logger))
 
             FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packet) ref.QueueAction(
@@ -73,8 +73,12 @@ Namespace Warcraft3
                             Case Greet
                                 index = CByte(vals("player index"))
                             Case HostMapInfo
-                                If mode = Modes.DownloadMap Then
-                                    dl = New W3MapDownload(CStr(vals("path")), CUInt(vals("size")), CType(vals("crc32"), Byte()), CType(vals("xoro checksum"), Byte()), CType(vals("sha1 checksum"), Byte()))
+                                If mode = DummyPlayerMode.DownloadMap Then
+                                    dl = New W3MapDownload(CStr(vals("path")),
+                                                           CUInt(vals("size")),
+                                                           CType(vals("crc32"), ViewableList(Of Byte)),
+                                                           CType(vals("xoro checksum"), ViewableList(Of Byte)),
+                                                           CType(vals("sha1 checksum"), ViewableList(Of Byte)))
                                     socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, 0))
                                 Else
                                     socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, CUInt(vals("size"))))
@@ -99,9 +103,9 @@ Namespace Warcraft3
                                     RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect
                                 End If
                             Case StartLoading
-                                If mode = Modes.DownloadMap Then
+                                If mode = DummyPlayerMode.DownloadMap Then
                                     Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
-                                ElseIf mode = Modes.EnterGame Then
+                                ElseIf mode = DummyPlayerMode.EnterGame Then
                                     FutureWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(W3Packet.MakeReady()))
                                 End If
                             Case Tick
@@ -139,7 +143,7 @@ Namespace Warcraft3
             End If
         End Function
         Private Sub SendPlayersConnected()
-            socket.SendPacket(W3Packet.MakePeerConnectionInfo(From p In otherPlayers Where p.socket IsNot Nothing Select p.index))
+            socket.SendPacket(W3Packet.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.index))
         End Sub
 
         Private Sub c_Disconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected

@@ -1,6 +1,6 @@
 ﻿Namespace Warcraft3
     Partial Public Class W3Game
-        Public Const SELF_DOWNLOAD_ID As Byte = 255
+        Public Const LocalTransferClientKey As Byte = 255
 
         Private _downloadScheduler As TransferScheduler(Of Byte)
         Private ReadOnly downloadTimer As New Timers.Timer(1000.Milliseconds.TotalSeconds)
@@ -23,7 +23,7 @@
             Me._downloadScheduler = New TransferScheduler(Of Byte)(typicalRate:=rate,
                                                                    typicalSwitchTime:=3000,
                                                                    filesize:=size)
-            AddHandler downloadScheduler.actions, AddressOf OnDownloadSchedulerActions
+            AddHandler downloadScheduler.Actions, AddressOf OnDownloadSchedulerActions
             AddHandler downloadTimer.Elapsed, Sub() OnScheduleDownloadsTick()
 
             InitCreateSlots()
@@ -52,9 +52,9 @@
                                     server.settings.header.Map.observers = GameObserverOption.Referees Then
                 For i = map.NumPlayerSlots To 12 - 1
                     Dim slot As W3Slot = New W3Slot(Me, CByte(i))
-                    slot.color = CType(W3Slot.OBS_TEAM, W3Slot.PlayerColor)
-                    slot.team = W3Slot.OBS_TEAM
-                    slot.race = W3Slot.RaceFlags.Random
+                    slot.color = CType(W3Slot.ObserverTeamIndex, W3Slot.PlayerColor)
+                    slot.team = W3Slot.ObserverTeamIndex
+                    slot.race = W3Slot.Races.Random
                     slots.Add(slot)
                     freeIndexes.Add(CByte(i + 1))
                 Next i
@@ -71,13 +71,13 @@
                     arg = arg.Substring(0, n + 1)
                 End If
 
-                Select Case arg.ToLower()
-                    Case "-multiobs", "-mo"
-                        Contract.Assume(map.NumPlayerSlots > 0)
+                Select Case arg.ToUpperInvariant
+                    Case "-MULTIOBS", "-MO"
+                        Contract.Assume(Map.NumPlayerSlots > 0)
                         Contract.Assume(slots.Count = 12)
                         Contract.Assume(freeIndexes.Count > 0)
-                        If map.NumPlayerSlots <= 10 Then
-                            For i = map.NumPlayerSlots To 10 - 1
+                        If Map.NumPlayerSlots <= 10 Then
+                            For i = Map.NumPlayerSlots To 10 - 1
                                 Contract.Assume(slots(i) IsNot Nothing)
                                 slots(i).contents = New W3SlotContentsClosed(slots(i))
                             Next i
@@ -90,9 +90,9 @@
                             AddFakePlayer("# multi obs", slots(10))
                             SetupCoveredSlot(slots(10), slots(11), playerIndex)
                         End If
-                    Case "-teams=", "-t="
-                        TrySetTeamSizes(XvX(arg2))
-                    Case "-reserve=", "-r="
+                    Case "-TEAMS=", "-T="
+                        TrySetTeamSizes(TeamVersusStringToTeamSizes(arg2))
+                    Case "-RESERVE=", "-R="
                         Dim slot = (From s In slots _
                                     Where s.contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept _
                                     ).FirstOrDefault
@@ -104,7 +104,7 @@
         End Sub
         Private Sub InitDownloads()
             If server.settings.allowUpload AndAlso map.fileAvailable Then
-                Me.downloadScheduler.AddClient(SELF_DOWNLOAD_ID, True)
+                Me.downloadScheduler.AddClient(LocalTransferClientKey, True)
             End If
 
             If server.settings.grabMap Then
@@ -134,23 +134,23 @@
         '''<summary>Autostarts the countdown if autostart is enabled and the game stays full for awhile.</summary>
         Private Function TryBeginAutoStart() As Boolean
             'Sanity check
-            If Not server.settings.autostarted Then
+            If Not server.settings.isAutoStarted Then
                 Return False
             ElseIf CountFreeSlots() > 0 Then
                 Return False
-            ElseIf state >= W3GameStates.PreCounting Then
+            ElseIf state >= W3GameState.PreCounting Then
                 Return False
-            ElseIf (From player In players Where Not player.isFake And player.GetPercentDl <> 100).Any Then
+            ElseIf (From player In players Where Not player.isFake And player.GetDownloadPercent <> 100).Any Then
                 Return False
             End If
-            ChangeState(W3GameStates.PreCounting)
+            ChangeState(W3GameState.PreCounting)
 
             'Give people a few seconds to realize the game is full before continuing
             FutureWait(3.Seconds).QueueCallWhenReady(ref,
                 Sub()
-                    If state <> W3GameStates.PreCounting Then  Return
-                    If Not server.settings.autostarted OrElse CountFreeSlots() > 0 Then
-                        ChangeState(W3GameStates.AcceptingPlayers)
+                    If state <> W3GameState.PreCounting Then  Return
+                    If Not server.settings.isAutoStarted OrElse CountFreeSlots() > 0 Then
+                        ChangeState(W3GameState.AcceptingPlayers)
                         Return
                     End If
 
@@ -161,9 +161,9 @@
                     'Give jittery players a few seconds to leave
                     FutureWait(5.Seconds).QueueCallWhenReady(ref,
                         Sub()
-                            If state <> W3GameStates.PreCounting Then  Return
-                            If Not server.settings.autostarted OrElse CountFreeSlots() > 0 Then
-                                ChangeState(W3GameStates.AcceptingPlayers)
+                            If state <> W3GameState.PreCounting Then  Return
+                            If Not server.settings.isAutoStarted OrElse CountFreeSlots() > 0 Then
+                                ChangeState(W3GameState.AcceptingPlayers)
                                 Return
                             End If
 
@@ -177,15 +177,15 @@
 
         '''<summary>Starts the countdown to launch.</summary>
         Private Function TryStartCountdown() As Boolean
-            If state = W3GameStates.CountingDown Then
+            If state = W3GameState.CountingDown Then
                 Return False
-            ElseIf state > W3GameStates.CountingDown Then
+            ElseIf state > W3GameState.CountingDown Then
                 Return False
-            ElseIf (From p In players Where Not p.isFake AndAlso p.GetPercentDl <> 100).Any Then
+            ElseIf (From p In players Where Not p.isFake AndAlso p.GetDownloadPercent <> 100).Any Then
                 Return False
             End If
 
-            ChangeState(W3GameStates.CountingDown)
+            ChangeState(W3GameState.CountingDown)
             flagHasPlayerLeft = False
 
             For Each player In players
@@ -197,7 +197,7 @@
             Return True
         End Function
         Private Sub _TryContinueCountdown(ByVal ticksLeft As Integer)
-            If state <> W3GameStates.CountingDown Then
+            If state <> W3GameState.CountingDown Then
                 Return
             End If
 
@@ -210,7 +210,7 @@
                 BroadcastMessage("Waiting for more players...")
                 BroadcastMessage("Use {0}leave if you need to leave.".frmt(My.Settings.commandPrefix))
                 BroadcastMessage("===============================================")
-                ChangeState(W3GameStates.AcceptingPlayers)
+                ChangeState(W3GameState.AcceptingPlayers)
                 flagHasPlayerLeft = False
                 ChangedLobbyState()
                 Return
@@ -219,7 +219,7 @@
             If ticksLeft > 0 Then
                 'Next tick
                 logger.log("Game starting in {0}".frmt(ticksLeft), LogMessageType.Positive)
-                For Each player In (From p In players Where p.GetOvercounted)
+                For Each player In (From p In players Where p.IsOverCounted)
                     Contract.Assume(player IsNot Nothing)
                     SendMessageTo("Game starting in {0}...".Frmt(ticksLeft), player, display:=False)
                 Next player
@@ -233,7 +233,7 @@
 
         '''<summary>Launches the game, sending players to the loading screen.</summary>
         Private Sub StartLoading()
-            If state >= W3GameStates.Loading Then Return
+            If state >= W3GameState.Loading Then Return
 
             'Remove fake players
             For Each player In (From p In players.ToList Where p.IsFake)
@@ -241,28 +241,28 @@
                 Dim slot = FindPlayerSlot(player)
                 If slot Is Nothing OrElse slot.contents.Moveable Then
                     Contract.Assume(player IsNot Nothing)
-                    RemovePlayer(player, True, W3PlayerLeaveTypes.Disconnect, "Fake players removed before loading")
+                    RemovePlayer(player, True, W3PlayerLeaveType.Disconnect, "Fake players removed before loading")
                 End If
             Next player
 
             'Encode HCL data
-            Dim useableSlots = (From slot In slots Where slot.contents.Moveable AndAlso slot.contents.Type <> W3SlotContents.ContentType.Empty).ToArray
-            Dim encodedHandicaps = server.settings.EncodedHCLMode((From slot In useableSlots Select slot.handicap).ToArray)
+            Dim useableSlots = (From slot In slots Where slot.contents.Moveable AndAlso slot.contents.ContentType <> SlotContentType.Empty).ToArray
+            Dim encodedHandicaps = Server.settings.EncodedHCLMode((From slot In useableSlots Select slot.handicap).ToArray)
             For i = 0 To encodedHandicaps.Length - 1
                 useableSlots(i).handicap = encodedHandicaps(i)
             Next i
             SendLobbyState()
 
-            ChangeState(W3GameStates.Loading)
+            ChangeState(W3GameState.Loading)
             Me.LobbyStop()
             LoadScreenStart()
         End Sub
 #End Region
 
 #Region "Players"
-        Private Sub PlayerVoteToStart(ByVal name As String, ByVal val As Boolean)
+        Private Sub SetPlayerVoteToStart(ByVal name As String, ByVal val As Boolean)
             Contract.Requires(name IsNot Nothing)
-            If Not server.settings.autostarted Then Throw New InvalidOperationException("Game is not set to autostart.")
+            If Not Server.settings.isAutoStarted Then Throw New InvalidOperationException("Game is not set to start automatically.")
             Dim p = FindPlayer(name)
             If p Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
             p.hasVotedToStart = val
@@ -278,21 +278,21 @@
         Private Function AddFakePlayer(ByVal name As String,
                                        Optional ByVal newSlot As W3Slot = Nothing) As W3Player
             Contract.Requires(name IsNot Nothing)
-            If state > W3GameStates.AcceptingPlayers Then
+            If state > W3GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
             ElseIf freeIndexes.Count <= 0 And fakeHostPlayer Is Nothing Then
                 Throw New InvalidOperationException("No space available for fake player.")
             End If
 
             'Assign index
-            If freeIndexes.Count = 0 Then RemovePlayer(fakeHostPlayer, True, W3PlayerLeaveTypes.Disconnect, "Need player index for new fake player")
+            If freeIndexes.Count = 0 Then RemovePlayer(fakeHostPlayer, True, W3PlayerLeaveType.Disconnect, "Need player index for new fake player")
             Dim index = freeIndexes(0)
             freeIndexes.Remove(index)
 
             'Make player
             Contract.Assume(index > 0)
             Contract.Assume(index <= 12)
-            Dim newPlayer As W3Player = New W3Player(index, Me, name, logger)
+            Dim newPlayer As W3Player = New W3Player(index, Me, name, Logger)
             If newSlot IsNot Nothing Then
                 newSlot.contents = New W3SlotContentsPlayer(newSlot, newPlayer)
             End If
@@ -305,7 +305,7 @@
 
             'Inform bot
             ThrowPlayerEntered(newPlayer)
-            logger.Log(newPlayer.name + " has been placed in the game.", LogMessageType.Positive)
+            Logger.Log(newPlayer.name + " has been placed in the game.", LogMessageType.Positive)
 
             'Update state
             ChangedLobbyState()
@@ -314,7 +314,7 @@
         Private Function TryRestoreFakeHost() As W3Player
             If fakeHostPlayer IsNot Nothing Then
                 Return Nothing
-            ElseIf state > W3GameStates.AcceptingPlayers Then
+            ElseIf state > W3GameState.AcceptingPlayers Then
                 Return Nothing
             End If
 
@@ -329,7 +329,7 @@
         End Function
 
         Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As W3Player
-            If state > W3GameStates.AcceptingPlayers Then
+            If state > W3GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
             ElseIf Not connectingPlayer.Socket.connected Then
                 Throw New InvalidOperationException("Player isn't connected.")
@@ -356,7 +356,7 @@
             ElseIf fakeHostPlayer IsNot Nothing Then
                 'the only player index left belongs to the fake host
                 index = fakeHostPlayer.index
-                RemovePlayer(fakeHostPlayer, True, W3PlayerLeaveTypes.Disconnect, "Need player index for joining player.")
+                RemovePlayer(fakeHostPlayer, True, W3PlayerLeaveType.Disconnect, "Need player index for joining player.")
             Else
                 'no indexes left, go away
                 Throw New InvalidOperationException("No index space available for player.")
@@ -369,21 +369,21 @@
             If bestMatch = W3SlotContents.WantPlayerPriority.AcceptReservation Then
                 For Each player In bestSlot.contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
-                    RemovePlayer(player, True, W3PlayerLeaveTypes.Disconnect, "Reservation fulfilled")
+                    RemovePlayer(player, True, W3PlayerLeaveType.Disconnect, "Reservation fulfilled")
                 Next player
             End If
 
             'Create player object
-            Dim newPlayer As W3Player = New W3Player(index, Me, connectingPlayer, logger)
+            Dim newPlayer As W3Player = New W3Player(index, Me, connectingPlayer, Logger)
             bestSlot.contents = bestSlot.contents.TakePlayer(newPlayer)
             players.Add(newPlayer)
 
             'Greet new player
-            newPlayer.QueueSendPacket(W3Packet.MakeGreet(newPlayer, index, map))
+            newPlayer.QueueSendPacket(W3Packet.MakeGreet(newPlayer, index))
             For Each player In (From p In players Where p IsNot newPlayer AndAlso IsPlayerVisible(p))
                 newPlayer.QueueSendPacket(W3Packet.MakeOtherPlayerJoined(player))
             Next player
-            newPlayer.QueueSendPacket(W3Packet.MakeHostMapInfo(map))
+            newPlayer.QueueSendPacket(W3Packet.MakeHostMapInfo(Map))
             If My.Resources.ProgramShowoff_f0name <> "" Then
                 SendMessageTo(My.Resources.ProgramShowoff_f0name.Frmt(My.Resources.ProgramName), newPlayer)
             End If
@@ -397,17 +397,17 @@
 
             'Inform bot
             ThrowPlayerEntered(newPlayer)
-            logger.Log("{0} has entered the game.".Frmt(newPlayer.name), LogMessageType.Positive)
+            Logger.Log("{0} has entered the game.".Frmt(newPlayer.name), LogMessageType.Positive)
 
             'Update state
             ChangedLobbyState()
             TryBeginAutoStart()
-            If server.settings.auto_elevate_username IsNot Nothing Then
-                If newPlayer.name.ToLower() = server.settings.auto_elevate_username.ToLower() Then
+            If Server.settings.autoElevateUserName IsNot Nothing Then
+                If newPlayer.name.ToUpperInvariant = Server.settings.autoElevateUserName.ToUpperInvariant Then
                     TryElevatePlayer(newPlayer.name)
                 End If
             End If
-            If server.settings.autostarted Then
+            If Server.settings.isAutoStarted Then
                 SendMessageTo("This is an automated game. {0}help for a list of commands.".Frmt(My.Settings.commandPrefix), newPlayer)
             End If
 
@@ -422,24 +422,24 @@
                                  End Sub)
         End Sub
 
-        Private Sub OnDownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndPoints),
-                                               ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndPoints))
+        Private Sub OnDownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndpoints),
+                                               ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndpoints))
             ref.QueueAction(
                 Sub()
                     'Start transfers
                     For Each e In started
                         'Find matching players
-                        Dim src = FindPlayer(e.src)
-                        Dim dst = FindPlayer(e.dst)
+                        Dim src = FindPlayer(e.source)
+                        Dim dst = FindPlayer(e.destination)
                         If dst Is Nothing Then  Continue For
 
                         'Apply
-                        If e.src = SELF_DOWNLOAD_ID Then
-                            logger.Log("Initiating map upload to {0}.".Frmt(dst.name), LogMessageType.Positive)
+                        If e.source = LocalTransferClientKey Then
+                            Logger.Log("Initiating map upload to {0}.".Frmt(dst.name), LogMessageType.Positive)
                             dst.IsGettingMapFromBot = True
                             dst.QueueBufferMap()
                         ElseIf src IsNot Nothing Then
-                            logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageType.Positive)
+                            Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageType.Positive)
                             src.QueueSendPacket(W3Packet.MakeSetUploadTarget(dst.index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
                             dst.QueueSendPacket(W3Packet.MakeSetDownloadSource(src.index))
                         End If
@@ -448,19 +448,19 @@
                     'Stop transfers
                     For Each e In stopped
                         'Find matching players
-                        Dim src = FindPlayer(e.src)
-                        Dim dst = FindPlayer(e.dst)
+                        Dim src = FindPlayer(e.source)
+                        Dim dst = FindPlayer(e.destination)
                         If dst Is Nothing Then  Continue For
 
                         'Apply
-                        If e.src = SELF_DOWNLOAD_ID Then
-                            logger.Log("Stopping map upload to {0}.".Frmt(dst.name), LogMessageType.Positive)
+                        If e.source = LocalTransferClientKey Then
+                            Logger.Log("Stopping map upload to {0}.".Frmt(dst.name), LogMessageType.Positive)
                             dst.IsGettingMapFromBot = False
                         ElseIf src IsNot Nothing Then
-                            logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageType.Positive)
-                            src.QueueSendPacket(W3Packet.MakeOtherPlayerLeft(dst, W3PlayerLeaveTypes.Disconnect))
+                            Logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageType.Positive)
+                            src.QueueSendPacket(W3Packet.MakeOtherPlayerLeft(dst, W3PlayerLeaveType.Disconnect))
                             src.QueueSendPacket(W3Packet.MakeOtherPlayerJoined(dst))
-                            dst.QueueSendPacket(W3Packet.MakeOtherPlayerLeft(src, W3PlayerLeaveTypes.Disconnect))
+                            dst.QueueSendPacket(W3Packet.MakeOtherPlayerLeft(src, W3PlayerLeaveType.Disconnect))
                             dst.QueueSendPacket(W3Packet.MakeOtherPlayerJoined(src))
                         End If
                     Next e
@@ -469,15 +469,15 @@
         End Sub
 
         Private Sub OnScheduleDownloadsTick()
-            downloadScheduler.Update()
+            DownloadScheduler.Update()
         End Sub
 
-        Public Sub LobbyCatchRemovedPlayer(ByVal p As W3Player, ByVal slot As W3Slot)
-            If slot Is Nothing OrElse slot.contents.PlayerIndex <> p.index Then
-                freeIndexes.Add(p.index)
+        Public Sub LobbyCatchRemovedPlayer(ByVal player As W3Player, ByVal slot As W3Slot)
+            If slot Is Nothing OrElse slot.contents.PlayerIndex <> player.index Then
+                freeIndexes.Add(player.index)
             End If
-            downloadScheduler.RemoveClient(p.index).MarkAnyExceptionAsHandled()
-            If p IsNot fakeHostPlayer Then TryRestoreFakeHost()
+            DownloadScheduler.RemoveClient(player.index).MarkAnyExceptionAsHandled()
+            If player IsNot fakeHostPlayer Then TryRestoreFakeHost()
             ChangedLobbyState()
         End Sub
 #End Region
@@ -491,12 +491,12 @@
             slotStateUpdateThrottle.SetActionToRun(Sub() ref.QueueAction(AddressOf SendLobbyState))
         End Sub
         Private Sub SendLobbyState()
-            If state >= W3GameStates.Loading Then Return
+            If state >= W3GameState.Loading Then Return
 
             Dim time As ModInt32 = Environment.TickCount()
             For Each player In players
                 Contract.Assume(player IsNot Nothing)
-                Dim pk = W3Packet.MakeLobbyState(player, map, slots, time, server.settings.isAdminGame)
+                Dim pk = W3Packet.MakeLobbyState(player, Map, slots, time, Server.settings.isAdminGame)
                 player.QueueSendPacket(pk)
             Next player
             TryBeginAutoStart()
@@ -505,7 +505,7 @@
         ''' <summary>Opens slots, closes slots and moves players around to try to match the desired team sizes.</summary>
         Private Sub TrySetTeamSizes(ByVal desiredTeamSizes As IList(Of Integer))
             Contract.Requires(desiredTeamSizes IsNot Nothing)
-            If state > W3GameStates.AcceptingPlayers Then
+            If state > W3GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't change team sizes after launch.")
             End If
 
@@ -516,11 +516,11 @@
                 For Each slot In slots
                     If slot.team >= teamSizesLeft.Count Then Continue For
 
-                    Select Case slot.contents.Type
-                        Case W3SlotContents.ContentType.Computer
+                    Select Case slot.contents.ContentType
+                        Case SlotContentType.Computer
                             'computers slots shouldn't be affected
 
-                        Case W3SlotContents.ContentType.Empty
+                        Case SlotContentType.Empty
                             If teamSizesLeft(slot.team) > 0 Then
                                 teamSizesLeft(slot.team) -= 1
                                 availableWellPlacedSlots.Add(slot)
@@ -529,7 +529,7 @@
                                 slot.contents = New W3SlotContentsClosed(slot)
                             End If
 
-                        Case W3SlotContents.ContentType.Player
+                        Case SlotContentType.Player
                             If teamSizesLeft(slot.team) > 0 Then
                                 teamSizesLeft(slot.team) -= 1
                             Else
@@ -537,7 +537,7 @@
                             End If
 
                         Case Else
-                            Throw slot.contents.Type.MakeImpossibleValueException
+                            Throw slot.contents.ContentType.MakeImpossibleValueException
                     End Select
                 Next slot
 
@@ -558,7 +558,7 @@
             Contract.Requires(slotQuery IsNot Nothing)
             Contract.Requires(action IsNot Nothing)
 
-            If state >= W3GameStates.CountingDown Then
+            If state >= W3GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't modify slots during launch.")
             End If
 
@@ -567,7 +567,7 @@
                 Throw New InvalidOperationException("No slot matching {0}".Frmt(slotQuery))
             End If
 
-            If avoidPlayers AndAlso slot.contents.Type = W3SlotContents.ContentType.Player Then
+            If avoidPlayers AndAlso slot.contents.ContentType = SlotContentType.Player Then
                 Throw New InvalidOperationException("Slot '{0}' contains a player.".Frmt(slotQuery))
             End If
 
@@ -614,12 +614,12 @@
             Contract.Requires(slotid IsNot Nothing)
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
-            If state >= W3GameStates.CountingDown Then
+            If state >= W3GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't reserve slots after launch.")
             End If
             Dim slot = FindMatchingSlot(slotid)
             If slot Is Nothing Then Throw New InvalidOperationException("No slot matching {0}".Frmt(slotid))
-            If slot.contents.Type = W3SlotContents.ContentType.Player Then
+            If slot.contents.ContentType = SlotContentType.Player Then
                 Throw New InvalidOperationException("Slot '{0}' can't be reserved because it already contains a player.".Frmt(slotid))
             Else
                 Return AddFakePlayer(username, slot)
@@ -629,7 +629,7 @@
         Private Sub SwapSlotContents(ByVal query1 As String, ByVal query2 As String)
             Contract.Requires(query1 IsNot Nothing)
             Contract.Requires(query2 IsNot Nothing)
-            If state > W3GameStates.AcceptingPlayers Then
+            If state > W3GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't swap slots after launch.")
             End If
             Dim slot1 = FindMatchingSlot(query1)
@@ -656,7 +656,7 @@
 #Region "Slot States"
         Private Sub SetSlotColor(ByVal slotid As String, ByVal color As W3Slot.PlayerColor)
             Contract.Requires(slotid IsNot Nothing)
-            If state > W3GameStates.CountingDown Then
+            If state > W3GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't change slot settings after launch.")
             End If
 
@@ -670,7 +670,7 @@
             ChangedLobbyState()
         End Sub
 
-        Private Sub SetSlotRace(ByVal slotid As String, ByVal race As W3Slot.RaceFlags)
+        Private Sub SetSlotRace(ByVal slotid As String, ByVal race As W3Slot.Races)
             Contract.Requires(slotid IsNot Nothing)
             ModifySlotContents(slotid,
                                Sub(slot)
@@ -703,7 +703,7 @@
         End Sub
 
         Private Sub SetAllSlotsLocked(ByVal locked As W3Slot.Lock)
-            If state > W3GameStates.AcceptingPlayers Then
+            If state > W3GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't lock slots after launch.")
             End If
             For Each slot In slots.ToList
@@ -719,16 +719,16 @@
 
             'Validate
             If slot Is Nothing Then Return
-            If slot.locked = W3Slot.Lock.frozen Then Return '[no changes allowed]
+            If slot.locked = W3Slot.Lock.Frozen Then Return '[no changes allowed]
             If Not slot.contents.Moveable Then Return '[slot is weird]
-            If state >= W3GameStates.Loading Then Return '[too late]
+            If state >= W3GameState.Loading Then Return '[too late]
             If Not newColor.EnumValueIsDefined Then Return '[not a valid color]
 
             'check for duplicates
             For Each other_slot In slots.ToList()
                 If other_slot.color = newColor Then
-                    If Not map.isMelee Then Return
-                    If Not other_slot.contents.Type = W3SlotContents.ContentType.Empty Then Return
+                    If Not Map.isMelee Then Return
+                    If Not other_slot.contents.ContentType = SlotContentType.Empty Then Return
                     other_slot.color = slot.color
                     Exit For
                 End If
@@ -738,16 +738,16 @@
             slot.color = newColor
             ChangedLobbyState()
         End Sub
-        Private Sub ReceiveSetRace(ByVal player As W3Player, ByVal newRace As W3Slot.RaceFlags)
+        Private Sub ReceiveSetRace(ByVal player As W3Player, ByVal newRace As W3Slot.Races)
             Contract.Requires(player IsNot Nothing)
             Dim slot = FindPlayerSlot(player)
 
             'Validate
             If slot Is Nothing Then Return
-            If slot.locked = W3Slot.Lock.frozen Then Return '[no changes allowed]
+            If slot.locked = W3Slot.Lock.Frozen Then Return '[no changes allowed]
             If Not slot.contents.Moveable Then Return '[slot is weird]
-            If state >= W3GameStates.Loading Then Return '[too late]
-            If Not newRace.EnumValueIsDefined OrElse newRace = W3Slot.RaceFlags.Unlocked Then Return '[not a valid race]
+            If state >= W3GameState.Loading Then Return '[too late]
+            If Not newRace.EnumValueIsDefined OrElse newRace = W3Slot.Races.Unlocked Then Return '[not a valid race]
 
             'Perform
             slot.race = newRace
@@ -759,9 +759,9 @@
 
             'Validate
             If slot Is Nothing Then Return
-            If slot.locked = W3Slot.Lock.frozen Then Return '[no changes allowed]
+            If slot.locked = W3Slot.Lock.Frozen Then Return '[no changes allowed]
             If Not slot.contents.Moveable Then Return '[slot is weird]
-            If state >= W3GameStates.CountingDown Then Return '[too late]
+            If state >= W3GameState.CountingDown Then Return '[too late]
 
             'Perform
             Select Case new_handicap
@@ -779,25 +779,25 @@
 
             'Validate
             If slot Is Nothing Then Return
-            If slot.locked <> W3Slot.Lock.unlocked Then Return '[no teams changes allowed]
-            If new_team > W3Slot.OBS_TEAM Then Return '[invalid value]
+            If slot.locked <> W3Slot.Lock.Unlocked Then Return '[no teams changes allowed]
+            If new_team > W3Slot.ObserverTeamIndex Then Return '[invalid value]
             If Not slot.contents.Moveable Then Return '[slot is weird]
-            If state >= W3GameStates.Loading Then Return '[too late]
-            If new_team = W3Slot.OBS_TEAM Then
-                Select Case server.settings.header.Map.observers
+            If state >= W3GameState.Loading Then Return '[too late]
+            If new_team = W3Slot.ObserverTeamIndex Then
+                Select Case Server.settings.header.Map.observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         '[fine; continue]
                     Case Else
                         Return '[obs not enabled; invalid value]
                 End Select
-            ElseIf Not map.isMelee And new_team >= map.numForces Then
+            ElseIf Not Map.isMelee And new_team >= Map.numForces Then
                 Return '[invalid team]
-            ElseIf map.isMelee And new_team >= map.NumPlayerSlots Then
+            ElseIf Map.isMelee And new_team >= Map.NumPlayerSlots Then
                 Return '[invalid team]
             End If
 
             'Perform
-            If map.isMelee Then
+            If Map.isMelee Then
                 'set slot to target team
                 slot.team = new_team
             Else
@@ -847,14 +847,15 @@
                                        CloseSlot(query)
                                    End Sub)
         End Function
-        Public Function QueueReserveSlot(ByVal query As String, ByVal username As String) As IFuture
+        Public Function QueueReserveSlot(ByVal query As String,
+                                         ByVal userName As String) As IFuture
             Contract.Requires(query IsNot Nothing)
-            Contract.Requires(username IsNot Nothing)
+            Contract.Requires(userName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
-                                       Contract.Assume(username IsNot Nothing)
-                                       ReserveSlot(query, username)
+                                       Contract.Assume(userName IsNot Nothing)
+                                       ReserveSlot(query, userName)
                                    End Sub)
         End Function
         Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture
@@ -895,15 +896,15 @@
                                        SetSlotHandicap(query, newHandicap)
                                    End Sub)
         End Function
-        Public Function QueueSetSlotTeam(ByVal query As String, ByVal new_team As Byte) As IFuture
+        Public Function QueueSetSlotTeam(ByVal query As String, ByVal newTeam As Byte) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(query IsNot Nothing)
-                                       SetSlotTeam(query, new_team)
+                                       SetSlotTeam(query, newTeam)
                                    End Sub)
         End Function
-        Public Function QueueSetSlotRace(ByVal query As String, ByVal newRace As W3Slot.RaceFlags) As IFuture
+        Public Function QueueSetSlotRace(ByVal query As String, ByVal newRace As W3Slot.Races) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
@@ -925,12 +926,13 @@
             Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() AddPlayer(newPlayer))
         End Function
-        Public Function QueuePlayerVoteToStart(ByVal name As String, ByVal val As Boolean) As IFuture
+        Public Function QueueSetPlayerVoteToStart(ByVal name As String,
+                                                  ByVal wantsToStart As Boolean) As IFuture
             Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(name IsNot Nothing)
-                                       PlayerVoteToStart(name, val)
+                                       SetPlayerVoteToStart(name, wantsToStart)
                                    End Sub)
         End Function
         Public Function QueueStartCountdown() As IFuture

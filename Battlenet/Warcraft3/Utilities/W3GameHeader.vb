@@ -1,5 +1,6 @@
 ﻿Namespace Warcraft3
-    Public Enum GameTypeFlags As UInteger
+    <Flags()>
+    Public Enum GameTypes As UInteger
         CreateGameUnknown0 = 1 << 0
         AuthenticatedMakerBlizzard = 1 << 3
 
@@ -54,22 +55,22 @@
     End Interface
     Public Interface IW3GameStateDescription
         Inherits IW3GameDescription
-        ReadOnly Property GameType As GameTypeFlags
-        ReadOnly Property GameState As Bnet.BnetPacket.GameStateFlags
+        ReadOnly Property GameType As GameTypes
+        ReadOnly Property GameState As Bnet.BnetPacket.GameStates
         ReadOnly Property NumFreeSlots As Integer
     End Interface
 
     Public NotInheritable Class W3GameHeaderAndState
         Inherits W3GameHeader
         Implements IW3GameStateDescription
-        Public state As Bnet.BnetPacket.GameStateFlags
+        Public state As Bnet.BnetPacket.GameStates
         Public freeSlotCount As Integer
-        Public ReadOnly type As GameTypeFlags
-        Public Sub New(ByVal state As Bnet.BnetPacket.GameStateFlags,
+        Public ReadOnly type As GameTypes
+        Public Sub New(ByVal state As Bnet.BnetPacket.GameStates,
                        ByVal header As W3GameHeader,
-                       ByVal type As GameTypeFlags,
+                       ByVal type As GameTypes,
                        Optional ByVal freeSlotCount As Integer = -1)
-            MyBase.New(header.Name, header.hostUserName, header.Map, header.hostPort, header.gameId, header.lanKey, header.Options, header.NumPlayerSlots)
+            MyBase.New(header.Name, header.HostUserName, header.Map, header.hostPort, CByte(header.GameId), header.lanKey, header.Options, header.NumPlayerSlots)
             Contract.Requires(header IsNot Nothing)
             Me.state = state
             Me.type = type
@@ -82,13 +83,13 @@
             End Get
         End Property
 
-        Private ReadOnly Property _GameState As Bnet.BnetPacket.GameStateFlags Implements IW3GameStateDescription.GameState
+        Private ReadOnly Property _GameState As Bnet.BnetPacket.GameStates Implements IW3GameStateDescription.GameState
             Get
                 Return state
             End Get
         End Property
 
-        Private ReadOnly Property _GameType As GameTypeFlags Implements IW3GameStateDescription.GameType
+        Private ReadOnly Property _GameType As GameTypes Implements IW3GameStateDescription.GameType
             Get
                 Return type
             End Get
@@ -98,13 +99,13 @@
         Implements IW3GameDescription
 
         Private ReadOnly _name As String
-        Public ReadOnly hostUserName As String
+        Private ReadOnly _hostUserName As String
         Private ReadOnly _map As W3MapSettings
 
         Public ReadOnly hostPort As UShort
-        Public ReadOnly gameId As Byte
+        Private ReadOnly _gameId As Byte
         Public ReadOnly lanKey As UInteger
-        Public ReadOnly creationTime As Date
+        Private ReadOnly _creationTime As Date
 
         Private ReadOnly _options As IList(Of String)
         Private ReadOnly _numPlayerSlots As Integer
@@ -149,28 +150,28 @@
                        ByVal gameId As Byte,
                        ByVal lanKey As UInteger,
                        ByVal options As IList(Of String),
-                       ByVal numPlayerSlots As Integer)
-            Contract.Requires(numPlayerSlots > 0)
-            Contract.Requires(numPlayerSlots <= 12)
+                       ByVal playerSlotCount As Integer)
+            Contract.Requires(playerSlotCount > 0)
+            Contract.Requires(playerSlotCount <= 12)
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(options IsNot Nothing)
             Me._name = name
-            Me.hostUserName = host
+            Me._hostUserName = host
             Me._map = map
             Me.hostPort = hostPort
-            Me.gameId = gameId
+            Me._gameId = gameId
             Me.lanKey = lanKey
             Me._options = options
-            Me._numPlayerSlots = numPlayerSlots
-            Me.creationTime = Now()
+            Me._numPlayerSlots = playerSlotCount
+            Me._creationTime = Now()
         End Sub
         Public ReadOnly Property NumPlayerAndObsSlots() As Integer Implements IW3GameDescription.NumPlayerAndObsSlots
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() > 0)
                 Contract.Ensures(Contract.Result(Of Integer)() <= 12)
-                Contract.Ensures(Contract.Result(Of Integer)() >= numPlayerSlots)
-                Select Case map.observers
+                Contract.Ensures(Contract.Result(Of Integer)() >= NumPlayerSlots)
+                Select Case Map.observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         Return 12
                     Case Else
@@ -180,24 +181,24 @@
         End Property
 
 #Region "Interface"
-        Protected ReadOnly Property _CreationTime As Date Implements IW3GameDescription.CreationTime
+        Public ReadOnly Property CreationTime As Date Implements IW3GameDescription.CreationTime
             Get
-                Return creationTime
+                Return _creationTime
             End Get
         End Property
-        Protected ReadOnly Property _BnetId As UInteger Implements IW3GameDescription.BnetId
+        Public ReadOnly Property GameId As UInteger Implements IW3GameDescription.BnetId
             Get
-                Return gameId
+                Return _gameId
             End Get
         End Property
-        Protected ReadOnly Property _Settings As W3MapSettings Implements IW3GameDescription.Settings
+        Public ReadOnly Property Settings As W3MapSettings Implements IW3GameDescription.Settings
             Get
-                Return Map
+                Return _map
             End Get
         End Property
-        Protected ReadOnly Property _HostUserName As String Implements IW3GameDescription.HostUserName
+        Public ReadOnly Property HostUserName As String Implements IW3GameDescription.HostUserName
             Get
-                Return hostUserName
+                Return _hostUserName
             End Get
         End Property
 #End Region

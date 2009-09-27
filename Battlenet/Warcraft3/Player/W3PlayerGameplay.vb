@@ -8,9 +8,9 @@
             End Get
         End Property
 
-        Public Sub New(ByVal length As UShort, ByVal start_time As Integer)
+        Public Sub New(ByVal length As UShort, ByVal startTime As Integer)
             Me.length = length
-            Me.startTime = start_time
+            Me.startTime = startTime
         End Sub
 
         'Private checksum As Byte() = Nothing
@@ -32,7 +32,7 @@
 
         Public Sub GamePlayStart()
             loadscreenStop()
-            state = W3PlayerStates.Playing
+            state = W3PlayerState.Playing
             handlers(W3PacketId.AcceptHost) = AddressOf ReceiveAcceptHost
             handlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
             handlers(W3PacketId.Tock) = AddressOf ReceiveTock
@@ -79,7 +79,7 @@
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             If tickQueue.Count <= 0 Then
                 logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageType.Problem)
-                Disconnect(True, W3PlayerLeaveTypes.Disconnect, "overticked")
+                Disconnect(True, W3PlayerLeaveType.Disconnect, "overticked")
                 Return
             End If
 

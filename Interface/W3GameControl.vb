@@ -13,18 +13,18 @@ Public Class W3GameControl
         Return ref.QueueFunc(Function() If(game Is Nothing, "[No Game]", game.Name))
     End Function
 
-    Public Function QueueHook(ByVal game As W3Game) As IFuture Implements IHookable(Of Warcraft3.W3Game).QueueHook
+    Public Function QueueHook(ByVal child As W3Game) As IFuture Implements IHookable(Of Warcraft3.W3Game).QueueHook
         Return ref.QueueAction(
             Sub()
                 For i = 0 To lstSlots.Items.Count - 1
                     lstSlots.Items(i) = "-"
                 Next i
-                Me.game = game
-                If game Is Nothing Then
+                Me.game = child
+                If child Is Nothing Then
                     logGame.SetGame(Nothing)
                 Else
-                    logGame.SetGame(game)
-                    game.QueueThrowUpdated()
+                    logGame.SetGame(child)
+                    child.QueueThrowUpdated()
                 End If
             End Sub
         )

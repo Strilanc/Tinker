@@ -6,15 +6,15 @@ Namespace Commands.Specializations
         Inherits InstanceCommands
 
         Public Sub New()
-            AddCommand(New com_Disconnect)
+            AddCommand(New CommandDisconnect)
         End Sub
 
         '''<summary>A command which disconnects the bot from the instance.</summary>
-        Public Class com_Disconnect
+        Public Class CommandDisconnect
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Disconnect,
-                           0, ArgumentLimits.min,
+                           0, ArgumentLimitType.Min,
                            My.Resources.Command_Instance_Disconnect_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -28,28 +28,28 @@ Namespace Commands.Specializations
         Inherits InstanceCommands
 
         Public Sub New()
-            AddCommand(New com_Cancel)
-            AddCommand(New com_Close)
-            AddCommand(New com_Freeze)
-            AddCommand(New com_Lock)
-            AddCommand(New com_Open)
-            AddCommand(New com_Reserve)
-            AddCommand(New com_SetColor)
-            AddCommand(New com_SetComputer)
-            AddCommand(New com_SetHandicap)
-            AddCommand(New com_SetTeam)
-            AddCommand(New com_SetTeams)
-            AddCommand(New com_Start)
-            AddCommand(New com_Swap)
-            AddCommand(New com_Unlock)
+            AddCommand(New CommandCancel)
+            AddCommand(New CommandClose)
+            AddCommand(New CommandFreeze)
+            AddCommand(New CommandLock)
+            AddCommand(New CommandOpen)
+            AddCommand(New CommandReserve)
+            AddCommand(New CommandSetColor)
+            AddCommand(New CommandSetComputer)
+            AddCommand(New CommandSetHandicap)
+            AddCommand(New CommandSetTeam)
+            AddCommand(New CommandSetTeams)
+            AddCommand(New CommandStart)
+            AddCommand(New CommandSwap)
+            AddCommand(New CommandUnlock)
         End Sub
 
         '''<summary>A command which opens a slot.</summary>
-        Public Class com_Open
+        Public Class CommandOpen
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Open,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_Open_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -58,11 +58,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which closes a slot.</summary>
-        Public Class com_Close
+        Public Class CommandClose
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Close,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_Close_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -71,11 +71,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which sets a slot's team.</summary>
-        Public Class com_SetTeam
+        Public Class CommandSetTeam
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetTeam,
-                           2, ArgumentLimits.exact,
+                           2, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_SetTeam_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -90,46 +90,46 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which preps slots for a particular number of players.</summary>
-        Public Class com_SetTeams
+        Public Class CommandSetTeams
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetTeams,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_SetTeams_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.QueueTrySetTeamSizes(W3Game.XvX(arguments(0))).EvalOnSuccess(Function() "Set Teams")
+                Return target.QueueTrySetTeamSizes(W3Game.TeamVersusStringToTeamSizes(arguments(0))).EvalOnSuccess(Function() "Set Teams")
             End Function
         End Class
 
         '''<summary>A command which sets a slot's handicap.</summary>
-        Public Class com_SetHandicap
+        Public Class CommandSetHandicap
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetHandicap,
-                           2, ArgumentLimits.exact,
+                           2, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_SetHandicap_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Dim arg_slot = arguments(0)
-                Dim arg_handicap = arguments(1)
-                Dim val_handicap As Byte = 0
-                Byte.TryParse(arg_handicap, val_handicap)
-                Select Case val_handicap
+                Dim argSlot = arguments(0)
+                Dim argHandicap = arguments(1)
+                Dim newHandicap As Byte
+                If Not Byte.TryParse(argHandicap, newHandicap) Then newHandicap = 0
+                Select Case newHandicap
                     Case 50, 60, 70, 80, 90, 100
-                        Return target.QueueSetSlotHandicap(arg_slot, val_handicap).EvalOnSuccess(Function() "Set Handicap")
+                        Return target.QueueSetSlotHandicap(argSlot, newHandicap).EvalOnSuccess(Function() "Set Handicap")
                     Case Else
-                        Throw New InvalidOperationException("Invalid handicap: '{0}'.".Frmt(arg_handicap))
+                        Throw New InvalidOperationException("Invalid handicap: '{0}'.".Frmt(argHandicap))
                 End Select
             End Function
         End Class
 
         '''<summary>A command which sets a slot's color.</summary>
-        Public Class com_SetColor
+        Public Class CommandSetColor
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetColor,
-                           2, ArgumentLimits.exact,
+                           2, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_SetColor_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -144,11 +144,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which swaps the contents of two slots.</summary>
-        Public Class com_Swap
+        Public Class CommandSwap
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Swap,
-                           2, ArgumentLimits.exact,
+                           2, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_Swap_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -157,11 +157,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which places a computer in a slot.</summary>
-        Public Class com_SetComputer
+        Public Class CommandSetComputer
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetComputer,
-                           1, ArgumentLimits.min,
+                           1, ArgumentLimitType.Min,
                            My.Resources.Command_Instance_SetComputer_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -176,62 +176,62 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which stops players from leaving a slot.</summary>
-        Public Class com_Lock
+        Public Class CommandLock
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Lock,
-                           1, ArgumentLimits.max,
+                           1, ArgumentLimitType.Max,
                            My.Resources.Command_Instance_Lock_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 If arguments.Count = 0 Then
-                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.sticky).EvalOnSuccess(Function() "Locked slots")
+                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Sticky).EvalOnSuccess(Function() "Locked slots")
                 Else
-                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.sticky).EvalOnSuccess(Function() "Locked slots")
+                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Sticky).EvalOnSuccess(Function() "Locked slots")
                 End If
             End Function
         End Class
 
         '''<summary>A command which enables players to leave and modify a slot.</summary>
-        Public Class com_Unlock
+        Public Class CommandUnlock
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Unlock,
-                           1, ArgumentLimits.max,
+                           1, ArgumentLimitType.Max,
                            My.Resources.Command_Instance_Unlock_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 If arguments.Count = 0 Then
-                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.unlocked).EvalOnSuccess(Function() "Unlocked slots")
+                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Unlocked).EvalOnSuccess(Function() "Unlocked slots")
                 Else
-                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.unlocked).EvalOnSuccess(Function() "Unlocked slots")
+                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Unlocked).EvalOnSuccess(Function() "Unlocked slots")
                 End If
             End Function
         End Class
 
         '''<summary>A command which stops players from modifying or leaving a slot.</summary>
-        Public Class com_Freeze
+        Public Class CommandFreeze
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Freeze,
-                           1, ArgumentLimits.max,
+                           1, ArgumentLimitType.Max,
                            My.Resources.Command_Instance_Freeze_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 If arguments.Count = 0 Then
-                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.frozen).EvalOnSuccess(Function() "Froze slots")
+                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Frozen).EvalOnSuccess(Function() "Froze slots")
                 Else
-                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.frozen).EvalOnSuccess(Function() "Froze slots")
+                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Frozen).EvalOnSuccess(Function() "Froze slots")
                 End If
             End Function
         End Class
 
         '''<summary>A command which reserves a slot for a player.</summary>
-        Public Class com_Reserve
+        Public Class CommandReserve
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Reserve,
-                           2, ArgumentLimits.exact,
+                           2, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_Reserve_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -240,11 +240,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which starts the launch countdown.</summary>
-        Public Class com_Start
+        Public Class CommandStart
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Start,
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_Start_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -253,15 +253,15 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which kills the instance.</summary>
-        Public Class com_Cancel
+        Public Class CommandCancel
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Cancel,
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_Cancel_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.server.QueueKill().EvalOnSuccess(Function() "Cancelled")
+                Return target.Server.QueueKill().EvalOnSuccess(Function() "Cancelled")
             End Function
         End Class
     End Class
@@ -270,18 +270,18 @@ Namespace Commands.Specializations
         Inherits CommandSet(Of W3Game)
 
         Public Sub New()
-            AddCommand(New com_Bot)
+            AddCommand(New CommandBot)
         End Sub
 
-        Public Class com_Bot
+        Public Class CommandBot
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Bot,
-                           0, ArgumentLimits.free,
+                           0, ArgumentLimitType.Free,
                            My.Resources.Command_Instance_Bot_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.server.parent.BotCommands.ProcessCommand(target.server.parent, user, arguments)
+                Return target.Server.parent.BotCommands.ProcessCommand(target.Server.parent, user, arguments)
             End Function
         End Class
     End Class
@@ -290,17 +290,17 @@ Namespace Commands.Specializations
         Inherits InstanceBaseCommands
 
         Public Sub New()
-            AddCommand(New com_Boot)
-            AddCommand(New com_GetSetting)
-            AddCommand(New com_SetSetting)
+            AddCommand(New CommandBoot)
+            AddCommand(New CommandGetSetting)
+            AddCommand(New CommandSetSetting)
         End Sub
 
         '''<summary>A command which boots players from a slot.</summary>
-        Public Class com_Boot
+        Public Class CommandBoot
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Boot,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_Boot_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -308,33 +308,29 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_GetSetting
+        Public Class CommandGetSetting
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New("Get",
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            "[Get setting] Displays a game setting. Available settings are tickperiod laglimit gamerate.")
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 Dim val As Object
-                Select Case arguments(0).ToLower()
-                    Case "tickperiod"
-                        val = target.SettingTickPeriod
-                    Case "laglimit"
-                        val = target.SettingLagLimit
-                    Case "gamerate"
-                        val = target.settingSpeedFactor
-                    Case Else
-                        Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(arguments(0)))
+                Select Case arguments(0).ToUpperInvariant
+                    Case "TICKPERIOD" : val = target.SettingTickPeriod
+                    Case "LAGLIMIT" : val = target.SettingLagLimit
+                    Case "GAMERATE" : val = target.SettingSpeedFactor
+                    Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(arguments(0)))
                 End Select
                 Return "{0} = '{1}'".Frmt(arguments(0), val).Futurized
             End Function
         End Class
-        Public Class com_SetSetting
+        Public Class CommandSetSetting
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New("Set",
-                           2, ArgumentLimits.exact,
+                           2, ArgumentLimitType.Exact,
                            "[Set setting] Changes a game setting. Available settings are tickperiod laglimit gamerate.")
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -342,16 +338,16 @@ Namespace Commands.Specializations
                 Dim vald As Double
                 Dim is_short = UShort.TryParse(arguments(1), val_us)
                 Dim is_double = Double.TryParse(arguments(1), vald)
-                Select Case arguments(0).ToLower()
-                    Case "tickperiod"
+                Select Case arguments(0).ToUpperInvariant
+                    Case "TICKPERIOD"
                         If Not is_short Or val_us < 50 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
                         target.SettingTickPeriod = val_us
-                    Case "laglimit"
+                    Case "LAGLIMIT"
                         If Not is_short Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
                         target.SettingLagLimit = val_us
-                    Case "gamerate"
+                    Case "GAMERATE"
                         If Not is_double Or vald < 0.01 Or vald > 10 Then Throw New ArgumentException("Invalid value")
-                        target.settingSpeedFactor = vald
+                        target.SettingSpeedFactor = vald
                     Case Else
                         Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(arguments(0)))
                 End Select
@@ -361,19 +357,19 @@ Namespace Commands.Specializations
     End Class
 
     Public Class InstanceBaseCommands
-        Inherits UICommandSet(Of W3Game)
+        Inherits CommandSet(Of W3Game)
 
         Public Sub New()
-            AddCommand(New com_Ping)
-            AddCommand(New com_Leave)
+            AddCommand(New CommandPing)
+            AddCommand(New CommandLeave)
         End Sub
 
         '''<summary>A command which disconnects the bot from the instance.</summary>
-        Public Class com_Ping
+        Public Class CommandPing
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Ping,
-                           0, ArgumentLimits.min,
+                           0, ArgumentLimitType.Min,
                            My.Resources.Command_Instance_Ping_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -401,11 +397,11 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class com_Leave
+        Public Class CommandLeave
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New("Leave",
-                           0, ArgumentLimits.exact,
+                           0, ArgumentLimitType.Exact,
                            "Disconnects you from the game (for when countdown is cancelled and you can't leave normally).")
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -419,29 +415,29 @@ Namespace Commands.Specializations
         Inherits InstanceBaseCommands
 
         Public Sub New()
-            AddCommand(New com_Elevate)
-            AddCommand(New com_VoteStart)
+            AddCommand(New CommandElevate)
+            AddCommand(New CommandVoteStart)
         End Sub
 
-        Public Class com_VoteStart
+        Public Class CommandVoteStart
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_VoteStart,
-                           1, ArgumentLimits.max,
+                           1, ArgumentLimitType.Max,
                            My.Resources.Command_Instance_VoteStart_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                If arguments.Count = 1 AndAlso arguments(0).ToLower <> "cancel" Then Throw New ArgumentException("Incorrect argument.")
+                If arguments.Count = 1 AndAlso arguments(0).ToUpperInvariant <> "CANCEL" Then Throw New ArgumentException("Incorrect argument.")
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
-                Return target.QueuePlayerVoteToStart(user.name, arguments.Count = 0).EvalOnSuccess(Function() "Voted to start")
+                Return target.QueueSetPlayerVoteToStart(user.name, arguments.Count = 0).EvalOnSuccess(Function() "Voted to start")
             End Function
         End Class
 
-        Public Class com_Elevate
+        Public Class CommandElevate
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Elevate,
-                           1, ArgumentLimits.exact,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Instance_Elevate_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)

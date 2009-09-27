@@ -29,7 +29,7 @@ Public NotInheritable Class MainBot
     Public ReadOnly ClientCommands As New ClientCommands
     Public ReadOnly ServerCommands As New ServerCommands()
     Public ReadOnly LanCommands As New LanCommands()
-    Public ReadOnly GameCommandsLoadScreen As New Commands.UICommandSet(Of W3Game)
+    Public ReadOnly GameCommandsLoadScreen As New Commands.CommandSet(Of W3Game)
     Public ReadOnly GameGuestCommandsLobby As New InstanceGuestSetupCommands
     Public ReadOnly GameGuestCommandsLoadScreen As New InstanceGuestLoadCommands
     Public ReadOnly GameGuestCommandsGamePlay As New InstanceGuestPlayCommands
@@ -40,8 +40,6 @@ Public NotInheritable Class MainBot
 
     Private ReadOnly ref As ICallQueue
     Private ReadOnly eref As ICallQueue
-    Private ReadOnly wardenRef As ICallQueue
-    Private intentionalDisconnectFlag As Boolean
 
     Private ReadOnly clients As New List(Of BnetClient)
     Private ReadOnly servers As New List(Of W3Server)
@@ -49,21 +47,16 @@ Public NotInheritable Class MainBot
 
     Public Event AddedWidget(ByVal widget As IBotWidget)
     Public Event RemovedWidget(ByVal widget As IBotWidget)
-    Public Event ServerStateChanged(ByVal server As W3Server, ByVal oldState As W3ServerStates, ByVal newState As W3ServerStates)
+    Public Event ServerStateChanged(ByVal server As W3Server, ByVal oldState As W3ServerState, ByVal newState As W3ServerState)
     Public Event AddedServer(ByVal server As W3Server)
     Public Event RemovedServer(ByVal server As W3Server)
-    Public Event ClientStateChanged(ByVal client As BnetClient, ByVal oldState As BnetClient.States, ByVal newState As BnetClient.States)
+    Public Event ClientStateChanged(ByVal client As BnetClient, ByVal oldState As BnetClientState, ByVal newState As BnetClientState)
     Public Event AddedClient(ByVal client As BnetClient)
     Public Event RemovedClient(ByVal client As BnetClient)
 #End Region
 
 #Region "New"
-    Public Sub New(ByVal wardenRef As ICallQueue,
-                   Optional ByVal logger As Logger = Nothing)
-        'contract bug wrt interface event implementation requires this:
-        'Contract.Requires(wardenRef IsNot Nothing)
-        Contract.Assume(wardenRef IsNot Nothing)
-        Me.wardenRef = wardenRef
+    Public Sub New(Optional ByVal logger As Logger = Nothing)
         Me.logger = If(logger, New Logger)
         Me.eref = New ThreadPooledCallQueue
         Me.ref = New ThreadPooledCallQueue
@@ -82,7 +75,7 @@ Public NotInheritable Class MainBot
         Else
             clientProfiles.Clear()
             Dim p = New ClientProfile()
-            Dim u = New BotUser(BotUserSet.NAME_NEW_USER, "games=1")
+            Dim u = New BotUser(BotUserSet.NewUserKey, "games=1")
             clientProfiles.Add(p)
             p.users.AddUser(u)
             pluginProfiles.Clear()
@@ -95,36 +88,35 @@ Public NotInheritable Class MainBot
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(ref IsNot Nothing)
         Contract.Invariant(eref IsNot Nothing)
-        Contract.Invariant(wardenRef IsNot Nothing)
     End Sub
 
 #Region "State"
     Private Const FormatVersion As UInteger = 0
-    Public Sub Save(ByVal w As IO.BinaryWriter)
-        w.Write(UShort.MaxValue) 'indicate we are not the old version without the format flag
-        w.Write(FormatVersion)
-        w.Write(CUInt(clientProfiles.Count))
+    Public Sub Save(ByVal writer As IO.BinaryWriter)
+        writer.Write(UShort.MaxValue) 'indicate we are not the old version without the format flag
+        writer.Write(FormatVersion)
+        writer.Write(CUInt(clientProfiles.Count))
         For Each profile In clientProfiles
-            profile.save(w)
+            profile.Save(writer)
         Next profile
-        w.Write(CUInt(pluginProfiles.Count))
+        writer.Write(CUInt(pluginProfiles.Count))
         For Each profile In pluginProfiles
-            profile.save(w)
+            profile.Save(writer)
         Next profile
     End Sub
-    Public Sub Load(ByVal r As IO.BinaryReader)
+    Public Sub Load(ByVal reader As IO.BinaryReader)
         Dim first_version = True
-        Dim n As UInteger = r.ReadUInt16()
+        Dim n As UInteger = reader.ReadUInt16()
         If n = UInt16.MaxValue Then 'not the old version without the format flag
-            Dim ver = r.ReadUInt32()
+            Dim ver = reader.ReadUInt32()
             If ver > FormatVersion Then Throw New IO.IOException("Unrecognized bot data format version.")
-            n = r.ReadUInt32()
+            n = reader.ReadUInt32()
             first_version = False
         End If
 
         clientProfiles.Clear()
         For repeat = 1UI To n
-            clientProfiles.Add(New ClientProfile(r))
+            clientProfiles.Add(New ClientProfile(reader))
         Next repeat
         If first_version Then
             pluginProfiles.Clear()
@@ -132,8 +124,8 @@ Public NotInheritable Class MainBot
         End If
 
         pluginProfiles.Clear()
-        For repeat = 1UI To r.ReadUInt32()
-            pluginProfiles.Add(New Plugins.PluginProfile(r))
+        For repeat = 1UI To reader.ReadUInt32()
+            pluginProfiles.Add(New Plugins.PluginProfile(reader))
         Next repeat
     End Sub
 
@@ -149,10 +141,10 @@ Public NotInheritable Class MainBot
                 Throw New InvalidOperationException("Server with name '{0}' already exists.".Frmt(name))
             End If
             Dim i = 2
-            While HaveServer(name + i.ToString())
+            While HaveServer(name + i.ToString(CultureInfo.InvariantCulture))
                 i += 1
             End While
-            name += i.ToString()
+            name += i.ToString(CultureInfo.InvariantCulture)
         End If
 
         Dim server As W3Server = New W3Server(name, Me, serverSettings, suffix)
@@ -202,7 +194,7 @@ Public NotInheritable Class MainBot
             Throw New ArgumentException("Invalid profile.")
         End If
 
-        Dim client = New BnetClient(Me, FindClientProfile(profileName), name, wardenRef)
+        Dim client = New BnetClient(Me, FindClientProfile(profileName), name)
         AddHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
         AddHandler client.StateChanged, AddressOf CatchClientStateChanged
         clients.Add(client)
@@ -231,19 +223,21 @@ Public NotInheritable Class MainBot
     End Function
 
     Private Function FindClient(ByVal name As String) As BnetClient
-        Return (From x In clients Where x.Name.ToLower = name.ToLower).FirstOrDefault()
+        Return (From x In clients Where x.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault()
     End Function
     Private Function FindServer(ByVal name As String) As W3Server
-        Return (From x In servers Where x.Name.ToLower = name.ToLower).FirstOrDefault()
+        Return (From x In servers Where x.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault()
     End Function
     Private Function FindWidget(ByVal name As String, ByVal typeName As String) As IBotWidget
-        Return (From x In widgets Where x.Name.ToLower = name.ToLower AndAlso x.TypeName.ToLower = typeName.ToLower).FirstOrDefault()
+        Return (From x In widgets
+                Where x.Name.ToUpperInvariant = name.ToUpperInvariant
+                Where x.TypeName.ToUpperInvariant = typeName.ToUpperInvariant).FirstOrDefault()
     End Function
     Public Function FindClientProfile(ByVal name As String) As ClientProfile
-        Return (From x In clientProfiles Where x.name.ToLower = name.ToLower).FirstOrDefault
+        Return (From x In clientProfiles Where x.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault
     End Function
     Public Function FindPluginProfile(ByVal name As String) As Plugins.PluginProfile
-        Return (From x In pluginProfiles Where x.name.ToLower = name.ToLower).FirstOrDefault
+        Return (From x In pluginProfiles Where x.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault
     End Function
 
     Private Sub Kill()
@@ -278,10 +272,10 @@ Public NotInheritable Class MainBot
 #End Region
 
 #Region "Access"
-    Public Shared Function Wc3MajorVersion() As Byte
-        Return Wc3Version(2)
+    Public Shared Function WC3MajorVersion() As Byte
+        Return WC3Version(2)
     End Function
-    Public Shared Function Wc3Version() As Byte()
+    Public Shared Function WC3Version() As Byte()
         Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
         Dim exeV(0 To 3) As Byte
         Dim ss() = My.Settings.exeVersion.Split("."c)
@@ -294,7 +288,7 @@ Public NotInheritable Class MainBot
         Next i
         Return exeV
     End Function
-    Public Shared Function Wc3Path() As String
+    Public Shared Function WC3Path() As String
         Return My.Settings.war3path
     End Function
     Public Shared Function MapPath() As String
@@ -308,10 +302,10 @@ Public NotInheritable Class MainBot
         Dim map = New W3Map("Maps\",
                             "AdminGame.w3x",
                             filesize:=1,
-                            crc32:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
-                            sha1Checksum:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
-                            xoroChecksum:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
-                            numSlots:=2)
+                            contentChecksumCRC32:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
+                            contentChecksumSHA1:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
+                            contentChecksumXORO:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
+                            slotCount:=2)
         map.slots(1).contents = New W3SlotContentsComputer(map.slots(1), W3Slot.ComputerLevel.Normal)
         Dim header = New W3GameHeader("Admin Game",
                                       My.Resources.ProgramName,
@@ -320,14 +314,14 @@ Public NotInheritable Class MainBot
                                       0,
                                       0,
                                       options:=New String() {"-permanent"},
-                                      numplayerslots:=map.NumPlayerSlots)
+                                      playerSlotCount:=map.NumPlayerSlots)
         Dim settings = New ServerSettings(map:=map,
                                           header:=header,
                                           allowUpload:=False,
-                                          defaultSlotLockState:=W3Slot.Lock.frozen,
+                                          defaultSlotLockState:=W3Slot.Lock.Frozen,
                                           instances:=0,
                                           password:=password,
-                                          is_admin_game:=True)
+                                          isAdminGame:=True)
         Dim server = CreateServer(name, settings)
         Dim lan As W3LanAdvertiser
         lan = New W3LanAdvertiser(Me, name, listenPort, remoteHost)
@@ -388,7 +382,7 @@ Public NotInheritable Class MainBot
     End Sub
 
     Private Sub CatchClientReceivedPacket(ByVal client As BnetClient, ByVal packet As BnetPacket)
-        If packet.id <> BnetPacketID.ChatEvent Then Return
+        If packet.id <> BnetPacketId.ChatEvent Then Return
 
         Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
         Dim id = CType(vals("event id"), BnetPacket.ChatEventId)
@@ -399,7 +393,7 @@ Public NotInheritable Class MainBot
         If id <> Bnet.BnetPacket.ChatEventId.Talk And id <> Bnet.BnetPacket.ChatEventId.Whisper Then
             Return
         ElseIf text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
-            If text.ToLower() <> "?trigger" Then
+            If text.ToUpperInvariant <> "?TRIGGER" Then
                 Return
             End If
         End If
@@ -409,14 +403,14 @@ Public NotInheritable Class MainBot
         If user Is Nothing Then Return
 
         'Process ?Trigger command
-        If text.ToLower() = "?trigger" Then
-            client.QueueSendWhisper(username, "Command prefix is '{0}'".frmt(My.Settings.commandPrefix))
+        If text.ToUpperInvariant = "?TRIGGER" Then
+            client.QueueSendWhisper(username, "Command prefix is '{0}'".Frmt(My.Settings.commandPrefix))
             Return
         End If
 
         'Process prefixed commands
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
-        Dim commandResult = ClientCommands.ProcessCommand(client, user, breakQuotedWords(commandText))
+        Dim commandResult = ClientCommands.ProcessCommand(client, user, BreakQuotedWords(commandText))
         commandResult.CallWhenValueReady(
             Sub(message, messageException)
                 If messageException IsNot Nothing Then
@@ -442,20 +436,20 @@ Public NotInheritable Class MainBot
                                         ByVal player As W3Player,
                                         ByVal text As String)
         If text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
-            If text.ToLower() <> "?trigger" Then
+            If text.ToUpperInvariant <> "?TRIGGER" Then
                 Return
             End If
         End If
 
         'Process ?trigger command
-        If text.ToLower() = "?trigger" Then
+        If text.ToUpperInvariant = "?TRIGGER" Then
             game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(My.Settings.commandPrefix), player)
             Return
         End If
 
         'Process prefixed commands
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
-        game.QueueCommandProcessText(player, breakQuotedWords(commandText)).CallWhenValueReady(
+        game.QueueCommandProcessText(player, BreakQuotedWords(commandText)).CallWhenValueReady(
             Sub(message, messageException)
                 If messageException IsNot Nothing Then
                     game.QueueSendMessageTo("Failed: {0}".Frmt(messageException.Message), player)
@@ -468,10 +462,10 @@ Public NotInheritable Class MainBot
         )
     End Sub
 
-    Private Sub CatchClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClient.States, ByVal new_state As BnetClient.States)
+    Private Sub CatchClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClientState, ByVal new_state As BnetClientState)
         RaiseEvent ClientStateChanged(sender, old_state, new_state)
     End Sub
-    Private Sub CatchServerStateChanged(ByVal sender As W3Server, ByVal old_state As W3ServerStates, ByVal new_state As W3ServerStates)
+    Private Sub CatchServerStateChanged(ByVal sender As W3Server, ByVal old_state As W3ServerState, ByVal new_state As W3ServerState)
         RaiseEvent ServerStateChanged(sender, old_state, new_state)
     End Sub
 #End Region
@@ -484,16 +478,16 @@ Public NotInheritable Class MainBot
         Return ref.QueueAction(AddressOf Kill)
     End Function
     Public Function QueueCreateLanAdmin(ByVal name As String,
-                                       ByVal password As String,
-                                       Optional ByVal remote_host As String = "localhost",
-                                       Optional ByVal listen_port As UShort = 0) As IFuture
-        Return ref.QueueFunc(Function() CreateLanAdmin(name, password, remote_host, listen_port)).Defuturized
+                                        ByVal password As String,
+                                        Optional ByVal remoteHostName As String = "localhost",
+                                        Optional ByVal listenPort As UShort = 0) As IFuture
+        Return ref.QueueFunc(Function() CreateLanAdmin(name, password, remoteHostName, listenPort)).Defuturized
     End Function
     Public Function QueueAddWidget(ByVal widget As IBotWidget) As IFuture
         Return ref.QueueAction(Sub() AddWidget(widget))
     End Function
-    Public Function QueueRemoveWidget(ByVal type_name As String, ByVal name As String) As IFuture
-        Return ref.QueueAction(Sub() RemoveWidget(type_name, name))
+    Public Function QueueRemoveWidget(ByVal typeName As String, ByVal name As String) As IFuture
+        Return ref.QueueAction(Sub() RemoveWidget(typeName, name))
     End Function
     Public Function QueueRemoveServer(ByVal name As String) As IFuture
         Return ref.QueueAction(Sub() KillServer(name))
@@ -561,17 +555,17 @@ Public Class PortPool
 
     Public Enum TryAddPortOutcome
         AlreadyInPool
-        AddedToPool
-        '''<summary>The port was still in used when removed from the pool, and was still in use now after being re-added.</summary>
-        ReAddedToPoolWhileStillInUse
+        Added
+        '''<summary>The port was still in use when removed from the pool, and is still in use now after being re-added.</summary>
+        ReturnedButStillInUse
     End Enum
     Public Function TryAddPort(ByVal port As UShort) As TryAddPortOutcome
         SyncLock lock
             If PortPool.Contains(port) Then Return TryAddPortOutcome.AlreadyInPool
             PortPool.Add(port)
-            If OutPorts.Contains(port) Then Return TryAddPortOutcome.ReAddedToPoolWhileStillInUse
+            If OutPorts.Contains(port) Then Return TryAddPortOutcome.ReturnedButStillInUse
             InPorts.Add(port)
-            Return TryAddPortOutcome.AddedToPool
+            Return TryAddPortOutcome.Added
         End SyncLock
     End Function
 

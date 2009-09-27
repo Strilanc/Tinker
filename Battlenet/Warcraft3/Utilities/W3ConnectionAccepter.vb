@@ -6,48 +6,13 @@
         Private ReadOnly logger As Logger
         Private ReadOnly sockets As New HashSet(Of W3Socket)
         Private ReadOnly lock As New Object()
-        Private ReadOnly costPerPacket As Double
-        Private ReadOnly costPerPacketData As Double
-        Private ReadOnly costPerNonGameAction As Double
-        Private ReadOnly costPerNonGameActionData As Double
-        Private ReadOnly costLimit As Double
-        Private ReadOnly costRecoveredPerSecond As Double
-        Private ReadOnly initialSlack As Double
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(initialSlack >= 0)
-            Contract.Invariant(costPerPacket >= 0)
-            Contract.Invariant(costPerPacketData >= 0)
-            Contract.Invariant(costPerNonGameAction >= 0)
-            Contract.Invariant(costPerNonGameActionData >= 0)
-            Contract.Invariant(costLimit >= 0)
-            Contract.Invariant(costRecoveredPerSecond > 0)
             Contract.Invariant(_accepter IsNot Nothing)
         End Sub
 
-        Public Sub New(Optional ByVal logger As Logger = Nothing,
-                       Optional ByVal initialSlack As Double = 0,
-                       Optional ByVal costPerPacket As Double = 0,
-                       Optional ByVal costPerPacketData As Double = 0,
-                       Optional ByVal costPerNonGameAction As Double = 0,
-                       Optional ByVal costPerNonGameActionData As Double = 0,
-                       Optional ByVal costLimit As Double = 0,
-                       Optional ByVal costRecoveredPerSecond As Double = 1)
-            Contract.Requires(initialSlack >= 0)
-            Contract.Requires(costPerPacket >= 0)
-            Contract.Requires(costPerPacketData >= 0)
-            Contract.Requires(costPerNonGameAction >= 0)
-            Contract.Requires(costPerNonGameActionData >= 0)
-            Contract.Requires(costLimit >= 0)
-            Contract.Requires(costRecoveredPerSecond > 0)
+        Protected Sub New(Optional ByVal logger As Logger = Nothing)
             Me.logger = If(logger, New Logger)
-            Me.initialSlack = initialSlack
-            Me.costPerNonGameAction = costPerNonGameActionData
-            Me.costPerNonGameActionData = costPerNonGameActionData
-            Me.costPerPacket = costPerPacket
-            Me.costPerPacketData = costPerPacketData
-            Me.costLimit = costLimit
-            Me.costRecoveredPerSecond = costRecoveredPerSecond
             AddHandler _accepter.AcceptedConnection, AddressOf OnAcceptConnection
         End Sub
 
@@ -79,14 +44,7 @@
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
             Try
-                Dim socket = New W3Socket(New PacketSocket(client, 60.Seconds, logger),
-                                          initialSlack,
-                                          costPerPacket,
-                                          costPerPacketData,
-                                          costPerNonGameAction,
-                                          costPerNonGameActionData,
-                                          costLimit,
-                                          costRecoveredPerSecond)
+                Dim socket = New W3Socket(New PacketSocket(client, 60.Seconds, logger))
                 logger.log("New player connecting from {0}.".frmt(socket.Name), LogMessageType.Positive)
 
                 SyncLock lock
@@ -94,21 +52,21 @@
                 End SyncLock
                 socket.FutureReadPacket().CallWhenValueReady(
                     Sub(packet, packetException)
-                                                                 If Not TryRemoveSocket(socket) Then  Return
-                                                                 If packetException IsNot Nothing Then
-                                                                     socket.Disconnect(expected:=False, reason:=packetException.ToString)
-                                                                     logger.Log(packetException.ToString, LogMessageType.Problem)
-                                                                     Return
-                                                                 End If
+                        If Not TryRemoveSocket(socket) Then  Return
+                        If packetException IsNot Nothing Then
+                            socket.Disconnect(expected:=False, reason:=packetException.ToString)
+                            logger.Log(packetException.ToString, LogMessageType.Problem)
+                            Return
+                        End If
 
-                                                                 Try
-                                                                     GetConnectingPlayer(socket, packet)
-                                                                 Catch e As Exception
-                                                                     Dim msg = "Error receiving {0} from {1}: {2}".Frmt(packet.id, socket.Name, e)
-                                                                     logger.Log(msg, LogMessageType.Problem)
-                                                                     socket.Disconnect(expected:=False, reason:=msg)
-                                                                 End Try
-                                                             End Sub
+                        Try
+                            GetConnectingPlayer(socket, packet)
+                        Catch e As Exception
+                            Dim msg = "Error receiving {0} from {1}: {2}".Frmt(packet.id, socket.Name, e)
+                            logger.Log(msg, LogMessageType.Problem)
+                            socket.Disconnect(expected:=False, reason:=msg)
+                        End Try
+                    End Sub
                 )
                 FutureWait(EXPIRY_PERIOD).CallWhenReady(
                     Sub()
@@ -139,14 +97,7 @@
         Public Event Connection(ByVal sender As W3ConnectionAccepter, ByVal player As W3ConnectingPlayer)
 
         Public Sub New(Optional ByVal logger As Logger = Nothing)
-            MyBase.New(logger,
-                       costLimit:=100,
-                       costRecoveredPerSecond:=20,
-                       costPerNonGameAction:=1,
-                       costPerNonGameActionData:=0.1,
-                       costPerPacket:=0,
-                       costperpacketdata:=0,
-                       initialSlack:=0)
+            MyBase.New(logger)
         End Sub
 
         Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)

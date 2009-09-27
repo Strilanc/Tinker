@@ -15,8 +15,8 @@ Public Class PacketStream
 
     Private ReadOnly read_header_buffer As Byte()
 
-    Public ReadOnly defaultMode As InterfaceModes
-    Public Enum InterfaceModes
+    Public ReadOnly defaultMode As InterfaceMode
+    Public Enum InterfaceMode
         IncludeSizeBytes
         HideSizeBytes
         RawBytes
@@ -24,14 +24,14 @@ Public Class PacketStream
 #End Region
 
 #Region "New"
-    Public Sub New(ByVal substream As IO.Stream,
+    Public Sub New(ByVal subStream As IO.Stream,
                    ByVal numBytesBeforeSize As Integer,
                    ByVal numSizeBytes As Integer,
-                   ByVal defaultMode As InterfaceModes,
+                   ByVal defaultMode As InterfaceMode,
                    ByVal logger As Logger,
-                   ByVal log_destination As String)
-        MyBase.New(substream)
-        Contract.Requires(substream IsNot Nothing)
+                   ByVal logDestination As String)
+        MyBase.New(subStream)
+        Contract.Requires(subStream IsNot Nothing)
         Contract.Requires(numBytesBeforeSize >= 0)
         Contract.Requires(numSizeBytes > 0)
 
@@ -40,7 +40,7 @@ Public Class PacketStream
         Me.headerSize = numSizeBytes + numBytesBeforeSize
         Me.defaultMode = defaultMode
         Me.logger = If(logger, New Logger)
-        Me.logDestination = log_destination
+        Me.logDestination = logDestination
         ReDim read_header_buffer(0 To numBytesBeforeSize + numSizeBytes - 1)
     End Sub
 #End Region
@@ -53,7 +53,7 @@ Public Class PacketStream
         Contract.Assume(offset + count <= buffer.Length)
         Return ReadWithMode(buffer, offset, count, defaultMode)
     End Function
-    Public Function ReadWithMode(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal mode As InterfaceModes) As Integer
+    Public Function ReadWithMode(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal mode As InterfaceMode) As Integer
         Contract.Requires(buffer IsNot Nothing)
         Contract.Requires(offset >= 0)
         Contract.Requires(count >= 0)
@@ -65,12 +65,12 @@ Public Class PacketStream
         Dim totalSize = 0
 
         'Read header
-        If mode <> InterfaceModes.RawBytes Then
+        If mode <> InterfaceMode.RawBytes Then
             If count < headerSize Then
                 Throw New IO.IOException("Header exceeds buffer size.")
             End If
             Do
-                Dim n = substream.Read(read_header_buffer, readSize, headerSize - readSize)
+                Dim n = subStream.Read(read_header_buffer, readSize, headerSize - readSize)
                 If n = 0 Then Exit Do
                 readSize += n
             Loop While readSize < headerSize
@@ -92,17 +92,17 @@ Public Class PacketStream
 
         'Transfer header to buffer
         Select Case mode
-            Case InterfaceModes.HideSizeBytes
+            Case InterfaceMode.HideSizeBytes
                 For i = 0 To numBytesBeforeSize - 1
                     buffer(i + offset) = read_header_buffer(i)
                 Next i
                 readSize = numBytesBeforeSize
-            Case InterfaceModes.IncludeSizeBytes
+            Case InterfaceMode.IncludeSizeBytes
                 For i = 0 To headerSize - 1
                     buffer(i + offset) = read_header_buffer(i)
                 Next i
                 readSize = headerSize
-            Case InterfaceModes.RawBytes
+            Case InterfaceMode.RawBytes
                 totalSize = count
             Case Else
                 Throw New NotSupportedException("Unrecognized interface mode.")
@@ -110,7 +110,7 @@ Public Class PacketStream
 
         'Read body into buffer
         While readSize < totalSize
-            Dim n = substream.Read(buffer, offset + readSize, totalSize - readSize)
+            Dim n = subStream.Read(buffer, offset + readSize, totalSize - readSize)
             If n = 0 Then
                 Throw New IO.IOException("Fragmented packet body.")
             End If
@@ -126,7 +126,7 @@ Public Class PacketStream
     Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
         WriteWithMode(buffer, offset, count, defaultMode)
     End Sub
-    Public Sub WriteWithMode(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal mode As InterfaceModes)
+    Public Sub WriteWithMode(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal mode As InterfaceMode)
         Contract.Requires(buffer IsNot Nothing)
         Contract.Requires(offset >= 0)
         Contract.Requires(count >= 0)
@@ -134,7 +134,7 @@ Public Class PacketStream
 
         'Convert data format
         Select Case mode
-            Case InterfaceModes.HideSizeBytes
+            Case InterfaceMode.HideSizeBytes
                 If count < numBytesBeforeSize Then Throw New ArgumentException("Data didn't include header data.")
                 Dim data(0 To count + numSizeBytes - 1) As Byte
                 For i = 0 To numBytesBeforeSize - 1
@@ -148,11 +148,11 @@ Public Class PacketStream
                 count = data.Length
                 EncodeSize(count, buffer, offset + numBytesBeforeSize)
 
-            Case InterfaceModes.IncludeSizeBytes
+            Case InterfaceMode.IncludeSizeBytes
                 If count < headerSize Then Throw New ArgumentException("Data didn't include header data.")
                 EncodeSize(count, buffer, offset + numBytesBeforeSize)
 
-            Case InterfaceModes.RawBytes
+            Case InterfaceMode.RawBytes
                 'no changes needed
 
             Case Else
@@ -163,7 +163,7 @@ Public Class PacketStream
         Dim offset_ = offset
         Dim count_ = count
         logger.log(Function() "Sending to {0}: {1}".frmt(logDestination, buffer_.SubArray(offset_, count_).ToHexString), LogMessageType.DataRaw)
-        substream.Write(buffer, offset, count)
+        subStream.Write(buffer, offset, count)
     End Sub
 
     Private Sub EncodeSize(ByVal size As Integer, ByVal buffer() As Byte, ByVal offset As Integer)
@@ -182,26 +182,26 @@ Public Class PacketStream
 End Class
 
 Public Class PacketStreamer
-    Private ReadOnly substream As IO.Stream
-    Private ReadOnly numBytesBeforeSize As Integer
-    Private ReadOnly numSizeBytes As Integer
+    Private ReadOnly subStream As IO.Stream
+    Private ReadOnly headerBytesBeforeSizeCount As Integer
+    Private ReadOnly headerValueSizeByteCount As Integer
     Private ReadOnly headerSize As Integer
     Private ReadOnly maxPacketSize As Integer
 
-    Public Sub New(ByVal substream As IO.Stream,
-                   ByVal numBytesBeforeSize As Integer,
-                   ByVal numSizeBytes As Integer,
+    Public Sub New(ByVal subStream As IO.Stream,
+                   ByVal headerBytesBeforeSizeCount As Integer,
+                   ByVal headerValueSizeByteCount As Integer,
                    ByVal maxPacketSize As Integer)
-        Contract.Requires(substream IsNot Nothing)
-        Contract.Requires(numBytesBeforeSize >= 0)
-        Contract.Requires(numSizeBytes > 0)
-        Contract.Requires(maxPacketSize >= numBytesBeforeSize + numSizeBytes)
+        Contract.Requires(subStream IsNot Nothing)
+        Contract.Requires(headerBytesBeforeSizeCount >= 0)
+        Contract.Requires(headerValueSizeByteCount > 0)
+        Contract.Requires(maxPacketSize >= headerBytesBeforeSizeCount + headerValueSizeByteCount)
 
         Me.maxPacketSize = maxPacketSize
-        Me.substream = substream
-        Me.numSizeBytes = numSizeBytes
-        Me.numBytesBeforeSize = numBytesBeforeSize
-        Me.headerSize = numSizeBytes + numBytesBeforeSize
+        Me.subStream = subStream
+        Me.headerValueSizeByteCount = headerValueSizeByteCount
+        Me.headerBytesBeforeSizeCount = headerBytesBeforeSizeCount
+        Me.headerSize = headerValueSizeByteCount + headerBytesBeforeSizeCount
     End Sub
 
     Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
@@ -210,13 +210,13 @@ Public Class PacketStreamer
         Dim packetData(0 To headerSize - 1) As Byte
         Dim result = New FutureFunction(Of ViewableList(Of Byte))
 
-        FutureIterate(Function() substream.FutureRead(packetData, readSize, packetData.Length - readSize),
+        FutureIterate(Function() subStream.FutureRead(packetData, readSize, packetData.Length - readSize),
             Function(numBytesRead, readException)
                 'Check result
                 If readException IsNot Nothing Then 'read failed
                     result.SetFailed(readException)
                     Return False.Futurized
-                ElseIf numBytesRead <= 0 Then 'substream ended
+                ElseIf numBytesRead <= 0 Then 'subStream ended
                     If readSize = 0 Then
                         result.SetFailed(New IO.IOException("End of stream."))
                     Else
@@ -233,7 +233,7 @@ Public Class PacketStreamer
 
                 'Parse header
                 If readSize = headerSize Then
-                    totalSize = CInt(packetData.SubArray(numBytesBeforeSize, numSizeBytes).ToUInt32())
+                    totalSize = CInt(packetData.SubArray(headerBytesBeforeSizeCount, headerValueSizeByteCount).ToUInt32())
                     If totalSize < headerSize Then
                         'too small
                         result.SetFailed(New IO.IOException("Invalid packet size (less than header size)."))
@@ -264,7 +264,7 @@ Public Class PacketStreamer
 
         'Read header
         Do
-            Dim n = substream.Read(packetData, readSize, headerSize - readSize)
+            Dim n = subStream.Read(packetData, readSize, headerSize - readSize)
             If n = 0 Then Exit Do
             readSize += n
         Loop While readSize < headerSize
@@ -275,7 +275,7 @@ Public Class PacketStreamer
         End If
 
         'Parse header
-        For i = headerSize - 1 To numBytesBeforeSize Step -1
+        For i = headerSize - 1 To headerBytesBeforeSizeCount Step -1
             totalSize <<= 8
             totalSize += packetData(i)
         Next i
@@ -290,7 +290,7 @@ Public Class PacketStreamer
 
         'Read body into buffer
         While readSize < totalSize
-            Dim n = substream.Read(packetData, readSize, totalSize - readSize)
+            Dim n = subStream.Read(packetData, readSize, totalSize - readSize)
             If n = 0 Then
                 Throw New IO.IOException("Fragmented packet (stream ended in the middle of a packet body).")
             End If
@@ -305,8 +305,8 @@ Public Class PacketStreamer
         If packetData.Length < headerSize Then Throw New ArgumentException("Data didn't include header data.")
 
         'Encode size
-        System.Array.Copy(CULng(packetData.Length).Bytes(size:=numSizeBytes), 0, packetData, numBytesBeforeSize, numSizeBytes)
+        System.Array.Copy(CULng(packetData.Length).Bytes(size:=headerValueSizeByteCount), 0, packetData, headerBytesBeforeSizeCount, headerValueSizeByteCount)
 
-        substream.Write(packetData, 0, packetData.Length)
+        subStream.Write(packetData, 0, packetData.Length)
     End Sub
 End Class

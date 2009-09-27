@@ -5,19 +5,19 @@ Imports HostBot.Links
 
 Namespace Commands.Specializations
     Public Class LanCommands
-        Inherits UICommandSet(Of W3LanAdvertiser)
+        Inherits CommandSet(Of W3LanAdvertiser)
 
         Public Sub New()
-            AddCommand(New com_Add)
-            AddCommand(New com_Remove)
-            AddCommand(New com_Host)
+            AddCommand(New CommandAdd)
+            AddCommand(New CommandRemove)
+            AddCommand(New CommandHost)
         End Sub
 
-        Public Class com_Host
+        Public Class CommandHost
             Inherits BaseCommand(Of W3LanAdvertiser)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Host,
-                           2, ArgumentLimits.min,
+                           2, ArgumentLimitType.Min,
                            My.Resources.Command_Client_Host_Help,
                            My.Resources.Command_Client_Host_Access,
                            My.Resources.Command_Client_Host_ExtraHelp)
@@ -28,11 +28,11 @@ Namespace Commands.Specializations
                 'Server settings
                 arguments = arguments.ToList
                 For i = 0 To arguments.Count - 1
-                    Select Case arguments(i).ToLower()
-                        Case "-reserve", "-r"
+                    Select Case arguments(i).ToUpperInvariant
+                        Case "-RESERVE", "-R"
                             arguments(i) = ""
                     End Select
-                    If arguments(i).ToLower Like "-port=*" Then
+                    If arguments(i).ToUpperInvariant Like "-PORT=*" Then
                         arguments(i) = ""
                     End If
                 Next i
@@ -40,7 +40,7 @@ Namespace Commands.Specializations
                                               If(user Is Nothing, My.Resources.ProgramName, user.name),
                                               New W3MapSettings(arguments, map),
                                               target.serverListenPort, 0, 0, arguments, map.NumPlayerSlots)
-                Dim settings = New ServerSettings(map, header, default_listen_ports:={target.serverListenPort})
+                Dim settings = New ServerSettings(map, header, defaultListenPorts:={target.serverListenPort})
                 Dim f_server = target.parent.QueueCreateServer(target.name, settings, "[Not Linked]", True)
 
                 'Create the server, then advertise the game
@@ -54,11 +54,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>Starts advertising a game.</summary>
-        Private Class com_Add
+        Private Class CommandAdd
             Inherits BaseCommand(Of W3LanAdvertiser)
             Public Sub New()
                 MyBase.New("Add",
-                            2, ArgumentLimits.exact,
+                            2, ArgumentLimitType.Exact,
                             "[--Add GameName Map] Adds a game to be advertised.")
             End Sub
             Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
@@ -73,11 +73,11 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>Stops advertising a game.</summary>
-        Private Class com_Remove
+        Private Class CommandRemove
             Inherits BaseCommand(Of W3LanAdvertiser)
             Public Sub New()
                 MyBase.New("Remove",
-                            1, ArgumentLimits.exact,
+                            1, ArgumentLimitType.Exact,
                             "[--Remove GameId] Removes a game being advertised.")
             End Sub
             Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
