@@ -123,12 +123,18 @@
 
     Public Class W3GameAction
         Public ReadOnly id As W3GameActionId
-        Public ReadOnly payload As IPickle(Of Object)
+        Private ReadOnly _payload As IPickle(Of Object)
         Private Shared ReadOnly packetJar As PrefixSwitchJar(Of W3GameActionId) = MakeJar()
 
+        Public ReadOnly Property Payload As IPickle(Of Object)
+            Get
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Return _payload
+            End Get
+        End Property
         Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of W3GameActionId)))
             Contract.Requires(payload IsNot Nothing)
-            Me.payload = payload.Value.payload
+            Me._payload = payload.Value.payload
             Me.id = payload.Value.index
         End Sub
 
@@ -139,17 +145,20 @@
         End Function
 
         Public Overrides Function ToString() As String
-            Return "{0} = {1}".Frmt(id, payload.Description.Value())
+            Return "{0} = {1}".Frmt(id, Payload.Description.Value())
         End Function
 
 #Region "Definition"
         Private Shared Sub reg(ByVal jar As PrefixSwitchJar(Of W3GameActionId),
                                ByVal id As W3GameActionId,
                                ByVal ParamArray subJars() As IJar(Of Object))
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(subJars IsNot Nothing)
             jar.AddPackerParser(id, New TupleJar(id.ToString, subJars).Weaken)
         End Sub
 
         Private Shared Function MakeJar() As PrefixSwitchJar(Of W3GameActionId)
+            Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of W3GameActionId))() IsNot Nothing)
             Dim jar = New PrefixSwitchJar(Of W3GameActionId)("W3GameAction")
 
             'Game controls

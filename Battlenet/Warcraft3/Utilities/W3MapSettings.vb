@@ -241,7 +241,7 @@
             Me.playableWidth = playableWidth
             Me.playableHeight = playableHeight
             If contentChecksumXORO IsNot Nothing Then Me.contentChecksumXORO = contentChecksumXORO.ToView
-            If contentChecksumSHA1 IsNot Nothing Then Me.contentChecksumXORO = contentChecksumSHA1.ToView
+            If contentChecksumSHA1 IsNot Nothing Then Me.contentChecksumSHA1 = contentChecksumSHA1.ToView
             Me.relativePath = relativePath
             Me.gameType = gameType
             If map IsNot Nothing Then

@@ -209,7 +209,7 @@
             Contract.Requires(parent IsNot Nothing)
         End Sub
         Public Overrides Function TakePlayer(ByVal player As W3Player) As W3SlotContents
-            Return New W3SlotContentsPlayer(parent, player)
+            Return New W3SlotContentsPlayer(Parent, player)
         End Function
         Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
             Return WantPlayerPriority.Accept

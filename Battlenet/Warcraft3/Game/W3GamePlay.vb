@@ -44,11 +44,9 @@
             Dim gsf As Double = My.Settings.game_speed_factor
             Dim gtp As Double = My.Settings.game_tick_period
             Dim gll As Double = My.Settings.game_lag_limit
-            Contract.Assume(gsf > 0 AndAlso Not Double.IsNaN(gsf) AndAlso Not Double.IsInfinity(gsf))
-            Contract.Assume(gtp > 0 AndAlso Not Double.IsNaN(gtp) AndAlso Not Double.IsInfinity(gtp))
-            Contract.Assume(gll >= 0)
-            Contract.Assume(Not Double.IsNaN(gll))
-            Contract.Assume(Not Double.IsInfinity(gll))
+            Contract.Assume(gsf > 0 AndAlso gsf.IsFinite)
+            Contract.Assume(gtp > 0 AndAlso gtp.IsFinite)
+            Contract.Assume(gll >= 0 AndAlso gll.IsFinite)
             SettingSpeedFactor = gsf
             SettingTickPeriod = gtp
             SettingLagLimit = gll

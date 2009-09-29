@@ -9,7 +9,7 @@ Namespace Warcraft3
         Public Event Disconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
 
         Public Sub New(ByVal socket As PacketSocket)
-            Contract.Requires(socket IsNot Nothing)
+            Contract.Assume(socket IsNot Nothing) 'bug in contracts required not using requires here
             Me.socket = socket
         End Sub
 

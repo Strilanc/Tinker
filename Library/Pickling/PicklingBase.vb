@@ -116,13 +116,22 @@
     End Class
 
     Public Module PicklingExtensionMethods
-        <Extension()> Public Function Weaken(Of T)(ByVal jar As IJar(Of T)) As IJar(Of Object)
+        <Extension()> <Pure()>
+        Public Function Weaken(Of T)(ByVal jar As IJar(Of T)) As IJar(Of Object)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
             Return New WeakJar(Of T)(jar)
         End Function
-        <Extension()> Public Function Weaken(Of T)(ByVal jar As IPackJar(Of T)) As IPackJar(Of Object)
+        <Extension()> <Pure()>
+        Public Function Weaken(Of T)(ByVal jar As IPackJar(Of T)) As IPackJar(Of Object)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPackJar(Of Object))() IsNot Nothing)
             Return New WeakPackJar(Of T)(jar)
         End Function
-        <Extension()> Public Function Weaken(Of T)(ByVal jar As IParseJar(Of T)) As IParseJar(Of Object)
+        <Extension()> <Pure()>
+        Public Function Weaken(Of T)(ByVal jar As IParseJar(Of T)) As IParseJar(Of Object)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IParseJar(Of Object))() IsNot Nothing)
             Return New WeakParseJar(Of T)(jar)
         End Function
 

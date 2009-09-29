@@ -62,17 +62,13 @@
                 End If
 
                 game.DownloadScheduler.AddClient(index, hasMap).MarkAnyExceptionAsHandled()
-                game.DownloadScheduler.SetLink(index, W3Game.LocalTransferClientKey, True).MarkAnyExceptionAsHandled()
+                game.DownloadScheduler.SetLink(index, W3Game.LocalTransferClientKey, linked:=True).MarkAnyExceptionAsHandled()
                 knowMapState = True
             ElseIf mapDownloadPosition = game.map.FileSize Then
                 logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
-                game.DownloadScheduler.StopTransfer(index, True).MarkAnyExceptionAsHandled()
+                game.DownloadScheduler.StopTransfer(index, complete:=True).MarkAnyExceptionAsHandled()
             Else
-                Dim d = CDbl(mapDownloadPosition)
-                Contract.Assume(d >= 0)
-                Contract.Assume(Not Double.IsNaN(d))
-                Contract.Assume(Not Double.IsInfinity(d))
-                game.DownloadScheduler.UpdateProgress(index, d).MarkAnyExceptionAsHandled()
+                game.DownloadScheduler.UpdateProgress(index, New FiniteDouble(mapDownloadPosition)).MarkAnyExceptionAsHandled()
                 If IsGettingMapFromBot Then
                     BufferMap()
                 End If

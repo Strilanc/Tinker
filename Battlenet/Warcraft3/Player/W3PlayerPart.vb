@@ -14,7 +14,7 @@ Namespace Warcraft3
         Private Sub ReceivePong(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
-            Dim lambda = 0.9
+            Dim lambda = New FiniteDouble(0.9)
             Dim tick As ModInt32 = Environment.TickCount
             Dim salt = CUInt(vals("salt"))
 
@@ -32,11 +32,9 @@ Namespace Warcraft3
             End If
 
             latency *= 1 - lambda
-            latency += lambda * CUInt(tick - stored.time)
+            latency += lambda * New FiniteDouble(CUInt(tick - stored.time))
             If latency = 0 Then latency = Double.Epsilon
             Contract.Assume(latency >= 0)
-            Contract.Assume(Not Double.IsNaN(latency))
-            Contract.Assume(Not Double.IsInfinity(latency))
         End Sub
 
         Private Sub ReceiveLeaving(ByVal packet As W3Packet)

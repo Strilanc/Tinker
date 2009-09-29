@@ -6,26 +6,20 @@ End Enum
 
 '''<summary>Schedules transfers for sharing a copyable resource among multiple clients.</summary>
 Public Class TransferScheduler(Of TClientKey)
-    Private ReadOnly typicalRate As Double
+    Private ReadOnly typicalRate As FiniteDouble
     Private ReadOnly clients As New Dictionary(Of TClientKey, Client)
     Private ReadOnly ref As ICallQueue
-    Private ReadOnly fileSize As Double
-    Private ReadOnly typicalSwitchTime As Double
+    Private ReadOnly fileSize As FiniteDouble
+    Private ReadOnly typicalSwitchTime As FiniteDouble
 
     Public Event Actions(ByVal started As List(Of TransferEndpoints), ByVal stopped As List(Of TransferEndpoints))
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(clients IsNot Nothing)
         Contract.Invariant(ref IsNot Nothing)
-        Contract.Invariant(fileSize > 0)
-        Contract.Invariant(Not Double.IsInfinity(fileSize))
-        Contract.Invariant(Not Double.IsNaN(fileSize))
-        Contract.Invariant(typicalRate > 0)
-        Contract.Invariant(Not Double.IsInfinity(typicalRate))
-        Contract.Invariant(Not Double.IsNaN(typicalRate))
-        Contract.Invariant(typicalSwitchTime >= 0)
-        Contract.Invariant(Not Double.IsInfinity(typicalSwitchTime))
-        Contract.Invariant(Not Double.IsNaN(typicalSwitchTime))
+        'Contract.Invariant(fileSize > 0)
+        'Contract.Invariant(typicalRate > 0)
+        'Contract.Invariant(typicalSwitchTime >= 0)
     End Sub
 
     Public Class TransferEndpoints
@@ -38,19 +32,13 @@ Public Class TransferScheduler(Of TClientKey)
         End Sub
     End Class
 
-    Public Sub New(ByVal typicalRate As Double,
-                   ByVal typicalSwitchTime As Double,
-                   ByVal fileSize As Double,
+    Public Sub New(ByVal typicalRate As FiniteDouble,
+                   ByVal typicalSwitchTime As FiniteDouble,
+                   ByVal fileSize As FiniteDouble,
                    Optional ByVal pq As ICallQueue = Nothing)
-        Contract.Requires(fileSize > 0)
-        Contract.Requires(Not Double.IsInfinity(fileSize))
-        Contract.Requires(Not Double.IsNaN(fileSize))
-        Contract.Requires(typicalRate > 0)
-        Contract.Requires(Not Double.IsInfinity(typicalRate))
-        Contract.Requires(Not Double.IsNaN(typicalRate))
-        Contract.Requires(typicalSwitchTime >= 0)
-        Contract.Requires(Not Double.IsInfinity(typicalSwitchTime))
-        Contract.Requires(Not Double.IsNaN(typicalSwitchTime))
+        Contract.Assume(fileSize > 0) 'bug in contracts required not using requires here
+        Contract.Assume(typicalRate > 0)
+        Contract.Assume(typicalSwitchTime >= 0)
         Me.ref = If(pq, New ThreadPooledCallQueue)
         Me.typicalRate = typicalRate
         Me.typicalSwitchTime = typicalSwitchTime
@@ -60,14 +48,14 @@ Public Class TransferScheduler(Of TClientKey)
     '''<summary>Adds a new client to the pool.</summary>
     Public Function AddClient(ByVal clientKey As TClientKey,
                               ByVal completed As Boolean,
-                              Optional ByVal expectedRate As Double = 0) As IFuture
-        Contract.Requires(expectedRate >= 0)
-        Contract.Requires(expectedRate = 0 OrElse Not Double.IsInfinity(expectedRate))
-        Contract.Requires(expectedRate = 0 OrElse Not Double.IsNaN(expectedRate))
+                              Optional ByVal expectedRate As FiniteDouble = Nothing) As IFuture
+        'Contract.Requires(expectedRate = Nothing OrElse expectedRate > 0)
+        If expectedRate = Nothing Then expectedRate = typicalRate
         Return ref.QueueAction(
             Sub()
                 If clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("client key already exists")
-                clients(clientKey) = New Client(clientKey, completed, If(expectedRate = 0, typicalRate, expectedRate))
+                Contract.Assume(expectedRate > 0)
+                clients(clientKey) = New Client(clientKey, completed, expectedRate)
             End Sub
         )
     End Function
@@ -126,10 +114,11 @@ Public Class TransferScheduler(Of TClientKey)
                         If Not .HasRateBeenMeasured AndAlso Not .busy Then  Return "?"
 
                         Dim d = .GetCurRateEstimate * 1000
-                        Dim f = 1
+                        Dim f = New FiniteDouble(1.0)
                         For Each s In {"B", "KiB", "MiB", "GiB", "TiB", "PiB"}
                             Dim f2 = f * 1024
                             If d < f2 Then
+                                Contract.Assume(f <> 0)
                                 Return "{0:0.0} {1}/s".Frmt(d / f, s)
                             End If
                             f = f2
@@ -157,18 +146,16 @@ Public Class TransferScheduler(Of TClientKey)
 
     '''<summary>Updates the progress of a transfer to or from the given client.</summary>
     Public Function UpdateProgress(ByVal clientKey As TClientKey,
-                                   ByVal progress As Double) As IFuture
+                                   ByVal progress As FiniteDouble) As IFuture
         Contract.Requires(progress >= 0)
-        Contract.Requires(Not Double.IsInfinity(progress))
-        Contract.Requires(Not Double.IsNaN(progress))
-        Dim progress_ = progress 'avoids hoisted argument contract verification flaw
         Return ref.QueueAction(
             Sub()
                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client key.")
                 Dim client = clients(clientKey)
                 If Not client.busy Then  Throw New InvalidOperationException("Client isn't transfering.")
-                client.UpdateProgress(progress_)
-                client.other.UpdateProgress(progress_)
+                Contract.Assume(progress >= 0)
+                client.UpdateProgress(progress)
+                client.other.UpdateProgress(progress)
             End Sub
         )
     End Function
@@ -183,8 +170,8 @@ Public Class TransferScheduler(Of TClientKey)
                 Dim client = clients(clientKey)
                 If client.busy Then
                     Dim other = client.other
-                    client.SetNotTransfering(complete)
-                    other.SetNotTransfering(complete)
+                    client.SetNotTransfering(nowFinished:=complete)
+                    other.SetNotTransfering(nowFinished:=complete)
                 End If
             End Sub
         )
@@ -216,8 +203,8 @@ Public Class TransferScheduler(Of TClientKey)
                     ElseIf Math.Min(downloader.GetTransferingTime, curUploader.GetTransferingTime) > Client.MIN_SWITCH_PERIOD Then
                         'Stop transfer if a significantly better uploader is available
                         Dim remaining = (fileSize - downloader.GetLastProgress)
-                        Dim curExpectedTime = remaining / downloader.GetCurRateEstimate()
-                        Dim newExpectedTime = typicalSwitchTime + 1.25 * remaining / Math.Min(downloader.GetMaxRateEstimate, bestUploader.GetMaxRateEstimate())
+                        Dim curExpectedTime = remaining / downloader.GetCurRateEstimate
+                        Dim newExpectedTime = typicalSwitchTime + 1.25 * remaining / FiniteDouble.Min(downloader.GetMaxRateEstimate, bestUploader.GetMaxRateEstimate())
                         If curUploader.IsProbablyFrozen OrElse newExpectedTime < curExpectedTime Then
                             breaks.Add(New TransferEndpoints(curUploader.key, downloader.key))
                         End If
@@ -239,12 +226,12 @@ Public Class TransferScheduler(Of TClientKey)
     End Sub
 
     Private Class Client
-        Private maxRateEstimate As Double
-        Private curRateEstimate As Double
+        Private maxRateEstimate As FiniteDouble
+        Private curRateEstimate As FiniteDouble
 
         Private lastUpdateTime As ModInt32
-        Private lastUpdateProgress As Double
-        Private lastStartProgress As Double
+        Private lastUpdateProgress As FiniteDouble
+        Private lastStartProgress As FiniteDouble
         Private lastStartTime As ModInt32
         Private numMeasurements As Integer
 
@@ -265,55 +252,43 @@ Public Class TransferScheduler(Of TClientKey)
             End Get
         End Property
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(maxRateEstimate > 0)
-            Contract.Invariant(Not Double.IsInfinity(maxRateEstimate))
-            Contract.Invariant(Not Double.IsNaN(maxRateEstimate))
-            Contract.Invariant(curRateEstimate > 0)
-            Contract.Invariant(Not Double.IsInfinity(curRateEstimate))
-            Contract.Invariant(Not Double.IsNaN(curRateEstimate))
-            Contract.Invariant(lastUpdateProgress >= 0)
-            Contract.Invariant(Not Double.IsInfinity(lastUpdateProgress))
-            Contract.Invariant(Not Double.IsNaN(lastUpdateProgress))
-            Contract.Invariant(lastStartProgress >= 0)
-            Contract.Invariant(Not Double.IsInfinity(lastStartProgress))
-            Contract.Invariant(Not Double.IsNaN(lastStartProgress))
-            Contract.Invariant(links IsNot Nothing)
+            'Contract.Invariant(maxRateEstimate > 0)
+            'Contract.Invariant(curRateEstimate > 0)
+            'Contract.Invariant(lastUpdateProgress >= 0)
+            'Contract.Invariant(lastStartProgress >= 0)
+            Contract.Invariant(_links IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal key As TClientKey, ByVal completed As Boolean, ByVal typicalRatePerMillisecond As Double)
+        Public Sub New(ByVal key As TClientKey, ByVal completed As Boolean, ByVal typicalRatePerMillisecond As FiniteDouble)
             Contract.Requires(typicalRatePerMillisecond > 0)
-            Contract.Requires(Not Double.IsInfinity(typicalRatePerMillisecond))
-            Contract.Requires(Not Double.IsNaN(typicalRatePerMillisecond))
             Me.key = key
             Me.completed = completed
             Me.maxRateEstimate = typicalRatePerMillisecond
             Me.curRateEstimate = typicalRatePerMillisecond
+            Contract.Assume(lastUpdateProgress >= 0)
+            Contract.Assume(lastStartProgress >= 0)
         End Sub
 
 #Region "Properties"
-        Public ReadOnly Property GetTransferingTime() As Double
+        Public ReadOnly Property GetTransferingTime() As FiniteDouble
             Get
-                Contract.Ensures(Contract.Result(Of Double)() >= 0)
-                Contract.Ensures(Not Double.IsNaN(Contract.Result(Of Double)()))
-                Contract.Ensures(Not Double.IsInfinity(Contract.Result(Of Double)()))
+                'Contract.Ensures(Contract.Result(Of FiniteDouble)() >= 0)
                 If Not busy Then Return 0
-                Return CUInt(Environment.TickCount - lastStartTime)
+                Return New FiniteDouble(CUInt(Environment.TickCount - lastStartTime))
             End Get
         End Property
-        Public ReadOnly Property GetMaxRateEstimate() As Double
+        Public ReadOnly Property GetMaxRateEstimate() As FiniteDouble
             Get
-                Contract.Ensures(Contract.Result(Of Double)() > 0)
-                Contract.Ensures(Not Double.IsNaN(Contract.Result(Of Double)()))
-                Contract.Ensures(Not Double.IsInfinity(Contract.Result(Of Double)()))
+                'Contract.Ensures(Contract.Result(Of FiniteDouble)() > 0)
                 If numMeasurements = 0 Then Return curRateEstimate
-                Return maxRateEstimate * (1 + 1 / numMeasurements)
+                Dim result = maxRateEstimate * New FiniteDouble(1 + 1 / numMeasurements)
+                Contract.Assume(result.Value > 0)
+                Return result
             End Get
         End Property
-        Public ReadOnly Property GetCurRateEstimate() As Double
+        Public ReadOnly Property GetCurRateEstimate() As FiniteDouble
             Get
-                Contract.Ensures(Contract.Result(Of Double)() > 0)
-                Contract.Ensures(Not Double.IsNaN(Contract.Result(Of Double)()))
-                Contract.Ensures(Not Double.IsInfinity(Contract.Result(Of Double)()))
+                'Contract.Ensures(Contract.Result(Of FiniteDouble)() > 0)
                 Return curRateEstimate
             End Get
         End Property
@@ -323,11 +298,9 @@ Public Class TransferScheduler(Of TClientKey)
             End Get
         End Property
 
-        Public ReadOnly Property GetLastProgress() As Double
+        Public ReadOnly Property GetLastProgress() As FiniteDouble
             Get
-                Contract.Ensures(Contract.Result(Of Double)() >= 0)
-                Contract.Ensures(Not Double.IsNaN(Contract.Result(Of Double)()))
-                Contract.Ensures(Not Double.IsInfinity(Contract.Result(Of Double)()))
+                'Contract.Ensures(Contract.Result(Of FiniteDouble)() >= 0)
                 Return lastUpdateProgress
             End Get
         End Property
@@ -339,10 +312,8 @@ Public Class TransferScheduler(Of TClientKey)
 #End Region
 
 #Region "State"
-        Public Sub SetTransfering(ByVal progress As Double, ByVal destinationClient As Client)
+        Public Sub SetTransfering(ByVal progress As FiniteDouble, ByVal destinationClient As Client)
             Contract.Requires(progress >= 0)
-            Contract.Requires(Not Double.IsInfinity(progress))
-            Contract.Requires(Not Double.IsNaN(progress))
             If busy Then Return
 
             'Update state
@@ -356,10 +327,8 @@ Public Class TransferScheduler(Of TClientKey)
             lastUpdateTime = lastStartTime
         End Sub
 
-        Public Sub UpdateProgress(ByVal progress As Double)
+        Public Sub UpdateProgress(ByVal progress As FiniteDouble)
             Contract.Requires(progress >= 0)
-            Contract.Requires(Not Double.IsInfinity(progress))
-            Contract.Requires(Not Double.IsNaN(progress))
             If Not busy Then Return
 
             'Measure cur rate
@@ -368,8 +337,12 @@ Public Class TransferScheduler(Of TClientKey)
             If progress <= lastUpdateProgress Then Return
 
             Dim dp = progress - lastUpdateProgress
-            Dim dt = CUInt(time - lastUpdateTime)
+            Dim dt = New FiniteDouble(CUInt(time - lastUpdateTime))
+            Contract.Assume(dt.Value <> 0)
             Dim r = dp / dt
+            Dim dc = dt / 1000
+            Contract.Assume(dc.Value <> 0)
+            Contract.Assume(CUR_ESTIMATE_CONVERGENCE_FACTOR > 0)
             Dim c = CUR_ESTIMATE_CONVERGENCE_FACTOR ^ (dt / 1000)
             curRateEstimate *= c
             curRateEstimate += r * (1 - c)
@@ -390,7 +363,7 @@ Public Class TransferScheduler(Of TClientKey)
             Dim dt = GetTransferingTime()
             If dt > 0 And dp > 0 Then
                 Dim r = dp / dt
-                Dim c = If(numMeasurements = 0 OrElse r > maxRateEstimate, 0, 0.99)
+                Dim c = New FiniteDouble(If(numMeasurements = 0 OrElse r > maxRateEstimate, 0, 0.99))
                 maxRateEstimate *= c
                 maxRateEstimate += r * (1 - c)
                 numMeasurements += 1

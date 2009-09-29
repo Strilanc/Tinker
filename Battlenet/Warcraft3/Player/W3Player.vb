@@ -21,7 +21,7 @@
         Private ReadOnly eref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly pingQueue As New Queue(Of W3PlayerPingRecord)
         Private numPeerConnections As Integer
-        Private latency As Double
+        Private latency As FiniteDouble
         Public hasVotedToStart As Boolean
         Public numAdminTries As Integer
 
@@ -29,8 +29,6 @@
             Contract.Invariant(numPeerConnections >= 0)
             Contract.Invariant(numPeerConnections <= 12)
             Contract.Invariant(latency >= 0)
-            Contract.Invariant(Not Double.IsNaN(latency))
-            Contract.Invariant(Not Double.IsInfinity(latency))
             Contract.Invariant(pingQueue IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
@@ -69,9 +67,6 @@
             hostFail.SetFailed(New ArgumentException("Fake players can't host."))
             Me.testCanHost = hostFail
             Me.testCanHost.MarkAnyExceptionAsHandled()
-
-            Contract.Assume(Not Double.IsNaN(latency))
-            Contract.Assume(Not Double.IsInfinity(latency))
         End Sub
 
         '''<summary>Creates a real player.</summary>
@@ -134,8 +129,6 @@
             'Test hosting
             Me.testCanHost = FutureCreateConnectedTcpClient(socket.RemoteEndPoint.Address, listenPort)
             Me.testCanHost.MarkAnyExceptionAsHandled()
-            Contract.Assume(Not Double.IsNaN(latency))
-            Contract.Assume(Not Double.IsInfinity(latency))
         End Sub
 
         Public ReadOnly Property CanHost() As HostTestResult

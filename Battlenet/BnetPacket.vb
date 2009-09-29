@@ -198,10 +198,10 @@ Namespace Bnet
         <Flags()>
         Public Enum GameStates As UInteger
             [Private] = 1 << 0
-            Full = 1 << 2
-            NotEmpty = 1 << 3 'really unsure about this one
-            InProgress = 1 << 4
-            Unknown0x10 = 1 << 5
+            Full = 1 << 1
+            NotEmpty = 1 << 2 'really unsure about this one
+            InProgress = 1 << 3
+            Unknown0x10 = 1 << 4
         End Enum
         Public Enum JoinChannelType As UInteger
             NoCreate = 0
@@ -419,7 +419,7 @@ Namespace Bnet
             Contract.Requires(clientPublicKey IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Return New BnetPacket(BnetPacketId.AccountLogOnBegin, New Dictionary(Of String, Object) From {
-                    {"client public key", clientPublicKey},
+                    {"client public key", clientPublicKey.ToArray},
                     {"username", userName}
                 })
         End Function
@@ -427,7 +427,7 @@ Namespace Bnet
             Contract.Requires(clientPasswordProof IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Return New BnetPacket(BnetPacketId.AccountLogOnFinish, New Dictionary(Of String, Object) From {
-                    {"client password proof", clientPasswordProof}
+                    {"client password proof", clientPasswordProof.ToArray}
                 })
         End Function
         Public Shared Function MakeEnterChat() As BnetPacket
@@ -592,12 +592,12 @@ Namespace Bnet
                 Select Case byteOrder
                     Case byteOrder.BigEndian
                         For i = numDigits - 1 To 0 Step -1
-                            digits(i) = Hex(u And CULng(&HF)).ToUpperInvariant()(0)
+                            digits(i) = Hex(u And CULng(&HF)).ToLowerInvariant()(0)
                             u >>= 4
                         Next i
                     Case byteOrder.LittleEndian
                         For i = 0 To numDigits - 1
-                            digits(i) = Hex(u And CULng(&HF)).ToUpperInvariant()(0)
+                            digits(i) = Hex(u And CULng(&HF)).ToLowerInvariant()(0)
                             u >>= 4
                         Next i
                     Case Else

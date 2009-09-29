@@ -1,10 +1,23 @@
 Public Class BotUser
-    Public ReadOnly name As String
+    Private ReadOnly _name As String
     Private settingMap As New Dictionary(Of String, String)
     Private permissionMap As New Dictionary(Of String, UInteger)
     Private Const MAX_PERMISSION_VALUE As UInteger = 10
     Private Const MIN_PERMISSION_VALUE As UInteger = 0
     Private Const SEPARATION_CHAR As Char = ";"c
+    Public ReadOnly Property Name As String
+        Get
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return _name
+        End Get
+    End Property
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(Name IsNot Nothing)
+        Contract.Invariant(settingMap IsNot Nothing)
+        Contract.Invariant(permissionMap IsNot Nothing)
+    End Sub
+
 
     Public Shared Function Pack(ByVal value As String) As String
         value = value.Replace("\", "\/")
@@ -65,7 +78,7 @@ Public Class BotUser
     Public Sub New(ByVal name As String,
                    Optional ByVal packedPermissions As String = Nothing,
                    Optional ByVal packedSettings As String = Nothing)
-        Me.name = name
+        Me._name = name
         If packedPermissions IsNot Nothing Then
             UpdatePermissions(packedPermissions)
         End If
@@ -101,20 +114,20 @@ Public Class BotUser
     End Property
 
     Public Sub Save(ByVal bw As IO.BinaryWriter)
-        bw.Write(name)
+        bw.Write(Name)
         bw.Write(CUShort(settingMap.Keys.Count))
-        For Each key As String In settingMap.Keys
+        For Each key In settingMap.Keys
             bw.Write(key)
             bw.Write(settingMap(key))
         Next key
         bw.Write(CUShort(permissionMap.Keys.Count))
-        For Each key As String In permissionMap.Keys
+        For Each key In permissionMap.Keys
             bw.Write(key)
             bw.Write(permissionMap(key))
         Next key
     End Sub
     Public Sub New(ByVal reader As IO.BinaryReader)
-        name = reader.ReadString()
+        Me._name = reader.ReadString()
         For i = 1 To reader.ReadUInt16()
             settingMap(reader.ReadString()) = reader.ReadString()
         Next i
@@ -124,12 +137,12 @@ Public Class BotUser
     End Sub
 
     Public Function Clone(Optional ByVal newName As String = Nothing) As BotUser
-        If newName Is Nothing Then newName = name
+        If newName Is Nothing Then newName = Name
         Dim newUser As New BotUser(newName)
-        For Each key As String In settingMap.Keys
+        For Each key In settingMap.Keys
             newUser.settingMap(key) = settingMap(key)
         Next key
-        For Each key As String In permissionMap.Keys
+        For Each key In permissionMap.Keys
             newUser.permissionMap(key) = permissionMap(key)
         Next key
         Return newUser
@@ -150,8 +163,8 @@ Public Class BotUser
         Return user2 < user1
     End Operator
     Public Shared Operator <=(ByVal user1 As BotUser, ByVal user2 As BotUser) As Boolean
-        For Each user As BotUser In New BotUser() {user1, user2}
-            For Each key As String In user.permissionMap.Keys
+        For Each user In {user1, user2}
+            For Each key In user.permissionMap.Keys
                 If user1.Permission(key) > user2.Permission(key) Then Return False
             Next key
         Next user
@@ -163,8 +176,8 @@ Public Class BotUser
     End Operator
 
     Public Overrides Function ToString() As String
-        ToString = name + ":"
-        For Each key As String In permissionMap.Keys
+        ToString = Name + ":"
+        For Each key In permissionMap.Keys
             If permissionMap(key) = 0 Then Continue For
             ToString += " {0}={1}".Frmt(key, permissionMap(key))
         Next key

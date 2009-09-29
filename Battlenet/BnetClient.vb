@@ -57,7 +57,7 @@ Namespace Bnet
 
         Public ReadOnly profile As ClientProfile
         Public ReadOnly parent As MainBot
-        Public ReadOnly name As String = "unnamed_client"
+        Private ReadOnly _name As String = "unnamed_client"
         Public ReadOnly logger As Logger
         Private socket As BnetSocket
 
@@ -101,10 +101,17 @@ Namespace Bnet
         Private accountPassword As String
         Private hostname As String
         Private state As BnetClientState
+
+        Public ReadOnly Property Name As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _name
+            End Get
+        End Property
 #End Region
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(name IsNot Nothing)
+            Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(parent IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(eref IsNot Nothing)
@@ -122,15 +129,15 @@ Namespace Bnet
                        ByVal profile As ClientProfile,
                        ByVal name As String,
                        Optional ByVal logger As Logger = Nothing)
-            Contract.Requires(parent IsNot Nothing)
-            Contract.Requires(profile IsNot Nothing)
-            Contract.Requires(name IsNot Nothing)
+            Contract.Assume(parent IsNot Nothing) 'bug in contracts required not using requires here
+            Contract.Assume(profile IsNot Nothing)
+            Contract.Assume(name IsNot Nothing)
             Me.futureConnected.MarkAnyExceptionAsHandled()
             Me.futureLoggedIn.MarkAnyExceptionAsHandled()
             Me.futureCreatedGame.MarkAnyExceptionAsHandled()
 
             'Pass values
-            Me.name = name
+            Me._name = name
             Me.parent = parent
             Me.profile = profile
             Me.listenPort = profile.listenPort
@@ -168,6 +175,8 @@ Namespace Bnet
 #Region "Access"
         Private Sub SendText(ByVal text As String)
             Contract.Requires(text IsNot Nothing)
+            Contract.Requires(text.Length > 0)
+
             Select Case state
                 Case BnetClientState.Channel
                     'fine
@@ -399,7 +408,11 @@ Namespace Bnet
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return QueueConnect(remoteHost).EvalOnSuccess(Function() QueueLogOn(userName, password)).Defuturized
+            Return QueueConnect(remoteHost).EvalOnSuccess(Function()
+                                                              Contract.Assume(userName IsNot Nothing)
+                                                              Contract.Assume(password IsNot Nothing)
+                                                              Return QueueLogOn(userName, password)
+                                                          End Function).Defuturized
         End Function
 
         Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
@@ -444,6 +457,9 @@ Namespace Bnet
                 connectRetriesLeft -= 1
                 FutureWait(5.Seconds).CallWhenReady(
                     Sub()
+                        Contract.Assume(hostname IsNot Nothing)
+                        Contract.Assume(accountUsername IsNot Nothing)
+                        Contract.Assume(accountPassword IsNot Nothing)
                         logger.Log("Attempting to reconnect...", LogMessageType.Positive)
                         QueueConnectAndLogOn(hostname, accountUsername, accountPassword)
                     End Sub
@@ -494,15 +510,12 @@ Namespace Bnet
                             Sub(listenException)
                                 If listenException IsNot Nothing Then
                                     futureCreatedGame.TrySetFailed(listenException)
+                                    Contract.Assume(listenException.Message IsNot Nothing)
                                     StopAdvertisingGame(reason:=listenException.Message)
                                 End If
                             End Sub
                         ).MarkAnyExceptionAsHandled()
                     End If
-                    '[verifier fails to realize passing 'Me' out won't ruin these variables]
-                    Contract.Assume(futureCreatedGame IsNot Nothing)
-                    Contract.Assume(futureConnected IsNot Nothing)
-                    Contract.Assume(futureLoggedIn IsNot Nothing)
                     Return futureCreatedGame
                 Case Else
                     Throw state.MakeImpossibleValueException
@@ -875,11 +888,13 @@ Namespace Bnet
 #Region "Networking (Warden)"
         Private Sub ReceiveWarden(ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(vals IsNot Nothing)
-            Dim data = CType(vals("encrypted data"), Byte()).ToView
+            Dim encryptedData = CType(vals("encrypted data"), Byte())
+            Contract.Assume(encryptedData IsNot Nothing)
             If futureWardenHandler Is Nothing Then Return
             futureWardenHandler.CallOnValueSuccess(
                 Sub(bnlsClient)
-                    bnlsClient.ProcessWardenPacket(data)
+                    Contract.Assume(encryptedData IsNot Nothing)
+                    bnlsClient.ProcessWardenPacket(encryptedData.ToView)
                 End Sub)
         End Sub
         Private Sub OnWardenSend(ByVal data() As Byte)
@@ -914,10 +929,6 @@ Namespace Bnet
                 gameRefreshTimer.Stop()
                 EnterChannel(lastChannel)
                 RaiseEvent RemovedGame(Me, advertisedGameSettings.header, "Client {0} failed to advertise the game. Most likely cause is game name in use.".Frmt(Me.name))
-                '[verifier fails to realize passing 'Me' out won't ruin these variables]
-                Contract.Assume(futureCreatedGame IsNot Nothing)
-                Contract.Assume(futureConnected IsNot Nothing)
-                Contract.Assume(futureLoggedIn IsNot Nothing)
             End If
         End Sub
         Private Sub IgnorePacket(ByVal vals As Dictionary(Of String, Object))

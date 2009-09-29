@@ -7,8 +7,6 @@
     End Enum
 
     Public Class BNLSWardenPacket
-        Public ReadOnly id As BNLSWardenPacketId
-        Public ReadOnly payload As IPickle(Of Object)
         Private Shared ReadOnly clientJar As ManualSwitchJar = MakeClientJar()
         Private Shared ReadOnly serverJar As New TupleJar("data",
                                                          New EnumByteJar(Of BNLSWardenPacketId)("type").Weaken,
@@ -16,15 +14,28 @@
                                                          New ByteJar("result").Weaken,
                                                          New ArrayJar("data", sizePrefixSize:=2).Weaken,
                                                          New ArrayJar("unspecified", takeRest:=True).Weaken)
+        Public ReadOnly id As BNLSWardenPacketId
+        Private ReadOnly _payload As IPickle(Of Object)
+        Public ReadOnly Property Payload As IPickle(Of Object)
+            Get
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Return _payload
+            End Get
+        End Property
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(payload IsNot Nothing)
+        End Sub
+
 
         Private Sub New(ByVal payload As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(payload IsNot Nothing)
-            Me.payload = payload
+            Me._payload = payload
             Me.id = CType(payload.Value("type"), BNLSWardenPacketId)
         End Sub
         Private Sub New(ByVal id As BNLSWardenPacketId, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
-            Me.payload = payload
+            Me._payload = payload
             Me.id = id
         End Sub
         Private Sub New(ByVal id As BNLSWardenPacketId, ByVal value As Dictionary(Of String, Object))
@@ -51,7 +62,7 @@
         Private Shared Sub reg(ByVal jar As ManualSwitchJar,
                                ByVal id As BNLSWardenPacketId,
                                ByVal ParamArray subJars() As IJar(Of Object))
-            jar.AddPackerParser(id, New TupleJar(id.ToString, subjars).Weaken)
+            jar.AddPackerParser(id, New TupleJar(id.ToString, subJars).Weaken)
         End Sub
 
         Private Shared Function MakeClientJar() As ManualSwitchJar

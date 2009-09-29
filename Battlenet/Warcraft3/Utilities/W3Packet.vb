@@ -494,14 +494,14 @@ Namespace Warcraft3
             Contract.Requires(sender IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Select Case chatType
-                Case ChatType.Game
+                Case chatType.Game
                     Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
                             {"receiving player indexes", (From p In receivingPlayers Select p.index).ToList},
                             {"sending player index", sender.index},
                             {"type", chatType},
                             {"message", text},
                             {"receiver type", receiverType}})
-                Case ChatType.Lobby
+                Case chatType.Lobby
                     Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
                             {"receiving player indexes", (From p In receivingPlayers Select p.index).ToList},
                             {"sending player index", sender.index},
@@ -537,9 +537,9 @@ Namespace Warcraft3
                     {"unknown", 1},
                     {"path", "Maps\" + map.RelativePath},
                     {"size", map.FileSize},
-                    {"crc32", map.ChecksumCRC32},
-                    {"xoro checksum", map.ChecksumXORO},
-                    {"sha1 checksum", map.ChecksumSHA1}})
+                    {"crc32", map.ChecksumCRC32.ToArray},
+                    {"xoro checksum", map.ChecksumXORO.ToArray},
+                    {"sha1 checksum", map.ChecksumSHA1.ToArray}})
         End Function
         <Pure()>
         Public Shared Function MakeOtherPlayerJoined(ByVal stranger As W3Player,
@@ -590,10 +590,9 @@ Namespace Warcraft3
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Dim receiver_ = receiver 'avoid contract verification issue on hoisted arguments
             Return New W3Packet(W3PacketId.LobbyState, New Dictionary(Of String, Object) From {
                     {"state size", CUShort(slots.Count() * 9 + 7)},
-                    {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver_)).ToList()},
+                    {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToList()},
                     {"time", CUInt(time)},
                     {"layout style", If(map.isMelee, 0, 3)},
                     {"num player slots", If(Not hideSlots, map.NumPlayerSlots, If(map.NumPlayerSlots = 12, 11, 12))}})
@@ -902,7 +901,6 @@ Namespace Warcraft3
                     {"team index", slot.team},
                     {"color", If(slot.team = W3Slot.ObserverTeamIndex, W3Slot.ObserverTeamIndex, slot.color)},
                     {"race", If(slot.game.Map.isMelee, slot.race Or W3Slot.Races.Unlocked, slot.race)},
-                    {"computer difficulty", W3Slot.ComputerLevel.Normal},
                     {"handicap", slot.handicap},
                     {"is computer", If(slot.contents.ContentType = SlotContentType.Computer, 1, 0)},
                     {"computer difficulty", slot.contents.DataComputerLevel},

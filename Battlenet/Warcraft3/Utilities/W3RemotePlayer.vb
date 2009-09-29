@@ -94,20 +94,32 @@ Namespace Warcraft3
 
     Public Class W3Peer
         Public ReadOnly name As String
-        Public ReadOnly index As Byte
+        Private ReadOnly _index As Byte
         Public ReadOnly listenPort As UShort
         Public ReadOnly ip As Net.IPAddress
         Public ReadOnly peerKey As UInteger
         Private WithEvents _socket As W3Socket
         Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal packet As W3Packet)
         Public Event Disconnected(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
+        Public ReadOnly Property Index As Byte
+            Get
+                Contract.Ensures(Contract.Result(Of Byte)() > 0)
+                Contract.Ensures(Contract.Result(Of Byte)() <= 12)
+                Return _index
+            End Get
+        End Property
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_index > 0)
+            Contract.Invariant(_index <= 12)
+        End Sub
 
         Public Sub New(ByVal name As String,
                        ByVal index As Byte,
                        ByVal listenPort As UShort,
                        ByVal ip As Net.IPAddress, ByVal peerKey As UInteger)
             Me.name = name
-            Me.index = index
+            Me._index = index
             Me.listenPort = listenPort
             Me.ip = ip
             Me.peerKey = peerKey
@@ -123,8 +135,8 @@ Namespace Warcraft3
             If socket Is Nothing Then Return
             FutureIterateExcept(AddressOf socket.FutureReadPacket,
                 Sub(packet)
-                                                                       RaiseEvent ReceivedPacket(Me, packet)
-                                                                   End Sub)
+                    RaiseEvent ReceivedPacket(Me, packet)
+                End Sub)
         End Sub
 
         Private Sub socket_Disconnected(ByVal sender As Warcraft3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected

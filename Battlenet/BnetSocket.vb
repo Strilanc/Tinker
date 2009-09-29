@@ -67,7 +67,8 @@ Public Class BnetSocket
             Logger.Log(packet.payload.Description, LogMessageType.DataParsed)
 
             'Send
-            socket.WritePacket(Concat({Bnet.BnetPacket.PacketPrefixValue, packet.id, 0, 0}, packet.payload.Data.ToArray))
+            socket.WritePacket(Concat({Bnet.BnetPacket.PacketPrefixValue, packet.id, 0, 0},
+                                      packet.payload.Data.ToArray))
 
         Catch e As Pickling.PicklingException
             Dim msg = "Error packing {0} for {1}: {2}".Frmt(packet.id, Name, e)
@@ -82,9 +83,14 @@ Public Class BnetSocket
     End Sub
 
     Public Function FutureReadPacket() As IFuture(Of Bnet.BnetPacket)
+        Contract.Ensures(Contract.Result(Of IFuture(Of Bnet.BnetPacket))() IsNot Nothing)
         Return socket.FutureReadPacket().Select(
             Function(data)
-                If data(0) <> Bnet.BnetPacket.PacketPrefixValue Then
+                Contract.Assume(data IsNot Nothing)
+                If data.Length < 4 Then
+                    Disconnect(expected:=False, reason:="Packer didn't include a header.")
+                    Throw New IO.IOException("Invalid packet prefix")
+                ElseIf data(0) <> Bnet.BnetPacket.PacketPrefixValue Then
                     Disconnect(expected:=False, reason:="Invalid packet prefix")
                     Throw New IO.IOException("Invalid packet prefix")
                 End If
@@ -146,7 +152,7 @@ Public Class PacketSocket
                    Optional ByVal numBytesBeforeSize As Integer = 2,
                    Optional ByVal numSizeBytes As Integer = 2,
                    Optional ByVal name As String = Nothing)
-        Contract.Requires(client IsNot Nothing)
+        Contract.Assume(client IsNot Nothing) 'bug in contracts required not using requires here
 
         Me.subStream = client.GetStream
         If streamWrapper IsNot Nothing Then Me.subStream = streamWrapper(Me.subStream)
@@ -217,14 +223,12 @@ Public Class PacketSocket
     Public Sub WritePacket(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
         packetStreamer.WritePacket(data)
-        Dim data_ = data
-        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data_.ToHexString), LogMessageType.DataRaw)
+        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
     End Sub
 
     Public Sub WriteRawData(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
         substream.Write(data, 0, data.Length)
-        Dim data_ = data
-        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data_.ToHexString), LogMessageType.DataRaw)
+        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
     End Sub
 End Class

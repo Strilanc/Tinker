@@ -25,6 +25,7 @@ Public Module PoorlyCategorizedFunctions
         For Each word In text.Split(" "c)
             If word = "" Then Continue For
             If cur_quoted_word Is Nothing Then
+                Contract.Assume(word.Length > 0)
                 If word(0) = """"c Then
                     If word(word.Length - 1) = """"c Then '[start and end of quoted word]
                         Contract.Assume(word.Length >= 2)
@@ -60,6 +61,7 @@ Public Module PoorlyCategorizedFunctions
         Dim vd = New String() {valueDivider}
         For Each pair In text.Split(pd, StringSplitOptions.RemoveEmptyEntries)
             Dim args = pair.Split(vd, StringSplitOptions.None)
+            Contract.Assume(args IsNot Nothing)
             If args.Count < 2 Then Continue For
             d(args(0)) = parser(pair.Substring(args(0).Length + 1))
         Next pair
@@ -73,7 +75,9 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(likeQuery IsNot Nothing)
         Contract.Requires(directory IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return FindFilesMatching(fileQuery, likeQuery, directory, 1).First
+        Dim result = FindFilesMatching(fileQuery, likeQuery, directory, 1).FirstOrDefault
+        If result Is Nothing Then Throw New OperationFailedException("No matches.")
+        Return result
     End Function
 
     Public Function FindFilesMatching(ByVal fileQuery As String,
@@ -88,6 +92,7 @@ Public Module PoorlyCategorizedFunctions
 
         'Normalize input
         directory = directory.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
+        Contract.Assume(directory.Length > 0)
         If directory(directory.Length - 1) <> DirectorySeparatorChar Then
             directory += DirectorySeparatorChar
         End If
@@ -98,6 +103,7 @@ Public Module PoorlyCategorizedFunctions
         If fileQuery.Contains(DirectorySeparatorChar) Then
             Dim words = fileQuery.Split(DirectorySeparatorChar)
             Dim file_pattern = words(words.Length - 1)
+            Contract.Assume(fileQuery.Length > file_pattern.Length)
             dirQuery = fileQuery.Substring(0, fileQuery.Length - file_pattern.Length) + "*"
             fileQuery = "*" + file_pattern
         End If
@@ -108,6 +114,7 @@ Public Module PoorlyCategorizedFunctions
 
         'Check files in folder
         For Each filename In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
+            Contract.Assume(filename.Length < directory.Length)
             filename = filename.Substring(directory.Length)
             If filename.ToUpperInvariant Like likeQuery AndAlso filename.ToUpperInvariant Like dirQuery Then
                 matches.Add(filename)
@@ -133,48 +140,38 @@ Public Module PoorlyCategorizedFunctions
     End Function
 #End Region
 
-    Public Function EnumSizePrefixedBlocks(ByVal data As ViewableList(Of Byte),
-                                           Optional ByVal wordSize As Integer = 2,
-                                           Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian) As IEnumerable(Of ViewableList(Of Byte))
-        Return New Enumerable(Of ViewableList(Of Byte))(
-            Function()
-                Dim offset = 0
-                Return New Enumerator(Of ViewableList(Of Byte))(
-                    Function(controller)
-                        If offset >= data.Length Then  Return controller.Break
-                        Dim r = CInt(data.SubView(0, wordSize).ToUInt32(byteOrder))
-                        If r < wordSize Then  Throw New IO.IOException("Invalid data.")
-                        If offset + r > data.Length Then  Throw New IO.IOException("Invalid data.")
-                        offset += r
-                        r -= wordSize
-                        Return data.SubView(offset - r, r)
-                    End Function)
-            End Function)
-    End Function
-
     <Extension()>
     Public Sub WriteNullTerminatedString(ByVal bw As BinaryWriter, ByVal data As String)
+        Contract.Requires(bw IsNot Nothing)
+        Contract.Requires(data IsNot Nothing)
         bw.Write(data.ToAscBytes(True))
     End Sub
     <Extension()>
     Public Function ReadNullTerminatedString(ByVal reader As BinaryReader,
                                              ByVal maxLength As Integer) As String
+        Contract.Requires(reader IsNot Nothing)
+        Contract.Requires(maxLength >= 0)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Dim result As String = Nothing
         If Not TryReadNullTerminatedString(reader, maxLength, result) Then
             Throw New IOException("Null-terminated string exceeded maximum length.")
         End If
+        Contract.Assume(result IsNot Nothing)
         Return result
     End Function
     <Extension()>
     Public Function TryReadNullTerminatedString(ByVal reader As BinaryReader,
                                                 ByVal maxLength As Integer,
                                                 ByRef result As String) As Boolean
+        Contract.Requires(reader IsNot Nothing)
         Dim data(0 To maxLength - 1) As Byte
         Dim n = 0
         Do
             Dim b = reader.ReadByte()
             If b = 0 Then
-                result = data.Take(n).ParseChrString(False)
+                Dim x = data.Take(n)
+                Contract.Assume(x IsNot Nothing)
+                result = x.ParseChrString(False)
                 Return True
             End If
             If n >= maxLength Then Return False

@@ -7,6 +7,7 @@ Public Class BigNum
     Private ReadOnly Property words As UInteger()
         Get
             Contract.Ensures(Contract.Result(Of UInteger())() IsNot Nothing)
+            Contract.Ensures((Contract.Result(Of UInteger()).Length = 0) = (Sign() = 0))
             Return _words
         End Get
     End Property
@@ -15,6 +16,7 @@ Public Class BigNum
         Get
             Contract.Ensures(Contract.Result(Of Integer)() >= -1)
             Contract.Ensures(Contract.Result(Of Integer)() <= 1)
+            Contract.Ensures((Contract.Result(Of Integer)() = 0) = (words.Length = 0))
             Return _sign
         End Get
     End Property
@@ -483,9 +485,9 @@ Public Class BigNum
         Contract.Requires(numerator IsNot Nothing)
         Contract.Requires(denominator IsNot Nothing)
         Contract.Ensures(Contract.Result(Of DivModResult)() IsNot Nothing)
-        'Contract.Ensures(Contract.Result(Of DivModResult)().remainder >= 0)
-        'Contract.Ensures(Contract.Result(Of DivModResult)().remainder < denominator.Abs())
-        'Contract.Ensures(Contract.Result(Of DivModResult)().quotient * denominator + Contract.Result(Of DivModResult)().remainder = numerator)
+        Contract.Ensures(Contract.Result(Of DivModResult)().Remainder >= 0)
+        Contract.Ensures(Contract.Result(Of DivModResult)().Remainder < denominator.Abs())
+        Contract.Ensures(Contract.Result(Of DivModResult)().Quotient * denominator + Contract.Result(Of DivModResult)().Remainder = numerator)
         If denominator = 0 Then Throw New ArgumentException("Denominator must be non-zero.", "denominator")
 
         'Special Cases

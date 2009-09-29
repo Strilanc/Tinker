@@ -8,7 +8,7 @@ Namespace Warcraft3
         Inherits FutureDisposable
 #Region "Properties"
         Public ReadOnly parent As MainBot
-        Public ReadOnly name As String
+        Private ReadOnly _name As String
         Public ReadOnly settings As ServerSettings
 
         Private ReadOnly games_all As New List(Of W3Game)
@@ -38,6 +38,12 @@ Namespace Warcraft3
                 Return _state
             End Get
         End Property
+        Public ReadOnly Property Name As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _name
+            End Get
+        End Property
         Private Sub change_state(ByVal new_state As W3ServerState)
             Dim old_state = _state
             _state = new_state
@@ -48,7 +54,7 @@ Namespace Warcraft3
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(parent IsNot Nothing)
-            Contract.Invariant(name IsNot Nothing)
+            Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(settings IsNot Nothing)
             Contract.Invariant(games_all IsNot Nothing)
             Contract.Invariant(games_lobby IsNot Nothing)
@@ -58,6 +64,7 @@ Namespace Warcraft3
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(eref IsNot Nothing)
+            Contract.Invariant(suffix IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As String,
@@ -65,36 +72,32 @@ Namespace Warcraft3
                        ByVal settings As ServerSettings,
                        Optional ByVal suffix As String = "",
                        Optional ByVal logger As Logger = Nothing)
-            'contract bug wrt interface event implementation requires this:
-            'Contract.Requires(name IsNot Nothing)
-            'Contract.Requires(parent IsNot Nothing)
-            'Contract.Requires(settings IsNot Nothing)
-            Contract.Assume(name IsNot Nothing)
+            Contract.Assume(name IsNot Nothing) 'bug in contracts required not using requires here
             Contract.Assume(parent IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
             Try
                 Me.settings = settings
                 Me.parent = parent
-                Me.name = name
+                Me._name = name
                 Me.suffix = suffix
                 Me.logger = If(logger, New Logger)
                 Me.door = New W3ServerDoor(Me, Me.logger)
                 Me.eref = New ThreadPooledCallQueue
                 Me.ref = New ThreadPooledCallQueue
 
-                For Each port In settings.default_listen_ports
+                For Each port In Me.settings.default_listen_ports
                     door.accepter.Accepter.OpenPort(port)
                 Next port
-                For i = 1 To settings.instances
+                For i = 1 To Me.settings.instances
                     CreateGame()
                 Next i
-                parent.logger.Log("Server started for map {0}.".Frmt(settings.map.RelativePath), LogMessageType.Positive)
+                Me.parent.logger.Log("Server started for map {0}.".Frmt(Me.settings.map.RelativePath), LogMessageType.Positive)
 
-                If settings.testFakePlayers AndAlso settings.default_listen_ports.Any Then
+                If Me.settings.testFakePlayers AndAlso Me.settings.default_listen_ports.Any Then
                     FutureWait(3.Seconds).CallWhenReady(
                         Sub()
                             For i = 1 To 3
-                                Dim receivedPort = parent.portPool.TryAcquireAnyPort()
+                                Dim receivedPort = Me.parent.portPool.TryAcquireAnyPort()
                                 If receivedPort Is Nothing Then
                                     logger.Log("Failed to get port for fake player.", LogMessageType.Negative)
                                     Exit For
@@ -103,7 +106,7 @@ Namespace Warcraft3
                                 Dim p = New W3DummyPlayer("Wait {0}min".Frmt(i), receivedPort, logger, DummyPlayerMode.EnterGame)
                                 p.readyDelay = i.Minutes
                                 Dim i_ = i
-                                p.QueueConnect("localhost", settings.default_listen_ports.FirstOrDefault).CallWhenReady(
+                                p.QueueConnect("localhost", Me.settings.default_listen_ports.FirstOrDefault).CallWhenReady(
                                     Sub(exception)
                                         If exception Is Nothing Then
                                             Me.logger.Log("Fake player {0} Connected", LogMessageType.Positive)
@@ -115,13 +118,13 @@ Namespace Warcraft3
                         End Sub)
                 End If
 
-                If settings.grabMap Then
-                    Dim server_port = settings.default_listen_ports.FirstOrDefault
+                If Me.settings.grabMap Then
+                    Dim server_port = Me.settings.default_listen_ports.FirstOrDefault
                     If server_port = 0 Then
                         Throw New InvalidOperationException("Server has no port for Grab player to connect on.")
                     End If
 
-                    Dim grabPort = parent.portPool.TryAcquireAnyPort()
+                    Dim grabPort = Me.parent.portPool.TryAcquireAnyPort()
                     If grabPort Is Nothing Then
                         Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
                     End If
@@ -230,7 +233,7 @@ Namespace Warcraft3
 
             door.Reset()
             For Each game In games_lobby.ToList
-                RemoveGame(game.name)
+                RemoveGame(game.Name)
             Next game
 
             If games_all.Any Then
@@ -249,7 +252,7 @@ Namespace Warcraft3
             End If
 
             For Each game In games_all.ToList
-                RemoveGame(game.name)
+                RemoveGame(game.Name)
             Next game
             games_all.Clear()
             door.Reset()
@@ -306,10 +309,20 @@ Namespace Warcraft3
 
         '''<summary>Finds a player with the given name in any of the server's games.</summary>
         Private Function f_FindPlayer(ByVal username As String) As IFuture(Of W3Player)
-            Dim futureFoundPlayers = (From game In games_all Select game.QueueFindPlayer(username)).ToList.Defuturized
-            Return futureFoundPlayers.Select(
+            Dim futureFoundPlayers = From game In games_all Select Function()
+                                                                       Contract.Assume(game IsNot Nothing)
+                                                                       Contract.Assume(username IsNot Nothing)
+                                                                       Return game.QueueFindPlayer(username)
+                                                                   End Function()
+            Contract.Assume(futureFoundPlayers IsNot Nothing)
+            Dim futureFoundPlayers2 = futureFoundPlayers.ToList
+            Contract.Assume(futureFoundPlayers2 IsNot Nothing)
+            Return futureFoundPlayers2.Defuturized.Select(
                 Function(foundPlayers)
-                    Return (From player In foundPlayers Where player IsNot Nothing).FirstOrDefault
+                    Contract.Assume(foundPlayers IsNot Nothing)
+                    Dim matches = From player In foundPlayers Where player IsNot Nothing
+                    Contract.Assume(matches IsNot Nothing)
+                    Return matches.FirstOrDefault
                 End Function
             )
         End Function
@@ -317,7 +330,11 @@ Namespace Warcraft3
         '''<summary>Finds a game containing a player with the given name.</summary>
         Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of W3Game)
             Return games_lobby.ToList.
-                   FutureSelect(Function(game) game.QueueFindPlayer(username).Select(Function(player) player IsNot Nothing))
+                   FutureSelect(Function(game)
+                                    Contract.Assume(game IsNot Nothing)
+                                    Contract.Assume(username IsNot Nothing)
+                                    Return game.QueueFindPlayer(username).Select(Function(player) player IsNot Nothing)
+                                End Function)
         End Function
 
         '''<summary>Removes a game with the given name.</summary>

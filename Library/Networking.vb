@@ -30,7 +30,10 @@ Public Module NetworkingCommon
                     If externalIp.Length < 7 OrElse externalIp.Length > 15 Then  Return  'not correct length for style (#.#.#.# to ###.###.###.###)
                     Dim words = externalIp.Split("."c)
                     If words.Length <> 4 OrElse (From word In words Where Not Byte.TryParse(word, 0)).Any Then  Return
-                    cachedExternalIP = (From word In words Select Byte.Parse(word, CultureInfo.InvariantCulture)).ToArray()
+                    cachedExternalIP = (From word In words Select Function()
+                                                                      Contract.Assume(word IsNot Nothing)
+                                                                      Return Byte.Parse(word, CultureInfo.InvariantCulture)
+                                                                  End Function()).ToArray()
                 End Using
             End Sub
         )
@@ -57,6 +60,7 @@ Public Module NetworkingCommon
     <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
     Public Function FutureCreateConnectedTcpClient(ByVal host As String,
                                                    ByVal port As UShort) As IFuture(Of TcpClient)
+        Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
         Dim result = New FutureFunction(Of TcpClient)
         Dim client = New TcpClient
         Try
@@ -80,6 +84,7 @@ Public Module NetworkingCommon
     <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
     Public Function FutureCreateConnectedTcpClient(ByVal address As Net.IPAddress,
                                                    ByVal port As UShort) As IFuture(Of TcpClient)
+        Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
         Dim result = New FutureFunction(Of TcpClient)
         Dim client = New TcpClient
         Try

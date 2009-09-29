@@ -70,7 +70,7 @@ Public Class PacketStream
                 Throw New IO.IOException("Header exceeds buffer size.")
             End If
             Do
-                Dim n = subStream.Read(read_header_buffer, readSize, headerSize - readSize)
+                Dim n = substream.Read(read_header_buffer, readSize, headerSize - readSize)
                 If n = 0 Then Exit Do
                 readSize += n
             Loop While readSize < headerSize
@@ -110,20 +110,29 @@ Public Class PacketStream
 
         'Read body into buffer
         While readSize < totalSize
-            Dim n = subStream.Read(buffer, offset + readSize, totalSize - readSize)
+            Dim n = substream.Read(buffer, offset + readSize, totalSize - readSize)
             If n = 0 Then
                 Throw New IO.IOException("Fragmented packet body.")
             End If
             readSize += n
         End While
 
-        Dim buffer_ = buffer 'avoids problems with contract verification on hoisted arguments
-        Dim offset_ = offset
-        logger.log(Function() "Received from {0}: {1}".frmt(logDestination, buffer_.SubArray(offset_, totalSize).ToHexString), LogMessageType.DataRaw)
+        logger.Log(Function()
+                       Contract.Assume(buffer IsNot Nothing)
+                       Contract.Assume(offset >= 0)
+                       Contract.Assume(totalSize >= 0)
+                       Contract.Assume(offset + totalSize < buffer.Length)
+                       Return "Received from {0}: {1}".Frmt(logDestination, buffer.SubArray(offset, totalSize).ToHexString)
+                   End Function, LogMessageType.DataRaw)
+        Contract.Assume(totalSize >= 0)
         Return totalSize
     End Function
 
     Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
+        Contract.Assume(buffer IsNot Nothing)
+        Contract.Assume(offset >= 0)
+        Contract.Assume(count >= 0)
+        Contract.Assume(offset + count < buffer.Length)
         WriteWithMode(buffer, offset, count, defaultMode)
     End Sub
     Public Sub WriteWithMode(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal mode As InterfaceMode)
@@ -159,11 +168,14 @@ Public Class PacketStream
                 Throw New NotSupportedException("Unrecognized interface mode.")
         End Select
 
-        Dim buffer_ = buffer 'fixes contract verification error due to hoisting
-        Dim offset_ = offset
-        Dim count_ = count
-        logger.log(Function() "Sending to {0}: {1}".frmt(logDestination, buffer_.SubArray(offset_, count_).ToHexString), LogMessageType.DataRaw)
-        subStream.Write(buffer, offset, count)
+        logger.Log(Function()
+                       Contract.Assume(buffer IsNot Nothing)
+                       Contract.Assume(offset >= 0)
+                       Contract.Assume(count >= 0)
+                       Contract.Assume(offset + count < buffer.Length)
+                       Return "Sending to {0}: {1}".Frmt(logDestination, buffer.SubArray(offset, count).ToHexString)
+                   End Function, LogMessageType.DataRaw)
+        substream.Write(buffer, offset, count)
     End Sub
 
     Private Sub EncodeSize(ByVal size As Integer, ByVal buffer() As Byte, ByVal offset As Integer)
@@ -185,8 +197,21 @@ Public Class PacketStreamer
     Private ReadOnly subStream As IO.Stream
     Private ReadOnly headerBytesBeforeSizeCount As Integer
     Private ReadOnly headerValueSizeByteCount As Integer
-    Private ReadOnly headerSize As Integer
     Private ReadOnly maxPacketSize As Integer
+
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(headerBytesBeforeSizeCount >= 0)
+        Contract.Invariant(headerValueSizeByteCount > 0)
+        Contract.Invariant(maxPacketSize > 0)
+        Contract.Invariant(subStream IsNot Nothing)
+    End Sub
+
+    Private ReadOnly Property HeaderSize As Integer
+        Get
+            Return headerValueSizeByteCount + headerBytesBeforeSizeCount
+        End Get
+    End Property
 
     Public Sub New(ByVal subStream As IO.Stream,
                    ByVal headerBytesBeforeSizeCount As Integer,
@@ -201,13 +226,13 @@ Public Class PacketStreamer
         Me.subStream = subStream
         Me.headerValueSizeByteCount = headerValueSizeByteCount
         Me.headerBytesBeforeSizeCount = headerBytesBeforeSizeCount
-        Me.headerSize = headerValueSizeByteCount + headerBytesBeforeSizeCount
     End Sub
 
     Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
+        Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
         Dim readSize = 0
         Dim totalSize = 0
-        Dim packetData(0 To headerSize - 1) As Byte
+        Dim packetData(0 To HeaderSize - 1) As Byte
         Dim result = New FutureFunction(Of ViewableList(Of Byte))
 
         FutureIterate(Function() subStream.FutureRead(packetData, readSize, packetData.Length - readSize),
@@ -232,9 +257,9 @@ Public Class PacketStreamer
                 End If
 
                 'Parse header
-                If readSize = headerSize Then
+                If readSize = HeaderSize Then
                     totalSize = CInt(packetData.SubArray(headerBytesBeforeSizeCount, headerValueSizeByteCount).ToUInt32())
-                    If totalSize < headerSize Then
+                    If totalSize < HeaderSize Then
                         'too small
                         result.SetFailed(New IO.IOException("Invalid packet size (less than header size)."))
                         Return False.Futurized
@@ -242,7 +267,7 @@ Public Class PacketStreamer
                         'too large
                         result.SetFailed(New IO.IOException("Packet exceeded maximum size."))
                         Return False.Futurized
-                    ElseIf totalSize > headerSize Then
+                    ElseIf totalSize > HeaderSize Then
                         'begin reading packet body
                         ReDim Preserve packetData(0 To totalSize - 1)
                         Return True.Futurized
@@ -258,6 +283,7 @@ Public Class PacketStreamer
         Return result
     End Function
     Public Function ReadPacket() As ViewableList(Of Byte)
+        Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
         Dim readSize = 0
         Dim totalSize = 0
         Dim packetData(0 To headerSize - 1) As Byte
@@ -302,10 +328,15 @@ Public Class PacketStreamer
 
     Public Sub WritePacket(ByVal packetData As Byte())
         Contract.Requires(packetData IsNot Nothing)
-        If packetData.Length < headerSize Then Throw New ArgumentException("Data didn't include header data.")
+        If packetData.Length < HeaderSize Then Throw New ArgumentException("Data didn't include header data.")
 
         'Encode size
-        System.Array.Copy(CULng(packetData.Length).Bytes(size:=headerValueSizeByteCount), 0, packetData, headerBytesBeforeSizeCount, headerValueSizeByteCount)
+        Dim encodedSize = CULng(packetData.Length).Bytes(size:=headerValueSizeByteCount)
+        System.Array.Copy(sourceArray:=encodedSize,
+                          sourceIndex:=0,
+                          destinationArray:=packetData,
+                          destinationIndex:=headerBytesBeforeSizeCount,
+                          length:=headerValueSizeByteCount)
 
         subStream.Write(packetData, 0, packetData.Length)
     End Sub

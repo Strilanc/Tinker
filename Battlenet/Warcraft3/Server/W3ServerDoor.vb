@@ -65,30 +65,30 @@
                                 If createdException Is Nothing Then
                                     FindGameForPlayer(player)
                                 Else
-                                    FailConnectingPlayer(player)
+                                    FailConnectingPlayer(player, "Failed to create game for player: {0}".Frmt(createdException))
                                 End If
                             End Sub
                         )
                     Else
                         If gameException IsNot Nothing Then
-                            FailConnectingPlayer(player)
+                            FailConnectingPlayer(player, "Failed to find game for player (eg. {0}).".Frmt(gameException.Message))
                         Else
                             SyncLock lock
                                 connectingPlayers.Remove(player)
                             End SyncLock
-                            logger.Log("Player {0} entered game {1}.".Frmt(player.Name, game.name), LogMessageType.Positive)
+                            logger.Log("Player {0} entered game {1}.".Frmt(player.Name, game.Name), LogMessageType.Positive)
                         End If
                     End If
                 End Sub
             )
         End Sub
-        Private Sub FailConnectingPlayer(ByVal player As W3ConnectingPlayer)
+        Private Sub FailConnectingPlayer(ByVal player As W3ConnectingPlayer, ByVal reason As String)
             SyncLock lock
                 connectingPlayers.Remove(player)
             End SyncLock
-            logger.log("Couldn't find a game for player {0}.".frmt(player.Name), LogMessageType.Negative)
+            logger.Log("Couldn't find a game for player {0}.".Frmt(player.Name), LogMessageType.Negative)
             player.Socket.SendPacket(W3Packet.MakeReject(W3Packet.RejectReason.GameFull))
-            player.Socket.Disconnect(expected:=True, reason:="No Game")
+            player.Socket.Disconnect(expected:=True, reason:=reason)
         End Sub
     End Class
 End Namespace

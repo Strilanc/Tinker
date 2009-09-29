@@ -14,12 +14,9 @@
         Private Sub LobbyNew(ByVal arguments As IEnumerable(Of String))
             Contract.Ensures(downloadScheduler IsNot Nothing)
 
-            Dim rate As Double = 10 * 1024 / 1000
-            Dim switchTime As Double = 3000
-            Dim size As Double = map.FileSize
-            Contract.Assume(Not Double.IsNaN(rate) AndAlso Not Double.IsInfinity(rate))
-            Contract.Assume(Not Double.IsNaN(switchTime) AndAlso Not Double.IsInfinity(switchTime))
-            Contract.Assume(Not Double.IsNaN(size) AndAlso Not Double.IsInfinity(size))
+            Dim rate As FiniteDouble = 10 * 1024 / 1000
+            Dim switchTime As FiniteDouble = 3000
+            Dim size As FiniteDouble = New FiniteDouble(Map.FileSize)
             Me._downloadScheduler = New TransferScheduler(Of Byte)(typicalRate:=rate,
                                                                    typicalSwitchTime:=3000,
                                                                    filesize:=size)

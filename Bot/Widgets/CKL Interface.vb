@@ -9,20 +9,51 @@ Namespace CKL
 
     Public Class CKLKey
         Private Shared ReadOnly cdKeyJar As New CDKeyJar("cdkey data")
-        Public ReadOnly name As String
-        Public ReadOnly cdKeyROC As String
-        Public ReadOnly cdKeyTFT As String
+        Private ReadOnly _name As String
+        Public ReadOnly _cdKeyROC As String
+        Public ReadOnly _cdKeyTFT As String
+
+        Public ReadOnly Property Name As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _name
+            End Get
+        End Property
+        Public ReadOnly Property CDKeyROC As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _cdKeyROC
+            End Get
+        End Property
+        Public ReadOnly Property CDKeyTFT As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _cdKeyTFT
+            End Get
+        End Property
+
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_cdKeyTFT IsNot Nothing)
+            Contract.Invariant(_cdKeyROC IsNot Nothing)
+            Contract.Invariant(_name IsNot Nothing)
+        End Sub
+
+
         Public Sub New(ByVal name As String,
                        ByVal cdKeyROC As String,
                        ByVal cdKeyTFT As String)
-            Me.name = name
-            Me.cdKeyROC = cdKeyROC
-            Me.cdKeyTFT = cdKeyTFT
+            Me._name = name
+            Me._cdKeyROC = cdKeyROC
+            Me._cdKeyTFT = cdKeyTFT
         End Sub
         Public Function Pack(ByVal clientToken As ViewableList(Of Byte),
-                             ByVal serverToken As ViewableList(Of Byte)) As Byte()
-            Return Concat(From key In {cdKeyROC, cdKeyTFT}
-                          Select cdKeyJar.pack(cdKeyJar.PackCDKey(key, clientToken, serverToken)).Data.ToArray)
+                             ByVal serverToken As ViewableList(Of Byte)) As ViewableList(Of Byte)
+            Contract.Requires(clientToken IsNot Nothing)
+            Contract.Requires(serverToken IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+            Return Concat(From key In {CDKeyROC, CDKeyTFT}
+                          Select cdKeyJar.Pack(cdKeyJar.PackCDKey(key, clientToken, serverToken)).Data.ToArray).ToView
         End Function
     End Class
     Public Class CKLEncodedKey

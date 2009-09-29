@@ -29,13 +29,6 @@ Public NotInheritable Class MainBot
     Public ReadOnly ClientCommands As New ClientCommands
     Public ReadOnly ServerCommands As New ServerCommands()
     Public ReadOnly LanCommands As New LanCommands()
-    Public ReadOnly GameCommandsLoadScreen As New Commands.CommandSet(Of W3Game)
-    Public ReadOnly GameGuestCommandsLobby As New InstanceGuestSetupCommands
-    Public ReadOnly GameGuestCommandsLoadScreen As New InstanceGuestLoadCommands
-    Public ReadOnly GameGuestCommandsGamePlay As New InstanceGuestPlayCommands
-    Public ReadOnly GameCommandsGamePlay As New InstancePlayCommands
-    Public ReadOnly GameCommandsLobby As New InstanceSetupCommands
-    Public ReadOnly GameCommandsAdmin As New InstanceAdminCommands
     Public ReadOnly logger As Logger
 
     Private ReadOnly ref As ICallQueue
@@ -60,9 +53,10 @@ Public NotInheritable Class MainBot
         Me.logger = If(logger, New Logger)
         Me.eref = New ThreadPooledCallQueue
         Me.ref = New ThreadPooledCallQueue
-        If My.Settings.botstore <> "" Then
+        Dim serializedData = My.Settings.botstore
+        If serializedData IsNot Nothing AndAlso serializedData <> "" Then
             Try
-                Using m As New IO.MemoryStream(My.Settings.botstore.ToAscBytes)
+                Using m As New IO.MemoryStream(serializedData.ToAscBytes)
                     Using r As New IO.BinaryReader(m)
                         Load(r)
                     End Using
@@ -88,6 +82,11 @@ Public NotInheritable Class MainBot
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(ref IsNot Nothing)
         Contract.Invariant(eref IsNot Nothing)
+        Contract.Invariant(servers IsNot Nothing)
+        Contract.Invariant(clients IsNot Nothing)
+        Contract.Invariant(pluginProfiles IsNot Nothing)
+        Contract.Invariant(clientProfiles IsNot Nothing)
+        Contract.Invariant(widgets IsNot Nothing)
     End Sub
 
 #Region "State"
@@ -156,6 +155,7 @@ Public NotInheritable Class MainBot
         Return server
     End Function
     Private Sub KillServer(ByVal name As String)
+        Contract.Requires(name IsNot Nothing)
         Dim server = FindServer(name)
         If server Is Nothing Then
             Throw New InvalidOperationException("No server with name {0}.".Frmt(name))
@@ -169,6 +169,7 @@ Public NotInheritable Class MainBot
     End Sub
 
     Private Sub AddWidget(ByVal widget As IBotWidget)
+        Contract.Requires(widget IsNot Nothing)
         If FindWidget(widget.TypeName, widget.Name) IsNot Nothing Then
             Throw New InvalidOperationException("A {0} named {1} already exists.".Frmt(widget.TypeName, widget.Name))
         End If
@@ -176,6 +177,8 @@ Public NotInheritable Class MainBot
         ThrowAddedWidget(widget)
     End Sub
     Private Sub RemoveWidget(ByVal typeName As String, ByVal name As String)
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(typeName IsNot Nothing)
         Dim widget = FindWidget(name, typeName)
         If widget Is Nothing Then Throw New InvalidOperationException("No {0} with name {1}.".Frmt(typeName, name))
         widgets.Remove(widget)
@@ -184,17 +187,20 @@ Public NotInheritable Class MainBot
     End Sub
 
     Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As BnetClient
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(profileName IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BnetClient)() IsNot Nothing)
 
+        Dim profile = FindClientProfile(profileName)
         If name.Trim = "" Then
             Throw New ArgumentException("Invalid client name.")
         ElseIf HaveClient(name) Then
             Throw New ArgumentException("Client named '{0}' already exists.".Frmt(name))
-        ElseIf FindClientProfile(profileName) Is Nothing Then
+        ElseIf profile Is Nothing Then
             Throw New ArgumentException("Invalid profile.")
         End If
 
-        Dim client = New BnetClient(Me, FindClientProfile(profileName), name)
+        Dim client = New BnetClient(Me, profile, name)
         AddHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
         AddHandler client.StateChanged, AddressOf CatchClientStateChanged
         clients.Add(client)
@@ -203,6 +209,8 @@ Public NotInheritable Class MainBot
         Return client
     End Function
     Private Sub KillClient(ByVal name As String, ByVal expected As Boolean, ByVal reason As String)
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(reason IsNot Nothing)
         Dim client = FindClient(name)
         If client Is Nothing Then
             Throw New InvalidOperationException("No client named {0}.".Frmt(name))
@@ -216,39 +224,47 @@ Public NotInheritable Class MainBot
     End Sub
 
     Private Function HaveClient(ByVal name As String) As Boolean
+        Contract.Requires(name IsNot Nothing)
         Return FindClient(name) IsNot Nothing
     End Function
     Private Function HaveServer(ByVal name As String) As Boolean
+        Contract.Requires(name IsNot Nothing)
         Return FindServer(name) IsNot Nothing
     End Function
 
     Private Function FindClient(ByVal name As String) As BnetClient
-        Return (From x In clients Where x.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault()
+        Contract.Requires(name IsNot Nothing)
+        Return (From x In clients Where x.Name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault()
     End Function
     Private Function FindServer(ByVal name As String) As W3Server
-        Return (From x In servers Where x.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault()
+        Contract.Requires(name IsNot Nothing)
+        Return (From x In servers Where x.Name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault()
     End Function
     Private Function FindWidget(ByVal name As String, ByVal typeName As String) As IBotWidget
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(typeName IsNot Nothing)
         Return (From x In widgets
                 Where x.Name.ToUpperInvariant = name.ToUpperInvariant
                 Where x.TypeName.ToUpperInvariant = typeName.ToUpperInvariant).FirstOrDefault()
     End Function
     Public Function FindClientProfile(ByVal name As String) As ClientProfile
+        Contract.Requires(name IsNot Nothing)
         Return (From x In clientProfiles Where x.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault
     End Function
     Public Function FindPluginProfile(ByVal name As String) As Plugins.PluginProfile
+        Contract.Requires(name IsNot Nothing)
         Return (From x In pluginProfiles Where x.name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault
     End Function
 
     Private Sub Kill()
         'Kill clients
         For Each client In clients.ToList
-            KillClient(client.name, expected:=True, reason:="Bot Killed")
+            KillClient(client.Name, expected:=True, reason:="Bot Killed")
         Next client
 
         'Kill servers
         For Each server In servers.ToList
-            KillServer(server.name)
+            KillServer(server.Name)
         Next server
 
         'Kill widgets
@@ -259,6 +275,7 @@ Public NotInheritable Class MainBot
 
     Private ReadOnly loadedPluginNames As New HashSet(Of String)
     Private Function LoadPlugin(ByVal name As String) As Plugins.IPlugin
+        Contract.Requires(name IsNot Nothing)
         If loadedPluginNames.Contains(name) Then Throw New InvalidOperationException("Plugin already loaded.")
 
         Dim profile = FindPluginProfile(name)
@@ -267,6 +284,9 @@ Public NotInheritable Class MainBot
         Return pluginManager.LoadPlugin(profile.name, profile.location)
     End Function
     Private Sub CatchUnloadedPlugin(ByVal name As String, ByVal plugin As Plugins.IPlugin, ByVal reason As String) Handles pluginManager.UnloadedPlugin
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(reason IsNot Nothing)
         logger.Log("Plugin '{0}' was unloaded ({1})".Frmt(name, reason), LogMessageType.Negative)
     End Sub
 #End Region
@@ -336,6 +356,8 @@ Public NotInheritable Class MainBot
         Dim result = server.QueueOpenPort(listenPort)
         result.CallWhenReady(
             Sub(exception)
+                Contract.Assume(lan IsNot Nothing)
+                Contract.Assume(server IsNot Nothing)
                 If exception IsNot Nothing Then
                     server.QueueKill()
                     lan.Dispose()
@@ -351,37 +373,45 @@ Public NotInheritable Class MainBot
 
 #Region "Events"
     Private Sub ThrowAddedWidget(ByVal widget As IBotWidget)
+        Contract.Requires(widget IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent AddedWidget(widget)
                          End Sub)
     End Sub
     Private Sub ThrowRemovedWidget(ByVal widget As IBotWidget)
+        Contract.Requires(widget IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent RemovedWidget(widget)
                          End Sub)
     End Sub
     Private Sub ThrowAddedServer(ByVal server As W3Server)
+        Contract.Requires(server IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent AddedServer(server)
                          End Sub)
     End Sub
     Private Sub ThrowRemovedServer(ByVal server As W3Server)
+        Contract.Requires(server IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent RemovedServer(server)
                          End Sub)
     End Sub
     Private Sub ThrowAddedClient(ByVal client As BnetClient)
+        Contract.Requires(client IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent AddedClient(client)
                          End Sub)
     End Sub
     Private Sub ThrowRemovedClient(ByVal client As BnetClient)
+        Contract.Requires(client IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent RemovedClient(client)
                          End Sub)
     End Sub
 
     Private Sub CatchClientReceivedPacket(ByVal client As BnetClient, ByVal packet As BnetPacket)
+        Contract.Requires(client IsNot Nothing)
+        Contract.Requires(packet IsNot Nothing)
         If packet.id <> BnetPacketId.ChatEvent Then Return
 
         Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
@@ -413,19 +443,20 @@ Public NotInheritable Class MainBot
         Dim commandResult = ClientCommands.ProcessCommand(client, user, BreakQuotedWords(commandText))
         commandResult.CallWhenValueReady(
             Sub(message, messageException)
+                Contract.Assume(user IsNot Nothing)
                 If messageException IsNot Nothing Then
-                    client.QueueSendWhisper(user.name, "Failed: {0}".Frmt(messageException.Message))
+                    client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(messageException.Message))
                 ElseIf message IsNot Nothing Then
-                    client.QueueSendWhisper(user.name, message)
+                    client.QueueSendWhisper(user.Name, message)
                 Else
-                    client.QueueSendWhisper(user.name, "Command Succeeded")
+                    client.QueueSendWhisper(user.Name, "Command Succeeded")
                 End If
             End Sub
         )
         FutureWait(2.Seconds).CallWhenReady(
             Sub()
                 If commandResult.State = FutureState.Unknown Then
-                    client.QueueSendWhisper(user.name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
+                    client.QueueSendWhisper(user.Name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
                 End If
             End Sub
             )
@@ -435,7 +466,14 @@ Public NotInheritable Class MainBot
                                         ByVal game As W3Game,
                                         ByVal player As W3Player,
                                         ByVal text As String)
-        If text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
+        Contract.Requires(sender IsNot Nothing)
+        Contract.Requires(game IsNot Nothing)
+        Contract.Requires(player IsNot Nothing)
+        Contract.Requires(text IsNot Nothing)
+
+        Dim prefix = My.Settings.commandPrefix
+        Contract.Assume(prefix IsNot Nothing)
+        If text.Substring(0, prefix.Length) <> prefix Then
             If text.ToUpperInvariant <> "?TRIGGER" Then
                 Return
             End If
@@ -443,7 +481,7 @@ Public NotInheritable Class MainBot
 
         'Process ?trigger command
         If text.ToUpperInvariant = "?TRIGGER" Then
-            game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(My.Settings.commandPrefix), player)
+            game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(prefix), player)
             Return
         End If
 
@@ -451,6 +489,7 @@ Public NotInheritable Class MainBot
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
         game.QueueCommandProcessText(player, BreakQuotedWords(commandText)).CallWhenValueReady(
             Sub(message, messageException)
+                Contract.Assume(player IsNot Nothing)
                 If messageException IsNot Nothing Then
                     game.QueueSendMessageTo("Failed: {0}".Frmt(messageException.Message), player)
                 ElseIf message IsNot Nothing Then
@@ -462,17 +501,23 @@ Public NotInheritable Class MainBot
         )
     End Sub
 
-    Private Sub CatchClientStateChanged(ByVal sender As BnetClient, ByVal old_state As BnetClientState, ByVal new_state As BnetClientState)
-        RaiseEvent ClientStateChanged(sender, old_state, new_state)
+    Private Sub CatchClientStateChanged(ByVal sender As BnetClient, ByVal oldState As BnetClientState, ByVal newState As BnetClientState)
+        Contract.Requires(sender IsNot Nothing)
+        RaiseEvent ClientStateChanged(sender, oldState, newState)
     End Sub
-    Private Sub CatchServerStateChanged(ByVal sender As W3Server, ByVal old_state As W3ServerState, ByVal new_state As W3ServerState)
-        RaiseEvent ServerStateChanged(sender, old_state, new_state)
+    Private Sub CatchServerStateChanged(ByVal sender As W3Server, ByVal oldState As W3ServerState, ByVal newState As W3ServerState)
+        Contract.Requires(sender IsNot Nothing)
+        RaiseEvent ServerStateChanged(sender, oldState, newState)
     End Sub
 #End Region
 
 #Region "Remote Calls"
     Public Function QueueFindServer(ByVal name As String) As IFuture(Of W3Server)
-        Return ref.QueueFunc(Function() FindServer(name))
+        Contract.Requires(name IsNot Nothing)
+        Return ref.QueueFunc(Function()
+                                 Contract.Assume(name IsNot Nothing)
+                                 Return FindServer(name)
+                             End Function)
     End Function
     Public Function QueueKill() As IFuture
         Return ref.QueueAction(AddressOf Kill)
@@ -481,43 +526,99 @@ Public NotInheritable Class MainBot
                                         ByVal password As String,
                                         Optional ByVal remoteHostName As String = "localhost",
                                         Optional ByVal listenPort As UShort = 0) As IFuture
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(password IsNot Nothing)
+        Contract.Requires(remoteHostName IsNot Nothing)
         Return ref.QueueFunc(Function() CreateLanAdmin(name, password, remoteHostName, listenPort)).Defuturized
     End Function
     Public Function QueueAddWidget(ByVal widget As IBotWidget) As IFuture
-        Return ref.QueueAction(Sub() AddWidget(widget))
+        Contract.Requires(widget IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Return ref.QueueAction(Sub()
+                                   Contract.Assume(widget IsNot Nothing)
+                                   AddWidget(widget)
+                               End Sub)
     End Function
     Public Function QueueRemoveWidget(ByVal typeName As String, ByVal name As String) As IFuture
-        Return ref.QueueAction(Sub() RemoveWidget(typeName, name))
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(typeName IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Return ref.QueueAction(Sub()
+                                   Contract.Assume(typeName IsNot Nothing)
+                                   Contract.Assume(name IsNot Nothing)
+                                   RemoveWidget(typeName, name)
+                               End Sub)
     End Function
     Public Function QueueRemoveServer(ByVal name As String) As IFuture
-        Return ref.QueueAction(Sub() KillServer(name))
+        Contract.Requires(name IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Return ref.QueueAction(Sub()
+                                   Contract.Assume(name IsNot Nothing)
+                                   KillServer(name)
+                               End Sub)
     End Function
     Public Function QueueCreateServer(ByVal name As String,
                                       ByVal defaultSettings As ServerSettings,
                                       Optional ByVal suffix As String = "",
                                       Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of W3Server)
-        Return ref.QueueFunc(Function() CreateServer(name, defaultSettings, suffix, avoidNameCollisions))
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(defaultSettings IsNot Nothing)
+        Contract.Requires(suffix IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of W3Server))() IsNot Nothing)
+        Return ref.QueueFunc(Function()
+                                 Contract.Assume(name IsNot Nothing)
+                                 Contract.Assume(defaultSettings IsNot Nothing)
+                                 Contract.Assume(suffix IsNot Nothing)
+                                 Return CreateServer(name, defaultSettings, suffix, avoidNameCollisions)
+                             End Function)
     End Function
     Public Function QueueFindClient(ByVal name As String) As IFuture(Of BnetClient)
-        Return ref.QueueFunc(Function() FindClient(name))
+        Contract.Requires(name IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of BnetClient))() IsNot Nothing)
+        Return ref.QueueFunc(Function()
+                                 Contract.Assume(name IsNot Nothing)
+                                 Return FindClient(name)
+                             End Function)
     End Function
     Public Function QueueRemoveClient(ByVal name As String, ByVal expected As Boolean, ByVal reason As String) As IFuture
-        Return ref.QueueAction(Sub() KillClient(name, expected, reason))
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(reason IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Return ref.QueueAction(Sub()
+                                   Contract.Assume(name IsNot Nothing)
+                                   Contract.Assume(reason IsNot Nothing)
+                                   KillClient(name, expected, reason)
+                               End Sub)
     End Function
     Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of BnetClient)
-        Return ref.QueueFunc(Function() CreateClient(name, profileName))
+        Contract.Requires(name IsNot Nothing)
+        Contract.Requires(profileName IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of BnetClient))() IsNot Nothing)
+        Return ref.QueueFunc(Function()
+                                 Contract.Assume(name IsNot Nothing)
+                                 Contract.Assume(profileName IsNot Nothing)
+                                 Return CreateClient(name, profileName)
+                             End Function)
     End Function
     Public Function QueueGetServers() As IFuture(Of List(Of W3Server))
+        Contract.Ensures(Contract.Result(Of IFuture(Of List(Of W3Server)))() IsNot Nothing)
         Return ref.QueueFunc(Function() servers.ToList)
     End Function
     Public Function QueueGetClients() As IFuture(Of List(Of BnetClient))
+        Contract.Ensures(Contract.Result(Of IFuture(Of List(Of BnetClient)))() IsNot Nothing)
         Return ref.QueueFunc(Function() clients.ToList)
     End Function
     Public Function QueueGetWidgets() As IFuture(Of List(Of IBotWidget))
+        Contract.Ensures(Contract.Result(Of IFuture(Of List(Of IBotWidget)))() IsNot Nothing)
         Return ref.QueueFunc(Function() widgets.ToList)
     End Function
     Public Function QueueLoadPlugin(ByVal name As String) As IFuture(Of Plugins.IPlugin)
-        Return ref.QueueFunc(Function() LoadPlugin(name))
+        Contract.Requires(name IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of Plugins.IPlugin))() IsNot Nothing)
+        Return ref.QueueFunc(Function()
+                                 Contract.Assume(name IsNot Nothing)
+                                 Return LoadPlugin(name)
+                             End Function)
     End Function
 #End Region
 End Class
@@ -593,6 +694,8 @@ Public Class PortPool
             Dim port = New PortHandle(Me, InPorts.First)
             InPorts.Remove(port.Port)
             OutPorts.Add(port.Port)
+            Contract.Assume(Not InPorts.Contains(port.Port))
+            Contract.Assume(OutPorts.Contains(port.Port))
             Return port
         End SyncLock
     End Function

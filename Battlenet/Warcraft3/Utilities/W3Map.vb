@@ -192,6 +192,7 @@ Namespace Warcraft3
             Contract.Requires(slotCount > 0)
             Contract.Requires(slotCount <= 12)
             Contract.Requires(fileSize > 0)
+            Contract.Ensures(Me.slots.Count = slotCount)
             Me._fullPath = folder + relativePath.Substring(5)
             Me._relativePath = relativePath
             Me._folder = folder

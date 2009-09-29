@@ -22,6 +22,8 @@ Namespace Warcraft3
         Private mode As DummyPlayerMode
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(index > 0)
+            Contract.Invariant(index <= 12)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
@@ -51,6 +53,7 @@ Namespace Warcraft3
 #Region "Networking"
         Public Function QueueConnect(ByVal hostName As String, ByVal port As UShort) As IFuture
             Contract.Requires(hostName IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()
                                        Contract.Assume(hostName IsNot Nothing)
                                        Connect(hostName, port)
@@ -96,7 +99,7 @@ Namespace Warcraft3
                                 AddHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
                                 AddHandler player.Disconnected, AddressOf OnPeerDisconnect
                             Case OtherPlayerLeft
-                                Dim player = (From p In otherPlayers Where p.index = CByte(vals("player index"))).FirstOrDefault
+                                Dim player = (From p In otherPlayers Where p.Index = CByte(vals("player index"))).FirstOrDefault
                                 If player IsNot Nothing Then
                                     otherPlayers.Remove(player)
                                     RemoveHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
@@ -133,8 +136,12 @@ Namespace Warcraft3
 
         Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of String, Object)) As Boolean
             If dl Is Nothing OrElse dl.file Is Nothing Then Throw New InvalidOperationException()
+            Dim position = CInt(CUInt(vals("file position")))
+            Dim fileData = CType(vals("file data"), Byte())
+            Contract.Assume(position > 0)
+            Contract.Assume(fileData IsNot Nothing)
 
-            If dl.ReceiveChunk(CInt(vals("file position")), CType(vals("file data"), Byte())) Then
+            If dl.ReceiveChunk(position, fileData) Then
                 socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, dl.size))
                 Return True
             Else
@@ -143,13 +150,17 @@ Namespace Warcraft3
             End If
         End Function
         Private Sub SendPlayersConnected()
-            socket.SendPacket(W3Packet.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.index))
+            socket.SendPacket(W3Packet.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.Index))
         End Sub
 
         Private Sub c_Disconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
-            ref.QueueAction(Sub() Disconnect(expected, reason))
+            ref.QueueAction(Sub()
+                                Contract.Assume(reason IsNot Nothing)
+                                Disconnect(expected, reason)
+                            End Sub)
         End Sub
         Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
+            Contract.Requires(reason IsNot Nothing)
             socket.Disconnect(expected, reason)
             accepter.Accepter.CloseAllPorts()
             For Each player In otherPlayers
@@ -173,7 +184,7 @@ Namespace Warcraft3
                                      ByVal acceptedPlayer As W3ConnectingPeer) Handles accepter.Connection
             ref.QueueAction(
                 Sub()
-                    Dim player = (From p In otherPlayers Where p.index = acceptedPlayer.index).FirstOrDefault
+                    Dim player = (From p In otherPlayers Where p.Index = acceptedPlayer.index).FirstOrDefault
                     Dim socket = acceptedPlayer.socket
                     If player Is Nothing Then
                         Dim msg = "{0} was not another player in the game.".Frmt(socket.Name)
@@ -200,7 +211,7 @@ Namespace Warcraft3
         End Sub
 
         Private Sub OnPeerReceivePacket(ByVal sender As W3Peer,
-                                         ByVal packet As W3Packet)
+                                        ByVal packet As W3Packet)
             ref.QueueAction(
                 Sub()
                     Try
@@ -215,7 +226,7 @@ Namespace Warcraft3
                                 If ReceiveDLMapChunk(vals) Then
                                     Disconnect(expected:=True, reason:="Download finished.")
                                 Else
-                                    sender.Socket.SendPacket(W3Packet.MakeMapFileDataReceived(sender.index, Me.index, pos))
+                                    sender.Socket.SendPacket(W3Packet.MakeMapFileDataReceived(sender.Index, Me.index, pos))
                                 End If
                         End Select
                     Catch e As Exception

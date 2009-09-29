@@ -28,6 +28,14 @@ Namespace Warcraft3
     End Enum
 
     Partial Public NotInheritable Class W3Game
+        Public Shared ReadOnly GameCommandsLoadScreen As New Commands.CommandSet(Of W3Game)
+        Public Shared ReadOnly GameGuestCommandsLobby As New Commands.Specializations.InstanceGuestSetupCommands
+        Public Shared ReadOnly GameGuestCommandsLoadScreen As New Commands.Specializations.InstanceGuestLoadCommands
+        Public Shared ReadOnly GameGuestCommandsGamePlay As New Commands.Specializations.InstanceGuestPlayCommands
+        Public Shared ReadOnly GameCommandsGamePlay As New Commands.Specializations.InstancePlayCommands
+        Public Shared ReadOnly GameCommandsLobby As New Commands.Specializations.InstanceSetupCommands
+        Public Shared ReadOnly GameCommandsAdmin As New Commands.Specializations.InstanceAdminCommands
+
         Private ReadOnly _server As W3Server
         Private ReadOnly _map As W3Map
         Private ReadOnly _name As String
@@ -78,11 +86,11 @@ Namespace Warcraft3
             Contract.Requires(logger IsNot Nothing)
             Select Case state
                 Case Is < W3GameState.Loading
-                    Server.parent.GameCommandsLobby.ProcessLocalText(Me, text, logger)
+                    W3Game.GameCommandsLobby.ProcessLocalText(Me, text, logger)
                 Case W3GameState.Loading
-                    Server.parent.GameCommandsLoadScreen.ProcessLocalText(Me, text, logger)
+                    W3Game.GameCommandsLoadScreen.ProcessLocalText(Me, text, logger)
                 Case Is > W3GameState.Loading
-                    Server.parent.GameCommandsGamePlay.ProcessLocalText(Me, text, logger)
+                    W3Game.GameCommandsGamePlay.ProcessLocalText(Me, text, logger)
                 Case Else
                     Throw New UnreachableException()
             End Select
@@ -94,24 +102,24 @@ Namespace Warcraft3
             If player IsNot adminPlayer Then
                 Select Case state
                     Case Is < W3GameState.Loading
-                        Return Server.parent.GameGuestCommandsLobby.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameGuestCommandsLobby.ProcessCommand(Me, user, arguments)
                     Case W3GameState.Loading
-                        Return Server.parent.GameGuestCommandsLoadScreen.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameGuestCommandsLoadScreen.ProcessCommand(Me, user, arguments)
                     Case Is > W3GameState.Loading
-                        Return Server.parent.GameGuestCommandsGamePlay.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameGuestCommandsGamePlay.ProcessCommand(Me, user, arguments)
                     Case Else
                         Throw New UnreachableException()
                 End Select
             ElseIf Server.settings.isAdminGame Then
-                Return Server.parent.GameCommandsAdmin.ProcessCommand(Me, Nothing, arguments)
+                Return W3Game.GameCommandsAdmin.ProcessCommand(Me, Nothing, arguments)
             Else
                 Select Case state
                     Case Is < W3GameState.Loading
-                        Return Server.parent.GameCommandsLobby.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameCommandsLobby.ProcessCommand(Me, user, arguments)
                     Case W3GameState.Loading
-                        Return Server.parent.GameCommandsLoadScreen.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameCommandsLoadScreen.ProcessCommand(Me, user, arguments)
                     Case Is > W3GameState.Loading
-                        Return Server.parent.GameCommandsGamePlay.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameCommandsGamePlay.ProcessCommand(Me, user, arguments)
                     Case Else
                         Throw New UnreachableException()
                 End Select
@@ -603,7 +611,7 @@ Namespace Warcraft3
                                                 ByVal arguments As IList(Of String)) As IFuture(Of String)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(arguments IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return ref.QueueFunc(Function()
                                      Contract.Assume(player IsNot Nothing)
                                      Contract.Assume(arguments IsNot Nothing)

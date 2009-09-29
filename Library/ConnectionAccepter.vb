@@ -8,6 +8,13 @@ Public Class ConnectionAccepter
 
     Public Event AcceptedConnection(ByVal sender As ConnectionAccepter, ByVal acceptedClient As TcpClient)
 
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(listeners IsNot Nothing)
+        Contract.Invariant(lock IsNot Nothing)
+    End Sub
+
+
     '''<summary>Tries to start listening for connections on the given port.</summary>
     Public Sub OpenPort(ByVal port As UShort)
         SyncLock lock

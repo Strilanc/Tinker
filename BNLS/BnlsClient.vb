@@ -54,13 +54,16 @@ Namespace BNLS
             'Read packets until an exception occurs
             Dim readLoop = FutureIterateExcept(Function() FutureReadBnlsPacket(socket, logger),
                 Sub(packet)
+                    Contract.Assume(packet IsNot Nothing)
+
                     'Check packet type
                     If packet.id <> BNLSWardenPacketId.FullServiceHandleWardenPacket Then
                         Throw New IO.IOException("Incorrect packet type received from server.")
                     End If
 
                     'Check packet contents
-                    Dim vals = CType(packet.payload, IPickle(Of Dictionary(Of String, Object))).Value
+                    Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of String, Object))).Value
+                    Contract.Assume(vals IsNot Nothing)
                     If CUInt(vals("cookie")) <> cookie Then
                         Throw New IO.IOException("Incorrect cookie from server.")
                     ElseIf CUInt(vals("result")) <> 0 Then
@@ -95,6 +98,7 @@ Namespace BNLS
             'Connect and send first packet
             Dim futurePacketSocket = FutureCreateConnectedTcpClient(hostName, port).Select(
                 Function(tcpClient)
+                    Contract.Assume(tcpClient IsNot Nothing)
                     Dim socket = New PacketSocket(tcpClient,
                                                   timeout:=5.Minutes,
                                                   numBytesBeforeSize:=0,
@@ -114,7 +118,9 @@ Namespace BNLS
             'Process response packet and construct bnls client on success
             Dim futureBnlsClient = futureReadPacket.Select(
                 Function(packet)
+                    Contract.Assume(packet IsNot Nothing)
                     Dim packetSocket = futurePacketSocket.Value
+                    Contract.Assume(packetSocket IsNot Nothing)
 
                     'Check packet type
                     If packet.id <> BNLSWardenPacketId.FullServiceConnect Then
@@ -124,7 +130,7 @@ Namespace BNLS
                     End If
 
                     'Check packet contents
-                    Dim vals = CType(packet.payload, IPickle(Of Dictionary(Of String, Object))).Value
+                    Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of String, Object))).Value
                     If CUInt(vals("cookie")) <> cookie Then
                         Dim msg = "Incorrect cookie from server."
                         packetSocket.Disconnect(expected:=False, reason:=msg)
@@ -140,22 +146,24 @@ Namespace BNLS
 
         Private Shared Sub WritePacket(ByVal socket As PacketSocket,
                                        ByVal logger As Logger,
-                                       ByVal pk As BNLSWardenPacket)
-            Contract.Requires(pk IsNot Nothing)
+                                       ByVal packet As BNLSWardenPacket)
+            Contract.Requires(packet IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
 
             Try
-                logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, socket.Name), LogMessageType.DataEvent)
-                logger.Log(pk.payload.Description, LogMessageType.DataParsed)
-                socket.WritePacket(Concat(Of Byte)({0, 0, BNLSPacketId.Warden, pk.id}, pk.payload.Data.ToArray))
+                logger.Log(Function() "Sending {0} to {1}".Frmt(packet.id, socket.Name), LogMessageType.DataEvent)
+                logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
+                socket.WritePacket(Concat(Of Byte)({0, 0, BNLSPacketId.Warden, packet.id}, packet.Payload.Data.ToArray))
 
             Catch e As Exception
                 If Not (TypeOf e Is SocketException OrElse
                         TypeOf e Is ObjectDisposedException OrElse
                         TypeOf e Is IO.IOException OrElse
                         TypeOf e Is PicklingException) Then
-                    LogUnexpectedException("Error sending {0} to {1}.".Frmt(pk.id, socket.Name), e)
+                    LogUnexpectedException("Error sending {0} to {1}.".Frmt(packet.id, socket.Name), e)
                 End If
-                socket.Disconnect(expected:=False, reason:="Error sending {0} for {1}: {2}".Frmt(pk.id, socket.Name, e))
+                socket.Disconnect(expected:=False, reason:="Error sending {0} for {1}: {2}".Frmt(packet.id, socket.Name, e))
                 Throw
             End Try
         End Sub
@@ -164,6 +172,8 @@ Namespace BNLS
                                                      ByVal logger As Logger) As IFuture(Of BNLSWardenPacket)
             Return socket.FutureReadPacket().Select(
                 Function(packetData)
+                    Contract.Assume(packetData IsNot Nothing)
+
                     'Check packet
                     If packetData.Length < 3 Then
                         Throw New IO.IOException("Packet doesn't have a header.")
@@ -174,12 +184,13 @@ Namespace BNLS
                     'Parse, log, return
                     Dim pk = BNLSWardenPacket.FromServerData(packetData.SubView(3))
                     logger.Log(Function() "Received {0} from {1}".Frmt(pk.id, socket.Name), LogMessageType.DataEvent)
-                    logger.Log(pk.payload.Description, LogMessageType.DataParsed)
+                    logger.Log(pk.Payload.Description, LogMessageType.DataParsed)
                     Return pk
                 End Function)
         End Function
 
         Public Sub ProcessWardenPacket(ByVal data As ViewableList(Of Byte))
+            Contract.Requires(data IsNot Nothing)
             WritePacket(socket, logger, BNLSWardenPacket.MakeFullServiceHandleWardenPacket(cookie, data.ToArray))
         End Sub
 

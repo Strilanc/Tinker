@@ -12,7 +12,10 @@ Public Module FutureExtensionsEx
         Dim result = New FutureFunction(Of Integer)
         Try
             this.BeginRead(buffer:=buffer, offset:=offset, count:=count, state:=Nothing,
-                 callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar)))
+                 callback:=Sub(ar) result.SetByEvaluating(Function()
+                                                              Contract.Assume(ar IsNot Nothing)
+                                                              Return this.EndRead(ar)
+                                                          End Function))
         Catch e As Exception
             result.SetFailed(e)
         End Try
@@ -29,16 +32,21 @@ Public Module FutureExtensionsEx
 
         Dim result = New FutureAction
         Dim iterator As Action(Of Boolean, Exception) = Nothing
+        Dim futureProduct As IFuture(Of T)
         iterator = Sub([continue], consumerException)
                        If consumerException IsNot Nothing Then
                            result.SetFailed(consumerException)
                        ElseIf [continue] Then
-                           producer().EvalWhenValueReady(consumer).Defuturized.CallWhenValueReady(iterator)
+                           futureProduct = producer()
+                           Contract.Assume(futureProduct IsNot Nothing)
+                           futureProduct.EvalWhenValueReady(consumer).Defuturized.CallWhenValueReady(iterator)
                        Else
                            result.SetSucceeded()
                        End If
                    End Sub
-        producer().EvalWhenValueReady(consumer).Defuturized.CallWhenValueReady(iterator)
+        futureProduct = producer()
+        Contract.Assume(futureProduct IsNot Nothing)
+        futureProduct.EvalWhenValueReady(consumer).Defuturized.CallWhenValueReady(iterator)
         Return result
     End Function
 
@@ -53,7 +61,9 @@ Public Module FutureExtensionsEx
 
         Dim result = New FutureAction
         Dim iterator As Action(Of T, Exception) = Nothing
+        Dim product As IFuture(Of T)
         iterator = Sub(value, valueException)
+                       Contract.Assume(result IsNot Nothing)
                        If valueException IsNot Nothing Then
                            result.SetFailed(valueException)
                        Else
@@ -62,10 +72,16 @@ Public Module FutureExtensionsEx
                            Catch e As Exception
                                result.SetFailed(e)
                            End Try
-                           producer().CallWhenValueReady(iterator)
+                           Contract.Assume(iterator IsNot Nothing)
+                           Contract.Assume(producer IsNot Nothing)
+                           product = producer()
+                           Contract.Assume(product IsNot Nothing)
+                           product.CallWhenValueReady(iterator)
                        End If
                    End Sub
-        producer().CallWhenValueReady(iterator)
+        product = producer()
+        Contract.Assume(product IsNot Nothing)
+        product.CallWhenValueReady(iterator)
         Return result
     End Function
 
