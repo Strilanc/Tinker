@@ -13,6 +13,7 @@
         End Sub
         Private Sub LoadScreenStart()
             For Each player In players
+                Contract.Assume(player IsNot Nothing)
                 player.QueueStartLoading()
                 unreadyPlayers.Add(player)
                 If IsPlayerVisible(player) Then visibleUnreadyPlayers.Add(player)
@@ -22,9 +23,10 @@
             logger.log("Players Loading", LogMessageType.Positive)
 
             'Ready any lingering fake players
-            For Each player In (From p In players Where p.IsFake _
+            For Each player In (From p In players Where p.isFake _
                                                   AndAlso IsPlayerVisible(p) _
-                                                  AndAlso FindPlayerSlot(p).contents.Moveable)
+                                                  AndAlso FindPlayerSlot(p).Contents.Moveable)
+                Contract.Assume(player IsNot Nothing)
                 readyPlayers.Add(player)
                 unreadyPlayers.Remove(player)
                 visibleReadyPlayers.Add(player)
@@ -80,6 +82,7 @@
                 unreadyPlayers.Remove(sendingPlayer)
 
                 Dim slot = FindPlayerSlot(sendingPlayer)
+                Contract.Assume(slot IsNot Nothing)
                 If (From x In slot.contents.EnumPlayers Where Not (x.Ready Or x.IsFake)).None Then
                     visibleReadiedPlayer = slot.contents.EnumPlayers.First
                 End If
@@ -135,7 +138,9 @@
 
                     numFakeTicks += 1
                     For Each player In readyPlayers
+                        Contract.Assume(player IsNot Nothing)
                         For Each other In visibleUnreadyPlayers
+                            Contract.Assume(other IsNot Nothing)
                             player.QueueSendPacket(W3Packet.MakeRemovePlayerFromLagScreen(other, 0))
                         Next other
                         player.QueueSendPacket(W3Packet.MakeTick(0))

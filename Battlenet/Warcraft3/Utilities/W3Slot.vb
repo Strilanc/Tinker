@@ -3,11 +3,40 @@
         Public ReadOnly index As Byte
         Public ReadOnly game As W3Game
         Public color As PlayerColor
-        Public team As Byte
+        Private _team As Byte
         Public handicap As Byte = 100
         Public race As Races = Races.Random
-        Public contents As W3SlotContents
+        Private _contents As W3SlotContents
         Public locked As Lock
+
+        Public Property Contents As W3SlotContents
+            Get
+                Contract.Ensures(Contract.Result(Of W3SlotContents)() IsNot Nothing)
+                Return Me._contents
+            End Get
+            Set(ByVal value As W3SlotContents)
+                Contract.Requires(value IsNot Nothing)
+                Me._contents = value
+            End Set
+        End Property
+        Public Property Team As Byte
+            Get
+                Contract.Ensures(Contract.Result(Of Byte)() >= 0)
+                Contract.Ensures(Contract.Result(Of Byte)() < 12)
+                Return _team
+            End Get
+            Set(ByVal value As Byte)
+                Contract.Requires(value >= 0)
+                Contract.Requires(value < 12)
+                _team = value
+            End Set
+        End Property
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_contents IsNot Nothing)
+            Contract.Invariant(_team >= 0)
+            Contract.Invariant(_team < 12)
+        End Sub
 
 #Region "Enums"
         Public Const ObserverTeamIndex As Byte = 12
@@ -44,19 +73,19 @@
             Sticky = 1
             Frozen = 2
         End Enum
-#End Region
-
-        Public Sub New(ByVal game As W3Game, ByVal index As Byte)
-            Me.game = game
-            Me.index = index
-            Me.contents = New W3SlotContentsOpen(Me)
-        End Sub
         Public Enum Match
             None = 0
             Contents = 1
             Color = 2
             Index = 3
         End Enum
+#End Region
+
+        Public Sub New(ByVal game As W3Game, ByVal index As Byte)
+            Me.game = game
+            Me.index = index
+            Me.Contents = New W3SlotContentsOpen(Me)
+        End Sub
         Public ReadOnly Property MatchableId() As String
             Get
                 Return (index + 1).ToString(CultureInfo.InvariantCulture)
@@ -65,7 +94,7 @@
         Public Function Matches(ByVal query As String) As Match
             If query = (index + 1).ToString(CultureInfo.InvariantCulture) Then Return Match.Index
             If query.ToUpperInvariant = color.ToString.ToUpperInvariant Then Return Match.Color
-            If contents.Matches(query) Then Return Match.Contents
+            If Contents.Matches(query) Then Return Match.Contents
             Return Match.None
         End Function
         Public Function Cloned() As W3Slot
@@ -74,7 +103,7 @@
             slot.team = team
             slot.handicap = handicap
             slot.race = race
-            slot.contents = contents.Clone(slot)
+            slot.Contents = Contents.Clone(slot)
             slot.locked = locked
             Return slot
         End Function
@@ -91,7 +120,7 @@
                 Case W3Slot.Lock.Sticky
                     s = "(STICKY) " + s
             End Select
-            Return contents.GenerateDescription.Select(Function(desc) Padded(s, 30) + desc)
+            Return Contents.GenerateDescription.Select(Function(desc) Padded(s, 30) + desc)
         End Function
     End Class
 

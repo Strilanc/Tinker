@@ -36,12 +36,24 @@ Namespace Bnet
 #Region "Inner"
         Public Class GameSettings
             Public [private] As Boolean
-            Public ReadOnly header As W3GameHeader
+            Private ReadOnly _header As W3GameHeader
+            Public ReadOnly Property Header As W3GameHeader
+                Get
+                    Contract.Ensures(Contract.Result(Of W3GameHeader)() IsNot Nothing)
+                    Return _header
+                End Get
+            End Property
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(_header IsNot Nothing)
+            End Sub
+
             Public Sub New(ByVal header As W3GameHeader)
                 Contract.Requires(header IsNot Nothing)
                 Me.private = [private]
-                Me.header = header
+                Me._header = header
                 For Each arg In header.Options
+                    Contract.Assume(arg IsNot Nothing)
                     Select Case arg.ToUpperInvariant.Trim()
                         Case "-P", "-PRIVATE"
                             Me.private = True
@@ -122,6 +134,9 @@ Namespace Bnet
             Contract.Invariant(futureLoggedIn IsNot Nothing)
             Contract.Invariant(futureConnected IsNot Nothing)
             Contract.Invariant(futureCreatedGame IsNot Nothing)
+            Contract.Invariant(userLinkMap IsNot Nothing)
+            Contract.Invariant(gameRefreshTimer IsNot Nothing)
+            Contract.Invariant(hostCount >= 0)
         End Sub
 
 #Region "New"
@@ -192,7 +207,11 @@ Namespace Bnet
         Private Sub SendWhisper(ByVal username As String, ByVal text As String)
             Contract.Requires(username IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
-            SendText("/w {0} {1}".Frmt(username, text))
+            Contract.Requires(username.Length > 0)
+            Contract.Requires(text.Length > 0)
+            Dim message = "/w {0} {1}".Frmt(username, text)
+            Contract.Assume(message.Length >= 6)
+            SendText(message)
         End Sub
 
         Private Sub SetListenPort(ByVal newPort As UShort)
@@ -301,6 +320,7 @@ Namespace Bnet
                             Me.futureConnected.MarkAnyExceptionAsHandled()
 
                             'Start log-on process
+                            Contract.Assume(tcpClient IsNot Nothing)
                             tcpClient.GetStream.Write({1}, 0, 1)
                             SendPacket(BnetPacket.MakeAuthenticationBegin(MainBot.WC3MajorVersion, GetCachedIPAddressBytes(external:=False)))
 
@@ -356,7 +376,7 @@ Namespace Bnet
         End Sub
         Private Sub BeginConnectBnlsServer(ByVal seed As ModInt32)
             Dim address = My.Settings.bnls
-            If address = "" Then
+            If address Is Nothing OrElse address = "" Then
                 logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
                 Return
             End If
@@ -374,6 +394,7 @@ Namespace Bnet
                         logger.Log("Error connecting to bnls server: {0}".Frmt(bnlsClientException), LogMessageType.Problem)
                         Return Nothing
                     End If
+                    Contract.Assume(bnlsClient IsNot Nothing)
                     logger.Log("Connected to bnls server.", LogMessageType.Positive)
                     AddHandler bnlsClient.Send, AddressOf OnWardenSend
                     AddHandler bnlsClient.Fail, AddressOf OnWardenFail
@@ -435,6 +456,7 @@ Namespace Bnet
             If futureWardenHandler IsNot Nothing Then
                 futureWardenHandler.CallOnValueSuccess(
                     Sub(bnlsClient)
+                        Contract.Assume(bnlsClient IsNot Nothing)
                         bnlsClient.Dispose()
                         RemoveHandler bnlsClient.Send, AddressOf OnWardenSend
                         RemoveHandler bnlsClient.Fail, AddressOf OnWardenFail
@@ -586,7 +608,9 @@ Namespace Bnet
         Private Sub SetUserServer(ByVal user As BotUser, ByVal server As W3Server)
             If user Is Nothing Then Return
             If userLinkMap.ContainsKey(user) Then
-                userLinkMap(user).Dispose()
+                Dim link = userLinkMap(user)
+                Contract.Assume(link IsNot Nothing)
+                link.Dispose()
                 userLinkMap.Remove(user)
             End If
             If server Is Nothing Then Return
@@ -691,8 +715,8 @@ Namespace Bnet
             Dim cdKeyOwner = My.Settings.cdKeyOwner
             Dim exeInfo = My.Settings.exeInformation
             Dim R = New System.Security.Cryptography.RNGCryptoServiceProvider()
-            If profile.keyServerAddress Like "*:#*" Then
-                Dim pair = profile.keyServerAddress.Split(":"c)
+            If profile.CKLServerAddress Like "*:#*" Then
+                Dim pair = profile.CKLServerAddress.Split(":"c)
                 Dim tempPort = pair(1)
                 Contract.Assume(tempPort IsNot Nothing) 'can be removed once verifier understands String.split
                 Dim port = UShort.Parse(tempPort, CultureInfo.InvariantCulture)
@@ -715,7 +739,10 @@ Namespace Bnet
                         End If
 
                         Contract.Assume(packet IsNot Nothing)
-                        Dim rocKeyData = CType(CType(packet.payload.Value, Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
+                        Dim sendVals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+                        Contract.Assume(sendVals IsNot Nothing)
+                        Dim rocKeyData = CType(sendVals("ROC cd key"), Dictionary(Of String, Object))
+                        Contract.Assume(rocKeyData IsNot Nothing)
                         Dim rocHash = CType(rocKeyData("hash"), Byte())
                         Contract.Assume(rocHash IsNot Nothing)
                         BeginConnectBnlsServer(rocHash.SubArray(0, 4).ToUInt32())
@@ -738,7 +765,10 @@ Namespace Bnet
                                                                     rocKey,
                                                                     tftKey,
                                                                     R)
-                Dim rocKeyData = CType(CType(p.payload.Value, Dictionary(Of String, Object))("ROC cd key"), Dictionary(Of String, Object))
+                Dim sendVals = CType(p.Payload.Value, Dictionary(Of String, Object))
+                Contract.Assume(sendVals IsNot Nothing)
+                Dim rocKeyData = CType(sendVals("ROC cd key"), Dictionary(Of String, Object))
+                Contract.Assume(rocKeyData IsNot Nothing)
                 Dim rocHash = CType(rocKeyData("hash"), Byte())
                 Contract.Assume(rocHash IsNot Nothing)
                 BeginConnectBnlsServer(rocHash.SubArray(0, 4).ToUInt32())
@@ -938,21 +968,25 @@ Namespace Bnet
 
 #Region "Networking (Misc)"
         Private Sub ReceiveChatEvent(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             Dim eventId = CType(vals("event id"), BnetPacket.ChatEventId)
             Dim text = CStr(vals("text"))
             If eventId = BnetPacket.ChatEventId.Channel Then lastChannel = text
         End Sub
 
         Private Sub ReceivePing(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             Dim salt = CUInt(vals("salt"))
             SendPacket(BnetPacket.MakePing(salt))
         End Sub
 
         Private Sub ReceiveNull(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             '[ignore]
         End Sub
 
         Private Sub ReceiveMessageBox(ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(vals IsNot Nothing)
             Dim msg = "MESSAGE BOX FROM BNET: " + CStr(vals("caption")) + ": " + CStr(vals("text"))
             logger.Log(msg, LogMessageType.Problem)
         End Sub

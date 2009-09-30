@@ -26,6 +26,15 @@ Public NotInheritable Class W3LanAdvertiser
     Private createCount As UInteger
     Private WithEvents refreshTimer As New System.Timers.Timer(3000)
 
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(refreshTimer IsNot Nothing)
+        Contract.Invariant(name IsNot Nothing)
+        Contract.Invariant(parent IsNot Nothing)
+        Contract.Invariant(createCount >= 0)
+        Contract.Invariant(logger IsNot Nothing)
+    End Sub
+
 #Region "Inner"
     Private Class LanGame
         Public ReadOnly id As UInteger
@@ -168,7 +177,7 @@ Public NotInheritable Class W3LanAdvertiser
         End SyncLock
 
         'Log
-        logger.log("Added game " + game.header.Name, LogMessageType.Positive)
+        logger.Log("Added game " + game.header.Name, LogMessageType.Positive)
         RaiseEvent AddStateString("{0}={1}".Frmt(id, gameHeader.Name), False)
 
         Return id
@@ -192,7 +201,7 @@ Public NotInheritable Class W3LanAdvertiser
         End SyncLock
 
         'Log
-        logger.log("Removed game " + game.header.Name, LogMessageType.Negative)
+        logger.Log("Removed game " + game.header.Name, LogMessageType.Negative)
         RaiseEvent RemoveStateString("{0}={1}".Frmt(game.id, game.header.Name))
         Return True
     End Function
@@ -237,24 +246,24 @@ Public NotInheritable Class W3LanAdvertiser
     Private Sub send(ByVal pk As W3Packet, ByVal remote_host As String, ByVal remote_port As UShort)
         Try
             'pack
-            Dim data = pk.payload.Data.ToArray()
+            Dim data = pk.Payload.Data.ToArray()
             data = Concat({W3Packet.PacketPrefixValue, pk.id}, CUShort(data.Length + 4).Bytes(), data)
 
             'Log
-            logger.log(Function() "Sending {0} to {1}: {2}".frmt(pk.id, remote_host, remote_port), LogMessageType.DataEvent)
-            logger.log(pk.payload.Description, LogMessageType.DataParsed)
-            logger.log(Function() "Sending {0} to {1}: {2}".frmt(data.ToHexString, remote_host, remote_port), LogMessageType.DataRaw)
+            logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(pk.id, remote_host, remote_port), LogMessageType.DataEvent)
+            logger.Log(pk.Payload.Description, LogMessageType.DataParsed)
+            logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(data.ToHexString, remote_host, remote_port), LogMessageType.DataRaw)
 
             'Send
             socket.Send(data, data.Length, remote_host, remote_port)
 
         Catch e As Pickling.PicklingException
             'Ignore
-            logger.log("Error packing {0}: {1} (skipped)".frmt(pk.id, e), LogMessageType.Negative)
+            logger.Log("Error packing {0}: {1} (skipped)".Frmt(pk.id, e), LogMessageType.Negative)
         Catch e As Exception
             'Fail
-            logger.log("Error sending {0}: {1}".frmt(pk.id, e), LogMessageType.Problem)
-            LogUnexpectedException("Exception rose past {0}.send".frmt(Me.GetType.Name), e)
+            logger.Log("Error sending {0}: {1}".Frmt(pk.id, e), LogMessageType.Problem)
+            LogUnexpectedException("Exception rose past {0}.send".Frmt(Me.GetType.Name), e)
         End Try
     End Sub
 #End Region
@@ -269,7 +278,7 @@ Public NotInheritable Class W3LanAdvertiser
     Private Sub hooked() Implements IBotWidget.Hooked
         Dim game_names As List(Of String)
         SyncLock lock
-            game_names = (From game In games1 Select "{0}={1}".frmt(game.id, game.header.Name)).ToList
+            game_names = (From game In games1 Select "{0}={1}".Frmt(game.id, game.header.Name)).ToList
         End SyncLock
         For Each game_name In game_names
             RaiseEvent AddStateString(game_name, False)

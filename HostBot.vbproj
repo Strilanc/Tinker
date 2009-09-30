@@ -67,8 +67,8 @@
     <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>
     <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
     <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
-    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>
-    <CodeContractsArithmeticObligations>True</CodeContractsArithmeticObligations>
+    <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
     <CodeContractsLibPaths>
     </CodeContractsLibPaths>
     <CodeContractsPlatformPath>
@@ -181,8 +181,8 @@
     <Compile Include="Battlenet\Warcraft3\Utilities\W3MapSettings.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Slot.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Socket.vb" />
-    <Compile Include="BNLS\BnlsClient.vb" />
-    <Compile Include="BNLS\BnlsWardenPacket.vb" />
+    <Compile Include="BNLS\WardenClient.vb" />
+    <Compile Include="BNLS\WardenPacket.vb" />
     <Compile Include="Bot\Commands\CKL Commands.vb" />
     <Compile Include="Bot\Commands\Lan Commands.vb" />
     <Compile Include="Bot\Widgets\CKL Client.vb" />

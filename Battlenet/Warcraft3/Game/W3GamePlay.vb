@@ -127,11 +127,11 @@
         Private Sub UpdateLagScreen()
             If laggingPlayers.Count > 0 Then
                 For Each p In laggingPlayers.ToList()
+                    Contract.Assume(p IsNot Nothing)
                     If Not players.Contains(p) Then
                         laggingPlayers.Remove(p)
                     ElseIf p.GetTockTime >= _gameTime OrElse p.isFake Then
                         laggingPlayers.Remove(p)
-                        Contract.Assume(p IsNot Nothing)
                         Dim p_ = p
                         If IsPlayerVisible(p) OrElse (From q In laggingPlayers _
                                                       Where GetVisiblePlayer(q) Is GetVisiblePlayer(p_)).None Then
@@ -172,8 +172,6 @@
             End While
 
             'Send data
-            Contract.Assume(dataList IsNot Nothing) 'remove this once verifier properly understands how List.Add works
-            Contract.Assume(outgoingData IsNot Nothing) 'remove this once verifier properly understands how List.Add works
             Dim normalData = Concat(dataList)
             For Each receiver In players
                 Contract.Assume(receiver IsNot Nothing)

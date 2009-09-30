@@ -7,17 +7,17 @@ Namespace Warcraft3
         Private destinationPath As String
         Private downloadPath As String
         Public ReadOnly size As UInteger
-        Private ReadOnly contentChecksumCRC32 As ViewableList(Of Byte)
+        Private ReadOnly fileChecksumCRC32 As ViewableList(Of Byte)
         Private ReadOnly contentChecksumXORO As ViewableList(Of Byte)
         Private ReadOnly contentChecksumSHA1 As ViewableList(Of Byte)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(downloadPath IsNot Nothing)
             Contract.Invariant(destinationPath IsNot Nothing)
-            Contract.Invariant(contentChecksumCRC32 IsNot Nothing)
+            Contract.Invariant(fileChecksumCRC32 IsNot Nothing)
             Contract.Invariant(contentChecksumXORO IsNot Nothing)
             Contract.Invariant(contentChecksumSHA1 IsNot Nothing)
-            Contract.Invariant(contentChecksumCRC32.Length = 4)
+            Contract.Invariant(fileChecksumCRC32.Length = 4)
             Contract.Invariant(contentChecksumXORO.Length = 4)
             Contract.Invariant(contentChecksumSHA1.Length = 20)
             Contract.Invariant(size > 0)
@@ -25,15 +25,15 @@ Namespace Warcraft3
 
         Public Sub New(ByVal path As String,
                        ByVal size As UInteger,
-                       ByVal contentChecksumCRC32 As ViewableList(Of Byte),
+                       ByVal fileChecksumCRC32 As ViewableList(Of Byte),
                        ByVal contentChecksumXORO As ViewableList(Of Byte),
                        ByVal contentChecksumSHA1 As ViewableList(Of Byte))
             Contract.Requires(path IsNot Nothing)
             Contract.Requires(size > 0)
-            Contract.Requires(contentChecksumCRC32 IsNot Nothing)
+            Contract.Requires(fileChecksumCRC32 IsNot Nothing)
             Contract.Requires(contentChecksumXORO IsNot Nothing)
             Contract.Requires(contentChecksumSHA1 IsNot Nothing)
-            Contract.Requires(contentChecksumCRC32.Length = 4)
+            Contract.Requires(fileChecksumCRC32.Length = 4)
             Contract.Requires(contentChecksumXORO.Length = 4)
             Contract.Requires(contentChecksumSHA1.Length = 20)
 
@@ -55,7 +55,7 @@ Namespace Warcraft3
                 n += 1
             Loop While IO.File.Exists(Me.destinationPath) Or IO.File.Exists(Me.downloadPath)
             Me.size = size
-            Me.contentChecksumCRC32 = contentChecksumCRC32
+            Me.fileChecksumCRC32 = fileChecksumCRC32
             Me.contentChecksumXORO = contentChecksumXORO
             Me.contentChecksumSHA1 = contentChecksumSHA1
             Me.file = New IO.FileStream(Me.downloadPath, IO.FileMode.OpenOrCreate, IO.FileAccess.Write, IO.FileShare.None)
@@ -77,7 +77,7 @@ Namespace Warcraft3
                 Dim map As New W3Map(My.Settings.mapPath, downloadPath.Substring(My.Settings.mapPath.Length), My.Settings.war3path)
                 If Not map.ChecksumSHA1.HasSameItemsAs(contentChecksumSHA1) Then Throw New IO.IOException("Invalid data.")
                 If Not map.ChecksumXORO.HasSameItemsAs(contentChecksumXORO) Then Throw New IO.IOException("Invalid data.")
-                If Not map.ChecksumCRC32.HasSameItemsAs(contentChecksumCRC32) Then Throw New IO.IOException("Invalid data.")
+                If Not map.ChecksumCRC32.HasSameItemsAs(fileChecksumCRC32) Then Throw New IO.IOException("Invalid data.")
                 IO.File.Move(downloadPath, destinationPath)
                 Return True
             End If

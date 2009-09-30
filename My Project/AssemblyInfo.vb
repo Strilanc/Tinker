@@ -34,4 +34,4 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyVersion("1.0.0.0")> 
 <Assembly: AssemblyFileVersion("1.0.0.0")> 
 
-<Assembly: ContractVerification(False)> 
+<Assembly: ContractVerification(True)> 

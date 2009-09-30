@@ -175,13 +175,24 @@ Namespace Warcraft3
     Public Class W3Packet
         Public Const PacketPrefixValue As Byte = &HF7
         Public ReadOnly id As W3PacketId
-        Public ReadOnly payload As IPickle(Of Object)
+        Private ReadOnly _payload As IPickle(Of Object)
         Private Shared ReadOnly packetJar As ManualSwitchJar = MakeW3PacketJar()
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_payload IsNot Nothing)
+        End Sub
+
+        Public ReadOnly Property Payload As IPickle(Of Object)
+            Get
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Return _payload
+            End Get
+        End Property
 
 #Region "New"
         Private Sub New(ByVal id As W3PacketId, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
-            Me.payload = payload
+            Me._payload = payload
             Me.id = id
         End Sub
         Private Sub New(ByVal id As W3PacketId, ByVal value As Object)

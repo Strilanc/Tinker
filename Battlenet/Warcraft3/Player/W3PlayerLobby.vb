@@ -6,21 +6,22 @@
         Private mapUploadPosition As Integer
         Private countdowns As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
-        Private ReadOnly handlers(0 To 255) As Action(Of W3Packet)
+        Private ReadOnly packetHandlers As New Dictionary(Of W3PacketId, Action(Of W3Packet))
 
         Private Sub LobbyStart()
             state = W3PlayerState.Lobby
-            handlers(W3PacketId.ClientMapInfo) = AddressOf ReceiveClientMapInfo
-            handlers(W3PacketId.PeerConnectionInfo) = AddressOf ReceivePeerConnectionInfo
+            packetHandlers(W3PacketId.ClientMapInfo) = AddressOf ReceiveClientMapInfo
+            packetHandlers(W3PacketId.PeerConnectionInfo) = AddressOf ReceivePeerConnectionInfo
         End Sub
         Private Sub LobbyStop()
-            handlers(W3PacketId.ClientMapInfo) = Nothing
+            packetHandlers.Remove(W3PacketId.ClientMapInfo)
         End Sub
 
 #Region "Networking"
         Private Sub ReceivePeerConnectionInfo(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+            Contract.Assume(vals IsNot Nothing)
             Dim dword = CUInt(vals("player bitflags"))
             Dim flags = From i In enumerable.Range(0, 12)
                         Select connected = ((dword >> i) And &H1) <> 0,
@@ -39,6 +40,7 @@
         Private Sub ReceiveClientMapInfo(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Contract.Assume(vals IsNot Nothing)
             Dim newMapDownloadPosition = CInt(CUInt(vals("total downloaded")))
             Dim delta = newMapDownloadPosition - mapDownloadPosition
             If delta < 0 Then

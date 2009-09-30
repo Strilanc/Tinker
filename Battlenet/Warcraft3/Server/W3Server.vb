@@ -7,9 +7,9 @@ Namespace Warcraft3
     Public NotInheritable Class W3Server
         Inherits FutureDisposable
 #Region "Properties"
-        Public ReadOnly parent As MainBot
+        Private ReadOnly _parent As MainBot
         Private ReadOnly _name As String
-        Public ReadOnly settings As ServerSettings
+        Private ReadOnly _settings As ServerSettings
 
         Private ReadOnly games_all As New List(Of W3Game)
         Private ReadOnly games_lobby As New List(Of W3Game)
@@ -33,6 +33,12 @@ Namespace Warcraft3
         Private instanceCreationCount As Integer
         Private suffix As String
         Private _state As W3ServerState = W3ServerState.OnlyAcceptingPlayers
+        Public ReadOnly Property Parent() As MainBot
+            Get
+                Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
+                Return _parent
+            End Get
+        End Property
         Private ReadOnly Property state() As W3ServerState
             Get
                 Return _state
@@ -44,6 +50,12 @@ Namespace Warcraft3
                 Return _name
             End Get
         End Property
+        Public ReadOnly Property Settings As ServerSettings
+            Get
+                Contract.Ensures(Contract.Result(Of ServerSettings)() IsNot Nothing)
+                Return _settings
+            End Get
+        End Property
         Private Sub change_state(ByVal new_state As W3ServerState)
             Dim old_state = _state
             _state = new_state
@@ -53,9 +65,9 @@ Namespace Warcraft3
 #End Region
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(parent IsNot Nothing)
+            Contract.Invariant(_parent IsNot Nothing)
             Contract.Invariant(_name IsNot Nothing)
-            Contract.Invariant(settings IsNot Nothing)
+            Contract.Invariant(_settings IsNot Nothing)
             Contract.Invariant(games_all IsNot Nothing)
             Contract.Invariant(games_lobby IsNot Nothing)
             Contract.Invariant(games_load_screen IsNot Nothing)
@@ -76,8 +88,8 @@ Namespace Warcraft3
             Contract.Assume(parent IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
             Try
-                Me.settings = settings
-                Me.parent = parent
+                Me._settings = settings
+                Me._parent = parent
                 Me._name = name
                 Me.suffix = suffix
                 Me.logger = If(logger, New Logger)
@@ -85,7 +97,7 @@ Namespace Warcraft3
                 Me.eref = New ThreadPooledCallQueue
                 Me.ref = New ThreadPooledCallQueue
 
-                For Each port In Me.settings.default_listen_ports
+                For Each port In Me.settings.defaultListenPorts
                     door.accepter.Accepter.OpenPort(port)
                 Next port
                 For i = 1 To Me.settings.instances
@@ -93,7 +105,7 @@ Namespace Warcraft3
                 Next i
                 Me.parent.logger.Log("Server started for map {0}.".Frmt(Me.settings.map.RelativePath), LogMessageType.Positive)
 
-                If Me.settings.testFakePlayers AndAlso Me.settings.default_listen_ports.Any Then
+                If Me.settings.testFakePlayers AndAlso Me.settings.defaultListenPorts.Any Then
                     FutureWait(3.Seconds).CallWhenReady(
                         Sub()
                             For i = 1 To 3
@@ -106,7 +118,7 @@ Namespace Warcraft3
                                 Dim p = New W3DummyPlayer("Wait {0}min".Frmt(i), receivedPort, logger, DummyPlayerMode.EnterGame)
                                 p.readyDelay = i.Minutes
                                 Dim i_ = i
-                                p.QueueConnect("localhost", Me.settings.default_listen_ports.FirstOrDefault).CallWhenReady(
+                                p.QueueConnect("localhost", Me.settings.defaultListenPorts.FirstOrDefault).CallWhenReady(
                                     Sub(exception)
                                         If exception Is Nothing Then
                                             Me.logger.Log("Fake player {0} Connected", LogMessageType.Positive)
@@ -119,7 +131,7 @@ Namespace Warcraft3
                 End If
 
                 If Me.settings.grabMap Then
-                    Dim server_port = Me.settings.default_listen_ports.FirstOrDefault
+                    Dim server_port = Me.settings.defaultListenPorts.FirstOrDefault
                     If server_port = 0 Then
                         Throw New InvalidOperationException("Server has no port for Grab player to connect on.")
                     End If

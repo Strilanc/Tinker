@@ -113,23 +113,24 @@ Namespace Bnet.Crypt
             Dim u = BigNum.FromBytes(SHA1(serverOffsetPublicKeyBytes.ToArray).SubArray(0, 4).Reverse().ToArray(), ByteOrder.LittleEndian)
 
             'Shared secret
-            Dim shared_secret = ((N + serverOffsetPublicKey - v) Mod N).PowerMod(clientPrivateKey + u * x, N).ToBytes(ByteOrder.LittleEndian).ToArray()
-            ReDim Preserve shared_secret(0 To 31)
+            Dim sharedSecret = ((N + serverOffsetPublicKey - v) Mod N).PowerMod(clientPrivateKey + u * x, N).ToBytes(ByteOrder.LittleEndian).ToArray()
+            ReDim Preserve sharedSecret(0 To 31)
+            Contract.Assume(sharedSecret IsNot Nothing)
             'separate into odd and even bytes
-            Dim shared_secret_evens(0 To 15) As Byte
-            Dim shared_secret_odds(0 To 15) As Byte
-            For i = 0 To 15
-                shared_secret_evens(i) = shared_secret(2 * i)
-                shared_secret_odds(i) = shared_secret(2 * i + 1)
+            Dim sharedSecretEvens(0 To 16 - 1) As Byte
+            Dim sharedSecretOdds(0 To 16 - 1) As Byte
+            For i = 0 To 16 - 1
+                sharedSecretEvens(i) = sharedSecret(2 * i)
+                sharedSecretOdds(i) = sharedSecret(2 * i + 1)
             Next i
             'hash odds and evens
-            shared_secret_evens = SHA1(shared_secret_evens)
-            shared_secret_odds = SHA1(shared_secret_odds)
+            sharedSecretEvens = SHA1(sharedSecretEvens)
+            sharedSecretOdds = SHA1(sharedSecretOdds)
             'interleave hashed odds and evens
-            ReDim shared_secret(0 To shared_secret_evens.Length + shared_secret_odds.Length - 1)
-            For i = 0 To shared_secret_evens.Length - 1
-                shared_secret(2 * i) = shared_secret_evens(i)
-                shared_secret(2 * i + 1) = shared_secret_odds(i)
+            ReDim sharedSecret(0 To sharedSecretEvens.Length + sharedSecretOdds.Length - 1)
+            For i = 0 To sharedSecretEvens.Length - 1
+                sharedSecret(2 * i) = sharedSecretEvens(i)
+                sharedSecret(2 * i + 1) = sharedSecretOdds(i)
             Next i
 
             'Fixed salt
@@ -146,8 +147,8 @@ Namespace Bnet.Crypt
                                           accountSalt.ToArray,
                                           clientPublicKeyBytes.ToArray,
                                           serverOffsetPublicKeyBytes.ToArray,
-                                          shared_secret))
-            Dim serverProof = SHA1(Concat(clientPublicKeyBytes.ToArray, clientProof, shared_secret))
+                                          sharedSecret))
+            Dim serverProof = SHA1(Concat(clientPublicKeyBytes.ToArray, clientProof, sharedSecret))
             Return New KeyPair(clientProof.ToView, serverProof.ToView)
         End Function
 
@@ -180,7 +181,8 @@ Namespace Bnet.Crypt
                     Throw New ArgumentException("Instructions did not include any operations.")
                 End If
 
-                If Not lines.Current Like "?=*" Then Exit Do 'end of initialization block
+                If lines.Current Is Nothing OrElse Not lines.Current Like "?=*" Then Exit Do 'end of initialization block
+                Contract.Assume(lines.Current.Length >= 2)
 
                 Dim u As UInteger
                 If Not UInteger.TryParse(lines.Current.Substring(2), u) Then
@@ -188,6 +190,9 @@ Namespace Bnet.Crypt
                 End If
                 variables(lines.Current(0)) = u
             Loop
+            Contract.Assume(variables.ContainsKey("A"c))
+            Contract.Assume(variables.ContainsKey("C"c))
+            Contract.Assume(variables.ContainsKey("S"c))
             Return variables
         End Function
         Private Function ParseRevisionCheckOperations(ByVal lines As IEnumerator(Of String),
@@ -207,7 +212,7 @@ Namespace Bnet.Crypt
             For i = 0 To numOps - 1
                 If Not lines.MoveNext Then
                     Throw New ArgumentException("Instructions did not include {0} operations as specified.".Frmt(numOps))
-                ElseIf Not lines.Current Like "?=?[-+^|&]?" Then
+                ElseIf lines.Current Is Nothing OrElse Not lines.Current Like "?=?[-+^|&]?" Then
                     Throw New ArgumentException("Invalid operation specified: {0}".Frmt(lines.Current))
                 End If
 
@@ -232,6 +237,9 @@ Namespace Bnet.Crypt
         Private Sub RevisionCheckApplyOperation(ByVal value As UInteger,
                                                 ByVal variables As Dictionary(Of Char, ModInt32),
                                                 ByVal operations As IEnumerable(Of RevisionCheckOperation))
+            Contract.Requires(variables IsNot Nothing)
+            Contract.Requires(operations IsNot Nothing)
+
             'Variable S = file dword
             variables("S"c) = value
 
@@ -278,6 +286,7 @@ Namespace Bnet.Crypt
             If Not indexString Like "VER-IX86-#.MPQ" AndAlso Not indexString Like "IX86VER#.MPQ" Then
                 Throw New ArgumentException("Unrecognized MPQ String: {0}".Frmt(indexString), "indexString")
             End If
+            Contract.Assume(indexString.Length >= 5)
             Dim table = {&HE7F4CB62UI,
                          &HF6A14FFCUI,
                          &HAA5504AFUI,
@@ -316,6 +325,7 @@ Namespace Bnet.Crypt
         Public Function SHA1(ByVal data() As Byte) As Byte()
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
             Using sha = New Security.Cryptography.SHA1Managed()
                 Dim hash = sha.ComputeHash(data)
                 Contract.Assume(hash IsNot Nothing)
@@ -325,23 +335,12 @@ Namespace Bnet.Crypt
     End Module
 
     Public Class CDKey
-        Public ReadOnly key As String
-        Public ReadOnly productKey As ViewableList(Of Byte)
-        Public ReadOnly privateKey As ViewableList(Of Byte)
-        Public ReadOnly publicKey As ViewableList(Of Byte)
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(key IsNot Nothing)
-            Contract.Invariant(productKey IsNot Nothing)
-            Contract.Invariant(privateKey IsNot Nothing)
-            Contract.Invariant(publicKey IsNot Nothing)
-        End Sub
 #Region "Shared Members"
         Private Const KEY_LENGTH As Integer = 26
         Private Shared ReadOnly keyMap As Dictionary(Of Char, Byte) = initKeyMap()
         Private Shared ReadOnly invKeyMap As Dictionary(Of Byte, Char) = initInvKeyMap()
         '''<summary>30 permutations of 0-15</summary>
-        Private Shared ReadOnly permutationSet As Byte()() = { _
+        Private Shared ReadOnly permutationSet As Byte()() = {
                     New Byte() {&H9, &H4, &H7, &HF, &HD, &HA, &H3, &HB, &H1, &H2, &HC, &H8, &H6, &HE, &H5, &H0},
                     New Byte() {&H9, &HB, &H5, &H4, &H8, &HF, &H1, &HE, &H7, &H0, &H3, &H2, &HA, &H6, &HD, &HC},
                     New Byte() {&HC, &HE, &H1, &H4, &H9, &HF, &HA, &HB, &HD, &H6, &H0, &H8, &H7, &H2, &H5, &H3},
@@ -371,7 +370,7 @@ Namespace Bnet.Crypt
                     New Byte() {&HA, &HC, &H1, &H0, &H9, &HE, &HD, &HB, &H3, &H7, &HF, &H8, &H5, &H2, &H4, &H6},
                     New Byte() {&HE, &HA, &H1, &H8, &H7, &H6, &H5, &HC, &H2, &HF, &H0, &HD, &H3, &HB, &H4, &H9},
                     New Byte() {&H3, &H8, &HE, &H0, &H7, &H9, &HF, &HC, &H1, &H6, &HD, &H2, &H5, &HA, &HB, &H4},
-                    New Byte() {&H3, &HA, &HC, &H4, &HD, &HB, &H9, &HE, &HF, &H6, &H1, &H7, &H2, &H0, &H5, &H8} _
+                    New Byte() {&H3, &HA, &HC, &H4, &HD, &HB, &H9, &HE, &HF, &H6, &H1, &H7, &H2, &H0, &H5, &H8}
                 }
         Private Shared ReadOnly invPermutationSet As Byte()() = initInvPermMap()
 
@@ -403,6 +402,42 @@ Namespace Bnet.Crypt
         End Function
 #End Region
 
+        Private ReadOnly _key As String
+        Private ReadOnly _productKey As ViewableList(Of Byte)
+        Private ReadOnly _privateKey As ViewableList(Of Byte)
+        Private ReadOnly _publicKey As ViewableList(Of Byte)
+        Public ReadOnly Property Key As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _key
+            End Get
+        End Property
+        Public ReadOnly Property ProductKey As ViewableList(Of Byte)
+            Get
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                Return _productKey
+            End Get
+        End Property
+        Public ReadOnly Property PrivateKey As ViewableList(Of Byte)
+            Get
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                Return _privateKey
+            End Get
+        End Property
+        Public ReadOnly Property PublicKey As ViewableList(Of Byte)
+            Get
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                Return _publicKey
+            End Get
+        End Property
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_key IsNot Nothing)
+            Contract.Invariant(_productKey IsNot Nothing)
+            Contract.Invariant(_privateKey IsNot Nothing)
+            Contract.Invariant(_publicKey IsNot Nothing)
+        End Sub
+
 #Region "Decode"
         Public Sub New(ByVal key As String)
             Contract.Requires(key IsNot Nothing)
@@ -429,6 +464,7 @@ Namespace Bnet.Crypt
             Contract.Assume(n_digitsBase16 IsNot Nothing) 'remove this once static verifier understands redim preserve
             For r = 29 To 0 Step -1
                 Dim perm = permutationSet(r)
+                Contract.Assume(perm IsNot Nothing)
                 Dim c = n_digitsBase16(r)
 
                 'Permute
@@ -450,24 +486,24 @@ Namespace Bnet.Crypt
             Dim n_digitsBase256 = BigNum.FromBaseBytes(n_digitsBase2, 2, ByteOrder.LittleEndian).ToBytes(ByteOrder.LittleEndian).ToArray()
             ReDim Preserve n_digitsBase256(0 To 15)
             Contract.Assume(n_digitsBase256 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            Me.productKey = {n_digitsBase256(13) >> &H2,
-                             CByte(0),
-                             CByte(0),
+            Me._productKey = {n_digitsBase256(13) >> &H2,
+                              CByte(0),
+                              CByte(0),
+                              CByte(0)}.ToView
+            Me._publicKey = {n_digitsBase256(10),
+                             n_digitsBase256(11),
+                             n_digitsBase256(12),
                              CByte(0)}.ToView
-            Me.publicKey = {n_digitsBase256(10),
-                            n_digitsBase256(11),
-                            n_digitsBase256(12),
-                            CByte(0)}.ToView
-            Me.privateKey = {n_digitsBase256(8),
-                             n_digitsBase256(9),
-                             n_digitsBase256(4),
-                             n_digitsBase256(5),
-                             n_digitsBase256(6),
-                             n_digitsBase256(7),
-                             n_digitsBase256(0),
-                             n_digitsBase256(1),
-                             n_digitsBase256(2),
-                             n_digitsBase256(3)}.ToView()
+            Me._privateKey = {n_digitsBase256(8),
+                              n_digitsBase256(9),
+                              n_digitsBase256(4),
+                              n_digitsBase256(5),
+                              n_digitsBase256(6),
+                              n_digitsBase256(7),
+                              n_digitsBase256(0),
+                              n_digitsBase256(1),
+                              n_digitsBase256(2),
+                              n_digitsBase256(3)}.ToView()
         End Sub
 #End Region
 
@@ -523,7 +559,10 @@ Namespace Bnet.Crypt
                 cdkey += invKeyMap(c)
             Next i
 
-            key = cdkey.ToUpperInvariant
+            Me._privateKey = privateKey.ToView
+            Me._publicKey = publicKey.ToView
+            Me._productKey = productKey.ToView
+            Me._key = cdkey.ToUpperInvariant
         End Sub
 #End Region
 

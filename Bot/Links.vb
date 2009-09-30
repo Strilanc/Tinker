@@ -24,8 +24,7 @@ Namespace Links
 
         Public Shared Function CreateMultiWayLink(ByVal members As IEnumerable(Of IGameSourceSink)) As IFutureDisposable
             Contract.Requires(members IsNot Nothing)
-            Dim members_ = members
-            Return DisposeLink.CreateMultiWayLink(From m1 In members_, m2 In members_
+            Return DisposeLink.CreateMultiWayLink(From m1 In members, m2 In members
                                                   Where m1 IsNot m2
                                                   Select AdvertisingLink.CreateOneWayLink(m1, m2))
         End Function

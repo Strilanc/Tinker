@@ -1,4 +1,5 @@
 ﻿'''<summary>Immutable BigNum</summary>
+<ContractVerification(False)>
 <DebuggerDisplay("{ToDecimal}")>
 Public Class BigNum
     Implements IComparable(Of BigNum)

@@ -13,19 +13,27 @@ Namespace Warcraft3
             Me.socket = socket
         End Sub
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(socket IsNot Nothing)
+        End Sub
+
         Public Property Logger() As Logger
             Get
+                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
                 Return socket.Logger
             End Get
             Set(ByVal value As Logger)
+                Contract.Requires(value IsNot Nothing)
                 socket.Logger = value
             End Set
         End Property
         Public Property Name() As String
             Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return socket.Name
             End Get
             Set(ByVal value As String)
+                Contract.Requires(value IsNot Nothing)
                 socket.Name = value
             End Set
         End Property
@@ -49,6 +57,8 @@ Namespace Warcraft3
         End Function
 
         Private Sub OnSocketDisconnect(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+            Contract.Requires(sender IsNot Nothing)
+            Contract.Requires(reason IsNot Nothing)
             RaiseEvent Disconnected(Me, expected, reason)
         End Sub
         Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
@@ -61,16 +71,17 @@ Namespace Warcraft3
 
             Try
                 'Validate
-                If socket Is Nothing OrElse Not socket.IsConnected OrElse packet Is Nothing Then
+                If Not socket.IsConnected Then
                     Throw New InvalidOperationException("Socket is not connected")
                 End If
 
                 'Log
                 Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.id, Name), LogMessageType.DataEvent)
-                Logger.Log(packet.payload.Description, LogMessageType.DataParsed)
+                Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
                 'Send
-                socket.WritePacket(Concat({W3Packet.PacketPrefixValue, packet.id, 0, 0}, packet.payload.Data.ToArray))
+                socket.WritePacket(Concat({W3Packet.PacketPrefixValue, packet.id, 0, 0},
+                                           packet.Payload.Data.ToArray))
 
             Catch e As Pickling.PicklingException
                 Dim msg = "Error packing {0} for {1}: {2}".Frmt(packet.id, Name, e)
@@ -90,8 +101,11 @@ Namespace Warcraft3
         End Sub
 
         Public Function FutureReadPacket() As IFuture(Of W3Packet)
+            Contract.Ensures(Contract.Result(Of IFuture(Of W3Packet))() IsNot Nothing)
             Return socket.FutureReadPacket().Select(
                 Function(data)
+                    Contract.Assume(data IsNot Nothing)
+                    Contract.Assume(data.Length >= 4)
                     If data(0) <> W3Packet.PacketPrefixValue OrElse data.Length < 4 Then
                         Disconnect(expected:=False, reason:="Invalid packet prefix")
                         Throw New IO.IOException("Invalid packet prefix")
@@ -103,10 +117,10 @@ Namespace Warcraft3
                         'Handle
                         Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageType.DataEvent)
                         Dim pk = W3Packet.FromData(id, data)
-                        If pk.payload.Data.Length <> data.Length Then
+                        If pk.Payload.Data.Length <> data.Length Then
                             Throw New Pickling.PicklingException("Data left over after parsing.")
                         End If
-                        Logger.Log(pk.payload.Description, LogMessageType.DataParsed)
+                        Logger.Log(pk.Payload.Description, LogMessageType.DataParsed)
                         Return pk
 
                     Catch e As Pickling.PicklingException

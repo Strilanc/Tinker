@@ -41,6 +41,7 @@
         HideTerrain
     End Enum
 
+    <ContractClass(GetType(ContractClassForIW3GameDescription))>
     Public Interface IW3GameDescription
         ReadOnly Property HostUserName As String
         ReadOnly Property CreationTime As Date
@@ -59,6 +60,51 @@
         ReadOnly Property GameState As Bnet.BnetPacket.GameStates
         ReadOnly Property NumFreeSlots As Integer
     End Interface
+
+    <ContractClassFor(GetType(IW3GameDescription))>
+    Public Class ContractClassForIW3GameDescription
+        Implements IW3GameDescription
+
+        Public ReadOnly Property BnetId As UInteger Implements IW3GameDescription.BnetId
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public ReadOnly Property CreationTime As Date Implements IW3GameDescription.CreationTime
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property HostUserName As String Implements IW3GameDescription.HostUserName
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property Name As String Implements IW3GameDescription.Name
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property NumPlayerAndObsSlots As Integer Implements IW3GameDescription.NumPlayerAndObsSlots
+            Get
+                Contract.Ensures(Contract.Result(Of Integer)() > 0)
+                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
+                Throw New NotSupportedException
+            End Get
+        End Property
+
+        Public ReadOnly Property Settings As W3MapSettings Implements IW3GameDescription.Settings
+            Get
+                Contract.Ensures(Contract.Result(Of W3MapSettings)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+    End Class
 
     Public NotInheritable Class W3GameHeaderAndState
         Inherits W3GameHeader

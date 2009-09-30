@@ -7,7 +7,7 @@
 
     Partial Public NotInheritable Class W3Player
         Private state As W3PlayerState = W3PlayerState.Lobby
-        Public ReadOnly index As Byte
+        Private ReadOnly _index As Byte
         Public ReadOnly game As W3Game
         Public ReadOnly name As String
         Public ReadOnly listenPort As UShort
@@ -25,10 +25,19 @@
         Public hasVotedToStart As Boolean
         Public numAdminTries As Integer
 
+        Public ReadOnly Property Index As Byte
+            Get
+                Contract.Ensures(Contract.Result(Of Byte)() > 0)
+                Contract.Ensures(Contract.Result(Of Byte)() <= 12)
+                Return _index
+            End Get
+        End Property
+
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(numPeerConnections >= 0)
             Contract.Invariant(numPeerConnections <= 12)
             Contract.Invariant(latency >= 0)
+            Contract.Invariant(tickQueue IsNot Nothing)
             Contract.Invariant(pingQueue IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
@@ -38,8 +47,9 @@
             Contract.Invariant(numAdminTries >= 0)
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(game IsNot Nothing)
-            Contract.Invariant(index > 0)
-            Contract.Invariant(index <= 12)
+            Contract.Invariant(packetHandlers IsNot Nothing)
+            Contract.Invariant(_index > 0)
+            Contract.Invariant(_index <= 12)
             Contract.Invariant(totalTockTime >= 0)
             Contract.Invariant(mapDownloadPosition >= 0)
         End Sub
@@ -56,7 +66,7 @@
 
             Me.logger = If(logger, New Logger)
             Me.game = game
-            Me.index = index
+            Me._index = index
             If name.Length > MAX_NAME_LENGTH Then
                 name = name.Substring(0, MAX_NAME_LENGTH)
             End If
@@ -92,24 +102,25 @@
             Me.socket = connectingPlayer.Socket
             Me.name = connectingPlayer.Name
             Me.listenPort = connectingPlayer.ListenPort
-            Me.index = index
+            Me._index = index
             AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
 
-            handlers(W3PacketId.Pong) = AddressOf ReceivePong
-            handlers(W3PacketId.Leaving) = AddressOf ReceiveLeaving
-            handlers(W3PacketId.NonGameAction) = AddressOf ReceiveNonGameAction
-            handlers(W3PacketId.MapFileDataReceived) = AddressOf IgnorePacket
-            handlers(W3PacketId.MapFileDataProblem) = AddressOf IgnorePacket
+            packetHandlers(W3PacketId.Pong) = AddressOf ReceivePong
+            packetHandlers(W3PacketId.Leaving) = AddressOf ReceiveLeaving
+            packetHandlers(W3PacketId.NonGameAction) = AddressOf ReceiveNonGameAction
+            packetHandlers(W3PacketId.MapFileDataReceived) = AddressOf IgnorePacket
+            packetHandlers(W3PacketId.MapFileDataProblem) = AddressOf IgnorePacket
 
             LobbyStart()
             Dim readLoop = FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packet) ref.QueueAction(
                 Sub()
+                    Contract.Assume(packet IsNot Nothing)
                     Try
-                        If handlers(packet.id) Is Nothing Then
+                        If Not packetHandlers.ContainsKey(packet.id) Then
                             Dim msg = "Ignored a packet of type {0} from {1} because there is no parser for that packet type.".Frmt(packet.id, name)
                             logger.Log(msg, LogMessageType.Negative)
                         Else
-                            Call handlers(packet.id)(packet)
+                            Call packetHandlers(packet.id)(packet)
                         End If
                     Catch e As Exception
                         Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".Frmt(packet.id, name, e)
@@ -120,6 +131,7 @@
             ))
             readLoop.CallWhenReady(Sub(exception) ref.QueueAction(
                 Sub()
+                    If exception Is Nothing Then  Return
                     Me.Disconnect(expected:=False,
                                   leaveType:=W3PlayerLeaveType.Disconnect,
                                   reason:="Error receiving packet from {0}: {1}".Frmt(name, exception.Message))
@@ -198,7 +210,7 @@
         End Property
         Public ReadOnly Property GetLatencyDescription As IFuture(Of String)
             Get
-                Return Me.game.DownloadScheduler.GetClientState(Me.index).QueueEvalOnValueSuccess(ref,
+                Return Me.game.DownloadScheduler.GetClientState(Me.Index).QueueEvalOnValueSuccess(ref,
                     Function(downloadState)
                         Select Case downloadState
                             Case ClientTransferState.Downloading : Return "(dl)"

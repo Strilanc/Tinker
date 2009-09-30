@@ -33,16 +33,16 @@
         Public Sub GamePlayStart()
             loadscreenStop()
             state = W3PlayerState.Playing
-            handlers(W3PacketId.AcceptHost) = AddressOf ReceiveAcceptHost
-            handlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
-            handlers(W3PacketId.Tock) = AddressOf ReceiveTock
-            handlers(W3PacketId.ClientDropLagger) = AddressOf ReceiveDropLagger
+            packetHandlers(W3PacketId.AcceptHost) = AddressOf ReceiveAcceptHost
+            packetHandlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
+            packetHandlers(W3PacketId.Tock) = AddressOf ReceiveTock
+            packetHandlers(W3PacketId.ClientDropLagger) = AddressOf ReceiveDropLagger
         End Sub
         Public Sub GamePlayStop()
-            handlers(W3PacketId.AcceptHost) = Nothing
-            handlers(W3PacketId.GameAction) = Nothing
-            handlers(W3PacketId.Tock) = Nothing
-            handlers(W3PacketId.ClientDropLagger) = Nothing
+            packetHandlers.Remove(W3PacketId.AcceptHost)
+            packetHandlers.Remove(W3PacketId.GameAction)
+            packetHandlers.Remove(W3PacketId.Tock)
+            packetHandlers.Remove(W3PacketId.ClientDropLagger)
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord, ByVal data As Byte())
@@ -67,9 +67,12 @@
         Private Sub ReceiveGameAction(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
 
-            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+            Contract.Assume(vals IsNot Nothing)
             Dim actions = CType(vals("actions"), IEnumerable(Of W3GameAction))
+            Contract.Assume(actions IsNot Nothing)
             For Each action In actions
+                Contract.Assume(action IsNot Nothing)
                 game.QueueReceiveGameAction(Me, action)
             Next action
             game.QueueSendGameData(Me, packet.payload.Data.SubView(4).ToArray)

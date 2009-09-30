@@ -7,13 +7,43 @@ Public Class ClientProfile
     Public password As String = ""
     Public server As String = "useast.battle.net (Azeroth)"
     Public listenPort As UShort = 6113
-    'Public lan_admin_port As UShort = 6114
-    'Public lan_admin_host As String = " (None)"
-    'Public lan_admin_password As String = ""
-    Public lanHost As String = " (None)"
+    Private _lanHost As String = " (None)"
     Public initialChannel As String = My.Resources.ProgramName
-    Public keyServerAddress As String = ""
+    Private _cklServerAddress As String = ""
     Private Const version As UInt16 = 1
+
+    Public Property LanHost As String
+        Get
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return Me._lanHost
+        End Get
+        Set(ByVal value As String)
+            Contract.Requires(value IsNot Nothing)
+            Me._lanHost = value
+        End Set
+    End Property
+    Public Property CKLServerAddress As String
+        Get
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return Me._cklServerAddress
+        End Get
+        Set(ByVal value As String)
+            Contract.Requires(value IsNot Nothing)
+            Me._cklServerAddress = value
+        End Set
+    End Property
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(name IsNot Nothing)
+        Contract.Invariant(users IsNot Nothing)
+        Contract.Invariant(cdKeyROC IsNot Nothing)
+        Contract.Invariant(cdKeyTFT IsNot Nothing)
+        Contract.Invariant(userName IsNot Nothing)
+        Contract.Invariant(password IsNot Nothing)
+        Contract.Invariant(server IsNot Nothing)
+        Contract.Invariant(_lanHost IsNot Nothing)
+        Contract.Invariant(initialChannel IsNot Nothing)
+        Contract.Invariant(_cklServerAddress IsNot Nothing)
+    End Sub
 
     Public Sub New(Optional ByVal name As String = "Default")
         Contract.Requires(name IsNot Nothing)
@@ -36,7 +66,7 @@ Public Class ClientProfile
         server = reader.ReadString()
         listenPort = reader.ReadUInt16()
         initialChannel = reader.ReadString()
-        keyServerAddress = reader.ReadString()
+        _cklServerAddress = reader.ReadString()
         If version >= 1 Then
             reader.ReadString() 'lan_admin_host
             reader.ReadUInt16() 'lan_admin_port
@@ -57,7 +87,7 @@ Public Class ClientProfile
         bw.Write(server)
         bw.Write(listenPort)
         bw.Write(initialChannel)
-        bw.Write(keyServerAddress)
+        bw.Write(_cklServerAddress)
         If version >= 1 Then
             bw.Write(" (None)") 'old default lan_admin_host
             bw.Write(CUShort(6114)) 'old default lan_admin_port
@@ -78,7 +108,7 @@ Public Class ClientProfile
             .name = If(newName, Me.name)
             .listenPort = listenPort
             .initialChannel = initialChannel
-            .keyServerAddress = keyServerAddress
+            ._cklServerAddress = _cklServerAddress
         End With
         Return newProfile
     End Function

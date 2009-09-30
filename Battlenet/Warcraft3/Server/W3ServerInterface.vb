@@ -9,26 +9,56 @@ Namespace Warcraft3
     End Enum
 
     Public Class ServerSettings
-        Public ReadOnly map As W3Map
-        Public ReadOnly header As W3GameHeader
+        Private ReadOnly _map As W3Map
+        Private ReadOnly _header As W3GameHeader
         Public ReadOnly creationTime As Date = DateTime.Now()
         Public ReadOnly isAdminGame As Boolean
         Public ReadOnly allowDownloads As Boolean
         Public ReadOnly allowUpload As Boolean
         Public ReadOnly instances As Integer
         Public ReadOnly isAutoStarted As Boolean
-        Public ReadOnly adminPassword As String
-        Public ReadOnly managed_lifecycle As Boolean
+        Private ReadOnly _adminPassword As String
         Public ReadOnly permanent As Boolean
         Public ReadOnly defaultSlotLockState As W3Slot.Lock
         Public ReadOnly autoElevateUserName As String
         Public ReadOnly grabMap As Boolean
-        Public ReadOnly default_listen_ports As New List(Of UShort)
+        Public ReadOnly defaultListenPorts As New List(Of UShort)
         Public ReadOnly loadInGame As Boolean
         Public ReadOnly testFakePlayers As Boolean
         Public ReadOnly HCLMode As String = ""
         Public Const HCLChars As String = "abcdefghijklmnopqrstuvwxyz0123456789 -=,."
+
+        Public ReadOnly Property Map() As W3Map
+            Get
+                Contract.Ensures(Contract.Result(Of W3Map)() IsNot Nothing)
+                Return _map
+            End Get
+        End Property
+        Public ReadOnly Property Header As W3GameHeader
+            Get
+                Contract.Ensures(Contract.Result(Of W3GameHeader)() IsNot Nothing)
+                Return _header
+            End Get
+        End Property
+        Public ReadOnly Property AdminPassword() As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _adminPassword
+            End Get
+        End Property
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_map IsNot Nothing)
+            Contract.Invariant(_header IsNot Nothing)
+            Contract.Invariant(_adminPassword IsNot Nothing)
+            Contract.Invariant(defaultListenPorts IsNot Nothing)
+            Contract.Invariant(HCLMode IsNot Nothing)
+        End Sub
+
         Public Function EncodedHCLMode(ByVal handicaps As Byte()) As Byte()
+            Contract.Requires(handicaps IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+
             Dim indexMap(0 To 255) As Byte
             Dim blocked(0 To 255) As Boolean
             blocked(50) = True
@@ -66,8 +96,9 @@ Namespace Warcraft3
                        Optional ByVal shouldGrabMap As Boolean = False,
                        Optional ByVal defaultListenPorts As IEnumerable(Of UShort) = Nothing)
             Contract.Requires(map IsNot Nothing)
-            Me.map = map
-            Me.header = header
+            Contract.Requires(header IsNot Nothing)
+            Me._map = map
+            Me._header = header
             Me.creationTime = DateTime.Now()
             Me.allowDownloads = allowDownloads
             Me.allowUpload = allowUpload
@@ -75,11 +106,11 @@ Namespace Warcraft3
             Me.isAutoStarted = isAutoStarted
             Me.defaultSlotLockState = defaultSlotLockState
             If password Is Nothing Then password = New Random().Next(0, 1000).ToString("000", CultureInfo.InvariantCulture)
-            Me.adminPassword = password
+            Me._adminPassword = password
             Me.autoElevateUserName = autoElevateUserName
             Me.isAdminGame = isAdminGame
             Me.grabMap = shouldGrabMap
-            Me.default_listen_ports = If(defaultListenPorts, New List(Of UShort)).ToList()
+            Me.defaultListenPorts = If(defaultListenPorts, New List(Of UShort)).ToList()
 
             For Each arg In header.Options
                 Dim arg2 = ""
@@ -110,13 +141,13 @@ Namespace Warcraft3
                     Case "-ADMIN=", "-A="
                         Me.autoElevateUserName = arg2
                     Case "-ADMIN", "-A"
-                        Me.autoElevateUserName = header.hostUserName
+                        Me.autoElevateUserName = header.HostUserName
                     Case "-GRAB"
                         Me.grabMap = True
                     Case "-PORT="
                         Dim port As UShort
                         If UShort.TryParse(arg2, port) Then
-                            Me.default_listen_ports.Add(port)
+                            Me.defaultListenPorts.Add(port)
                         End If
                     Case "-LOADINGAME", "-LIG"
                         Me.loadInGame = True

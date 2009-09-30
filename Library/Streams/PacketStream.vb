@@ -331,8 +331,8 @@ Public Class PacketStreamer
         If packetData.Length < HeaderSize Then Throw New ArgumentException("Data didn't include header data.")
 
         'Encode size
-        Dim encodedSize = CULng(packetData.Length).Bytes(size:=headerValueSizeByteCount)
-        System.Array.Copy(sourceArray:=encodedSize,
+        Dim sizeBytes = CULng(packetData.Length).Bytes(size:=headerValueSizeByteCount)
+        System.Array.Copy(sourceArray:=sizeBytes,
                           sourceIndex:=0,
                           destinationArray:=packetData,
                           destinationIndex:=headerBytesBeforeSizeCount,

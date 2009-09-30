@@ -14,14 +14,20 @@ Namespace Warcraft3
         Private ReadOnly _relativePath As String
         Private ReadOnly _fullPath As String
         Public fileAvailable As Boolean
-        Public slots As New List(Of W3Slot)
-
+        Private ReadOnly _slots As New List(Of W3Slot)
+        Public ReadOnly Property Slots As IList(Of W3Slot)
+            Get
+                Contract.Ensures(Contract.Result(Of IList(Of W3Slot))() IsNot Nothing)
+                Return _slots
+            End Get
+        End Property
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_fileSize > 0)
             Contract.Invariant(_contentChecksumSha1 IsNot Nothing)
             Contract.Invariant(_contentChecksumSha1.Length = 20)
             Contract.Invariant(_contentChecksumXORO IsNot Nothing)
             Contract.Invariant(_contentChecksumXORO.Length = 4)
+            Contract.Invariant(_slots IsNot Nothing)
             Contract.Invariant(_crc32 IsNot Nothing)
             Contract.Invariant(_crc32.Length = 4)
             Contract.Invariant(_folder IsNot Nothing)
@@ -129,11 +135,14 @@ Namespace Warcraft3
 #Region "Properties"
         Public ReadOnly Property PlayerAndObsSlotCount(ByVal mapSettings As W3MapSettings) As Integer
             Get
+                Contract.Requires(mapSettings IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Integer)() > 0)
+                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
                 Select Case mapSettings.observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         Return 12
                     Case Else
-                        Return numPlayerSlots
+                        Return NumPlayerSlots
                 End Select
             End Get
         End Property
@@ -141,6 +150,8 @@ Namespace Warcraft3
 
 #Region "New"
         Public Shared Function FromArgument(ByVal arg As String) As W3Map
+            Contract.Requires(arg IsNot Nothing)
+            Contract.Requires(arg.Length > 0)
             If arg(0) = "-"c Then
                 Throw New ArgumentException("Map argument begins with '-', is probably an option. (did you forget an argument?)")
             ElseIf arg Like "0[xX]*" Then
@@ -156,7 +167,7 @@ Namespace Warcraft3
                     Next i
 
                     Dim packet = W3Packet.FromData(W3PacketId.HostMapInfo, hexData.ToView())
-                    vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+                    vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                 Catch e As Exception
                     Throw out_fail
                 End Try
@@ -176,19 +187,20 @@ Namespace Warcraft3
         Public Sub New(ByVal folder As String,
                        ByVal relativePath As String,
                        ByVal fileSize As UInteger,
-                       ByVal contentChecksumCRC32 As Byte(),
+                       ByVal fileChecksumCRC32 As Byte(),
                        ByVal contentChecksumSHA1 As Byte(),
                        ByVal contentChecksumXORO As Byte(),
                        ByVal slotCount As Integer)
             Contract.Requires(folder IsNot Nothing)
             Contract.Requires(relativePath IsNot Nothing)
+            Contract.Requires(relativePath.StartsWith("Maps\", StringComparison.InvariantCultureIgnoreCase))
             Contract.Requires(contentChecksumSHA1 IsNot Nothing)
             Contract.Requires(contentChecksumSHA1.Length = 20)
-            Contract.Requires(contentChecksumCRC32 IsNot Nothing)
+            Contract.Requires(fileChecksumCRC32 IsNot Nothing)
             Contract.Requires(contentChecksumXORO IsNot Nothing)
             Contract.Requires(contentChecksumXORO.Length = 4)
-            Contract.Requires(contentChecksumCRC32 IsNot Nothing)
-            Contract.Requires(contentChecksumCRC32.Length = 4)
+            Contract.Requires(fileChecksumCRC32 IsNot Nothing)
+            Contract.Requires(fileChecksumCRC32.Length = 4)
             Contract.Requires(slotCount > 0)
             Contract.Requires(slotCount <= 12)
             Contract.Requires(fileSize > 0)
@@ -202,7 +214,7 @@ Namespace Warcraft3
             Me.name = Mpq.Common.GetFileNameSlash(relativePath)
             Me._numPlayerSlots = slotCount
             Me._fileSize = fileSize
-            Me._crc32 = contentChecksumCRC32.ToView
+            Me._crc32 = fileChecksumCRC32.ToView
             Me._contentChecksumSha1 = contentChecksumSHA1.ToView
             Me._contentChecksumXORO = contentChecksumXORO.ToView
             For i = 1 To slotCount
@@ -219,11 +231,11 @@ Namespace Warcraft3
             Me._relativePath = relativePath
             Me._fullPath = folder + relativePath
             Me._folder = folder
-            Using f = New IO.BufferedStream(New IO.FileStream(fullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
+            Using f = New IO.BufferedStream(New IO.FileStream(FullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
                 Me._fileSize = CUInt(f.Length)
                 Me._crc32 = Bnet.Crypt.CRC32(f).Bytes().ToView
             End Using
-            Dim mpqa = New Mpq.MpqArchive(fullPath)
+            Dim mpqa = New Mpq.MpqArchive(FullPath)
             Dim mpq_war3path = OpenWar3PatchArchive(wc3PatchMPQFolder)
             Me._contentChecksumSha1 = ComputeMapSha1Checksum(mpqa, mpq_war3path).ToView
             Me._contentChecksumXORO = CUInt(ComputeMapXoro(mpqa, mpq_war3path)).Bytes().ToView
@@ -242,6 +254,8 @@ Namespace Warcraft3
 #Region "Read"
         Public Function ReadChunk(ByVal pos As Integer,
                                   Optional ByVal maxLength As Integer = 1442) As Byte()
+            Contract.Requires(pos >= 0)
+            Contract.Requires(maxLength >= 0)
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
             If Not fileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
 
@@ -275,6 +289,9 @@ Namespace Warcraft3
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
         Private Function ComputeMapSha1Checksum(ByVal mapArchive As Mpq.MpqArchive,
                                                 ByVal war3PatchArchive As Mpq.MpqArchive) As Byte()
+            Contract.Requires(mapArchive IsNot Nothing)
+            Contract.Requires(war3PatchArchive IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
             Dim streams As New List(Of IO.Stream)
 
             'Overridable map files from war3patch.mpq
@@ -315,6 +332,7 @@ Namespace Warcraft3
 
         '''<summary>Computes parts of the Xoro checksum.</summary>
         Private Function ComputeStreamXoro(ByVal stream As IO.Stream) As ModInt32
+            Contract.Requires(stream IsNot Nothing)
             Dim val As ModInt32 = 0
 
             With New IO.BinaryReader(New IO.BufferedStream(stream))
@@ -335,6 +353,8 @@ Namespace Warcraft3
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
         Private Function ComputeMapXoro(ByVal mapArchive As Mpq.MpqArchive,
                                         ByVal war3PatchArchive As Mpq.MpqArchive) As ModInt32
+            Contract.Requires(mapArchive IsNot Nothing)
+            Contract.Requires(war3PatchArchive IsNot Nothing)
             Dim val As ModInt32 = 0
 
             'Overridable map files from war3patch.mpq
@@ -376,20 +396,22 @@ Namespace Warcraft3
 
         '''<summary>Finds a string in the war3map.wts file.</summary>
         Public Shared Function GetMapString(ByVal mapArchive As Mpq.MpqArchive, ByVal key As String) As String
+            Contract.Requires(mapArchive IsNot Nothing)
+            Contract.Requires(key IsNot Nothing)
             Using sr As New IO.StreamReader(New IO.BufferedStream(mapArchive.OpenFile("war3map.wts")))
                 Do Until sr.EndOfStream
-                    Dim cur_key = sr.ReadLine()
+                    Dim curKey = sr.ReadLine()
                     If sr.ReadLine <> "{" Then Continue Do
-                    Dim cur_val As New System.Text.StringBuilder()
+                    Dim curValue As New System.Text.StringBuilder()
                     Do
                         If sr.EndOfStream Then Throw New IO.IOException("Invalid strings file")
                         Dim line = sr.ReadLine()
                         If line = "}" Then Exit Do
-                        If cur_val.Length > 0 Then cur_val.Append(Environment.NewLine)
-                        cur_val.Append(line)
+                        If curValue.Length > 0 Then curValue.Append(Environment.NewLine)
+                        curValue.Append(line)
                     Loop
-                    If cur_key = key Then
-                        Return cur_val.ToString
+                    If curKey = key Then
+                        Return curValue.ToString
                     End If
                 Loop
                 Throw New KeyNotFoundException("String not found")
@@ -399,6 +421,7 @@ Namespace Warcraft3
         '''<summary>Reads the map information from war3map.w3i</summary>
         '''<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
         Public Sub ReadMapInfo(ByVal mapArchive As Mpq.MpqArchive)
+            Contract.Requires(mapArchive IsNot Nothing)
             Using br = New IO.BinaryReader(New IO.BufferedStream(mapArchive.OpenFile("war3map.w3i")))
                 Dim fileFormat = br.ReadInt32()
                 If fileFormat <> 18 And fileFormat <> 25 Then Throw New IO.IOException("Unrecognized war3map.w3i format.")
@@ -416,14 +439,14 @@ Namespace Warcraft3
                     If key Like "TRIGSTR_#*" Then
                         Dim key_id As UInteger
                         If UInt32.TryParse(key.Substring("TRIGSTR_".Length), key_id) Then
-                            key = "STRING {0}".frmt(key_id)
+                            key = "STRING {0}".Frmt(key_id)
                         End If
                     End If
                     Me.name = GetMapString(mapArchive, key)
                 Catch e As KeyNotFoundException
                     Me.name = key
                 Catch e As Exception
-                    Me.name = "{0} (error reading strings file: {1})".frmt(name_key, e)
+                    Me.name = "{0} (error reading strings file: {1})".Frmt(name_key, e)
                 End Try
                 While br.ReadByte() <> 0 : End While 'map author
                 While br.ReadByte() <> 0 : End While 'map description

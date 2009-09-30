@@ -32,16 +32,16 @@
         Private Sub InitCreateSlots()
             'create player slots
             For i = 0 To map.slots.Count - 1
-                With map.slots(i)
-                    Dim slot = New W3Slot(Me, CByte(i))
-                    slot.contents = .contents.Clone(slot)
-                    slot.color = .color
-                    slot.race = .race
-                    slot.team = .team
-                    slot.locked = server.settings.defaultSlotLockState
-                    slots.Add(slot)
-                    freeIndexes.Add(CByte(i + 1))
-                End With
+                Dim baseSlot = Map.Slots(i)
+                Contract.Assume(baseSlot IsNot Nothing)
+                Dim slot = New W3Slot(Me, CByte(i))
+                slot.Contents = baseSlot.Contents.Clone(slot)
+                slot.color = baseSlot.color
+                slot.race = baseSlot.race
+                slot.team = baseSlot.team
+                slot.locked = Server.Settings.defaultSlotLockState
+                slots.Add(slot)
+                freeIndexes.Add(CByte(i + 1))
             Next i
 
             'create observer slots
@@ -61,6 +61,7 @@
             If arguments Is Nothing Then Return
 
             For Each arg In arguments
+                Contract.Assume(arg IsNot Nothing)
                 Dim arg2 = ""
                 If arg Like "-*=*" AndAlso Not arg Like "-*=*=*" Then
                     Dim n = arg.IndexOf("="c)
@@ -76,7 +77,7 @@
                         If Map.NumPlayerSlots <= 10 Then
                             For i = Map.NumPlayerSlots To 10 - 1
                                 Contract.Assume(slots(i) IsNot Nothing)
-                                slots(i).contents = New W3SlotContentsClosed(slots(i))
+                                slots(i).Contents = New W3SlotContentsClosed(slots(i))
                             Next i
                             Dim playerIndex = freeIndexes(0)
                             freeIndexes.Remove(playerIndex)
@@ -91,7 +92,7 @@
                         TrySetTeamSizes(TeamVersusStringToTeamSizes(arg2))
                     Case "-RESERVE=", "-R="
                         Dim slot = (From s In slots _
-                                    Where s.contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept _
+                                    Where s.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept _
                                     ).FirstOrDefault
                         If slot IsNot Nothing Then
                             ReserveSlot(slot.MatchableId, arg2)
@@ -105,7 +106,7 @@
             End If
 
             If server.settings.grabMap Then
-                Dim server_port = server.settings.default_listen_ports.FirstOrDefault
+                Dim server_port = server.settings.defaultListenPorts.FirstOrDefault
                 If server_port = 0 Then
                     Throw New InvalidOperationException("Server has no port for Grab player to connect on.")
                 End If
@@ -186,6 +187,7 @@
             flagHasPlayerLeft = False
 
             For Each player In players
+                Contract.Assume(player IsNot Nothing)
                 player.QueueStartCountdown()
             Next player
 
@@ -246,6 +248,7 @@
             Dim useableSlots = (From slot In slots Where slot.contents.Moveable AndAlso slot.contents.ContentType <> SlotContentType.Empty).ToArray
             Dim encodedHandicaps = Server.settings.EncodedHCLMode((From slot In useableSlots Select slot.handicap).ToArray)
             For i = 0 To encodedHandicaps.Length - 1
+                Contract.Assume(useableSlots(i) IsNot Nothing)
                 useableSlots(i).handicap = encodedHandicaps(i)
             Next i
             SendLobbyState()
@@ -275,6 +278,8 @@
         Private Function AddFakePlayer(ByVal name As String,
                                        Optional ByVal newSlot As W3Slot = Nothing) As W3Player
             Contract.Requires(name IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
+
             If state > W3GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
             ElseIf freeIndexes.Count <= 0 And fakeHostPlayer Is Nothing Then
@@ -297,6 +302,7 @@
 
             'Inform other players
             For Each player In players
+                Contract.Assume(player IsNot Nothing)
                 player.QueueSendPacket(W3Packet.MakeOtherPlayerJoined(newPlayer, index))
             Next player
 
@@ -326,6 +332,9 @@
         End Function
 
         Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As W3Player
+            Contract.Requires(connectingPlayer IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
+
             If state > W3GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
             ElseIf Not connectingPlayer.Socket.connected Then
@@ -335,24 +344,25 @@
             'Assign slot
             Dim bestSlot As W3Slot = Nothing
             Dim bestMatch = W3SlotContents.WantPlayerPriority.Reject
-            slots.MaxPair(Function(slot) slot.contents.WantPlayer(connectingPlayer.Name),
+            slots.MaxPair(Function(slot) slot.Contents.WantPlayer(connectingPlayer.Name),
                                bestSlot,
                                bestMatch)
             If bestMatch < W3SlotContents.WantPlayerPriority.Accept Then
                 Throw New InvalidOperationException("No slot available for player.")
             End If
+            Contract.Assume(bestSlot IsNot Nothing)
 
             'Assign index
             Dim index As Byte = 0
-            If bestSlot.contents.PlayerIndex <> 0 And bestMatch <> W3SlotContents.WantPlayerPriority.AcceptReservation Then
+            If bestSlot.Contents.PlayerIndex <> 0 And bestMatch <> W3SlotContents.WantPlayerPriority.AcceptReservation Then
                 'the slot requires the player to take a specific index
-                index = bestSlot.contents.PlayerIndex
+                index = bestSlot.Contents.PlayerIndex
             ElseIf freeIndexes.Count > 0 Then
                 'there is a player index available
                 index = freeIndexes(0)
             ElseIf fakeHostPlayer IsNot Nothing Then
                 'the only player index left belongs to the fake host
-                index = fakeHostPlayer.index
+                index = fakeHostPlayer.Index
                 RemovePlayer(fakeHostPlayer, True, W3PlayerLeaveType.Disconnect, "Need player index for joining player.")
             Else
                 'no indexes left, go away
@@ -364,7 +374,7 @@
 
             'Reservation
             If bestMatch = W3SlotContents.WantPlayerPriority.AcceptReservation Then
-                For Each player In bestSlot.contents.EnumPlayers
+                For Each player In bestSlot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
                     RemovePlayer(player, True, W3PlayerLeaveType.Disconnect, "Reservation fulfilled")
                 Next player
@@ -372,7 +382,7 @@
 
             'Create player object
             Dim newPlayer As W3Player = New W3Player(index, Me, connectingPlayer, Logger)
-            bestSlot.contents = bestSlot.contents.TakePlayer(newPlayer)
+            bestSlot.Contents = bestSlot.Contents.TakePlayer(newPlayer)
             players.Add(newPlayer)
 
             'Greet new player
@@ -399,12 +409,12 @@
             'Update state
             ChangedLobbyState()
             TryBeginAutoStart()
-            If Server.settings.autoElevateUserName IsNot Nothing Then
-                If newPlayer.name.ToUpperInvariant = Server.settings.autoElevateUserName.ToUpperInvariant Then
+            If Server.Settings.autoElevateUserName IsNot Nothing Then
+                If newPlayer.name.ToUpperInvariant = Server.Settings.autoElevateUserName.ToUpperInvariant Then
                     TryElevatePlayer(newPlayer.name)
                 End If
             End If
-            If Server.settings.isAutoStarted Then
+            If Server.Settings.isAutoStarted Then
                 SendMessageTo("This is an automated game. {0}help for a list of commands.".Frmt(My.Settings.commandPrefix), newPlayer)
             End If
 
@@ -470,10 +480,12 @@
         End Sub
 
         Public Sub LobbyCatchRemovedPlayer(ByVal player As W3Player, ByVal slot As W3Slot)
-            If slot Is Nothing OrElse slot.contents.PlayerIndex <> player.index Then
-                freeIndexes.Add(player.index)
+            Contract.Requires(player IsNot Nothing)
+
+            If slot Is Nothing OrElse slot.Contents.PlayerIndex <> player.Index Then
+                freeIndexes.Add(player.Index)
             End If
-            DownloadScheduler.RemoveClient(player.index).MarkAnyExceptionAsHandled()
+            DownloadScheduler.RemoveClient(player.Index).MarkAnyExceptionAsHandled()
             If player IsNot fakeHostPlayer Then TryRestoreFakeHost()
             ChangedLobbyState()
         End Sub
@@ -511,6 +523,7 @@
                 Dim misplacedPlayerSlots = New List(Of W3Slot)
                 Dim teamSizesLeft = desiredTeamSizes.ToArray()
                 For Each slot In slots
+                    Contract.Assume(slot IsNot Nothing)
                     If slot.team >= teamSizesLeft.Count Then Continue For
 
                     Select Case slot.contents.ContentType
@@ -704,6 +717,7 @@
                 Throw New InvalidOperationException("Can't lock slots after launch.")
             End If
             For Each slot In slots.ToList
+                Contract.Assume(slot IsNot Nothing)
                 slot.locked = locked
             Next slot
         End Sub
@@ -722,14 +736,15 @@
             If Not newColor.EnumValueIsDefined Then Return '[not a valid color]
 
             'check for duplicates
-            For Each other_slot In slots.ToList()
-                If other_slot.color = newColor Then
+            For Each otherSlot In slots.ToList()
+                Contract.Assume(otherSlot IsNot Nothing)
+                If otherSlot.color = newColor Then
                     If Not Map.isMelee Then Return
-                    If Not other_slot.contents.ContentType = SlotContentType.Empty Then Return
-                    other_slot.color = slot.color
+                    If Not otherSlot.Contents.ContentType = SlotContentType.Empty Then Return
+                    otherSlot.color = slot.color
                     Exit For
                 End If
-            Next other_slot
+            Next otherSlot
 
             'change color
             slot.color = newColor
@@ -770,33 +785,33 @@
 
             ChangedLobbyState()
         End Sub
-        Private Sub ReceiveSetTeam(ByVal player As W3Player, ByVal new_team As Byte)
+        Private Sub ReceiveSetTeam(ByVal player As W3Player, ByVal newTeam As Byte)
             Contract.Requires(player IsNot Nothing)
             Dim slot = FindPlayerSlot(player)
 
             'Validate
             If slot Is Nothing Then Return
             If slot.locked <> W3Slot.Lock.Unlocked Then Return '[no teams changes allowed]
-            If new_team > W3Slot.ObserverTeamIndex Then Return '[invalid value]
+            If newTeam > W3Slot.ObserverTeamIndex Then Return '[invalid value]
             If Not slot.contents.Moveable Then Return '[slot is weird]
             If state >= W3GameState.Loading Then Return '[too late]
-            If new_team = W3Slot.ObserverTeamIndex Then
+            If newTeam = W3Slot.ObserverTeamIndex Then
                 Select Case Server.settings.header.Map.observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         '[fine; continue]
                     Case Else
                         Return '[obs not enabled; invalid value]
                 End Select
-            ElseIf Not Map.isMelee And new_team >= Map.numForces Then
+            ElseIf Not Map.isMelee And newTeam >= Map.numForces Then
                 Return '[invalid team]
-            ElseIf Map.isMelee And new_team >= Map.NumPlayerSlots Then
+            ElseIf Map.isMelee And newTeam >= Map.NumPlayerSlots Then
                 Return '[invalid team]
             End If
 
             'Perform
             If Map.isMelee Then
                 'set slot to target team
-                slot.team = new_team
+                slot.team = newTeam
             Else
                 'swap with next open slot from target team
                 For offset_mod = 0 To slots.Count - 1
@@ -804,7 +819,7 @@
                     Contract.Assume(nextIndex >= 0)
                     Dim nextSlot = slots(nextIndex)
                     Contract.Assume(nextSlot IsNot Nothing)
-                    If nextSlot.team = new_team AndAlso nextSlot.contents.WantPlayer(player.name) >= W3SlotContents.WantPlayerPriority.Accept Then
+                    If nextSlot.team = newTeam AndAlso nextSlot.contents.WantPlayer(player.name) >= W3SlotContents.WantPlayerPriority.Accept Then
                         SwapSlotContents(nextSlot, slot)
                         Exit For
                     End If

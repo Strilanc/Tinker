@@ -17,7 +17,7 @@
         cboGateway.Text = profile.server
         numLocalPort.Value = profile.listenPort
         txtInitialChannel.Text = profile.initialChannel
-        txtCKLServer.Text = profile.keyServerAddress
+        txtCKLServer.Text = profile.CKLServerAddress
         cboLanHost.Text = profile.lanHost
 
         gridUsers.Rows.Clear()
@@ -40,7 +40,7 @@
         profile.server = cboGateway.Text
         profile.listenPort = CUShort(numLocalPort.Value)
         profile.initialChannel = txtInitialChannel.Text
-        profile.keyServerAddress = txtCKLServer.Text
+        profile.CKLServerAddress = txtCKLServer.Text
         profile.lanHost = cboLanHost.Text
 
         Dim existing_users As New List(Of String)

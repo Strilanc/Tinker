@@ -6,10 +6,10 @@
             LobbyStop()
             state = W3PlayerState.Loading
             SendPacket(W3Packet.MakeStartLoading())
-            handlers(W3PacketId.Ready) = AddressOf ReceiveReady
+            packetHandlers(W3PacketId.Ready) = AddressOf ReceiveReady
         End Sub
         Public Sub LoadScreenStop()
-            handlers(W3PacketId.Ready) = Nothing
+            packetHandlers.Remove(W3PacketId.Ready)
         End Sub
 
         Private Sub ReceiveReady(ByVal packet As W3Packet)
@@ -17,7 +17,7 @@
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
             Ready = True
             If game.server.settings.loadInGame Then
-                handlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
+                packetHandlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
             End If
             logger.Log(name + " is ready", LogMessageType.Positive)
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'

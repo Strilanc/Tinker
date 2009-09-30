@@ -50,6 +50,7 @@ Public Class TransferScheduler(Of TClientKey)
                               ByVal completed As Boolean,
                               Optional ByVal expectedRate As FiniteDouble = Nothing) As IFuture
         'Contract.Requires(expectedRate = Nothing OrElse expectedRate > 0)
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         If expectedRate = Nothing Then expectedRate = typicalRate
         Return ref.QueueAction(
             Sub()
@@ -64,6 +65,7 @@ Public Class TransferScheduler(Of TClientKey)
     Public Function SetLink(ByVal clientKey1 As TClientKey,
                             ByVal clientKey2 As TClientKey,
                             ByVal linked As Boolean) As IFuture
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
                 If Not clients.ContainsKey(clientKey1) Then  Throw New InvalidOperationException("No such client key")
@@ -87,6 +89,7 @@ Public Class TransferScheduler(Of TClientKey)
 
     '''<summary>Removes a client from the pool.</summary>
     Public Function RemoveClient(ByVal clientKey As TClientKey) As IFuture
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client.")
@@ -131,6 +134,7 @@ Public Class TransferScheduler(Of TClientKey)
     End Property
 
     Public Function GetClientState(ByVal clientKey As TClientKey) As IFuture(Of ClientTransferState)
+        Contract.Ensures(Contract.Result(Of IFuture(Of ClientTransferState))() IsNot Nothing)
         Return ref.QueueFunc(Function()
                                  If Not clients.ContainsKey(clientKey) Then  Return ClientTransferState.Idle
                                  Dim client = clients(clientKey)
@@ -148,6 +152,7 @@ Public Class TransferScheduler(Of TClientKey)
     Public Function UpdateProgress(ByVal clientKey As TClientKey,
                                    ByVal progress As FiniteDouble) As IFuture
         Contract.Requires(progress >= 0)
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client key.")
@@ -163,6 +168,7 @@ Public Class TransferScheduler(Of TClientKey)
     '''<summary>Stops any transfers to or from the given client.</summary>
     Public Function StopTransfer(ByVal clientKey As TClientKey,
                                  ByVal complete As Boolean) As IFuture
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client key.")

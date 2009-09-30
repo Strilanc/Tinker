@@ -4,6 +4,7 @@ Namespace Warcraft3
         Private Sub ReceiveNonGameAction(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Contract.Assume(vals IsNot Nothing)
             game.QueueReceiveNonGameAction(Me, vals)
         End Sub
 
@@ -14,6 +15,7 @@ Namespace Warcraft3
         Private Sub ReceivePong(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Contract.Assume(vals IsNot Nothing)
             Dim lambda = New FiniteDouble(0.9)
             Dim tick As ModInt32 = Environment.TickCount
             Dim salt = CUInt(vals("salt"))
@@ -40,6 +42,7 @@ Namespace Warcraft3
         Private Sub ReceiveLeaving(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Contract.Assume(vals IsNot Nothing)
             Dim leaveType = CType(vals("leave type"), W3PlayerLeaveType)
             Disconnect(True, leaveType, "manually leaving ({0})".Frmt(leaveType))
         End Sub

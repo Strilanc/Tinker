@@ -51,7 +51,7 @@ Namespace Warcraft3
         Private flagHasPlayerLeft As Boolean
         Private adminPlayer As W3Player
         Private ReadOnly players As New List(Of W3Player)
-        Private ReadOnly index_map(0 To 12) As Byte
+        Private ReadOnly indexMap(0 To 12) As Byte
 
         Public Event PlayerAction(ByVal sender As W3Game, ByVal player As W3Player, ByVal action As W3GameAction)
         Public Event Updated(ByVal sender As W3Game, ByVal slots As List(Of W3Slot))
@@ -60,24 +60,33 @@ Namespace Warcraft3
         Public Event ChangedState(ByVal sender As W3Game, ByVal oldState As W3GameState, ByVal newState As W3GameState)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(Server IsNot Nothing)
-            Contract.Invariant(Map IsNot Nothing)
-            Contract.Invariant(Name IsNot Nothing)
+            Contract.Invariant(_server IsNot Nothing)
+            Contract.Invariant(_map IsNot Nothing)
+            Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(slots IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(eventRef IsNot Nothing)
-            Contract.Invariant(Logger IsNot Nothing)
+            Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(pingTimer IsNot Nothing)
             Contract.Invariant(players IsNot Nothing)
-            Contract.Invariant(index_map IsNot Nothing)
+            Contract.Invariant(indexMap IsNot Nothing)
+            Contract.Invariant(indexMap.Length = 13)
 
+            Contract.Invariant(freeIndexes IsNot Nothing)
+            Contract.Invariant(tickTimer IsNot Nothing)
             Contract.Invariant(readyPlayers IsNot Nothing)
             Contract.Invariant(unreadyPlayers IsNot Nothing)
             Contract.Invariant(visibleReadyPlayers IsNot Nothing)
             Contract.Invariant(visibleUnreadyPlayers IsNot Nothing)
             Contract.Invariant(fakeTickTimer IsNot Nothing)
-            Contract.Invariant(DownloadScheduler IsNot Nothing)
+            Contract.Invariant(downloadTimer IsNot Nothing)
+            Contract.Invariant(_downloadScheduler IsNot Nothing)
             Contract.Invariant(_gameTime >= 0)
+            Contract.Invariant(laggingPlayers IsNot Nothing)
+            Contract.Invariant(gameDataQueue IsNot Nothing)
+            Contract.Invariant(updateEventThrottle IsNot Nothing)
+            Contract.Invariant(slotStateUpdateThrottle IsNot Nothing)
+            Contract.Invariant(rand IsNot Nothing)
         End Sub
 
 #Region "Commands"
@@ -110,7 +119,7 @@ Namespace Warcraft3
                     Case Else
                         Throw New UnreachableException()
                 End Select
-            ElseIf Server.settings.isAdminGame Then
+            ElseIf Server.Settings.isAdminGame Then
                 Return W3Game.GameCommandsAdmin.ProcessCommand(Me, Nothing, arguments)
             Else
                 Select Case state
@@ -151,7 +160,7 @@ Namespace Warcraft3
             For Each receiver In players
                 Contract.Assume(receiver IsNot Nothing)
                 Dim visibleReceiver = GetVisiblePlayer(receiver)
-                If requestedReceiverIndexes.Contains(visibleReceiver.index) Then
+                If requestedReceiverIndexes.Contains(visibleReceiver.Index) Then
                     receiver.QueueSendPacket(pk)
                 ElseIf visibleReceiver Is visibleSender AndAlso sender IsNot receiver Then
                     receiver.QueueSendPacket(pk)
@@ -219,8 +228,8 @@ Namespace Warcraft3
             Me._server = parent
             Me._name = name
             Me._logger = If(logger, New Logger)
-            For i = 0 To index_map.Length - 1
-                index_map(i) = CByte(i)
+            For i = 0 To indexMap.Length - 1
+                indexMap(i) = CByte(i)
             Next i
 
             LobbyNew(arguments)
@@ -261,7 +270,7 @@ Namespace Warcraft3
                                        End Function)
 
                 If host IsNot Nothing AndAlso Not host.isFake Then
-                    BroadcastPacket(W3Packet.MakeSetHost(host.index), Nothing)
+                    BroadcastPacket(W3Packet.MakeSetHost(host.Index), Nothing)
                     Logger.Log(Name + " has handed off hosting to " + host.name, LogMessageType.Positive)
                 Else
                     Logger.Log(Name + " has failed to hand off hosting", LogMessageType.Negative)
@@ -355,7 +364,7 @@ Namespace Warcraft3
 
         '''<summary>Returns the number of slots potentially available for new players.</summary>
         <Pure()> Private Function CountFreeSlots() As Integer
-            Dim freeSlots = From slot In slots Where slot.contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept
+            Dim freeSlots = From slot In slots Where slot.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept
             Contract.Assume(freeSlots IsNot Nothing)
             Return (freeSlots).Count
         End Function
@@ -380,7 +389,7 @@ Namespace Warcraft3
         <Pure()> Private Function FindPlayerSlot(ByVal player As W3Player) As W3Slot
             Contract.Requires(player IsNot Nothing)
             Return (From slot In slots
-                    Where (From resident In slot.contents.EnumPlayers Where resident Is player).Any
+                    Where (From resident In slot.Contents.EnumPlayers Where resident Is player).Any
                    ).FirstOrDefault
         End Function
 #End Region
@@ -433,8 +442,8 @@ Namespace Warcraft3
             'Clean slot
             Dim slot = FindPlayerSlot(player)
             If slot IsNot Nothing Then
-                If slot.contents.EnumPlayers.Contains(player) Then
-                    slot.contents = slot.contents.RemovePlayer(player)
+                If slot.Contents.EnumPlayers.Contains(player) Then
+                    slot.Contents = slot.Contents.RemovePlayer(player)
                 End If
             End If
 
@@ -488,7 +497,7 @@ Namespace Warcraft3
             If password IsNot Nothing Then
                 player.numAdminTries += 1
                 If player.numAdminTries > 5 Then Throw New InvalidOperationException("Too many tries.")
-                If password.ToUpperInvariant <> Server.settings.adminPassword.ToUpperInvariant Then
+                If password.ToUpperInvariant <> Server.Settings.AdminPassword.ToUpperInvariant Then
                     Throw New InvalidOperationException("Incorrect password.")
                 End If
             End If
@@ -502,29 +511,29 @@ Namespace Warcraft3
             Return (From x In players Where x.name.ToUpperInvariant = username.ToUpperInvariant).FirstOrDefault
         End Function
         Private Function FindPlayer(ByVal index As Byte) As W3Player
-            Return (From x In players Where x.index = index).FirstOrDefault
+            Return (From x In players Where x.Index = index).FirstOrDefault
         End Function
 
         '''<summary>Boots players in the slot with the given index.</summary>
         Private Sub Boot(ByVal slotQuery As String)
             Contract.Requires(slotQuery IsNot Nothing)
             Dim slot = FindMatchingSlot(slotQuery)
-            If slot IsNot Nothing Then Throw New InvalidOperationException("No slot {0}".Frmt(slotQuery))
-            If Not slot.contents.EnumPlayers.Any Then
+            If slot Is Nothing Then Throw New InvalidOperationException("No slot {0}".Frmt(slotQuery))
+            If Not slot.Contents.EnumPlayers.Any Then
                 Throw New InvalidOperationException("There is no player to boot in slot '{0}'.".Frmt(slotQuery))
             End If
 
-            Dim target = (From player In slot.contents.EnumPlayers
+            Dim target = (From player In slot.Contents.EnumPlayers
                           Where player.name.ToUpperInvariant = slotQuery.ToUpperInvariant).FirstOrDefault
             If target IsNot Nothing Then
-                slot.contents = slot.contents.RemovePlayer(target)
+                slot.Contents = slot.Contents.RemovePlayer(target)
                 RemovePlayer(target, True, W3PlayerLeaveType.Disconnect, "Booted")
                 Return
             End If
 
-            For Each player In slot.contents.EnumPlayers
+            For Each player In slot.Contents.EnumPlayers
                 Contract.Assume(player IsNot Nothing)
-                slot.contents = slot.contents.RemovePlayer(player)
+                slot.Contents = slot.Contents.RemovePlayer(player)
                 RemovePlayer(player, True, W3PlayerLeaveType.Disconnect, "Booted")
             Next player
         End Sub
@@ -533,14 +542,14 @@ Namespace Warcraft3
 #Region "Invisible Players"
         <Pure()> Private Function IsPlayerVisible(ByVal player As W3Player) As Boolean
             Contract.Requires(player IsNot Nothing)
-            Return index_map(player.index) = player.index
+            Return indexMap(player.Index) = player.Index
         End Function
         <Pure()> Private Function GetVisiblePlayer(ByVal player As W3Player) As W3Player
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
             If IsPlayerVisible(player) Then Return player
-            Dim visibleIndex = index_map(player.index)
-            Dim visiblePlayer = (From p In players Where p.index = visibleIndex).First
+            Dim visibleIndex = indexMap(player.Index)
+            Dim visiblePlayer = (From p In players Where p.Index = visibleIndex).First
             Contract.Assume(visiblePlayer IsNot Nothing)
             Return visiblePlayer
         End Function
@@ -551,12 +560,12 @@ Namespace Warcraft3
             Contract.Requires(coveredSlot IsNot Nothing)
             Contract.Requires(playerIndex > 0)
             Contract.Requires(playerIndex <= 12)
-            If coveringSlot.contents.EnumPlayers.Count <> 1 Then Throw New InvalidOperationException()
-            If coveredSlot.contents.EnumPlayers.Any Then Throw New InvalidOperationException()
-            Dim player = coveringSlot.contents.EnumPlayers.First
+            If coveringSlot.Contents.EnumPlayers.Count <> 1 Then Throw New InvalidOperationException()
+            If coveredSlot.Contents.EnumPlayers.Any Then Throw New InvalidOperationException()
+            Dim player = coveringSlot.Contents.EnumPlayers.First
             Contract.Assume(player IsNot Nothing)
-            coveringSlot.contents = New W3SlotContentsCovering(coveringSlot, coveredSlot, player)
-            coveredSlot.contents = New W3SlotContentsCovered(coveredSlot, coveringSlot, playerIndex, coveredSlot.contents.EnumPlayers)
+            coveringSlot.Contents = New W3SlotContentsCovering(coveringSlot, coveredSlot, player)
+            coveredSlot.Contents = New W3SlotContentsCovered(coveredSlot, coveringSlot, playerIndex, coveredSlot.Contents.EnumPlayers)
         End Sub
 #End Region
 

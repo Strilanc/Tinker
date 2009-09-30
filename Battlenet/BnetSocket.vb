@@ -5,6 +5,10 @@ Public Class BnetSocket
     Private WithEvents socket As PacketSocket
     Public Event Disconnected(ByVal sender As BnetSocket, ByVal expected As Boolean, ByVal reason As String)
 
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(socket IsNot Nothing)
+    End Sub
+
     Public Sub New(ByVal socket As PacketSocket)
         Contract.Assume(socket IsNot Nothing)
         Me.socket = socket
@@ -12,17 +16,21 @@ Public Class BnetSocket
 
     Public Property Logger() As Logger
         Get
+            Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
             Return socket.Logger
         End Get
         Set(ByVal value As Logger)
+            Contract.Requires(value IsNot Nothing)
             socket.Logger = value
         End Set
     End Property
     Public Property Name() As String
         Get
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Return socket.Name
         End Get
         Set(ByVal value As String)
+            Contract.Requires(value IsNot Nothing)
             socket.Name = value
         End Set
     End Property
@@ -46,6 +54,8 @@ Public Class BnetSocket
     End Function
 
     Private Sub CatchDisconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+        Contract.Requires(sender IsNot Nothing)
+        Contract.Requires(reason IsNot Nothing)
         RaiseEvent Disconnected(Me, expected, reason)
     End Sub
     Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
@@ -57,18 +67,18 @@ Public Class BnetSocket
         Contract.Requires(packet IsNot Nothing)
 
         'Validate
-        If socket Is Nothing OrElse Not socket.IsConnected OrElse packet Is Nothing Then
+        If Not socket.IsConnected Then
             Throw New InvalidOperationException("Socket is not connected")
         End If
 
         Try
             'Log
             Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.id, Name), LogMessageType.DataEvent)
-            Logger.Log(packet.payload.Description, LogMessageType.DataParsed)
+            Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
             'Send
             socket.WritePacket(Concat({Bnet.BnetPacket.PacketPrefixValue, packet.id, 0, 0},
-                                      packet.payload.Data.ToArray))
+                                      packet.Payload.Data.ToArray))
 
         Catch e As Pickling.PicklingException
             Dim msg = "Error packing {0} for {1}: {2}".Frmt(packet.id, Name, e)
@@ -101,10 +111,10 @@ Public Class BnetSocket
                     'Handle
                     Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageType.DataEvent)
                     Dim pk = Bnet.BnetPacket.FromData(id, data)
-                    If pk.payload.Data.Length <> data.Length Then
+                    If pk.Payload.Data.Length <> data.Length Then
                         Throw New Pickling.PicklingException("Data left over after parsing.")
                     End If
-                    Logger.Log(pk.payload.Description, LogMessageType.DataParsed)
+                    Logger.Log(pk.Payload.Description, LogMessageType.DataParsed)
                     Return pk
 
                 Catch e As Pickling.PicklingException
@@ -129,19 +139,44 @@ Public Class PacketSocket
     Private ReadOnly subStream As IO.Stream
     Private ReadOnly packetStreamer As PacketStreamer
     Private ReadOnly _remoteEndPoint As IPEndPoint
-    Public Property Logger As Logger
-    Public Property Name() As String
+    Private _logger As Logger
+    Private _name As String
 
     Public Const DefaultBufferSize As Integer = 1460 '[sending more data in a packet causes wc3 clients to disc; happens to be maximum ethernet header size]
     Public ReadOnly bufferSize As Integer
     Public Event Disconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String)
     Private WithEvents deadManSwitch As DeadManSwitch
 
+    Public Property Name As String
+        Get
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return Me._name
+        End Get
+        Set(ByVal value As String)
+            Contract.Requires(value IsNot Nothing)
+            Me._name = value
+        End Set
+    End Property
+    Public Property Logger As Logger
+        Get
+            Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
+            Return Me._logger
+        End Get
+        Set(ByVal value As Logger)
+            Contract.Requires(value IsNot Nothing)
+            Me._logger = value
+        End Set
+    End Property
+
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(substream IsNot Nothing)
+        Contract.Invariant(subStream IsNot Nothing)
         Contract.Invariant(packetStreamer IsNot Nothing)
+        Contract.Invariant(deadManSwitch IsNot Nothing)
         Contract.Invariant(_remoteEndPoint IsNot Nothing)
         Contract.Invariant(_remoteEndPoint.Address IsNot Nothing)
+        Contract.Invariant(_logger IsNot Nothing)
+        Contract.Invariant(_name IsNot Nothing)
+        Contract.Invariant(client IsNot Nothing)
     End Sub
 
     Public Sub New(ByVal client As TcpClient,
@@ -158,7 +193,7 @@ Public Class PacketSocket
         If streamWrapper IsNot Nothing Then Me.subStream = streamWrapper(Me.subStream)
         Me.bufferSize = bufferSize
         Me.deadManSwitch = New DeadManSwitch(timeout, initiallyArmed:=True)
-        Me.Logger = If(logger, New Logger)
+        Me._logger = If(logger, New Logger)
         Me.client = client
         Me.packetStreamer = New PacketStreamer(Me.subStream, numBytesBeforeSize, numSizeBytes, maxPacketSize:=bufferSize)
         Me.expectConnected = client.Connected
@@ -169,7 +204,7 @@ Public Class PacketSocket
         End If
         Contract.Assume(_remoteEndPoint IsNot Nothing)
         Contract.Assume(_remoteEndPoint.Address IsNot Nothing)
-        Me.Name = If(name, Me.RemoteEndPoint.ToString)
+        Me._name = If(name, Me.RemoteEndPoint.ToString)
     End Sub
 
     Public ReadOnly Property RemoteEndPoint As IPEndPoint

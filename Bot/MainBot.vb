@@ -21,7 +21,7 @@ Imports HostBot.Commands.Specializations
 '''<summary>The heart and soul of the bot. Handles all of the other pieces.</summary>
 Public NotInheritable Class MainBot
 #Region "Variables"
-    Public ReadOnly portPool As New PortPool
+    Private ReadOnly _portPool As New PortPool
     Public ReadOnly clientProfiles As New HashSet(Of ClientProfile)
     Public ReadOnly pluginProfiles As New HashSet(Of Plugins.PluginProfile)
     Private WithEvents pluginManager As Plugins.PluginManager
@@ -79,6 +79,12 @@ Public NotInheritable Class MainBot
     End Sub
 #End Region
 
+    Public ReadOnly Property PortPool As PortPool
+        Get
+            Contract.Ensures(Contract.Result(Of PortPool)() IsNot Nothing)
+            Return _portPool
+        End Get
+    End Property
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(ref IsNot Nothing)
         Contract.Invariant(eref IsNot Nothing)
@@ -87,6 +93,7 @@ Public NotInheritable Class MainBot
         Contract.Invariant(pluginProfiles IsNot Nothing)
         Contract.Invariant(clientProfiles IsNot Nothing)
         Contract.Invariant(widgets IsNot Nothing)
+        Contract.Invariant(_portPool IsNot Nothing)
     End Sub
 
 #Region "State"
@@ -297,16 +304,19 @@ Public NotInheritable Class MainBot
     End Function
     Public Shared Function WC3Version() As Byte()
         Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-        Dim exeV(0 To 3) As Byte
-        Dim ss() = My.Settings.exeVersion.Split("."c)
+        Dim exeS = My.Settings.exeVersion
+        Contract.Assume(exeS IsNot Nothing)
+        Dim ss = exeS.Split("."c)
         If ss.Length <> 4 Then Throw New ArgumentException("Invalid version specified in settings. Must have #.#.#.# form.")
+        Dim exeV(0 To 3) As Byte
         For i = 0 To 3
+            Contract.Assume(ss(i) IsNot Nothing)
             If Not Integer.TryParse(ss(i), 0) Or ss(i).Length > 8 Then
                 Throw New ArgumentException("Invalid version specified in settings. Must have #.#.#.# form.")
             End If
-            exeV(3 - i) = CByte(CInt(ss(i)) And &HFF)
+            exeV(i) = CByte(CInt(ss(i)) And &HFF)
         Next i
-        Return exeV
+        Return exeV.Reverse.ToArray
     End Function
     Public Shared Function WC3Path() As String
         Return My.Settings.war3path
@@ -322,7 +332,7 @@ Public NotInheritable Class MainBot
         Dim map = New W3Map("Maps\",
                             "AdminGame.w3x",
                             filesize:=1,
-                            contentChecksumCRC32:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
+                            fileChecksumCRC32:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
                             contentChecksumSHA1:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
                             contentChecksumXORO:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
                             slotCount:=2)

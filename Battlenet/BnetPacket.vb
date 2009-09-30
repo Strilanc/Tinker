@@ -130,17 +130,23 @@ Namespace Bnet
 
     Public Class BnetPacket
         Public Const PacketPrefixValue As Byte = &HFF
-        Public ReadOnly payload As IPickle(Of Object)
+        Private ReadOnly _payload As IPickle(Of Object)
         Public ReadOnly id As BnetPacketId
         Private Shared ReadOnly packetJar As ManualSwitchJar = MakeBnetPacketJar()
+        Public ReadOnly Property Payload As IPickle(Of Object)
+            Get
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Return _payload
+            End Get
+        End Property
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(payload IsNot Nothing)
+            Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
         Private Sub New(ByVal id As BnetPacketId, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
-            Me.payload = payload
+            Me._payload = payload
             Me.id = id
         End Sub
         Private Sub New(ByVal id As BnetPacketId, ByVal value As Object)
@@ -396,6 +402,7 @@ Namespace Bnet
             Contract.Requires(exeInformation IsNot Nothing)
             Contract.Requires(cdKeyROC IsNot Nothing)
             Contract.Requires(cdKeyTFT IsNot Nothing)
+            Contract.Requires(secureRandomNumberGenerator IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
 
             Dim clientCdKeySalt(0 To 3) As Byte
@@ -468,6 +475,8 @@ Namespace Bnet
         End Function
         Public Shared Function MakeCreateGame3(ByVal game As IW3GameStateDescription,
                                                ByVal gameId As Integer) As BnetPacket
+            Contract.Requires(game IsNot Nothing)
+            Contract.Requires(gameId >= 0)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Const MAX_GAME_NAME_LENGTH As UInteger = 31
             If game.Name.Length > MAX_GAME_NAME_LENGTH Then
@@ -511,6 +520,7 @@ Namespace Bnet
             Contract.Requires(cdKeyOwner IsNot Nothing)
             Contract.Requires(exeInformation IsNot Nothing)
             Contract.Requires(remoteHostName IsNot Nothing)
+            Contract.Requires(secureRandomNumberGenerator IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of BnetPacket))() IsNot Nothing)
 
             Dim clientCdKeySalt(0 To 3) As Byte
