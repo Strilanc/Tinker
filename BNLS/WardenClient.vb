@@ -161,7 +161,7 @@ Namespace BNLS
                         TypeOf e Is ObjectDisposedException OrElse
                         TypeOf e Is IO.IOException OrElse
                         TypeOf e Is PicklingException) Then
-                    LogUnexpectedException("Error sending {0} to {1}.".Frmt(packet.id, socket.Name), e)
+                    e.RaiseAsUnexpected("Error sending {0} to {1}.".Frmt(packet.id, socket.Name))
                 End If
                 socket.Disconnect(expected:=False, reason:="Error sending {0} for {1}: {2}".Frmt(packet.id, socket.Name, e))
                 Throw

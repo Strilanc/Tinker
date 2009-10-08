@@ -58,9 +58,9 @@ Public Class LoggerControl
             If value = isLoggingUnexpectedExceptions Then Return
             isLoggingUnexpectedExceptions = value
             If isLoggingUnexpectedExceptions Then
-                AddHandler CaughtUnexpectedException, AddressOf OnLoggedUnexpectedException
+                AddHandler UnexpectedException, AddressOf OnLoggedUnexpectedException
             Else
-                RemoveHandler CaughtUnexpectedException, AddressOf OnLoggedUnexpectedException
+                RemoveHandler UnexpectedException, AddressOf OnLoggedUnexpectedException
             End If
         End SyncLock
     End Sub
@@ -117,7 +117,7 @@ Public Class LoggerControl
             Try
                 filestream = New IO.FileStream(folder + IO.Path.DirectorySeparatorChar + filename, IO.FileMode.Append, IO.FileAccess.Write, IO.FileShare.Read)
             Catch e As Exception
-                LogUnexpectedException("Error opening log file '" + filename + "' in My Documents\HostBot Logs.", e)
+                e.RaiseAsUnexpected("Error opening log file '" + filename + "' in My Documents\HostBot Logs.")
                 LogMessage("Error opening log file '" + filename + "' in Documents.", Color.Red)
                 Return False
             End Try
@@ -132,7 +132,7 @@ Public Class LoggerControl
         End Get
     End Property
 
-    Public Sub LogMessage(ByVal message As ExpensiveValue(Of String),
+    Public Sub LogMessage(ByVal message As LazyValue(Of String),
                           ByVal color As Color,
                           Optional ByVal fileOnly As Boolean = False)
         LogMessage(message.Value, color, fileOnly)
@@ -224,7 +224,7 @@ Public Class LoggerControl
 
             txtLog.Select(txtLog.TextLength, 0)
         Catch e As Exception
-            LogUnexpectedException("Exception rose post LoggerControl.emptyQueue", e)
+            e.RaiseAsUnexpected("Exception rose post LoggerControl.emptyQueue")
         End Try
     End Sub
     Private Sub LogFutureMessage(ByVal placeholder As String,
@@ -247,7 +247,7 @@ Public Class LoggerControl
 
 #Region "Log Events"
     Private Sub OnLoggedMessage(ByVal type As LogMessageType,
-                                ByVal message As ExpensiveValue(Of String)) Handles _logger.LoggedMessage
+                                ByVal message As LazyValue(Of String)) Handles _logger.LoggedMessage
         Dim color As Color
         Dim fileOnly As Boolean
         SyncLock lock
@@ -261,9 +261,9 @@ Public Class LoggerControl
                                       ByVal out As IFuture(Of String)) Handles _logger.LoggedFutureMessage
         uiRef.QueueAction(Sub() LogFutureMessage(placeholder, out))
     End Sub
-    Private Sub OnLoggedUnexpectedException(ByVal context As String,
-                                            ByVal exception As Exception)
-        LogMessage(GenerateUnexpectedExceptionDescription(context, exception), Color.Red)
+    Private Sub OnLoggedUnexpectedException(ByVal exception As Exception,
+                                            ByVal context As String)
+        LogMessage("Unexpected exception ({0}): {1}".Frmt(context, exception), Color.Red)
     End Sub
 #End Region
 

@@ -1,4 +1,26 @@
 ﻿Namespace Warcraft3
+    Public Enum HostTestResult As Integer
+        Fail = -1
+        Test = 0
+        Pass = 1
+    End Enum
+    Public Class W3PlayerPingRecord
+        Public ReadOnly salt As UInteger
+        Public ReadOnly time As ModInt32
+        Public Sub New(ByVal salt As UInteger, ByVal time As ModInt32)
+            Me.salt = salt
+            Me.time = time
+        End Sub
+    End Class
+    Public Enum W3PlayerLeaveType As Byte
+        Disconnect = 1
+        Lose = 7
+        MeleeLose = 8
+        Win = 9
+        Draw = 10
+        Observer = 11
+        Lobby = 13
+    End Enum
     Public Enum W3PlayerState
         Lobby
         Loading
@@ -125,7 +147,7 @@
                     Catch e As Exception
                         Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".Frmt(packet.id, name, e)
                         logger.Log(msg, LogMessageType.Problem)
-                        LogUnexpectedException(msg, e)
+                        e.RaiseAsUnexpected(msg)
                     End Try
                 End Sub
             ))
@@ -216,6 +238,7 @@
                             Case ClientTransferState.Downloading : Return "(dl)"
                             Case ClientTransferState.Uploading : Return "(ul)"
                             Case ClientTransferState.Idle : Return If(latency = 0, "?", "{0:0}ms".Frmt(latency))
+                            Case ClientTransferState.Ready : Return If(latency = 0, "?", "{0:0}ms".Frmt(latency))
                             Case Else : Throw downloadState.MakeImpossibleValueException()
                         End Select
                     End Function)

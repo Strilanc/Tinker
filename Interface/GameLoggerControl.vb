@@ -26,7 +26,7 @@ Public Class GameLoggerControl
                                ByVal action As W3GameAction) Handles game.PlayerAction
         Dim mode = actionMode
         If mode = CallbackMode.Off Then Return
-        LogMessage(New ExpensiveValue(Of String)(Function() "{0}: {1}".Frmt(player.name, action.payload.Description.Value)),
+        LogMessage(New LazyValue(Of String)(Function() "{0}: {1}".Frmt(player.name, action.Payload.Description.Value)),
                    Color.DarkBlue,
                    mode = CallbackMode.File)
     End Sub

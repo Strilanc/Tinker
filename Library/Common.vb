@@ -134,7 +134,7 @@ Public Module PoorlyCategorizedFunctions
             folder += IO.Path.DirectorySeparatorChar
             Return folder
         Catch e As Exception
-            LogUnexpectedException("Error getting folder My Documents\HostBot\{0}.".Frmt(subfolder), e)
+            e.RaiseAsUnexpected("Error getting folder My Documents\HostBot\{0}.".Frmt(subfolder))
             Throw
         End Try
     End Function

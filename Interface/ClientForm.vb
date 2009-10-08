@@ -59,7 +59,7 @@ Public Class ClientForm
                 ShowSettings()
             End If
         Catch ex As Exception
-            MessageBox.Show(GenerateUnexpectedExceptionDescription("Error loading program.", ex))
+            MessageBox.Show("Error loading program: {0}.".Frmt(ex))
             Me.Close()
         End Try
     End Sub

@@ -122,7 +122,7 @@ Public Class ContractClassForIBotWidget
     Public Event ClearStateStrings() Implements IBotWidget.ClearStateStrings
     Public Sub Hooked() Implements IBotWidget.Hooked
     End Sub
-    Public ReadOnly Property Logger As Strilbrary.Logging.Logger Implements IBotWidget.Logger
+    Public ReadOnly Property Logger As Logger Implements IBotWidget.Logger
         Get
             Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
             Throw New NotSupportedException

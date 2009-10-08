@@ -8,11 +8,16 @@
         End Sub
     End Class
 
+    <ContractClass(GetType(ContractClassIPickle))>
+    Public Interface IPickle
+        ReadOnly Property Data As ViewableList(Of Byte)
+        ReadOnly Property Description As LazyValue(Of String)
+    End Interface
+
     <ContractClass(GetType(ContractClassIPickle(Of )))>
     Public Interface IPickle(Of Out T)
-        ReadOnly Property Data As ViewableList(Of Byte)
+        Inherits IPickle
         ReadOnly Property Value As T
-        ReadOnly Property Description As ExpensiveValue(Of String)
     End Interface
 
     <ContractClass(GetType(ContractClassForIJarInfo))>
@@ -35,24 +40,39 @@
         Inherits IParseJar(Of T)
     End Interface
 
+    <ContractClassFor(GetType(IPickle))>
+    Public Class ContractClassIPickle
+        Implements IPickle
+        Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
+            Get
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle.Description
+            Get
+                Contract.Ensures(Contract.Result(Of LazyValue(Of String))() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+    End Class
+
     <ContractClassFor(GetType(IPickle(Of )))>
     Public Class ContractClassIPickle(Of T)
         Implements IPickle(Of T)
-        Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle(Of T).Data
+        Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
             Get
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-                Return Nothing
+                Throw New NotSupportedException
             End Get
         End Property
-        Public ReadOnly Property Description As ExpensiveValue(Of String) Implements IPickle(Of T).Description
+        Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle.Description
             Get
-                Contract.Ensures(Contract.Result(Of ExpensiveValue(Of String))() IsNot Nothing)
-                Return Nothing
+                Throw New NotSupportedException
             End Get
         End Property
         Public ReadOnly Property Value As T Implements IPickle(Of T).Value
             Get
-                Return Nothing
+                Throw New NotSupportedException
             End Get
         End Property
     End Class

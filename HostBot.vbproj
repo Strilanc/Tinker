@@ -64,7 +64,7 @@
     </CodeContractsCustomRewriterClass>
     <CodeContractsRuntimeCheckingLevel>Pre and Post</CodeContractsRuntimeCheckingLevel>
     <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
-    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
     <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
     <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
     <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
@@ -146,7 +146,6 @@
     <Import Include="Strilbrary" />
     <Import Include="Strilbrary.Enumeration" />
     <Import Include="Strilbrary.Exceptions" />
-    <Import Include="Strilbrary.Logging" />
     <Import Include="Strilbrary.Numerics" />
     <Import Include="Strilbrary.Streams" />
     <Import Include="Strilbrary.Threading" />
@@ -171,7 +170,6 @@
     <Compile Include="Battlenet\Warcraft3\Game\W3GameLobby.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GamePlay.vb" />
     <Compile Include="Battlenet\Warcraft3\Player\W3Player.vb" />
-    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerInterface.vb" />
     <Compile Include="Battlenet\Warcraft3\Player\W3PlayerLoadScreen.vb" />
     <Compile Include="Battlenet\Warcraft3\Player\W3PlayerLobby.vb" />
     <Compile Include="Battlenet\Warcraft3\Player\W3PlayerGameplay.vb" />
@@ -225,6 +223,7 @@
     <Compile Include="Library\Common.vb" />
     <Compile Include="Library\ConnectionAccepter.vb" />
     <Compile Include="Library\DeadManSwitch.vb" />
+    <Compile Include="Library\Logging.vb" />
     <Compile Include="Library\Networking.vb" />
     <Compile Include="Library\Pickling\Jars Enum.vb" />
     <Compile Include="Library\Pickling\PicklingBase.vb" />
@@ -300,6 +299,7 @@
     <Compile Include="Library\Future Common.vb" />
     <Compile Include="Test\Test.vb" />
     <Compile Include="Bot\Widgets\Hookable.vb" />
+    <Compile Include="Test\W3PacketHandler.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Interface\BotControl.resx">

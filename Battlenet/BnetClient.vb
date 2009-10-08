@@ -348,7 +348,7 @@ Namespace Bnet
                         ElseIf Not (TypeOf packetException Is SocketException OrElse
                                     TypeOf packetException Is ObjectDisposedException OrElse
                                     TypeOf packetException Is IO.IOException) Then
-                            LogUnexpectedException("Error receiving data from bnet server", packetException)
+                            packetException.RaiseAsUnexpected("Error receiving data from bnet server")
                         End If
                         Disconnect(expected:=False, reason:="Error receiving packet: {0}.".Frmt(packetException))
                         Return False
@@ -362,12 +362,12 @@ Namespace Bnet
                                              RaiseEvent ReceivedPacket(Me, packet)
                                          End Sub)
                         If packetHandlers(packet.id) IsNot Nothing Then
-                            Call packetHandlers(packet.id)(CType(packet.payload.Value, Dictionary(Of String, Object)))
+                            Call packetHandlers(packet.id)(CType(packet.Payload.Value, Dictionary(Of String, Object)))
                         End If
                         Return True
 
                     Catch e As Exception
-                        LogUnexpectedException("Error receiving data from bnet server", e)
+                        e.RaiseAsUnexpected("Error receiving data from bnet server")
                         Disconnect(expected:=False, reason:="Error handling packet: {0}.".Frmt(e))
                         Return False
                     End Try
@@ -934,7 +934,7 @@ Namespace Bnet
                             End Sub)
         End Sub
         Private Sub OnWardenFail(ByVal e As Exception)
-            LogUnexpectedException("Warden", e)
+            e.RaiseAsUnexpected("Warden")
             logger.Log("Error dealing with Warden packet. Disconnecting to be safe.", LogMessageType.Problem)
             ref.QueueAction(Sub() Disconnect(expected:=False, reason:="Error dealing with Warden packet."))
         End Sub

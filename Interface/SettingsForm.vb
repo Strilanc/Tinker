@@ -244,7 +244,7 @@ Public Class SettingsForm
                         gridPlugins.Rows.Add(pluginName, rel_path, "")
                     End If
                 Catch ex As Exception
-                    LogUnexpectedException("Importing plugin from settings form.", ex)
+                    ex.RaiseAsUnexpected("Importing plugin from settings form.")
                     MessageBox.Show("Error importing plugin: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
                 End Try
             End If

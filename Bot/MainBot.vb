@@ -64,7 +64,7 @@ Public NotInheritable Class MainBot
             Catch e As Exception
                 clientProfiles.Clear()
                 clientProfiles.Add(New ClientProfile())
-                LogUnexpectedException("Error loading profiles.", e)
+                e.RaiseAsUnexpected("Error loading profiles.")
             End Try
         Else
             clientProfiles.Clear()

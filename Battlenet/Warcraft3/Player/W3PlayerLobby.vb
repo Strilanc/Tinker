@@ -68,7 +68,7 @@
                 knowMapState = True
             ElseIf mapDownloadPosition = game.map.FileSize Then
                 logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
-                game.DownloadScheduler.StopTransfer(index, complete:=True).MarkAnyExceptionAsHandled()
+                game.DownloadScheduler.SetNotTransfering(Index, completed:=True).MarkAnyExceptionAsHandled()
             Else
                 game.DownloadScheduler.UpdateProgress(index, New FiniteDouble(mapDownloadPosition)).MarkAnyExceptionAsHandled()
                 If IsGettingMapFromBot Then

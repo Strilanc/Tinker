@@ -263,7 +263,7 @@ Public NotInheritable Class W3LanAdvertiser
         Catch e As Exception
             'Fail
             logger.Log("Error sending {0}: {1}".Frmt(pk.id, e), LogMessageType.Problem)
-            LogUnexpectedException("Exception rose past {0}.send".Frmt(Me.GetType.Name), e)
+            e.RaiseAsUnexpected("Exception rose past {0}.send".Frmt(Me.GetType.Name))
         End Try
     End Sub
 #End Region

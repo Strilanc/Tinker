@@ -5,10 +5,10 @@
 
         Private ReadOnly _data As ViewableList(Of Byte)
         Private ReadOnly _value As T
-        Private ReadOnly _description As ExpensiveValue(Of String)
+        Private ReadOnly _description As LazyValue(Of String)
         Public Sub New(ByVal value As T,
                        ByVal data As ViewableList(Of Byte),
-                       ByVal description As ExpensiveValue(Of String))
+                       ByVal description As LazyValue(Of String))
             Me._data = data
             Me._value = value
             Me._description = description
@@ -17,13 +17,13 @@
         Public Sub New(ByVal jarName As String,
                        ByVal value As T,
                        ByVal data As ViewableList(Of Byte))
-            Me.new(value, data, New ExpensiveValue(Of String)(Function() "{0}: {1}".Frmt(jarName, value)))
+            Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, value)))
         End Sub
         Public Sub New(ByVal jarName As String,
                        ByVal value As T,
                        ByVal data As ViewableList(Of Byte),
                        ByVal valueDescription As Func(Of String))
-            Me.new(value, data, New ExpensiveValue(Of String)(Function() "{0}: {1}".Frmt(jarName, valueDescription())))
+            Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, valueDescription())))
         End Sub
 
         Public Shared Function MakeListDescription(ByVal pickles As IEnumerable(Of IPickle(Of T))) As String
@@ -32,7 +32,7 @@
                                               ).StringJoin(Environment.NewLine).Indent("    "))
         End Function
 
-        Public ReadOnly Property Description As ExpensiveValue(Of String) Implements IPickle(Of T).Description
+        Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle(Of T).Description
             Get
                 Return _description
             End Get

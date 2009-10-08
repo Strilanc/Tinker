@@ -69,7 +69,7 @@ Namespace Warcraft3
             FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packet) ref.QueueAction(
                 Sub()
                     Dim id = packet.id
-                    Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+                    Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                     Contract.Assume(vals IsNot Nothing)
                     Try
                         Select Case id
@@ -126,7 +126,7 @@ Namespace Warcraft3
                     Catch e As Exception
                         Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".Frmt(id, name, e)
                         logger.Log(msg, LogMessageType.Problem)
-                        LogUnexpectedException(msg, e)
+                        e.RaiseAsUnexpected(msg)
                     End Try
                 End Sub
             ))
@@ -217,11 +217,11 @@ Namespace Warcraft3
                     Try
                         Select Case packet.id
                             Case PeerPing
-                                Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+                                Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                                 sender.Socket.SendPacket(W3Packet.MakePeerPing(CType(vals("salt"), Byte()), 1))
                                 sender.Socket.SendPacket(W3Packet.MakePeerPong(CType(vals("salt"), Byte())))
                             Case MapFileData
-                                Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+                                Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                                 Dim pos = CUInt(dl.file.Position)
                                 If ReceiveDLMapChunk(vals) Then
                                     Disconnect(expected:=True, reason:="Download finished.")
@@ -232,7 +232,7 @@ Namespace Warcraft3
                     Catch e As Exception
                         Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".Frmt(packet.id, name, e)
                         logger.Log(msg, LogMessageType.Problem)
-                        LogUnexpectedException(msg, e)
+                        e.RaiseAsUnexpected(msg)
                     End Try
                 End Sub
             )

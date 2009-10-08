@@ -86,7 +86,7 @@ Public Class BnetSocket
             Throw
         Catch e As Exception
             Dim msg = "Error sending {0} to {1}: {2}".Frmt(packet.id, Name, e)
-            LogUnexpectedException(msg, e)
+            e.RaiseAsUnexpected(msg)
             Logger.Log(msg, LogMessageType.Problem)
             Throw
         End Try
@@ -125,7 +125,7 @@ Public Class BnetSocket
                 Catch e As Exception
                     Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".Frmt(id, Name, e)
                     Logger.Log(msg, LogMessageType.Problem)
-                    LogUnexpectedException(msg, e)
+                    e.RaiseAsUnexpected(msg)
                     Throw
                 End Try
             End Function

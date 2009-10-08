@@ -211,7 +211,7 @@ Namespace Commands
                 'Run
                 Return Process(target, user, arguments)
             Catch e As Exception
-                LogUnexpectedException("Processing text for command.", e)
+                e.RaiseAsUnexpected("Processing text for command.")
                 Dim result = New FutureFunction(Of String)
                 result.SetFailed(e)
                 Return result
@@ -425,7 +425,7 @@ Namespace Commands
                         End If
                     End Function))
             Catch e As Exception
-                LogUnexpectedException("Exception rose past {0}[{1}].ProcessLocalTest".Frmt(this.GetType.Name, this.name), e)
+                e.RaiseAsUnexpected("Exception rose past {0}[{1}].ProcessLocalTest".Frmt(this.GetType.Name, this.Name))
             End Try
         End Sub
     End Module

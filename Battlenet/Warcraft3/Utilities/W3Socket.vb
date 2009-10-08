@@ -92,7 +92,7 @@ Namespace Warcraft3
                 If Not (TypeOf e Is SocketException OrElse
                         TypeOf e Is ObjectDisposedException OrElse
                         TypeOf e Is IO.IOException) Then
-                    LogUnexpectedException("Error sending {0} to {1}.".Frmt(packet.id, Name), e)
+                    e.RaiseAsUnexpected("Error sending {0} to {1}.".Frmt(packet.id, Name))
                 End If
                 Dim msg = "Error sending {0} to {1}: {2}".Frmt(packet.id, Name, e)
                 socket.Disconnect(expected:=False, reason:=msg)
@@ -132,7 +132,7 @@ Namespace Warcraft3
                         If Not (TypeOf e Is SocketException OrElse
                                 TypeOf e Is ObjectDisposedException OrElse
                                 TypeOf e Is IO.IOException) Then
-                            LogUnexpectedException("Error receiving {0} from {1} ({2}).".Frmt(id, Name, data.ToHexString()), e)
+                            e.RaiseAsUnexpected("Error receiving {0} from {1} ({2}).".Frmt(id, Name, data.ToHexString()))
                         End If
                         Dim msg = "Error receiving {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
                         Logger.Log(msg, LogMessageType.Problem)

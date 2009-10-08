@@ -1,16 +1,24 @@
 ﻿Public Enum ClientTransferState
+    ''' <summary>Doesn't have file but not transfering.</summary>
     Idle
+    ''' <summary>Has file but not transfering.</summary>
+    Ready
+    ''' <summary>Doesn't have file and is transfering.</summary>
     Downloading
+    ''' <summary>Has file and is transfering.</summary>
     Uploading
 End Enum
 
 '''<summary>Schedules transfers for sharing a copyable resource among multiple clients.</summary>
 Public Class TransferScheduler(Of TClientKey)
     Private ReadOnly typicalRate As FiniteDouble
-    Private ReadOnly clients As New Dictionary(Of TClientKey, Client)
+    Private ReadOnly clients As New Dictionary(Of TClientKey, TransferClient)
     Private ReadOnly ref As ICallQueue
     Private ReadOnly fileSize As FiniteDouble
     Private ReadOnly typicalSwitchTime As FiniteDouble
+    Private ReadOnly minSwithPeriod As FiniteDouble
+    Private ReadOnly freezePeriod As FiniteDouble
+    Private Const SwitchRatePenaltyFactor As Double = 1.1
 
     Public Event Actions(ByVal started As List(Of TransferEndpoints), ByVal stopped As List(Of TransferEndpoints))
 
@@ -35,11 +43,15 @@ Public Class TransferScheduler(Of TClientKey)
     Public Sub New(ByVal typicalRate As FiniteDouble,
                    ByVal typicalSwitchTime As FiniteDouble,
                    ByVal fileSize As FiniteDouble,
+                   Optional ByVal minSwitchPeriodMilliseconds As Integer = 3000,
+                   Optional ByVal freezePeriodMilliseconds As Integer = 5000,
                    Optional ByVal pq As ICallQueue = Nothing)
         Contract.Assume(fileSize > 0) 'bug in contracts required not using requires here
         Contract.Assume(typicalRate > 0)
         Contract.Assume(typicalSwitchTime >= 0)
         Me.ref = If(pq, New ThreadPooledCallQueue)
+        Me.minSwithPeriod = minSwitchPeriodMilliseconds
+        Me.freezePeriod = freezePeriodMilliseconds
         Me.typicalRate = typicalRate
         Me.typicalSwitchTime = typicalSwitchTime
         Me.fileSize = fileSize
@@ -56,7 +68,7 @@ Public Class TransferScheduler(Of TClientKey)
             Sub()
                 If clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("client key already exists")
                 Contract.Assume(expectedRate > 0)
-                clients(clientKey) = New Client(clientKey, completed, expectedRate)
+                clients(clientKey) = New TransferClient(clientKey, completed, expectedRate)
             End Sub
         )
     End Function
@@ -79,8 +91,8 @@ Public Class TransferScheduler(Of TClientKey)
                 Else
                     client1.links.Remove(client2)
                     client2.links.Remove(client1)
-                    If client1.busy AndAlso client1.other Is client2 Then
-                        StopTransfer(clientKey1, False)
+                    If client1.Busy AndAlso client1.other Is client2 Then
+                        SetNotTransfering(clientKey1, False)
                     End If
                 End If
             End Sub
@@ -136,14 +148,20 @@ Public Class TransferScheduler(Of TClientKey)
     Public Function GetClientState(ByVal clientKey As TClientKey) As IFuture(Of ClientTransferState)
         Contract.Ensures(Contract.Result(Of IFuture(Of ClientTransferState))() IsNot Nothing)
         Return ref.QueueFunc(Function()
-                                 If Not clients.ContainsKey(clientKey) Then  Return ClientTransferState.Idle
+                                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client.")
                                  Dim client = clients(clientKey)
-                                 If Not client.busy Then
-                                     Return ClientTransferState.Idle
-                                 ElseIf client.completed Then
-                                     Return ClientTransferState.Uploading
+                                 If client.Busy Then
+                                     If client.completed Then
+                                         Return ClientTransferState.Uploading
+                                     Else
+                                         Return ClientTransferState.Downloading
+                                     End If
                                  Else
-                                     Return ClientTransferState.Downloading
+                                     If client.completed Then
+                                         Return ClientTransferState.Ready
+                                     Else
+                                         Return ClientTransferState.Idle
+                                     End If
                                  End If
                              End Function)
     End Function
@@ -165,36 +183,37 @@ Public Class TransferScheduler(Of TClientKey)
         )
     End Function
 
-    '''<summary>Stops any transfers to or from the given client.</summary>
-    Public Function StopTransfer(ByVal clientKey As TClientKey,
-                                 ByVal complete As Boolean) As IFuture
+    '''<summary>Stops any transfers to or from the given client. Marks the destination as completed if completed is set.</summary>
+    Public Function SetNotTransfering(ByVal clientKey As TClientKey,
+                                      ByVal completed As Boolean) As IFuture
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client key.")
 
                 Dim client = clients(clientKey)
-                If client.busy Then
-                    Dim other = client.other
-                    client.SetNotTransfering(nowFinished:=complete)
-                    other.SetNotTransfering(nowFinished:=complete)
+                Dim other = client.other
+                If other IsNot Nothing Then
+                    other.SetNotTransfering(nowFinished:=completed)
                 End If
+                client.SetNotTransfering(nowFinished:=completed)
             End Sub
         )
     End Function
 
-    Public Sub Update()
-        ref.QueueAction(
+    Public Function Update() As ifuture
+        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Return ref.QueueAction(
             Sub()
                 Dim transfers = New List(Of TransferEndpoints)
                 Dim breaks = New List(Of TransferEndpoints)
 
                 'Match downloaders to uploaders
                 For Each downloader In (From client In clients.Values Where Not client.completed)
-                    Dim availableUploaders = From e In downloader.links Where e.completed AndAlso Not e.busy
-                    If availableUploaders.None Then  Continue For
-
                     Dim curUploader = downloader.other
+                    Dim availableUploaders = From e In downloader.links Where e.completed AndAlso Not e.Busy
+                    If availableUploaders.None AndAlso curUploader Is Nothing Then  Continue For
+
                     Dim bestUploader = availableUploaders.Max(Function(e1, e2)
                                                                   Dim n = Math.Sign(e1.GetMaxRateEstimate - e2.GetMaxRateEstimate)
                                                                   If n <> 0 Then  Return n
@@ -206,12 +225,15 @@ Public Class TransferScheduler(Of TClientKey)
                         bestUploader.SetTransfering(downloader.GetLastProgress, downloader)
                         downloader.SetTransfering(downloader.GetLastProgress, bestUploader)
                         transfers.Add(New TransferEndpoints(bestUploader.key, downloader.key))
-                    ElseIf Math.Min(downloader.GetTransferingTime, curUploader.GetTransferingTime) > Client.MIN_SWITCH_PERIOD Then
+                    ElseIf downloader.TimeSinceLastActivity >= freezePeriod Then
+                        'Stop transfer if it appears to have frozen
+                        breaks.Add(New TransferEndpoints(curUploader.key, downloader.key))
+                    ElseIf bestUploader IsNot Nothing AndAlso downloader.GetTransferingTime >= minSwithPeriod Then
                         'Stop transfer if a significantly better uploader is available
-                        Dim remaining = (fileSize - downloader.GetLastProgress)
-                        Dim curExpectedTime = remaining / downloader.GetCurRateEstimate
-                        Dim newExpectedTime = typicalSwitchTime + 1.25 * remaining / FiniteDouble.Min(downloader.GetMaxRateEstimate, bestUploader.GetMaxRateEstimate())
-                        If curUploader.IsProbablyFrozen OrElse newExpectedTime < curExpectedTime Then
+                        Dim remainingData = fileSize - downloader.GetLastProgress
+                        Dim curExpectedTime = remainingData / downloader.GetCurRateEstimate
+                        Dim newExpectedTime = typicalSwitchTime + SwitchRatePenaltyFactor * remainingData / FiniteDouble.Min(downloader.GetMaxRateEstimate, bestUploader.GetMaxRateEstimate)
+                        If newExpectedTime < curExpectedTime Then
                             breaks.Add(New TransferEndpoints(curUploader.key, downloader.key))
                         End If
                     End If
@@ -220,7 +242,8 @@ Public Class TransferScheduler(Of TClientKey)
                 'Stop transfers seen as improvable
                 '[Done here instead of in the above loop to avoid potentially giving two commands to clients at the same time]
                 For Each e In breaks
-                    StopTransfer(e.source, False)
+                    clients(e.source).SetNotTransfering(nowFinished:=False)
+                    clients(e.destination).SetNotTransfering(nowFinished:=False)
                 Next e
 
                 'Report actions to the outside
@@ -229,9 +252,10 @@ Public Class TransferScheduler(Of TClientKey)
                 End If
             End Sub
         )
-    End Sub
+    End Function
 
-    Private Class Client
+    <DebuggerDisplay("{ToString}")>
+    Private Class TransferClient
         Private maxRateEstimate As FiniteDouble
         Private curRateEstimate As FiniteDouble
 
@@ -242,18 +266,15 @@ Public Class TransferScheduler(Of TClientKey)
         Private numMeasurements As Integer
 
         Public ReadOnly key As TClientKey
-        Public other As Client = Nothing
-        Private ReadOnly _links As New HashSet(Of Client)
-        Public busy As Boolean
+        Public other As TransferClient = Nothing
+        Private ReadOnly _links As New HashSet(Of TransferClient)
         Public completed As Boolean
 
-        Public Const PROBABLY_FROZEN_PERIOD As Integer = 6000
-        Public Const MIN_SWITCH_PERIOD As Integer = 3000
         Private Const CUR_ESTIMATE_CONVERGENCE_FACTOR As Double = 0.6
 
-        Public ReadOnly Property links As HashSet(Of Client)
+        Public ReadOnly Property links As HashSet(Of TransferClient)
             Get
-                Contract.Ensures(Contract.Result(Of HashSet(Of Client))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of HashSet(Of TransferClient))() IsNot Nothing)
                 Return _links
             End Get
         End Property
@@ -276,6 +297,17 @@ Public Class TransferScheduler(Of TClientKey)
         End Sub
 
 #Region "Properties"
+        Public ReadOnly Property Busy As Boolean
+            Get
+                Return other IsNot Nothing
+            End Get
+        End Property
+        Public ReadOnly Property TimeSinceLastActivity() As FiniteDouble
+            Get
+                'Contract.Ensures(Contract.Result(Of FiniteDouble)() >= 0)
+                Return New FiniteDouble(CUInt(Environment.TickCount - lastUpdateTime))
+            End Get
+        End Property
         Public ReadOnly Property GetTransferingTime() As FiniteDouble
             Get
                 'Contract.Ensures(Contract.Result(Of FiniteDouble)() >= 0)
@@ -286,8 +318,8 @@ Public Class TransferScheduler(Of TClientKey)
         Public ReadOnly Property GetMaxRateEstimate() As FiniteDouble
             Get
                 'Contract.Ensures(Contract.Result(Of FiniteDouble)() > 0)
-                If numMeasurements = 0 Then Return curRateEstimate
-                Dim result = maxRateEstimate * New FiniteDouble(1 + 1 / numMeasurements)
+                Dim result = maxRateEstimate * New FiniteDouble(1 + 1 / (1 + numMeasurements))
+                If result < curRateEstimate Then result = curRateEstimate
                 Contract.Assume(result.Value > 0)
                 Return result
             End Get
@@ -310,21 +342,17 @@ Public Class TransferScheduler(Of TClientKey)
                 Return lastUpdateProgress
             End Get
         End Property
-        Public ReadOnly Property IsProbablyFrozen() As Boolean
-            Get
-                Return CUInt(Environment.TickCount - lastUpdateTime) > PROBABLY_FROZEN_PERIOD
-            End Get
-        End Property
 #End Region
 
 #Region "State"
-        Public Sub SetTransfering(ByVal progress As FiniteDouble, ByVal destinationClient As Client)
+        Public Sub SetTransfering(ByVal progress As FiniteDouble, ByVal destinationClient As TransferClient)
+            Contract.Requires(destinationClient IsNot Nothing)
             Contract.Requires(progress >= 0)
-            If busy Then Return
+            If Busy Then Return
 
             'Update state
-            busy = True
             Me.other = destinationClient
+            Me.curRateEstimate = FiniteDouble.Min(Me.maxRateEstimate, other.maxRateEstimate)
 
             'Prep measure
             lastStartProgress = progress
@@ -369,18 +397,25 @@ Public Class TransferScheduler(Of TClientKey)
             Dim dt = GetTransferingTime()
             If dt > 0 And dp > 0 Then
                 Dim r = dp / dt
-                Dim c = New FiniteDouble(If(numMeasurements = 0 OrElse r > maxRateEstimate, 0, 0.99))
+                Dim c = New FiniteDouble(If(numMeasurements = 0 OrElse r > maxRateEstimate, 0, 0.9))
                 maxRateEstimate *= c
                 maxRateEstimate += r * (1 - c)
                 numMeasurements += 1
             End If
 
             'Update state
-            Me.busy = False
             Me.completed = Me.completed Or nowFinished
             Me.other = Nothing
             Me.curRateEstimate = Me.maxRateEstimate
         End Sub
 #End Region
+
+        Public Overrides Function ToString() As String
+            If busy Then
+                Return "Client {0}: {1} {2}".Frmt(key, If(completed, "Uploading to", "Downloading from"), other.key)
+            Else
+                Return "Client {0}: {1}".Frmt(key, If(completed, "Completed", "Not Completed"))
+            End If
+        End Function
     End Class
 End Class
