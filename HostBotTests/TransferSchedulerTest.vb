@@ -6,17 +6,6 @@ Imports HostBot
 
 <TestClass()>
 Public Class TransferSchedulerTest
-    Private Shared Function BlockOnFuture(ByVal future As IFuture) As Boolean
-        Return BlockOnFuture(future, New TimeSpan(0, 0, seconds:=100))
-    End Function
-    Private Shared Function BlockOnFuture(ByVal future As IFuture,
-                                          ByVal timeout As TimeSpan) As Boolean
-        Dim waitHandle = New System.Threading.ManualResetEvent(initialState:=False)
-        AddHandler future.Ready, Sub() waitHandle.Set()
-        If future.State <> FutureState.Unknown Then waitHandle.Set()
-        Return waitHandle.WaitOne(timeout)
-    End Function
-
     <TestMethod()>
     Public Sub AddTest_Single()
         Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)

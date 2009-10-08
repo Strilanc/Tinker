@@ -65,8 +65,11 @@
     <Import Include="System.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="PacketStreamTest.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="TransferSchedulerTest.vb" />
+    <Compile Include="Utilities\Common.vb" />
+    <Compile Include="Utilities\StreamTester.vb" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\HostBot\HostBot.vbproj">
