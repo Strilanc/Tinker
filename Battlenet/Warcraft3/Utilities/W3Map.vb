@@ -1,5 +1,5 @@
 Namespace Warcraft3
-    Public Class W3Map
+    Public NotInheritable Class W3Map
         Public playableWidth As Integer
         Public playableHeight As Integer
         Public isMelee As Boolean

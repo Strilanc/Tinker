@@ -1,4 +1,4 @@
-﻿Public Class DeadManSwitch
+﻿Public NotInheritable Class DeadManSwitch
     Inherits FutureDisposable
 
     Private ReadOnly timer As Timers.Timer

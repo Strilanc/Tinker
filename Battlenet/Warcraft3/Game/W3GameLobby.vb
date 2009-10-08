@@ -1,5 +1,5 @@
 ﻿Namespace Warcraft3
-    Partial Public Class W3Game
+    Partial Public NotInheritable Class W3Game
         Public Const LocalTransferClientKey As Byte = 255
 
         Private _downloadScheduler As TransferScheduler(Of Byte)

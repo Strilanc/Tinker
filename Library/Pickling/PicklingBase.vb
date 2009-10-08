@@ -1,6 +1,6 @@
 ﻿Namespace Pickling
     <DebuggerDisplay("{ToString}")>
-    Public Class Pickle(Of T)
+    Public NotInheritable Class Pickle(Of T)
         Implements IPickle(Of T)
 
         Private ReadOnly _data As ViewableList(Of Byte)
@@ -135,35 +135,35 @@
             Return New WeakParseJar(Of T)(jar)
         End Function
 
-        Private Class WeakJar(Of T)
+        Private NotInheritable Class WeakJar(Of T)
             Inherits Jar(Of Object)
             Private ReadOnly subJar As IJar(Of T)
             Public Sub New(ByVal jar As IJar(Of T))
                 MyBase.New(jar.Name)
-                Me.subjar = jar
+                Me.subJar = jar
             End Sub
             Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Object)
-                Dim p = subjar.Parse(data)
+                Dim p = subJar.Parse(data)
                 Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
             End Function
             Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
-                Dim p = subjar.Pack(CType(CType(value, Object), T))
+                Dim p = subJar.Pack(CType(CType(value, Object), T))
                 Return New Pickle(Of R)(value, p.Data, p.Description)
             End Function
         End Class
-        Private Class WeakPackJar(Of T)
+        Private NotInheritable Class WeakPackJar(Of T)
             Inherits PackJar(Of Object)
             Private ReadOnly subJar As IPackJar(Of T)
             Public Sub New(ByVal jar As IPackJar(Of T))
                 MyBase.New(jar.Name)
-                Me.subjar = jar
+                Me.subJar = jar
             End Sub
             Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
-                Dim p = subjar.Pack(CType(CType(value, Object), T))
+                Dim p = subJar.Pack(CType(CType(value, Object), T))
                 Return New Pickle(Of R)(value, p.Data, p.Description)
             End Function
         End Class
-        Private Class WeakParseJar(Of T)
+        Private NotInheritable Class WeakParseJar(Of T)
             Inherits ParseJar(Of Object)
             Private ReadOnly subJar As IParseJar(Of T)
             Public Sub New(ByVal jar As IParseJar(Of T))

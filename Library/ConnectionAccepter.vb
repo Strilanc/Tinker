@@ -2,7 +2,7 @@
 Imports System.Net
 
 '''<summary>A thread-safe class which accepts connections on multiple ports, and returns accepted TcpClients using events.</summary>
-Public Class ConnectionAccepter
+Public NotInheritable Class ConnectionAccepter
     Private ReadOnly listeners As New HashSet(Of TcpListener)
     Private ReadOnly lock As New Object
 

@@ -16,7 +16,7 @@ Public Class ClientForm
             CacheIPAddresses()
             bot = New MainBot()
             For Each port In SettingsForm.ParsePortList(My.Settings.port_pool, "")
-                bot.portPool.TryAddPort(port)
+                bot.PortPool.TryAddPort(port)
             Next port
             botcMain.logBot.SetLogUnexpected(True)
             botcMain.QueueHook(bot)

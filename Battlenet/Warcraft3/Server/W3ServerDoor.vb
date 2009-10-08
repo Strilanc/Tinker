@@ -1,5 +1,5 @@
 ﻿Namespace Warcraft3
-    Public Class W3ServerDoor
+    Public NotInheritable Class W3ServerDoor
         Public ReadOnly server As W3Server
         Public ReadOnly logger As Logger
         Private WithEvents _accepter As W3ConnectionAccepter

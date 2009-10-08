@@ -104,7 +104,7 @@
     End Class
 
     '''<summary>Pickles fixed-size unsigned integers</summary>
-    Public Class ValueJar
+    Public NotInheritable Class ValueJar
         Inherits Jar(Of ULong)
         Private ReadOnly byteCount As Integer
         Private ReadOnly byteOrder As ByteOrder

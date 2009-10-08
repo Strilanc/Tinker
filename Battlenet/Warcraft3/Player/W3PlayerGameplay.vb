@@ -1,5 +1,5 @@
 ﻿Namespace Warcraft3
-    Public Class TickRecord
+    Public NotInheritable Class TickRecord
         Public ReadOnly length As UShort
         Public ReadOnly startTime As Integer
         Public ReadOnly Property EndTime() As Integer
@@ -26,7 +26,7 @@
         'End Function
     End Class
 
-    Partial Public Class W3Player
+    Partial Public NotInheritable Class W3Player
         Private ReadOnly tickQueue As New Queue(Of TickRecord)
         Private totalTockTime As Integer
 

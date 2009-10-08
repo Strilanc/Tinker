@@ -2,14 +2,14 @@ Imports System.Reflection
 
 Namespace Plugins
     <Serializable()>
-    Public Class PluginException
+    Public NotInheritable Class PluginException
         Inherits Exception
         Public Sub New(ByVal message As String, Optional ByVal innerException As Exception = Nothing)
             MyBase.New(message, innerException)
         End Sub
     End Class
 
-    Public Class PluginProfile
+    Public NotInheritable Class PluginProfile
         Public name As String
         Public location As String
         Public argument As String

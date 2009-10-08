@@ -1,6 +1,6 @@
 ﻿Namespace Warcraft3
     Partial Class W3Game
-        Private Class GameTickDatum
+        Private NotInheritable Class GameTickDatum
             Private ReadOnly _source As W3Player
             Private ReadOnly _data As Byte()
             <ContractInvariantMethod()> Private Sub ObjectInvariant()

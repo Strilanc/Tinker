@@ -4,7 +4,7 @@ Imports HostBot.Warcraft3
 Imports HostBot.Links
 
 Namespace Commands.Specializations
-    Public Class LanCommands
+    Public NotInheritable Class LanCommands
         Inherits CommandSet(Of W3LanAdvertiser)
 
         Public Sub New()
@@ -13,7 +13,7 @@ Namespace Commands.Specializations
             AddCommand(New CommandHost)
         End Sub
 
-        Public Class CommandHost
+        Public NotInheritable Class CommandHost
             Inherits BaseCommand(Of W3LanAdvertiser)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Host,
@@ -54,7 +54,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>Starts advertising a game.</summary>
-        Private Class CommandAdd
+        Private NotInheritable Class CommandAdd
             Inherits BaseCommand(Of W3LanAdvertiser)
             Public Sub New()
                 MyBase.New("Add",
@@ -73,7 +73,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>Stops advertising a game.</summary>
-        Private Class CommandRemove
+        Private NotInheritable Class CommandRemove
             Inherits BaseCommand(Of W3LanAdvertiser)
             Public Sub New()
                 MyBase.New("Remove",

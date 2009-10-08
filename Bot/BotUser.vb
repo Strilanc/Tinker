@@ -1,4 +1,4 @@
-Public Class BotUser
+Public NotInheritable Class BotUser
     Private ReadOnly _name As String
     Private settingMap As New Dictionary(Of String, String)
     Private permissionMap As New Dictionary(Of String, UInteger)
@@ -184,7 +184,7 @@ Public Class BotUser
     End Function
 End Class
 
-Public Class BotUserSet
+Public NotInheritable Class BotUserSet
     Private ReadOnly userMap As New Dictionary(Of String, BotUser)
     Private ReadOnly tempUserMap As New Dictionary(Of String, BotUser)
     Public Const UnknownUserKey As String = "*unknown"

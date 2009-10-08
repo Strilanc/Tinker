@@ -17,7 +17,7 @@ Imports HostBot.Commands
 Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations
-    Public Class ServerCommands
+    Public NotInheritable Class ServerCommands
         Inherits CommandSet(Of W3Server)
 
         Public Sub New()
@@ -28,7 +28,7 @@ Namespace Commands.Specializations
             AddCommand(New CommandBot)
         End Sub
 
-        Private Class CommandBot
+        Private NotInheritable Class CommandBot
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("bot",
@@ -36,11 +36,11 @@ Namespace Commands.Specializations
                             "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.")
             End Sub
             Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.parent.BotCommands.ProcessCommand(target.parent, user, arguments)
+                Return target.Parent.BotCommands.ProcessCommand(target.Parent, user, arguments)
             End Function
         End Class
 
-        'Private Class CommandParentCommand
+        'Private NotInheritable Class CommandParentCommand
         '    Inherits BaseCommand(Of W3GameServer)
         '    Private parent_command As BaseCommand(Of MainBot)
         '    Public Sub New(ByVal parent_command As BaseCommand(Of MainBot))
@@ -53,7 +53,7 @@ Namespace Commands.Specializations
         'End Class
 
         '''<summary>A command which tells the server to stop listening on a port.</summary>
-        Private Class CommandStartListening
+        Private NotInheritable Class CommandStartListening
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Listen",
@@ -69,7 +69,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which tells the server to stop listening on a port or all ports.</summary>
-        Private Class CommandStopListening
+        Private NotInheritable Class CommandStopListening
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("StopListening",
@@ -90,7 +90,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Private Class CommandOpenInstance
+        Private NotInheritable Class CommandOpenInstance
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Open",
@@ -102,7 +102,7 @@ Namespace Commands.Specializations
                 Return target.QueueCreateGame(arguments(0)).EvalOnSuccess(Function() "Created instance.")
             End Function
         End Class
-        Private Class CommandCloseInstance
+        Private NotInheritable Class CommandCloseInstance
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Close",

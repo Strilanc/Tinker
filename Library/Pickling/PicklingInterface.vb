@@ -1,6 +1,6 @@
 ﻿Namespace Pickling
     <Serializable()>
-    Public Class PicklingException
+    Public NotInheritable Class PicklingException
         Inherits Exception
         Public Sub New(Optional ByVal message As String = Nothing,
                        Optional ByVal innerException As Exception = Nothing)
@@ -41,7 +41,7 @@
     End Interface
 
     <ContractClassFor(GetType(IPickle))>
-    Public Class ContractClassIPickle
+    Public NotInheritable Class ContractClassIPickle
         Implements IPickle
         Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
             Get
@@ -58,7 +58,7 @@
     End Class
 
     <ContractClassFor(GetType(IPickle(Of )))>
-    Public Class ContractClassIPickle(Of T)
+    Public NotInheritable Class ContractClassIPickle(Of T)
         Implements IPickle(Of T)
         Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
             Get
@@ -78,7 +78,7 @@
     End Class
 
     <ContractClassFor(GetType(IJarInfo))>
-    Public Class ContractClassForIJarInfo
+    Public NotInheritable Class ContractClassForIJarInfo
         Implements IJarInfo
         Public ReadOnly Property Name As String Implements IJarInfo.Name
             Get
@@ -89,7 +89,7 @@
     End Class
 
     <ContractClassFor(GetType(IPackJar(Of )))>
-    Public Class ContractClassIPackJar(Of T)
+    Public NotInheritable Class ContractClassIPackJar(Of T)
         Implements IPackJar(Of T)
         Public ReadOnly Property Name As String Implements IJarInfo.Name
             Get
@@ -103,7 +103,7 @@
     End Class
 
     <ContractClassFor(GetType(IParseJar(Of )))>
-    Public Class ContractClassIParseJar(Of T)
+    Public NotInheritable Class ContractClassIParseJar(Of T)
         Implements IParseJar(Of T)
         Public ReadOnly Property Name As String Implements IJarInfo.Name
             Get

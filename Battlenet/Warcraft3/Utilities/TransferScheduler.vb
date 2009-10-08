@@ -10,7 +10,7 @@
 End Enum
 
 '''<summary>Schedules transfers for sharing a copyable resource among multiple clients.</summary>
-Public Class TransferScheduler(Of TClientKey)
+Public NotInheritable Class TransferScheduler(Of TClientKey)
     Private ReadOnly typicalRate As FiniteDouble
     Private ReadOnly clients As New Dictionary(Of TClientKey, TransferClient)
     Private ReadOnly ref As ICallQueue
@@ -30,7 +30,7 @@ Public Class TransferScheduler(Of TClientKey)
         'Contract.Invariant(typicalSwitchTime >= 0)
     End Sub
 
-    Public Class TransferEndpoints
+    Public NotInheritable Class TransferEndpoints
         Public ReadOnly source As TClientKey
         Public ReadOnly destination As TClientKey
         Public Sub New(ByVal source As TClientKey,
@@ -106,7 +106,7 @@ Public Class TransferScheduler(Of TClientKey)
             Sub()
                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client.")
                 Dim client = clients(clientKey)
-                If client.busy Then
+                If client.Busy Then
                     Dim other = client.other
                     client.SetNotTransfering(False)
                     other.SetNotTransfering(False)
@@ -126,7 +126,7 @@ Public Class TransferScheduler(Of TClientKey)
                 Function()
                     If Not clients.ContainsKey(clientKey) Then  Return "?"
                     With clients(clientKey)
-                        If Not .HasRateBeenMeasured AndAlso Not .busy Then  Return "?"
+                        If Not .HasRateBeenMeasured AndAlso Not .Busy Then  Return "?"
 
                         Dim d = .GetCurRateEstimate * 1000
                         Dim f = New FiniteDouble(1.0)
@@ -175,7 +175,7 @@ Public Class TransferScheduler(Of TClientKey)
             Sub()
                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client key.")
                 Dim client = clients(clientKey)
-                If Not client.busy Then  Throw New InvalidOperationException("Client isn't transfering.")
+                If Not client.Busy Then  Throw New InvalidOperationException("Client isn't transfering.")
                 Contract.Assume(progress >= 0)
                 client.UpdateProgress(progress)
                 client.other.UpdateProgress(progress)
@@ -255,7 +255,7 @@ Public Class TransferScheduler(Of TClientKey)
     End Function
 
     <DebuggerDisplay("{ToString}")>
-    Private Class TransferClient
+    Private NotInheritable Class TransferClient
         Private maxRateEstimate As FiniteDouble
         Private curRateEstimate As FiniteDouble
 
@@ -311,7 +311,7 @@ Public Class TransferScheduler(Of TClientKey)
         Public ReadOnly Property GetTransferingTime() As FiniteDouble
             Get
                 'Contract.Ensures(Contract.Result(Of FiniteDouble)() >= 0)
-                If Not busy Then Return 0
+                If Not Busy Then Return 0
                 Return New FiniteDouble(CUInt(Environment.TickCount - lastStartTime))
             End Get
         End Property
@@ -363,7 +363,7 @@ Public Class TransferScheduler(Of TClientKey)
 
         Public Sub UpdateProgress(ByVal progress As FiniteDouble)
             Contract.Requires(progress >= 0)
-            If Not busy Then Return
+            If Not Busy Then Return
 
             'Measure cur rate
             Dim time As ModInt32 = Environment.TickCount()
@@ -387,7 +387,7 @@ Public Class TransferScheduler(Of TClientKey)
         End Sub
 
         Public Sub SetNotTransfering(ByVal nowFinished As Boolean)
-            If Not busy Then
+            If Not Busy Then
                 Me.completed = Me.completed Or nowFinished
                 Return
             End If
@@ -411,7 +411,7 @@ Public Class TransferScheduler(Of TClientKey)
 #End Region
 
         Public Overrides Function ToString() As String
-            If busy Then
+            If Busy Then
                 Return "Client {0}: {1} {2}".Frmt(key, If(completed, "Uploading to", "Downloading from"), other.key)
             Else
                 Return "Client {0}: {1}".Frmt(key, If(completed, "Completed", "Not Completed"))

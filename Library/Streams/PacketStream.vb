@@ -2,7 +2,7 @@
 '''A stream wrapper which causes reads to return data in the same chunks it was written with.
 '''Adds a size parameter to data when writing, includes size parameter in data when reading.
 '''</summary>
-Public Class PacketStream
+Public NotInheritable Class PacketStream
     Inherits WrappedStream
 
 #Region "Variables"
@@ -193,7 +193,7 @@ Public Class PacketStream
 #End Region
 End Class
 
-Public Class PacketStreamer
+Public NotInheritable Class PacketStreamer
     Private ReadOnly subStream As IO.Stream
     Private ReadOnly headerBytesBeforeSizeCount As Integer
     Private ReadOnly headerValueSizeByteCount As Integer

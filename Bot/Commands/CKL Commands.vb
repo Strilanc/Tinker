@@ -5,7 +5,7 @@ Imports HostBot.Links
 Imports HostBot.CKL
 
 Namespace Commands.Specializations
-    Public Class CKLCommands
+    Public NotInheritable Class CKLCommands
         Inherits CommandSet(Of CKLServer)
 
         Public Sub New()
@@ -14,7 +14,7 @@ Namespace Commands.Specializations
         End Sub
 
         '''<summary>Starts advertising a game.</summary>
-        Private Class CommandAddKey
+        Private NotInheritable Class CommandAddKey
             Inherits BaseCommand(Of CKLServer)
             Public Sub New()
                 MyBase.New("AddKey",
@@ -33,7 +33,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>Stops advertising a game.</summary>
-        Private Class CommandRemoveKey
+        Private NotInheritable Class CommandRemoveKey
             Inherits BaseCommand(Of CKLServer)
             Public Sub New()
                 MyBase.New("RemoveKey",

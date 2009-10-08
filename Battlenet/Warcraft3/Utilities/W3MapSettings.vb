@@ -1,5 +1,5 @@
 ﻿Namespace Warcraft3
-    Public Class W3MapSettingsJar
+    Public NotInheritable Class W3MapSettingsJar
         Inherits Jar(Of Object)
         Private Enum GameSettings As UInteger
             'SpeedSlow = 0 'no flags set
@@ -198,7 +198,7 @@
         End Function
     End Class
 
-    Public Class W3MapSettings
+    Public NotInheritable Class W3MapSettings
         Public ReadOnly randomHero As Boolean
         Public ReadOnly randomRace As Boolean
         Public ReadOnly allowFullSharedControl As Boolean

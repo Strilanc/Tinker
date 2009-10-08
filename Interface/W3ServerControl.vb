@@ -14,7 +14,7 @@ Public Class W3ServerControl
 
     Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of W3Server).QueueGetCaption
         Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-        Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".Frmt(server.name, server.GetSuffix)))
+        Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".Frmt(server.Name, server.GetSuffix)))
     End Function
 
     Public Function QueueHook(ByVal child As W3Server) As IFuture Implements IHookable(Of W3Server).QueueHook
@@ -36,37 +36,37 @@ Public Class W3ServerControl
                 Else
                     logServer.SetLogger(child.logger, "Server")
                     child.QueueGetGames().CallOnValueSuccess(Sub(games) ref.QueueAction(
-    Sub()
-        If child IsNot Me.server Then  Return
-        For Each game In games
-            If Me.games.Contains(game) Then  Continue For
-            Me.games.Add(game)
-        Next game
-    End Sub
-))
-                    Dim map = child.settings.map
+                        Sub()
+                            If child IsNot Me.server Then  Return
+                            For Each game In games
+                                If Me.games.Contains(game) Then  Continue For
+                                Me.games.Add(game)
+                            Next game
+                        End Sub
+                    ))
+                    Dim map = child.Settings.Map
 
                     Dim info = "Map Name\n{0}\n\n" +
-           "Relative Path\n{1}\n\n" +
-           "Map Type\n{2}\n\n" +
-           "Player Count\n{3}\n\n" +
-           "Force Count\n{4}\n\n" +
-           "Playable Size\n{5} x {6}\n\n" +
-           "File Size\n{7:###,###,###,###} bytes\n\n" +
-           "File Checksum (crc32)\n{8}\n\n" +
-           "Map Checksum (xoro)\n{9}\n\n" +
-           "Map Checksum (sha1)\n{10}\n"
+                               "Relative Path\n{1}\n\n" +
+                               "Map Type\n{2}\n\n" +
+                               "Player Count\n{3}\n\n" +
+                               "Force Count\n{4}\n\n" +
+                               "Playable Size\n{5} x {6}\n\n" +
+                               "File Size\n{7:###,###,###,###} bytes\n\n" +
+                               "File Checksum (crc32)\n{8}\n\n" +
+                               "Map Checksum (xoro)\n{9}\n\n" +
+                               "Map Checksum (sha1)\n{10}\n"
                     info = info.Replace("\n", Environment.NewLine)
                     info = info.Frmt(map.name,
-                 map.RelativePath,
-                 If(map.isMelee, "Melee", "Custom"),
-                 map.NumPlayerSlots,
-                 map.numForces,
-                 map.playableWidth, map.playableHeight,
-                 map.FileSize,
-                 map.ChecksumCRC32.ToHexString,
-                 map.ChecksumXORO.ToHexString,
-                 map.ChecksumSHA1.ToHexString)
+                                     map.RelativePath,
+                                     If(map.isMelee, "Melee", "Custom"),
+                                     map.NumPlayerSlots,
+                                     map.numForces,
+                                     map.playableWidth, map.playableHeight,
+                                     map.FileSize,
+                                     map.ChecksumCRC32.ToHexString,
+                                     map.ChecksumXORO.ToHexString,
+                                     map.ChecksumSHA1.ToHexString)
                     txtInfo.Text = info
                 End If
             End Sub
@@ -99,7 +99,7 @@ Public Class W3ServerControl
         If e.KeyChar <> ChrW(Keys.Enter) Then Return
         If txtCommand.Text = "" Then Return
         e.Handled = True
-        server.parent.ServerCommands.ProcessLocalText(server, txtCommand.Text, logServer.Logger())
+        server.Parent.ServerCommands.ProcessLocalText(server, txtCommand.Text, logServer.Logger())
         txtCommand.Text = ""
     End Sub
 End Class

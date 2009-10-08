@@ -36,7 +36,7 @@ Public NotInheritable Class W3LanAdvertiser
     End Sub
 
 #Region "Inner"
-    Private Class LanGame
+    Private NotInheritable Class LanGame
         Public ReadOnly id As UInteger
         Public ReadOnly creation_time As Integer
         Public ReadOnly header As W3GameHeader
@@ -46,7 +46,7 @@ Public NotInheritable Class W3LanAdvertiser
             Me.header = header
         End Sub
     End Class
-    Private Class AdvertisingLinkMember
+    Private NotInheritable Class AdvertisingLinkMember
         Inherits FutureDisposable
         Implements IGameSourceSink
 

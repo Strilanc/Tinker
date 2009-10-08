@@ -186,7 +186,7 @@ Namespace Pickling.Jars
     End Class
 
     '''<summary>Combines jars to pickle ordered tuples of objects</summary>
-    Public Class TuplePackJar
+    Public NotInheritable Class TuplePackJar
         Inherits PackJar(Of Dictionary(Of String, Object))
         Private ReadOnly subJars() As IPackJar(Of Object)
 
@@ -342,7 +342,7 @@ Namespace Pickling.Jars
             Return New Pickle(Of List(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
-    Public Class ListPackJar(Of T)
+    Public NotInheritable Class ListPackJar(Of T)
         Inherits PackJar(Of List(Of T))
         Private ReadOnly subJar As IPackJar(Of T)
         Private ReadOnly prefixSize As Integer
@@ -363,7 +363,7 @@ Namespace Pickling.Jars
             Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() Pickle(Of T).MakeListDescription(pickles))
         End Function
     End Class
-    Public Class ListJar(Of T)
+    Public NotInheritable Class ListJar(Of T)
         Inherits FusionJar(Of List(Of T))
         Public Sub New(ByVal name As String,
                        ByVal subJar As IJar(Of T),
@@ -373,7 +373,7 @@ Namespace Pickling.Jars
         End Sub
     End Class
 
-    Public Class RepeatingParseJar(Of T)
+    Public NotInheritable Class RepeatingParseJar(Of T)
         Inherits ParseJar(Of List(Of T))
         Private ReadOnly subJar As IParseJar(Of T)
 
@@ -407,7 +407,7 @@ Namespace Pickling.Jars
             Return New Pickle(Of List(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
-    Public Class RepeatingPackJar(Of T)
+    Public NotInheritable Class RepeatingPackJar(Of T)
         Inherits PackJar(Of List(Of T))
         Private ReadOnly subJar As IPackJar(Of T)
 
@@ -425,7 +425,7 @@ Namespace Pickling.Jars
             Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() Pickle(Of T).MakeListDescription(pickles))
         End Function
     End Class
-    Public Class RepeatingJar(Of T)
+    Public NotInheritable Class RepeatingJar(Of T)
         Inherits FusionJar(Of List(Of T))
         Public Sub New(ByVal name As String,
                        ByVal subJar As IJar(Of T))
@@ -435,7 +435,7 @@ Namespace Pickling.Jars
         End Sub
     End Class
 
-    Public Class InteriorSwitchJar(Of T)
+    Public NotInheritable Class InteriorSwitchJar(Of T)
         Inherits Jar(Of T)
         Private ReadOnly packers(0 To 255) As IPackJar(Of T)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of T)
@@ -478,7 +478,7 @@ Namespace Pickling.Jars
             packers(index) = packer
         End Sub
     End Class
-    Public Class PrefixPickle(Of T)
+    Public NotInheritable Class PrefixPickle(Of T)
         Public ReadOnly index As T
         Public ReadOnly payload As IPickle(Of Object)
         Public Sub New(ByVal index As T, ByVal payload As IPickle(Of Object))
@@ -487,7 +487,7 @@ Namespace Pickling.Jars
             Me.payload = payload
         End Sub
     End Class
-    Public Class PrefixSwitchJar(Of T)
+    Public NotInheritable Class PrefixSwitchJar(Of T)
         Inherits Jar(Of PrefixPickle(Of T))
         Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
@@ -526,7 +526,7 @@ Namespace Pickling.Jars
             packers(index) = packer
         End Sub
     End Class
-    Public Class ManualSwitchJar
+    Public NotInheritable Class ManualSwitchJar
         Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
 
@@ -581,7 +581,7 @@ Namespace Pickling.Jars
             packers(index) = packer
         End Sub
     End Class
-    Public Class EmptyJar
+    Public NotInheritable Class EmptyJar
         Inherits Jar(Of Object)
         Public Sub New(ByVal name As String)
             MyBase.New(name)

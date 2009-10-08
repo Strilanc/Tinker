@@ -401,7 +401,7 @@ Namespace Warcraft3
                 End Sub
             )
         End Sub
-        Private Class AdvertisingDependency
+        Private NotInheritable Class AdvertisingDependency
             Inherits FutureDisposable
             Private WithEvents server As W3Server
 

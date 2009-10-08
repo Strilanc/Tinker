@@ -12,7 +12,7 @@ Public Class BnetClientControl
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
     Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of BnetClient).QueueGetCaption
-        Return ref.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".Frmt(client.name)))
+        Return ref.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".Frmt(client.Name)))
     End Function
     Public Function QueueHook(ByVal child As BnetClient) As IFuture Implements IHookable(Of BnetClient).QueueHook
         Return ref.QueueAction(
@@ -37,7 +37,7 @@ Public Class BnetClientControl
         ref.QueueAction(
             Sub()
                 If sender IsNot client Then  Return
-                Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+                Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                 Select Case packet.id
                     Case BnetPacketId.ChatEvent
                         Dim id = CType(vals("event id"), BnetPacket.ChatEventId)
@@ -49,13 +49,13 @@ Public Class BnetClientControl
                                     lstState.Items.Insert(numPrimaryStates, user)
                                     numPrimaryStates += 1
                                 End If
-                                logClient.LogMessage("{0} entered the channel".frmt(user), Color.LightGray)
+                                logClient.LogMessage("{0} entered the channel".Frmt(user), Color.LightGray)
                             Case ChatEventId.UserLeft
                                 If lstState.Items.Contains(user) AndAlso lstState.Items.IndexOf(user) < numPrimaryStates Then
                                     numPrimaryStates -= 1
                                     lstState.Items.Remove(user)
                                 End If
-                                logClient.LogMessage("{0} left the channel".frmt(user), Color.LightGray)
+                                logClient.LogMessage("{0} left the channel".Frmt(user), Color.LightGray)
                             Case ChatEventId.Channel
                                 logClient.LogMessage("--- Entered Channel: " + text, Color.DarkGray)
                                 lstState.Items.Clear()
@@ -63,15 +63,15 @@ Public Class BnetClientControl
                                 lstState.Items.Add(New String("-"c, 50))
                                 numPrimaryStates = 2
                             Case ChatEventId.Whisper
-                                logClient.LogMessage("{0} whispers: {1}".frmt(user, text), Color.DarkGreen)
+                                logClient.LogMessage("{0} whispers: {1}".Frmt(user, text), Color.DarkGreen)
                             Case ChatEventId.Talk
-                                logClient.LogMessage("{0}: {1}".frmt(user, text), Color.Black)
+                                logClient.LogMessage("{0}: {1}".Frmt(user, text), Color.Black)
                             Case ChatEventId.Broadcast
-                                logClient.LogMessage("(server broadcast) {0}: {1}".frmt(user, text), Color.Red)
+                                logClient.LogMessage("(server broadcast) {0}: {1}".Frmt(user, text), Color.Red)
                             Case ChatEventId.Channel
-                                logClient.LogMessage("Entered channel {0}".frmt(text), Color.DarkGray)
+                                logClient.LogMessage("Entered channel {0}".Frmt(text), Color.DarkGray)
                             Case ChatEventId.WhisperSent
-                                logClient.LogMessage("You whisper to {0}: {1}".frmt(user, text), Color.DarkGreen)
+                                logClient.LogMessage("You whisper to {0}: {1}".Frmt(user, text), Color.DarkGreen)
                             Case ChatEventId.ChannelFull
                                 logClient.LogMessage("Channel was full", Color.Red)
                             Case ChatEventId.ChannelDoesNotExist
@@ -83,7 +83,7 @@ Public Class BnetClientControl
                             Case ChatEventId.Errors
                                 logClient.LogMessage(text, Color.Red)
                             Case ChatEventId.Emote
-                                logClient.LogMessage("{0} {1}".frmt(user, text), Color.DarkGray)
+                                logClient.LogMessage("{0} {1}".Frmt(user, text), Color.DarkGray)
                         End Select
                     Case BnetPacketId.QueryGamesList
                         While lstState.Items.Count > numPrimaryStates
@@ -110,7 +110,7 @@ Public Class BnetClientControl
         If txtCommand.Text = "" Then Return
         If client Is Nothing Then Return
         e.Handled = True
-        client.Parent.ClientCommands.ProcessLocalText(client, txtCommand.Text, logClient.Logger())
+        client.parent.ClientCommands.ProcessLocalText(client, txtCommand.Text, logClient.Logger())
         txtCommand.Text = ""
     End Sub
 
@@ -142,8 +142,8 @@ Public Class BnetClientControl
                         lstState.Items.Add("Game")
                         Dim g = client.CurGame
                         If g IsNot Nothing Then
-                            lstState.Items.Add(g.header.Name)
-                            lstState.Items.Add(g.header.Map.relativePath)
+                            lstState.Items.Add(g.Header.Name)
+                            lstState.Items.Add(g.Header.Map.relativePath)
                             lstState.Items.Add(If(g.private, "Private", "Public"))
                             lstState.Items.Add("Refreshed: {0}".Frmt(Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
                         End If

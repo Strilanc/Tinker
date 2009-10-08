@@ -7,7 +7,7 @@ Public Class GameLoggerControl
         SyncLock lock
             If Me.game Is game Then Return
             Me.game = game
-            SetLogger(If(game Is Nothing, Nothing, game.logger), "Game")
+            SetLogger(If(game Is Nothing, Nothing, game.Logger), "Game")
         End SyncLock
     End Sub
 

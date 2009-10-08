@@ -4,7 +4,7 @@
         Test = 0
         Pass = 1
     End Enum
-    Public Class W3PlayerPingRecord
+    Public NotInheritable Class W3PlayerPingRecord
         Public ReadOnly salt As UInteger
         Public ReadOnly time As ModInt32
         Public Sub New(ByVal salt As UInteger, ByVal time As ModInt32)

@@ -633,7 +633,7 @@ Public NotInheritable Class MainBot
 #End Region
 End Class
 
-Public Class PortPool
+Public NotInheritable Class PortPool
     Private ReadOnly InPorts As New HashSet(Of UShort)
     Private ReadOnly OutPorts As New HashSet(Of UShort)
     Private ReadOnly PortPool As New HashSet(Of UShort)
@@ -710,7 +710,7 @@ Public Class PortPool
         End SyncLock
     End Function
 
-    Public Class PortHandle
+    Public NotInheritable Class PortHandle
         Inherits FutureDisposable
         Private ReadOnly pool As PortPool
         Private ReadOnly _port As UShort

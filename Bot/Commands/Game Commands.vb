@@ -2,7 +2,7 @@ Imports HostBot.Commands
 Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations
-    Public Class InstancePlayCommands
+    Public NotInheritable Class InstancePlayCommands
         Inherits InstanceCommands
 
         Public Sub New()
@@ -10,7 +10,7 @@ Namespace Commands.Specializations
         End Sub
 
         '''<summary>A command which disconnects the bot from the instance.</summary>
-        Public Class CommandDisconnect
+        Public NotInheritable Class CommandDisconnect
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Disconnect,
@@ -24,7 +24,7 @@ Namespace Commands.Specializations
         End Class
     End Class
 
-    Public Class InstanceSetupCommands
+    Public NotInheritable Class InstanceSetupCommands
         Inherits InstanceCommands
 
         Public Sub New()
@@ -45,7 +45,7 @@ Namespace Commands.Specializations
         End Sub
 
         '''<summary>A command which opens a slot.</summary>
-        Public Class CommandOpen
+        Public NotInheritable Class CommandOpen
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Open,
@@ -58,7 +58,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which closes a slot.</summary>
-        Public Class CommandClose
+        Public NotInheritable Class CommandClose
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Close,
@@ -71,7 +71,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which sets a slot's team.</summary>
-        Public Class CommandSetTeam
+        Public NotInheritable Class CommandSetTeam
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetTeam,
@@ -90,7 +90,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which preps slots for a particular number of players.</summary>
-        Public Class CommandSetTeams
+        Public NotInheritable Class CommandSetTeams
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetTeams,
@@ -103,7 +103,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which sets a slot's handicap.</summary>
-        Public Class CommandSetHandicap
+        Public NotInheritable Class CommandSetHandicap
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetHandicap,
@@ -125,7 +125,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which sets a slot's color.</summary>
-        Public Class CommandSetColor
+        Public NotInheritable Class CommandSetColor
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetColor,
@@ -144,7 +144,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which swaps the contents of two slots.</summary>
-        Public Class CommandSwap
+        Public NotInheritable Class CommandSwap
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Swap,
@@ -157,7 +157,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which places a computer in a slot.</summary>
-        Public Class CommandSetComputer
+        Public NotInheritable Class CommandSetComputer
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_SetComputer,
@@ -176,7 +176,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which stops players from leaving a slot.</summary>
-        Public Class CommandLock
+        Public NotInheritable Class CommandLock
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Lock,
@@ -193,7 +193,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which enables players to leave and modify a slot.</summary>
-        Public Class CommandUnlock
+        Public NotInheritable Class CommandUnlock
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Unlock,
@@ -210,7 +210,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which stops players from modifying or leaving a slot.</summary>
-        Public Class CommandFreeze
+        Public NotInheritable Class CommandFreeze
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Freeze,
@@ -227,7 +227,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which reserves a slot for a player.</summary>
-        Public Class CommandReserve
+        Public NotInheritable Class CommandReserve
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Reserve,
@@ -240,7 +240,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which starts the launch countdown.</summary>
-        Public Class CommandStart
+        Public NotInheritable Class CommandStart
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Start,
@@ -253,7 +253,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which kills the instance.</summary>
-        Public Class CommandCancel
+        Public NotInheritable Class CommandCancel
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Cancel,
@@ -266,14 +266,14 @@ Namespace Commands.Specializations
         End Class
     End Class
 
-    Public Class InstanceAdminCommands
+    Public NotInheritable Class InstanceAdminCommands
         Inherits CommandSet(Of W3Game)
 
         Public Sub New()
             AddCommand(New CommandBot)
         End Sub
 
-        Public Class CommandBot
+        Public NotInheritable Class CommandBot
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Bot,
@@ -296,7 +296,7 @@ Namespace Commands.Specializations
         End Sub
 
         '''<summary>A command which boots players from a slot.</summary>
-        Public Class CommandBoot
+        Public NotInheritable Class CommandBoot
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Boot,
@@ -308,7 +308,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandGetSetting
+        Public NotInheritable Class CommandGetSetting
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New("Get",
@@ -326,7 +326,7 @@ Namespace Commands.Specializations
                 Return "{0} = '{1}'".Frmt(arguments(0), val).Futurized
             End Function
         End Class
-        Public Class CommandSetSetting
+        Public NotInheritable Class CommandSetSetting
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New("Set",
@@ -365,7 +365,7 @@ Namespace Commands.Specializations
         End Sub
 
         '''<summary>A command which disconnects the bot from the instance.</summary>
-        Public Class CommandPing
+        Public NotInheritable Class CommandPing
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Ping,
@@ -397,7 +397,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandLeave
+        Public NotInheritable Class CommandLeave
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New("Leave",
@@ -406,12 +406,12 @@ Namespace Commands.Specializations
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
                 If user Is Nothing Then Throw New InvalidOperationException("You are not in the game.")
-                Return target.QueueBootSlot(user.name).EvalOnSuccess(Function() "Left.")
+                Return target.QueueBootSlot(user.Name).EvalOnSuccess(Function() "Left.")
             End Function
         End Class
     End Class
 
-    Public Class InstanceGuestSetupCommands
+    Public NotInheritable Class InstanceGuestSetupCommands
         Inherits InstanceBaseCommands
 
         Public Sub New()
@@ -419,7 +419,7 @@ Namespace Commands.Specializations
             AddCommand(New CommandVoteStart)
         End Sub
 
-        Public Class CommandVoteStart
+        Public NotInheritable Class CommandVoteStart
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_VoteStart,
@@ -433,7 +433,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandElevate
+        Public NotInheritable Class CommandElevate
             Inherits BaseCommand(Of W3Game)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Instance_Elevate,
@@ -446,10 +446,10 @@ Namespace Commands.Specializations
             End Function
         End Class
     End Class
-    Public Class InstanceGuestLoadCommands
+    Public NotInheritable Class InstanceGuestLoadCommands
         Inherits InstanceBaseCommands
     End Class
-    Public Class InstanceGuestPlayCommands
+    Public NotInheritable Class InstanceGuestPlayCommands
         Inherits InstanceBaseCommands
     End Class
 End Namespace

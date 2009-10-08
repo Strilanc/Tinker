@@ -7,7 +7,7 @@ Namespace CKL
         Keys = 1
     End Enum
 
-    Public Class CKLKey
+    Public NotInheritable Class CKLKey
         Private Shared ReadOnly cdKeyJar As New CDKeyJar("cdkey data")
         Private ReadOnly _name As String
         Public ReadOnly _cdKeyROC As String
@@ -56,7 +56,7 @@ Namespace CKL
                           Select cdKeyJar.Pack(cdKeyJar.PackCDKey(key, clientToken, serverToken)).Data.ToArray).ToView
         End Function
     End Class
-    Public Class CKLEncodedKey
+    Public NotInheritable Class CKLEncodedKey
         Public ReadOnly CDKeyROC As Dictionary(Of String, Object)
         Public ReadOnly CDKeyTFT As Dictionary(Of String, Object)
         Public Sub New(ByVal cdKeyROC As Dictionary(Of String, Object),

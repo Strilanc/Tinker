@@ -3,7 +3,7 @@ Imports HostBot.Bnet
 Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations
-    Public Class BotCommands
+    Public NotInheritable Class BotCommands
         Inherits CommandSet(Of MainBot)
         Public Sub New()
             AddCommand(New CommandClient)
@@ -129,7 +129,7 @@ Namespace Commands.Specializations
         End Sub
 
         '''<summary>A command which forwards sub-commands to a named battle.net client.</summary>
-        Public Class CommandClient
+        Public NotInheritable Class CommandClient
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_Client,
@@ -149,7 +149,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which forwards sub-commands to a named warcraft 3 game server.</summary>
-        Public Class CommandServer
+        Public NotInheritable Class CommandServer
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_Server,
@@ -170,7 +170,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which creates a new battle.net client.</summary>
-        Public Class CommandCreateClient
+        Public NotInheritable Class CommandCreateClient
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_CreateClient,
@@ -185,7 +185,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which kills a battle.net client.</summary>
-        Public Class CommandKillClient
+        Public NotInheritable Class CommandKillClient
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_KillClient,
@@ -201,7 +201,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which kills a battle.net server.</summary>
-        Public Class CommandKillServer
+        Public NotInheritable Class CommandKillServer
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_KillServer,
@@ -219,7 +219,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which creates a new warcraft 3 game server.</summary>
-        Public Class CommandCreateServer
+        Public NotInheritable Class CommandCreateServer
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_CreateServer,
@@ -244,7 +244,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which attempts to load a plugin from the specified assembly in the plugins folder.</summary>
-        Public Class CommandLoadPlugin
+        Public NotInheritable Class CommandLoadPlugin
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_LoadPlugin,
@@ -257,7 +257,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandRecacheIP
+        Public NotInheritable Class CommandRecacheIP
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New("RecacheIP",
@@ -272,7 +272,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which creates a battle.net client and logs on to a battle.net server.</summary>
-        Private Class CommandConnect
+        Private NotInheritable Class CommandConnect
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_Connect,
@@ -330,7 +330,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandDownloadEpicWarMap
+        Public NotInheritable Class CommandDownloadEpicWarMap
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_DownloadEpicWarMap,
@@ -392,7 +392,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandFindMaps
+        Public NotInheritable Class CommandFindMaps
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_FindMaps,
@@ -408,7 +408,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandCreateCKL
+        Public NotInheritable Class CommandCreateCKL
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_CreateCKL,
@@ -431,7 +431,7 @@ Namespace Commands.Specializations
                 End If
             End Function
         End Class
-        Public Class CommandKillCKL
+        Public NotInheritable Class CommandKillCKL
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_KillCKL,

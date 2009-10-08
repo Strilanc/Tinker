@@ -2,7 +2,7 @@
 '''Stops the subStream from being written to too quickly by queueing write calls.
 '''Doesn't block the caller.
 '''</summary>
-Public Class ThrottledWriteStream
+Public NotInheritable Class ThrottledWriteStream
     Inherits WrappedStream
     Private ReadOnly writer As ThrottledWriter
 
@@ -48,7 +48,7 @@ Public Class ThrottledWriteStream
     End Sub
 End Class
 
-Public Class ThrottledWriter
+Public NotInheritable Class ThrottledWriter
     Inherits AbstractLockFreeConsumer(Of Byte())
 
     Private ReadOnly destinationStream As IO.Stream

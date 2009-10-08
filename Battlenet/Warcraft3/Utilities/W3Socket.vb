@@ -4,7 +4,7 @@ Imports System.Net
 Imports System.Net.Sockets
 
 Namespace Warcraft3
-    Public Class W3Socket
+    Public NotInheritable Class W3Socket
         Private WithEvents socket As PacketSocket
         Public Event Disconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
 

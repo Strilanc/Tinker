@@ -182,7 +182,7 @@ Public Module PoorlyCategorizedFunctions
     End Function
 End Module
 
-Public Class KeyPair
+Public NotInheritable Class KeyPair
     Private ReadOnly _value1 As ViewableList(Of Byte)
     Private ReadOnly _value2 As ViewableList(Of Byte)
     Public ReadOnly Property Value1 As ViewableList(Of Byte)

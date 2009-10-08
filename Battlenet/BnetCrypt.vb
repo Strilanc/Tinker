@@ -334,7 +334,7 @@ Namespace Bnet.Crypt
         End Function
     End Module
 
-    Public Class CDKey
+    Public NotInheritable Class CDKey
 #Region "Shared Members"
         Private Const KEY_LENGTH As Integer = 26
         Private Shared ReadOnly keyMap As Dictionary(Of Char, Byte) = initKeyMap()

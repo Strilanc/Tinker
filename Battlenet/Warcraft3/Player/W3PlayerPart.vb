@@ -1,5 +1,5 @@
 Namespace Warcraft3
-    Partial Public Class W3Player
+    Partial Public NotInheritable Class W3Player
 #Region "Networking"
         Private Sub ReceiveNonGameAction(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)

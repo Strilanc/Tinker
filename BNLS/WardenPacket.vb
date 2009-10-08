@@ -6,7 +6,7 @@
         PartialServiceMemoryCheck = 3
     End Enum
 
-    Public Class BNLSWardenPacket
+    Public NotInheritable Class BNLSWardenPacket
         Private Shared ReadOnly clientJar As ManualSwitchJar = MakeClientJar()
         Private Shared ReadOnly serverJar As New TupleJar("data",
                                                          New EnumByteJar(Of BNLSWardenPacketId)("type").Weaken,

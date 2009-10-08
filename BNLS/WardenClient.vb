@@ -29,7 +29,7 @@ Namespace BNLS
         Warden = &H7D
     End Enum
 
-    Public Class WardenClient
+    Public NotInheritable Class WardenClient
         Implements IDisposable
 
         Private WithEvents socket As PacketSocket

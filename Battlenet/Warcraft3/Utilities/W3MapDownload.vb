@@ -2,7 +2,7 @@
 Imports HostBot.Warcraft3
 
 Namespace Warcraft3
-    Public Class W3MapDownload
+    Public NotInheritable Class W3MapDownload
         Public file As IO.Stream
         Private destinationPath As String
         Private downloadPath As String

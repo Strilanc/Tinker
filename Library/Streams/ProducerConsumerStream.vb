@@ -1,4 +1,4 @@
-﻿Public Class ProducerConsumerStream
+﻿Public NotInheritable Class ProducerConsumerStream
     Inherits IO.Stream
     Private data(0 To 15) As Byte
     Private readPosition As Integer

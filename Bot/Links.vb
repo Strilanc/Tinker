@@ -17,7 +17,7 @@ Namespace Links
         Inherits IGameSink
     End Interface
 
-    Public Class AdvertisingLink
+    Public NotInheritable Class AdvertisingLink
         Inherits FutureDisposable
         Private ReadOnly master As IGameSource
         Private ReadOnly servant As IGameSink
@@ -72,7 +72,7 @@ Namespace Links
         End Sub
     End Class
 
-    Public Class AdvertisingDisposeNotifier
+    Public NotInheritable Class AdvertisingDisposeNotifier
         Inherits FutureDisposable
         Private ReadOnly member As IGameSourceSink
 

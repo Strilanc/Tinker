@@ -1,4 +1,4 @@
-Public Class ClientProfile
+Public NotInheritable Class ClientProfile
     Public name As String
     Public users As New BotUserSet()
     Public cdKeyROC As String = ""

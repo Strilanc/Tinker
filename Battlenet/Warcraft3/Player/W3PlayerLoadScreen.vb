@@ -1,5 +1,5 @@
 ﻿Namespace Warcraft3
-    Partial Public Class W3Player
+    Partial Public NotInheritable Class W3Player
         Public Property Ready As Boolean
 
         Public Sub LoadScreenStart()

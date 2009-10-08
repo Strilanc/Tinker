@@ -7,7 +7,7 @@ Namespace Warcraft3
         EnterGame
     End Enum
 
-    Public Class W3DummyPlayer
+    Public NotInheritable Class W3DummyPlayer
         Private ReadOnly name As String
         Private ReadOnly listenPort As UShort
         Private ReadOnly ref As ICallQueue

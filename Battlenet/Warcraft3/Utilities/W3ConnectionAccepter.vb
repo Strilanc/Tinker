@@ -91,7 +91,7 @@
         Protected MustOverride Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)
     End Class
 
-    Public Class W3ConnectionAccepter
+    Public NotInheritable Class W3ConnectionAccepter
         Inherits W3ConnectionAccepterBase
 
         Public Event Connection(ByVal sender As W3ConnectionAccepter, ByVal player As W3ConnectingPlayer)
@@ -102,10 +102,10 @@
 
         Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)
             If packet.id <> W3PacketId.Knock Then
-                Throw New IO.IOException("{0} was not a warcraft 3 player.".frmt(socket.Name))
+                Throw New IO.IOException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
 
-            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
             Dim name = CStr(vals("name"))
             Dim internalAddress = CType(vals("internal address"), Dictionary(Of String, Object))
             Contract.Assume(name IsNot Nothing)
@@ -124,7 +124,7 @@
         End Sub
     End Class
 
-    Public Class W3PeerConnectionAccepter
+    Public NotInheritable Class W3PeerConnectionAccepter
         Inherits W3ConnectionAccepterBase
 
         Public Event Connection(ByVal sender As W3PeerConnectionAccepter, ByVal player As W3ConnectingPeer)

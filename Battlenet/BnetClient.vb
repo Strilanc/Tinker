@@ -34,7 +34,7 @@ Namespace Bnet
         Implements IGameSourceSink
 
 #Region "Inner"
-        Public Class GameSettings
+        Public NotInheritable Class GameSettings
             Public [private] As Boolean
             Private ReadOnly _header As W3GameHeader
             Public ReadOnly Property Header As W3GameHeader
@@ -251,7 +251,7 @@ Namespace Bnet
         Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
             If Not finalizing Then
                 ref.QueueAction(Sub() Disconnect(expected:=True, reason:="{0} Disposed".Frmt(Me.GetType.Name)))
-                parent.QueueRemoveClient(Me.name, expected:=True, reason:="Client Disposed")
+                parent.QueueRemoveClient(Me.Name, expected:=True, reason:="Client Disposed")
             End If
         End Sub
         Private Sub ChangeState(ByVal newState As BnetClientState)
@@ -272,7 +272,7 @@ Namespace Bnet
 
                 'Allocate port
                 If Me.listenPort = 0 Then
-                    Dim out = parent.portPool.TryAcquireAnyPort()
+                    Dim out = parent.PortPool.TryAcquireAnyPort()
                     If out Is Nothing Then
                         Throw New InvalidOperationException("No listen port specified, and no ports available in the pool.")
                     End If
@@ -558,11 +558,11 @@ Namespace Bnet
             'If in_progress Then gameState = gameState Or BnetPacket.GameStateFlags.InProgress
             'If Not empty Then game_state_flags = game_state_flags Or FLAG_NOT_EMPTY [causes problems: why?]
 
-            Dim gameType = GameTypes.CreateGameUnknown0 Or advertisedGameSettings.header.Map.gameType
+            Dim gameType = GameTypes.CreateGameUnknown0 Or advertisedGameSettings.Header.Map.gameType
             If advertisedGameSettings.private Then
                 gameType = gameType Or GameTypes.PrivateGame
             End If
-            Select Case advertisedGameSettings.header.Map.observers
+            Select Case advertisedGameSettings.Header.Map.observers
                 Case GameObserverOption.FullObservers, GameObserverOption.Referees
                     gameType = gameType Or GameTypes.ObsFull
                 Case GameObserverOption.ObsOnDefeat
@@ -572,7 +572,7 @@ Namespace Bnet
             End Select
 
             SendPacket(BnetPacket.MakeCreateGame3(New W3GameHeaderAndState(gameState,
-                                                                           advertisedGameSettings.header,
+                                                                           advertisedGameSettings.Header,
                                                                            gameType),
                                                   hostCount))
         End Sub
@@ -587,7 +587,7 @@ Namespace Bnet
                     EnterChannel(lastChannel)
                     futureCreatedGame.TrySetFailed(New OperationFailedException("Advertising cancelled."))
                     eref.QueueAction(Sub()
-                                         RaiseEvent RemovedGame(Me, advertisedGameSettings.header, reason)
+                                         RaiseEvent RemovedGame(Me, advertisedGameSettings.Header, reason)
                                      End Sub)
 
                 Case Else
@@ -617,7 +617,7 @@ Namespace Bnet
             userLinkMap(user) = New ClientServerUserLink(Me, server, user)
         End Sub
 
-        Private Class ClientServerUserLink
+        Private NotInheritable Class ClientServerUserLink
             Inherits FutureDisposable
             Public ReadOnly client As BnetClient
             Public ReadOnly server As W3Server

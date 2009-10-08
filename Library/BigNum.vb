@@ -1,7 +1,7 @@
 ﻿'''<summary>Immutable BigNum</summary>
 <ContractVerification(False)>
 <DebuggerDisplay("{ToDecimal}")>
-Public Class BigNum
+Public NotInheritable Class BigNum
     Implements IComparable(Of BigNum)
 
     Private ReadOnly _words As UInteger()
@@ -443,7 +443,7 @@ Public Class BigNum
 
 #Region "Mod Ops"
     <DebuggerDisplay("{ToDecimal}")>
-    Public Class DivModResult
+    Public NotInheritable Class DivModResult
         Private ReadOnly _quotient As BigNum
         Private ReadOnly _remainder As BigNum
         Public ReadOnly Property Quotient As BigNum

@@ -172,7 +172,7 @@ Namespace Warcraft3
         Pong = &H46
     End Enum
 
-    Public Class W3Packet
+    Public NotInheritable Class W3Packet
         Public Const PacketPrefixValue As Byte = &HF7
         Public ReadOnly id As W3PacketId
         Private ReadOnly _payload As IPickle(Of Object)
@@ -890,7 +890,7 @@ Namespace Warcraft3
         End Function
     End Class
 
-    Public Class SlotJar
+    Public NotInheritable Class SlotJar
         Inherits TupleJar
 
         Public Sub New(ByVal name As String)

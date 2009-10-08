@@ -33,7 +33,7 @@ Namespace Commands
     End Interface
 
     <ContractClassFor(GetType(ICommand(Of )))>
-    Public Class ContractClassForICommand(Of T)
+    Public NotInheritable Class ContractClassForICommand(Of T)
         Implements ICommand(Of T)
 
         Public Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String) Implements ICommand(Of T).Process
@@ -229,7 +229,7 @@ Namespace Commands
 
 #Region "Derived Classes"
     '''<summary>Implements a command for access to a list of commands and help with specific commands.</summary>
-    Public Class CommandHelp(Of T)
+    Public NotInheritable Class CommandHelp(Of T)
         Inherits BaseCommand(Of T)
         Private helpMap As New Dictionary(Of String, String)
         Private commands As New List(Of ICommand(Of T))
@@ -337,7 +337,7 @@ Namespace Commands
 
     Public Delegate Function CommandProcessFunc(Of T)(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
 
-    Public Class Command(Of T)
+    Public NotInheritable Class Command(Of T)
         Inherits BaseCommand(Of T)
         Private ReadOnly processFunction As CommandProcessFunc(Of T)
 

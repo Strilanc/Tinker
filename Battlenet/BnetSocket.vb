@@ -1,7 +1,7 @@
 Imports System.Net
 Imports System.Net.Sockets
 
-Public Class BnetSocket
+Public NotInheritable Class BnetSocket
     Private WithEvents socket As PacketSocket
     Public Event Disconnected(ByVal sender As BnetSocket, ByVal expected As Boolean, ByVal reason As String)
 
@@ -133,7 +133,7 @@ Public Class BnetSocket
     End Function
 End Class
 
-Public Class PacketSocket
+Public NotInheritable Class PacketSocket
     Private expectConnected As Boolean
     Private ReadOnly client As TcpClient
     Private ReadOnly subStream As IO.Stream

@@ -4,7 +4,7 @@
     Function QueueDispose() As IFuture
 End Interface
 
-Public Class TabControlIHookableSet(Of TElement, TControl As {Control, New, IHookable(Of TElement)})
+Public NotInheritable Class TabControlIHookableSet(Of TElement, TControl As {Control, New, IHookable(Of TElement)})
     Private ReadOnly tabs As New Dictionary(Of TElement, TabPage)
     Private ReadOnly controls As New Dictionary(Of TElement, TControl)
     Private ReadOnly elements As New List(Of TElement)
@@ -115,7 +115,7 @@ Public Interface IBotWidget
     Sub ProcessCommand(ByVal text As String)
 End Interface
 <ContractClassFor(GetType(IBotWidget))>
-Public Class ContractClassForIBotWidget
+Public NotInheritable Class ContractClassForIBotWidget
     Implements IBotWidget
     Public Event RemoveStateString(ByVal state As String) Implements IBotWidget.RemoveStateString
     Public Event AddStateString(ByVal state As String, ByVal shouldInsertAtTop As Boolean) Implements IBotWidget.AddStateString

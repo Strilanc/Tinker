@@ -5,7 +5,7 @@ Imports HostBot.Warcraft3
 Imports HostBot.Links
 
 Namespace Commands.Specializations
-    Public Class ClientCommands
+    Public NotInheritable Class ClientCommands
         Inherits CommandSet(Of BnetClient)
 
         Private com_login As New ClientLogOnCommands()
@@ -54,7 +54,7 @@ Namespace Commands.Specializations
             AddCommand(New CommandUser)
         End Sub
 
-        Public Class CommandAdLink
+        Public NotInheritable Class CommandAdLink
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AdLink,
@@ -82,7 +82,7 @@ Namespace Commands.Specializations
                 )
             End Function
         End Class
-        Public Class CommandAdUnlink
+        Public NotInheritable Class CommandAdUnlink
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AdUnlink,
@@ -110,7 +110,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which forwards sub-commands to the main bot command set</summary>
-        Public Class CommandBot
+        Public NotInheritable Class CommandBot
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Bot",
@@ -123,7 +123,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandParentCommand
+        Public NotInheritable Class CommandParentCommand
             Inherits BaseCommand(Of BnetClient)
             Private subCommand As BaseCommand(Of MainBot)
             Public Sub New(ByVal subCommand As BaseCommand(Of MainBot))
@@ -138,7 +138,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which returns the port the client is set to tell bnet it is listening on.</summary>
-        Private Class CommandGetPort
+        Private NotInheritable Class CommandGetPort
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_GetPort,
@@ -153,7 +153,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which changes the port the client is set to tell bnet it is listening on.</summary>
-        Private Class CommandSetPort
+        Private NotInheritable Class CommandSetPort
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_SetPort,
@@ -169,7 +169,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Private Class CommandDisconnect
+        Private NotInheritable Class CommandDisconnect
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("disconnect",
@@ -182,7 +182,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandAddUser
+        Public NotInheritable Class CommandAddUser
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_AddUser,
@@ -197,7 +197,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandRemoveUser
+        Public NotInheritable Class CommandRemoveUser
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_RemoveUser,
@@ -219,7 +219,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandPromote
+        Public NotInheritable Class CommandPromote
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Promote",
@@ -257,7 +257,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandDemote
+        Public NotInheritable Class CommandDemote
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Demote",
@@ -295,7 +295,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandUser
+        Public NotInheritable Class CommandUser
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_User,
@@ -318,7 +318,7 @@ Namespace Commands.Specializations
         End Class
     End Class
 
-    Public Class ClientLogOnCommands
+    Public NotInheritable Class ClientLogOnCommands
         Inherits BaseClientCommands
 
         Public Sub New()
@@ -326,7 +326,7 @@ Namespace Commands.Specializations
             AddCommand(New CommandLogOn)
         End Sub
 
-        Private Class CommandLogOn
+        Private NotInheritable Class CommandLogOn
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_LogOn,
@@ -344,7 +344,7 @@ Namespace Commands.Specializations
         End Class
     End Class
 
-    Public Class ClientOnlineCommands
+    Public NotInheritable Class ClientOnlineCommands
         Inherits BaseClientCommands
 
         Public Sub New()
@@ -359,7 +359,7 @@ Namespace Commands.Specializations
             AddCommand(New CommandRefreshGamesList)
         End Sub
 
-        Public Class CommandHost
+        Public NotInheritable Class CommandHost
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Host,
@@ -414,7 +414,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandRefreshGamesList
+        Public NotInheritable Class CommandRefreshGamesList
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("RefreshGamesList",
@@ -427,7 +427,7 @@ Namespace Commands.Specializations
                 Return target.QueueSendPacket(BnetPacket.MakeQueryGamesList()).EvalOnSuccess(Function() "Sent request.")
             End Function
         End Class
-        Public Class CommandGame
+        Public NotInheritable Class CommandGame
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("Game",
@@ -458,7 +458,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandCancelHost
+        Public NotInheritable Class CommandCancelHost
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("CancelHost",
@@ -481,7 +481,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandAdminCode
+        Public NotInheritable Class CommandAdminCode
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New("AdminCode",
@@ -503,7 +503,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandSay
+        Public NotInheritable Class CommandSay
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Say,
@@ -519,7 +519,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which tells the client to start advertising a game.</summary>
-        Public Class CommandStartAdvertising
+        Public NotInheritable Class CommandStartAdvertising
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_StartAdvertising,
@@ -541,7 +541,7 @@ Namespace Commands.Specializations
         End Class
 
         '''<summary>A command which tells the client to stop advertising a game.</summary>
-        Public Class CommandStopAdvertising
+        Public NotInheritable Class CommandStopAdvertising
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_StopAdvertising,
@@ -557,7 +557,7 @@ Namespace Commands.Specializations
             End Function
         End Class
 
-        Public Class CommandElevate
+        Public NotInheritable Class CommandElevate
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Elevate,
@@ -596,14 +596,14 @@ Namespace Commands.Specializations
         End Class
     End Class
 
-    Public Class ClientOfflineCommands
+    Public NotInheritable Class ClientOfflineCommands
         Inherits BaseClientCommands
 
         Public Sub New()
             AddCommand(New CommandConnect)
         End Sub
 
-        Private Class CommandConnect
+        Private NotInheritable Class CommandConnect
             Inherits BaseCommand(Of BnetClient)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Client_Connect,

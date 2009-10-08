@@ -18,11 +18,11 @@
         numLocalPort.Value = profile.listenPort
         txtInitialChannel.Text = profile.initialChannel
         txtCKLServer.Text = profile.CKLServerAddress
-        cboLanHost.Text = profile.lanHost
+        cboLanHost.Text = profile.LanHost
 
         gridUsers.Rows.Clear()
         For Each user As BotUser In profile.users.Users
-            gridUsers.Rows.Add(user.name, user.PackPermissions(), user.PackSettings())
+            gridUsers.Rows.Add(user.Name, user.PackPermissions(), user.PackSettings())
         Next user
 
         btnDeleteProfile.Enabled = profile.name <> "Default"
@@ -41,7 +41,7 @@
         profile.listenPort = CUShort(numLocalPort.Value)
         profile.initialChannel = txtInitialChannel.Text
         profile.CKLServerAddress = txtCKLServer.Text
-        profile.lanHost = cboLanHost.Text
+        profile.LanHost = cboLanHost.Text
 
         Dim existing_users As New List(Of String)
         For i = 0 To gridUsers.RowCount - 1

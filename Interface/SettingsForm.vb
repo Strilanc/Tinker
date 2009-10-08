@@ -146,13 +146,13 @@ Public Class SettingsForm
         'Sync desired port pool with bot port pool
         Dim portPoolText = txtPortPool.Text
         Dim ports = ParsePortList(portPoolText, portPoolText)
-        For Each port In bot.portPool.EnumPorts
+        For Each port In bot.PortPool.EnumPorts
             If Not ports.Contains(port) Then
-                bot.portPool.TryRemovePort(port)
+                bot.PortPool.TryRemovePort(port)
             End If
         Next port
         For Each port In ports
-            bot.portPool.TryAddPort(port)
+            bot.PortPool.TryAddPort(port)
         Next port
 
         My.Settings.war3path = txtProgramPath.Text

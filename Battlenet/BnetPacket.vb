@@ -128,7 +128,7 @@ Namespace Bnet
         ClanMemberInformation = &H82
     End Enum
 
-    Public Class BnetPacket
+    Public NotInheritable Class BnetPacket
         Public Const PacketPrefixValue As Byte = &HFF
         Private ReadOnly _payload As IPickle(Of Object)
         Public ReadOnly id As BnetPacketId
@@ -575,7 +575,7 @@ Namespace Bnet
 #End Region
 
 #Region "Jars"
-        Public Class TextHexValueJar
+        Public NotInheritable Class TextHexValueJar
             Inherits Jar(Of ULong)
             Private ReadOnly numDigits As Integer
             Private ReadOnly byteOrder As ByteOrder
@@ -624,7 +624,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Public Class CDKeyJar
+        Public NotInheritable Class CDKeyJar
             Inherits Pickling.Jars.TupleJar
 
             Public Sub New(ByVal name As String)
@@ -647,14 +647,14 @@ Namespace Bnet
                 Dim cdkey = New Bnet.Crypt.CDKey(key)
                 Return New Dictionary(Of String, Object) From {
                         {"length", CUInt(key.Length)},
-                        {"product key", cdkey.productKey.ToArray()},
-                        {"public key", cdkey.publicKey.ToArray()},
+                        {"product key", cdkey.ProductKey.ToArray()},
+                        {"public key", cdkey.PublicKey.ToArray()},
                         {"unknown", 0},
                         {"hash", Bnet.Crypt.SHA1(Concat(clientToken.ToArray,
                                                         serverToken.ToArray,
-                                                        cdkey.productKey.ToArray,
-                                                        cdkey.publicKey.ToArray,
-                                                        cdkey.privateKey.ToArray))}}
+                                                        cdkey.ProductKey.ToArray,
+                                                        cdkey.PublicKey.ToArray,
+                                                        cdkey.PrivateKey.ToArray))}}
             End Function
 
             Public Shared Function PackBorrowedCDKey(ByVal data() As Byte) As Dictionary(Of String, Object)

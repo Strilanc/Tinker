@@ -62,7 +62,7 @@
     End Interface
 
     <ContractClassFor(GetType(IW3GameDescription))>
-    Public Class ContractClassForIW3GameDescription
+    Public NotInheritable Class ContractClassForIW3GameDescription
         Implements IW3GameDescription
 
         Public ReadOnly Property BnetId As UInteger Implements IW3GameDescription.BnetId

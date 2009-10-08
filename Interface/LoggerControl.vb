@@ -11,7 +11,7 @@ Public Class LoggerControl
     Private filestream As IO.Stream
     Private isLoggingUnexpectedExceptions As Boolean
 
-    Private Class QueuedMessage
+    Private NotInheritable Class QueuedMessage
         Public ReadOnly message As String
         Public ReadOnly color As Color
         Public ReadOnly replacement As QueuedMessage

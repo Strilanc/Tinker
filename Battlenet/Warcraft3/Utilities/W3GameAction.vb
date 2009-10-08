@@ -121,7 +121,7 @@
         TriggerArrowKeyEvent = &H75
     End Enum
 
-    Public Class W3GameAction
+    Public NotInheritable Class W3GameAction
         Public ReadOnly id As W3GameActionId
         Private ReadOnly _payload As IPickle(Of Object)
         Private Shared ReadOnly packetJar As PrefixSwitchJar(Of W3GameActionId) = MakeJar()
@@ -466,7 +466,7 @@
             End Function
         End Class
 
-        Private Class OrderTypeJar
+        Private NotInheritable Class OrderTypeJar
             Inherits EnumUInt32Jar(Of OrderId)
 
             Public Sub New(ByVal name As String)
@@ -480,7 +480,7 @@
             End Function
         End Class
 
-        Private Class ObjectTypeJar
+        Private NotInheritable Class ObjectTypeJar
             Inherits UInt32Jar
 
             Public Sub New(ByVal name As String)
@@ -506,19 +506,19 @@
 #End Region
     End Class
 
-    Public Class W3GameActionJar
+    Public NotInheritable Class W3GameActionJar
         Inherits Jar(Of W3GameAction)
         Public Sub New(ByVal name As String)
             MyBase.New(name)
         End Sub
 
         Public Overrides Function Pack(Of TValue As W3GameAction)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
-            Return New Pickle(Of TValue)(Name, value, Concat({value.id}, value.payload.Data.ToArray).ToView)
+            Return New Pickle(Of TValue)(Name, value, Concat({value.id}, value.Payload.Data.ToArray).ToView)
         End Function
 
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of W3GameAction)
             Dim val = W3GameAction.FromData(data)
-            Dim n = val.payload.Data.Length
+            Dim n = val.Payload.Data.Length
             Return New Pickle(Of W3GameAction)(Name, val, data.SubView(0, n + 1))
         End Function
     End Class

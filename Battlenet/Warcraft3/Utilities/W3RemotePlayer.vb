@@ -2,7 +2,7 @@
 Imports HostBot.Warcraft3
 
 Namespace Warcraft3
-    Public Class W3ConnectingPlayer
+    Public NotInheritable Class W3ConnectingPlayer
         Private ReadOnly _name As String
         Private ReadOnly _peerKey As UInteger
         Private ReadOnly _entryKey As UInteger
@@ -76,7 +76,7 @@ Namespace Warcraft3
         End Sub
     End Class
 
-    Public Class W3ConnectingPeer
+    Public NotInheritable Class W3ConnectingPeer
         Public ReadOnly socket As W3Socket
         Public ReadOnly receiverPeerKey As Byte
         Public ReadOnly index As Byte
@@ -92,7 +92,7 @@ Namespace Warcraft3
         End Sub
     End Class
 
-    Public Class W3Peer
+    Public NotInheritable Class W3Peer
         Public ReadOnly name As String
         Private ReadOnly _index As Byte
         Public ReadOnly listenPort As UShort

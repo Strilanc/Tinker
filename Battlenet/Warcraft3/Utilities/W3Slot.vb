@@ -1,5 +1,5 @@
 ﻿Namespace Warcraft3
-    Public Class W3Slot
+    Public NotInheritable Class W3Slot
         Public ReadOnly index As Byte
         Public ReadOnly game As W3Game
         Public color As PlayerColor
@@ -273,7 +273,7 @@
         End Property
     End Class
 
-    Public Class W3SlotContentsComputer
+    Public NotInheritable Class W3SlotContentsComputer
         Inherits W3SlotContentsClosed
         Private ReadOnly level As W3Slot.ComputerLevel
         Public Sub New(ByVal parent As W3Slot, ByVal level As W3Slot.ComputerLevel)
@@ -321,7 +321,7 @@
         End Function
         Public Overrides ReadOnly Property PlayerIndex() As Byte
             Get
-                Return player.index
+                Return player.Index
             End Get
         End Property
         Public Overrides Function WantPlayer(ByVal name As String) As W3SlotContents.WantPlayerPriority
@@ -353,7 +353,7 @@
         End Property
         Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As W3Player) As Byte
             Get
-                Return player.index
+                Return player.Index
             End Get
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As W3Player) As Byte
@@ -368,7 +368,7 @@
         End Property
     End Class
 
-    Public Class W3SlotContentsCovering
+    Public NotInheritable Class W3SlotContentsCovering
         Inherits W3SlotContentsPlayer
         Public ReadOnly coveredSlot As W3Slot
         Public Sub New(ByVal parent As W3Slot, ByVal coveredSlot As W3Slot, ByVal player As W3Player)
@@ -399,7 +399,7 @@
         End Property
     End Class
 
-    Public Class W3SlotContentsCovered
+    Public NotInheritable Class W3SlotContentsCovered
         Inherits W3SlotContents
         Public ReadOnly coveringSlot As W3Slot
         Private ReadOnly _playerIndex As Byte

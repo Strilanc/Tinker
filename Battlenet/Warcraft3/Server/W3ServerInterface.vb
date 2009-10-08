@@ -8,7 +8,7 @@ Namespace Warcraft3
         Disposed = 3
     End Enum
 
-    Public Class ServerSettings
+    Public NotInheritable Class ServerSettings
         Private ReadOnly _map As W3Map
         Private ReadOnly _header As W3GameHeader
         Public ReadOnly creationTime As Date = DateTime.Now()
