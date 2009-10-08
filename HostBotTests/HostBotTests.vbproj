@@ -65,6 +65,7 @@
     <Import Include="System.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CDKeyTest.vb" />
     <Compile Include="PacketStreamTest.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="TransferSchedulerTest.vb" />
