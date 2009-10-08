@@ -630,31 +630,31 @@ Namespace Bnet
             Public Sub New(ByVal name As String)
                 MyBase.New(name,
                         New UInt32Jar("length").Weaken,
-                        New ArrayJar("product key", 4).Weaken,
-                        New ArrayJar("public key", 4).Weaken,
+                        New EnumUInt32Jar(Of CDKeyProduct)("product key").Weaken,
+                        New UInt32Jar("public key").Weaken,
                         New UInt32Jar("unknown").Weaken,
                         New ArrayJar("hash", 20).Weaken)
                 Contract.Requires(name IsNot Nothing)
             End Sub
 
-            Public Shared Function PackCDKey(ByVal key As String,
+            Public Shared Function PackCDKey(ByVal wc3Key As String,
                                              ByVal clientToken As ViewableList(Of Byte),
                                              ByVal serverToken As ViewableList(Of Byte)) As Dictionary(Of String, Object)
-                Contract.Requires(key IsNot Nothing)
+                Contract.Requires(wc3Key IsNot Nothing)
                 Contract.Requires(clientToken IsNot Nothing)
                 Contract.Requires(serverToken IsNot Nothing)
 
-                Dim cdkey = New Bnet.Crypt.CDKey(key)
+                Dim key = CDKey.FromWC3StyleKey(wc3Key)
                 Return New Dictionary(Of String, Object) From {
-                        {"length", CUInt(key.Length)},
-                        {"product key", cdkey.ProductKey.ToArray()},
-                        {"public key", cdkey.PublicKey.ToArray()},
+                        {"length", CUInt(wc3Key.Length)},
+                        {"product key", key.Product},
+                        {"public key", key.PublicKey},
                         {"unknown", 0},
                         {"hash", Bnet.Crypt.SHA1(Concat(clientToken.ToArray,
                                                         serverToken.ToArray,
-                                                        cdkey.ProductKey.ToArray,
-                                                        cdkey.PublicKey.ToArray,
-                                                        cdkey.PrivateKey.ToArray))}}
+                                                        CUInt(key.Product).Bytes,
+                                                        key.PublicKey.Bytes,
+                                                        key.PrivateKey.ToArray))}}
             End Function
 
             Public Shared Function PackBorrowedCDKey(ByVal data() As Byte) As Dictionary(Of String, Object)
@@ -662,10 +662,10 @@ Namespace Bnet
                 Contract.Requires(data.Length = 36)
 
                 Return New Dictionary(Of String, Object) From {
-                        {"length", data.SubArray(0, 4).ToUInt32()},
-                        {"product key", data.SubArray(4, 4)},
-                        {"public key", data.SubArray(8, 4)},
-                        {"unknown", data.SubArray(12, 4).ToUInt32()},
+                        {"length", data.SubArray(0, 4).ToUInt32},
+                        {"product key", data.SubArray(4, 4).ToUInt32},
+                        {"public key", data.SubArray(8, 4).ToUInt32},
+                        {"unknown", data.SubArray(12, 4).ToUInt32},
                         {"hash", data.SubArray(16, 20)}}
             End Function
         End Class

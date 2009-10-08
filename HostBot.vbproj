@@ -219,7 +219,6 @@
     <Compile Include="Interface\BotWidgetControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Library\BigNum.vb" />
     <Compile Include="Library\Common.vb" />
     <Compile Include="Library\ConnectionAccepter.vb" />
     <Compile Include="Library\DeadManSwitch.vb" />

@@ -1,3 +1,5 @@
+Imports System.Numerics
+
 ''HostBot - Warcraft 3 game hosting bot
 ''Copyright (C) 2008 Craig Gidney
 ''
@@ -16,8 +18,8 @@
 ''''Implements the various cryptographic checks and algorithms blizzard uses
 Namespace Bnet.Crypt
     Public Module CryptCommon
-        Private ReadOnly G As BigNum = 47
-        Private ReadOnly N As BigNum = BigNum.FromString("112624315653284427036559548610503669920632123929604336254260115573677366691719", 10, ByteOrder.BigEndian)
+        Private ReadOnly G As BigInteger = 47
+        Private ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719")
 
         '''<summary>Computes the crc32 value for a stream of data.</summary>
         '''<param name="stream">The stream to read data from.</param>
@@ -71,11 +73,14 @@ Namespace Bnet.Crypt
             Contract.Requires(secureRandomNumberGenerator IsNot Nothing)
             Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
 
-            Dim privateKey = N.RandomUniformUpTo(secureRandomNumberGenerator, False, False)
-            Dim privateKeyBytes = privateKey.ToBytes(ByteOrder.LittleEndian).ToArray()
+            Dim privateKeyBytes = N.ToUnsignedByteArray
+            secureRandomNumberGenerator.GetBytes(privateKeyBytes)
+            Dim privateKey = privateKeyBytes.ToUnsignedBigInteger Mod N
+            If privateKey = 0 Then privateKey = 1
+            privateKeyBytes = privateKey.ToUnsignedByteArray
 
-            Dim publicKey = Bnet.Crypt.G.PowerMod(privateKey, N)
-            Dim publicKeyBytes = publicKey.ToBytes(ByteOrder.LittleEndian).ToArray()
+            Dim publicKey = BigInteger.ModPow(G, privateKey, N)
+            Dim publicKeyBytes = publicKey.ToUnsignedByteArray
 
             ReDim Preserve privateKeyBytes(0 To 31)
             ReDim Preserve publicKeyBytes(0 To 31)
@@ -99,56 +104,49 @@ Namespace Bnet.Crypt
             Contract.Requires(accountSalt IsNot Nothing)
             Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
 
-            userName = userName.ToUpperInvariant
-            password = password.ToUpperInvariant
-            Dim serverOffsetPublicKey = BigNum.FromBytes(serverOffsetPublicKeyBytes, ByteOrder.LittleEndian)
-            Dim clientPrivateKey = BigNum.FromBytes(clientPrivateKeyBytes, ByteOrder.LittleEndian)
-            Dim clientPublicKey = BigNum.FromBytes(clientPublicKeyBytes, ByteOrder.LittleEndian)
+            Dim userIdAuthData = System.Text.ASCIIEncoding.ASCII.GetBytes("{0}:{1}".Frmt(userName.ToUpperInvariant, password.ToUpperInvariant))
+            Dim serverOffsetPublicKey = serverOffsetPublicKeyBytes.ToUnsignedBigInteger
+            Dim clientPrivateKey = clientPrivateKeyBytes.ToUnsignedBigInteger
+            Dim clientPublicKey = clientPublicKeyBytes.ToUnsignedBigInteger
 
             'Password private key
-            Dim x = BigNum.FromBytes(SHA1(Concat(accountSalt.ToArray, SHA1((userName + ":" + password).ToAscBytes()))), ByteOrder.LittleEndian)
+            Dim x = Concat(accountSalt.ToArray, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
 
             'Verifier
-            Dim v = G.PowerMod(x, N)
-            Dim u = BigNum.FromBytes(SHA1(serverOffsetPublicKeyBytes.ToArray).SubArray(0, 4).Reverse().ToArray(), ByteOrder.LittleEndian)
+            Dim v = BigInteger.ModPow(G, x, N)
+            Dim u = serverOffsetPublicKeyBytes.ToArray.SHA1.SubArray(0, 4).Reverse.ToUnsignedBigInteger
 
             'Shared secret
-            Dim sharedSecret = ((N + serverOffsetPublicKey - v) Mod N).PowerMod(clientPrivateKey + u * x, N).ToBytes(ByteOrder.LittleEndian).ToArray()
-            ReDim Preserve sharedSecret(0 To 31)
-            Contract.Assume(sharedSecret IsNot Nothing)
-            'separate into odd and even bytes
-            Dim sharedSecretEvens(0 To 16 - 1) As Byte
-            Dim sharedSecretOdds(0 To 16 - 1) As Byte
-            For i = 0 To 16 - 1
-                sharedSecretEvens(i) = sharedSecret(2 * i)
-                sharedSecretOdds(i) = sharedSecret(2 * i + 1)
-            Next i
-            'hash odds and evens
-            sharedSecretEvens = SHA1(sharedSecretEvens)
-            sharedSecretOdds = SHA1(sharedSecretOdds)
-            'interleave hashed odds and evens
-            ReDim sharedSecret(0 To sharedSecretEvens.Length + sharedSecretOdds.Length - 1)
-            For i = 0 To sharedSecretEvens.Length - 1
-                sharedSecret(2 * i) = sharedSecretEvens(i)
-                sharedSecret(2 * i + 1) = sharedSecretOdds(i)
-            Next i
+            Dim sharedSecretData = BigInteger.ModPow((N + serverOffsetPublicKey - v) Mod N, clientPrivateKey + u * x, N).ToUnsignedByteArray
+            ReDim Preserve sharedSecretData(0 To 32 - 1)
+            Contract.Assume(sharedSecretData IsNot Nothing)
+            'Hash odd and even elements
+            Dim sharedHashEven = (From i In Enumerable.Range(0, 16)
+                                  Select sharedSecretData(i * 2)).ToArray.SHA1
+            Dim sharedHashOdd = (From i In Enumerable.Range(0, 16)
+                                 Select sharedSecretData(i * 2 + 1)).ToArray.SHA1
+            'Interleave odd and even hashes
+            Dim sharedHash = (From i In Enumerable.Range(0, 40)
+                              Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))).ToArray
 
             'Fixed salt
-            Dim fixed_G = SHA1(G.ToBytes(ByteOrder.LittleEndian).ToArray())
-            Dim fixed_N = SHA1(N.ToBytes(ByteOrder.LittleEndian).ToArray())
-            Dim fixed_salt(0 To 19) As Byte
-            For i = 0 To fixed_G.Length - 1
+            Dim fixed_G = G.ToUnsignedByteArray.SHA1
+            Dim fixed_N = N.ToUnsignedByteArray.SHA1
+            Dim fixed_salt(0 To 20 - 1) As Byte
+            For i = 0 To 20 - 1
                 fixed_salt(i) = fixed_G(i) Xor fixed_N(i)
             Next i
 
             'Proofs
-            Dim clientProof = SHA1(Concat(fixed_salt,
-                                          SHA1(userName.ToAscBytes),
-                                          accountSalt.ToArray,
-                                          clientPublicKeyBytes.ToArray,
-                                          serverOffsetPublicKeyBytes.ToArray,
-                                          sharedSecret))
-            Dim serverProof = SHA1(Concat(clientPublicKeyBytes.ToArray, clientProof, sharedSecret))
+            Dim clientProof = Concat(fixed_salt,
+                                     userName.ToAscBytes.SHA1,
+                                     accountSalt.ToArray,
+                                     clientPublicKeyBytes.ToArray,
+                                     serverOffsetPublicKeyBytes.ToArray,
+                                     sharedHash).SHA1
+            Dim serverProof = Concat(clientPublicKeyBytes.ToArray,
+                                     clientProof,
+                                     sharedHash).SHA1
             Return New KeyPair(clientProof.ToView, serverProof.ToView)
         End Function
 
@@ -322,6 +320,7 @@ Namespace Bnet.Crypt
         End Function
 #End Region
 
+        <Extension()>
         Public Function SHA1(ByVal data() As Byte) As Byte()
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
@@ -333,256 +332,4 @@ Namespace Bnet.Crypt
             End Using
         End Function
     End Module
-
-    Public NotInheritable Class CDKey
-#Region "Shared Members"
-        Private Const KEY_LENGTH As Integer = 26
-        Private Shared ReadOnly keyMap As Dictionary(Of Char, Byte) = initKeyMap()
-        Private Shared ReadOnly invKeyMap As Dictionary(Of Byte, Char) = initInvKeyMap()
-        '''<summary>30 permutations of 0-15</summary>
-        Private Shared ReadOnly permutationSet As Byte()() = {
-                    New Byte() {&H9, &H4, &H7, &HF, &HD, &HA, &H3, &HB, &H1, &H2, &HC, &H8, &H6, &HE, &H5, &H0},
-                    New Byte() {&H9, &HB, &H5, &H4, &H8, &HF, &H1, &HE, &H7, &H0, &H3, &H2, &HA, &H6, &HD, &HC},
-                    New Byte() {&HC, &HE, &H1, &H4, &H9, &HF, &HA, &HB, &HD, &H6, &H0, &H8, &H7, &H2, &H5, &H3},
-                    New Byte() {&HB, &H2, &H5, &HE, &HD, &H3, &H9, &H0, &H1, &HF, &H7, &HC, &HA, &H6, &H4, &H8},
-                    New Byte() {&H6, &H2, &H4, &H5, &HB, &H8, &HC, &HE, &HD, &HF, &H7, &H1, &HA, &H0, &H3, &H9},
-                    New Byte() {&H5, &H4, &HE, &HC, &H7, &H6, &HD, &HA, &HF, &H2, &H9, &H1, &H0, &HB, &H8, &H3},
-                    New Byte() {&HC, &H7, &H8, &HF, &HB, &H0, &H5, &H9, &HD, &HA, &H6, &HE, &H2, &H4, &H3, &H1},
-                    New Byte() {&H3, &HA, &HE, &H8, &H1, &HB, &H5, &H4, &H2, &HF, &HD, &HC, &H6, &H7, &H9, &H0},
-                    New Byte() {&HC, &HD, &H1, &HF, &H8, &HE, &H5, &HB, &H3, &HA, &H9, &H0, &H7, &H2, &H4, &H6},
-                    New Byte() {&HD, &HA, &H7, &HE, &H1, &H6, &HB, &H8, &HF, &HC, &H5, &H2, &H3, &H0, &H4, &H9},
-                    New Byte() {&H3, &HE, &H7, &H5, &HB, &HF, &H8, &HC, &H1, &HA, &H4, &HD, &H0, &H6, &H9, &H2},
-                    New Byte() {&HB, &H6, &H9, &H4, &H1, &H8, &HA, &HD, &H7, &HE, &H0, &HC, &HF, &H2, &H3, &H5},
-                    New Byte() {&HC, &H7, &H8, &HD, &H3, &HB, &H0, &HE, &H6, &HF, &H9, &H4, &HA, &H1, &H5, &H2},
-                    New Byte() {&HC, &H6, &HD, &H9, &HB, &H0, &H1, &H2, &HF, &H7, &H3, &H4, &HA, &HE, &H8, &H5},
-                    New Byte() {&H3, &H6, &H1, &H5, &HB, &HC, &H8, &H0, &HF, &HE, &H9, &H4, &H7, &HA, &HD, &H2},
-                    New Byte() {&HA, &H7, &HB, &HF, &H2, &H8, &H0, &HD, &HE, &HC, &H1, &H6, &H9, &H3, &H5, &H4},
-                    New Byte() {&HA, &HB, &HD, &H4, &H3, &H8, &H5, &H9, &H1, &H0, &HF, &HC, &H7, &HE, &H2, &H6},
-                    New Byte() {&HB, &H4, &HD, &HF, &H1, &H6, &H3, &HE, &H7, &HA, &HC, &H8, &H9, &H2, &H5, &H0},
-                    New Byte() {&H9, &H6, &H7, &H0, &H1, &HA, &HD, &H2, &H3, &HE, &HF, &HC, &H5, &HB, &H4, &H8},
-                    New Byte() {&HD, &HE, &H5, &H6, &H1, &H9, &H8, &HC, &H2, &HF, &H3, &H7, &HB, &H4, &H0, &HA},
-                    New Byte() {&H9, &HF, &H4, &H0, &H1, &H6, &HA, &HE, &H2, &H3, &H7, &HD, &H5, &HB, &H8, &HC},
-                    New Byte() {&H3, &HE, &H1, &HA, &H2, &HC, &H8, &H4, &HB, &H7, &HD, &H0, &HF, &H6, &H9, &H5},
-                    New Byte() {&H7, &H2, &HC, &H6, &HA, &H8, &HB, &H0, &HF, &H4, &H3, &HE, &H9, &H1, &HD, &H5},
-                    New Byte() {&HC, &H4, &H5, &H9, &HA, &H2, &H8, &HD, &H3, &HF, &H1, &HE, &H6, &H7, &HB, &H0},
-                    New Byte() {&HA, &H8, &HE, &HD, &H9, &HF, &H3, &H0, &H4, &H6, &H1, &HC, &H7, &HB, &H2, &H5},
-                    New Byte() {&H3, &HC, &H4, &HA, &H2, &HF, &HD, &HE, &H7, &H0, &H5, &H8, &H1, &H6, &HB, &H9},
-                    New Byte() {&HA, &HC, &H1, &H0, &H9, &HE, &HD, &HB, &H3, &H7, &HF, &H8, &H5, &H2, &H4, &H6},
-                    New Byte() {&HE, &HA, &H1, &H8, &H7, &H6, &H5, &HC, &H2, &HF, &H0, &HD, &H3, &HB, &H4, &H9},
-                    New Byte() {&H3, &H8, &HE, &H0, &H7, &H9, &HF, &HC, &H1, &H6, &HD, &H2, &H5, &HA, &HB, &H4},
-                    New Byte() {&H3, &HA, &HC, &H4, &HD, &HB, &H9, &HE, &HF, &H6, &H1, &H7, &H2, &H0, &H5, &H8}
-                }
-        Private Shared ReadOnly invPermutationSet As Byte()() = initInvPermMap()
-
-        Private Shared Function initKeyMap() As Dictionary(Of Char, Byte)
-            Dim vals As New Dictionary(Of Char, Byte)
-            Dim chars As String = "246789BCDEFGHJKMNPRTVWXYZ"
-            For b As Byte = 0 To CByte(chars.Length - 1)
-                vals(chars(b)) = b
-            Next b
-            Return vals
-        End Function
-        Private Shared Function initInvKeyMap() As Dictionary(Of Byte, Char)
-            If keyMap Is Nothing Then Throw New InvalidOperationException("Key map must be initialized before inverse key map")
-            Dim vals As New Dictionary(Of Byte, Char)
-            For Each e As Char In keyMap.Keys
-                vals(keyMap(e)) = e
-            Next e
-            Return vals
-        End Function
-        Private Shared Function initInvPermMap() As Byte()()
-            Dim invPermSet(0 To 29)() As Byte
-            For i As Integer = 0 To 29
-                ReDim invPermSet(i)(0 To 15)
-                For j As Byte = 0 To 15
-                    invPermSet(i)(permutationSet(i)(j)) = j
-                Next j
-            Next i
-            Return invPermSet
-        End Function
-#End Region
-
-        Private ReadOnly _key As String
-        Private ReadOnly _productKey As ViewableList(Of Byte)
-        Private ReadOnly _privateKey As ViewableList(Of Byte)
-        Private ReadOnly _publicKey As ViewableList(Of Byte)
-        Public ReadOnly Property Key As String
-            Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return _key
-            End Get
-        End Property
-        Public ReadOnly Property ProductKey As ViewableList(Of Byte)
-            Get
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-                Return _productKey
-            End Get
-        End Property
-        Public ReadOnly Property PrivateKey As ViewableList(Of Byte)
-            Get
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-                Return _privateKey
-            End Get
-        End Property
-        Public ReadOnly Property PublicKey As ViewableList(Of Byte)
-            Get
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-                Return _publicKey
-            End Get
-        End Property
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_key IsNot Nothing)
-            Contract.Invariant(_productKey IsNot Nothing)
-            Contract.Invariant(_privateKey IsNot Nothing)
-            Contract.Invariant(_publicKey IsNot Nothing)
-        End Sub
-
-#Region "Decode"
-        Public Sub New(ByVal key As String)
-            Contract.Requires(key IsNot Nothing)
-            Dim cdkey = key.ToUpperInvariant.Replace("-", "").Replace(" ", "").ToCharArray()
-            If cdkey.Length <> KEY_LENGTH Then Throw New ArgumentException("Invalid cd key length.")
-
-            'Shuffle the cd key into the digits of a base 5 number
-            Dim d = 33
-            Dim n_digitsBase5(0 To KEY_LENGTH * 2 - 1) As Byte
-            For i = 0 To KEY_LENGTH - 1
-                If Not keyMap.ContainsKey(cdkey(i)) Then Throw New ArgumentException("Invalid cd key character: " + cdkey(i))
-                Dim c = keyMap(cdkey(i)) '[range: 0 to 24]
-
-                'extract the two base 5 digits of c
-                d = (d + 49) Mod n_digitsBase5.Length
-                n_digitsBase5(d) = CByte(c \ 5)
-                d = (d + 49) Mod n_digitsBase5.Length
-                n_digitsBase5(d) = CByte(c Mod 5)
-            Next i
-
-            'Permute nibbles
-            Dim n_digitsBase16 = BigNum.FromBaseBytes(n_digitsBase5, 5, ByteOrder.LittleEndian).ToBaseBytes(16, ByteOrder.LittleEndian).ToArray()
-            ReDim Preserve n_digitsBase16(0 To 31)
-            Contract.Assume(n_digitsBase16 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            For r = 29 To 0 Step -1
-                Dim perm = permutationSet(r)
-                Contract.Assume(perm IsNot Nothing)
-                Dim c = n_digitsBase16(r)
-
-                'Permute
-                For r2 = 29 To 0 Step -1
-                    If r = r2 Then Continue For
-                    c = perm(n_digitsBase16(r2) Xor perm(c))
-                Next r2
-
-                n_digitsBase16(r) = perm(c)
-            Next r
-
-            'Swap bits
-            Dim n_digitsBase2 = BigNum.FromBaseBytes(n_digitsBase16, 16, ByteOrder.LittleEndian).ToBaseBytes(2, ByteOrder.LittleEndian).ToArray()
-            ReDim Preserve n_digitsBase2(0 To 127)
-            Contract.Assume(n_digitsBase2 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            SwapBits11Mod120(n_digitsBase2)
-
-            'Extract keys
-            Dim n_digitsBase256 = BigNum.FromBaseBytes(n_digitsBase2, 2, ByteOrder.LittleEndian).ToBytes(ByteOrder.LittleEndian).ToArray()
-            ReDim Preserve n_digitsBase256(0 To 15)
-            Contract.Assume(n_digitsBase256 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            Me._productKey = {n_digitsBase256(13) >> &H2,
-                              CByte(0),
-                              CByte(0),
-                              CByte(0)}.ToView
-            Me._publicKey = {n_digitsBase256(10),
-                             n_digitsBase256(11),
-                             n_digitsBase256(12),
-                             CByte(0)}.ToView
-            Me._privateKey = {n_digitsBase256(8),
-                              n_digitsBase256(9),
-                              n_digitsBase256(4),
-                              n_digitsBase256(5),
-                              n_digitsBase256(6),
-                              n_digitsBase256(7),
-                              n_digitsBase256(0),
-                              n_digitsBase256(1),
-                              n_digitsBase256(2),
-                              n_digitsBase256(3)}.ToView()
-        End Sub
-#End Region
-
-#Region "Encode"
-        Public Sub New(ByVal productKey As Byte(), ByVal publicKey As Byte(), ByVal privateKey As Byte())
-            Contract.Requires(productKey IsNot Nothing)
-            Contract.Requires(publicKey IsNot Nothing)
-            Contract.Requires(privateKey IsNot Nothing)
-            'Inject keys
-            Dim n_digitsBase256 = New Byte() {privateKey(6), privateKey(7), privateKey(8), privateKey(9),
-                                              privateKey(2), privateKey(3), privateKey(4), privateKey(5),
-                                              privateKey(0), privateKey(1), publicKey(0), publicKey(1),
-                                              publicKey(2), productKey(0) << 2, 0, 0}
-
-            'Swap bits
-            Dim n_digitsBase2 = BigNum.FromBaseBytes(n_digitsBase256, 256, ByteOrder.LittleEndian).ToBaseBytes(2, ByteOrder.LittleEndian).ToArray()
-            ReDim Preserve n_digitsBase2(0 To 127)
-            Contract.Assume(n_digitsBase2 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            SwapBits11Mod120(n_digitsBase2)
-
-            'Unpermute nibbles
-            Dim n_digitsBase16 = BigNum.FromBaseBytes(n_digitsBase2, 2, ByteOrder.LittleEndian).ToBaseBytes(16, ByteOrder.LittleEndian).ToArray()
-            ReDim Preserve n_digitsBase16(0 To 31)
-            Contract.Assume(n_digitsBase16 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            For r = 0 To 29
-                Dim unperm = invPermutationSet(r)
-                Dim c = unperm(n_digitsBase16(r))
-
-                'Unpermute
-                For r2 = 0 To 29
-                    If r = r2 Then Continue For
-                    c = unperm(n_digitsBase16(r2) Xor unperm(c))
-                Next r2
-
-                n_digitsBase16(r) = c
-            Next r
-
-            'Shuffle the base 5 digits into the cd key
-            Dim n_digitsBase5 = BigNum.FromBaseBytes(n_digitsBase16, 16, ByteOrder.LittleEndian).ToBaseBytes(5, ByteOrder.LittleEndian).ToArray()
-            ReDim Preserve n_digitsBase5(0 To KEY_LENGTH * 2 - 1)
-            Contract.Assume(n_digitsBase5 IsNot Nothing) 'remove this once static verifier understands redim preserve
-            Dim d = 33
-            Dim cdkey = ""
-            For i = 0 To KEY_LENGTH - 1
-                Dim c As Byte
-
-                'combine two base 5 digits to get base 25 digit
-                d = (d + 49) Mod n_digitsBase5.Length
-                c = n_digitsBase5(d)
-                d = (d + 49) Mod n_digitsBase5.Length
-                c = c * CByte(5) + n_digitsBase5(d)
-
-                cdkey += invKeyMap(c)
-            Next i
-
-            Me._privateKey = privateKey.ToView
-            Me._publicKey = publicKey.ToView
-            Me._productKey = productKey.ToView
-            Me._key = cdkey.ToUpperInvariant
-        End Sub
-#End Region
-
-#Region "Misc"
-        '''<summary>Swap the bits with their *11 counterpart mod 120</summary>
-        '''<remarks>This transformation is its own inverse: x*11*11 = x*121 = x*1 = x (mod 120)</remarks>
-        Private Sub SwapBits11Mod120(ByVal bits() As Byte)
-            Contract.Requires(bits IsNot Nothing)
-            If bits.Length <> 128 Then Throw New ArgumentException("Size must be 128", "bits")
-
-            For i As Integer = 0 To 119
-                Dim j As Integer = (i * 11) Mod 120
-                If j <= i Then Continue For 'don't swap the same bits twice
-
-                'swap bits i and j
-                Dim b As Byte = bits(i)
-                bits(i) = bits(j)
-                bits(j) = b
-            Next i
-        End Sub
-#End Region
-    End Class
 End Namespace

@@ -4,6 +4,7 @@ Imports System.IO.Path
 Imports System.Text
 Imports System.Net
 Imports System.IO
+Imports System.Numerics
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
@@ -14,6 +15,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Return text.Replace("\n", Environment.NewLine)
     End Function
+
     <Pure()>
     Public Function BreakQuotedWords(ByVal text As String) As List(Of String)
         Contract.Requires(text IsNot Nothing)
@@ -139,6 +141,66 @@ Public Module PoorlyCategorizedFunctions
         End Try
     End Function
 #End Region
+
+    ''' <summary>
+    ''' Converts little-endian digits in one base to little-endian digits in another base.
+    ''' </summary>
+    <Pure()> <Extension()>
+    Public Function ConvertFromBaseToBase(ByVal digits As IList(Of Byte),
+                                          ByVal inputBase As UInteger,
+                                          ByVal outputBase As UInteger,
+                                          Optional ByVal minOutputLength As Integer = 0) As IList(Of Byte)
+        Contract.Requires(digits IsNot Nothing)
+        Contract.Requires(inputBase >= 2)
+        Contract.Requires(inputBase <= 256)
+        Contract.Requires(outputBase >= 2)
+        Contract.Requires(outputBase <= 256)
+        Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count >= minOutputLength)
+
+        'Convert from digits in input base to BigInteger
+        Dim value = New BigInteger
+        For i = digits.Count - 1 To 0 Step -1
+            value *= inputBase
+            value += digits(i)
+        Next i
+
+        'Convert from BigInteger to digits in output base
+        Dim result = New List(Of Byte)
+        Do Until result.Count >= minOutputLength AndAlso value = 0
+            Dim remainder As BigInteger = Nothing
+            value = BigInteger.DivRem(value, outputBase, remainder)
+            result.Add(CByte(remainder))
+        Loop
+
+        Return result
+    End Function
+    <Pure()> <Extension()>
+    Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte)) As BigInteger
+        Contract.Requires(digits IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
+        Return New BigInteger(digits.Concat({0}).ToArray)
+    End Function
+    <Pure()> <Extension()>
+    Public Function ToUnsignedBigInteger(ByVal digits As Byte()) As BigInteger
+        Contract.Requires(digits IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
+        If (digits(digits.Count - 1) And &H80) = 0 Then
+            Return New BigInteger(digits)
+        Else
+            Return New BigInteger(Concat(digits, {0}))
+        End If
+    End Function
+    <Pure()> <Extension()>
+    Public Function ToUnsignedByteArray(ByVal value As BigInteger) As Byte()
+        Contract.Requires(value >= 0)
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Dim result = value.ToByteArray()
+        If result(result.Length - 1) = 0 Then
+            result = result.SubArray(0, result.Length - 1)
+        End If
+        Return result
+    End Function
 
     <Extension()>
     Public Sub WriteNullTerminatedString(ByVal bw As BinaryWriter, ByVal data As String)
