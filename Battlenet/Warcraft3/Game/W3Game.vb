@@ -34,24 +34,21 @@ Namespace Warcraft3
         Public Shared ReadOnly GameGuestCommandsGamePlay As New Commands.Specializations.InstanceGuestPlayCommands
         Public Shared ReadOnly GameCommandsGamePlay As New Commands.Specializations.InstancePlayCommands
         Public Shared ReadOnly GameCommandsLobby As New Commands.Specializations.InstanceSetupCommands
-        Public Shared ReadOnly GameCommandsAdmin As New Commands.Specializations.InstanceAdminCommands
 
-        Private ReadOnly _server As W3Server
         Private ReadOnly _map As W3Map
         Private ReadOnly _name As String
-        Private ReadOnly rand As New Random()
         Private ReadOnly slots As New List(Of W3Slot)
         Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly eventRef As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly _logger As Logger
         Private Const PING_PERIOD As UShort = 5000
-        Private ReadOnly pingTimer As New Timers.Timer(PING_PERIOD)
         Private state As W3GameState = W3GameState.AcceptingPlayers
         Private fakeHostPlayer As W3Player
         Private flagHasPlayerLeft As Boolean
         Private adminPlayer As W3Player
         Private ReadOnly players As New List(Of W3Player)
         Private ReadOnly indexMap(0 To 12) As Byte
+        Private ReadOnly settings As ServerSettings
 
         Public Event PlayerAction(ByVal sender As W3Game, ByVal player As W3Player, ByVal action As W3GameAction)
         Public Event Updated(ByVal sender As W3Game, ByVal slots As List(Of W3Slot))
@@ -60,18 +57,17 @@ Namespace Warcraft3
         Public Event ChangedState(ByVal sender As W3Game, ByVal oldState As W3GameState, ByVal newState As W3GameState)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_server IsNot Nothing)
             Contract.Invariant(_map IsNot Nothing)
             Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(slots IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(eventRef IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
-            Contract.Invariant(pingTimer IsNot Nothing)
             Contract.Invariant(players IsNot Nothing)
             Contract.Invariant(indexMap IsNot Nothing)
             Contract.Invariant(indexMap.Length = 13)
 
+            Contract.Invariant(settings IsNot Nothing)
             Contract.Invariant(freeIndexes IsNot Nothing)
             Contract.Invariant(tickTimer IsNot Nothing)
             Contract.Invariant(readyPlayers IsNot Nothing)
@@ -86,7 +82,6 @@ Namespace Warcraft3
             Contract.Invariant(gameDataQueue IsNot Nothing)
             Contract.Invariant(updateEventThrottle IsNot Nothing)
             Contract.Invariant(slotStateUpdateThrottle IsNot Nothing)
-            Contract.Invariant(rand IsNot Nothing)
         End Sub
 
 #Region "Commands"
@@ -104,7 +99,9 @@ Namespace Warcraft3
                     Throw New UnreachableException()
             End Select
         End Sub
-        Private Function CommandProcessText(ByVal player As W3Player, ByVal arguments As IList(Of String)) As IFuture(Of String)
+        Private Function CommandProcessText(ByVal bot As MainBot,
+                                            ByVal player As W3Player,
+                                            ByVal arguments As IList(Of String)) As IFuture(Of String)
             Contract.Requires(arguments IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Dim user = New BotUser(player.name)
@@ -119,8 +116,8 @@ Namespace Warcraft3
                     Case Else
                         Throw New UnreachableException()
                 End Select
-            ElseIf Server.Settings.isAdminGame Then
-                Return W3Game.GameCommandsAdmin.ProcessCommand(Me, Nothing, arguments)
+            ElseIf settings.isAdminGame Then
+                Return New Commands.Specializations.InstanceAdminCommands(bot).ProcessCommand(Me, Nothing, arguments)
             Else
                 Select Case state
                     Case Is < W3GameState.Loading
@@ -211,21 +208,20 @@ Namespace Warcraft3
 #End Region
 
 #Region "Life"
-        Public Sub New(ByVal parent As W3Server,
-                       ByVal name As String,
+        Public Sub New(ByVal name As String,
                        ByVal map As W3Map,
+                       ByVal settings As ServerSettings,
                        ByVal arguments As IEnumerable(Of String),
                        Optional ByVal logger As Logger = Nothing)
             'contract bug wrt interface event implementation requires this:
             'Contract.Requires(map IsNot Nothing)
-            'Contract.Requires(parent IsNot Nothing)
             'Contract.Requires(name IsNot Nothing)
             Contract.Assume(map IsNot Nothing)
-            Contract.Assume(parent IsNot Nothing)
             Contract.Assume(name IsNot Nothing)
+            Contract.Assume(settings IsNot Nothing)
 
+            Me.settings = settings
             Me._map = map
-            Me._server = parent
             Me._name = name
             Me._logger = If(logger, New Logger)
             For i = 0 To indexMap.Length - 1
@@ -235,9 +231,6 @@ Namespace Warcraft3
             LobbyNew(arguments)
             LoadScreenNew()
             GamePlayNew()
-
-            AddHandler pingTimer.Elapsed, Sub() CatchPing()
-            Me.pingTimer.Start()
 
             Contract.Assume(DownloadScheduler IsNot Nothing)
             Contract.Assume(fakeTickTimer IsNot Nothing)
@@ -251,30 +244,6 @@ Namespace Warcraft3
         Private Sub Close()
             If state >= W3GameState.Closed Then
                 Return
-            End If
-            pingTimer.Stop()
-
-            'Pass hosting duty to another player if possible
-            If state = W3GameState.Playing AndAlso players.Count > 1 Then
-                Dim host = players.Max(Function(p1, p2)
-                                           If p1 Is Nothing Then  Return -1
-                                           If p2 Is Nothing Then  Return 1
-                                           If p1.isFake Then  Return -1
-                                           If p2.isFake Then  Return 1
-
-                                           'Can they host? Are they connected to more people? Are they on a better connection?
-                                           Dim signs = {Math.Sign(p1.CanHost - p2.CanHost),
-                                                        Math.Sign(p1.GetNumPeerConnections - p2.GetNumPeerConnections),
-                                                        Math.Sign(p1.GetLatency - p2.GetLatency)}
-                                           Return (From sign In signs Where sign <> 0).FirstOrDefault
-                                       End Function)
-
-                If host IsNot Nothing AndAlso Not host.isFake Then
-                    BroadcastPacket(W3Packet.MakeSetHost(host.Index), Nothing)
-                    Logger.Log(Name + " has handed off hosting to " + host.name, LogMessageType.Positive)
-                Else
-                    Logger.Log(Name + " has failed to hand off hosting", LogMessageType.Negative)
-                End If
             End If
 
             'disconnect from all players
@@ -309,20 +278,6 @@ Namespace Warcraft3
             eventRef.QueueAction(Sub()
                                      RaiseEvent ChangedState(Me, old_state, new_state)
                                  End Sub)
-        End Sub
-
-        Private Sub CatchPing()
-            ref.QueueAction(
-                Sub()
-                    Dim salt = CUInt(rand.Next(0, Integer.MaxValue))
-                    Dim tick As ModInt32 = Environment.TickCount
-                    Dim record = New W3PlayerPingRecord(salt, tick)
-                    For Each player In players
-                        player.QueuePing(record)
-                    Next player
-                    ThrowUpdated()
-                End Sub
-            )
         End Sub
 #End Region
 
@@ -497,7 +452,7 @@ Namespace Warcraft3
             If password IsNot Nothing Then
                 player.numAdminTries += 1
                 If player.numAdminTries > 5 Then Throw New InvalidOperationException("Too many tries.")
-                If password.ToUpperInvariant <> Server.Settings.AdminPassword.ToUpperInvariant Then
+                If password.ToUpperInvariant <> settings.AdminPassword.ToUpperInvariant Then
                     Throw New InvalidOperationException("Incorrect password.")
                 End If
             End If
@@ -591,13 +546,6 @@ Namespace Warcraft3
             End Get
         End Property
 
-        Public ReadOnly Property Server As W3Server
-            Get
-                Contract.Ensures(Contract.Result(Of W3Server)() IsNot Nothing)
-                Return _server
-            End Get
-        End Property
-
         Public Function QueueGetAdminPlayer() As IFuture(Of W3Player)
             Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() adminPlayer)
@@ -616,15 +564,18 @@ Namespace Warcraft3
                                        CommandProcessLocalText(text, logger)
                                    End Sub)
         End Function
-        Public Function QueueCommandProcessText(ByVal player As W3Player,
+        Public Function QueueCommandProcessText(ByVal bot As MainBot,
+                                                ByVal player As W3Player,
                                                 ByVal arguments As IList(Of String)) As IFuture(Of String)
+            Contract.Requires(bot IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(arguments IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return ref.QueueFunc(Function()
+                                     Contract.Assume(bot IsNot Nothing)
                                      Contract.Assume(player IsNot Nothing)
                                      Contract.Assume(arguments IsNot Nothing)
-                                     Return CommandProcessText(player, arguments)
+                                     Return CommandProcessText(bot, player, arguments)
                                  End Function).Defuturized
         End Function
         Public Function QueueTryElevatePlayer(ByVal name As String,

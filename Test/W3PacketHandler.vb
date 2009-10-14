@@ -60,7 +60,18 @@ Namespace Testing
             Return seed.Bytes.ToView
         End Function
     End Class
-    Public Module M
-        Private ReadOnly PingPacketJar As New PacketParseJar(Of PingPacket)(W3PacketId.Ping.ToString, AddressOf PingPacket.FromData)
-    End Module
+
+    'Public Class Dic
+    '    Private ReadOnly jar As TupleParseJar
+    '    Public Sub New(ByVal jar As TupleParseJar)
+    '        Me.jar = jar
+    '    End Sub
+    'End Class
+
+    'Public Module M
+    '    Private ReadOnly PingPacketJar As New PacketParseJar(Of PingPacket)(W3PacketId.Ping.ToString, AddressOf PingPacket.FromData)
+    '    Public Function Pico(Of T)(ByVal k As T, ByVal jar As IParseJar(Of T), ByVal handler As Action(Of T)) As Handler(Of T)
+    '        Return New Handler(Of T)(jar, handler)
+    '    End Function
+    'End Module
 End Namespace

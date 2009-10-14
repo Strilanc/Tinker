@@ -163,6 +163,7 @@
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
     <Compile Include="Battlenet\CDKey.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\Pinger.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3GameAction.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3GameHeader.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3RemotePlayer.vb" />

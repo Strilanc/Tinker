@@ -105,11 +105,30 @@ Namespace Warcraft3
                 Next i
                 Me.parent.logger.Log("Server started for map {0}.".Frmt(Me.settings.map.RelativePath), LogMessageType.Positive)
 
-                If Me.settings.testFakePlayers AndAlso Me.settings.defaultListenPorts.Any Then
+                If Me.Settings.grabMap Then
+                    Dim serverPort = Me.Settings.defaultListenPorts.FirstOrDefault
+                    If serverPort = 0 Then
+                        Throw New InvalidOperationException("Server has no port for Grab player to connect on.")
+                    End If
+
+                    Dim grabPort = parent.PortPool.TryAcquireAnyPort()
+                    If grabPort Is Nothing Then
+                        Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
+                    End If
+
+                    FutureWait(3.Seconds).CallWhenReady(
+                        Sub()
+                            Dim p = New W3DummyPlayer("Grab", grabPort, logger)
+                            p.QueueConnect("localhost", serverPort)
+                        End Sub
+                    )
+                End If
+
+                If Me.Settings.testFakePlayers AndAlso Me.Settings.defaultListenPorts.Any Then
                     FutureWait(3.Seconds).CallWhenReady(
                         Sub()
                             For i = 1 To 3
-                                Dim receivedPort = Me.parent.portPool.TryAcquireAnyPort()
+                                Dim receivedPort = Me.Parent.PortPool.TryAcquireAnyPort()
                                 If receivedPort Is Nothing Then
                                     logger.Log("Failed to get port for fake player.", LogMessageType.Negative)
                                     Exit For
@@ -118,7 +137,7 @@ Namespace Warcraft3
                                 Dim p = New W3DummyPlayer("Wait {0}min".Frmt(i), receivedPort, logger, DummyPlayerMode.EnterGame)
                                 p.readyDelay = i.Minutes
                                 Dim i_ = i
-                                p.QueueConnect("localhost", Me.settings.defaultListenPorts.FirstOrDefault).CallWhenReady(
+                                p.QueueConnect("localhost", Me.Settings.defaultListenPorts.FirstOrDefault).CallWhenReady(
                                     Sub(exception)
                                         If exception Is Nothing Then
                                             Me.logger.Log("Fake player {0} Connected", LogMessageType.Positive)
@@ -297,7 +316,7 @@ Namespace Warcraft3
                 Throw New InvalidOperationException("A game called '{0}' already exists.".Frmt(gameName))
             End If
 
-            game = New W3Game(Me, gameName, settings.map, If(arguments, settings.header.Options))
+            game = New W3Game(gameName, Settings.Map, Settings, If(arguments, Settings.Header.Options))
             logger.Log(game.Name + " opened.", LogMessageType.Positive)
             instanceCreationCount += 1
             games_all.Add(game)

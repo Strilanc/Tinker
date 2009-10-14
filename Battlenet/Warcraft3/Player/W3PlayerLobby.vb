@@ -18,6 +18,8 @@
         End Sub
 
 #Region "Networking"
+        Public Event GameStateUpdated1(ByVal sender As W3Player)
+        Public Event GameStateUpdated2(ByVal sender As W3Player)
         Private Sub ReceivePeerConnectionInfo(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
             Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
@@ -32,24 +34,24 @@
 
             If state = W3PlayerState.Lobby Then
                 For Each flag In flags
-                    game.DownloadScheduler.SetLink(Me.index, flag.pid, flag.connected).MarkAnyExceptionAsHandled()
+                    scheduler.SetLink(Me.Index, flag.pid, flag.connected).MarkAnyExceptionAsHandled()
                 Next flag
             End If
-            game.QueueThrowUpdated()
+            RaiseEvent GameStateUpdated1(Me)
         End Sub
         Private Sub ReceiveClientMapInfo(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
             Contract.Assume(vals IsNot Nothing)
             Dim newMapDownloadPosition = CInt(CUInt(vals("total downloaded")))
             Dim delta = newMapDownloadPosition - mapDownloadPosition
             If delta < 0 Then
                 Disconnect(True, W3PlayerLeaveType.Disconnect, "auto-booted: moved download position backwards from {1} to {2}.".Frmt(mapDownloadPosition, newMapDownloadPosition))
                 Return
-            ElseIf newMapDownloadPosition > game.map.FileSize Then
+            ElseIf newMapDownloadPosition > settings.Map.FileSize Then
                 Disconnect(True, W3PlayerLeaveType.Disconnect, "auto-booted: moved download position past file size")
                 Return
-            ElseIf mapDownloadPosition = game.map.FileSize Then
+            ElseIf mapDownloadPosition = settings.Map.FileSize Then
                 '[previously finished download]
                 Return
             End If
@@ -57,26 +59,26 @@
             mapDownloadPosition = newMapDownloadPosition
             mapUploadPosition = Math.Max(mapDownloadPosition, mapUploadPosition)
             If Not knowMapState Then
-                Dim hasMap = mapDownloadPosition = game.map.FileSize
-                If Not hasMap AndAlso Not game.server.settings.allowDownloads Then
+                Dim hasMap = mapDownloadPosition = settings.Map.FileSize
+                If Not hasMap AndAlso Not settings.allowDownloads Then
                     Disconnect(True, W3PlayerLeaveType.Disconnect, "no dls allowed")
                     Return
                 End If
 
-                game.DownloadScheduler.AddClient(index, hasMap).MarkAnyExceptionAsHandled()
-                game.DownloadScheduler.SetLink(index, W3Game.LocalTransferClientKey, linked:=True).MarkAnyExceptionAsHandled()
+                scheduler.AddClient(Index, hasMap).MarkAnyExceptionAsHandled()
+                scheduler.SetLink(Index, W3Game.LocalTransferClientKey, linked:=True).MarkAnyExceptionAsHandled()
                 knowMapState = True
-            ElseIf mapDownloadPosition = game.map.FileSize Then
+            ElseIf mapDownloadPosition = settings.Map.FileSize Then
                 logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
-                game.DownloadScheduler.SetNotTransfering(Index, completed:=True).MarkAnyExceptionAsHandled()
+                scheduler.SetNotTransfering(Index, completed:=True).MarkAnyExceptionAsHandled()
             Else
-                game.DownloadScheduler.UpdateProgress(index, New FiniteDouble(mapDownloadPosition)).MarkAnyExceptionAsHandled()
+                scheduler.UpdateProgress(Index, New FiniteDouble(mapDownloadPosition)).MarkAnyExceptionAsHandled()
                 If IsGettingMapFromBot Then
                     BufferMap()
                 End If
             End If
 
-            game.QueueUpdatedGameState()
+            RaiseEvent GameStateUpdated2(Me)
         End Sub
 #End Region
 
@@ -109,15 +111,17 @@
             SendPacket(W3Packet.MakeStartCountdown())
         End Sub
 
-        Private Sub BufferMap()
-            Dim f_index = game.QueueGetFakeHostPlayer.Select(Function(player) If(player Is Nothing, CByte(0), player.index))
-            f_index.CallOnValueSuccess(Sub(senderIndex) ref.QueueAction(
+        Public Event WantMapSender(ByVal sender As W3Player)
+        Public Sub GiveMapSender(ByVal senderIndex As Byte)
+            Contract.Requires(senderIndex >= 0)
+            Contract.Requires(senderIndex <= 12)
+            ref.QueueAction(
                 Sub()
-                    While mapUploadPosition < Math.Min(game.map.FileSize, mapDownloadPosition + MAX_BUFFERED_MAP_SIZE)
+                    While mapUploadPosition < Math.Min(settings.Map.FileSize, mapDownloadPosition + MAX_BUFFERED_MAP_SIZE)
                         Dim out_DataSize = 0
                         Contract.Assume(senderIndex >= 0)
                         Contract.Assume(senderIndex <= 12)
-                        Dim pk = W3Packet.MakeMapFileData(game.map, index, mapUploadPosition, out_DataSize, senderIndex)
+                        Dim pk = W3Packet.MakeMapFileData(settings.Map, Index, mapUploadPosition, out_DataSize, senderIndex)
                         mapUploadPosition += out_DataSize
                         Try
                             SendPacket(pk)
@@ -125,8 +129,10 @@
                             Exit While
                         End Try
                     End While
-                End Sub
-            ))
+                End Sub)
+        End Sub
+        Private Sub BufferMap()
+            RaiseEvent WantMapSender(Me)
         End Sub
 #End Region
     End Class

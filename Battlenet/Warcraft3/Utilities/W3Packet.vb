@@ -244,9 +244,17 @@ Namespace Warcraft3
 #End Region
 
 #Region "Definition"
+        Public Shared Function rage2(Of T)(ByVal jar As IJar(Of T), ByVal handler As Func(Of T, ifuture)) As Testing.Handler(Of T)
+            Return New Testing.Handler(Of T)(jar, handler)
+        End Function
+        Private Shared Function rage(ByVal id As W3PacketId, ByVal ParamArray subJars() As IJar(Of Object)) As IJar(Of Dictionary(Of String, Object))
+            Return New TupleJar(id.ToString(), subJars)
+        End Function
         Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal id As W3PacketId, ByVal ParamArray subJars() As IJar(Of Object))
             jar.AddPackerParser(id, New TupleJar(id.ToString(), subJars).Weaken)
         End Sub
+        Public Shared ReadOnly PongJar As IJar(Of Dictionary(Of String, Object)) = rage(W3PacketId.Pong,
+                                                                                        New UInt32Jar("salt").Weaken)
         Private Shared Function MakeW3PacketJar() As ManualSwitchJar
             Dim jar = New ManualSwitchJar
 

@@ -9,7 +9,7 @@
 
 'Public Module MX
 '    '    Private Sub XXX()
-'    '        Dim archive = New Mpq.MpqArchive("C:\Program Files (x86)\Warcraft III\Maps\Test\Castle Fight v1.13b.mpq")
+'    '        Dim archive = New Mpq.Archive("C:\Program Files (x86)\Warcraft III\Maps\Test\Castle Fight v1.13b.mpq")
 '    '        Dim file = archive.OpenFile("war3map.w3i")
 '    '        Dim data(0 To CInt(file.Length) - 1) As Byte
 '    '        file.Read(data, 0, data.Length)
@@ -71,7 +71,7 @@
 '        End While
 '    End Sub
 '    Public Sub FixMap(ByVal path As String)
-'        Dim archive = New Mpq.MpqArchive(path)
+'        Dim archive = New Mpq.Archive(path)
 '        Dim j = If(archive.hashTable.contains("war3map.j"), "war3map.j", "scripts\war3map.j")
 '        Dim file = archive.OpenFile(j)
 '        Dim reader = New IO.StreamReader(file)

@@ -497,7 +497,7 @@ Public NotInheritable Class MainBot
 
         'Process prefixed commands
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
-        game.QueueCommandProcessText(player, BreakQuotedWords(commandText)).CallWhenValueReady(
+        game.QueueCommandProcessText(Me, player, BreakQuotedWords(commandText)).CallWhenValueReady(
             Sub(message, messageException)
                 Contract.Assume(player IsNot Nothing)
                 If messageException IsNot Nothing Then

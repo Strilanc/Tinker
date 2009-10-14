@@ -98,7 +98,7 @@ Public Class BnetClientControl
                             Dim settings = CType(stats("settings"), Warcraft3.W3MapSettings)
                             lstState.Items.Add(CStr(game("game name")))
                             lstState.Items.Add(CStr(stats("username")))
-                            lstState.Items.Add(Mpq.Common.GetFileNameSlash(settings.relativePath))
+                            lstState.Items.Add(settings.relativePath.Split("\"c).Last)
                         Next game
                 End Select
             End Sub

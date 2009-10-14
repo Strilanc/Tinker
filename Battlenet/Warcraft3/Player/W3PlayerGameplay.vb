@@ -27,8 +27,13 @@
     End Class
 
     Partial Public NotInheritable Class W3Player
+        Public Event ReceivedDropLagger(ByVal sender As W3Player)
+        Public Event ReceivedGameAction(ByVal sender As W3Player, ByVal action As W3GameAction)
+        Public Event ReceivedGameData(ByVal sender As W3Player, ByVal data As Byte())
+
         Private ReadOnly tickQueue As New Queue(Of TickRecord)
         Private totalTockTime As Integer
+        Private maxTockTime As Integer
 
         Public Sub GamePlayStart()
             loadscreenStop()
@@ -49,18 +54,18 @@
             Contract.Requires(record IsNot Nothing)
             If isFake Then Return
             tickQueue.Enqueue(record)
+            maxTockTime += record.length
             SendPacket(W3Packet.MakeTick(record.length, data))
         End Sub
 
 #Region "Networking"
         Private Sub ReceiveDropLagger(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
-            game.QueueDropLagger()
+            RaiseEvent ReceivedDropLagger(Me)
         End Sub
         Private Sub ReceiveAcceptHost(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
             SendPacket(W3Packet.MakeConfirmHost())
         End Sub
 
@@ -72,14 +77,13 @@
             Dim actions = CType(vals("actions"), IEnumerable(Of W3GameAction))
             Contract.Assume(actions IsNot Nothing)
             For Each action In actions
-                Contract.Assume(action IsNot Nothing)
-                game.QueueReceiveGameAction(Me, action)
+                RaiseEvent ReceivedGameAction(Me, action)
             Next action
-            game.QueueSendGameData(Me, packet.payload.Data.SubView(4).ToArray)
+            RaiseEvent ReceivedGameData(Me, packet.Payload.Data.SubView(4).ToArray)
         End Sub
         Private Sub ReceiveTock(ByVal packet As W3Packet)
             Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
+            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
             If tickQueue.Count <= 0 Then
                 logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageType.Problem)
                 Disconnect(True, W3PlayerLeaveType.Disconnect, "overticked")

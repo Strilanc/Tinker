@@ -16,7 +16,7 @@ Public Class PacketStreamTest
         p.WritePacket({0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
         m.Position = 0
         Assert.IsTrue(m.Length = 10)
-        Assert.IsTrue(m.ReadBytes(10).HasSameItemsAs({0, 1, 10, 0, 4, 5, 6, 7, 8, 9}))
+        Assert.IsTrue(m.ReadBytesExact(10).HasSameItemsAs({0, 1, 10, 0, 4, 5, 6, 7, 8, 9}))
     End Sub
     <TestMethod()>
     Public Sub WritePacketTest_Twice()
@@ -26,7 +26,7 @@ Public Class PacketStreamTest
         p.WritePacket({0, 0, 0, 0, &HFF})
         m.Position = 0
         Assert.IsTrue(m.Length = 15)
-        Assert.IsTrue(m.ReadBytes(15).HasSameItemsAs({0, 1, 10, 0, 4, 5, 6, 7, 8, 9, 0, 0, 5, 0, &HFF}))
+        Assert.IsTrue(m.ReadBytesExact(15).HasSameItemsAs({0, 1, 10, 0, 4, 5, 6, 7, 8, 9, 0, 0, 5, 0, &HFF}))
     End Sub
 
     <TestMethod()>

@@ -261,7 +261,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Cancel_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.Server.QueueKill().EvalOnSuccess(Function() "Cancelled")
+                Return target.QueueClose.EvalOnSuccess(Function() "Cancelled")
             End Function
         End Class
     End Class
@@ -269,19 +269,21 @@ Namespace Commands.Specializations
     Public NotInheritable Class InstanceAdminCommands
         Inherits CommandSet(Of W3Game)
 
-        Public Sub New()
-            AddCommand(New CommandBot)
+        Public Sub New(ByVal bot As MainBot)
+            AddCommand(New CommandBot(bot))
         End Sub
 
         Public NotInheritable Class CommandBot
             Inherits BaseCommand(Of W3Game)
-            Public Sub New()
+            Private ReadOnly bot As MainBot
+            Public Sub New(ByVal bot As MainBot)
                 MyBase.New(My.Resources.Command_Instance_Bot,
                            0, ArgumentLimitType.Free,
                            My.Resources.Command_Instance_Bot_Help)
+                Me.bot = bot
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.Server.parent.BotCommands.ProcessCommand(target.Server.parent, user, arguments)
+                Return bot.BotCommands.ProcessCommand(bot, user, arguments)
             End Function
         End Class
     End Class

@@ -211,7 +211,7 @@ Namespace Warcraft3
             Me.playableHeight = 256
             Me.playableWidth = 256
             Me.isMelee = True
-            Me.name = Mpq.Common.GetFileNameSlash(relativePath)
+            Me.name = relativePath.Split("\"c).Last
             Me._numPlayerSlots = slotCount
             Me._fileSize = fileSize
             Me._crc32 = fileChecksumCRC32.ToView
@@ -235,7 +235,7 @@ Namespace Warcraft3
                 Me._fileSize = CUInt(f.Length)
                 Me._crc32 = Bnet.Crypt.CRC32(f).Bytes().ToView
             End Using
-            Dim mpqa = New Mpq.MpqArchive(FullPath)
+            Dim mpqa = New MPQ.Archive(FullPath)
             Dim mpq_war3path = OpenWar3PatchArchive(wc3PatchMPQFolder)
             Me._contentChecksumSha1 = ComputeMapSha1Checksum(mpqa, mpq_war3path).ToView
             Me._contentChecksumXORO = CUInt(ComputeMapXoro(mpqa, mpq_war3path)).Bytes().ToView
@@ -268,18 +268,18 @@ Namespace Warcraft3
             End Using
         End Function
 
-        Private Function OpenWar3PatchArchive(ByVal war3PatchFolder As String) As Mpq.MpqArchive
-            Dim backupMPQA As Mpq.MpqArchive = Nothing
+        Private Function OpenWar3PatchArchive(ByVal war3PatchFolder As String) As MPQ.Archive
+            Dim backupMPQA As MPQ.Archive = Nothing
             Dim normal_path = war3PatchFolder + "War3Patch.mpq"
             Dim copy_path = war3PatchFolder + "HostBotTempCopyWar3Patch" + My.Settings.exeVersion + ".mpq"
             If IO.File.Exists(copy_path) Then
-                Return New Mpq.MpqArchive(copy_path)
+                Return New MPQ.Archive(copy_path)
             ElseIf IO.File.Exists(normal_path) Then
                 Try
-                    Return New Mpq.MpqArchive(normal_path)
+                    Return New MPQ.Archive(normal_path)
                 Catch e As IO.IOException
                     IO.File.Copy(normal_path, copy_path)
-                    Return New Mpq.MpqArchive(copy_path)
+                    Return New MPQ.Archive(copy_path)
                 End Try
             Else
                 Throw New IO.IOException("Couldn't find War3Patch.mpq")
@@ -287,8 +287,8 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
-        Private Function ComputeMapSha1Checksum(ByVal mapArchive As Mpq.MpqArchive,
-                                                ByVal war3PatchArchive As Mpq.MpqArchive) As Byte()
+        Private Function ComputeMapSha1Checksum(ByVal mapArchive As MPQ.Archive,
+                                                ByVal war3PatchArchive As MPQ.Archive) As Byte()
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
@@ -300,7 +300,7 @@ Namespace Warcraft3
                 Dim mpqToUse = If(mapArchive.hashTable.contains(filename),
                                   mapArchive,
                                   war3PatchArchive)
-                streams.Add(mpqToUse.OpenFile(filename))
+                streams.Add(mpqToUse.OpenFileByName(filename))
             Next filename
 
             'Magic value
@@ -319,7 +319,7 @@ Namespace Warcraft3
                 Dim filenameToUse = (From filename In fileset.Split("|"c)
                                      Where mapArchive.hashTable.contains(filename)).FirstOrDefault
                 If filenameToUse IsNot Nothing Then
-                    streams.Add(mapArchive.OpenFile(filenameToUse))
+                    streams.Add(mapArchive.OpenFileByName(filenameToUse))
                 End If
             Next fileset
 
@@ -351,8 +351,8 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
-        Private Function ComputeMapXoro(ByVal mapArchive As Mpq.MpqArchive,
-                                        ByVal war3PatchArchive As Mpq.MpqArchive) As ModInt32
+        Private Function ComputeMapXoro(ByVal mapArchive As MPQ.Archive,
+                                        ByVal war3PatchArchive As MPQ.Archive) As ModInt32
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
             Dim val As ModInt32 = 0
@@ -363,7 +363,7 @@ Namespace Warcraft3
                 Dim mpqToUse = If(mapArchive.hashTable.contains(filename),
                                   mapArchive,
                                   war3PatchArchive)
-                Using f = mpqToUse.OpenFile(filename)
+                Using f = mpqToUse.OpenFileByName(filename)
                     val = val Xor ComputeStreamXoro(f)
                 End Using
             Next filename
@@ -385,7 +385,7 @@ Namespace Warcraft3
                 Dim filenameToUse = (From filename In fileset.Split("|"c)
                                      Where mapArchive.hashTable.contains(filename)).FirstOrDefault
                 If filenameToUse IsNot Nothing Then
-                    Using f = mapArchive.OpenFile(filenameToUse)
+                    Using f = mapArchive.OpenFileByName(filenameToUse)
                         val = (val Xor ComputeStreamXoro(f)).ShiftRotateLeft(3)
                     End Using
                 End If
@@ -395,10 +395,10 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Finds a string in the war3map.wts file.</summary>
-        Public Shared Function GetMapString(ByVal mapArchive As Mpq.MpqArchive, ByVal key As String) As String
+        Public Shared Function GetMapString(ByVal mapArchive As MPQ.Archive, ByVal key As String) As String
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(key IsNot Nothing)
-            Using sr As New IO.StreamReader(New IO.BufferedStream(mapArchive.OpenFile("war3map.wts")))
+            Using sr As New IO.StreamReader(New IO.BufferedStream(mapArchive.OpenFileByName("war3map.wts")))
                 Do Until sr.EndOfStream
                     Dim curKey = sr.ReadLine()
                     If sr.ReadLine <> "{" Then Continue Do
@@ -420,9 +420,9 @@ Namespace Warcraft3
 
         '''<summary>Reads the map information from war3map.w3i</summary>
         '''<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
-        Public Sub ReadMapInfo(ByVal mapArchive As Mpq.MpqArchive)
+        Public Sub ReadMapInfo(ByVal mapArchive As MPQ.Archive)
             Contract.Requires(mapArchive IsNot Nothing)
-            Using br = New IO.BinaryReader(New IO.BufferedStream(mapArchive.OpenFile("war3map.w3i")))
+            Using br = New IO.BinaryReader(New IO.BufferedStream(mapArchive.OpenFileByName("war3map.w3i")))
                 Dim fileFormat = br.ReadInt32()
                 If fileFormat <> 18 And fileFormat <> 25 Then Throw New IO.IOException("Unrecognized war3map.w3i format.")
 
@@ -500,22 +500,22 @@ Namespace Warcraft3
 
                 Dim numSlots = br.ReadInt32()
                 For i = 1 To numSlots
-                    Dim slot = New W3Slot(Nothing, CByte(slots.Count + 1))
+                    Dim slot = New W3Slot(Nothing, CByte(Slots.Count + 1))
                     'color
                     slot.color = CType(br.ReadInt32(), W3Slot.PlayerColor)
                     If Not slot.color.EnumValueIsDefined Then Throw New IO.IOException("Unrecognized map slot color.")
                     'type
                     Select Case br.ReadInt32()
                         Case 1
-                            slot.contents = New W3SlotContentsOpen(slot)
-                            slots.Add(slot)
+                            slot.Contents = New W3SlotContentsOpen(slot)
+                            Slots.Add(slot)
                             _numPlayerSlots += 1
                         Case 2
-                            slot.contents = New W3SlotContentsComputer(slot, W3Slot.ComputerLevel.Normal)
-                            slots.Add(slot)
+                            slot.Contents = New W3SlotContentsComputer(slot, W3Slot.ComputerLevel.Normal)
+                            Slots.Add(slot)
                             _numPlayerSlots += 1
                         Case 3
-                            slot.contents = New W3SlotContentsClosed(slot)
+                            slot.Contents = New W3SlotContentsClosed(slot)
                         Case Else
                             Throw New IO.IOException("Unrecognized map slot type.")
                     End Select
@@ -543,9 +543,9 @@ Namespace Warcraft3
                     Dim playerMask = br.ReadUInt32()
                     For j = 0 To 11
                         If (playerMask And &H1) <> 0 Then
-                            For k = 0 To slots.Count - 1
-                                If slots(k).color = j Then
-                                    slots(k).team = CByte(i)
+                            For k = 0 To Slots.Count - 1
+                                If Slots(k).color = j Then
+                                    Slots(k).Team = CByte(i)
                                 End If
                             Next k
                         End If
