@@ -1,5 +1,3 @@
-Imports System.Numerics
-
 ''HostBot - Warcraft 3 game hosting bot
 ''Copyright (C) 2008 Craig Gidney
 ''
@@ -15,142 +13,128 @@ Imports System.Numerics
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
-''''Implements the various cryptographic checks and algorithms blizzard uses
-Namespace Bnet.Crypt
-    Public Module CryptCommon
+Imports System.Numerics
+
+Namespace Bnet
+    ''' <summary>
+    ''' Implements some of the cryptographic checks and algorithms blizzard uses for warcraft 3.
+    ''' </summary>
+    Public Module Authentication
+#Region "User Authentication: Password Proof"
         Private ReadOnly G As BigInteger = 47
         Private ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719")
-
-        '''<summary>Computes the crc32 value for a stream of data.</summary>
-        '''<param name="stream">The stream to read data from.</param>
-        '''<param name="length">The total amount of data to read. -1 means read entire stream.</param>
-        '''<param name="poly">The polynomial to be used, specified in a bit pattern. (Default is CRC-32-IEEE 802.3).</param>
-        '''<param name="polyAlreadyReversed">Indicates whether or not the bit pattern of the polynomial is already reversed.</param>
-        '''<returns>crc32 value</returns>
-        Public Function CRC32(ByVal stream As IO.Stream,
-                              Optional ByVal length As Long = -1,
-                              Optional ByVal poly As UInteger = &H4C11DB7,
-                              Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
-            Dim r = New IO.BinaryReader(stream)
-            Dim reg As UInteger
-
-            'Reverse the polynomial
-            If polyAlreadyReversed = False Then
-                Dim polyRev As UInteger = 0
-                For i = 0 To 31
-                    If ((poly >> i) And &H1) <> 0 Then
-                        polyRev = polyRev Or (CUInt(&H1) << (31 - i))
-                    End If
-                Next i
-                poly = polyRev
-            End If
-
-            'Precompute the combined XOR masks for each byte
-            Dim xorTable(0 To 255) As UInteger
-            For i = 0 To 255
-                reg = CUInt(i)
-                For j = 0 To 7
-                    If (reg And CUInt(&H1)) <> 0 Then
-                        reg = (reg >> 1) Xor poly
-                    Else
-                        reg >>= 1
-                    End If
-                Next j
-                xorTable(i) = reg
-            Next i
-
-            'Direct Table Algorithm
-            reg = Not 0UI
-            If length = -1 Then length = stream.Length - stream.Position
-            For i As Long = 0 To length - 1
-                reg = (reg >> 8) Xor xorTable(r.ReadByte() Xor CByte(reg And &HFF))
-            Next i
-
-            Return Not reg
-        End Function
 
         Public Function GeneratePublicPrivateKeyPair(ByVal secureRandomNumberGenerator As System.Security.Cryptography.RandomNumberGenerator) As KeyPair
             Contract.Requires(secureRandomNumberGenerator IsNot Nothing)
             Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
 
-            Dim privateKeyBytes = N.ToUnsignedByteArray
-            secureRandomNumberGenerator.GetBytes(privateKeyBytes)
-            Dim privateKey = privateKeyBytes.ToUnsignedBigInteger Mod N
-            If privateKey = 0 Then privateKey = 1
-            privateKeyBytes = privateKey.ToUnsignedByteArray
+            'Generate random data for private key
+            Contract.Assume(N >= 0)
+            Dim privateKeyDataBuffer = N.ToUnsignedByteArray
+            secureRandomNumberGenerator.GetBytes(privateKeyDataBuffer)
 
-            Dim publicKey = BigInteger.ModPow(G, privateKey, N)
-            Dim publicKeyBytes = publicKey.ToUnsignedByteArray
+            'Compute key-pair
+            Dim privateKeyValue = (privateKeyDataBuffer.ToUnsignedBigInteger Mod (N - 1)) + 1
+            Dim publicKeyValue = BigInteger.ModPow(G, privateKeyValue, N)
 
-            ReDim Preserve privateKeyBytes(0 To 31)
-            ReDim Preserve publicKeyBytes(0 To 31)
-            Contract.Assume(privateKeyBytes IsNot Nothing) 'remove this once contract static verifier understands redim preserve
-            Contract.Assume(publicKeyBytes IsNot Nothing) 'remove this once contract static verifier understands redim preserve
+            'Convert to bytes
+            Contract.Assume(privateKeyValue >= 0)
+            Contract.Assume(publicKeyValue >= 0)
+            Dim privateKeyBytes = privateKeyValue.ToUnsignedByteArray.PaddedTo(32)
+            Dim publicKeyBytes = publicKeyValue.ToUnsignedByteArray.PaddedTo(32)
 
             Return New KeyPair(publicKeyBytes.ToView, privateKeyBytes.ToView)
         End Function
 
+        Private ReadOnly Property FixedSalt() As Byte()
+            Get
+                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
+
+                Contract.Assume(G >= 0)
+                Contract.Assume(N >= 0)
+                Dim hash1 = G.ToUnsignedByteArray.SHA1
+                Dim hash2 = N.ToUnsignedByteArray.SHA1
+                Return (From i In Enumerable.Range(0, 20)
+                        Select hash1(i) Xor hash2(i)
+                        ).ToArray
+            End Get
+        End Property
+
+        <Pure()>
+        Private Function ComputeSharedSecret(ByVal userName As String,
+                                             ByVal password As String,
+                                             ByVal accountSalt As ViewableList(Of Byte),
+                                             ByVal serverPublicKeyBytes As ViewableList(Of Byte),
+                                             ByVal clientPrivateKey As BigInteger) As Byte()
+            Contract.Requires(userName IsNot Nothing)
+            Contract.Requires(password IsNot Nothing)
+            Contract.Requires(clientPrivateKey >= 0)
+            Contract.Requires(serverPublicKeyBytes IsNot Nothing)
+            Contract.Requires(accountSalt IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Byte())().Length = 40)
+
+            Dim userIdAuthData = "{0}:{1}".Frmt(userName.ToUpperInvariant, password.ToUpperInvariant).ToAscBytes
+            Dim passwordKey = Concat(accountSalt.ToArray, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
+            Dim verifier = BigInteger.ModPow(G, passwordKey, N)
+            Dim serverKey = serverPublicKeyBytes.SHA1.SubArray(0, 4).Reverse.ToUnsignedBigInteger
+
+            'Shared value
+            Dim serverPublicKey = serverPublicKeyBytes.ToUnsignedBigInteger
+            Dim sharedValue = BigInteger.ModPow(serverPublicKey - verifier + N, clientPrivateKey + serverKey * passwordKey, N)
+            Contract.Assume(sharedValue >= 0)
+
+            'Hash odd and even bytes of the shared value
+            Dim sharedValueBytes = sharedValue.ToUnsignedByteArray.PaddedTo(32)
+            Dim sharedHashEven = (From i In Enumerable.Range(0, 16)
+                                  Select sharedValueBytes(i * 2)
+                                  ).SHA1
+            Dim sharedHashOdd = (From i In Enumerable.Range(0, 16)
+                                 Select sharedValueBytes(i * 2 + 1)
+                                 ).SHA1
+
+            'Interleave odd and even hashes
+            Return (From i In Enumerable.Range(0, 40)
+                    Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))
+                    ).ToArray
+        End Function
+
+        <Pure()>
         Public Function GenerateClientServerPasswordProofs(ByVal userName As String,
                                                            ByVal password As String,
                                                            ByVal accountSalt As ViewableList(Of Byte),
-                                                           ByVal serverOffsetPublicKeyBytes As ViewableList(Of Byte),
-                                                           ByVal clientPrivateKeyBytes As ViewableList(Of Byte),
+                                                           ByVal serverPublicKeyBytes As ViewableList(Of Byte),
+                                                           ByVal clientPrivateKey As BigInteger,
                                                            ByVal clientPublicKeyBytes As ViewableList(Of Byte)) As KeyPair
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
-            Contract.Requires(clientPrivateKeyBytes IsNot Nothing)
+            Contract.Requires(clientPrivateKey >= 0)
             Contract.Requires(clientPublicKeyBytes IsNot Nothing)
-            Contract.Requires(serverOffsetPublicKeyBytes IsNot Nothing)
+            Contract.Requires(serverPublicKeyBytes IsNot Nothing)
             Contract.Requires(accountSalt IsNot Nothing)
             Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
 
-            Dim userIdAuthData = System.Text.ASCIIEncoding.ASCII.GetBytes("{0}:{1}".Frmt(userName.ToUpperInvariant, password.ToUpperInvariant))
-            Dim serverOffsetPublicKey = serverOffsetPublicKeyBytes.ToUnsignedBigInteger
-            Dim clientPrivateKey = clientPrivateKeyBytes.ToUnsignedBigInteger
-            Dim clientPublicKey = clientPublicKeyBytes.ToUnsignedBigInteger
-
-            'Password private key
-            Dim x = Concat(accountSalt.ToArray, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
-
-            'Verifier
-            Dim v = BigInteger.ModPow(G, x, N)
-            Dim u = serverOffsetPublicKeyBytes.ToArray.SHA1.SubArray(0, 4).Reverse.ToUnsignedBigInteger
-
-            'Shared secret
-            Dim sharedSecretData = BigInteger.ModPow((N + serverOffsetPublicKey - v) Mod N, clientPrivateKey + u * x, N).ToUnsignedByteArray
-            ReDim Preserve sharedSecretData(0 To 32 - 1)
-            Contract.Assume(sharedSecretData IsNot Nothing)
-            'Hash odd and even elements
-            Dim sharedHashEven = (From i In Enumerable.Range(0, 16)
-                                  Select sharedSecretData(i * 2)).ToArray.SHA1
-            Dim sharedHashOdd = (From i In Enumerable.Range(0, 16)
-                                 Select sharedSecretData(i * 2 + 1)).ToArray.SHA1
-            'Interleave odd and even hashes
-            Dim sharedHash = (From i In Enumerable.Range(0, 40)
-                              Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))).ToArray
-
-            'Fixed salt
-            Dim fixed_G = G.ToUnsignedByteArray.SHA1
-            Dim fixed_N = N.ToUnsignedByteArray.SHA1
-            Dim fixed_salt(0 To 20 - 1) As Byte
-            For i = 0 To 20 - 1
-                fixed_salt(i) = fixed_G(i) Xor fixed_N(i)
-            Next i
-
-            'Proofs
-            Dim clientProof = Concat(fixed_salt,
-                                     userName.ToAscBytes.SHA1,
+            Dim sharedSecret = ComputeSharedSecret(userName,
+                                                   password,
+                                                   accountSalt,
+                                                   serverPublicKeyBytes,
+                                                   clientPrivateKey)
+            Dim clientProof = Concat(FixedSalt,
+                                     userName.ToUpperInvariant.ToAscBytes.SHA1,
                                      accountSalt.ToArray,
                                      clientPublicKeyBytes.ToArray,
-                                     serverOffsetPublicKeyBytes.ToArray,
-                                     sharedHash).SHA1
+                                     serverPublicKeyBytes.ToArray,
+                                     sharedSecret).SHA1
             Dim serverProof = Concat(clientPublicKeyBytes.ToArray,
                                      clientProof,
-                                     sharedHash).SHA1
+                                     sharedSecret).SHA1
+
             Return New KeyPair(clientProof.ToView, serverProof.ToView)
         End Function
+#End Region
 
-#Region "MPQ Revision Check"
+#Region "Program Authentication: Revision Check"
         Private Structure RevisionCheckOperation
             Public ReadOnly leftOperand As Char
             Public ReadOnly rightOperand As Char
@@ -171,9 +155,9 @@ Namespace Bnet.Crypt
             Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))().ContainsKey("S"c))
 
             Dim variables = New Dictionary(Of Char, ModInt32)
-            variables("S"c) = 0
             variables("A"c) = 0
             variables("C"c) = 0
+            variables("S"c) = 0
             Do
                 If Not lines.MoveNext Then
                     Throw New ArgumentException("Instructions did not include any operations.")
@@ -189,8 +173,6 @@ Namespace Bnet.Crypt
                 variables(lines.Current(0)) = u
             Loop
             Contract.Assume(variables.ContainsKey("A"c))
-            Contract.Assume(variables.ContainsKey("C"c))
-            Contract.Assume(variables.ContainsKey("S"c))
             Return variables
         End Function
         Private Function ParseRevisionCheckOperations(ByVal lines As IEnumerator(Of String),
@@ -258,6 +240,7 @@ Namespace Bnet.Crypt
                 variables(op.destinationOperand) = vD
             Next op
         End Sub
+
         Public Function GenerateRevisionCheck(ByVal folder As String,
                                               ByVal indexString As String,
                                               ByVal instructions As String) As UInteger
@@ -305,31 +288,20 @@ Namespace Bnet.Crypt
             'Parse Files
             For Each filename In {"War3.exe", "Storm.dll", "Game.dll"}
                 'Open file
-                Dim f = New IO.FileStream(folder + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
-                Dim n = CInt(f.Length).ModCeiling(1024)
-                Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({f, tail_stream})))
+                Using f = New IO.FileStream(folder + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+                    Dim n = CInt(f.Length).ModCeiling(1024)
+                    Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({f, tail_stream})))
 
-                'Apply operations using each dword in stream
-                For repeat = 0 To n - 1 Step 4
-                    RevisionCheckApplyOperation(br.ReadUInt32(), variables, operations)
-                Next repeat
+                    'Apply operations using each dword in stream
+                    For repeat = 0 To n - 1 Step 4
+                        RevisionCheckApplyOperation(br.ReadUInt32(), variables, operations)
+                    Next repeat
+                End Using
             Next filename
 
             'Return value of Variable C
             Return variables("C"c)
         End Function
 #End Region
-
-        <Extension()>
-        Public Function SHA1(ByVal data() As Byte) As Byte()
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
-            Using sha = New Security.Cryptography.SHA1Managed()
-                Dim hash = sha.ComputeHash(data)
-                Contract.Assume(hash IsNot Nothing)
-                Return hash
-            End Using
-        End Function
     End Module
 End Namespace

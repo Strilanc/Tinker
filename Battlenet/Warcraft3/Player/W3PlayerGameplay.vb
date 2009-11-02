@@ -36,18 +36,9 @@
         Private maxTockTime As Integer
 
         Public Sub GamePlayStart()
-            loadscreenStop()
             state = W3PlayerState.Playing
-            packetHandlers(W3PacketId.AcceptHost) = AddressOf ReceiveAcceptHost
-            packetHandlers(W3PacketId.GameAction) = AddressOf ReceiveGameAction
-            packetHandlers(W3PacketId.Tock) = AddressOf ReceiveTock
-            packetHandlers(W3PacketId.ClientDropLagger) = AddressOf ReceiveDropLagger
-        End Sub
-        Public Sub GamePlayStop()
-            packetHandlers.Remove(W3PacketId.AcceptHost)
-            packetHandlers.Remove(W3PacketId.GameAction)
-            packetHandlers.Remove(W3PacketId.Tock)
-            packetHandlers.Remove(W3PacketId.ClientDropLagger)
+            AddQueuePacketHandler(W3Packet.Jars.Tock, AddressOf ReceiveTock)
+            AddQueuePacketHandler(W3Packet.Jars.ClientDropLagger, AddressOf ReceiveDropLagger)
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord, ByVal data As Byte())
@@ -59,31 +50,23 @@
         End Sub
 
 #Region "Networking"
-        Private Sub ReceiveDropLagger(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
+        Private Sub ReceiveDropLagger(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             RaiseEvent ReceivedDropLagger(Me)
         End Sub
-        Private Sub ReceiveAcceptHost(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
-            SendPacket(W3Packet.MakeConfirmHost())
-        End Sub
 
-        Private Sub ReceiveGameAction(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
-
-            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
-            Contract.Assume(vals IsNot Nothing)
+        Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+            Contract.Requires(Pickle IsNot Nothing)
+            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
             Dim actions = CType(vals("actions"), IEnumerable(Of W3GameAction))
             Contract.Assume(actions IsNot Nothing)
             For Each action In actions
                 RaiseEvent ReceivedGameAction(Me, action)
             Next action
-            RaiseEvent ReceivedGameData(Me, packet.Payload.Data.SubView(4).ToArray)
+            RaiseEvent ReceivedGameData(Me, pickle.Data.ToArray)
         End Sub
-        Private Sub ReceiveTock(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+        Private Sub ReceiveTock(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+            Contract.Requires(Pickle IsNot Nothing)
+            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
             If tickQueue.Count <= 0 Then
                 logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageType.Problem)
                 Disconnect(True, W3PlayerLeaveType.Disconnect, "overticked")
@@ -91,7 +74,9 @@
             End If
 
             Dim record = tickQueue.Dequeue()
+            Contract.Assume(record IsNot Nothing)
             totalTockTime += record.length
+            Contract.Assume(totalTockTime >= 0)
 
             'Dim checksum = CType(vals("game state checksum"), Byte())
             'If synced Then
@@ -122,10 +107,6 @@
         Public Function QueueStartPlaying() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf GamePlayStart)
-        End Function
-        Public Function QueueStopPlaying() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(AddressOf GamePlayStop)
         End Function
 #End Region
     End Class

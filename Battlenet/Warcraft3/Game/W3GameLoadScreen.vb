@@ -25,7 +25,7 @@
             'Ready any lingering fake players
             For Each player In (From p In players Where p.isFake _
                                                   AndAlso IsPlayerVisible(p) _
-                                                  AndAlso FindPlayerSlot(p).Contents.Moveable)
+                                                  AndAlso TryFindPlayerSlot(p).Contents.Moveable)
                 Contract.Assume(player IsNot Nothing)
                 readyPlayers.Add(player)
                 unreadyPlayers.Remove(player)
@@ -80,7 +80,7 @@
                 readyPlayers.Add(sendingPlayer)
                 unreadyPlayers.Remove(sendingPlayer)
 
-                Dim slot = FindPlayerSlot(sendingPlayer)
+                Dim slot = TryFindPlayerSlot(sendingPlayer)
                 Contract.Assume(slot IsNot Nothing)
                 If (From x In slot.Contents.EnumPlayers Where Not (x.Ready Or x.isFake)).None Then
                     visibleReadiedPlayer = slot.Contents.EnumPlayers.First
@@ -96,6 +96,7 @@
 
             If settings.loadInGame Then
                 For Each player In players
+                    Contract.Assume(player IsNot Nothing)
                     If IsPlayerVisible(player) Then
                         sendingPlayer.QueueSendPacket(W3Packet.MakeOtherPlayerReady(player))
                     End If
@@ -108,6 +109,7 @@
                     SendMessageTo("{0} players still loading.".Frmt(unreadyPlayers.Count), sendingPlayer)
                 End If
                 For Each player In readyPlayers
+                    Contract.Assume(player IsNot Nothing)
                     If player IsNot sendingPlayer Then
                         SendMessageTo("{0} is ready.".Frmt(sendingPlayer.name), player)
                         If visibleReadiedPlayer IsNot Nothing Then

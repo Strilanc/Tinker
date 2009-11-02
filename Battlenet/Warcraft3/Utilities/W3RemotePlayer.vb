@@ -134,8 +134,8 @@ Namespace Warcraft3
             Me._socket = socket
             If socket Is Nothing Then Return
             FutureIterateExcept(AddressOf socket.FutureReadPacket,
-                Sub(packet)
-                    RaiseEvent ReceivedPacket(Me, packet)
+                Sub(packetData)
+                    RaiseEvent ReceivedPacket(Me, W3Packet.FromData(CType(packetData(1), W3PacketId), packetData.SubView(4)))
                 End Sub)
         End Sub
 

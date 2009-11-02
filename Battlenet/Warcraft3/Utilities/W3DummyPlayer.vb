@@ -66,8 +66,9 @@ Namespace Warcraft3
             tcp.Connect(hostName, port)
             socket = New W3Socket(New PacketSocket(tcp, 60.Seconds, Me.logger))
 
-            FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packet) ref.QueueAction(
+            FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packetData) ref.QueueAction(
                 Sub()
+                    Dim packet = W3Packet.FromData(CType(packetData(1), W3PacketId), packetData.SubView(4))
                     Dim id = packet.id
                     Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                     Contract.Assume(vals IsNot Nothing)
@@ -79,8 +80,8 @@ Namespace Warcraft3
                                 If mode = DummyPlayerMode.DownloadMap Then
                                     dl = New W3MapDownload(CStr(vals("path")),
                                                            CUInt(vals("size")),
-                                                           CType(vals("crc32"), ViewableList(Of Byte)),
-                                                           CType(vals("xoro checksum"), ViewableList(Of Byte)),
+                                                           CUInt(vals("crc32")),
+                                                           CUInt(vals("xoro checksum")),
                                                            CType(vals("sha1 checksum"), ViewableList(Of Byte)))
                                     socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, 0))
                                 Else

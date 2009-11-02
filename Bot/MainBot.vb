@@ -330,21 +330,23 @@ Public NotInheritable Class MainBot
                                     Optional ByVal remoteHost As String = "localhost",
                                     Optional ByVal listenPort As UShort = 0) As IFuture
         Dim map = New W3Map("Maps\",
-                            "AdminGame.w3x",
+                            "Maps\AdminGame.w3x",
                             filesize:=1,
-                            fileChecksumCRC32:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
-                            contentChecksumSHA1:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
-                            contentChecksumXORO:=(From b In Enumerable.Range(0, 4) Select CByte(b)).ToArray(),
+                            fileChecksumCRC32:=&H12345678UI,
+                            mapChecksumSHA1:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
+                            mapChecksumXORO:=&H2357BDUI,
                             slotCount:=2)
+        Contract.Assume(map.Slots(1) IsNot Nothing)
         map.slots(1).contents = New W3SlotContentsComputer(map.slots(1), W3Slot.ComputerLevel.Normal)
-        Dim header = New W3GameHeader("Admin Game",
-                                      My.Resources.ProgramName,
-                                      New W3MapSettings(Nothing, map),
+        Dim header = New W3GameDescription("Admin Game",
+                                      New W3GameStats(map, My.Resources.ProgramName, New String() {}),
                                       0,
                                       0,
                                       0,
                                       options:=New String() {"-permanent"},
-                                      playerSlotCount:=map.NumPlayerSlots)
+                                      playerSlotCount:=map.NumPlayerSlots,
+                                      gameType:=map.GameType,
+                                      state:=0)
         Dim settings = New ServerSettings(map:=map,
                                           header:=header,
                                           allowUpload:=False,
@@ -483,10 +485,8 @@ Public NotInheritable Class MainBot
 
         Dim prefix = My.Settings.commandPrefix
         Contract.Assume(prefix IsNot Nothing)
-        If text.Substring(0, prefix.Length) <> prefix Then
-            If text.ToUpperInvariant <> "?TRIGGER" Then
-                Return
-            End If
+        If Not text.StartsWith(prefix) AndAlso text.ToUpperInvariant <> "?TRIGGER" Then
+            Return
         End If
 
         'Process ?trigger command
@@ -634,15 +634,33 @@ Public NotInheritable Class MainBot
 End Class
 
 Public NotInheritable Class PortPool
-    Private ReadOnly InPorts As New HashSet(Of UShort)
-    Private ReadOnly OutPorts As New HashSet(Of UShort)
-    Private ReadOnly PortPool As New HashSet(Of UShort)
+    Private ReadOnly _inPorts As New HashSet(Of UShort)
+    Private ReadOnly _outPorts As New HashSet(Of UShort)
+    Private ReadOnly _portPool As New HashSet(Of UShort)
     Private ReadOnly lock As New Object()
-
+    Private ReadOnly Property PortPool As HashSet(Of UShort)
+        Get
+            Contract.Ensures(Contract.Result(Of HashSet(Of UShort))() IsNot Nothing)
+            Return _portPool
+        End Get
+    End Property
+    Private ReadOnly Property InPorts As HashSet(Of UShort)
+        Get
+            Contract.Ensures(Contract.Result(Of HashSet(Of UShort))() IsNot Nothing)
+            Return _inPorts
+        End Get
+    End Property
+    Private ReadOnly Property OutPorts As HashSet(Of UShort)
+        Get
+            Contract.Ensures(Contract.Result(Of HashSet(Of UShort))() IsNot Nothing)
+            Return _outPorts
+        End Get
+    End Property
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(InPorts IsNot Nothing)
-        Contract.Invariant(OutPorts IsNot Nothing)
-        Contract.Invariant(PortPool IsNot Nothing)
+        Contract.Invariant(_inPorts IsNot Nothing)
+        Contract.Invariant(_outPorts IsNot Nothing)
+        Contract.Invariant(_portPool IsNot Nothing)
+        Contract.Invariant(lock IsNot Nothing)
     End Sub
 
     Public Function EnumPorts() As IEnumerable(Of UShort)
@@ -697,15 +715,11 @@ Public NotInheritable Class PortPool
     End Function
 
     Public Function TryAcquireAnyPort() As PortHandle
-        Contract.Ensures(Contract.Result(Of PortHandle)() Is Nothing OrElse Not InPorts.Contains(Contract.Result(Of PortHandle).Port))
-        Contract.Ensures(Contract.Result(Of PortHandle)() Is Nothing OrElse OutPorts.Contains(Contract.Result(Of PortHandle).Port))
         SyncLock lock
             If InPorts.Count = 0 Then Return Nothing
             Dim port = New PortHandle(Me, InPorts.First)
             InPorts.Remove(port.Port)
             OutPorts.Add(port.Port)
-            Contract.Assume(Not InPorts.Contains(port.Port))
-            Contract.Assume(OutPorts.Contains(port.Port))
             Return port
         End SyncLock
     End Function
@@ -715,7 +729,12 @@ Public NotInheritable Class PortPool
         Private ReadOnly pool As PortPool
         Private ReadOnly _port As UShort
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(pool IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal pool As PortPool, ByVal port As UShort)
+            Contract.Requires(pool IsNot Nothing)
             Me.pool = pool
             Me._port = port
         End Sub

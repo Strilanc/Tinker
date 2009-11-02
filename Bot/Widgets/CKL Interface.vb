@@ -43,6 +43,9 @@ Namespace CKL
         Public Sub New(ByVal name As String,
                        ByVal cdKeyROC As String,
                        ByVal cdKeyTFT As String)
+            Contract.Requires(name IsNot Nothing)
+            Contract.Requires(cdKeyROC IsNot Nothing)
+            Contract.Requires(cdKeyTFT IsNot Nothing)
             Me._name = name
             Me._cdKeyROC = cdKeyROC
             Me._cdKeyTFT = cdKeyTFT
@@ -81,21 +84,23 @@ Namespace CKL
         Public Sub New(ByVal name As String,
                        ByVal listenPort As PortPool.PortHandle)
             MyBase.New(name, listenPort)
-            AddHandler KeyAdded, AddressOf c_KeyAdded
-            AddHandler KeyRemoved, AddressOf c_KeyRemoved
+            AddHandler KeyAdded, AddressOf OnKeyAdded
+            AddHandler KeyRemoved, AddressOf OnKeyRemoved
         End Sub
         Public Sub New(ByVal name As String,
                        ByVal listenPort As UShort)
             MyBase.New(name, listenPort)
-            AddHandler KeyAdded, AddressOf c_KeyAdded
-            AddHandler KeyRemoved, AddressOf c_KeyRemoved
+            AddHandler KeyAdded, AddressOf OnKeyAdded
+            AddHandler KeyRemoved, AddressOf OnKeyRemoved
         End Sub
 
-        Private Sub c_KeyAdded(ByVal sender As CKLServer, ByVal key As CKLKey)
-            RaiseEvent AddStateString(key.name, False)
+        Private Sub OnKeyAdded(ByVal sender As CKLServer, ByVal key As CKLKey)
+            Contract.Requires(key IsNot Nothing)
+            RaiseEvent AddStateString(key.Name, False)
         End Sub
-        Private Sub c_KeyRemoved(ByVal sender As CKLServer, ByVal key As CKLKey)
-            RaiseEvent RemoveStateString(key.name)
+        Private Sub OnKeyRemoved(ByVal sender As CKLServer, ByVal key As CKLKey)
+            Contract.Requires(key IsNot Nothing)
+            RaiseEvent RemoveStateString(key.Name)
         End Sub
 
         Private ReadOnly Property _Logger() As Logger Implements IBotWidget.Logger

@@ -66,7 +66,7 @@
     <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
     <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
     <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
-    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
+    <CodeContractsNonNullObligations>False</CodeContractsNonNullObligations>
     <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
     <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
     <CodeContractsLibPaths>
@@ -85,6 +85,7 @@
     <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
     <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
     <CodeContractsRedundantAssumptions>True</CodeContractsRedundantAssumptions>
+    <CodeContractsReferenceAssembly>%28none%29</CodeContractsReferenceAssembly>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -136,6 +137,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -163,9 +165,12 @@
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
     <Compile Include="Battlenet\CDKey.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameStatsJar.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\KeyedEvent.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\Pinger.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3GameAction.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameHeader.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameDescription.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3Relay.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3RemotePlayer.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3MapDownload.vb" />
     <Compile Include="Battlenet\Warcraft3\Game\W3GameLoadScreen.vb" />
@@ -178,12 +183,16 @@
     <Compile Include="Battlenet\Warcraft3\Server\W3ServerDoor.vb" />
     <Compile Include="Battlenet\Warcraft3\Server\W3ServerInterface.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3ConnectionAccepter.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3MapSettings.vb" />
+    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameStats.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Slot.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\W3Socket.vb" />
     <Compile Include="BNLS\WardenClient.vb" />
     <Compile Include="BNLS\WardenPacket.vb" />
     <Compile Include="Bot\Commands\CKL Commands.vb" />
+    <Compile Include="Library\Commands\CommandSet.vb" />
+    <Compile Include="Library\Commands\BaseCommand.vb" />
+    <Compile Include="Library\Commands\CommandArguments.vb" />
+    <Compile Include="Library\Commands\HelpCommand.vb" />
     <Compile Include="Bot\Commands\Lan Commands.vb" />
     <Compile Include="Bot\Widgets\CKL Client.vb" />
     <Compile Include="Bot\Widgets\CKL Interface.vb" />
@@ -202,7 +211,7 @@
     <Compile Include="Battlenet\Warcraft3\Utilities\W3DummyPlayer.vb" />
     <Compile Include="Battlenet\Warcraft3\W3LanAdvertiser.vb" />
     <Compile Include="Battlenet\Warcraft3\Utilities\TransferScheduler.vb" />
-    <Compile Include="Bot\Commands\Base Commands.vb" />
+    <Compile Include="Library\Commands\ICommand.vb" />
     <Compile Include="Bot\Commands\Bot Commands.vb" />
     <Compile Include="Bot\Commands\Client Commands.vb" />
     <Compile Include="Bot\Commands\Game Commands.vb" />
@@ -257,7 +266,7 @@
     </Compile>
     <Compile Include="Bot\MainBot.vb" />
     <Compile Include="Battlenet\BnetClient.vb" />
-    <Compile Include="Battlenet\BnetCrypt.vb" />
+    <Compile Include="Battlenet\BnetAuthentication.vb" />
     <Compile Include="Battlenet\BnetSocket.vb" />
     <Compile Include="Interface\W3GameControl.Designer.vb">
       <DependentUpon>W3GameControl.vb</DependentUpon>
@@ -299,7 +308,6 @@
     <Compile Include="Library\Future Common.vb" />
     <Compile Include="Test\Test.vb" />
     <Compile Include="Bot\Widgets\Hookable.vb" />
-    <Compile Include="Test\W3PacketHandler.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Interface\BotControl.resx">
@@ -362,6 +370,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
       <Visible>False</Visible>
       <ProductName>.NET Framework 2.0 %28x86%29</ProductName>

@@ -1,10 +1,29 @@
 Public NotInheritable Class BotUser
     Private ReadOnly _name As String
-    Private settingMap As New Dictionary(Of String, String)
-    Private permissionMap As New Dictionary(Of String, UInteger)
+    Private _settingMap As New Dictionary(Of String, String)
+    Private _permissionMap As New Dictionary(Of String, UInteger)
     Private Const MAX_PERMISSION_VALUE As UInteger = 10
     Private Const MIN_PERMISSION_VALUE As UInteger = 0
     Private Const SEPARATION_CHAR As Char = ";"c
+    Private ReadOnly Property PermissionMap As Dictionary(Of String, UInteger)
+        Get
+            Contract.Ensures(Contract.Result(Of Dictionary(Of String, UInteger))() IsNot Nothing)
+            Return _permissionMap
+        End Get
+    End Property
+    Private ReadOnly Property SettingMap As Dictionary(Of String, String)
+        Get
+            Contract.Ensures(Contract.Result(Of Dictionary(Of String, String))() IsNot Nothing)
+            Return _settingMap
+        End Get
+    End Property
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(_name IsNot Nothing)
+        Contract.Invariant(_settingMap IsNot Nothing)
+        Contract.Invariant(_permissionMap IsNot Nothing)
+    End Sub
+
     Public ReadOnly Property Name As String
         Get
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -12,14 +31,9 @@ Public NotInheritable Class BotUser
         End Get
     End Property
 
-    <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(Name IsNot Nothing)
-        Contract.Invariant(settingMap IsNot Nothing)
-        Contract.Invariant(permissionMap IsNot Nothing)
-    End Sub
-
-
     Public Shared Function Pack(ByVal value As String) As String
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         value = value.Replace("\", "\/")
         value = value.Replace(SEPARATION_CHAR, "\sep/")
         value = value.Replace(Environment.NewLine, "\n")
@@ -28,6 +42,8 @@ Public NotInheritable Class BotUser
         Return value
     End Function
     Public Shared Function Unpack(ByVal value As String) As String
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         value = value.Replace("\eq/", "=")
         value = value.Replace("\t", vbTab)
         value = value.Replace("\n", Environment.NewLine)
@@ -37,25 +53,25 @@ Public NotInheritable Class BotUser
     End Function
 
     Public Function PackPermissions() As String
-        Dim packedVals = ""
-        For Each key In permissionMap.Keys
-            If packedVals <> "" Then packedVals += SEPARATION_CHAR
-            packedVals += "{0}={1}".Frmt(Pack(key), permissionMap(key))
-        Next key
-        Return packedVals
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return (From pair In permissionMap
+                Select "{0}={1}".Frmt(Pack(pair.Key), pair.Value)
+                ).StringJoin(SEPARATION_CHAR)
     End Function
     Public Function PackSettings() As String
-        Dim packedVals As String = ""
-        For Each key In settingMap.Keys
-            If packedVals <> "" Then packedVals += SEPARATION_CHAR
-            packedVals += Pack(key) + "=" + Pack(settingMap(key))
-        Next key
-        Return packedVals
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return (From pair In settingMap
+                Select "{0}={1}".Frmt(Pack(pair.Key), Pack(pair.Value))
+                ).StringJoin(SEPARATION_CHAR)
     End Function
 
     Public Shared Function UnpackPermissions(ByVal packedPermissions As String) As Dictionary(Of String, UInteger)
+        Contract.Requires(packedPermissions IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Dictionary(Of String, UInteger))() IsNot Nothing)
+
         Dim permissionMap = New Dictionary(Of String, UInteger)
         For Each key In packedPermissions.Split(";"c)
+            Contract.Assume(key IsNot Nothing)
             Dim pair = key.Split("="c)
             If pair.Length <> 2 Then Continue For
             Dim value As UInteger
@@ -66,10 +82,15 @@ Public NotInheritable Class BotUser
         Return permissionMap
     End Function
     Public Shared Function UnpackSettings(ByVal packedSettings As String) As Dictionary(Of String, String)
+        Contract.Requires(packedSettings IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Dictionary(Of String, String))() IsNot Nothing)
+
         Dim settingMap As New Dictionary(Of String, String)
         For Each key In packedSettings.Split(";"c)
+            Contract.Assume(key IsNot Nothing)
             Dim pair = key.Split("="c)
             If pair.Length <> 2 Then Continue For
+            Contract.Assume(pair(1) IsNot Nothing)
             settingMap(Unpack(pair(0))) = Unpack(pair(1))
         Next key
         Return settingMap
@@ -78,6 +99,7 @@ Public NotInheritable Class BotUser
     Public Sub New(ByVal name As String,
                    Optional ByVal packedPermissions As String = Nothing,
                    Optional ByVal packedSettings As String = Nothing)
+        Contract.Requires(name IsNot Nothing)
         Me._name = name
         If packedPermissions IsNot Nothing Then
             UpdatePermissions(packedPermissions)
@@ -88,45 +110,56 @@ Public NotInheritable Class BotUser
     End Sub
 
     Public Sub UpdatePermissions(ByVal packedPermissions As String)
-        permissionMap = UnpackPermissions(packedPermissions)
+        Contract.Requires(packedPermissions IsNot Nothing)
+        _permissionMap = UnpackPermissions(packedPermissions)
     End Sub
     Public Sub UpdateSettings(ByVal packedSettings As String)
-        settingMap = UnpackSettings(packedSettings)
+        Contract.Requires(packedSettings IsNot Nothing)
+        _settingMap = UnpackSettings(packedSettings)
     End Sub
 
     Public Property Permission(ByVal key As String) As UInteger
         Get
+            Contract.Requires(key IsNot Nothing)
             If Not permissionMap.ContainsKey(key) Then Return 0
             Return permissionMap(key)
         End Get
         Set(ByVal value As UInteger)
+            Contract.Requires(key IsNot Nothing)
             permissionMap(key) = value
         End Set
     End Property
     Public Property Setting(ByVal key As String) As String
         Get
+            Contract.Requires(key IsNot Nothing)
             If Not settingMap.ContainsKey(key) Then Return Nothing
             Return settingMap(key)
         End Get
         Set(ByVal value As String)
+            Contract.Requires(key IsNot Nothing)
             settingMap(key) = value
         End Set
     End Property
 
-    Public Sub Save(ByVal bw As IO.BinaryWriter)
-        bw.Write(Name)
-        bw.Write(CUShort(settingMap.Keys.Count))
-        For Each key In settingMap.Keys
-            bw.Write(key)
-            bw.Write(settingMap(key))
-        Next key
-        bw.Write(CUShort(permissionMap.Keys.Count))
-        For Each key In permissionMap.Keys
-            bw.Write(key)
-            bw.Write(permissionMap(key))
-        Next key
+    Public Sub Save(ByVal writer As IO.BinaryWriter)
+        Contract.Requires(writer IsNot Nothing)
+        writer.Write(Name)
+        writer.Write(CUShort(settingMap.Keys.Count))
+        For Each pair In settingMap
+            Contract.Assume(pair.Key IsNot Nothing)
+            Contract.Assume(pair.Value IsNot Nothing)
+            writer.Write(pair.Key)
+            writer.Write(pair.Value)
+        Next pair
+        writer.Write(CUShort(permissionMap.Keys.Count))
+        For Each pair In permissionMap
+            Contract.Assume(pair.Key IsNot Nothing)
+            writer.Write(pair.Key)
+            writer.Write(pair.Value)
+        Next pair
     End Sub
     Public Sub New(ByVal reader As IO.BinaryReader)
+        Contract.Requires(reader IsNot Nothing)
         Me._name = reader.ReadString()
         For i = 1 To reader.ReadUInt16()
             settingMap(reader.ReadString()) = reader.ReadString()
@@ -137,22 +170,28 @@ Public NotInheritable Class BotUser
     End Sub
 
     Public Function Clone(Optional ByVal newName As String = Nothing) As BotUser
+        Contract.Ensures(Contract.Result(Of BotUser)() IsNot Nothing)
         If newName Is Nothing Then newName = Name
         Dim newUser As New BotUser(newName)
-        For Each key In settingMap.Keys
-            newUser.settingMap(key) = settingMap(key)
+        For Each key In SettingMap.Keys
+            Contract.Assume(key IsNot Nothing)
+            newUser.SettingMap(key) = SettingMap(key)
         Next key
-        For Each key In permissionMap.Keys
-            newUser.permissionMap(key) = permissionMap(key)
+        For Each key In PermissionMap.Keys
+            newUser.PermissionMap(key) = PermissionMap(key)
         Next key
         Return newUser
     End Function
 
     Public Shared Operator <(ByVal user1 As BotUser, ByVal user2 As BotUser) As Boolean
+        Contract.Requires(user1 IsNot Nothing)
+        Contract.Requires(user2 IsNot Nothing)
         If Not user1 <= user2 Then Return False
 
         For Each user As BotUser In New BotUser() {user1, user2}
-            For Each key As String In user.permissionMap.Keys
+            Contract.Assume(user IsNot Nothing)
+            For Each key In user.permissionMap.Keys
+                Contract.Assume(key IsNot Nothing)
                 If user1.Permission(key) < user2.Permission(key) Then Return True
             Next key
         Next user
@@ -160,11 +199,17 @@ Public NotInheritable Class BotUser
         Return False
     End Operator
     Public Shared Operator >(ByVal user1 As BotUser, ByVal user2 As BotUser) As Boolean
+        Contract.Requires(user1 IsNot Nothing)
+        Contract.Requires(user2 IsNot Nothing)
         Return user2 < user1
     End Operator
     Public Shared Operator <=(ByVal user1 As BotUser, ByVal user2 As BotUser) As Boolean
+        Contract.Requires(user1 IsNot Nothing)
+        Contract.Requires(user2 IsNot Nothing)
         For Each user In {user1, user2}
+            Contract.Assume(user IsNot Nothing)
             For Each key In user.permissionMap.Keys
+                Contract.Assume(key IsNot Nothing)
                 If user1.Permission(key) > user2.Permission(key) Then Return False
             Next key
         Next user
@@ -172,15 +217,16 @@ Public NotInheritable Class BotUser
         Return True
     End Operator
     Public Shared Operator >=(ByVal user1 As BotUser, ByVal user2 As BotUser) As Boolean
+        Contract.Requires(user1 IsNot Nothing)
+        Contract.Requires(user2 IsNot Nothing)
         Return user2 <= user1
     End Operator
 
     Public Overrides Function ToString() As String
-        ToString = Name + ":"
-        For Each key In permissionMap.Keys
-            If permissionMap(key) = 0 Then Continue For
-            ToString += " {0}={1}".Frmt(key, permissionMap(key))
-        Next key
+        Return "{0}: {1}".Frmt(Name, (From pair In permissionMap
+                                      Where pair.Value <> 0
+                                      Select "{0}={1}".Frmt(pair.Key, pair.Value)
+                                      ).StringJoin(", "))
     End Function
 End Class
 
@@ -196,6 +242,7 @@ Public NotInheritable Class BotUserSet
 
     Public Function CreateNewUser(ByVal name As String) As BotUser
         Contract.Requires(name IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of BotUser)() IsNot Nothing)
         Dim key = name.ToUpperInvariant
         If userMap.ContainsKey(key) Then
             Throw New InvalidOperationException("User already exists")
@@ -254,6 +301,7 @@ Public NotInheritable Class BotUserSet
 
         'Remove those users
         For Each name In removedUsers
+            Contract.Assume(name IsNot Nothing)
             RemoveUser(name)
         Next name
     End Sub
@@ -291,6 +339,7 @@ Public NotInheritable Class BotUserSet
     Public Function Clone() As BotUserSet
         Dim newUserSet As New BotUserSet
         For Each user As BotUser In userMap.Values
+            Contract.Assume(user IsNot Nothing)
             newUserSet.AddUser(user.Clone())
         Next user
         Return newUserSet

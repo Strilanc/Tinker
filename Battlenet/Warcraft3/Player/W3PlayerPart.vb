@@ -2,32 +2,18 @@ Namespace Warcraft3
     Partial Public NotInheritable Class W3Player
         Public Event ReceivedNonGameAction(ByVal sender As W3Player, ByVal vals As Dictionary(Of String, Object))
 #Region "Networking"
-        Private Sub ReceiveNonGameAction(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+        Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+            Contract.Requires(Pickle IsNot Nothing)
+            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
             RaiseEvent ReceivedNonGameAction(Me, vals)
         End Sub
 
-        Private Sub IgnorePacket(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
+        Private Sub IgnorePacket(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
         End Sub
 
-        Private Sub ReceivePong(ByVal vals As Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
-            pinger.QueueReceivedPong(CUInt(vals("salt"))).CallWhenReady(
-                Sub(exception)
-                    If exception IsNot Nothing Then
-                        Disconnect(expected:=True,
-                                   leaveType:=W3PlayerLeaveType.Disconnect,
-                                   reason:=exception.Message)
-                    End If
-                End Sub)
-        End Sub
-
-        Private Sub ReceiveLeaving(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
-            Contract.Assume(vals IsNot Nothing)
+        Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+            Contract.Requires(Pickle IsNot Nothing)
+            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
             Dim leaveType = CType(vals("leave type"), W3PlayerLeaveType)
             Disconnect(True, leaveType, "manually leaving ({0})".Frmt(leaveType))
         End Sub
@@ -45,11 +31,12 @@ Namespace Warcraft3
         End Property
 
         Public Function Description() As IFuture(Of String)
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return GetLatencyDescription.Select(
                 Function(latencyDesc)
                     Dim base = name.Padded(20) +
                                "Host={0}".Frmt(CanHost()).Padded(12) +
-                               "{0}c".Frmt(numPeerConnections).Padded(5) +
+                               "{0}c".Frmt(_numPeerConnections).Padded(5) +
                                latencyDesc.Padded(12)
                     Select Case state
                         Case W3PlayerState.Lobby
@@ -65,14 +52,14 @@ Namespace Warcraft3
                                            Padded("DL={0}".Frmt(dl), 9) +
                                            "EB={0}".Frmt(rateDescription)
                                 End Function)
-                        Case W3PlayerState.Loading
-                            Return (base + "Ready={0}".Frmt(Ready)).Futurized
-                        Case W3PlayerState.Playing
-                            Return (base + "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime)).Futurized
-                        Case Else
-                            Throw state.MakeImpossibleValueException
-                    End Select
-                End Function
+                                        Case W3PlayerState.Loading
+                                            Return (base + "Ready={0}".Frmt(Ready)).Futurized
+                                        Case W3PlayerState.Playing
+                                            Return (base + "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime)).Futurized
+                                        Case Else
+                                            Throw state.MakeImpossibleValueException
+                                    End Select
+                                End Function
             ).Defuturized
         End Function
     End Class

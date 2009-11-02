@@ -6,43 +6,50 @@
         Private mapUploadPosition As Integer
         Private countdowns As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
-        Private ReadOnly packetHandlers As New Dictionary(Of W3PacketId, Action(Of W3Packet))
 
+        Private Sub AddQueuePacketHandler(ByVal jar As W3Packet.DefParser,
+                                          ByVal handler As Action(Of IPickle(Of Dictionary(Of String, Object))))
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            packetHandler.AddHandler(jar.id, jar, Function(data) ref.QueueAction(Sub() handler(data)))
+        End Sub
+        Private Sub AddQueuePacketHandler(Of T)(ByVal id As W3PacketId,
+                                                ByVal jar As IJar(Of T),
+                                                ByVal handler As Action(Of IPickle(Of T)))
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            packetHandler.AddHandler(id, jar, Function(data) ref.QueueAction(Sub() handler(data)))
+        End Sub
         Private Sub LobbyStart()
             state = W3PlayerState.Lobby
-            packetHandlers(W3PacketId.ClientMapInfo) = AddressOf ReceiveClientMapInfo
-            packetHandlers(W3PacketId.PeerConnectionInfo) = AddressOf ReceivePeerConnectionInfo
-        End Sub
-        Private Sub LobbyStop()
-            packetHandlers.Remove(W3PacketId.ClientMapInfo)
+            AddQueuePacketHandler(W3Packet.Jars.ClientMapInfo, AddressOf ReceiveClientMapInfo)
+            AddQueuePacketHandler(W3Packet.Jars.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
         End Sub
 
 #Region "Networking"
         Public Event GameStateUpdated1(ByVal sender As W3Player)
         Public Event GameStateUpdated2(ByVal sender As W3Player)
-        Private Sub ReceivePeerConnectionInfo(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
-            Contract.Assume(vals IsNot Nothing)
+        Private Sub ReceivePeerConnectionInfo(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+            Contract.Requires(pickle IsNot Nothing)
+            Dim vals = CType(pickle.Value, Dictionary(Of String, Object))
             Dim dword = CUInt(vals("player bitflags"))
             Dim flags = From i In enumerable.Range(0, 12)
                         Select connected = ((dword >> i) And &H1) <> 0,
                                pid = CByte(i + 1)
-            numPeerConnections = (From flag In flags Where flag.connected).Count
-            Contract.Assume(numPeerConnections >= 0)
-            Contract.Assume(numPeerConnections <= 12)
+            _numPeerConnections = (From flag In flags Where flag.connected).Count
+            Contract.Assume(_numPeerConnections <= 12)
 
             If state = W3PlayerState.Lobby Then
                 For Each flag In flags
+                    Contract.Assume(flag IsNot Nothing)
                     scheduler.SetLink(Me.Index, flag.pid, flag.connected).MarkAnyExceptionAsHandled()
                 Next flag
             End If
             RaiseEvent GameStateUpdated1(Me)
         End Sub
-        Private Sub ReceiveClientMapInfo(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
-            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
-            Contract.Assume(vals IsNot Nothing)
+        Private Sub ReceiveClientMapInfo(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+            Contract.Requires(pickle IsNot Nothing)
+            Dim vals = CType(pickle.Value, Dictionary(Of String, Object))
             Dim newMapDownloadPosition = CInt(CUInt(vals("total downloaded")))
             Dim delta = newMapDownloadPosition - mapDownloadPosition
             If delta < 0 Then
@@ -72,7 +79,9 @@
                 logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
                 scheduler.SetNotTransfering(Index, completed:=True).MarkAnyExceptionAsHandled()
             Else
-                scheduler.UpdateProgress(Index, New FiniteDouble(mapDownloadPosition)).MarkAnyExceptionAsHandled()
+                Dim progress = New FiniteDouble(mapDownloadPosition)
+                Contract.Assume(progress >= 0)
+                scheduler.UpdateProgress(Index, progress).MarkAnyExceptionAsHandled()
                 If IsGettingMapFromBot Then
                     BufferMap()
                 End If

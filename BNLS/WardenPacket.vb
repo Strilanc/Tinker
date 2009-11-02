@@ -24,7 +24,7 @@
         End Property
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(payload IsNot Nothing)
+            Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
 
@@ -62,6 +62,8 @@
         Private Shared Sub reg(ByVal jar As ManualSwitchJar,
                                ByVal id As BNLSWardenPacketId,
                                ByVal ParamArray subJars() As IJar(Of Object))
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(subJars IsNot Nothing)
             jar.AddPackerParser(id, New TupleJar(id.ToString, subJars).Weaken)
         End Sub
 
@@ -116,6 +118,7 @@
 
 #Region "Packers"
         Public Shared Function MakeFullServiceConnect(ByVal cookie As UInteger, ByVal seed As UInteger) As BNLSWardenPacket
+            Contract.Ensures(Contract.Result(Of BNLSWardenPacket)() IsNot Nothing)
             Return New BNLSWardenPacket(BNLSWardenPacketId.FullServiceConnect, New Dictionary(Of String, Object) From {
                     {"cookie", cookie},
                     {"client type", BNLSClientType.Warcraft3TFT},
@@ -125,6 +128,7 @@
                     {"unspecified", New Byte() {}}})
         End Function
         Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As Byte()) As BNLSWardenPacket
+            Contract.Ensures(Contract.Result(Of BNLSWardenPacket)() IsNot Nothing)
             Return New BNLSWardenPacket(BNLSWardenPacketId.FullServiceHandleWardenPacket, New Dictionary(Of String, Object) From {
                     {"cookie", cookie},
                     {"raw warden packet data", data},

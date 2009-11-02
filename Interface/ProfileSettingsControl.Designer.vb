@@ -22,40 +22,39 @@ Partial Class ProfileSettingsControl
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.components = New System.ComponentModel.Container
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(ProfileSettingsControl))
-        Me.tabsProfile = New System.Windows.Forms.TabControl
-        Me.tabSettings = New System.Windows.Forms.TabPage
-        Me.btnDeleteProfile = New System.Windows.Forms.Button
-        Me.txtCKLServer = New System.Windows.Forms.TextBox
-        Me.lblCKLServer = New System.Windows.Forms.Label
-        Me.lblLanHost = New System.Windows.Forms.Label
-        Me.cboLanHost = New System.Windows.Forms.ComboBox
-        Me.lblRocKey = New System.Windows.Forms.Label
-        Me.txtRocKey = New System.Windows.Forms.TextBox
-        Me.txtTftKey = New System.Windows.Forms.TextBox
-        Me.lblTftKey = New System.Windows.Forms.Label
-        Me.numLocalPort = New System.Windows.Forms.NumericUpDown
-        Me.lblUsername = New System.Windows.Forms.Label
-        Me.lblInitialChannel = New System.Windows.Forms.Label
-        Me.txtInitialChannel = New System.Windows.Forms.TextBox
-        Me.lblGateway = New System.Windows.Forms.Label
-        Me.cboGateway = New System.Windows.Forms.ComboBox
-        Me.lblLocalPort = New System.Windows.Forms.Label
-        Me.lblPassword = New System.Windows.Forms.Label
-        Me.txtPassword = New System.Windows.Forms.TextBox
-        Me.txtUsername = New System.Windows.Forms.TextBox
-        Me.tabUsers = New System.Windows.Forms.TabPage
-        Me.gridUsers = New System.Windows.Forms.DataGridView
-        Me.colName = New System.Windows.Forms.DataGridViewTextBoxColumn
-        Me.colAccess = New System.Windows.Forms.DataGridViewTextBoxColumn
-        Me.colSettings = New System.Windows.Forms.DataGridViewTextBoxColumn
-        Me.tipNormal = New System.Windows.Forms.ToolTip(Me.components)
+        Me.tabsProfile = New System.Windows.Forms.TabControl()
+        Me.tabSettings = New System.Windows.Forms.TabPage()
+        Me.lblTFTKeyError = New System.Windows.Forms.Label()
+        Me.lblROCKeyError = New System.Windows.Forms.Label()
+        Me.btnDeleteProfile = New System.Windows.Forms.Button()
+        Me.txtCKLServer = New System.Windows.Forms.TextBox()
+        Me.lblCKLServer = New System.Windows.Forms.Label()
+        Me.lblLanHost = New System.Windows.Forms.Label()
+        Me.cboLanHost = New System.Windows.Forms.ComboBox()
+        Me.lblRocKey = New System.Windows.Forms.Label()
+        Me.txtRocKey = New System.Windows.Forms.TextBox()
+        Me.txtTftKey = New System.Windows.Forms.TextBox()
+        Me.lblTftKey = New System.Windows.Forms.Label()
+        Me.numLocalPort = New System.Windows.Forms.NumericUpDown()
+        Me.lblUsername = New System.Windows.Forms.Label()
+        Me.lblInitialChannel = New System.Windows.Forms.Label()
+        Me.txtInitialChannel = New System.Windows.Forms.TextBox()
+        Me.lblGateway = New System.Windows.Forms.Label()
+        Me.cboGateway = New System.Windows.Forms.ComboBox()
+        Me.lblLocalPort = New System.Windows.Forms.Label()
+        Me.lblPassword = New System.Windows.Forms.Label()
+        Me.txtPassword = New System.Windows.Forms.TextBox()
+        Me.txtUsername = New System.Windows.Forms.TextBox()
+        Me.tabUsers = New System.Windows.Forms.TabPage()
+        Me.gridUsers = New System.Windows.Forms.DataGridView()
+        Me.colName = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.colAccess = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.colSettings = New System.Windows.Forms.DataGridViewTextBoxColumn()
+        Me.tipNormal = New System.Windows.Forms.ToolTip()
         Me.tabsProfile.SuspendLayout()
         Me.tabSettings.SuspendLayout()
-        CType(Me.numLocalPort, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.tabUsers.SuspendLayout()
-        CType(Me.gridUsers, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SuspendLayout()
         '
         'tabsProfile
@@ -91,6 +90,8 @@ Partial Class ProfileSettingsControl
         Me.tabSettings.Controls.Add(Me.lblPassword)
         Me.tabSettings.Controls.Add(Me.txtPassword)
         Me.tabSettings.Controls.Add(Me.txtUsername)
+        Me.tabSettings.Controls.Add(Me.lblROCKeyError)
+        Me.tabSettings.Controls.Add(Me.lblTFTKeyError)
         Me.tabSettings.Location = New System.Drawing.Point(4, 22)
         Me.tabSettings.Name = "tabSettings"
         Me.tabSettings.Padding = New System.Windows.Forms.Padding(3)
@@ -98,6 +99,28 @@ Partial Class ProfileSettingsControl
         Me.tabSettings.TabIndex = 0
         Me.tabSettings.Text = "Settings"
         Me.tabSettings.UseVisualStyleBackColor = True
+        '
+        'lblTFTKeyError
+        '
+        Me.lblTFTKeyError.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblTFTKeyError.ForeColor = System.Drawing.Color.Red
+        Me.lblTFTKeyError.Location = New System.Drawing.Point(232, 82)
+        Me.lblTFTKeyError.Name = "lblTFTKeyError"
+        Me.lblTFTKeyError.Size = New System.Drawing.Size(220, 13)
+        Me.lblTFTKeyError.TabIndex = 62
+        Me.lblTFTKeyError.Text = "No Key Entered"
+        Me.lblTFTKeyError.TextAlign = System.Drawing.ContentAlignment.TopRight
+        '
+        'lblROCKeyError
+        '
+        Me.lblROCKeyError.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblROCKeyError.ForeColor = System.Drawing.Color.Red
+        Me.lblROCKeyError.Location = New System.Drawing.Point(6, 82)
+        Me.lblROCKeyError.Name = "lblROCKeyError"
+        Me.lblROCKeyError.Size = New System.Drawing.Size(220, 13)
+        Me.lblROCKeyError.TabIndex = 61
+        Me.lblROCKeyError.Text = "No Key Entered"
+        Me.lblROCKeyError.TextAlign = System.Drawing.ContentAlignment.TopRight
         '
         'btnDeleteProfile
         '
@@ -326,9 +349,7 @@ Partial Class ProfileSettingsControl
         Me.tabsProfile.ResumeLayout(False)
         Me.tabSettings.ResumeLayout(False)
         Me.tabSettings.PerformLayout()
-        CType(Me.numLocalPort, System.ComponentModel.ISupportInitialize).EndInit()
         Me.tabUsers.ResumeLayout(False)
-        CType(Me.gridUsers, System.ComponentModel.ISupportInitialize).EndInit()
         Me.ResumeLayout(False)
 
     End Sub
@@ -359,5 +380,7 @@ Partial Class ProfileSettingsControl
     Friend WithEvents colSettings As System.Windows.Forms.DataGridViewTextBoxColumn
     Friend WithEvents btnDeleteProfile As System.Windows.Forms.Button
     Friend WithEvents tipNormal As System.Windows.Forms.ToolTip
+    Friend WithEvents lblTFTKeyError As System.Windows.Forms.Label
+    Friend WithEvents lblROCKeyError As System.Windows.Forms.Label
 
 End Class

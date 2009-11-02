@@ -1,6 +1,7 @@
 ﻿Namespace Warcraft3
+    <ContractClass(GetType(W3ConnectionAccepterBase.ContractClass))>
     Public MustInherit Class W3ConnectionAccepterBase
-        Private Shared ReadOnly EXPIRY_PERIOD As TimeSpan = 10.Seconds
+        Private Shared ReadOnly FirstPacketTimeout As TimeSpan = 10.Seconds
 
         Private ReadOnly _accepter As New ConnectionAccepter
         Private ReadOnly logger As Logger
@@ -9,6 +10,9 @@
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_accepter IsNot Nothing)
+            Contract.Invariant(logger IsNot Nothing)
+            Contract.Invariant(sockets IsNot Nothing)
+            Contract.Invariant(lock IsNot Nothing)
         End Sub
 
         Protected Sub New(Optional ByVal logger As Logger = Nothing)
@@ -25,6 +29,7 @@
             SyncLock lock
                 Accepter.CloseAllPorts()
                 For Each socket In sockets
+                    Contract.Assume(socket IsNot Nothing)
                     socket.Disconnect(expected:=True, reason:="Accepter Reset")
                 Next socket
                 sockets.Clear()
@@ -44,38 +49,39 @@
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
             Try
-                Dim socket = New W3Socket(New PacketSocket(client, 60.Seconds, logger))
-                logger.log("New player connecting from {0}.".frmt(socket.Name), LogMessageType.Positive)
+                Dim socket = New W3Socket(New PacketSocket(client, timeout:=60.Seconds, logger:=logger))
+                logger.Log("New player connecting from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 
                 SyncLock lock
                     sockets.Add(socket)
                 End SyncLock
                 socket.FutureReadPacket().CallWhenValueReady(
-                    Sub(packet, packetException)
-                        If Not TryRemoveSocket(socket) Then  Return
-                        If packetException IsNot Nothing Then
-                            socket.Disconnect(expected:=False, reason:=packetException.ToString)
-                            logger.Log(packetException.ToString, LogMessageType.Problem)
+                    Sub(packetData, readException)
+                        If Not TryRemoveSocket(socket) Then Return
+                        If readException IsNot Nothing Then
+                            socket.Disconnect(expected:=False, reason:=readException.Message)
                             Return
                         End If
 
                         Try
-                            GetConnectingPlayer(socket, packet)
+                            Dim id = CType(packetData(1), W3PacketId)
+                            Dim pickle = ProcessConnectingPlayer(socket, packetData)
+                            logger.Log(Function() "Received {0}".Frmt(id), LogMessageType.DataEvent)
+                            logger.Log(Function() "{0} = {1}".Frmt(id, pickle.Description), LogMessageType.DataParsed)
                         Catch e As Exception
-                            Dim msg = "Error receiving {0} from {1}: {2}".Frmt(packet.id, socket.Name, e)
-                            logger.Log(msg, LogMessageType.Problem)
-                            socket.Disconnect(expected:=False, reason:=msg)
+                            socket.Disconnect(expected:=False, reason:=e.Message)
                         End Try
                     End Sub
                 )
-                FutureWait(EXPIRY_PERIOD).CallWhenReady(
+                FutureWait(FirstPacketTimeout).CallWhenReady(
                     Sub()
-                        If Not TryRemoveSocket(socket) Then  Return
+                        If Not TryRemoveSocket(socket) Then Return
+                        logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)
                         socket.Disconnect(expected:=False, reason:="Idle")
                     End Sub
                 )
             Catch e As Exception
-                logger.log("Error accepting connection: " + e.ToString, LogMessageType.Problem)
+                logger.Log("Error accepting connection: {0}".Frmt(e.Message), LogMessageType.Problem)
             End Try
         End Sub
 
@@ -88,7 +94,19 @@
             Return True
         End Function
 
-        Protected MustOverride Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)
+        Protected MustOverride Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As ViewableList(Of Byte)) As IPickle
+        <ContractClassFor(GetType(W3ConnectionAccepterBase))>
+        Public MustInherit Class ContractClass
+            Inherits W3ConnectionAccepterBase
+
+            Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As Strilbrary.ViewableList(Of Byte)) As IPickle
+                Contract.Requires(socket IsNot Nothing)
+                Contract.Requires(packetData IsNot Nothing)
+                Contract.Requires(packetData.Length >= 4)
+                Contract.Ensures(Contract.Result(Of IPickle)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
+        End Class
     End Class
 
     Public NotInheritable Class W3ConnectionAccepter
@@ -100,17 +118,15 @@
             MyBase.New(logger)
         End Sub
 
-        Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)
-            If packet.id <> W3PacketId.Knock Then
+        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As Strilbrary.ViewableList(Of Byte)) As IPickle
+            If packetData(1) <> W3PacketId.Knock Then
                 Throw New IO.IOException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
 
-            Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
-            Dim name = CStr(vals("name"))
-            Dim internalAddress = CType(vals("internal address"), Dictionary(Of String, Object))
-            Contract.Assume(name IsNot Nothing)
-            Contract.Assume(internalAddress IsNot Nothing)
-            Contract.Assume(socket IsNot Nothing)
+            Dim pickle = W3Packet.Jars.Knock.Parse(packetData.SubView(4))
+            Dim vals = pickle.Value.AssumeNotNull
+            Dim name = CStr(vals("name")).AssumeNotNull
+            Dim internalAddress = CType(vals("internal address"), Dictionary(Of String, Object)).AssumeNotNull
             Dim player = New W3ConnectingPlayer(name,
                                                 CUInt(vals("game id")),
                                                 CUInt(vals("entry key")),
@@ -121,7 +137,8 @@
 
             socket.Name = player.Name
             RaiseEvent Connection(Me, player)
-        End Sub
+            Return pickle
+        End Function
     End Class
 
     Public NotInheritable Class W3PeerConnectionAccepter
@@ -133,16 +150,18 @@
             MyBase.New(logger)
         End Sub
 
-        Protected Overrides Sub GetConnectingPlayer(ByVal socket As W3Socket, ByVal packet As W3Packet)
-            If packet.id <> W3PacketId.PeerKnock Then
-                Throw New IO.IOException("{0} was not a warcraft 3 peer connection.".frmt(socket.Name))
+        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As Strilbrary.ViewableList(Of Byte)) As IPickle
+            If packetData(1) <> W3PacketId.PeerKnock Then
+                Throw New IO.IOException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
             End If
-            Dim vals = CType(packet.payload, Dictionary(Of String, Object))
+            Dim pickle = W3Packet.Jars.PeerKnock.Parse(packetData.SubView(4))
+            Dim vals = pickle.Value.AssumeNotNull
             Dim player = New W3ConnectingPeer(socket,
                                               CByte(vals("receiver peer key")),
                                               CByte(vals("sender player id")),
                                               CUShort(vals("sender peer connection flags")))
             RaiseEvent Connection(Me, player)
-        End Sub
+            Return pickle
+        End Function
     End Class
 End Namespace

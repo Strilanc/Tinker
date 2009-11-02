@@ -45,8 +45,8 @@
             Next i
 
             'create observer slots
-            If settings.Header.Map.observers = GameObserverOption.FullObservers OrElse
-                                    settings.Header.Map.observers = GameObserverOption.Referees Then
+            If settings.Header.GameStats.observers = GameObserverOption.FullObservers OrElse
+                                    settings.Header.GameStats.observers = GameObserverOption.Referees Then
                 For i = Map.NumPlayerSlots To 12 - 1
                     Dim slot As W3Slot = New W3Slot(Me, CByte(i))
                     slot.color = CType(W3Slot.ObserverTeamIndex, W3Slot.PlayerColor)
@@ -71,7 +71,6 @@
 
                 Select Case arg.ToUpperInvariant
                     Case "-MULTIOBS", "-MO"
-                        Contract.Assume(Map.NumPlayerSlots > 0)
                         Contract.Assume(slots.Count = 12)
                         Contract.Assume(freeIndexes.Count > 0)
                         If Map.NumPlayerSlots <= 10 Then
@@ -131,7 +130,7 @@
             'Give people a few seconds to realize the game is full before continuing
             FutureWait(3.Seconds).QueueCallWhenReady(ref,
                 Sub()
-                    If state <> W3GameState.PreCounting Then  Return
+                    If state <> W3GameState.PreCounting Then Return
                     If Not settings.isAutoStarted OrElse CountFreeSlots() > 0 Then
                         ChangeState(W3GameState.AcceptingPlayers)
                         Return
@@ -144,7 +143,7 @@
                     'Give jittery players a few seconds to leave
                     FutureWait(5.Seconds).QueueCallWhenReady(ref,
                         Sub()
-                            If state <> W3GameState.PreCounting Then  Return
+                            If state <> W3GameState.PreCounting Then Return
                             If Not settings.isAutoStarted OrElse CountFreeSlots() > 0 Then
                                 ChangeState(W3GameState.AcceptingPlayers)
                                 Return
@@ -153,7 +152,7 @@
                             TryStartCountdown()
                         End Sub
                     )
-                End Sub
+                        End Sub
             )
             Return True
         End Function
@@ -222,9 +221,8 @@
             'Remove fake players
             For Each player In (From p In players.ToList Where p.isFake)
                 Contract.Assume(player IsNot Nothing)
-                Dim slot = FindPlayerSlot(player)
+                Dim slot = TryFindPlayerSlot(player)
                 If slot Is Nothing OrElse slot.Contents.Moveable Then
-                    Contract.Assume(player IsNot Nothing)
                     RemovePlayer(player, True, W3PlayerLeaveType.Disconnect, "Fake players removed before loading")
                 End If
             Next player
@@ -248,7 +246,7 @@
         Private Sub SetPlayerVoteToStart(ByVal name As String, ByVal val As Boolean)
             Contract.Requires(name IsNot Nothing)
             If Not settings.isAutoStarted Then Throw New InvalidOperationException("Game is not set to start automatically.")
-            Dim p = FindPlayer(name)
+            Dim p = TryFindPlayer(name)
             If p Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
             p.hasVotedToStart = val
             If Not val Then Return
@@ -396,7 +394,7 @@
             TryBeginAutoStart()
             If settings.autoElevateUserName IsNot Nothing Then
                 If newPlayer.name.ToUpperInvariant = settings.autoElevateUserName.ToUpperInvariant Then
-                    TryElevatePlayer(newPlayer.name)
+                    ElevatePlayer(newPlayer.name)
                 End If
             End If
             If settings.isAutoStarted Then
@@ -415,7 +413,7 @@
                                                     QueueGetFakeHostPlayer.CallOnValueSuccess(
                                                         Sub(value) sender.GiveMapSender(If(value Is Nothing, CByte(0), value.Index))
                                                     )
-                                                End Sub
+                                                        End Sub
 
             Return newPlayer
         End Function
@@ -435,9 +433,9 @@
                     'Start transfers
                     For Each e In started
                         'Find matching players
-                        Dim src = FindPlayer(e.source)
-                        Dim dst = FindPlayer(e.destination)
-                        If dst Is Nothing Then  Continue For
+                        Dim src = TryFindPlayer(e.source)
+                        Dim dst = TryFindPlayer(e.destination)
+                        If dst Is Nothing Then Continue For
 
                         'Apply
                         If e.source = LocalTransferClientKey Then
@@ -454,9 +452,9 @@
                     'Stop transfers
                     For Each e In stopped
                         'Find matching players
-                        Dim src = FindPlayer(e.source)
-                        Dim dst = FindPlayer(e.destination)
-                        If dst Is Nothing Then  Continue For
+                        Dim src = TryFindPlayer(e.source)
+                        Dim dst = TryFindPlayer(e.destination)
+                        If dst Is Nothing Then Continue For
 
                         'Apply
                         If e.source = LocalTransferClientKey Then
@@ -571,7 +569,7 @@
                 Throw New InvalidOperationException("Can't modify slots during launch.")
             End If
 
-            Dim slot = FindMatchingSlot(slotQuery)
+            Dim slot = TryFindMatchingSlot(slotQuery)
             If slot Is Nothing Then
                 Throw New InvalidOperationException("No slot matching {0}".Frmt(slotQuery))
             End If
@@ -626,7 +624,7 @@
             If state >= W3GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't reserve slots after launch.")
             End If
-            Dim slot = FindMatchingSlot(slotid)
+            Dim slot = TryFindMatchingSlot(slotid)
             If slot Is Nothing Then Throw New InvalidOperationException("No slot matching {0}".Frmt(slotid))
             If slot.Contents.ContentType = SlotContentType.Player Then
                 Throw New InvalidOperationException("Slot '{0}' can't be reserved because it already contains a player.".Frmt(slotid))
@@ -641,8 +639,8 @@
             If state > W3GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't swap slots after launch.")
             End If
-            Dim slot1 = FindMatchingSlot(query1)
-            Dim slot2 = FindMatchingSlot(query2)
+            Dim slot1 = TryFindMatchingSlot(query1)
+            Dim slot2 = TryFindMatchingSlot(query2)
             If slot1 Is Nothing Then
                 Throw New InvalidOperationException("No slot matching '{0}'.".Frmt(query1))
             ElseIf slot2 Is Nothing Then
@@ -669,7 +667,7 @@
                 Throw New InvalidOperationException("Can't change slot settings after launch.")
             End If
 
-            Dim foundSlot = FindMatchingSlot(slotid)
+            Dim foundSlot = TryFindMatchingSlot(slotid)
             If foundSlot Is Nothing Then Throw New InvalidOperationException("No slot {0}".Frmt(slotid))
 
             Dim swapColorSlot = (From x In slots Where x.color = color).FirstOrDefault
@@ -725,7 +723,7 @@
 #Region "Networking"
         Private Sub ReceiveSetColor(ByVal player As W3Player, ByVal newColor As W3Slot.PlayerColor)
             Contract.Requires(player IsNot Nothing)
-            Dim slot = FindPlayerSlot(player)
+            Dim slot = TryFindPlayerSlot(player)
 
             'Validate
             If slot Is Nothing Then Return
@@ -751,7 +749,7 @@
         End Sub
         Private Sub ReceiveSetRace(ByVal player As W3Player, ByVal newRace As W3Slot.Races)
             Contract.Requires(player IsNot Nothing)
-            Dim slot = FindPlayerSlot(player)
+            Dim slot = TryFindPlayerSlot(player)
 
             'Validate
             If slot Is Nothing Then Return
@@ -766,7 +764,7 @@
         End Sub
         Private Sub ReceiveSetHandicap(ByVal player As W3Player, ByVal new_handicap As Byte)
             Contract.Requires(player IsNot Nothing)
-            Dim slot = FindPlayerSlot(player)
+            Dim slot = TryFindPlayerSlot(player)
 
             'Validate
             If slot Is Nothing Then Return
@@ -786,7 +784,7 @@
         End Sub
         Private Sub ReceiveSetTeam(ByVal player As W3Player, ByVal newTeam As Byte)
             Contract.Requires(player IsNot Nothing)
-            Dim slot = FindPlayerSlot(player)
+            Dim slot = TryFindPlayerSlot(player)
 
             'Validate
             If slot Is Nothing Then Return
@@ -795,14 +793,12 @@
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If state >= W3GameState.Loading Then Return '[too late]
             If newTeam = W3Slot.ObserverTeamIndex Then
-                Select Case settings.Header.Map.observers
+                Select Case settings.Header.GameStats.observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         '[fine; continue]
                     Case Else
                         Return '[obs not enabled; invalid value]
                 End Select
-            ElseIf Not Map.isMelee And newTeam >= Map.numForces Then
-                Return '[invalid team]
             ElseIf Map.isMelee And newTeam >= Map.NumPlayerSlots Then
                 Return '[invalid team]
             End If
@@ -897,6 +893,7 @@
                                    End Sub)
         End Function
         Public Function QueueSetAllSlotsLocked(ByVal newLockState As W3Slot.Lock) As IFuture
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return ref.QueueAction(Sub() SetAllSlotsLocked(newLockState))
         End Function
         Public Function QueueSetSlotHandicap(ByVal query As String, ByVal newHandicap As Byte) As IFuture

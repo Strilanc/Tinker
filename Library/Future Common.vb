@@ -6,16 +6,20 @@ Public Module FutureExtensionsEx
     <Extension()>
     <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
     Public Function FutureRead(ByVal this As IO.Stream,
-                                   ByVal buffer() As Byte,
-                                   ByVal offset As Integer,
-                                   ByVal count As Integer) As IFuture(Of Integer)
+                               ByVal buffer() As Byte,
+                               ByVal offset As Integer,
+                               ByVal count As Integer) As IFuture(Of Integer)
+        Contract.Requires(this IsNot Nothing)
+        Contract.Requires(buffer IsNot Nothing)
+        Contract.Requires(offset >= 0)
+        Contract.Requires(count >= 0)
+        Contract.Requires(offset + count <= buffer.Length)
+        Contract.Ensures(Contract.Result(Of IFuture(Of Integer))() IsNot Nothing)
+
         Dim result = New FutureFunction(Of Integer)
         Try
             this.BeginRead(buffer:=buffer, offset:=offset, count:=count, state:=Nothing,
-                 callback:=Sub(ar) result.SetByEvaluating(Function()
-                                                              Contract.Assume(ar IsNot Nothing)
-                                                              Return this.EndRead(ar)
-                                                          End Function))
+                 callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar)))
         Catch e As Exception
             result.SetFailed(e)
         End Try
@@ -29,6 +33,7 @@ Public Module FutureExtensionsEx
                                          ByVal consumer As Func(Of T, Exception, IFuture(Of Boolean))) As IFuture
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
 
         Dim result = New FutureAction
         Dim iterator As Action(Of Boolean, Exception) = Nothing
@@ -58,12 +63,12 @@ Public Module FutureExtensionsEx
                                               ByVal consumer As Action(Of T)) As IFuture
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
 
         Dim result = New FutureAction
         Dim iterator As Action(Of T, Exception) = Nothing
         Dim product As IFuture(Of T)
         iterator = Sub(value, valueException)
-                       Contract.Assume(result IsNot Nothing)
                        If valueException IsNot Nothing Then
                            result.SetFailed(valueException)
                        Else
@@ -72,8 +77,6 @@ Public Module FutureExtensionsEx
                            Catch e As Exception
                                result.SetFailed(e)
                            End Try
-                           Contract.Assume(iterator IsNot Nothing)
-                           Contract.Assume(producer IsNot Nothing)
                            product = producer()
                            Contract.Assume(product IsNot Nothing)
                            product.CallWhenValueReady(iterator)

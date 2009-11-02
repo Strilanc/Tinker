@@ -36,7 +36,7 @@ Public Class BnetClientControl
     Private Sub CatchReceivedPacket(ByVal sender As BnetClient, ByVal packet As BnetPacket) Handles client.ReceivedPacket
         ref.QueueAction(
             Sub()
-                If sender IsNot client Then  Return
+                If sender IsNot client Then Return
                 Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                 Select Case packet.id
                     Case BnetPacketId.ChatEvent
@@ -94,11 +94,10 @@ Public Class BnetClientControl
                         lstState.Items.Add(Date.Now().ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture))
                         For Each game In CType(vals("games"), IEnumerable(Of Dictionary(Of String, Object)))
                             lstState.Items.Add("---")
-                            Dim stats = CType(game("game statstring"), Dictionary(Of String, Object))
-                            Dim settings = CType(stats("settings"), Warcraft3.W3MapSettings)
+                            Dim stats = CType(game("game statstring"), Warcraft3.W3GameStats)
                             lstState.Items.Add(CStr(game("game name")))
-                            lstState.Items.Add(CStr(stats("username")))
-                            lstState.Items.Add(settings.relativePath.Split("\"c).Last)
+                            lstState.Items.Add(CStr(stats.HostName))
+                            lstState.Items.Add(stats.relativePath.Split("\"c).Last)
                         Next game
                 End Select
             End Sub
@@ -129,13 +128,13 @@ Public Class BnetClientControl
                                         ByVal newState As BnetClientState) Handles client.StateChanged
         ref.QueueAction(
             Sub()
-                If sender IsNot client Then  Return
+                If sender IsNot client Then Return
                 txtTalk.Enabled = False
                 lstState.Enabled = True
                 lstState.BackColor = SystemColors.Window
                 Select Case newState
                     Case BnetClientState.Channel, BnetClientState.CreatingGame
-                        If oldState = BnetClientState.Game Then  lstState.Items.Clear()
+                        If oldState = BnetClientState.Game Then lstState.Items.Clear()
                         txtTalk.Enabled = True
                     Case BnetClientState.Game
                         lstState.Items.Clear()
@@ -143,7 +142,7 @@ Public Class BnetClientControl
                         Dim g = client.CurGame
                         If g IsNot Nothing Then
                             lstState.Items.Add(g.Header.Name)
-                            lstState.Items.Add(g.Header.Map.relativePath)
+                            lstState.Items.Add(g.Header.GameStats.relativePath)
                             lstState.Items.Add(If(g.private, "Private", "Public"))
                             lstState.Items.Add("Refreshed: {0}".Frmt(Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
                         End If

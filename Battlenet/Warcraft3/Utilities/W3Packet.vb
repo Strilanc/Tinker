@@ -75,10 +75,10 @@ Namespace Warcraft3
         RemovePlayerFromLagScreen = &H11
         '_Unseen12 = &H12
         '_Unseen13 = &H13
-        SetHost = &H14 'unsure
+        '_Unsure_SetHost = &H14
         '_PeerUnknown15 = &H15
         '_PeerUnknown16 = &H16
-        ConfirmHost = &H17 'unsure
+        '_Unsure_ConfirmHost = &H17
         '_Unseen18 = &H18
         '_PeerUnknown19 = &H19
         '_Unseen1A = &H1A
@@ -113,7 +113,7 @@ Namespace Warcraft3
         ClientDropLagger = &H29
         '_Unseen2A = &H2A
         '_PeerUnknown2B = &H2B
-        AcceptHost = &H2C 'unsure
+        '_Unsure_AcceptHost = &H2C 
         '_Unseen2D = &H2D
         '_Unseen2E = &H2E
         '''<summary>Response to LanRefreshGame or LanCreateGame when clients want to know game info.</summary>
@@ -243,26 +243,237 @@ Namespace Warcraft3
         End Enum
 #End Region
 
-#Region "Definition"
-        Public Shared Function rage2(Of T)(ByVal jar As IJar(Of T), ByVal handler As Func(Of T, ifuture)) As Testing.Handler(Of T)
-            Return New Testing.Handler(Of T)(jar, handler)
-        End Function
-        Private Shared Function rage(ByVal id As W3PacketId, ByVal ParamArray subJars() As IJar(Of Object)) As IJar(Of Dictionary(Of String, Object))
-            Return New TupleJar(id.ToString(), subJars)
-        End Function
         Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal id As W3PacketId, ByVal ParamArray subJars() As IJar(Of Object))
-            jar.AddPackerParser(id, New TupleJar(id.ToString(), subJars).Weaken)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(subJars IsNot Nothing)
+            jar.AddPackerParser(id, New DefParser(id, subJars).Weaken)
         End Sub
-        Public Shared ReadOnly PongJar As IJar(Of Dictionary(Of String, Object)) = rage(W3PacketId.Pong,
-                                                                                        New UInt32Jar("salt").Weaken)
+        Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal subjar As DefParser)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(subjar IsNot Nothing)
+            jar.AddPackerParser(subjar.id, subjar.Weaken)
+        End Sub
+        Public Class DefParser
+            Inherits TupleJar
+            Public ReadOnly id As W3PacketId
+            Public Sub New(ByVal id As W3PacketId, ByVal ParamArray subjars() As IJar(Of Object))
+                MyBase.New(id.ToString, subjars)
+                Contract.Requires(subjars IsNot Nothing)
+                Me.id = id
+            End Sub
+        End Class
+
+        Public Class Jars
+#Region "Misc"
+            Public Shared ReadOnly Ping As New DefParser(W3PacketId.Ping,
+                    New UInt32Jar("salt").Weaken)
+            Public Shared ReadOnly Pong As New DefParser(W3PacketId.Pong,
+                    New UInt32Jar("salt").Weaken)
+#End Region
+
+#Region "Player Exit"
+            Public Shared ReadOnly Leaving As New DefParser(W3PacketId.Leaving,
+                    New EnumUInt32Jar(Of W3PlayerLeaveType)("leave type").Weaken)
+            Public Shared ReadOnly OtherPlayerLeft As New DefParser(W3PacketId.OtherPlayerLeft,
+                    New ByteJar("player index").Weaken,
+                    New EnumUInt32Jar(Of W3PlayerLeaveType)("leave type").Weaken)
+#End Region
+
+#Region "Player Entry"
+            Public Shared ReadOnly Knock As New DefParser(W3PacketId.Knock,
+                    New UInt32Jar("game id").Weaken,
+                    New UInt32Jar("entry key").Weaken,
+                    New ByteJar("unknown value").Weaken,
+                    New UInt16Jar("listen port").Weaken,
+                    New UInt32Jar("peer key").Weaken,
+                    New StringJar("name", , , , "max 15 characters + terminator").Weaken,
+                    New ArrayJar("unknown data", sizePrefixSize:=1).Weaken,
+                    New AddressJar("internal address").Weaken)
+            Public Shared ReadOnly Greet As New DefParser(W3PacketId.Greet,
+                    New UInt16Jar("slot layout included").Weaken,
+                    New ByteJar("player index").Weaken,
+                    New AddressJar("external address").Weaken)
+            Public Shared ReadOnly HostMapInfo As New DefParser(W3PacketId.HostMapInfo,
+                    New UInt32Jar("unknown").Weaken,
+                    New StringJar("path").Weaken,
+                    New UInt32Jar("size").Weaken,
+                    New UInt32Jar("crc32").Weaken,
+                    New UInt32Jar("xoro checksum").Weaken,
+                    New ArrayJar("sha1 checksum", 20).Weaken)
+            Public Shared ReadOnly RejectEntry As New DefParser(W3PacketId.RejectEntry,
+                    New EnumUInt32Jar(Of RejectReason)("reason").Weaken)
+            Public Shared ReadOnly OtherPlayerJoined As New DefParser(W3PacketId.OtherPlayerJoined,
+                    New UInt32Jar("peer key").Weaken,
+                    New ByteJar("index").Weaken,
+                    New StringJar("name", , , , "max 15 chars + terminator").Weaken,
+                    New ArrayJar("unknown data", sizePrefixSize:=1).Weaken,
+                    New AddressJar("external address").Weaken,
+                    New AddressJar("internal address").Weaken)
+#End Region
+
+#Region "Lobby"
+            Public Shared ReadOnly OtherPlayerReady As New DefParser(W3PacketId.OtherPlayerReady,
+                    New ByteJar("player index").Weaken)
+            Public Shared ReadOnly StartLoading As New DefParser(W3PacketId.StartLoading)
+            Public Shared ReadOnly StartCountdown As New DefParser(W3PacketId.StartCountdown)
+            Public Shared ReadOnly Ready As New DefParser(W3PacketId.Ready)
+            Public Shared ReadOnly LobbyState As New DefParser(W3PacketId.LobbyState,
+                    New UInt16Jar("state size").Weaken,
+                    New ListJar(Of Dictionary(Of String, Object))("slots", New SlotJar("slot")).Weaken,
+                    New UInt32Jar("time").Weaken,
+                    New ByteJar("layout style").Weaken,
+                    New ByteJar("num player slots").Weaken)
+            Public Shared ReadOnly PeerConnectionInfo As New DefParser(W3PacketId.PeerConnectionInfo,
+                    New UInt16Jar("player bitflags").Weaken)
+            Public Shared ReadOnly NonGameAction As IJar(Of Dictionary(Of String, Object)) = MakeNonGameActionJar()
+#End Region
+
+#Region "Gameplay"
+            Public Shared ReadOnly ShowLagScreen As New DefParser(W3PacketId.ShowLagScreen,
+                    New ListJar(Of Dictionary(Of String, Object))("laggers",
+                        New TupleJar("lagger",
+                            New ByteJar("player index").Weaken,
+                            New UInt32Jar("initial milliseconds used").Weaken)).Weaken)
+            Public Shared ReadOnly RemovePlayerFromLagScreen As New DefParser(W3PacketId.RemovePlayerFromLagScreen,
+                    New ByteJar("player index").Weaken,
+                    New UInt32Jar("marginal milliseconds used").Weaken)
+            Public Shared ReadOnly ClientDropLagger As New DefParser(W3PacketId.ClientDropLagger)
+            Public Shared ReadOnly Tick As New DefParser(W3PacketId.Tick,
+                    New UInt16Jar("time span").Weaken,
+                    New ArrayJar("subpacket", takerest:=True).Weaken)
+            Public Shared ReadOnly Tock As New DefParser(W3PacketId.Tock,
+                    New ArrayJar("game state checksum", 5).Weaken)
+            Public Shared ReadOnly GameAction As New DefParser(W3PacketId.GameAction,
+                    New ArrayJar("crc32", expectedSize:=4).Weaken,
+                    New RepeatingJar(Of W3GameAction)("actions", New W3GameActionJar("action")).Weaken)
+#End Region
+
+#Region "Lan"
+            Public Shared ReadOnly LanRequestGame As New DefParser(W3PacketId.LanRequestGame,
+                    New StringJar("product id", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
+                    New UInt32Jar("major version").Weaken,
+                    New UInt32Jar("unknown1").Weaken)
+            Public Shared ReadOnly LanRefreshGame As New DefParser(W3PacketId.LanRefreshGame,
+                    New UInt32Jar("game id").Weaken,
+                    New UInt32Jar("num players").Weaken,
+                    New UInt32Jar("free slots").Weaken)
+            Public Shared ReadOnly LanCreateGame As New DefParser(W3PacketId.LanCreateGame,
+                    New StringJar("product id", False, True, 4).Weaken,
+                    New UInt32Jar("major version").Weaken,
+                    New UInt32Jar("game id").Weaken)
+            Public Shared ReadOnly LanDestroyGame As New DefParser(W3PacketId.LanDestroyGame,
+                    New UInt32Jar("game id").Weaken)
+            Public Shared ReadOnly LanDescribeGame As New DefParser(W3PacketId.LanDescribeGame,
+                    New StringJar("product id", False, True, 4).Weaken,
+                    New UInt32Jar("major version").Weaken,
+                    New UInt32Jar("game id").Weaken,
+                    New UInt32Jar("entry key").Weaken,
+                    New StringJar("name", True).Weaken,
+                    New StringJar("password", True, , , "unused").Weaken,
+                    New W3GameStatsJar("statstring").Weaken,
+                    New UInt32Jar("num slots").Weaken,
+                    New EnumUInt32Jar(Of GameTypes)("game type").Weaken,
+                    New UInt32Jar("num players + 1").Weaken,
+                    New UInt32Jar("free slots + 1").Weaken,
+                    New UInt32Jar("age").Weaken,
+                    New UInt16Jar("listen port").Weaken)
+#End Region
+
+#Region "Peer"
+            Public Shared ReadOnly PeerKnock As New DefParser(W3PacketId.PeerKnock,
+                    New UInt32Jar("receiver peer key").Weaken,
+                    New UInt32Jar("unknown1").Weaken,
+                    New ByteJar("sender player id").Weaken,
+                    New ByteJar("unknown3").Weaken,
+                    New UInt32Jar("sender peer connection flags").Weaken)
+            Public Shared ReadOnly PeerPing As New DefParser(W3PacketId.PeerPing,
+                    New ArrayJar("salt", 4).Weaken,
+                    New UInt32Jar("sender peer connection flags").Weaken,
+                    New UInt32Jar("unknown2").Weaken)
+            Public Shared ReadOnly PeerPong As New DefParser(W3PacketId.PeerPong,
+                    New ArrayJar("salt", 4).Weaken)
+#End Region
+
+#Region "Download"
+            Public Shared ReadOnly ClientMapInfo As New DefParser(W3PacketId.ClientMapInfo,
+                    New UInt32Jar("unknown").Weaken,
+                    New EnumByteJar(Of DownloadState)("dl state").Weaken,
+                    New UInt32Jar("total downloaded").Weaken)
+            Public Shared ReadOnly SetUploadTarget As New DefParser(W3PacketId.SetUploadTarget,
+                    New UInt32Jar("unknown1").Weaken,
+                    New ByteJar("receiving player index").Weaken,
+                    New UInt32Jar("starting file pos").Weaken)
+            Public Shared ReadOnly SetDownloadSource As New DefParser(W3PacketId.SetDownloadSource,
+                    New UInt32Jar("unknown").Weaken,
+                    New ByteJar("sending player index").Weaken)
+            Public Shared ReadOnly MapFileData As New DefParser(W3PacketId.MapFileData,
+                    New ByteJar("receiving player index").Weaken,
+                    New ByteJar("sending player index").Weaken,
+                    New UInt32Jar("unknown").Weaken,
+                    New UInt32Jar("file position").Weaken,
+                    New ArrayJar("crc32", 4).Weaken,
+                    New ArrayJar("file data", takerest:=True).Weaken)
+            Public Shared ReadOnly MapFileDataReceived As New DefParser(W3PacketId.MapFileDataReceived,
+                    New ByteJar("sender index").Weaken,
+                    New ByteJar("receiver index").Weaken,
+                    New UInt32Jar("unknown").Weaken,
+                    New UInt32Jar("total downloaded").Weaken)
+            Public Shared ReadOnly MapFileDataProblem As New DefParser(W3PacketId.MapFileDataProblem,
+                    New ByteJar("sender index").Weaken,
+                    New ByteJar("receiver index").Weaken,
+                    New UInt32Jar("unknown").Weaken)
+#End Region
+
+#Region "Factory Methods"
+            Private Shared Function MakeNonGameActionJar() As IJar(Of Dictionary(Of String, Object))
+                Dim commandJar = New InteriorSwitchJar(Of Dictionary(Of String, Object))(
+                        W3PacketId.NonGameAction.ToString,
+                        Function(val) CByte(val("command type")),
+                        Function(data) data(data(0) + 2))
+                commandJar.AddPackerParser(W3Packet.NonGameAction.GameChat, New TupleJar(W3PacketId.NonGameAction.ToString,
+                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New ByteJar("sending player").Weaken,
+                        New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                        New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
+                        New StringJar("message").Weaken))
+                commandJar.AddPackerParser(W3Packet.NonGameAction.LobbyChat, New TupleJar(W3PacketId.NonGameAction.ToString,
+                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New ByteJar("sending player").Weaken,
+                        New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                        New StringJar("message").Weaken))
+                commandJar.AddPackerParser(W3Packet.NonGameAction.SetTeam, New TupleJar(W3PacketId.NonGameAction.ToString,
+                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New ByteJar("sending player").Weaken,
+                        New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                        New ByteJar("new value").Weaken))
+                commandJar.AddPackerParser(W3Packet.NonGameAction.SetHandicap, New TupleJar(W3PacketId.NonGameAction.ToString,
+                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New ByteJar("sending player").Weaken,
+                        New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                        New ByteJar("new value").Weaken))
+                commandJar.AddPackerParser(W3Packet.NonGameAction.SetRace, New TupleJar(W3PacketId.NonGameAction.ToString,
+                        New ArrayJar("receiving player indexes", , 1).Weaken,
+                        New ByteJar("sending player").Weaken,
+                        New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                        New EnumByteJar(Of W3Slot.Races)("new value").Weaken))
+                commandJar.AddPackerParser(W3Packet.NonGameAction.SetColor, New TupleJar(W3PacketId.NonGameAction.ToString,
+                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New ByteJar("sending player").Weaken,
+                        New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                        New EnumByteJar(Of W3Slot.PlayerColor)("new value").Weaken))
+                Return commandJar
+            End Function
+#End Region
+        End Class
+
+#Region "Definition"
+
         Private Shared Function MakeW3PacketJar() As ManualSwitchJar
             Dim jar = New ManualSwitchJar
 
             'Misc
-            reg(jar, W3PacketId.Ping,
-                    New UInt32Jar("salt").Weaken)
-            reg(jar, W3PacketId.Pong,
-                    New UInt32Jar("salt").Weaken)
+            reg(jar, Jars.Ping)
+            reg(jar, Jars.Pong)
 
             'Chat
             Dim chatJar = New InteriorSwitchJar(Of Dictionary(Of String, Object))(
@@ -321,155 +532,51 @@ Namespace Warcraft3
             jar.AddPackerParser(W3PacketId.NonGameAction, commandJar.Weaken)
 
             'Player Exit
-            reg(jar, W3PacketId.Leaving,
-                    New EnumUInt32Jar(Of W3PlayerLeaveType)("leave type").Weaken)
-            reg(jar, W3PacketId.OtherPlayerLeft,
-                    New ByteJar("player index").Weaken,
-                    New EnumUInt32Jar(Of W3PlayerLeaveType)("leave type").Weaken)
+            reg(jar, Jars.Leaving)
+            reg(jar, Jars.OtherPlayerLeft)
 
             'Player Entry
-            reg(jar, W3PacketId.Knock,
-                    New UInt32Jar("game id").Weaken,
-                    New UInt32Jar("entry key").Weaken,
-                    New ByteJar("unknown2").Weaken,
-                    New UInt16Jar("listen port").Weaken,
-                    New UInt32Jar("peer key").Weaken,
-                    New StringJar("name", , , , "max 15 characters + terminator").Weaken,
-                    New UInt16Jar("unknown3").Weaken,
-                    New AddressJar("internal address").Weaken)
-            reg(jar, W3PacketId.Greet,
-                    New UInt16Jar("slot layout included").Weaken,
-                    New ByteJar("player index").Weaken,
-                    New AddressJar("external address").Weaken)
-            reg(jar, W3PacketId.HostMapInfo,
-                    New UInt32Jar("unknown").Weaken,
-                    New StringJar("path").Weaken,
-                    New UInt32Jar("size").Weaken,
-                    New ArrayJar("crc32", 4).Weaken,
-                    New ArrayJar("xoro checksum", 4).Weaken,
-                    New ArrayJar("sha1 checksum", 20).Weaken)
-            reg(jar, W3PacketId.RejectEntry,
-                    New EnumUInt32Jar(Of RejectReason)("reason").Weaken)
-            reg(jar, W3PacketId.OtherPlayerJoined,
-                    New UInt32Jar("peer key").Weaken,
-                    New ByteJar("index").Weaken,
-                    New StringJar("name", , , , "max 15 chars + terminator").Weaken,
-                    New UInt16Jar("unknown[0x01]").Weaken,
-                    New AddressJar("external address").Weaken,
-                    New AddressJar("internal address").Weaken)
+            reg(jar, Jars.Knock)
+            reg(jar, Jars.Greet)
+            reg(jar, Jars.HostMapInfo)
+            reg(jar, Jars.RejectEntry)
+            reg(jar, Jars.OtherPlayerJoined)
 
             'Lobby
-            reg(jar, W3PacketId.OtherPlayerReady,
-                    New ByteJar("player index").Weaken)
-            reg(jar, W3PacketId.StartLoading)
-            reg(jar, W3PacketId.StartCountdown)
-            reg(jar, W3PacketId.Ready)
-            reg(jar, W3PacketId.LobbyState,
-                    New UInt16Jar("state size").Weaken,
-                    New ListJar(Of Dictionary(Of String, Object))("slots", New SlotJar("slot")).Weaken,
-                    New UInt32Jar("time").Weaken,
-                    New ByteJar("layout style").Weaken,
-                    New ByteJar("num player slots").Weaken)
-            reg(jar, W3PacketId.PeerConnectionInfo,
-                    New UInt16Jar("player bitflags").Weaken)
+            reg(jar, Jars.OtherPlayerReady)
+            reg(jar, Jars.StartLoading)
+            reg(jar, Jars.StartCountdown)
+            reg(jar, Jars.Ready)
+            reg(jar, Jars.LobbyState)
+            reg(jar, Jars.PeerConnectionInfo)
 
             'Gameplay
-            reg(jar, W3PacketId.ShowLagScreen,
-                    New ListJar(Of Dictionary(Of String, Object))("laggers",
-                        New TupleJar("lagger",
-                            New ByteJar("player index").Weaken,
-                            New UInt32Jar("initial milliseconds used").Weaken)).Weaken)
-            reg(jar, W3PacketId.RemovePlayerFromLagScreen,
-                    New ByteJar("player index").Weaken,
-                    New UInt32Jar("marginal milliseconds used").Weaken)
-            reg(jar, W3PacketId.ClientDropLagger)
-            reg(jar, W3PacketId.Tick,
-                    New UInt16Jar("time span").Weaken,
-                    New ArrayJar("subpacket", takerest:=True).Weaken)
-            reg(jar, W3PacketId.Tock,
-                    New ArrayJar("game state checksum", 5).Weaken)
-            reg(jar, W3PacketId.GameAction,
-                    New ArrayJar("crc32", expectedSize:=4).Weaken,
-                    New RepeatingJar(Of W3GameAction)("actions", New W3GameActionJar("action")).Weaken)
+            reg(jar, Jars.ShowLagScreen)
+            reg(jar, Jars.RemovePlayerFromLagScreen)
+            reg(jar, Jars.ClientDropLagger)
+            reg(jar, Jars.Tick)
+            reg(jar, Jars.Tock)
+            reg(jar, Jars.GameAction)
 
             'Lan
-            reg(jar, W3PacketId.LanRequestGame,
-                    New StringJar("product id", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
-                    New UInt32Jar("major version").Weaken,
-                    New UInt32Jar("unknown1").Weaken)
-            reg(jar, W3PacketId.LanRefreshGame,
-                    New UInt32Jar("game id").Weaken,
-                    New UInt32Jar("num players").Weaken,
-                    New UInt32Jar("free slots").Weaken)
-            reg(jar, W3PacketId.LanCreateGame,
-                    New StringJar("product id", False, True, 4).Weaken,
-                    New UInt32Jar("major version").Weaken,
-                    New UInt32Jar("game id").Weaken)
-            reg(jar, W3PacketId.LanDestroyGame,
-                    New UInt32Jar("game id").Weaken)
-            reg(jar, W3PacketId.LanDescribeGame,
-                    New StringJar("product id", False, True, 4).Weaken,
-                    New UInt32Jar("major version").Weaken,
-                    New UInt32Jar("game id").Weaken,
-                    New UInt32Jar("entry key").Weaken,
-                    New StringJar("name", True).Weaken,
-                    New StringJar("password", True, , , "unused").Weaken,
-                    New W3MapSettingsJar("statstring"),
-                    New UInt32Jar("num slots").Weaken,
-                    New EnumUInt32Jar(Of GameTypes)("game type").Weaken,
-                    New UInt32Jar("num players + 1").Weaken,
-                    New UInt32Jar("free slots + 1").Weaken,
-                    New UInt32Jar("age").Weaken,
-                    New UInt16Jar("listen port").Weaken)
+            reg(jar, Jars.LanRequestGame)
+            reg(jar, Jars.LanRefreshGame)
+            reg(jar, Jars.LanCreateGame)
+            reg(jar, Jars.LanDestroyGame)
+            reg(jar, Jars.LanDescribeGame)
 
             'Peer
-            reg(jar, W3PacketId.PeerKnock,
-                    New UInt32Jar("receiver peer key").Weaken,
-                    New UInt32Jar("unknown1").Weaken,
-                    New ByteJar("sender player id").Weaken,
-                    New ByteJar("unknown3").Weaken,
-                    New UInt32Jar("sender peer connection flags").Weaken)
-            reg(jar, W3PacketId.PeerPing,
-                    New ArrayJar("salt", 4).Weaken,
-                    New UInt32Jar("sender peer connection flags").Weaken,
-                    New UInt32Jar("unknown2").Weaken)
-            reg(jar, W3PacketId.PeerPong,
-                    New ArrayJar("salt", 4).Weaken)
+            reg(jar, Jars.PeerKnock)
+            reg(jar, Jars.PeerPing)
+            reg(jar, Jars.PeerPong)
 
             'Map Download
-            reg(jar, W3PacketId.ClientMapInfo,
-                    New UInt32Jar("unknown").Weaken,
-                    New EnumByteJar(Of DownloadState)("dl state").Weaken,
-                    New UInt32Jar("total downloaded").Weaken)
-            reg(jar, W3PacketId.SetUploadTarget,
-                    New UInt32Jar("unknown1").Weaken,
-                    New ByteJar("receiving player index").Weaken,
-                    New UInt32Jar("starting file pos").Weaken)
-            reg(jar, W3PacketId.SetDownloadSource,
-                    New UInt32Jar("unknown").Weaken,
-                    New ByteJar("sending player index").Weaken)
-            reg(jar, W3PacketId.MapFileData,
-                    New ByteJar("receiving player index").Weaken,
-                    New ByteJar("sending player index").Weaken,
-                    New UInt32Jar("unknown").Weaken,
-                    New UInt32Jar("file position").Weaken,
-                    New ArrayJar("crc32", 4).Weaken,
-                    New ArrayJar("file data", takerest:=True).Weaken)
-            reg(jar, W3PacketId.MapFileDataReceived,
-                    New ByteJar("sender index").Weaken,
-                    New ByteJar("receiver index").Weaken,
-                    New UInt32Jar("unknown").Weaken,
-                    New UInt32Jar("total downloaded").Weaken)
-            reg(jar, W3PacketId.MapFileDataProblem,
-                    New ByteJar("sender index").Weaken,
-                    New ByteJar("receiver index").Weaken,
-                    New UInt32Jar("unknown").Weaken)
-
-            'EXPERIMENTAL
-            reg(jar, W3PacketId.ConfirmHost)
-            reg(jar, W3PacketId.SetHost,
-                    New ByteJar("player index").Weaken)
-            reg(jar, W3PacketId.AcceptHost)
+            reg(jar, Jars.ClientMapInfo)
+            reg(jar, Jars.SetUploadTarget)
+            reg(jar, Jars.SetDownloadSource)
+            reg(jar, Jars.MapFileData)
+            reg(jar, Jars.MapFileDataReceived)
+            reg(jar, Jars.MapFileDataProblem)
 
             Return jar
         End Function
@@ -478,6 +585,7 @@ Namespace Warcraft3
 #Region "Parsing"
         Public Shared Function FromData(ByVal id As W3PacketId, ByVal data As ViewableList(Of Byte)) As W3Packet
             Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(id, packetJar.Parse(id, data))
         End Function
 #End Region
@@ -490,7 +598,7 @@ Namespace Warcraft3
             Return New W3Packet(W3PacketId.ShowLagScreen, New Dictionary(Of String, Object) From {
                     {"laggers", (From p In laggers
                                  Select New Dictionary(Of String, Object) From {
-                                        {"player index", p.index},
+                                        {"player index", p.Index},
                                         {"initial milliseconds used", 2000}}).ToList()}})
         End Function
         <Pure()>
@@ -499,7 +607,7 @@ Namespace Warcraft3
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.RemovePlayerFromLagScreen, New Dictionary(Of String, Object) From {
-                    {"player index", player.index},
+                    {"player index", player.Index},
                     {"marginal milliseconds used", lagTimeInMilliseconds}})
         End Function
         <Pure()>
@@ -515,15 +623,15 @@ Namespace Warcraft3
             Select Case chatType
                 Case chatType.Game
                     Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
-                            {"receiving player indexes", (From p In receivingPlayers Select p.index).ToList},
-                            {"sending player index", sender.index},
+                            {"receiving player indexes", (From p In receivingPlayers Select p.Index).ToList},
+                            {"sending player index", sender.Index},
                             {"type", chatType},
                             {"message", text},
                             {"receiver type", receiverType}})
                 Case chatType.Lobby
                     Return New W3Packet(W3PacketId.Text, New Dictionary(Of String, Object) From {
-                            {"receiving player indexes", (From p In receivingPlayers Select p.index).ToList},
-                            {"sending player index", sender.index},
+                            {"receiving player indexes", (From p In receivingPlayers Select p.Index).ToList},
+                            {"sending player index", sender.Index},
                             {"type", chatType},
                             {"message", text}})
                 Case Else
@@ -556,9 +664,9 @@ Namespace Warcraft3
                     {"unknown", 1},
                     {"path", "Maps\" + map.RelativePath},
                     {"size", map.FileSize},
-                    {"crc32", map.ChecksumCRC32.ToArray},
-                    {"xoro checksum", map.ChecksumXORO.ToArray},
-                    {"sha1 checksum", map.ChecksumSHA1.ToArray}})
+                    {"crc32", map.FileChecksumCRC32},
+                    {"xoro checksum", map.MapChecksumXORO},
+                    {"sha1 checksum", map.MapChecksumSHA1.ToArray}})
         End Function
         <Pure()>
         Public Shared Function MakeOtherPlayerJoined(ByVal stranger As W3Player,
@@ -570,9 +678,9 @@ Namespace Warcraft3
                              AddressJar.PackIPv4Address(stranger.GetRemoteEndPoint.Address, stranger.listenPort))
             Return New W3Packet(W3PacketId.OtherPlayerJoined, New Dictionary(Of String, Object) From {
                     {"peer key", stranger.peerKey},
-                    {"index", If(overrideIndex <> 0, overrideIndex, stranger.index)},
-                    {"name", stranger.name},
-                    {"unknown[0x01]", 1},
+                    {"index", If(overrideIndex <> 0, overrideIndex, stranger.Index)},
+                    {"name", stranger.Name},
+                    {"unknown data", New Byte() {0}},
                     {"external address", address},
                     {"internal address", address}})
         End Function
@@ -588,7 +696,7 @@ Namespace Warcraft3
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.OtherPlayerReady, New Dictionary(Of String, Object) From {
-                    {"player index", player.index}})
+                    {"player index", player.Index}})
         End Function
         <Pure()>
         Public Shared Function MakeOtherPlayerLeft(ByVal player As W3Player,
@@ -596,7 +704,7 @@ Namespace Warcraft3
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.OtherPlayerLeft, New Dictionary(Of String, Object) From {
-                                {"player index", player.index},
+                                {"player index", player.Index},
                                 {"leave type", CByte(leaveType)}})
         End Function
         <Pure()>
@@ -617,30 +725,22 @@ Namespace Warcraft3
                     {"num player slots", If(Not hideSlots, map.NumPlayerSlots, If(map.NumPlayerSlots = 12, 11, 12))}})
         End Function
         <Pure()>
-        Public Shared Function MakeSetHost(ByVal newHost As Byte) As W3Packet
-            Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Return New W3Packet(W3PacketId.SetHost, New Dictionary(Of String, Object) From {
-                    {"player index", newHost}})
-        End Function
-        <Pure()>
         Public Shared Function MakeStartCountdown() As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.StartCountdown, New Dictionary(Of String, Object))
         End Function
-        <Pure()> Public Shared Function MakeStartLoading() As W3Packet
+        <Pure()>
+        Public Shared Function MakeStartLoading() As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.StartLoading, New Dictionary(Of String, Object))
         End Function
-        <Pure()> Public Shared Function MakeConfirmHost() As W3Packet
-            Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
-            Return New W3Packet(W3PacketId.ConfirmHost, New Dictionary(Of String, Object))
-        End Function
-        <Pure()> Public Shared Function MakeTick(Optional ByVal delta As UShort = 250,
-                                                 Optional ByVal tickData() As Byte = Nothing) As W3Packet
+        <Pure()>
+        Public Shared Function MakeTick(Optional ByVal delta As UShort = 250,
+                                        Optional ByVal tickData() As Byte = Nothing) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             tickData = If(tickData, {})
             If tickData.Length > 0 Then
-                tickData = Concat(Bnet.Crypt.CRC32(New IO.MemoryStream(tickData)).Bytes().SubArray(0, 2), tickData)
+                tickData = Concat(tickData.CRC32.Bytes.SubArray(0, 2), tickData)
             End If
 
             Return New W3Packet(W3PacketId.Tick, New Dictionary(Of String, Object) From {
@@ -667,15 +767,13 @@ Namespace Warcraft3
             If senderIndex = 0 Then senderIndex = If(receiverIndex = 1, CByte(2), CByte(1))
 
             refSizeDataSent = filedata.Length
-            Using memFileData = New IO.MemoryStream(filedata)
-                Return New W3Packet(W3PacketId.MapFileData, New Dictionary(Of String, Object) From {
-                        {"receiving player index", receiverIndex},
-                        {"sending player index", senderIndex},
-                        {"unknown", 1},
-                        {"file position", filePosition},
-                        {"crc32", Bnet.Crypt.CRC32(memFileData).Bytes()},
-                        {"file data", filedata}})
-            End Using
+            Return New W3Packet(W3PacketId.MapFileData, New Dictionary(Of String, Object) From {
+                    {"receiving player index", receiverIndex},
+                    {"sending player index", senderIndex},
+                    {"unknown", 1},
+                    {"file position", filePosition},
+                    {"crc32", filedata.CRC32.Bytes},
+                    {"file data", filedata}})
         End Function
         Public Shared Function MakeSetUploadTarget(ByVal receiverIndex As Byte,
                                                    ByVal filePosition As UInteger) As W3Packet
@@ -729,19 +827,21 @@ Namespace Warcraft3
                     {"game id", gameId}})
         End Function
         Public Shared Function MakeLanRefreshGame(ByVal gameId As UInteger,
-                                                  ByVal game As IW3GameDescription) As W3Packet
+                                                  ByVal game As W3GameDescription) As W3Packet
+            Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.LanRefreshGame, New Dictionary(Of String, Object) From {
                     {"game id", gameId},
                     {"num players", 0},
-                    {"free slots", game.NumPlayerAndObsSlots}})
+                    {"free slots", game.TotalSlotCount}})
         End Function
         Public Shared Function MakeLanDescribeGame(ByVal creationTime As ModInt32,
                                                    ByVal majorVersion As UInteger,
                                                    ByVal gameId As UInteger,
-                                                   ByVal game As IW3GameDescription,
+                                                   ByVal game As W3GameDescription,
                                                    ByVal listenPort As UShort,
                                                    Optional ByVal gameType As GameTypes = GameTypes.CreateGameUnknown0) As W3Packet
+            Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.LanDescribeGame, New Dictionary(Of String, Object) From {
                     {"product id", "W3XP"},
@@ -750,11 +850,11 @@ Namespace Warcraft3
                     {"entry key", 2642024974UI},
                     {"name", game.Name},
                     {"password", ""},
-                    {"statstring", New Dictionary(Of String, Object) From {{"settings", game.Settings}, {"username", game.HostUserName}}},
-                    {"num slots", game.NumPlayerAndObsSlots()},
+                    {"statstring", game.GameStats},
+                    {"num slots", game.TotalSlotCount()},
                     {"game type", gameType},
                     {"num players + 1", 1},
-                    {"free slots + 1", game.NumPlayerAndObsSlots() + 1},
+                    {"free slots + 1", game.TotalSlotCount() + 1},
                     {"age", CUInt(Environment.TickCount - creationTime)},
                     {"listen port", listenPort}})
         End Function
@@ -768,17 +868,24 @@ Namespace Warcraft3
 #Region "Packing: Client Packets"
         Public Shared Function MakeKnock(ByVal name As String,
                                          ByVal listenPort As UShort,
-                                         ByVal sendingPort As UShort) As W3Packet
+                                         ByVal sendingPort As UShort,
+                                         Optional ByVal gameId As UInt32 = 0,
+                                         Optional ByVal entryKey As UInt32 = 0,
+                                         Optional ByVal peerKey As UInt32 = 0,
+                                         Optional ByVal internalAddress As Net.IPAddress = Nothing) As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
+            If internalAddress Is Nothing Then
+                internalAddress = New Net.IPAddress(GetCachedIPAddressBytes(external:=True))
+            End If
             Return New W3Packet(W3PacketId.Knock, New Dictionary(Of String, Object) From {
-                    {"game id", 0},
-                    {"entry key", 0},
-                    {"unknown2", 0},
+                    {"game id", gameId},
+                    {"entry key", entryKey},
+                    {"unknown value", 0},
                     {"listen port", listenPort},
-                    {"peer key", 0},
+                    {"peer key", peerKey},
                     {"name", name},
-                    {"unknown3", 1},
-                    {"internal address", AddressJar.PackIPv4Address(GetCachedIPAddressBytes(external:=True), sendingPort)}})
+                    {"unknown data", New Byte() {0}},
+                    {"internal address", AddressJar.PackIPv4Address(internalAddress.GetAddressBytes, sendingPort)}})
         End Function
         Public Shared Function MakeReady() As W3Packet
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
@@ -875,6 +982,7 @@ Namespace Warcraft3
         End Function
         Public Shared Function PackIPv4Address(ByVal address As Net.IPEndPoint) As Dictionary(Of String, Object)
             Contract.Requires(address IsNot Nothing)
+            Contract.Requires(address.Address IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Dictionary(Of String, Object))() IsNot Nothing)
             Dim bytes = address.Address.GetAddressBytes()
             Contract.Assume(bytes IsNot Nothing)
@@ -917,16 +1025,57 @@ Namespace Warcraft3
         Public Shared Function PackSlot(ByVal slot As W3Slot,
                                         ByVal receiver As W3Player) As Dictionary(Of String, Object)
             Return New Dictionary(Of String, Object) From {
-                    {"team index", slot.team},
-                    {"color", If(slot.team = W3Slot.ObserverTeamIndex, W3Slot.ObserverTeamIndex, slot.color)},
+                    {"team index", slot.Team},
+                    {"color", If(slot.Team = W3Slot.ObserverTeamIndex, W3Slot.ObserverTeamIndex, slot.color)},
                     {"race", If(slot.game.Map.isMelee, slot.race Or W3Slot.Races.Unlocked, slot.race)},
                     {"handicap", slot.handicap},
-                    {"is computer", If(slot.contents.ContentType = SlotContentType.Computer, 1, 0)},
-                    {"computer difficulty", slot.contents.DataComputerLevel},
-                    {"slot state", slot.contents.DataState(receiver)},
-                    {"player index", slot.contents.DataPlayerIndex(receiver)},
-                    {"dl percent", slot.contents.DataDownloadPercent(receiver)}}
+                    {"is computer", If(slot.Contents.ContentType = SlotContentType.Computer, 1, 0)},
+                    {"computer difficulty", slot.Contents.DataComputerLevel},
+                    {"slot state", slot.Contents.DataState(receiver)},
+                    {"player index", slot.Contents.DataPlayerIndex(receiver)},
+                    {"dl percent", slot.Contents.DataDownloadPercent(receiver)}}
         End Function
     End Class
 #End Region
+
+    Public NotInheritable Class W3PacketHandler
+        Private ReadOnly handlers As New KeyedEvent(Of W3PacketId, ViewableList(Of Byte))
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(handlers IsNot Nothing)
+        End Sub
+
+        Public Sub [AddHandler](Of TData)(ByVal packetId As W3PacketId,
+                                          ByVal jar As IJar(Of TData),
+                                          ByVal handler As Func(Of IPickle(Of TData), IFuture))
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            packetId = packetId.AssumeNotNull
+            handlers.AddHandler(packetId, Function(data As ViewableList(Of Byte))
+                                              Dim value = jar.Parse(data)
+                                              Return handler(value)
+                                          End Function)
+        End Sub
+
+        Public Function HandlePacket(ByVal packetData As ViewableList(Of Byte)) As IFuture
+            Contract.Requires(packetData IsNot Nothing)
+            Contract.Requires(packetData.Length >= 4)
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+
+            'Prep
+            Dim packetId = CType(packetData(1), W3PacketId)
+            Dim packetBody = packetData.SubView(4)
+            If packetData(0) <> W3Packet.PacketPrefixValue Then
+                Return New IO.IOException("Invalid packet header").FuturizedFail
+            End If
+
+            'Handle
+            packetId = packetId.AssumeNotNull
+            Dim result = handlers.Raise(packetId, packetData)
+            If result.Count = 0 Then
+                Return New IO.IOException("No handler for {0}".Frmt(packetId)).FuturizedFail
+            End If
+            Return result.Defuturized
+        End Function
+    End Class
 End Namespace

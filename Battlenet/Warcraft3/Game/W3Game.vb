@@ -172,16 +172,13 @@ Namespace Warcraft3
             'Player Chat
             Select Case commandType
                 Case W3Packet.NonGameAction.GameChat, W3Packet.NonGameAction.LobbyChat
-                    Dim message = CStr(vals("message"))
+                    Dim message = CStr(vals("message")).AssumeNotNull
                     Dim chatType = If(commandType = W3Packet.NonGameAction.GameChat, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby)
                     Dim receiverType As W3Packet.ChatReceiverType
                     If chatType = W3Packet.ChatType.Game Then
                         receiverType = CType(vals("receiver type"), W3Packet.ChatReceiverType)
                     End If
-                    Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IList(Of Byte))
-
-                    Contract.Assume(message IsNot Nothing)
-                    Contract.Assume(receivingPlayerIndexes IsNot Nothing)
+                    Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IList(Of Byte)).AssumeNotNull
 
                     ReceiveChat(sender,
                                 message,
@@ -231,13 +228,6 @@ Namespace Warcraft3
             LobbyNew(arguments)
             LoadScreenNew()
             GamePlayNew()
-
-            Contract.Assume(DownloadScheduler IsNot Nothing)
-            Contract.Assume(fakeTickTimer IsNot Nothing)
-            Contract.Assume(visibleUnreadyPlayers IsNot Nothing)
-            Contract.Assume(visibleReadyPlayers IsNot Nothing)
-            Contract.Assume(unreadyPlayers IsNot Nothing)
-            Contract.Assume(readyPlayers IsNot Nothing)
         End Sub
 
         '''<summary>Disconnects from all players and kills the instance. Passes hosting to a player if possible.</summary>
@@ -282,25 +272,6 @@ Namespace Warcraft3
 #End Region
 
 #Region "Access"
-        '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>
-        Public Shared Function TeamVersusStringToTeamSizes(ByVal value As String) As IList(Of Integer)
-            Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IList(Of Integer))() IsNot Nothing)
-
-            'parse numbers between 'v's
-            Dim vals = value.ToUpperInvariant.Split("V"c)
-            Dim nums = New List(Of Integer)
-            For Each e In vals
-                Dim b As Byte
-                Contract.Assume(e IsNot Nothing)
-                If Not Byte.TryParse(e, b) Then
-                    Throw New InvalidOperationException("Non-numeric team limit '{0}'.".Frmt(e))
-                End If
-                nums.Add(b)
-            Next e
-            Return nums
-        End Function
-
         Private Sub ChangeState(ByVal newState As W3GameState)
             Dim oldState = state
             state = newState
@@ -313,20 +284,21 @@ Namespace Warcraft3
             Contract.Requires(pk IsNot Nothing)
             For Each player In (From _player In players
                                 Where _player IsNot source)
-                player.QueueSendPacket(pk)
+                player.AssumeNotNull.QueueSendPacket(pk)
             Next player
         End Sub
 
         '''<summary>Returns the number of slots potentially available for new players.</summary>
-        <Pure()> Private Function CountFreeSlots() As Integer
-            Dim freeSlots = From slot In slots Where slot.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept
-            Contract.Assume(freeSlots IsNot Nothing)
-            Return (freeSlots).Count
+        <Pure()>
+        Private Function CountFreeSlots() As Integer
+            Return (From slot In slots
+                    Where slot.AssumeNotNull.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept).
+                    AssumeNotNull.Count
         End Function
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
-        Private Function FindMatchingSlot(ByVal query As String) As W3Slot
+        Private Function TryFindMatchingSlot(ByVal query As String) As W3Slot
             Contract.Requires(query IsNot Nothing)
 
             Dim bestSlot As W3Slot = Nothing
@@ -341,11 +313,12 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Returns the slot containing the given player.</summary>
-        <Pure()> Private Function FindPlayerSlot(ByVal player As W3Player) As W3Slot
+        <Pure()>
+        Private Function TryFindPlayerSlot(ByVal player As W3Player) As W3Slot
             Contract.Requires(player IsNot Nothing)
             Return (From slot In slots
                     Where (From resident In slot.Contents.EnumPlayers Where resident Is player).Any
-                   ).FirstOrDefault
+                    ).FirstOrDefault
         End Function
 #End Region
 
@@ -355,8 +328,7 @@ Namespace Warcraft3
                                      Optional ByVal playerToAvoid As W3Player = Nothing)
             Contract.Requires(message IsNot Nothing)
             For Each player In (From _player In players Where _player IsNot playerToAvoid)
-                Contract.Assume(player IsNot Nothing)
-                SendMessageTo(message, player, display:=False)
+                SendMessageTo(message, player.AssumeNotNull, display:=False)
             Next player
             Logger.Log("{0}: {1}".Frmt(My.Resources.ProgramName, message), LogMessageType.Typical)
         End Sub
@@ -395,7 +367,7 @@ Namespace Warcraft3
             End If
 
             'Clean slot
-            Dim slot = FindPlayerSlot(player)
+            Dim slot = TryFindPlayerSlot(player)
             If slot IsNot Nothing Then
                 If slot.Contents.EnumPlayers.Contains(player) Then
                     slot.Contents = slot.Contents.RemovePlayer(player)
@@ -442,11 +414,11 @@ Namespace Warcraft3
             End If
         End Sub
 
-        Private Sub TryElevatePlayer(ByVal name As String,
-                                          Optional ByVal password As String = Nothing)
+        Private Sub ElevatePlayer(ByVal name As String,
+                                  Optional ByVal password As String = Nothing)
             Contract.Requires(name IsNot Nothing)
 
-            Dim player = FindPlayer(name)
+            Dim player = TryFindPlayer(name)
             If player Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
             If adminPlayer IsNot Nothing Then Throw New InvalidOperationException("A player is already the admin.")
             If password IsNot Nothing Then
@@ -461,18 +433,22 @@ Namespace Warcraft3
             SendMessageTo("You are now the admin.", player)
         End Sub
 
-        Private Function FindPlayer(ByVal username As String) As W3Player
+        Private Function TryFindPlayer(ByVal username As String) As W3Player
             Contract.Requires(username IsNot Nothing)
-            Return (From x In players Where x.name.ToUpperInvariant = username.ToUpperInvariant).FirstOrDefault
+            Return (From player In players
+                    Where String.Compare(player.AssumeNotNull.name, username, StringComparison.InvariantCultureIgnoreCase) = 0).
+                    FirstOrDefault
         End Function
-        Private Function FindPlayer(ByVal index As Byte) As W3Player
-            Return (From x In players Where x.Index = index).FirstOrDefault
+        Private Function TryFindPlayer(ByVal index As Byte) As W3Player
+            Return (From player In players
+                    Where player.AssumeNotNull.Index = index).
+                    FirstOrDefault
         End Function
 
         '''<summary>Boots players in the slot with the given index.</summary>
         Private Sub Boot(ByVal slotQuery As String)
             Contract.Requires(slotQuery IsNot Nothing)
-            Dim slot = FindMatchingSlot(slotQuery)
+            Dim slot = TryFindMatchingSlot(slotQuery)
             If slot Is Nothing Then Throw New InvalidOperationException("No slot {0}".Frmt(slotQuery))
             If Not slot.Contents.EnumPlayers.Any Then
                 Throw New InvalidOperationException("There is no player to boot in slot '{0}'.".Frmt(slotQuery))
@@ -495,11 +471,13 @@ Namespace Warcraft3
 #End Region
 
 #Region "Invisible Players"
-        <Pure()> Private Function IsPlayerVisible(ByVal player As W3Player) As Boolean
+        <Pure()>
+        Private Function IsPlayerVisible(ByVal player As W3Player) As Boolean
             Contract.Requires(player IsNot Nothing)
             Return indexMap(player.Index) = player.Index
         End Function
-        <Pure()> Private Function GetVisiblePlayer(ByVal player As W3Player) As W3Player
+        <Pure()>
+        Private Function GetVisiblePlayer(ByVal player As W3Player) As W3Player
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
             If IsPlayerVisible(player) Then Return player
@@ -585,7 +563,7 @@ Namespace Warcraft3
             Return ref.QueueAction(Sub()
                                        Contract.Assume(name IsNot Nothing)
                                        Contract.Assume(password IsNot Nothing)
-                                       TryElevatePlayer(name, password)
+                                       ElevatePlayer(name, password)
                                    End Sub)
         End Function
         Public Function QueueFindPlayer(ByVal userName As String) As IFuture(Of W3Player)
@@ -593,7 +571,7 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
             Return ref.QueueFunc(Function()
                                      Contract.Assume(userName IsNot Nothing)
-                                     Return FindPlayer(userName)
+                                     Return TryFindPlayer(userName)
                                  End Function)
         End Function
         Public Function QueueRemovePlayer(ByVal player As W3Player,

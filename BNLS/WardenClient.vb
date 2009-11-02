@@ -39,6 +39,11 @@ Namespace BNLS
         Public Event Fail(ByVal e As Exception)
         Public Event Disconnect(ByVal sender As WardenClient, ByVal expected As Boolean, ByVal reason As String)
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(logger IsNot Nothing)
+            Contract.Invariant(socket IsNot Nothing)
+        End Sub
+
         Private Sub New(ByVal socket As PacketSocket,
                         ByVal cookie As UInteger,
                         Optional ByVal logger As Logger = Nothing)

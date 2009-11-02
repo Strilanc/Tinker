@@ -2,36 +2,36 @@ Imports System.Net
 Imports System.Net.Sockets
 
 Public NotInheritable Class BnetSocket
-    Private WithEvents socket As PacketSocket
+    Private WithEvents _socket As PacketSocket
     Public Event Disconnected(ByVal sender As BnetSocket, ByVal expected As Boolean, ByVal reason As String)
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(socket IsNot Nothing)
+        Contract.Invariant(_socket IsNot Nothing)
     End Sub
 
     Public Sub New(ByVal socket As PacketSocket)
         Contract.Assume(socket IsNot Nothing)
-        Me.socket = socket
+        Me._socket = socket
     End Sub
 
     Public Property Logger() As Logger
         Get
             Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
-            Return socket.Logger
+            Return _socket.Logger
         End Get
         Set(ByVal value As Logger)
             Contract.Requires(value IsNot Nothing)
-            socket.Logger = value
+            _socket.Logger = value
         End Set
     End Property
     Public Property Name() As String
         Get
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-            Return socket.Name
+            Return _socket.Name
         End Get
         Set(ByVal value As String)
             Contract.Requires(value IsNot Nothing)
-            socket.Name = value
+            _socket.Name = value
         End Set
     End Property
 
@@ -39,35 +39,35 @@ Public NotInheritable Class BnetSocket
         Get
             Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
-            Return socket.LocalEndPoint
+            Return _socket.LocalEndPoint
         End Get
     End Property
     Public ReadOnly Property RemoteEndPoint As IPEndPoint
         Get
             Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
-            Return socket.RemoteEndPoint
+            Return _socket.RemoteEndPoint
         End Get
     End Property
     Public Function IsConnected() As Boolean
-        Return socket.IsConnected
+        Return _socket.IsConnected
     End Function
 
-    Private Sub CatchDisconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+    Private Sub CatchDisconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
         Contract.Requires(sender IsNot Nothing)
         Contract.Requires(reason IsNot Nothing)
         RaiseEvent Disconnected(Me, expected, reason)
     End Sub
     Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
         Contract.Requires(reason IsNot Nothing)
-        socket.Disconnect(expected, reason)
+        _socket.Disconnect(expected, reason)
     End Sub
 
     Public Sub SendPacket(ByVal packet As Bnet.BnetPacket)
         Contract.Requires(packet IsNot Nothing)
 
         'Validate
-        If Not socket.IsConnected Then
+        If Not _socket.IsConnected Then
             Throw New InvalidOperationException("Socket is not connected")
         End If
 
@@ -77,7 +77,7 @@ Public NotInheritable Class BnetSocket
             Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
             'Send
-            socket.WritePacket(Concat({Bnet.BnetPacket.PacketPrefixValue, packet.id, 0, 0},
+            _socket.WritePacket(Concat({Bnet.BnetPacket.PacketPrefixValue, packet.id, 0, 0},
                                       packet.Payload.Data.ToArray))
 
         Catch e As Pickling.PicklingException
@@ -94,7 +94,7 @@ Public NotInheritable Class BnetSocket
 
     Public Function FutureReadPacket() As IFuture(Of Bnet.BnetPacket)
         Contract.Ensures(Contract.Result(Of IFuture(Of Bnet.BnetPacket))() IsNot Nothing)
-        Return socket.FutureReadPacket().Select(
+        Return _socket.FutureReadPacket().Select(
             Function(data)
                 Contract.Assume(data IsNot Nothing)
                 If data.Length < 4 Then
@@ -131,12 +131,19 @@ Public NotInheritable Class BnetSocket
             End Function
         )
     End Function
+
+    Public ReadOnly Property Socket As PacketSocket
+        Get
+            Contract.Ensures(Contract.Result(Of PacketSocket)() IsNot Nothing)
+            Return _socket
+        End Get
+    End Property
 End Class
 
 Public NotInheritable Class PacketSocket
     Private expectConnected As Boolean
     Private ReadOnly client As TcpClient
-    Private ReadOnly subStream As IO.Stream
+    Private ReadOnly _subStream As IO.Stream
     Private ReadOnly packetStreamer As PacketStreamer
     Private ReadOnly _remoteEndPoint As IPEndPoint
     Private _logger As Logger
@@ -169,7 +176,7 @@ Public NotInheritable Class PacketSocket
     End Property
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(subStream IsNot Nothing)
+        Contract.Invariant(_subStream IsNot Nothing)
         Contract.Invariant(packetStreamer IsNot Nothing)
         Contract.Invariant(deadManSwitch IsNot Nothing)
         Contract.Invariant(_remoteEndPoint IsNot Nothing)
@@ -180,7 +187,7 @@ Public NotInheritable Class PacketSocket
     End Sub
 
     Public Sub New(ByVal client As TcpClient,
-                   ByVal timeout As TimeSpan,
+                   Optional ByVal timeout As TimeSpan? = Nothing,
                    Optional ByVal logger As Logger = Nothing,
                    Optional ByVal streamWrapper As Func(Of IO.Stream, IO.Stream) = Nothing,
                    Optional ByVal bufferSize As Integer = DefaultBufferSize,
@@ -189,13 +196,15 @@ Public NotInheritable Class PacketSocket
                    Optional ByVal name As String = Nothing)
         Contract.Assume(client IsNot Nothing) 'bug in contracts required not using requires here
 
-        Me.subStream = client.GetStream
-        If streamWrapper IsNot Nothing Then Me.subStream = streamWrapper(Me.subStream)
+        Me._subStream = client.GetStream
+        If streamWrapper IsNot Nothing Then Me._subStream = streamWrapper(Me._subStream)
         Me.bufferSize = bufferSize
-        Me.deadManSwitch = New DeadManSwitch(timeout, initiallyArmed:=True)
+        If timeout IsNot Nothing Then
+            Me.deadManSwitch = New DeadManSwitch(timeout.Value, initiallyArmed:=True)
+        End If
         Me._logger = If(logger, New Logger)
         Me.client = client
-        Me.packetStreamer = New PacketStreamer(Me.subStream, numBytesBeforeSize, numSizeBytes, maxPacketSize:=bufferSize)
+        Me.packetStreamer = New PacketStreamer(Me._subStream, numBytesBeforeSize, numSizeBytes, maxPacketSize:=bufferSize)
         Me.expectConnected = client.Connected
         _remoteEndPoint = CType(client.Client.RemoteEndPoint, Net.IPEndPoint)
         If RemoteEndPoint.Address.GetAddressBytes().HasSameItemsAs(GetCachedIPAddressBytes(external:=False)) OrElse
@@ -218,7 +227,11 @@ Public NotInheritable Class PacketSocket
         Get
             Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
-            Return CType(client.Client.LocalEndPoint, Net.IPEndPoint)
+            Contract.Assume(client.Client IsNot Nothing)
+            Dim result = CType(client.Client.LocalEndPoint, Net.IPEndPoint)
+            Contract.Assume(result IsNot Nothing)
+            Contract.Assume(result.Address IsNot Nothing)
+            Return result
         End Get
     End Property
     Public Function IsConnected() As Boolean
@@ -229,8 +242,8 @@ Public NotInheritable Class PacketSocket
         If Not expectConnected Then Return
         expectConnected = False
         client.Close()
-        deadManSwitch.Dispose()
-        substream.Close()
+        If deadManSwitch IsNot Nothing Then deadManSwitch.Dispose()
+        _subStream.Close()
         ThreadPooledAction(Sub()
                                RaiseEvent Disconnected(Me, expected, reason)
                            End Sub)
@@ -240,16 +253,17 @@ Public NotInheritable Class PacketSocket
     End Sub
 
     Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
+        Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
         'Async read packet
         Dim result = packetStreamer.FutureReadPacket()
         'Async handle receiving packet
         result.CallWhenValueReady(
             Sub(data, dataException)
-                deadManSwitch.Reset()
+                If deadManSwitch IsNot Nothing Then deadManSwitch.Reset()
                 If dataException IsNot Nothing Then
                     Disconnect(expected:=False, reason:=dataException.ToString)
                 Else
-                    Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
+                    Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)
                 End If
             End Sub)
         Return result
@@ -258,12 +272,19 @@ Public NotInheritable Class PacketSocket
     Public Sub WritePacket(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
         packetStreamer.WritePacket(data)
-        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
+        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)
     End Sub
 
     Public Sub WriteRawData(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
-        substream.Write(data, 0, data.Length)
-        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
+        _subStream.Write(data, 0, data.Length)
+        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)
     End Sub
+
+    Public ReadOnly Property SubStream As IO.Stream
+        Get
+            Contract.Ensures(Contract.Result(Of IO.Stream)() IsNot Nothing)
+            Return _subStream
+        End Get
+    End Property
 End Class

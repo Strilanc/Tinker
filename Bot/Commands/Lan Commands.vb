@@ -23,6 +23,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_Host_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count >= 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
                 Dim map = W3Map.FromArgument(arguments(1))
 
                 'Server settings
@@ -36,10 +39,10 @@ Namespace Commands.Specializations
                         arguments(i) = ""
                     End If
                 Next i
-                Dim header = New W3GameHeader(arguments(0),
-                                              If(user Is Nothing, My.Resources.ProgramName, user.name),
-                                              New W3MapSettings(arguments, map),
-                                              target.serverListenPort, 0, 0, arguments, map.NumPlayerSlots)
+                Dim header = W3GameDescription.FromArguments(arguments(0),
+                                                             arguments(1),
+                                                             If(user Is Nothing, My.Resources.ProgramName, user.Name),
+                                                             arguments)
                 Dim settings = New ServerSettings(map, header, defaultListenPorts:={target.serverListenPort})
                 Dim f_server = target.parent.QueueCreateServer(target.name, settings, "[Not Linked]", True)
 
@@ -62,12 +65,15 @@ Namespace Commands.Specializations
                             "[--Add GameName Map] Adds a game to be advertised.")
             End Sub
             Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
                 Dim name = arguments(0)
                 Dim map = W3Map.FromArgument(arguments(1))
-                Dim id = target.AddGame(New W3GameHeader(arguments(0),
-                                                         My.Resources.ProgramName,
-                                                         New W3MapSettings(arguments, map),
-                                                         0, 0, 0, arguments, map.NumPlayerSlots))
+                Dim id = target.AddGame(W3GameDescription.FromArguments(arguments(0),
+                                                                        arguments(1),
+                                                                        If(user Is Nothing, My.Resources.ProgramName, user.Name),
+                                                                        arguments))
                 Return "Started advertising game '{0}' for map '{1}'.".Frmt(name, map.RelativePath, id).Futurized
             End Function
         End Class
@@ -81,6 +87,8 @@ Namespace Commands.Specializations
                             "[--Remove GameId] Removes a game being advertised.")
             End Sub
             Public Overrides Function Process(ByVal target As W3LanAdvertiser, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Dim id As UInteger
                 If Not UInteger.TryParse(arguments(0), id) Then
                     Throw New InvalidOperationException("Invalid game id.")

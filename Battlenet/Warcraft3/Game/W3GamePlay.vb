@@ -54,15 +54,13 @@
         End Sub
         Private Sub GameplayStart()
             For Each player In players
+                Contract.Assume(player IsNot Nothing)
                 player.QueueStartPlaying()
             Next player
             Me.lastTickTime = Environment.TickCount
             Me.tickTimer.Start()
         End Sub
         Private Sub GameplayStop()
-            For Each player In players
-                player.QueueStopPlaying()
-            Next player
             tickTimer.Stop()
         End Sub
 
@@ -133,9 +131,8 @@
                     ElseIf p.GetTockTime >= _gameTime OrElse p.isFake Then
                         laggingPlayers.Remove(p)
                         Dim p_ = p
-                        If IsPlayerVisible(p) OrElse (From q In laggingPlayers _
+                        If IsPlayerVisible(p) OrElse (From q In laggingPlayers
                                                       Where GetVisiblePlayer(q) Is GetVisiblePlayer(p_)).None Then
-                            Contract.Assume(p IsNot Nothing)
                             BroadcastPacket(
                                     W3Packet.MakeRemovePlayerFromLagScreen(
                                             GetVisiblePlayer(p),
@@ -154,6 +151,7 @@
             End If
         End Sub
         Private Sub SendQueuedGameData(ByVal record As TickRecord)
+            Contract.Requires(record IsNot Nothing)
             'Include all the data we can fit in a packet
             Dim dataLength = 0
             Dim dataList = New List(Of Byte())(gameDataQueue.Count)
@@ -161,10 +159,11 @@
             While gameDataQueue.Count > 0 _
                   AndAlso dataLength + gameDataQueue.Peek().Data.Length < PacketSocket.DefaultBufferSize - 20 '[20 includes headers and a small safety margin]
                 Dim e = gameDataQueue.Dequeue()
+                Contract.Assume(e IsNot Nothing)
                 outgoingData.Add(e)
 
                 'append client data to broadcast game data
-                Dim data = Concat({GetVisiblePlayer(e.Source).index},
+                Dim data = Concat({GetVisiblePlayer(e.Source).Index},
                                   CUShort(e.Data.Length).Bytes(),
                                   e.Data)
                 dataList.Add(data)

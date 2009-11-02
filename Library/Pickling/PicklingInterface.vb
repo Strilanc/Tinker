@@ -62,16 +62,19 @@
         Implements IPickle(Of T)
         Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
             Get
+                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
         Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle.Description
             Get
+                Contract.Ensures(Contract.Result(Of LazyValue(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
         Public ReadOnly Property Value As T Implements IPickle(Of T).Value
             Get
+                Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
@@ -97,6 +100,7 @@
             End Get
         End Property
         Public Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
+            Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of TValue))() IsNot Nothing)
             Throw New NotSupportedException()
         End Function

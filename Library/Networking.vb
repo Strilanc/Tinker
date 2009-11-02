@@ -10,13 +10,16 @@ Public Module NetworkingCommon
     Private cachedInternalIP As Byte()
     Public Sub CacheIPAddresses()
         'Internal IP
-        Dim addr = (From nic In NetworkInterface.GetAllNetworkInterfaces
+        Dim interfaces = NetworkInterface.GetAllNetworkInterfaces
+        Contract.Assume(interfaces IsNot Nothing)
+        Dim addr = (From nic In interfaces
                     Where nic.Supports(NetworkInterfaceComponent.IPv4)
                     Select a = (From address In nic.GetIPProperties.UnicastAddresses
                                 Where address.Address.AddressFamily = Net.Sockets.AddressFamily.InterNetwork
                                 Where address.Address.ToString <> "127.0.0.1").FirstOrDefault()
                     Where a IsNot Nothing).FirstOrDefault()
         If addr IsNot Nothing Then
+            Contract.Assume(addr.Address IsNot Nothing)
             cachedInternalIP = addr.Address.GetAddressBytes
         Else
             cachedInternalIP = New Byte() {127, 0, 0, 1}

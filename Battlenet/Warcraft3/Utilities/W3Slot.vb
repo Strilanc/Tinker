@@ -21,21 +21,18 @@
         End Property
         Public Property Team As Byte
             Get
-                Contract.Ensures(Contract.Result(Of Byte)() >= 0)
-                Contract.Ensures(Contract.Result(Of Byte)() < 12)
+                Contract.Ensures(Contract.Result(Of Byte)() <= 12)
                 Return _team
             End Get
             Set(ByVal value As Byte)
-                Contract.Requires(value >= 0)
-                Contract.Requires(value < 12)
+                Contract.Requires(value <= 12)
                 _team = value
             End Set
         End Property
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_contents IsNot Nothing)
-            Contract.Invariant(_team >= 0)
-            Contract.Invariant(_team < 12)
+            Contract.Invariant(_team <= 12)
         End Sub
 
 #Region "Enums"
@@ -88,10 +85,12 @@
         End Sub
         Public ReadOnly Property MatchableId() As String
             Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return (index + 1).ToString(CultureInfo.InvariantCulture)
             End Get
         End Property
         Public Function Matches(ByVal query As String) As Match
+            Contract.Requires(query IsNot Nothing)
             If query = (index + 1).ToString(CultureInfo.InvariantCulture) Then Return Match.Index
             If query.ToUpperInvariant = color.ToString.ToUpperInvariant Then Return Match.Color
             If Contents.Matches(query) Then Return Match.Contents
@@ -129,6 +128,7 @@
         Computer
         Player
     End Enum
+    <ContractClass(GetType(W3SlotContents.ContractClass))>
     Public MustInherit Class W3SlotContents
         Private ReadOnly _parent As W3Slot
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -170,6 +170,7 @@
         End Enum
         Public Overridable ReadOnly Property DataState(ByVal receiver As W3Player) As State
             Get
+                Contract.Requires(receiver IsNot Nothing)
                 Return State.Open
             End Get
         End Property
@@ -180,11 +181,13 @@
         End Property
         Public Overridable ReadOnly Property DataPlayerIndex(ByVal receiver As W3Player) As Byte
             Get
+                Contract.Requires(receiver IsNot Nothing)
                 Return 0
             End Get
         End Property
         Public Overridable ReadOnly Property DataDownloadPercent(ByVal receiver As W3Player) As Byte
             Get
+                Contract.Requires(receiver IsNot Nothing)
                 Return 255
             End Get
         End Property
@@ -210,6 +213,7 @@
         End Function
         Public Overridable Function RemovePlayer(ByVal player As W3Player) As W3SlotContents
             Contract.Requires(player IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of W3SlotContents)() IsNot Nothing)
             Throw New InvalidOperationException()
         End Function
         Public Overridable Function EnumPlayers() As IEnumerable(Of W3Player)
@@ -226,9 +230,24 @@
             Throw New NotSupportedException()
         End Function
         Public Overridable Function Matches(ByVal query As String) As Boolean
+            Contract.Requires(query IsNot Nothing)
             Return False
         End Function
 #End Region
+
+        <ContractClassFor(GetType(W3SlotContents))>
+        Public MustInherit Class ContractClass
+            Inherits W3SlotContents
+
+            Public Sub New(ByVal parent As W3Slot)
+                MyBase.New(parent)
+                Throw New NotSupportedException
+            End Sub
+            Public Overrides Function GenerateDescription() As IFuture(Of String)
+                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
+        End Class
     End Class
 
     Public Class W3SlotContentsOpen
@@ -307,6 +326,11 @@
     Public Class W3SlotContentsPlayer
         Inherits W3SlotContents
         Protected ReadOnly player As W3Player
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(player IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal parent As W3Slot, ByVal player As W3Player)
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)
@@ -370,13 +394,25 @@
 
     Public NotInheritable Class W3SlotContentsCovering
         Inherits W3SlotContentsPlayer
-        Public ReadOnly coveredSlot As W3Slot
+        Private ReadOnly _coveredSlot As W3Slot
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_coveredSlot IsNot Nothing)
+        End Sub
+
+        Public ReadOnly Property CoveredSlot As W3Slot
+            Get
+                Contract.Ensures(Contract.Result(Of W3Slot)() IsNot Nothing)
+                Return _coveredSlot
+            End Get
+        End Property
+
         Public Sub New(ByVal parent As W3Slot, ByVal coveredSlot As W3Slot, ByVal player As W3Player)
             MyBase.New(parent, player)
             Contract.Requires(parent IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(coveredSlot IsNot Nothing)
-            Me.coveredSlot = coveredSlot
+            Me._coveredSlot = coveredSlot
         End Sub
         Public Overrides Function GenerateDescription() As IFuture(Of String)
             Return MyBase.GenerateDescription.Select(Function(desc) "[Covering {0}] {1}".Frmt(coveredSlot.color, desc))
@@ -404,10 +440,17 @@
         Public ReadOnly coveringSlot As W3Slot
         Private ReadOnly _playerIndex As Byte
         Private ReadOnly players As List(Of W3Player)
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(players IsNot Nothing)
+            Contract.Invariant(coveringSlot IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal parent As W3Slot, ByVal coveringSlot As W3Slot, ByVal playerIndex As Byte, ByVal players As IEnumerable(Of W3Player))
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)
             Contract.Requires(players IsNot Nothing)
+            Contract.Requires(coveringSlot IsNot Nothing)
             Me.coveringSlot = coveringSlot
             Me.players = players.ToList
             Me._playerIndex = playerIndex

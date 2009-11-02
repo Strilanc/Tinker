@@ -94,11 +94,13 @@ Namespace Commands.Specializations
             Inherits BaseCommand(Of W3Server)
             Public Sub New()
                 MyBase.New("Open",
-                            1, ArgumentLimitType.Max,
-                            "[--Open name=generated_name]",
+                            1, ArgumentLimitType.Exact,
+                            "[Open name]",
                             "root=4;games=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Return target.QueueCreateGame(arguments(0)).EvalOnSuccess(Function() "Created instance.")
             End Function
         End Class
@@ -111,6 +113,8 @@ Namespace Commands.Specializations
                             "root=4;games=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Return target.QueueRemoveGame(arguments(0), ignorePermanent:=True).EvalOnSuccess(Function() "Closed instance.")
             End Function
         End Class

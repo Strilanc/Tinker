@@ -5,6 +5,7 @@ Imports System.Text
 Imports System.Net
 Imports System.IO
 Imports System.Numerics
+Imports Strilbrary.Enumeration
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
@@ -16,6 +17,15 @@ Public Module PoorlyCategorizedFunctions
         Return text.Replace("\n", Environment.NewLine)
     End Function
 
+    <Pure()> <Extension()>
+    Public Function FuturizedFail(ByVal e As Exception) As IFuture
+        Contract.Requires(e IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Dim result = New FutureAction
+        result.SetFailed(e)
+        Return result
+    End Function
+
     <Pure()>
     Public Function BreakQuotedWords(ByVal text As String) As List(Of String)
         Contract.Requires(text IsNot Nothing)
@@ -23,27 +33,27 @@ Public Module PoorlyCategorizedFunctions
 
         Dim quoted_words As New List(Of String)
         If text = "" Then Return quoted_words
-        Dim cur_quoted_word As String = Nothing
+        Dim curQuotedWord As String = Nothing
         For Each word In text.Split(" "c)
+            Contract.Assume(word IsNot Nothing)
             If word = "" Then Continue For
-            If cur_quoted_word Is Nothing Then
-                Contract.Assume(word.Length > 0)
+            Contract.Assume(word.Length > 0)
+            If curQuotedWord Is Nothing Then
                 If word(0) = """"c Then
                     If word(word.Length - 1) = """"c Then '[start and end of quoted word]
                         Contract.Assume(word.Length >= 2)
                         quoted_words.Add(word.Substring(1, word.Length - 2))
                     Else '[start of quoted word]
-                        Contract.Assume(word.Length >= 1)
-                        cur_quoted_word = word.Substring(1) + " "
+                        curQuotedWord = word.Substring(1) + " "
                     End If
                 Else '[normal word]
                     quoted_words.Add(word)
                 End If
             ElseIf word(word.Length - 1) = """"c Then '[end of quoted word]
-                quoted_words.Add(cur_quoted_word + word.Substring(0, word.Length - 1))
-                cur_quoted_word = Nothing
+                quoted_words.Add(curQuotedWord + word.Substring(0, word.Length - 1))
+                curQuotedWord = Nothing
             Else '[middle of quoted word]
-                cur_quoted_word += word + " "
+                curQuotedWord += word + " "
             End If
         Next word
         Return quoted_words
@@ -62,9 +72,12 @@ Public Module PoorlyCategorizedFunctions
         Dim pd = New String() {pairDivider}
         Dim vd = New String() {valueDivider}
         For Each pair In text.Split(pd, StringSplitOptions.RemoveEmptyEntries)
+            Contract.Assume(pair IsNot Nothing)
             Dim args = pair.Split(vd, StringSplitOptions.None)
             Contract.Assume(args IsNot Nothing)
             If args.Count < 2 Then Continue For
+            Contract.Assume(args(0) IsNot Nothing)
+            Contract.Assume(args(0).Length < pair.Length)
             d(args(0)) = parser(pair.Substring(args(0).Length + 1))
         Next pair
         Return d
@@ -90,7 +103,6 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(likeQuery IsNot Nothing)
         Contract.Requires(directory IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
-        Dim matches As New List(Of String)
 
         'Normalize input
         directory = directory.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
@@ -104,10 +116,11 @@ Public Module PoorlyCategorizedFunctions
         Dim dirQuery = "*"
         If fileQuery.Contains(DirectorySeparatorChar) Then
             Dim words = fileQuery.Split(DirectorySeparatorChar)
-            Dim file_pattern = words(words.Length - 1)
-            Contract.Assume(fileQuery.Length > file_pattern.Length)
-            dirQuery = fileQuery.Substring(0, fileQuery.Length - file_pattern.Length) + "*"
-            fileQuery = "*" + file_pattern
+            Dim filePattern = words(words.Length - 1)
+            Contract.Assume(filePattern IsNot Nothing)
+            Contract.Assume(fileQuery.Length > filePattern.Length)
+            dirQuery = fileQuery.Substring(0, fileQuery.Length - filePattern.Length) + "*"
+            fileQuery = "*" + filePattern
         End If
 
         'patterns are not case-sensitive
@@ -115,15 +128,16 @@ Public Module PoorlyCategorizedFunctions
         likeQuery = likeQuery.ToUpperInvariant
 
         'Check files in folder
+        Dim matches As New List(Of String)
         For Each filename In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
-            Contract.Assume(filename.Length < directory.Length)
+            Contract.Assume(filename IsNot Nothing)
+            Contract.Assume(filename.Length > directory.Length)
             filename = filename.Substring(directory.Length)
             If filename.ToUpperInvariant Like likeQuery AndAlso filename.ToUpperInvariant Like dirQuery Then
                 matches.Add(filename)
                 If matches.Count >= maxResults Then Exit For
             End If
         Next filename
-
         Return matches
     End Function
     Public Function GetDataFolderPath(ByVal subfolder As String) As String
@@ -136,27 +150,25 @@ Public Module PoorlyCategorizedFunctions
             folder += IO.Path.DirectorySeparatorChar
             Return folder
         Catch e As Exception
-            e.RaiseAsUnexpected("Error getting folder My Documents\HostBot\{0}.".Frmt(subfolder))
+            e.RaiseAsUnexpected("Error getting folder Documents\HostBot\{0}.".Frmt(subfolder))
             Throw
         End Try
     End Function
 #End Region
 
     ''' <summary>
-    ''' Converts little-endian digits in one base to little-endian digits in another base.
+    ''' Determines the little-endian digits in one base from the little-endian digits in another base.
     ''' </summary>
     <Pure()> <Extension()>
     Public Function ConvertFromBaseToBase(ByVal digits As IList(Of Byte),
                                           ByVal inputBase As UInteger,
-                                          ByVal outputBase As UInteger,
-                                          Optional ByVal minOutputLength As Integer = 0) As IList(Of Byte)
+                                          ByVal outputBase As UInteger) As IList(Of Byte)
         Contract.Requires(digits IsNot Nothing)
         Contract.Requires(inputBase >= 2)
         Contract.Requires(inputBase <= 256)
         Contract.Requires(outputBase >= 2)
         Contract.Requires(outputBase <= 256)
         Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count >= minOutputLength)
 
         'Convert from digits in input base to BigInteger
         Dim value = New BigInteger
@@ -167,7 +179,7 @@ Public Module PoorlyCategorizedFunctions
 
         'Convert from BigInteger to digits in output base
         Dim result = New List(Of Byte)
-        Do Until result.Count >= minOutputLength AndAlso value = 0
+        Do Until value = 0
             Dim remainder As BigInteger = Nothing
             value = BigInteger.DivRem(value, outputBase, remainder)
             result.Add(CByte(remainder))
@@ -175,20 +187,45 @@ Public Module PoorlyCategorizedFunctions
 
         Return result
     End Function
+    ''' <summary>
+    ''' Determines a list starting with the elements of the given list but padded with default values to meet a minimum length.
+    ''' </summary>
     <Pure()> <Extension()>
-    Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte)) As BigInteger
+    Public Function PaddedTo(Of T)(ByVal this As IList(Of T),
+                                   ByVal minimumLength As Integer) As IList(Of T)
+        Contract.Requires(this IsNot Nothing)
+        Contract.Requires(minimumLength >= 0)
+        Contract.Ensures(Contract.Result(Of IList(Of T))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IList(Of T))().Count >= minimumLength)
+        Contract.Ensures(Contract.Result(Of IList(Of T))().Count >= this.Count)
+
+        Dim result(0 To Math.Max(minimumLength, this.Count) - 1) As T
+        For i = 0 To this.Count - 1
+            result(i) = this(i)
+        Next i
+        Return result
+    End Function
+
+    <Pure()> <Extension()>
+    Public Function ToUnsignedBigInteger(ByVal digits As IList(Of Byte)) As BigInteger
         Contract.Requires(digits IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
-        Return New BigInteger(digits.Concat({0}).ToArray)
+        Return digits.ToArray.ToUnsignedBigInteger
     End Function
     <Pure()> <Extension()>
     Public Function ToUnsignedBigInteger(ByVal digits As Byte()) As BigInteger
         Contract.Requires(digits IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
-        If (digits(digits.Count - 1) And &H80) = 0 Then
+        If digits.Length = 0 Then
+            Dim result = New BigInteger(0)
+            Contract.Assume(result >= 0)
+            Return result
+        ElseIf (digits(digits.Length - 1) And &H80) = 0 Then
             Return New BigInteger(digits)
         Else
-            Return New BigInteger(Concat(digits, {0}))
+            Dim result = New BigInteger(Concat(digits, {0}))
+            Contract.Assume(result >= 0)
+            Return result
         End If
     End Function
     <Pure()> <Extension()>
@@ -196,10 +233,18 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(value >= 0)
         Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
         Dim result = value.ToByteArray()
-        If result(result.Length - 1) = 0 Then
+        Contract.Assume(result IsNot Nothing)
+        If result.Length > 0 AndAlso result(result.Length - 1) = 0 Then
             result = result.SubArray(0, result.Length - 1)
         End If
         Return result
+    End Function
+
+    <Pure()> <Extension()>
+    Public Function AssumeNotNull(Of T)(ByVal arg As T) As T
+        Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
+        Contract.Assume(arg IsNot Nothing)
+        Return arg
     End Function
 
     <Extension()>
@@ -209,38 +254,125 @@ Public Module PoorlyCategorizedFunctions
         bw.Write(data.ToAscBytes(True))
     End Sub
     <Extension()>
+    Public Function ReadNullTerminatedData(ByVal reader As BinaryReader) As IList(Of Byte)
+        Contract.Requires(reader IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+        Dim data = New List(Of Byte)
+        Do
+            Dim b = reader.ReadByte()
+            If b = 0 Then Exit Do
+            data.Add(b)
+        Loop
+        Return data
+    End Function
+    <Extension()>
+    Public Function ReadNullTerminatedString(ByVal reader As BinaryReader) As String
+        Contract.Requires(reader IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return reader.ReadNullTerminatedData.ParseChrString(nullTerminated:=False)
+    End Function
+    <Extension()>
     Public Function ReadNullTerminatedString(ByVal reader As BinaryReader,
                                              ByVal maxLength As Integer) As String
         Contract.Requires(reader IsNot Nothing)
         Contract.Requires(maxLength >= 0)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Dim result As String = Nothing
-        If Not TryReadNullTerminatedString(reader, maxLength, result) Then
-            Throw New IOException("Null-terminated string exceeded maximum length.")
-        End If
-        Contract.Assume(result IsNot Nothing)
-        Return result
-    End Function
-    <Extension()>
-    Public Function TryReadNullTerminatedString(ByVal reader As BinaryReader,
-                                                ByVal maxLength As Integer,
-                                                ByRef result As String) As Boolean
-        Contract.Requires(reader IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)().Length <= maxLength)
+
         Dim data(0 To maxLength - 1) As Byte
-        Dim n = 0
+        Dim numRead = 0
         Do
             Dim b = reader.ReadByte()
-            If b = 0 Then
-                Dim x = data.Take(n)
-                Contract.Assume(x IsNot Nothing)
-                result = x.ParseChrString(False)
-                Return True
-            End If
-            If n >= maxLength Then Return False
 
-            data(n) = b
-            n += 1
+            If b = 0 Then Return data.Take(numRead).ParseChrString(nullTerminated:=False)
+            If numRead >= maxLength Then Throw New InvalidDataException("Null-terminated string exceeded maximum length.")
+
+            data(numRead) = b
+            numRead += 1
         Loop
+    End Function
+
+    '''<summary>Determines the SHA-1 hash of a sequence of bytes.</summary>
+    <Extension()>
+    Public Function SHA1(ByVal data As IEnumerable(Of Byte)) As Byte()
+        Contract.Requires(data IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
+        Using sha = New System.Security.Cryptography.SHA1Managed()
+            Dim hash = sha.ComputeHash(data.ToStream)
+            Contract.Assume(hash IsNot Nothing)
+            Contract.Assume(hash.Length = 20)
+            Return hash
+        End Using
+    End Function
+
+    '''<summary>Determines the crc32 checksum of a sequence of bytes.</summary>
+    <Extension()> <Pure()>
+    Public Function CRC32(ByVal data As IEnumerable(Of Byte),
+                          Optional ByVal poly As UInteger = &H4C11DB7,
+                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+        Contract.Requires(data IsNot Nothing)
+        Return data.GetEnumerator.CRC32(poly, polyAlreadyReversed)
+    End Function
+    '''<summary>Determines the crc32 checksum of a sequence of bytes.</summary>
+    <Extension()>
+    Public Function CRC32(ByVal data As IEnumerator(Of Byte),
+                          Optional ByVal poly As UInteger = &H4C11DB7,
+                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+        Contract.Requires(data IsNot Nothing)
+        Dim reg As UInteger
+
+        'Reverse the polynomial
+        If polyAlreadyReversed = False Then
+            Dim polyRev As UInteger = 0
+            For i = 0 To 31
+                If ((poly >> i) And &H1) <> 0 Then
+                    polyRev = polyRev Or (CUInt(&H1) << (31 - i))
+                End If
+            Next i
+            poly = polyRev
+        End If
+
+        'Precompute the combined XOR masks for each byte
+        Dim xorTable(0 To 255) As UInteger
+        For i = 0 To 255
+            reg = CUInt(i)
+            For j = 0 To 7
+                If (reg And CUInt(&H1)) <> 0 Then
+                    reg = (reg >> 1) Xor poly
+                Else
+                    reg >>= 1
+                End If
+            Next j
+            xorTable(i) = reg
+        Next i
+
+        'Direct Table Algorithm
+        reg = UInteger.MaxValue
+        While data.MoveNext
+            reg = (reg >> 8) Xor xorTable(data.Current Xor CByte(reg And &HFF))
+        End While
+
+        Return Not reg
+    End Function
+
+    '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>
+    Public Function TeamVersusStringToTeamSizes(ByVal value As String) As IList(Of Integer)
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IList(Of Integer))() IsNot Nothing)
+
+        'parse numbers between 'v's
+        Dim vals = value.ToUpperInvariant.Split("V"c)
+        Dim nums = New List(Of Integer)
+        For Each e In vals
+            Dim b As Byte
+            Contract.Assume(e IsNot Nothing)
+            If Not Byte.TryParse(e, b) Then
+                Throw New InvalidOperationException("Non-numeric team limit '{0}'.".Frmt(e))
+            End If
+            nums.Add(b)
+        Next e
+        Return nums
     End Function
 End Module
 

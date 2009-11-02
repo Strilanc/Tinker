@@ -340,32 +340,21 @@ Namespace Warcraft3
 
         '''<summary>Finds a player with the given name in any of the server's games.</summary>
         Private Function f_FindPlayer(ByVal username As String) As IFuture(Of W3Player)
-            Dim futureFoundPlayers = From game In games_all Select Function()
-                                                                       Contract.Assume(game IsNot Nothing)
-                                                                       Contract.Assume(username IsNot Nothing)
-                                                                       Return game.QueueFindPlayer(username)
-                                                                   End Function()
-            Contract.Assume(futureFoundPlayers IsNot Nothing)
-            Dim futureFoundPlayers2 = futureFoundPlayers.ToList
-            Contract.Assume(futureFoundPlayers2 IsNot Nothing)
-            Return futureFoundPlayers2.Defuturized.Select(
-                Function(foundPlayers)
-                    Contract.Assume(foundPlayers IsNot Nothing)
-                    Dim matches = From player In foundPlayers Where player IsNot Nothing
-                    Contract.Assume(matches IsNot Nothing)
-                    Return matches.FirstOrDefault
-                End Function
+            Dim futureFoundPlayers = (From game In games_all
+                                      Select game.QueueFindPlayer(username)
+                                      ).ToList
+            Return futureFoundPlayers.Defuturized.Select(
+                Function(foundPlayers) (From player In foundPlayers
+                                        Where player IsNot Nothing
+                                        ).FirstOrDefault
             )
         End Function
 
         '''<summary>Finds a game containing a player with the given name.</summary>
         Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of W3Game)
             Return games_lobby.ToList.
-                   FutureSelect(Function(game)
-                                    Contract.Assume(game IsNot Nothing)
-                                    Contract.Assume(username IsNot Nothing)
-                                    Return game.QueueFindPlayer(username).Select(Function(player) player IsNot Nothing)
-                                End Function)
+                   FutureSelect(Function(game) game.QueueFindPlayer(username).
+                                                    Select(Function(player) player IsNot Nothing))
         End Function
 
         '''<summary>Removes a game with the given name.</summary>
@@ -409,12 +398,12 @@ Namespace Warcraft3
             Next m
         End Sub
 
-        Private Sub c_AdvertiserRemovedGame(ByVal _m As IGameSource, ByVal header As W3GameHeader, ByVal reason As String)
+        Private Sub c_AdvertiserRemovedGame(ByVal _m As IGameSource, ByVal header As W3GameDescription, ByVal reason As String)
             If header IsNot settings.header Then Return
             Dim m = CType(_m, IGameSourceSink)
             ref.QueueAction(
                 Sub()
-                    If Not linkedAdvertisers.Contains(m) Then  Return
+                    If Not linkedAdvertisers.Contains(m) Then Return
                     RemoveHandler m.RemovedGame, AddressOf c_AdvertiserRemovedGame
                     linkedAdvertisers.Remove(m)
                 End Sub

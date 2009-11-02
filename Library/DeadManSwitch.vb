@@ -5,6 +5,10 @@
     Private flipped As Boolean
     Public Event Triggered(ByVal sender As DeadManSwitch)
 
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(timer IsNot Nothing)
+    End Sub
+
     Public Sub New(ByVal period As TimeSpan,
                    ByVal initiallyArmed As Boolean)
         If period.Ticks <= 0 Then Throw New ArgumentOutOfRangeException("period", "TimeSpan must be positive.")

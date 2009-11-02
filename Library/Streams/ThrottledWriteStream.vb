@@ -42,10 +42,21 @@ Public NotInheritable Class ThrottledWriteStream
         Throw New NotSupportedException
     End Sub
 
+    Public Overrides Function BeginRead(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
+        Return substream.BeginRead(buffer, offset, count, callback, state)
+    End Function
+    Public Overrides Function EndRead(ByVal asyncResult As System.IAsyncResult) As Integer
+        Return substream.EndRead(asyncResult)
+    End Function
+
     '''<summary>Queues a write to the subStream. Doesn't block.</summary>
     Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
         writer.QueueWrite(SubArray(buffer, offset, count))
     End Sub
+
+    Public Overrides Function BeginWrite(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult
+        Throw New NotSupportedException
+    End Function
 End Class
 
 Public NotInheritable Class ThrottledWriter

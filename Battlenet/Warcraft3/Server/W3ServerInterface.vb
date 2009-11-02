@@ -10,7 +10,7 @@ Namespace Warcraft3
 
     Public NotInheritable Class ServerSettings
         Private ReadOnly _map As W3Map
-        Private ReadOnly _header As W3GameHeader
+        Private ReadOnly _header As W3GameDescription
         Public ReadOnly creationTime As Date = DateTime.Now()
         Public ReadOnly isAdminGame As Boolean
         Public ReadOnly allowDownloads As Boolean
@@ -34,9 +34,9 @@ Namespace Warcraft3
                 Return _map
             End Get
         End Property
-        Public ReadOnly Property Header As W3GameHeader
+        Public ReadOnly Property Header As W3GameDescription
             Get
-                Contract.Ensures(Contract.Result(Of W3GameHeader)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of W3GameDescription)() IsNot Nothing)
                 Return _header
             End Get
         End Property
@@ -84,7 +84,7 @@ Namespace Warcraft3
         End Function
 
         Public Sub New(ByVal map As W3Map,
-                       ByVal header As W3GameHeader,
+                       ByVal header As W3GameDescription,
                        Optional ByVal allowDownloads As Boolean = True,
                        Optional ByVal allowUpload As Boolean = True,
                        Optional ByVal isAutoStarted As Boolean = False,
@@ -113,6 +113,7 @@ Namespace Warcraft3
             Me.defaultListenPorts = If(defaultListenPorts, New List(Of UShort)).ToList()
 
             For Each arg In header.Options
+                Contract.Assume(arg IsNot Nothing)
                 Dim arg2 = ""
                 If arg.Contains("="c) Then
                     Dim n = arg.IndexOf("="c)
@@ -141,7 +142,7 @@ Namespace Warcraft3
                     Case "-ADMIN=", "-A="
                         Me.autoElevateUserName = arg2
                     Case "-ADMIN", "-A"
-                        Me.autoElevateUserName = header.HostUserName
+                        Me.autoElevateUserName = header.GameStats.HostName
                     Case "-GRAB"
                         Me.grabMap = True
                     Case "-PORT="

@@ -270,7 +270,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
         Private ReadOnly _links As New HashSet(Of TransferClient)
         Public completed As Boolean
 
-        Private Const CUR_ESTIMATE_CONVERGENCE_FACTOR As Double = 0.6
+        Private Shared ReadOnly LiveEstimateConvergence As New FiniteDouble(0.6)
 
         Public ReadOnly Property links As HashSet(Of TransferClient)
             Get
@@ -361,6 +361,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
             lastUpdateTime = lastStartTime
         End Sub
 
+        <ContractVerification(False)>
         Public Sub UpdateProgress(ByVal progress As FiniteDouble)
             Contract.Requires(progress >= 0)
             If Not Busy Then Return
@@ -372,12 +373,9 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
 
             Dim dp = progress - lastUpdateProgress
             Dim dt = New FiniteDouble(CUInt(time - lastUpdateTime))
-            Contract.Assume(dt.Value <> 0)
             Dim r = dp / dt
             Dim dc = dt / 1000
-            Contract.Assume(dc.Value <> 0)
-            Contract.Assume(CUR_ESTIMATE_CONVERGENCE_FACTOR > 0)
-            Dim c = CUR_ESTIMATE_CONVERGENCE_FACTOR ^ (dt / 1000)
+            Dim c = LiveEstimateConvergence ^ dc
             curRateEstimate *= c
             curRateEstimate += r * (1 - c)
 
@@ -396,6 +394,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
             Dim dp = lastUpdateProgress - lastStartProgress
             Dim dt = GetTransferingTime()
             If dt > 0 And dp > 0 Then
+                Contract.Assume(dt.Value <> 0)
                 Dim r = dp / dt
                 Dim c = New FiniteDouble(If(numMeasurements = 0 OrElse r > maxRateEstimate, 0, 0.9))
                 maxRateEstimate *= c

@@ -9,7 +9,7 @@ Public NotInheritable Class W3LanAdvertiser
 
     Private ReadOnly games1 As New HashSet(Of LanGame)
     Private ReadOnly idmap As New Dictionary(Of UInteger, LanGame)
-    Private ReadOnly headermap As New Dictionary(Of W3GameHeader, LanGame)
+    Private ReadOnly headermap As New Dictionary(Of W3GameDescription, LanGame)
     Private ReadOnly socket As UdpClient
     Public Const WidgetTypeName As String = "LanAdvertiser"
 
@@ -39,8 +39,8 @@ Public NotInheritable Class W3LanAdvertiser
     Private NotInheritable Class LanGame
         Public ReadOnly id As UInteger
         Public ReadOnly creation_time As Integer
-        Public ReadOnly header As W3GameHeader
-        Public Sub New(ByVal id As UInteger, ByVal header As W3GameHeader)
+        Public ReadOnly header As W3GameDescription
+        Public Sub New(ByVal id As UInteger, ByVal header As W3GameDescription)
             Me.id = id
             Me.creation_time = Environment.TickCount
             Me.header = header
@@ -51,11 +51,11 @@ Public NotInheritable Class W3LanAdvertiser
         Implements IGameSourceSink
 
         Private ReadOnly parent As W3LanAdvertiser
-        Private ReadOnly games As New HashSet(Of W3GameHeader)
+        Private ReadOnly games As New HashSet(Of W3GameDescription)
 
         Private Event DisposedLink(ByVal sender As Links.IGameSource, ByVal partner As IGameSink) Implements IGameSource.DisposedLink
-        Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSource.AddedGame
-        Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSource.RemovedGame
+        Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameDescription, ByVal server As W3Server) Implements IGameSource.AddedGame
+        Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameDescription, ByVal reason As String) Implements IGameSource.RemovedGame
 
         Public Sub New(ByVal parent As W3LanAdvertiser)
             'contract bug wrt interface event implementation requires this:
@@ -65,7 +65,7 @@ Public NotInheritable Class W3LanAdvertiser
             DisposeLink.CreateOneWayLink(parent, Me)
         End Sub
 
-        Public Sub AddGame(ByVal game As W3GameHeader, ByVal server As W3Server) Implements IGameSourceSink.AddGame
+        Public Sub AddGame(ByVal game As W3GameDescription, ByVal server As W3Server) Implements IGameSourceSink.AddGame
             If games.Contains(game) Then Return
             games.Add(game)
             parent.AddGame(game)
@@ -80,7 +80,7 @@ Public NotInheritable Class W3LanAdvertiser
                 )
             End If
         End Sub
-        Public Sub RemoveGame(ByVal game As W3GameHeader, ByVal reason As String) Implements IGameSourceSink.RemoveGame
+        Public Sub RemoveGame(ByVal game As W3GameDescription, ByVal reason As String) Implements IGameSourceSink.RemoveGame
             If Not games.Contains(game) Then Return
             games.Remove(game)
             parent.RemoveGame(game)
@@ -161,7 +161,7 @@ Public NotInheritable Class W3LanAdvertiser
     End Function
 
     '''<summary>Adds a game to be advertised</summary>
-    Public Function AddGame(ByVal gameHeader As W3GameHeader) As UInteger
+    Public Function AddGame(ByVal gameHeader As W3GameDescription) As UInteger
         Dim id As UInteger
         Dim game As LanGame
 
@@ -205,7 +205,7 @@ Public NotInheritable Class W3LanAdvertiser
         RaiseEvent RemoveStateString("{0}={1}".Frmt(game.id, game.header.Name))
         Return True
     End Function
-    Public Function RemoveGame(ByVal header As W3GameHeader) As Boolean
+    Public Function RemoveGame(ByVal header As W3GameDescription) As Boolean
         Dim game As LanGame
 
         SyncLock lock

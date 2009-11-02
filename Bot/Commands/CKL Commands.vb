@@ -25,9 +25,11 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As CKLServer,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Dim name = arguments(0)
-                Dim rocKey = arguments(1)
-                Dim tftKey = arguments(2)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count = 3)
+                Dim name = arguments(0).AssumeNotNull
+                Dim rocKey = arguments(1).AssumeNotNull
+                Dim tftKey = arguments(2).AssumeNotNull
                 Return target.AddKey(name, rocKey, tftKey).EvalOnSuccess(Function() "Key '{0}' added.".Frmt(name))
             End Function
         End Class
@@ -43,7 +45,9 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As CKLServer,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Dim name = arguments(0)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count = 1)
+                Dim name = arguments(0).AssumeNotNull
                 Return target.RemoveKey(name).EvalOnSuccess(Function() "Key '{0}' added.".Frmt(name))
             End Function
         End Class

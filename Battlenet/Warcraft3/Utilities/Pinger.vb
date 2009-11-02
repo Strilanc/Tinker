@@ -28,6 +28,7 @@
         Me.timer = New Timers.Timer(period.TotalMilliseconds)
         AddHandler Me.timer.Elapsed, Sub() OnTick()
         Me.timer.Start()
+        Contract.Assume(_latency >= 0)
     End Sub
 
     Public Function QueueGetLatency() As IFuture(Of FiniteDouble)

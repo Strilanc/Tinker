@@ -27,11 +27,12 @@ Namespace Pickling.Jars
         End Sub
 
         Protected Overridable Function DescribeValue(ByVal value As Byte()) As String
+            Contract.Requires(value IsNot Nothing)
             Return "[{0}]".Frmt(value.ToHexString)
         End Function
 
         Public Overrides Function Pack(Of TValue As Byte())(ByVal value As TValue) As IPickle(Of TValue)
-            Dim val = CType(value, Byte())
+            Dim val = CType(value, Byte()).AssumeNotNull
             Dim offset = 0
             Dim size = val.Length
             If sizePrefixSize > 0 Then
@@ -115,6 +116,7 @@ Namespace Pickling.Jars
         End Sub
 
         Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Dim size = value.Length + If(nullTerminated, 1, 0)
             If expectedSize <> 0 And size <> expectedSize Then Throw New PicklingException("Size doesn't match expected size")
 
@@ -146,7 +148,7 @@ Namespace Pickling.Jars
                         End If
                     Next j
                 Else 'empty strings at the end of data are sometimes simply omitted
-                    Return New Pickle(Of String)(Me.Name, Nothing, data, Function() """")
+                    Return New Pickle(Of String)(Me.Name, "", data, Function() """")
                 End If
             End If
             Dim outputSize = inputSize - If(nullTerminated, 1, 0)
@@ -158,7 +160,9 @@ Namespace Pickling.Jars
             Dim i = 0
             While outputSize > 0
                 outputSize -= 1
-                cc(If(reversed, outputSize, i)) = Chr(data(i))
+                Dim j = If(reversed, outputSize, i)
+                Contract.Assume(i < data.Length)
+                cc(j) = Chr(data(i))
                 i += 1
             End While
 
@@ -169,8 +173,16 @@ Namespace Pickling.Jars
         Inherits Jar(Of T)
         Public ReadOnly packer As IPackJar(Of T)
         Public ReadOnly parser As IParseJar(Of T)
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(parser IsNot Nothing)
+            Contract.Invariant(packer IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal packer As IPackJar(Of T), ByVal parser As IParseJar(Of T))
             MyBase.New(packer.Name)
+            Contract.Requires(packer IsNot Nothing)
+            Contract.Requires(parser IsNot Nothing)
             If packer.Name <> parser.Name Then Throw New ArgumentException("Parser must match packer.", "parser")
             Me.packer = packer
             Me.parser = parser
@@ -190,6 +202,10 @@ Namespace Pickling.Jars
         Inherits PackJar(Of Dictionary(Of String, Object))
         Private ReadOnly subJars() As IPackJar(Of Object)
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(subJars IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal name As String)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
@@ -198,21 +214,26 @@ Namespace Pickling.Jars
         Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IPackJar(Of Object))
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
+            Contract.Requires(subJars IsNot Nothing)
             Me.subJars = subJars
         End Sub
         Public Function Extend(Of T)(ByVal jar As IPackJar(Of T)) As TuplePackJar
+            Contract.Requires(jar IsNot Nothing)
             Return New TuplePackJar(Name, Concat(subJars, New IPackJar(Of Object)() {jar.Weaken}))
         End Function
 
         Public Overrides Function Pack(Of TValue As Dictionary(Of String, Object))(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             If value.Keys.Count > subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
 
             'Pack
             Dim pickles = New List(Of IPickle(Of Object))
-            For Each j In subJars
-                If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(j.Name))
-                pickles.Add(j.Pack(value(j.Name)))
-            Next j
+            For Each subJar In subJars
+                Contract.Assume(subJar IsNot Nothing)
+                If Not value.ContainsKey(subJar.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(subJar.Name))
+                Contract.Assume(value(subJar.Name) IsNot Nothing)
+                pickles.Add(subJar.Pack(value(subJar.Name)))
+            Next subJar
             Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
@@ -220,15 +241,23 @@ Namespace Pickling.Jars
         Inherits ParseJar(Of Dictionary(Of String, Object))
         Private ReadOnly subJars() As IParseJar(Of Object)
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(subJars IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IParseJar(Of Object))
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
+            Contract.Requires(subJars IsNot Nothing)
             Me.subJars = subJars
         End Sub
         Public Function Extend(ByVal jar As IParseJar(Of Object)) As TupleParseJar
+            Contract.Requires(jar IsNot Nothing)
             Return New TupleParseJar(Name, Concat(subJars, {jar}))
         End Function
         Public Function ExWeak(Of T)(ByVal jar As IParseJar(Of T)) As TupleParseJar
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(jar IsNot Nothing)
             Return New TupleParseJar(Name, Concat(subJars, {jar.Weaken}))
         End Function
 
@@ -239,6 +268,7 @@ Namespace Pickling.Jars
             Dim curCount = data.Length
             Dim curOffset = 0
             For Each j In subJars
+                Contract.Assume(j IsNot Nothing)
                 'Value
                 Dim p = j.Parse(data.SubView(curOffset, curCount))
                 vals(j.Name) = p.Value
@@ -247,6 +277,7 @@ Namespace Pickling.Jars
                 Dim n = p.Data.Length
                 curCount -= n
                 curOffset += n
+                If curCount < 0 Then Throw New InvalidStateException("subJar lied about data used.")
             Next j
 
             Return New Pickle(Of Dictionary(Of String, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
@@ -257,24 +288,33 @@ Namespace Pickling.Jars
         Inherits FusionJar(Of Dictionary(Of String, Object))
         Private ReadOnly subJars() As IJar(Of Object)
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(subJars IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IJar(Of Object))
             MyBase.New(New TuplePackJar(name, subJars), New TupleParseJar(name, subJars))
             Contract.Requires(name IsNot Nothing)
+            Contract.Requires(subJars IsNot Nothing)
             Me.subJars = subJars
         End Sub
         Public Function Extend(Of T)(ByVal jar As IJar(Of T)) As TupleJar
+            Contract.Requires(jar IsNot Nothing)
             Return New TupleJar(Name, Concat(subJars, {jar.Weaken}))
         End Function
 
         Public Overrides Function Pack(Of TValue As Dictionary(Of String, Object))(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             If value.Keys.Count > subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
 
             'Pack
             Dim pickles = New List(Of IPickle(Of Object))
-            For Each j In subJars
-                If Not value.ContainsKey(j.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(j.Name))
-                pickles.Add(j.Pack(value(j.Name)))
-            Next j
+            For Each subjar In subJars
+                Contract.Assume(subJar IsNot Nothing)
+                If Not value.ContainsKey(subjar.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(subjar.Name))
+                Contract.Assume(value(subjar.Name) IsNot Nothing)
+                pickles.Add(subjar.Pack(value(subjar.Name)))
+            Next subjar
             Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
 
@@ -284,16 +324,18 @@ Namespace Pickling.Jars
             Dim pickles = New List(Of IPickle(Of Object))
             Dim curCount = data.Length
             Dim curOffset = 0
-            For Each j In subJars
+            For Each subJar In subJars
+                Contract.Assume(subJar IsNot Nothing)
                 'Value
-                Dim p = j.Parse(data.SubView(curOffset, curCount))
-                vals(j.Name) = p.Value
+                Dim p = subJar.Parse(data.SubView(curOffset, curCount))
+                vals(subJar.Name) = p.Value
                 pickles.Add(p)
                 'Size
                 Dim n = p.Data.Length
                 curCount -= n
                 curOffset += n
-            Next j
+                If curCount < 0 Then Throw New InvalidStateException("subJar reported incorrect data length")
+            Next subJar
 
             Return New Pickle(Of Dictionary(Of String, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
@@ -303,6 +345,11 @@ Namespace Pickling.Jars
         Inherits ParseJar(Of List(Of T))
         Private ReadOnly sizeJar As ValueJar
         Private ReadOnly subJar As IParseJar(Of T)
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(sizeJar IsNot Nothing)
+            Contract.Invariant(subJar IsNot Nothing)
+        End Sub
 
         Public Sub New(ByVal name As String,
                        ByVal subJar As IParseJar(Of T),
@@ -320,24 +367,22 @@ Namespace Pickling.Jars
             'Parse
             Dim vals As New List(Of T)
             Dim pickles As New List(Of IPickle(Of Object))
-            Dim curCount = data.Length
             Dim curOffset = 0
             'List Size
             Dim sz = sizeJar.Parse(data)
             Dim numElements = sz.Value
             curOffset += sz.Data.Length
-            curCount -= sz.Data.Length
             'List Elements
-            For i = 1UL To numElements
+            For repeat = 1UL To numElements
+                Contract.Assume(curOffset <= data.Length)
                 'Value
-                Dim p = subJar.Parse(data.SubView(curOffset, curCount))
+                Dim p = subJar.Parse(data.SubView(curOffset, data.Length - curOffset))
                 vals.Add(p.Value)
                 pickles.Add(New Pickle(Of Object)(p.Value, p.Data, p.Description))
                 'Size
                 Dim n = p.Data.Length
-                curCount -= n
                 curOffset += n
-            Next i
+            Next repeat
 
             Return New Pickle(Of List(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
@@ -347,17 +392,24 @@ Namespace Pickling.Jars
         Private ReadOnly subJar As IPackJar(Of T)
         Private ReadOnly prefixSize As Integer
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(prefixSize > 0)
+            Contract.Invariant(subJar IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal name As String,
                        ByVal subJar As IPackJar(Of T),
                        Optional ByVal prefixSize As Integer = 1)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJar IsNot Nothing)
+            Contract.Requires(prefixSize > 0)
             Me.subJar = subJar
             Me.prefixSize = prefixSize
         End Sub
 
         Public Overrides Function Pack(Of TValue As List(Of T))(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Dim pickles = (From e In value Select CType(subJar.Pack(e), IPickle(Of T))).ToList()
             Dim data = Concat(CUInt(value.Count).Bytes(size:=prefixSize), Concat(From p In pickles Select p.Data.ToArray))
             Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() Pickle(Of T).MakeListDescription(pickles))
@@ -370,6 +422,9 @@ Namespace Pickling.Jars
                        Optional ByVal prefixSize As Integer = 1)
             MyBase.New(New ListPackJar(Of T)(name, subJar, prefixSize), New ListParseJar(Of T)(name, subJar, prefixSize))
             Contract.Requires(name IsNot Nothing)
+            Contract.Requires(subJar IsNot Nothing)
+            Contract.Requires(prefixSize > 0)
+            Contract.Requires(prefixSize <= 8)
         End Sub
     End Class
 
@@ -441,10 +496,21 @@ Namespace Pickling.Jars
         Private ReadOnly parsers(0 To 255) As IParseJar(Of T)
         Private ReadOnly valueIndexExtractor As Func(Of T, Byte)
         Private ReadOnly dataIndexExtractor As Func(Of ViewableList(Of Byte), Byte)
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(packers IsNot Nothing)
+            Contract.Invariant(parsers IsNot Nothing)
+            Contract.Invariant(valueIndexExtractor IsNot Nothing)
+            Contract.Invariant(dataIndexExtractor IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal name As String,
                        ByVal valueIndexExtractor As Func(Of T, Byte),
                        ByVal dataIndexExtractor As Func(Of ViewableList(Of Byte), Byte))
             MyBase.new(name)
+            Contract.Requires(name IsNot Nothing)
+            Contract.Requires(valueIndexExtractor IsNot Nothing)
+            Contract.Requires(dataIndexExtractor IsNot Nothing)
             Me.valueIndexExtractor = valueIndexExtractor
             Me.dataIndexExtractor = dataIndexExtractor
         End Sub
@@ -491,6 +557,12 @@ Namespace Pickling.Jars
         Inherits Jar(Of PrefixPickle(Of T))
         Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(packers IsNot Nothing)
+            Contract.Invariant(parsers IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal name As String)
             MyBase.new(name)
         End Sub
@@ -530,6 +602,11 @@ Namespace Pickling.Jars
         Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(packers IsNot Nothing)
+            Contract.Invariant(parsers IsNot Nothing)
+        End Sub
+
         Public Sub New()
         End Sub
         Public Sub New(ByVal parsersPackers As IDictionary(Of Byte, IJar(Of Object)))
@@ -542,6 +619,8 @@ Namespace Pickling.Jars
         End Sub
         Public Sub New(ByVal parsers As IDictionary(Of Byte, IParseJar(Of Object)),
                        ByVal packers As IDictionary(Of Byte, IPackJar(Of Object)))
+            Contract.Requires(parsers IsNot Nothing)
+            Contract.Requires(packers IsNot Nothing)
             For Each pair In parsers
                 Me.parsers(pair.Key) = pair.Value
             Next pair

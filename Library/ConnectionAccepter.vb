@@ -55,6 +55,8 @@ Public NotInheritable Class ConnectionAccepter
         Dim ports = New List(Of UShort)
         SyncLock lock
             For Each listener In listeners
+                Contract.Assume(listener IsNot Nothing)
+                Contract.Assume(listener.LocalEndpoint IsNot Nothing)
                 ports.Add(CUShort(CType(listener.LocalEndpoint, Net.IPEndPoint).Port))
             Next listener
         End SyncLock
@@ -80,6 +82,7 @@ Public NotInheritable Class ConnectionAccepter
     Public Sub CloseAllPorts()
         SyncLock lock
             For Each listener In listeners
+                Contract.Assume(listener IsNot Nothing)
                 listener.Stop()
             Next listener
             listeners.Clear()

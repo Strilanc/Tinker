@@ -37,7 +37,7 @@
             End SyncLock
         End Sub
 
-        Private Sub c_Connection(ByVal sender As W3ConnectionAccepter,
+        Private Sub OnConnection(ByVal sender As W3ConnectionAccepter,
                                  ByVal player As W3ConnectingPlayer) Handles _accepter.Connection
             SyncLock lock
                 connectingPlayers.Add(player)
@@ -48,9 +48,7 @@
         Private Sub FindGameForPlayer(ByVal player As W3ConnectingPlayer)
             Dim addedPlayerFilter = Function(game As W3Game)
                                         Return game.QueueTryAddPlayer(player).EvalWhenValueReady(
-                                            Function(addedPlayer, playerException)
-                                                Return addedPlayer IsNot Nothing
-                                            End Function
+                                            Function(addedPlayer, playerException) addedPlayer IsNot Nothing
                                         )
                                     End Function
 
@@ -83,6 +81,8 @@
             )
         End Sub
         Private Sub FailConnectingPlayer(ByVal player As W3ConnectingPlayer, ByVal reason As String)
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(reason IsNot Nothing)
             SyncLock lock
                 connectingPlayers.Remove(player)
             End SyncLock

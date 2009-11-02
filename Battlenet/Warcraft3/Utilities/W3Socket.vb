@@ -5,36 +5,36 @@ Imports System.Net.Sockets
 
 Namespace Warcraft3
     Public NotInheritable Class W3Socket
-        Private WithEvents socket As PacketSocket
+        Private WithEvents _socket As PacketSocket
         Public Event Disconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
 
         Public Sub New(ByVal socket As PacketSocket)
             Contract.Assume(socket IsNot Nothing) 'bug in contracts required not using requires here
-            Me.socket = socket
+            Me._socket = socket
         End Sub
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(socket IsNot Nothing)
+            Contract.Invariant(_socket IsNot Nothing)
         End Sub
 
         Public Property Logger() As Logger
             Get
                 Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
-                Return socket.Logger
+                Return _socket.Logger
             End Get
             Set(ByVal value As Logger)
                 Contract.Requires(value IsNot Nothing)
-                socket.Logger = value
+                _socket.Logger = value
             End Set
         End Property
         Public Property Name() As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return socket.Name
+                Return _socket.Name
             End Get
             Set(ByVal value As String)
                 Contract.Requires(value IsNot Nothing)
-                socket.Name = value
+                _socket.Name = value
             End Set
         End Property
 
@@ -42,28 +42,28 @@ Namespace Warcraft3
             Get
                 Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
-                Return socket.LocalEndPoint
+                Return _socket.LocalEndPoint
             End Get
         End Property
         Public ReadOnly Property RemoteEndPoint As IPEndPoint
             Get
                 Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
-                Return socket.RemoteEndPoint
+                Return _socket.RemoteEndPoint
             End Get
         End Property
         Public Function connected() As Boolean
-            Return socket.IsConnected
+            Return _socket.IsConnected
         End Function
 
-        Private Sub OnSocketDisconnect(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+        Private Sub OnSocketDisconnect(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
             RaiseEvent Disconnected(Me, expected, reason)
         End Sub
         Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
-            socket.Disconnect(expected, reason)
+            _socket.Disconnect(expected, reason)
         End Sub
 
         Public Sub SendPacket(ByVal packet As W3Packet)
@@ -71,7 +71,7 @@ Namespace Warcraft3
 
             Try
                 'Validate
-                If Not socket.IsConnected Then
+                If Not _socket.IsConnected Then
                     Throw New InvalidOperationException("Socket is not connected")
                 End If
 
@@ -80,7 +80,7 @@ Namespace Warcraft3
                 Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
                 'Send
-                socket.WritePacket(Concat({W3Packet.PacketPrefixValue, packet.id, 0, 0},
+                _socket.WritePacket(Concat({W3Packet.PacketPrefixValue, packet.id, 0, 0},
                                            packet.Payload.Data.ToArray))
 
             Catch e As Pickling.PicklingException
@@ -95,175 +95,21 @@ Namespace Warcraft3
                     e.RaiseAsUnexpected("Error sending {0} to {1}.".Frmt(packet.id, Name))
                 End If
                 Dim msg = "Error sending {0} to {1}: {2}".Frmt(packet.id, Name, e)
-                socket.Disconnect(expected:=False, reason:=msg)
+                _socket.Disconnect(expected:=False, reason:=msg)
                 Throw
             End Try
         End Sub
 
-        Public Function FutureReadPacket() As IFuture(Of W3Packet)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3Packet))() IsNot Nothing)
-            Return socket.FutureReadPacket().Select(
-                Function(data)
-                    Contract.Assume(data IsNot Nothing)
-                    Contract.Assume(data.Length >= 4)
-                    If data(0) <> W3Packet.PacketPrefixValue OrElse data.Length < 4 Then
-                        Disconnect(expected:=False, reason:="Invalid packet prefix")
-                        Throw New IO.IOException("Invalid packet prefix")
-                    End If
-                    Dim id = CType(data(1), W3PacketId)
-                    data = data.SubView(4)
-
-                    Try
-                        'Handle
-                        Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageType.DataEvent)
-                        Dim pk = W3Packet.FromData(id, data)
-                        If pk.Payload.Data.Length <> data.Length Then
-                            Throw New Pickling.PicklingException("Data left over after parsing.")
-                        End If
-                        Logger.Log(pk.Payload.Description, LogMessageType.DataParsed)
-                        Return pk
-
-                    Catch e As Pickling.PicklingException
-                        Dim msg = "Error parsing {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
-                        Logger.Log(msg, LogMessageType.Negative)
-                        Throw
-
-                    Catch e As Exception
-                        If Not (TypeOf e Is SocketException OrElse
-                                TypeOf e Is ObjectDisposedException OrElse
-                                TypeOf e Is IO.IOException) Then
-                            e.RaiseAsUnexpected("Error receiving {0} from {1} ({2}).".Frmt(id, Name, data.ToHexString()))
-                        End If
-                        Dim msg = "Error receiving {0} from {1}: {2} ({3})".Frmt(id, Name, e, data.ToHexString())
-                        Logger.Log(msg, LogMessageType.Problem)
-                        socket.Disconnect(expected:=False, reason:=msg)
-                        Throw
-                    End Try
-                End Function
-            )
-        End Function
-    End Class
-
-
-
-
-
-
-
-    Public NotInheritable Class W3AutoSocket
-        Private WithEvents socket As PacketSocket
-        Public Event Disconnected(ByVal sender As W3AutoSocket, ByVal expected As Boolean, ByVal reason As String)
-
-        Public Sub New(ByVal socket As PacketSocket)
-            Contract.Assume(socket IsNot Nothing) 'bug in contracts required not using requires here
-            Me.socket = socket
-        End Sub
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(socket IsNot Nothing)
-        End Sub
-
-        Public Property Logger() As Logger
-            Get
-                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
-                Return socket.Logger
-            End Get
-            Set(ByVal value As Logger)
-                Contract.Requires(value IsNot Nothing)
-                socket.Logger = value
-            End Set
-        End Property
-        Public Property Name() As String
-            Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return socket.Name
-            End Get
-            Set(ByVal value As String)
-                Contract.Requires(value IsNot Nothing)
-                socket.Name = value
-            End Set
-        End Property
-
-        Public ReadOnly Property LocalEndPoint As IPEndPoint
-            Get
-                Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
-                Return socket.LocalEndPoint
-            End Get
-        End Property
-        Public ReadOnly Property RemoteEndPoint As IPEndPoint
-            Get
-                Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
-                Return socket.RemoteEndPoint
-            End Get
-        End Property
-        Public Function Connected() As Boolean
-            Return socket.IsConnected
+        Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
+            Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
+            Return _socket.FutureReadPacket()
         End Function
 
-        Private Sub OnSocketDisconnect(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String) Handles Socket.Disconnected
-            Contract.Requires(sender IsNot Nothing)
-            Contract.Requires(reason IsNot Nothing)
-            RaiseEvent Disconnected(Me, expected, reason)
-        End Sub
-        Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
-            Contract.Requires(reason IsNot Nothing)
-            socket.Disconnect(expected, reason)
-        End Sub
-
-        Public Sub SendPacket(ByVal packet As W3Packet)
-            Contract.Requires(packet IsNot Nothing)
-
-            Try
-                'Validate
-                If Not socket.IsConnected Then
-                    Throw New InvalidOperationException("Socket is not connected")
-                End If
-
-                'Send
-                Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.id, Name), LogMessageType.DataEvent)
-                Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
-                socket.WritePacket(Concat({W3Packet.PacketPrefixValue, packet.id, 0, 0},
-                                           packet.Payload.Data.ToArray))
-
-            Catch e As Pickling.PicklingException
-                Dim msg = "Error packing {0} for {1}: {2}".Frmt(packet.id, Name, e)
-                Logger.Log(msg, LogMessageType.Problem)
-                Throw
-
-            Catch e As Exception
-                If Not (TypeOf e Is SocketException OrElse
-                        TypeOf e Is ObjectDisposedException OrElse
-                        TypeOf e Is IO.IOException) Then
-                    e.RaiseAsUnexpected("Error sending {0} to {1}.".Frmt(packet.id, Name))
-                End If
-                Dim msg = "Error sending {0} to {1}: {2}".Frmt(packet.id, Name, e)
-                socket.Disconnect(expected:=False, reason:=msg)
-                Throw
-            End Try
-        End Sub
-
-        Private Sub BeginReading()
-            FutureIterateExcept(AddressOf socket.FutureReadPacket,
-                Sub(data)
-                    Contract.Assume(data IsNot Nothing)
-                    Contract.Assume(data.Length >= 4)
-                    If data(0) <> W3Packet.PacketPrefixValue OrElse data.Length < 4 Then
-                        Throw New IO.IOException("Invalid packet prefix")
-                    End If
-                    Dim id = CType(data(1), W3PacketId)
-                    If Not testHandlers.ContainsKey(id) Then
-                        Throw New IO.IOException("Unexpected packet.")
-                    End If
-                    testHandlers(id).TryParseAndHandle(data.SubView(4))
-                End Sub)
-        End Sub
-
-        Private ReadOnly testHandlers As New Dictionary(Of W3PacketId, Testing.IHandler)
-        Public Sub RegHandler(Of T)(ByVal key As W3PacketId, ByVal jar As IJar(Of T), ByVal func As Func(Of T, ifuture))
-            If testHandlers.ContainsKey(key) Then Throw New InvalidOperationException()
-            testHandlers(key) = W3Packet.rage2(jar, func)
-        End Sub
+        Public ReadOnly Property Socket As PacketSocket
+            Get
+                Contract.Ensures(Contract.Result(Of PacketSocket)() IsNot Nothing)
+                Return _socket
+            End Get
+        End Property
     End Class
 End Namespace

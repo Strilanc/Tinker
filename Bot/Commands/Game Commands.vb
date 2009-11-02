@@ -53,6 +53,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Open_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Return target.QueueOpenSlot(arguments(0)).EvalOnSuccess(Function() "Opened")
             End Function
         End Class
@@ -66,6 +68,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Close_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Return target.QueueCloseSlot(arguments(0)).EvalOnSuccess(Function() "Closed")
             End Function
         End Class
@@ -79,6 +83,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_SetTeam_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
                 Dim arg_slot = arguments(0)
                 Dim arg_team = arguments(1)
                 Dim val_team As Byte
@@ -98,7 +105,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_SetTeams_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.QueueTrySetTeamSizes(W3Game.TeamVersusStringToTeamSizes(arguments(0))).EvalOnSuccess(Function() "Set Teams")
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Return target.QueueTrySetTeamSizes(TeamVersusStringToTeamSizes(arguments(0))).EvalOnSuccess(Function() "Set Teams")
             End Function
         End Class
 
@@ -111,6 +120,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_SetHandicap_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
                 Dim argSlot = arguments(0)
                 Dim argHandicap = arguments(1)
                 Dim newHandicap As Byte
@@ -133,6 +145,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_SetColor_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
                 Dim arg_slot = arguments(0)
                 Dim arg_color = arguments(1)
                 Dim ret_color As W3Slot.PlayerColor
@@ -152,6 +167,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Swap_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
                 Return target.QueueSwapSlotContents(arguments(0), arguments(1)).EvalOnSuccess(Function() "Swapped Slots")
             End Function
         End Class
@@ -165,6 +183,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_SetComputer_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count >= 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments.Count < 2 OrElse arguments(1) IsNot Nothing)
                 Dim arg_slot = arguments(0)
                 Dim arg_difficulty = If(arguments.Count >= 2, arguments(1), W3Slot.ComputerLevel.Normal.ToString)
                 Dim ret_difficulty As W3Slot.ComputerLevel
@@ -184,9 +205,12 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Lock_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count <= 1)
                 If arguments.Count = 0 Then
                     Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Sticky).EvalOnSuccess(Function() "Locked slots")
                 Else
+                    Contract.Assume(arguments(0) IsNot Nothing)
                     Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Sticky).EvalOnSuccess(Function() "Locked slots")
                 End If
             End Function
@@ -201,9 +225,12 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Unlock_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count <= 1)
                 If arguments.Count = 0 Then
                     Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Unlocked).EvalOnSuccess(Function() "Unlocked slots")
                 Else
+                    Contract.Assume(arguments(0) IsNot Nothing)
                     Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Unlocked).EvalOnSuccess(Function() "Unlocked slots")
                 End If
             End Function
@@ -218,9 +245,12 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Freeze_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count <= 1)
                 If arguments.Count = 0 Then
                     Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Frozen).EvalOnSuccess(Function() "Froze slots")
                 Else
+                    Contract.Assume(arguments(0) IsNot Nothing)
                     Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Frozen).EvalOnSuccess(Function() "Froze slots")
                 End If
             End Function
@@ -235,6 +265,10 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Reserve_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count = 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
                 Return target.QueueReserveSlot(arguments(0), arguments(1)).EvalOnSuccess(Function() "Reserved Slot")
             End Function
         End Class
@@ -248,6 +282,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Start_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueStartCountdown().EvalOnSuccess(Function() "Started Countdown")
             End Function
         End Class
@@ -261,6 +296,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Cancel_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueClose.EvalOnSuccess(Function() "Cancelled")
             End Function
         End Class
@@ -283,6 +319,7 @@ Namespace Commands.Specializations
                 Me.bot = bot
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return bot.BotCommands.ProcessCommand(bot, user, arguments)
             End Function
         End Class
@@ -306,6 +343,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Boot_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Return target.QueueBootSlot(arguments(0)).EvalOnSuccess(Function() "Booted")
             End Function
         End Class
@@ -318,6 +358,8 @@ Namespace Commands.Specializations
                            "[Get setting] Displays a game setting. Available settings are tickperiod laglimit gamerate.")
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count = 1)
                 Dim val As Object
                 Select Case arguments(0).ToUpperInvariant
                     Case "TICKPERIOD" : val = target.SettingTickPeriod
@@ -336,6 +378,8 @@ Namespace Commands.Specializations
                            "[Set setting] Changes a game setting. Available settings are tickperiod laglimit gamerate.")
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count = 2)
                 Dim val_us As UShort
                 Dim vald As Double
                 Dim is_short = UShort.TryParse(arguments(1), val_us)
@@ -375,6 +419,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Ping_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim futurePlayers = target.QueueGetPlayers()
 
                 Dim futureLatencies = futurePlayers.Select(
@@ -407,6 +452,7 @@ Namespace Commands.Specializations
                            "Disconnects you from the game (for when countdown is cancelled and you can't leave normally).")
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("You are not in the game.")
                 Return target.QueueBootSlot(user.Name).EvalOnSuccess(Function() "Left.")
             End Function
@@ -429,6 +475,7 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_VoteStart_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If arguments.Count = 1 AndAlso arguments(0).ToUpperInvariant <> "CANCEL" Then Throw New ArgumentException("Incorrect argument.")
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
                 Return target.QueueSetPlayerVoteToStart(user.name, arguments.Count = 0).EvalOnSuccess(Function() "Voted to start")
@@ -443,8 +490,10 @@ Namespace Commands.Specializations
                            My.Resources.Command_Instance_Elevate_Help)
             End Sub
             Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Contract.Assume(arguments.Count = 1)
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
-                Return target.QueueTryElevatePlayer(user.name, arguments(0)).EvalOnSuccess(Function() "Elevated")
+                Return target.QueueTryElevatePlayer(user.Name, arguments(0)).EvalOnSuccess(Function() "Elevated")
             End Function
         End Class
     End Class

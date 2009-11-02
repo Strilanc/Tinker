@@ -139,9 +139,11 @@ Namespace Commands.Specializations
                             My.Resources.Command_Bot_Client_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count >= 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Return target.QueueFindClient(arguments(0)).Select(
                     Function(client)
-                        If client Is Nothing Then  Throw New ArgumentException("No matching client")
+                        If client Is Nothing Then Throw New ArgumentException("No matching client")
                         Return target.ClientCommands.ProcessCommand(client, user, arguments.SubToArray(1))
                     End Function
                 ).Defuturized()
@@ -179,6 +181,8 @@ Namespace Commands.Specializations
                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Return target.QueueCreateClient(arguments(0)).
                         EvalOnSuccess(Function() "Created client '{0}'.".Frmt(arguments(0)))
             End Function
@@ -194,6 +198,8 @@ Namespace Commands.Specializations
                            "root=4", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Dim name = arguments(0)
                 Return target.QueueRemoveClient(name, expected:=True, reason:="KillClient Command").
                         EvalOnSuccess(Function() "Removed client named {0}.".Frmt(name))
@@ -231,12 +237,15 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As MainBot,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count >= 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
                 Dim map = W3Map.FromArgument(arguments(1))
                 Dim settings = New ServerSettings(map,
-                                                  New W3GameHeader(arguments(0),
-                                                                   If(user Is Nothing, My.Resources.ProgramName, user.name),
-                                                                   New W3MapSettings(arguments, map),
-                                                                   0, 0, 0, arguments, map.NumPlayerSlots))
+                                                  W3GameDescription.FromArguments(arguments(0),
+                                                                                  arguments(1),
+                                                                                  If(user Is Nothing, My.Resources.ProgramName, user.Name), 
+                                                                                  arguments))
                 Dim name = arguments(0)
                 Return target.QueueCreateServer(name, settings).
                     EvalOnSuccess(Function() "Created server with name '{0}'. Admin password is {1}.".Frmt(name, settings.adminPassword))
@@ -284,6 +293,8 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As MainBot,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count >= 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 'Attempt to connect to each listed profile
                 Dim futureClients = New List(Of IFuture(Of BnetClient))(arguments.Count)
                 For Each arg In arguments
@@ -339,6 +350,7 @@ Namespace Commands.Specializations
                            "root=2", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
                 Dim epicWarNumber As UInteger
                 If Not UInteger.TryParse(arguments(0), epicWarNumber) Then
                     Throw New ArgumentException("Expected a numeric argument.")
@@ -396,13 +408,14 @@ Namespace Commands.Specializations
             Inherits BaseCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(My.Resources.Command_Bot_FindMaps,
-                           1, ArgumentLimitType.Min,
+                           1, ArgumentLimitType.Exact,
                            My.Resources.Command_Bot_FindMaps_Help,
                            "games=1", "")
             End Sub
             Public Overrides Function Process(ByVal target As MainBot, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
                 Const MAX_RESULTS As Integer = 5
-                Dim results = FindFilesMatching("*" + arguments(0) + "*", "*.[wW]3[mxMX]", My.Settings.mapPath, MAX_RESULTS)
+                Dim results = FindFilesMatching("*{0}*".Frmt(arguments(0)), "*.[wW]3[mxMX]", My.Settings.mapPath.AssumeNotNull, MAX_RESULTS)
                 If results.Count = 0 Then Return "No matching maps.".Futurized
                 Return results.StringJoin(", ").Futurized
             End Function

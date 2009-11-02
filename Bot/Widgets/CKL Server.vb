@@ -120,7 +120,7 @@ Namespace CKL
 
         Public Overridable Sub [Stop]()
             Accepter.CloseAllPorts()
-            portHandle.Dispose()
+            If portHandle IsNot Nothing Then portHandle.Dispose()
         End Sub
     End Class
 End Namespace

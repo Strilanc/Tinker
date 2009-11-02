@@ -21,7 +21,7 @@ Public Class W3ServerControl
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
-                If Me.server Is child Then  Return
+                If Me.server Is child Then Return
                 Me.server = Nothing
                 If games IsNot Nothing Then
                     games.Clear()
@@ -35,41 +35,41 @@ Public Class W3ServerControl
                     logServer.SetLogger(Nothing, Nothing)
                 Else
                     logServer.SetLogger(child.logger, "Server")
-                    child.QueueGetGames().CallOnValueSuccess(Sub(games) ref.QueueAction(
-                        Sub()
-                            If child IsNot Me.server Then  Return
-                            For Each game In games
-                                If Me.games.Contains(game) Then  Continue For
-                                Me.games.Add(game)
-                            Next game
-                        End Sub
-                    ))
                     Dim map = child.Settings.Map
 
                     Dim info = "Map Name\n{0}\n\n" +
                                "Relative Path\n{1}\n\n" +
                                "Map Type\n{2}\n\n" +
                                "Player Count\n{3}\n\n" +
-                               "Force Count\n{4}\n\n" +
-                               "Playable Size\n{5} x {6}\n\n" +
-                               "File Size\n{7:###,###,###,###} bytes\n\n" +
-                               "File Checksum (crc32)\n{8}\n\n" +
-                               "Map Checksum (xoro)\n{9}\n\n" +
-                               "Map Checksum (sha1)\n{10}\n"
+                               "Playable Size\n{4} x {5}\n\n" +
+                               "File Size\n{6:###,###,###,###} bytes\n\n" +
+                               "File Checksum (crc32)\n{7}\n\n" +
+                               "Map Checksum (xoro)\n{8}\n\n" +
+                               "Map Checksum (sha1)\n{9}\n"
                     info = info.Replace("\n", Environment.NewLine)
                     info = info.Frmt(map.name,
                                      map.RelativePath,
                                      If(map.isMelee, "Melee", "Custom"),
                                      map.NumPlayerSlots,
-                                     map.numForces,
-                                     map.playableWidth, map.playableHeight,
+                                     map.playableWidth,
+                                     map.playableHeight,
                                      map.FileSize,
-                                     map.ChecksumCRC32.ToHexString,
-                                     map.ChecksumXORO.ToHexString,
-                                     map.ChecksumSHA1.ToHexString)
+                                     map.FileChecksumCRC32.Bytes.ToHexString,
+                                     map.MapChecksumXORO.Bytes.ToHexString,
+                                     map.MapChecksumSHA1.ToHexString)
                     txtInfo.Text = info
-                End If
-            End Sub
+
+                    child.QueueGetGames().CallOnValueSuccess(Sub(games) ref.QueueAction(
+                        Sub()
+                            If child IsNot Me.server Then Return
+                            For Each game In games
+                                If Me.games.Contains(game) Then Continue For
+                                Me.games.Add(game)
+                            Next game
+                        End Sub
+                    ))
+                            End If
+                        End Sub
         )
     End Function
 

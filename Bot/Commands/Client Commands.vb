@@ -13,6 +13,7 @@ Namespace Commands.Specializations
         Private com_offline As New ClientOfflineCommands()
 
         Private Function GetCurrentCommandSet(ByVal target As BnetClient) As IFuture(Of BaseClientCommands)
+            Contract.Ensures(Contract.Result(Of IFuture(Of BaseClientCommands))() IsNot Nothing)
             Return target.QueueGetState.Select(Of BaseClientCommands)(
                 Function(state)
                     Select Case state
@@ -66,6 +67,8 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As BnetClient,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Dim client = target
                 Dim other_client = target.parent.QueueFindClient(arguments(0))
                 Return other_client.Select(
@@ -94,7 +97,9 @@ Namespace Commands.Specializations
             Public Overrides Function Process(ByVal target As BnetClient,
                                               ByVal user As BotUser,
                                               ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.parent.QueueFindClient(arguments(0)).Select(
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Return target.Parent.QueueFindClient(arguments(0)).Select(
                     Function(client2)
                         If client2 Is Nothing Then
                             Throw New ArgumentException("No client matching that name.")
@@ -103,7 +108,7 @@ Namespace Commands.Specializations
                         End If
 
                         target.QueueRemoveAdvertisingPartner(client2)
-                        Return "Any link between client {0} and client {1} has been removed.".Frmt(target.name, client2.name)
+                        Return "Any link between client {0} and client {1} has been removed.".Frmt(target.Name, client2.Name)
                     End Function
                 )
             End Function
@@ -163,6 +168,8 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_SetPort_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Dim port As UShort
                 If Not UShort.TryParse(arguments(0), port) Then Throw New ArgumentException("Invalid port")
                 Return target.QueueSetListenPort(port).EvalOnSuccess(Function() "Set listen port to {0}.".Frmt(port))
@@ -192,8 +199,10 @@ Namespace Commands.Specializations
                             My.Resources.Command_Client_AddUser_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 Dim newUser As BotUser = target.profile.users.CreateNewUser(arguments(0))
-                Return "Created {0}".Frmt(newUser.name).Futurized
+                Return "Created {0}".Frmt(newUser.Name).Futurized
             End Function
         End Class
 
@@ -207,11 +216,14 @@ Namespace Commands.Specializations
                             My.Resources.Command_Client_RemoveUser_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count = 1)
+                Contract.Assume(arguments(0) IsNot Nothing)
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
                     Throw New ArgumentException("That user does not exist")
                 End If
-                Dim target_user As BotUser = target.profile.users(arguments(0))
-                If user IsNot Nothing AndAlso Not target_user < user Then
+                Dim targetUser = target.profile.users(arguments(0))
+                Contract.Assume(targetUser IsNot Nothing)
+                If user IsNot Nothing AndAlso Not targetUser < user Then
                     Throw New ArgumentException("You can only destroy users with lower permissions.")
                 End If
                 target.profile.users.RemoveUser(arguments(0))
@@ -228,6 +240,10 @@ Namespace Commands.Specializations
                             "users=1", "")
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count >= 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
+                Contract.Assume(arguments.Count < 3 OrElse arguments(2) IsNot Nothing)
                 'get target user
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
                     Throw New ArgumentException("That user does not exist")
@@ -266,6 +282,10 @@ Namespace Commands.Specializations
                             "users=3", "")
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count >= 2)
+                Contract.Assume(arguments(0) IsNot Nothing)
+                Contract.Assume(arguments(1) IsNot Nothing)
+                Contract.Assume(arguments.Count < 3 OrElse arguments(2) IsNot Nothing)
                 'get target user
                 If Not target.profile.users.ContainsUser(arguments(0)) Then
                     Throw New ArgumentException("That user does not exist")
@@ -305,8 +325,9 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_User_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
+                Contract.Assume(arguments.Count < 1 OrElse arguments(0) IsNot Nothing)
                 If arguments.Count = 0 And user Is Nothing Then Throw New ArgumentException("No user specified.")
-                Dim username = If(arguments.Count = 0, user.name, arguments(0))
+                Dim username = If(arguments.Count = 0, user.Name, arguments(0))
                 If target.profile.users.ContainsUser(username) Then
                     Return target.profile.users(username).ToString().Futurized
                 ElseIf target.profile.users.ContainsUser(BotUserSet.UnknownUserKey) Then
@@ -386,10 +407,10 @@ Namespace Commands.Specializations
                         Throw New InvalidOperationException("You need root=5 to use -port.")
                     End If
                 Next i
-                Dim header = New W3GameHeader(arguments(0),
-                                              If(user Is Nothing, My.Resources.ProgramName, user.name),
-                                              New W3MapSettings(arguments, map),
-                                              0, 0, 0, arguments, map.NumPlayerSlots)
+                Dim header = W3GameDescription.FromArguments(arguments(0),
+                                                             arguments(1),
+                                                             If(user Is Nothing, My.Resources.ProgramName, user.Name),
+                                                             arguments)
                 Dim f_settings = target.QueueGetListenPort.Select(Function(port) New ServerSettings(map, header, defaultListenPorts:={port}))
                 Dim f_server = f_settings.Select(Function(settings) target.parent.QueueCreateServer(target.name, settings, "[Linked]", True)).Defuturized()
 
@@ -405,11 +426,11 @@ Namespace Commands.Specializations
                                     server.QueueKill()
                                     Throw New OperationFailedException(innerException:=advertiseException)
                                 Else
-                                    Return "Succesfully created game {0} for map {1}.".Frmt(header.Name, header.Map.relativePath)
+                                    Return "Succesfully created game {0} for map {1}.".Frmt(header.Name, header.GameStats.relativePath)
                                 End If
                             End Function
                         )
-                    End Function
+                            End Function
                 ).Defuturized()
             End Function
         End Class
@@ -453,7 +474,7 @@ Namespace Commands.Specializations
                                 Return game.QueueCommandProcessText(target.parent, Nothing, arguments.SubToArray(1))
                             End Function
                         ).Defuturized()
-                    End Function
+                            End Function
                 ).Defuturized()
             End Function
         End Class
@@ -529,14 +550,12 @@ Namespace Commands.Specializations
                            My.Resources.Command_Client_StartAdvertising_ExtraHelp)
             End Sub
             Public Overrides Function Process(ByVal target As BnetClient, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Dim map = W3Map.FromArgument(arguments(1))
-
                 'create
                 Return target.QueueStartAdvertisingGame(
-                    New W3GameHeader(arguments(0),
-                                     My.Resources.ProgramName,
-                                     New W3MapSettings(arguments, map),
-                                     0, 0, 0, arguments, map.NumPlayerSlots), Nothing).EvalOnSuccess(Function() "Started advertising")
+                    W3GameDescription.FromArguments(arguments(0),
+                                                    arguments(1),
+                                                    If(user Is Nothing, My.Resources.ProgramName, user.Name),
+                                                    arguments), Nothing).EvalOnSuccess(Function() "Started advertising")
             End Function
         End Class
 

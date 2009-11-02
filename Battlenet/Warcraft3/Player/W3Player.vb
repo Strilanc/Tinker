@@ -25,23 +25,30 @@
         Private ReadOnly testCanHost As IFuture
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
+        Private ReadOnly packetHandler As New W3PacketHandler
         Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly eref As ICallQueue = New ThreadPooledCallQueue
-        Private numPeerConnections As Integer
+        Private _numPeerConnections As Integer
         Private ReadOnly settings As ServerSettings
         Private ReadOnly scheduler As TransferScheduler(Of Byte)
         Private ReadOnly pinger As Pinger
 
-        Public ReadOnly name As String
+        Private ReadOnly _name As String
         Public ReadOnly listenPort As UShort
         Public ReadOnly peerKey As UInteger
         Public ReadOnly isFake As Boolean
-        Public ReadOnly logger As Logger
+        Private ReadOnly logger As Logger
 
         Public hasVotedToStart As Boolean
         Public numAdminTries As Integer
         Public Event Disconnected(ByVal sender As W3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String)
 
+        Public ReadOnly Property Name As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _name
+            End Get
+        End Property
         Public ReadOnly Property Index As Byte
             Get
                 Contract.Ensures(Contract.Result(Of Byte)() > 0)
@@ -51,19 +58,20 @@
         End Property
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(numPeerConnections >= 0)
-            Contract.Invariant(numPeerConnections <= 12)
+            Contract.Invariant(_numPeerConnections >= 0)
+            Contract.Invariant(_numPeerConnections <= 12)
             Contract.Invariant(tickQueue IsNot Nothing)
+            Contract.Invariant(packetHandler IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(eref IsNot Nothing)
             Contract.Invariant(socket Is Nothing = isFake)
             Contract.Invariant(testCanHost IsNot Nothing)
             Contract.Invariant(numAdminTries >= 0)
-            Contract.Invariant(name IsNot Nothing)
+            Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(settings IsNot Nothing)
+            Contract.Invariant(socket IsNot Nothing)
             Contract.Invariant(scheduler IsNot Nothing)
-            Contract.Invariant(packetHandlers IsNot Nothing)
             Contract.Invariant(_index > 0)
             Contract.Invariant(_index <= 12)
             Contract.Invariant(totalTockTime >= 0)
@@ -87,7 +95,7 @@
             If name.Length > MAX_NAME_LENGTH Then
                 name = name.Substring(0, MAX_NAME_LENGTH)
             End If
-            Me.name = name
+            Me._name = name
             isFake = True
             LobbyStart()
             Dim hostFail = New FutureAction
@@ -96,14 +104,12 @@
             Me.testCanHost.MarkAnyExceptionAsHandled()
         End Sub
 
-
-
         '''<summary>Creates a real player.</summary>
         Public Sub New(ByVal index As Byte,
                        ByVal settings As ServerSettings,
                        ByVal scheduler As TransferScheduler(Of Byte),
                        ByVal connectingPlayer As W3ConnectingPlayer,
-                       Optional ByVal logging As Logger = Nothing)
+                       Optional ByVal logger As Logger = Nothing)
             'Contract.Requires(index > 0)
             'Contract.Requires(index <= 12)
             'Contract.Requires(game IsNot Nothing)
@@ -114,21 +120,25 @@
 
             Me.settings = settings
             Me.scheduler = scheduler
-            Me.logger = If(logging, New Logger)
+            Me.logger = If(logger, New Logger)
             connectingPlayer.Socket.Logger = Me.logger
             Me.peerKey = connectingPlayer.PeerKey
 
             Me.socket = connectingPlayer.Socket
-            Me.name = connectingPlayer.Name
+            Me._name = connectingPlayer.Name
             Me.listenPort = connectingPlayer.ListenPort
             Me._index = index
             AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
 
-            packetHandlers(W3PacketId.Pong) = Sub(val As W3Packet) ReceivePong(CType(val.Payload.Value, Dictionary(Of String, Object)))
-            packetHandlers(W3PacketId.Leaving) = AddressOf ReceiveLeaving
-            packetHandlers(W3PacketId.NonGameAction) = AddressOf ReceiveNonGameAction
-            packetHandlers(W3PacketId.MapFileDataReceived) = AddressOf IgnorePacket
-            packetHandlers(W3PacketId.MapFileDataProblem) = AddressOf IgnorePacket
+            packetHandler.AddHandler(packetId:=W3PacketId.Pong,
+                                     jar:=W3Packet.Jars.Pong,
+                                     handler:=Function(pickle) pinger.QueueReceivedPong(CUInt(pickle.Value("salt"))))
+            AddQueuePacketHandler(id:=W3PacketId.NonGameAction,
+                                  jar:=W3Packet.Jars.NonGameAction,
+                                  handler:=AddressOf ReceiveNonGameAction)
+            AddQueuePacketHandler(W3Packet.Jars.Leaving, AddressOf ReceiveLeaving)
+            AddQueuePacketHandler(W3Packet.Jars.MapFileDataReceived, AddressOf IgnorePacket)
+            AddQueuePacketHandler(W3Packet.Jars.MapFileDataProblem, AddressOf IgnorePacket)
 
             LobbyStart()
             BeginReading()
@@ -138,7 +148,7 @@
             Me.testCanHost.MarkAnyExceptionAsHandled()
 
             'Pings
-            pinger = New Pinger(5.Seconds, 10)
+            pinger = New Pinger(period:=5.Seconds, timeoutCount:=10)
             AddHandler pinger.SendPing, Sub(sender, salt) QueueSendPacket(W3Packet.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) QueueDisconnect(expected:=False,
                                                                    leaveType:=W3PlayerLeaveType.Disconnect,
@@ -146,42 +156,31 @@
         End Sub
 
         Private Sub BeginReading()
-            Dim readLoop = FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packet) ref.QueueAction(
-                Sub()
-                    Contract.Assume(packet IsNot Nothing)
-                    Try
-                        'If testHandlers.ContainsKey(packet.id) Then
-                        '    Dim r = testHandlers(packet.id).TryParseAndHandle(packet.Payload.Data)
-                        '    r.parseResult.CallWhenReady(
-                        '        Sub(exception)
-                        '            If exception Is Nothing Then  Return
-                        '            logger.Log("Error parsing packet: {0}".Frmt(exception.ToString), LogMessageType.Problem)
-                        '        End Sub)
-                        '    r.handleResult.CallWhenReady(
-                        '        Sub(exception)
-                        '            If exception Is Nothing Then  Return
-                        '            logger.Log("Error handling packet: {0}".Frmt(exception.ToString), LogMessageType.Problem)
-                        '        End Sub)
-                        'Else
-                        If Not packetHandlers.ContainsKey(packet.id) Then
-                            Dim msg = "Ignored a packet of type {0} from {1} because there is no parser for that packet type.".Frmt(packet.id, name)
-                            logger.Log(msg, LogMessageType.Negative)
-                        Else
-                            Call packetHandlers(packet.id)(packet)
-                        End If
-                    Catch e As Exception
-                        Dim msg = "Ignored a packet of type {0} from {1} because there was an error handling it: {2}".Frmt(packet.id, name, e)
-                        logger.Log(msg, LogMessageType.Problem)
-                        e.RaiseAsUnexpected(msg)
-                    End Try
+            Dim readLoop = FutureIterateExcept(AddressOf socket.FutureReadPacket,
+                Sub(packetData)
+                    Contract.Assume(packetData IsNot Nothing)
+                    Contract.Assume(packetData.Length >= 4)
+                    ProcessPacket(packetData)
                 End Sub
-            ))
+            )
             readLoop.QueueCallWhenReady(ref,
                 Sub(exception)
-                    If exception Is Nothing Then  Return
+                    If exception Is Nothing Then Return
                     Me.Disconnect(expected:=False,
                                   leaveType:=W3PlayerLeaveType.Disconnect,
-                                  reason:="Error receiving packet from {0}: {1}".Frmt(name, exception.Message))
+                                  reason:="Error receiving packet: {0}".Frmt(exception.Message))
+                End Sub
+            )
+        End Sub
+        Private Sub ProcessPacket(ByVal packetData As ViewableList(Of Byte))
+            Contract.Requires(packetData IsNot Nothing)
+            Contract.Requires(packetData.Length >= 4)
+            packetHandler.HandlePacket(packetData).CallWhenReady(
+                Sub(exception)
+                    If exception Is Nothing Then Return
+                    Disconnect(expected:=False,
+                               leaveType:=W3PlayerLeaveType.Disconnect,
+                               reason:=exception.Message)
                 End Sub
             )
         End Sub
@@ -231,6 +230,7 @@
             End Get
         End Property
         Public Function GetLatency() As IFuture(Of FiniteDouble)
+            Contract.Ensures(Contract.Result(Of IFuture(Of FiniteDouble))() IsNot Nothing)
             If pinger Is Nothing Then
                 Return New FiniteDouble().Futurized
             Else
@@ -239,6 +239,7 @@
         End Function
         Public ReadOnly Property GetLatencyDescription As IFuture(Of String)
             Get
+                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
                 Dim futureLatency = GetLatency()
                 Dim futureTransferState = scheduler.GetClientState(Me.Index)
                 Return New IFuture() {futureLatency, futureTransferState}.Defuturized.EvalOnSuccess(
@@ -255,11 +256,11 @@
                     End Function)
             End Get
         End Property
-        Public ReadOnly Property GetNumPeerConnections() As Integer
+        Public ReadOnly Property NumPeerConnections() As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
                 Contract.Ensures(Contract.Result(Of Integer)() <= 12)
-                Return numPeerConnections
+                Return _numPeerConnections
             End Get
         End Property
 
