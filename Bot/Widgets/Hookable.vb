@@ -100,7 +100,7 @@ Public NotInheritable Class TabControlIHookableSet(Of TElement, TControl As {Con
     End Sub
 End Class
 
-<ContractClass(GetType(ContractClassForIBotWidget))>
+<ContractClass(GetType(IBotWidget.ContractClass))>
 Public Interface IBotWidget
     Event AddStateString(ByVal state As String, ByVal shouldInsertAtTop As Boolean)
     Event RemoveStateString(ByVal state As String)
@@ -113,36 +113,37 @@ Public Interface IBotWidget
     Sub [Stop]()
     Sub Hooked()
     Sub ProcessCommand(ByVal text As String)
+
+    <ContractClassFor(GetType(IBotWidget))>
+    Class ContractClass
+        Implements IBotWidget
+        Public Event RemoveStateString(ByVal state As String) Implements IBotWidget.RemoveStateString
+        Public Event AddStateString(ByVal state As String, ByVal shouldInsertAtTop As Boolean) Implements IBotWidget.AddStateString
+        Public Event ClearStateStrings() Implements IBotWidget.ClearStateStrings
+        Public Sub Hooked() Implements IBotWidget.Hooked
+        End Sub
+        Public ReadOnly Property Logger As Logger Implements IBotWidget.Logger
+            Get
+                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public ReadOnly Property Name As String Implements IBotWidget.Name
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Public Sub ProcessCommand(ByVal text As String) Implements IBotWidget.ProcessCommand
+            Contract.Requires(text IsNot Nothing)
+        End Sub
+        Public Sub [Stop]() Implements IBotWidget.Stop
+        End Sub
+        Public ReadOnly Property TypeName As String Implements IBotWidget.TypeName
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+        End Property
+    End Class
 End Interface
-<ContractClassFor(GetType(IBotWidget))>
-Public NotInheritable Class ContractClassForIBotWidget
-    Implements IBotWidget
-    Public Event RemoveStateString(ByVal state As String) Implements IBotWidget.RemoveStateString
-    Public Event AddStateString(ByVal state As String, ByVal shouldInsertAtTop As Boolean) Implements IBotWidget.AddStateString
-    Public Event ClearStateStrings() Implements IBotWidget.ClearStateStrings
-    Public Sub Hooked() Implements IBotWidget.Hooked
-    End Sub
-    Public ReadOnly Property Logger As Logger Implements IBotWidget.Logger
-        Get
-            Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
-            Throw New NotSupportedException
-        End Get
-    End Property
-    Public ReadOnly Property Name As String Implements IBotWidget.Name
-        Get
-            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-            Throw New NotSupportedException
-        End Get
-    End Property
-    Public Sub ProcessCommand(ByVal text As String) Implements IBotWidget.ProcessCommand
-        Contract.Requires(text IsNot Nothing)
-    End Sub
-    Public Sub [Stop]() Implements IBotWidget.Stop
-    End Sub
-    Public ReadOnly Property TypeName As String Implements IBotWidget.TypeName
-        Get
-            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-            Throw New NotSupportedException
-        End Get
-    End Property
-End Class

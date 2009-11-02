@@ -8,10 +8,27 @@
         End Sub
     End Class
 
-    <ContractClass(GetType(ContractClassIPickle))>
+    <ContractClass(GetType(IPickle.ContractClass))>
     Public Interface IPickle
         ReadOnly Property Data As ViewableList(Of Byte)
         ReadOnly Property Description As LazyValue(Of String)
+
+        <ContractClassFor(GetType(IPickle))>
+        Class ContractClass
+            Implements IPickle
+            Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
+                Get
+                    Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle.Description
+                Get
+                    Contract.Ensures(Contract.Result(Of LazyValue(Of String))() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+        End Class
     End Interface
 
     <ContractClass(GetType(ContractClassIPickle(Of )))>
@@ -19,44 +36,6 @@
         Inherits IPickle
         ReadOnly Property Value As T
     End Interface
-
-    <ContractClass(GetType(ContractClassForIJarInfo))>
-    Public Interface IJarInfo
-        ReadOnly Property Name As String
-    End Interface
-    <ContractClass(GetType(ContractClassIPackJar(Of )))>
-    Public Interface IPackJar(Of In T)
-        Inherits IJarInfo
-        Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-    End Interface
-    <ContractClass(GetType(ContractClassIParseJar(Of )))>
-    Public Interface IParseJar(Of Out T)
-        Inherits IJarInfo
-        Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
-    End Interface
-    Public Interface IJar(Of T)
-        Inherits IJarInfo
-        Inherits IPackJar(Of T)
-        Inherits IParseJar(Of T)
-    End Interface
-
-    <ContractClassFor(GetType(IPickle))>
-    Public NotInheritable Class ContractClassIPickle
-        Implements IPickle
-        Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
-            Get
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-                Throw New NotSupportedException
-            End Get
-        End Property
-        Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle.Description
-            Get
-                Contract.Ensures(Contract.Result(Of LazyValue(Of String))() IsNot Nothing)
-                Throw New NotSupportedException
-            End Get
-        End Property
-    End Class
-
     <ContractClassFor(GetType(IPickle(Of )))>
     Public NotInheritable Class ContractClassIPickle(Of T)
         Implements IPickle(Of T)
@@ -80,17 +59,27 @@
         End Property
     End Class
 
-    <ContractClassFor(GetType(IJarInfo))>
-    Public NotInheritable Class ContractClassForIJarInfo
-        Implements IJarInfo
-        Public ReadOnly Property Name As String Implements IJarInfo.Name
-            Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Throw New NotSupportedException()
-            End Get
-        End Property
-    End Class
+    <ContractClass(GetType(IJarInfo.ContractClass))>
+    Public Interface IJarInfo
+        ReadOnly Property Name As String
 
+        <ContractClassFor(GetType(IJarInfo))>
+        Class ContractClass
+            Implements IJarInfo
+            Public ReadOnly Property Name As String Implements IJarInfo.Name
+                Get
+                    Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                    Throw New NotSupportedException()
+                End Get
+            End Property
+        End Class
+    End Interface
+
+    <ContractClass(GetType(ContractClassIPackJar(Of )))>
+    Public Interface IPackJar(Of In T)
+        Inherits IJarInfo
+        Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
+    End Interface
     <ContractClassFor(GetType(IPackJar(Of )))>
     Public NotInheritable Class ContractClassIPackJar(Of T)
         Implements IPackJar(Of T)
@@ -106,6 +95,11 @@
         End Function
     End Class
 
+    <ContractClass(GetType(ContractClassIParseJar(Of )))>
+    Public Interface IParseJar(Of Out T)
+        Inherits IJarInfo
+        Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
+    End Interface
     <ContractClassFor(GetType(IParseJar(Of )))>
     Public NotInheritable Class ContractClassIParseJar(Of T)
         Implements IParseJar(Of T)
@@ -120,4 +114,10 @@
             Throw New NotSupportedException()
         End Function
     End Class
+
+    Public Interface IJar(Of T)
+        Inherits IJarInfo
+        Inherits IPackJar(Of T)
+        Inherits IParseJar(Of T)
+    End Interface
 End Namespace

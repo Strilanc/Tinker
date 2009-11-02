@@ -227,43 +227,46 @@ Namespace Plugins
         End Sub
     End Class
 
-    <ContractClass(GetType(ContractClassForIPlugout))>
+    <ContractClass(GetType(IPlugout.ContractClass))>
     Public Interface IPlugout
         ReadOnly Property Bot() As MainBot
         Sub DisposePlugin(ByVal reason As String)
-    End Interface
-    <ContractClassFor(GetType(IPlugout))>
-    Public Class ContractClassForIPlugout
-        Implements IPlugout
-        Public ReadOnly Property Bot As MainBot Implements IPlugout.Bot
-            Get
-                Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
-                Throw New NotSupportedException
-            End Get
-        End Property
-        Public Sub DisposePlugin(ByVal reason As String) Implements IPlugout.DisposePlugin
-            Contract.Requires(reason IsNot Nothing)
-        End Sub
-    End Class
 
+        <ContractClassFor(GetType(IPlugout))>
+        Class ContractClass
+            Implements IPlugout
+            Public ReadOnly Property Bot As MainBot Implements IPlugout.Bot
+                Get
+                    Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public Sub DisposePlugin(ByVal reason As String) Implements IPlugout.DisposePlugin
+                Contract.Requires(reason IsNot Nothing)
+            End Sub
+        End Class
+    End Interface
+
+    <ContractClass(GetType(IPlugin.ContractClass))>
     Public Interface IPlugin
         Inherits IDisposable
         Sub Init(ByVal plugout As IPlugout)
         ReadOnly Property Description() As String
+
+        <ContractClassFor(GetType(IPlugin))>
+        Class ContractClass
+            Implements IPlugin
+            Public ReadOnly Property Description As String Implements IPlugin.Description
+                Get
+                    Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public Sub Init(ByVal plugout As IPlugout) Implements IPlugin.Init
+                Contract.Requires(plugout IsNot Nothing)
+            End Sub
+            Public Sub Dispose() Implements IDisposable.Dispose
+            End Sub
+        End Class
     End Interface
-    <ContractClassFor(GetType(IPlugin))>
-    Public Class ContractClassForIPlugin
-        Implements IPlugin
-        Public ReadOnly Property Description As String Implements IPlugin.Description
-            Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Throw New NotSupportedException
-            End Get
-        End Property
-        Public Sub Init(ByVal plugout As IPlugout) Implements IPlugin.Init
-            Contract.Requires(plugout IsNot Nothing)
-        End Sub
-        Public Sub Dispose() Implements IDisposable.Dispose
-        End Sub
-    End Class
 End Namespace
