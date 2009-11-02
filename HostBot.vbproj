@@ -165,29 +165,29 @@
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
     <Compile Include="Battlenet\CDKey.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameStatsJar.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\KeyedEvent.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\Pinger.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameAction.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameDescription.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3Relay.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3RemotePlayer.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3MapDownload.vb" />
-    <Compile Include="Battlenet\Warcraft3\Game\W3GameLoadScreen.vb" />
-    <Compile Include="Battlenet\Warcraft3\Game\W3GameLobby.vb" />
-    <Compile Include="Battlenet\Warcraft3\Game\W3GamePlay.vb" />
-    <Compile Include="Battlenet\Warcraft3\Player\W3Player.vb" />
-    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerLoadScreen.vb" />
-    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerLobby.vb" />
-    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerGameplay.vb" />
-    <Compile Include="Battlenet\Warcraft3\Server\W3ServerDoor.vb" />
-    <Compile Include="Battlenet\Warcraft3\Server\W3ServerInterface.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3ConnectionAccepter.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3GameStats.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3Slot.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3Socket.vb" />
-    <Compile Include="BNLS\WardenClient.vb" />
-    <Compile Include="BNLS\WardenPacket.vb" />
+    <Compile Include="Warcraft3\W3GameStatsJar.vb" />
+    <Compile Include="Warcraft3\KeyedEvent.vb" />
+    <Compile Include="Warcraft3\Pinger.vb" />
+    <Compile Include="Warcraft3\W3GameAction.vb" />
+    <Compile Include="Warcraft3\W3GameDescription.vb" />
+    <Compile Include="Warcraft3\W3Relay.vb" />
+    <Compile Include="Warcraft3\W3RemotePlayer.vb" />
+    <Compile Include="Warcraft3\W3MapDownload.vb" />
+    <Compile Include="Warcraft3\Game\W3GameLoadScreen.vb" />
+    <Compile Include="Warcraft3\Game\W3GameLobby.vb" />
+    <Compile Include="Warcraft3\Game\W3GamePlay.vb" />
+    <Compile Include="Warcraft3\Player\W3Player.vb" />
+    <Compile Include="Warcraft3\Player\W3PlayerLoadScreen.vb" />
+    <Compile Include="Warcraft3\Player\W3PlayerLobby.vb" />
+    <Compile Include="Warcraft3\Player\W3PlayerGameplay.vb" />
+    <Compile Include="Warcraft3\Server\W3ServerDoor.vb" />
+    <Compile Include="Warcraft3\Server\W3ServerInterface.vb" />
+    <Compile Include="Warcraft3\W3ConnectionAccepter.vb" />
+    <Compile Include="Warcraft3\W3GameStats.vb" />
+    <Compile Include="Warcraft3\W3Slot.vb" />
+    <Compile Include="Warcraft3\W3Socket.vb" />
+    <Compile Include="BNLS\BNLSWardenClient.vb" />
+    <Compile Include="BNLS\BNLSWardenPacket.vb" />
     <Compile Include="Bot\Commands\CKL Commands.vb" />
     <Compile Include="Library\Commands\CommandSet.vb" />
     <Compile Include="Library\Commands\BaseCommand.vb" />
@@ -208,9 +208,9 @@
     <Compile Include="Interface\ProfileSettingsControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3DummyPlayer.vb" />
-    <Compile Include="Battlenet\Warcraft3\W3LanAdvertiser.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\TransferScheduler.vb" />
+    <Compile Include="Warcraft3\W3DummyPlayer.vb" />
+    <Compile Include="Warcraft3\W3LanAdvertiser.vb" />
+    <Compile Include="Warcraft3\TransferScheduler.vb" />
     <Compile Include="Library\Commands\ICommand.vb" />
     <Compile Include="Bot\Commands\Bot Commands.vb" />
     <Compile Include="Bot\Commands\Client Commands.vb" />
@@ -244,7 +244,7 @@
     <Compile Include="Library\Streams\ThrottledWriteStream.vb" />
     <Compile Include="Bot\Plugins.vb" />
     <Compile Include="Bot\Widgets\CKL Server.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3Packet.vb" />
+    <Compile Include="Warcraft3\W3Packet.vb" />
     <Compile Include="Bot\BotUser.vb" />
     <Compile Include="Interface\LoggerControl.Designer.vb">
       <DependentUpon>LoggerControl.vb</DependentUpon>
@@ -286,10 +286,10 @@
     <Compile Include="Interface\SettingsForm.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Battlenet\Warcraft3\Game\W3Game.vb" />
-    <Compile Include="Battlenet\Warcraft3\Server\W3Server.vb" />
-    <Compile Include="Battlenet\Warcraft3\Player\W3PlayerPart.vb" />
-    <Compile Include="Battlenet\Warcraft3\Utilities\W3Map.vb" />
+    <Compile Include="Warcraft3\Game\W3Game.vb" />
+    <Compile Include="Warcraft3\Server\W3Server.vb" />
+    <Compile Include="Warcraft3\Player\W3PlayerPart.vb" />
+    <Compile Include="Warcraft3\W3Map.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>

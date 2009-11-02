@@ -29,7 +29,7 @@ Namespace BNLS
         Warden = &H7D
     End Enum
 
-    Public NotInheritable Class WardenClient
+    Public NotInheritable Class BNLSWardenClient
         Implements IDisposable
 
         Private WithEvents socket As PacketSocket
@@ -37,7 +37,7 @@ Namespace BNLS
         Private ReadOnly cookie As UInteger
         Public Event Send(ByVal data As Byte())
         Public Event Fail(ByVal e As Exception)
-        Public Event Disconnect(ByVal sender As WardenClient, ByVal expected As Boolean, ByVal reason As String)
+        Public Event Disconnect(ByVal sender As BNLSWardenClient, ByVal expected As Boolean, ByVal reason As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(logger IsNot Nothing)
@@ -94,9 +94,9 @@ Namespace BNLS
         Public Shared Function FutureConnectToBNLSServer(ByVal hostName As String,
                                                          ByVal port As UShort,
                                                          ByVal seed As UInteger,
-                                                         Optional ByVal logger As Logger = Nothing) As IFuture(Of WardenClient)
+                                                         Optional ByVal logger As Logger = Nothing) As IFuture(Of BNLSWardenClient)
             Contract.Requires(hostName IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of WardenClient))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of BNLSWardenClient))() IsNot Nothing)
             logger = If(logger, New Logger())
             Dim cookie = seed
 
@@ -142,7 +142,7 @@ Namespace BNLS
                         Throw New IO.IOException(msg)
                     End If
 
-                    Return New WardenClient(packetSocket, cookie, logger)
+                    Return New BNLSWardenClient(packetSocket, cookie, logger)
                 End Function
             )
 

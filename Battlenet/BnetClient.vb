@@ -103,7 +103,7 @@ Namespace Bnet
         Public Event ReceivedPacket(ByVal sender As BnetClient, ByVal packet As BnetPacket)
 
         'warden
-        Private futureWardenHandler As IFuture(Of BNLS.WardenClient)
+        Private futureWardenHandler As IFuture(Of BNLS.BNLSWardenClient)
 
         'state
         Private listenPort As UShort
@@ -393,7 +393,7 @@ Namespace Bnet
             End If
 
             logger.Log("Connecting to bnls server at {0}...".Frmt(address), LogMessageType.Positive)
-            futureWardenHandler = BNLS.WardenClient.FutureConnectToBNLSServer(hostPortPair(0), port, seed, logger).EvalWhenValueReady(
+            futureWardenHandler = BNLS.BNLSWardenClient.FutureConnectToBNLSServer(hostPortPair(0), port, seed, logger).EvalWhenValueReady(
                 Function(bnlsClient, bnlsClientException)
                     If bnlsClientException IsNot Nothing Then
                         logger.Log("Error connecting to bnls server: {0}".Frmt(bnlsClientException), LogMessageType.Problem)
