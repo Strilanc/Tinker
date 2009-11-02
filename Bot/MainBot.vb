@@ -625,10 +625,7 @@ Public NotInheritable Class MainBot
     Public Function QueueLoadPlugin(ByVal name As String) As IFuture(Of Plugins.IPlugin)
         Contract.Requires(name IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture(Of Plugins.IPlugin))() IsNot Nothing)
-        Return ref.QueueFunc(Function()
-                                 Contract.Assume(name IsNot Nothing)
-                                 Return LoadPlugin(name)
-                             End Function)
+        Return ref.QueueFunc(Function() LoadPlugin(name))
     End Function
 #End Region
 End Class

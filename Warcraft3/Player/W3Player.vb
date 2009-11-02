@@ -25,7 +25,7 @@
         Private ReadOnly testCanHost As IFuture
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
-        Private ReadOnly packetHandler As New W3PacketHandler
+        Private ReadOnly packetHandler As W3PacketHandler
         Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
         Private ReadOnly eref As ICallQueue = New ThreadPooledCallQueue
         Private _numPeerConnections As Integer
@@ -91,6 +91,7 @@
             Me.settings = settings
             Me.scheduler = scheduler
             Me.logger = If(logger, New Logger)
+            Me.packetHandler = New W3PacketHandler(Me.logger)
             Me._index = index
             If name.Length > MAX_NAME_LENGTH Then
                 name = name.Substring(0, MAX_NAME_LENGTH)
@@ -121,6 +122,7 @@
             Me.settings = settings
             Me.scheduler = scheduler
             Me.logger = If(logger, New Logger)
+            Me.packetHandler = New W3PacketHandler(Me.logger)
             connectingPlayer.Socket.Logger = Me.logger
             Me.peerKey = connectingPlayer.PeerKey
 

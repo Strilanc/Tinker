@@ -67,7 +67,7 @@
                             Dim id = CType(packetData(1), W3PacketId)
                             Dim pickle = ProcessConnectingPlayer(socket, packetData)
                             logger.Log(Function() "Received {0}".Frmt(id), LogMessageType.DataEvent)
-                            logger.Log(Function() "{0} = {1}".Frmt(id, pickle.Description), LogMessageType.DataParsed)
+                            logger.Log(Function() "{0} = {1}".Frmt(id, pickle.Description.Value), LogMessageType.DataParsed)
                         Catch e As Exception
                             socket.Disconnect(expected:=False, reason:=e.Message)
                         End Try

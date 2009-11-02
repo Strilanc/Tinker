@@ -263,9 +263,7 @@ Namespace Bnet
         Private Sub ChangeState(ByVal newState As BnetClientState)
             Dim oldState = state
             state = newState
-            eref.QueueAction(Sub()
-                                 RaiseEvent StateChanged(Me, oldState, newState)
-                             End Sub)
+            eref.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
         Private Function BeginConnect(ByVal remoteHost As String) As IFuture
             Contract.Requires(remoteHost IsNot Nothing)
@@ -300,13 +298,11 @@ Namespace Bnet
                 Return FutureCreateConnectedTcpClient(remoteHost, port).QueueEvalOnValueSuccess(ref,
                     Function(tcpClient)
                         Try
-                            Contract.Assume(tcpClient IsNot Nothing)
                             socket = New BnetSocket(New PacketSocket(
                                 tcpClient,
                                 60.Seconds,
                                 logger,
                                 Function(stream)
-                                    Contract.Assume(stream IsNot Nothing)
                                     Return New ThrottledWriteStream(stream,
                                                                     initialSlack:=1000,
                                                                     costPerWrite:=100,
@@ -325,7 +321,6 @@ Namespace Bnet
                                         Me.futureConnected.MarkAnyExceptionAsHandled()
 
                                         'Start log-on process
-                                        Contract.Assume(tcpClient IsNot Nothing)
                                         tcpClient.GetStream.Write({1}, 0, 1)
                                         SendPacket(BnetPacket.MakeAuthenticationBegin(MainBot.WC3MajorVersion, GetCachedIPAddressBytes(external:=False)))
 
@@ -363,9 +358,7 @@ Namespace Bnet
                         Dim packet = packetData
 
                         'Handle
-                        eref.QueueAction(Sub()
-                                             RaiseEvent ReceivedPacket(Me, packet)
-                                         End Sub)
+                        eref.QueueAction(Sub() RaiseEvent ReceivedPacket(Me, packet))
                         If packetHandlers(packet.id) IsNot Nothing Then
                             Call packetHandlers(packet.id)(CType(packet.Payload.Value, Dictionary(Of String, Object)))
                         End If
@@ -434,11 +427,7 @@ Namespace Bnet
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return QueueConnect(remoteHost).EvalOnSuccess(Function()
-                                                              Contract.Assume(userName IsNot Nothing)
-                                                              Contract.Assume(password IsNot Nothing)
-                                                              Return QueueLogOn(userName, password)
-                                                          End Function).Defuturized
+            Return QueueConnect(remoteHost).EvalOnSuccess(Function() QueueLogOn(userName, password)).Defuturized
         End Function
 
         Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
@@ -527,9 +516,7 @@ Namespace Bnet
                         Throw
                     End Try
 
-                    eref.QueueAction(Sub()
-                                         RaiseEvent AddedGame(Me, game, server)
-                                     End Sub)
+                    eref.QueueAction(Sub() RaiseEvent AddedGame(Me, game, server))
                     If server IsNot Nothing Then
                         server.QueueAddAdvertiser(Me).MarkAnyExceptionAsHandled()
                         DisposeLink.CreateOneWayLink(New AdvertisingDisposeNotifier(Me), server.CreateAdvertisingDependency)
@@ -590,9 +577,7 @@ Namespace Bnet
                     gameRefreshTimer.Stop()
                     EnterChannel(lastChannel)
                     futureCreatedGame.TrySetFailed(New OperationFailedException("Advertising cancelled."))
-                    eref.QueueAction(Sub()
-                                         RaiseEvent RemovedGame(Me, advertisedGameSettings.Header, reason)
-                                     End Sub)
+                    eref.QueueAction(Sub() RaiseEvent RemovedGame(Me, advertisedGameSettings.Header, reason))
 
                 Case Else
                     Throw New InvalidOperationException("Wasn't advertising any games.")
@@ -653,16 +638,10 @@ Namespace Bnet
         Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameDescription, ByVal server As W3Server) Implements IGameSource.AddedGame
         Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameDescription, ByVal reason As String) Implements IGameSource.RemovedGame
         Private Sub _QueueAddGame(ByVal game As W3GameDescription, ByVal server As W3Server) Implements IGameSourceSink.AddGame
-            ref.QueueAction(Sub()
-                                Contract.Assume(game IsNot Nothing)
-                                BeginAdvertiseGame(game, server)
-                            End Sub).MarkAnyExceptionAsHandled()
+            ref.QueueAction(Sub() BeginAdvertiseGame(game, server)).MarkAnyExceptionAsHandled()
         End Sub
         Private Sub _QueueRemoveGame(ByVal game As W3GameDescription, ByVal reason As String) Implements IGameSourceSink.RemoveGame
-            ref.QueueAction(Sub()
-                                Contract.Assume(reason IsNot Nothing)
-                                StopAdvertisingGame(reason)
-                            End Sub).MarkAnyExceptionAsHandled()
+            ref.QueueAction(Sub() StopAdvertisingGame(reason)).MarkAnyExceptionAsHandled()
         End Sub
         Private Sub _QueueSetAdvertisingOptions(ByVal [private] As Boolean) Implements Links.IGameSourceSink.SetAdvertisingOptions
             ref.QueueAction(
@@ -683,9 +662,7 @@ Namespace Bnet
         End Sub
         <Pure()>
         Public Sub QueueRemoveAdvertisingPartner(ByVal other As IGameSourceSink)
-            eref.QueueAction(Sub()
-                                 RaiseEvent DisposedAdvertisingLink(Me, other)
-                             End Sub)
+            eref.QueueAction(Sub() RaiseEvent DisposedAdvertisingLink(Me, other))
         End Sub
 #End Region
 
@@ -1001,11 +978,7 @@ Namespace Bnet
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(text.Length > 0)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(text IsNot Nothing)
-                                       Contract.Assume(text.Length > 0)
-                                       SendText(text)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SendText(text))
         End Function
         Public Function QueueSendWhisper(ByVal userName As String,
                                          ByVal text As String) As IFuture
@@ -1013,21 +986,12 @@ Namespace Bnet
             Contract.Requires(userName.Length > 0)
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(userName IsNot Nothing)
-                                       Contract.Assume(text IsNot Nothing)
-                                       Contract.Assume(userName.Length > 0)
-                                       Contract.Assume(text.Length > 0)
-                                       SendWhisper(userName, text)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SendWhisper(userName, text))
         End Function
         Public Function QueueSendPacket(ByVal packet As BnetPacket) As IFuture
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(packet IsNot Nothing)
-                                       SendPacket(packet)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SendPacket(packet))
         End Function
         Public Function QueueSetListenPort(ByVal newPort As UShort) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
@@ -1036,46 +1000,30 @@ Namespace Bnet
         Public Function QueueStopAdvertisingGame(ByVal reason As String) As IFuture
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(reason IsNot Nothing)
-                                       StopAdvertisingGame(reason)
-                                   End Sub)
+            Return ref.QueueAction(Sub() StopAdvertisingGame(reason))
         End Function
         Public Function QueueStartAdvertisingGame(ByVal header As W3GameDescription,
                                                   ByVal server As W3Server) As IFuture
             Contract.Requires(header IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueFunc(Function()
-                                     Contract.Assume(header IsNot Nothing)
-                                     Return BeginAdvertiseGame(header, server)
-                                 End Function).Defuturized
+            Return ref.QueueFunc(Function() BeginAdvertiseGame(header, server)).Defuturized
         End Function
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As IFuture
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(reason IsNot Nothing)
-                                       Disconnect(expected, reason)
-                                   End Sub)
+            Return ref.QueueAction(Sub() Disconnect(expected, reason))
         End Function
         Public Function QueueConnect(ByVal remoteHost As String) As IFuture
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueFunc(Function()
-                                     Contract.Assume(remoteHost IsNot Nothing)
-                                     Return BeginConnect(remoteHost)
-                                 End Function).Defuturized
+            Return ref.QueueFunc(Function() BeginConnect(remoteHost)).Defuturized
         End Function
         Public Function QueueLogOn(ByVal userName As String,
                                    ByVal password As String) As IFuture
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueFunc(Function()
-                                     Contract.Assume(userName IsNot Nothing)
-                                     Contract.Assume(password IsNot Nothing)
-                                     Return BeginLogOn(userName, password)
-                                 End Function).Defuturized
+            Return ref.QueueFunc(Function() BeginLogOn(userName, password)).Defuturized
         End Function
         Public Function QueueGetUserServer(ByVal user As BotUser) As IFuture(Of W3Server)
             Contract.Ensures(Contract.Result(Of IFuture(Of Warcraft3.W3Server))() IsNot Nothing)

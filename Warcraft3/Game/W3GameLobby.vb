@@ -587,10 +587,7 @@
         Private Sub OpenSlot(ByVal slotid As String)
             Contract.Requires(slotid IsNot Nothing)
             ModifySlotContents(slotid,
-                               Sub(slot)
-                                   Contract.Assume(slot IsNot Nothing)
-                                   slot.Contents = New W3SlotContentsOpen(slot)
-                               End Sub,
+                               Sub(slot) slot.Contents = New W3SlotContentsOpen(slot),
                                avoidPlayers:=True)
         End Sub
 
@@ -598,10 +595,7 @@
         Private Sub ComputerizeSlot(ByVal slotid As String, ByVal cpu As W3Slot.ComputerLevel)
             Contract.Requires(slotid IsNot Nothing)
             ModifySlotContents(slotid,
-                               Sub(slot)
-                                   Contract.Assume(slot IsNot Nothing)
-                                   slot.Contents = New W3SlotContentsComputer(slot, cpu)
-                               End Sub,
+                               Sub(slot) slot.Contents = New W3SlotContentsComputer(slot, cpu),
                                avoidPlayers:=True)
         End Sub
 
@@ -609,10 +603,7 @@
         Private Sub CloseSlot(ByVal slotid As String)
             Contract.Requires(slotid IsNot Nothing)
             ModifySlotContents(slotid,
-                               Sub(slot)
-                                   Contract.Assume(slot IsNot Nothing)
-                                   slot.Contents = New W3SlotContentsClosed(slot)
-                               End Sub,
+                               Sub(slot) slot.Contents = New W3SlotContentsClosed(slot),
                                avoidPlayers:=True)
         End Sub
 
@@ -679,34 +670,22 @@
 
         Private Sub SetSlotRace(ByVal slotid As String, ByVal race As W3Slot.Races)
             Contract.Requires(slotid IsNot Nothing)
-            ModifySlotContents(slotid,
-                               Sub(slot)
-                                   slot.race = race
-                               End Sub)
+            ModifySlotContents(slotid,Sub(slot) slot.race = race)
         End Sub
 
         Private Sub SetSlotTeam(ByVal slotid As String, ByVal team As Byte)
             Contract.Requires(slotid IsNot Nothing)
-            ModifySlotContents(slotid,
-                               Sub(slot)
-                                   slot.Team = team
-                               End Sub)
+            ModifySlotContents(slotid,Sub(slot) slot.Team = team)
         End Sub
 
         Private Sub SetSlotHandicap(ByVal slotid As String, ByVal handicap As Byte)
             Contract.Requires(slotid IsNot Nothing)
-            ModifySlotContents(slotid,
-                               Sub(slot)
-                                   slot.handicap = handicap
-                               End Sub)
+            ModifySlotContents(slotid,Sub(slot) slot.handicap = handicap)
         End Sub
 
         Private Sub SetSlotLocked(ByVal slotid As String, ByVal locked As W3Slot.Lock)
             Contract.Requires(slotid IsNot Nothing)
-            ModifySlotContents(slotid,
-                               Sub(slot)
-                                   slot.locked = locked
-                               End Sub)
+            ModifySlotContents(slotid,Sub(slot) slot.locked = locked)
         End Sub
 
         Private Sub SetAllSlotsLocked(ByVal locked As W3Slot.Lock)
@@ -841,56 +820,36 @@
         Public Function QueueOpenSlot(ByVal query As String) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       OpenSlot(query)
-                                   End Sub)
+            Return ref.QueueAction(Sub() OpenSlot(query))
         End Function
         Public Function QueueCloseSlot(ByVal query As String) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       CloseSlot(query)
-                                   End Sub)
+            Return ref.QueueAction(Sub() CloseSlot(query))
         End Function
         Public Function QueueReserveSlot(ByVal query As String,
                                          ByVal userName As String) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Requires(userName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       Contract.Assume(userName IsNot Nothing)
-                                       ReserveSlot(query, userName)
-                                   End Sub)
+            Return ref.QueueAction(Sub() ReserveSlot(query, userName))
         End Function
         Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture
             Contract.Requires(query1 IsNot Nothing)
             Contract.Requires(query2 IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query1 IsNot Nothing)
-                                       Contract.Assume(query2 IsNot Nothing)
-                                       SwapSlotContents(query1, query2)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SwapSlotContents(query1, query2))
         End Function
 
         Public Function QueueSetSlotCpu(ByVal query As String, ByVal newCpuLevel As W3Slot.ComputerLevel) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       ComputerizeSlot(query, newCpuLevel)
-                                   End Sub)
+            Return ref.QueueAction(Sub() ComputerizeSlot(query, newCpuLevel))
         End Function
         Public Function QueueSetSlotLocked(ByVal query As String, ByVal newLockState As W3Slot.Lock) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       SetSlotLocked(query, newLockState)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SetSlotLocked(query, newLockState))
         End Function
         Public Function QueueSetAllSlotsLocked(ByVal newLockState As W3Slot.Lock) As IFuture
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
@@ -899,34 +858,22 @@
         Public Function QueueSetSlotHandicap(ByVal query As String, ByVal newHandicap As Byte) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       SetSlotHandicap(query, newHandicap)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SetSlotHandicap(query, newHandicap))
         End Function
         Public Function QueueSetSlotTeam(ByVal query As String, ByVal newTeam As Byte) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       SetSlotTeam(query, newTeam)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SetSlotTeam(query, newTeam))
         End Function
         Public Function QueueSetSlotRace(ByVal query As String, ByVal newRace As W3Slot.Races) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       SetSlotRace(query, newRace)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SetSlotRace(query, newRace))
         End Function
         Public Function QueueSetSlotColor(ByVal query As String, ByVal newColor As W3Slot.PlayerColor) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(query IsNot Nothing)
-                                       SetSlotColor(query, newColor)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SetSlotColor(query, newColor))
         End Function
 
         Public Function QueueTryAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of W3Player)
@@ -938,10 +885,7 @@
                                                   ByVal wantsToStart As Boolean) As IFuture
             Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(name IsNot Nothing)
-                                       SetPlayerVoteToStart(name, wantsToStart)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
         End Function
         Public Function QueueStartCountdown() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
@@ -950,10 +894,7 @@
         Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture
             Contract.Requires(sizes IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(sizes IsNot Nothing)
-                                       TrySetTeamSizes(sizes)
-                                   End Sub)
+            Return ref.QueueAction(Sub() TrySetTeamSizes(sizes))
         End Function
 #End Region
     End Class

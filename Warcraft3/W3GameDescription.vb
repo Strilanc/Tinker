@@ -162,7 +162,6 @@ Namespace Warcraft3
 
         Public Overridable ReadOnly Property GameState As Bnet.BnetPacket.GameStates
             Get
-                Contract.Ensures(Contract.Result(Of W3GameStats)() IsNot Nothing)
                 Return _state
             End Get
         End Property

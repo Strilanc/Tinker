@@ -1040,9 +1040,15 @@ Namespace Warcraft3
 
     Public NotInheritable Class W3PacketHandler
         Private ReadOnly handlers As New KeyedEvent(Of W3PacketId, ViewableList(Of Byte))
+        Private ReadOnly logger As Logger
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(handlers IsNot Nothing)
+            Contract.Invariant(logger IsNot Nothing)
+        End Sub
+
+        Public Sub New(ByVal logger As Logger)
+            Me.logger = If(logger, New Logger)
         End Sub
 
         Public Sub [AddHandler](Of TData)(ByVal packetId As W3PacketId,
@@ -1053,6 +1059,7 @@ Namespace Warcraft3
             packetId = packetId.AssumeNotNull
             handlers.AddHandler(packetId, Function(data As ViewableList(Of Byte))
                                               Dim value = jar.Parse(data)
+                                              logger.Log(Function() "{0}".Frmt(value.Description.Value), LogMessageType.DataParsed)
                                               Return handler(value)
                                           End Function)
         End Sub
@@ -1068,10 +1075,10 @@ Namespace Warcraft3
             If packetData(0) <> W3Packet.PacketPrefixValue Then
                 Return New IO.IOException("Invalid packet header").FuturizedFail
             End If
+            logger.Log(Function() "Received {0}".Frmt(packetId), LogMessageType.DataEvent)
 
             'Handle
-            packetId = packetId.AssumeNotNull
-            Dim result = handlers.Raise(packetId, packetData)
+            Dim result = handlers.Raise(packetId, packetBody)
             If result.Count = 0 Then
                 Return New IO.IOException("No handler for {0}".Frmt(packetId)).FuturizedFail
             End If

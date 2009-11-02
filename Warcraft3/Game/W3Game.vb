@@ -536,11 +536,7 @@ Namespace Warcraft3
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(text IsNot Nothing)
-                                       Contract.Assume(logger IsNot Nothing)
-                                       CommandProcessLocalText(text, logger)
-                                   End Sub)
+            Return ref.QueueAction(Sub() CommandProcessLocalText(text, logger))
         End Function
         Public Function QueueCommandProcessText(ByVal bot As MainBot,
                                                 ByVal player As W3Player,
@@ -549,30 +545,18 @@ Namespace Warcraft3
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(arguments IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-            Return ref.QueueFunc(Function()
-                                     Contract.Assume(bot IsNot Nothing)
-                                     Contract.Assume(player IsNot Nothing)
-                                     Contract.Assume(arguments IsNot Nothing)
-                                     Return CommandProcessText(bot, player, arguments)
-                                 End Function).Defuturized
+            Return ref.QueueFunc(Function() CommandProcessText(bot, player, arguments)).Defuturized
         End Function
         Public Function QueueTryElevatePlayer(ByVal name As String,
                                               Optional ByVal password As String = Nothing) As IFuture
             Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(name IsNot Nothing)
-                                       Contract.Assume(password IsNot Nothing)
-                                       ElevatePlayer(name, password)
-                                   End Sub)
+            Return ref.QueueAction(Sub() ElevatePlayer(name, password))
         End Function
         Public Function QueueFindPlayer(ByVal userName As String) As IFuture(Of W3Player)
             Contract.Requires(userName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
-            Return ref.QueueFunc(Function()
-                                     Contract.Assume(userName IsNot Nothing)
-                                     Return TryFindPlayer(userName)
-                                 End Function)
+            Return ref.QueueFunc(Function() TryFindPlayer(userName))
         End Function
         Public Function QueueRemovePlayer(ByVal player As W3Player,
                                           ByVal expected As Boolean,
@@ -581,11 +565,7 @@ Namespace Warcraft3
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(player IsNot Nothing)
-                                       Contract.Assume(reason IsNot Nothing)
-                                       RemovePlayer(player, expected, leaveType, reason)
-                                   End Sub)
+            Return ref.QueueAction(Sub() RemovePlayer(player, expected, leaveType, reason))
         End Function
         Public Function QueueGetPlayers() As IFuture(Of List(Of W3Player))
             Contract.Ensures(Contract.Result(Of IFuture(Of List(Of W3Player)))() IsNot Nothing)
@@ -602,28 +582,18 @@ Namespace Warcraft3
         Public Function QueueBroadcastMessage(ByVal message As String) As IFuture
             Contract.Requires(message IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(message IsNot Nothing)
-                                       BroadcastMessage(message)
-                                   End Sub)
+            Return ref.QueueAction(Sub() BroadcastMessage(message))
         End Function
         Public Function QueueSendMessageTo(ByVal message As String, ByVal player As W3Player) As IFuture
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(message IsNot Nothing)
-                                       Contract.Assume(player IsNot Nothing)
-                                       SendMessageTo(message, player)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SendMessageTo(message, player))
         End Function
         Public Function QueueBootSlot(ByVal slotQuery As String) As IFuture
             Contract.Requires(slotQuery IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(slotQuery IsNot Nothing)
-                                       Boot(slotQuery)
-                                   End Sub)
+            Return ref.QueueAction(Sub() Boot(slotQuery))
         End Function
         Public Function QueueGetState() As IFuture(Of W3GameState)
             Contract.Ensures(Contract.Result(Of IFuture(Of W3GameState))() IsNot Nothing)
@@ -634,11 +604,7 @@ Namespace Warcraft3
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(values IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(player IsNot Nothing)
-                                       Contract.Assume(values IsNot Nothing)
-                                       ReceiveNonGameAction(player, values)
-                                   End Sub)
+            Return ref.QueueAction(Sub() ReceiveNonGameAction(player, values))
         End Function
 #End Region
     End Class
