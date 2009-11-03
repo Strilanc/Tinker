@@ -115,7 +115,7 @@ Public NotInheritable Class MainBot
         Dim n As UInteger = reader.ReadUInt16()
         If n = UInt16.MaxValue Then 'not the old version without the format flag
             Dim ver = reader.ReadUInt32()
-            If ver > FormatVersion Then Throw New IO.IOException("Unrecognized bot data format version.")
+            If ver > FormatVersion Then Throw New IO.InvalidDataException("Unrecognized bot data format version.")
             n = reader.ReadUInt32()
             first_version = False
         End If

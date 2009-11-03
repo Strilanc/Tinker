@@ -59,7 +59,7 @@ Namespace Warcraft3
             Contract.Requires(data IsNot Nothing)
             If file Is Nothing Then Throw New InvalidOperationException("File is closed.")
             If pos <> file.Position Then Return False
-            If file.Position + data.Length > size Then Throw New IO.IOException("Invalid data.")
+            If file.Position + data.Length > size Then Throw New IO.InvalidDataException("Data runs past end of file.")
             file.Write(data, 0, data.Length)
 
             If file.Position = size Then
@@ -67,9 +67,9 @@ Namespace Warcraft3
                 file.Close()
                 file = Nothing
                 Dim map As New W3Map(My.Settings.mapPath, downloadPath.Substring(My.Settings.mapPath.Length), My.Settings.war3path)
-                If Not map.MapChecksumSHA1.HasSameItemsAs(mapChecksumSHA1) Then Throw New IO.IOException("Invalid data.")
-                If map.MapChecksumXORO <> mapChecksumXORO Then Throw New IO.IOException("Invalid data.")
-                If map.FileChecksumCRC32 <> fileChecksumCRC32 Then Throw New IO.IOException("Invalid data.")
+                If Not map.MapChecksumSHA1.HasSameItemsAs(mapChecksumSHA1) Then Throw New IO.InvalidDataException("Completed map doesn't match reported SHA1 checksum.")
+                If map.MapChecksumXORO <> mapChecksumXORO Then Throw New IO.InvalidDataException("Completed map doesn't match reported XORO checksum.")
+                If map.FileChecksumCRC32 <> fileChecksumCRC32 Then Throw New IO.InvalidDataException("Completed map doesn't match reported CRC32 checksum.")
                 IO.File.Move(downloadPath, destinationPath)
                 Return True
             End If

@@ -32,7 +32,7 @@ Namespace Plugins
         Public Sub New(ByVal reader As IO.BinaryReader)
             Contract.Requires(reader IsNot Nothing)
             Dim ver = reader.ReadUInt32()
-            If ver > format_version Then Throw New IO.IOException("Saved PlayerRecord has an unrecognized format version.")
+            If ver > format_version Then Throw New IO.InvalidDataException("Saved PlayerRecord has an unrecognized format version.")
             name = reader.ReadString()
             location = reader.ReadString()
             argument = reader.ReadString()

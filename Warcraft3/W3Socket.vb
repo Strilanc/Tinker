@@ -91,6 +91,7 @@ Namespace Warcraft3
             Catch e As Exception
                 If Not (TypeOf e Is SocketException OrElse
                         TypeOf e Is ObjectDisposedException OrElse
+                        TypeOf e Is IO.InvalidDataException OrElse
                         TypeOf e Is IO.IOException) Then
                     e.RaiseAsUnexpected("Error sending {0} to {1}.".Frmt(packet.id, Name))
                 End If

@@ -33,7 +33,7 @@ Friend Class StreamTester
                             If exception IsNot Nothing Then
                                 result.SetFailed(exception)
                             ElseIf value < data.Length Then
-                                result.SetFailed(New IO.IOException("Data ended before expected."))
+                                result.SetFailed(New IO.InvalidDataException("Data ended before expected."))
                             Else
                                 ThreadPooledAction(Sub() RunContinue(result))
                             End If
@@ -46,7 +46,7 @@ Friend Class StreamTester
                             If exception IsNot Nothing Then
                                 result.SetFailed(exception)
                             ElseIf value < data.Length Then
-                                result.SetFailed(New IO.IOException("Data ended before expected."))
+                                result.SetFailed(New IO.InvalidDataException("Data ended before expected."))
                             Else
                                 If expectedData.HasSameItemsAs(data) Then
                                     ThreadPooledAction(Sub() RunContinue(result))
@@ -63,7 +63,7 @@ Friend Class StreamTester
                     testStream.Close()
                     ThreadPooledAction(Sub() RunContinue(result))
                 Case Else
-                    result.SetFailed(New IO.IOException("Unrecognized command in test data."))
+                    result.SetFailed(New IO.InvalidDataException("Unrecognized command in test data."))
             End Select
         Catch e As Exception
             result.SetFailed(e)

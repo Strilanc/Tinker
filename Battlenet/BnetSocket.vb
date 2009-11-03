@@ -99,10 +99,10 @@ Public NotInheritable Class BnetSocket
                 Contract.Assume(data IsNot Nothing)
                 If data.Length < 4 Then
                     Disconnect(expected:=False, reason:="Packer didn't include a header.")
-                    Throw New IO.IOException("Invalid packet prefix")
+                    Throw New IO.InvalidDataException("Invalid packet prefix")
                 ElseIf data(0) <> Bnet.BnetPacket.PacketPrefixValue Then
                     Disconnect(expected:=False, reason:="Invalid packet prefix")
-                    Throw New IO.IOException("Invalid packet prefix")
+                    Throw New IO.InvalidDataException("Invalid packet prefix")
                 End If
                 Dim id = CType(data(1), Bnet.BnetPacketId)
                 data = data.SubView(4)

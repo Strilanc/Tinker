@@ -116,17 +116,17 @@
                 Select Case ArgumentLimitType
                     Case ArgumentLimitType.Exact
                         If arguments.Count > ArgumentLimit Then
-                            Throw New IO.IOException("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".Frmt(ArgumentLimit))
+                            Throw New ArgumentException("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".Frmt(ArgumentLimit))
                         ElseIf arguments.Count < ArgumentLimit Then
-                            Throw New IO.IOException("Not enough arguments, expected at least {0}.".Frmt(ArgumentLimit))
+                            Throw New ArgumentException("Not enough arguments, expected at least {0}.".Frmt(ArgumentLimit))
                         End If
                     Case ArgumentLimitType.Max
                         If arguments.Count > ArgumentLimit Then
-                            Throw New IO.IOException("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".Frmt(ArgumentLimit))
+                            Throw New ArgumentException("Too many arguments, expected at most {0}. Use quotes (""like this"") to surround individual arguments containing spaces.".Frmt(ArgumentLimit))
                         End If
                     Case ArgumentLimitType.Min
                         If arguments.Count < ArgumentLimit Then
-                            Throw New IO.IOException("Not enough arguments, expected at least {0}.".Frmt(ArgumentLimit))
+                            Throw New ArgumentException("Not enough arguments, expected at least {0}.".Frmt(ArgumentLimit))
                         End If
                 End Select
 

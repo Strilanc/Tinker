@@ -38,7 +38,7 @@
                     Dim flag = packetData(0)
                     Dim id = packetData(1)
                     If flag <> CKLServer.PacketPrefixValue Then
-                        Throw New IO.IOException("Incorrect header id in data returned from CKL server.")
+                        Throw New IO.InvalidDataException("Incorrect header id in data returned from CKL server.")
                     End If
 
                     'Read body
@@ -53,7 +53,7 @@
                             Return New CKLEncodedKey(Bnet.BnetPacket.CDKeyJar.PackBorrowedCDKey(rocKeyData),
                                                      Bnet.BnetPacket.CDKeyJar.PackBorrowedCDKey(tftKeyData))
                         Case Else
-                            Throw New IO.IOException("Incorrect packet id in data returned from CKL server.")
+                            Throw New IO.InvalidDataException("Incorrect packet id in data returned from CKL server.")
                     End Select
                 End Function)
 

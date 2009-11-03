@@ -347,6 +347,7 @@ Namespace Bnet
                             Return True
                         ElseIf Not (TypeOf packetException Is SocketException OrElse
                                     TypeOf packetException Is ObjectDisposedException OrElse
+                                    TypeOf packetException Is IO.InvalidDataException OrElse
                                     TypeOf packetException Is IO.IOException) Then
                             packetException.RaiseAsUnexpected("Error receiving data from bnet server")
                         End If
@@ -679,12 +680,12 @@ Namespace Bnet
             Const LOGON_TYPE_WC3 As UInteger = 2
 
             If state <> BnetClientState.Connecting Then
-                Throw New Exception("Invalid state for receiving AUTHENTICATION_BEGIN")
+                Throw New IO.InvalidDataException("Invalid state for receiving AUTHENTICATION_BEGIN")
             End If
 
             'validate
             If CType(vals("logon type"), UInteger) <> LOGON_TYPE_WC3 Then
-                futureConnected.TrySetFailed(New IO.IOException("Failed to connect: Unrecognized logon type from server."))
+                futureConnected.TrySetFailed(New IO.InvalidDataException("Failed to connect: Unrecognized logon type from server."))
                 Throw New IO.InvalidDataException("Unrecognized logon type")
             End If
 
@@ -714,7 +715,7 @@ Namespace Bnet
                     Sub(packet, packetException)
                         If packetException IsNot Nothing Then
                             logger.Log(packetException.Message, LogMessageType.Negative)
-                            futureConnected.TrySetFailed(New IO.IOException("Failed to borrow keys: '{0}'.".Frmt(packetException.Message)))
+                            futureConnected.TrySetFailed(New OperationFailedException("Failed to borrow keys: '{0}'.".Frmt(packetException.Message)))
                             Disconnect(expected:=False, reason:="Error borrowing keys.")
                             Return
                         End If
@@ -753,7 +754,7 @@ Namespace Bnet
         Private Sub ReceiveAuthenticationFinish(ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(vals IsNot Nothing)
             If state <> BnetClientState.Connecting Then
-                Throw New Exception("Invalid state for receiving AUTHENTICATION_FINISHED")
+                Throw New IO.InvalidDataException("Invalid state for receiving AUTHENTICATION_FINISHED")
             End If
 
             Dim result = CType(CUInt(vals("result")), BnetPacket.AuthenticationFinishResult)
@@ -860,7 +861,7 @@ Namespace Bnet
             If serverPasswordProof Is Nothing Then Throw New InvalidStateException("Received AccountLogOnFinish before server password proof computed.")
             Contract.Assume(removeServerPasswordProof IsNot Nothing)
             If Not Me.serverPasswordProof.HasSameItemsAs(removeServerPasswordProof) Then
-                futureLoggedIn.TrySetFailed(New IO.IOException("Failed to logon: Server didn't give correct password proof"))
+                futureLoggedIn.TrySetFailed(New IO.InvalidDataException("Failed to logon: Server didn't give correct password proof"))
                 Throw New IO.InvalidDataException("Server didn't give correct password proof.")
             End If
             Dim lan_host = profile.lanHost.Split(" "c)(0)

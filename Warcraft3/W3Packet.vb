@@ -1073,7 +1073,7 @@ Namespace Warcraft3
             Dim packetId = CType(packetData(1), W3PacketId)
             Dim packetBody = packetData.SubView(4)
             If packetData(0) <> W3Packet.PacketPrefixValue Then
-                Return New IO.IOException("Invalid packet header").FuturizedFail
+                Return New IO.InvalidDataException("Invalid packet header").FuturizedFail
             End If
             logger.Log(Function() "Received {0}".Frmt(packetId), LogMessageType.DataEvent)
 

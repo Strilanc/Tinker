@@ -539,12 +539,12 @@ Namespace Warcraft3
                     Throw New IO.InvalidDataException("Invalid number of slots.")
                 End If
                 Dim slots = New List(Of W3Slot)
-                Dim slotMap = New Dictionary(Of Integer, W3Slot)
-                For slotId = 0 To numSlotsInFile - 1
+                Dim slotColorMap = New Dictionary(Of W3Slot.PlayerColor, W3Slot)
+                For repeat = 0 To numSlotsInFile - 1
                     Dim slot = New W3Slot(Nothing, CByte(slots.Count + 1))
                     'color
                     slot.color = CType(br.ReadInt32(), W3Slot.PlayerColor)
-                    If Not slot.color.EnumValueIsDefined Then Throw New IO.IOException("Unrecognized map slot color.")
+                    If Not slot.color.EnumValueIsDefined Then Throw New IO.InvalidDataException("Unrecognized map slot color.")
                     'type
                     Select Case br.ReadInt32() '0=?, 1=available, 2=cpu, 3=unused
                         Case 1 : slot.Contents = New W3SlotContentsOpen(slot)
@@ -574,9 +574,9 @@ Namespace Warcraft3
                     If slot IsNot Nothing Then
                         slots.Add(slot)
                         slot.race = race
-                        slotMap(slotId) = slot
+                        slotColorMap(slot.color) = slot
                     End If
-                Next slotId
+                Next repeat
 
                 'Forces
                 Dim numForces = br.ReadInt32()
@@ -588,15 +588,12 @@ Namespace Warcraft3
                     Dim memberBitField = br.ReadUInt32() 'force members
                     br.ReadNullTerminatedString() 'force name
 
-                    For slotId = 0 To numSlotsInFile - 1
-                        If CBool((memberBitField >> slotId) And &H1) Then
-                            If Not slotMap.ContainsKey(slotId) Then
-                                Throw New IO.InvalidDataException("Force included invalid slot.")
-                            End If
-                            Contract.Assume(slotMap(slotId) IsNot Nothing)
-                            slotMap(slotId).Team = teamIndex
-                        End If
-                    Next slotId
+                    For Each color In EnumValues(Of W3Slot.PlayerColor)()
+                        If Not CBool((memberBitField >> CInt(color)) And &H1) Then Continue For
+                        If Not slotColorMap.ContainsKey(color) Then Continue For
+                        Contract.Assume(slotColorMap(color) IsNot Nothing)
+                        slotColorMap(color).Team = teamIndex
+                    Next color
                 Next teamIndex
 
                 '... more data in the file but it isn't needed ...
@@ -608,7 +605,6 @@ Namespace Warcraft3
                         slots(i).race = W3Slot.Races.Random
                     Next i
                 End If
-
                 Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, isMelee, slots)
             End Using
         End Function

@@ -120,7 +120,7 @@
 
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As Strilbrary.ViewableList(Of Byte)) As IPickle
             If packetData(1) <> W3PacketId.Knock Then
-                Throw New IO.IOException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
+                Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
 
             Dim pickle = W3Packet.Jars.Knock.Parse(packetData.SubView(4))
@@ -152,7 +152,7 @@
 
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As Strilbrary.ViewableList(Of Byte)) As IPickle
             If packetData(1) <> W3PacketId.PeerKnock Then
-                Throw New IO.IOException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
+                Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
             End If
             Dim pickle = W3Packet.Jars.PeerKnock.Parse(packetData.SubView(4))
             Dim vals = pickle.Value.AssumeNotNull

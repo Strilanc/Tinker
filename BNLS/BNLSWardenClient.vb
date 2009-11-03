@@ -63,14 +63,14 @@ Namespace BNLS
 
                     'Check packet type
                     If packet.id <> BNLSWardenPacketId.FullServiceHandleWardenPacket Then
-                        Throw New IO.IOException("Incorrect packet type received from server.")
+                        Throw New IO.InvalidDataException("Incorrect packet type received from server.")
                     End If
 
                     'Check packet contents
                     Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of String, Object))).Value
                     Contract.Assume(vals IsNot Nothing)
                     If CUInt(vals("cookie")) <> cookie Then
-                        Throw New IO.IOException("Incorrect cookie from server.")
+                        Throw New IO.InvalidDataException("Incorrect cookie from server.")
                     ElseIf CUInt(vals("result")) <> 0 Then
                         Throw New IO.IOException("Server indicated there was a failure.")
                     End If
@@ -131,7 +131,7 @@ Namespace BNLS
                     If packet.id <> BNLSWardenPacketId.FullServiceConnect Then
                         Dim msg = "Bnls server responded with a non-FullServiceConnect packet."
                         packetSocket.Disconnect(expected:=False, reason:=msg)
-                        Throw New IO.IOException(msg)
+                        Throw New IO.InvalidDataException(msg)
                     End If
 
                     'Check packet contents
@@ -139,7 +139,7 @@ Namespace BNLS
                     If CUInt(vals("cookie")) <> cookie Then
                         Dim msg = "Incorrect cookie from server."
                         packetSocket.Disconnect(expected:=False, reason:=msg)
-                        Throw New IO.IOException(msg)
+                        Throw New IO.InvalidDataException(msg)
                     End If
 
                     Return New BNLSWardenClient(packetSocket, cookie, logger)
@@ -181,9 +181,9 @@ Namespace BNLS
 
                     'Check packet
                     If packetData.Length < 3 Then
-                        Throw New IO.IOException("Packet doesn't have a header.")
+                        Throw New IO.InvalidDataException("Packet doesn't have a header.")
                     ElseIf packetData(2) <> BNLSPacketId.Warden Then
-                        Throw New IO.IOException("Not a bnls warden packet.")
+                        Throw New IO.InvalidDataException("Not a bnls warden packet.")
                     End If
 
                     'Parse, log, return

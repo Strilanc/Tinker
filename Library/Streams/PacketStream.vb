@@ -68,11 +68,11 @@ Public NotInheritable Class PacketStreamer
                     totalSize = CInt(packetData.SubArray(headerBytesBeforeSizeCount, headerValueSizeByteCount).ToUInt32())
                     If totalSize < HeaderSize Then
                         'too small
-                        result.SetFailed(New IO.IOException("Invalid packet size (less than header size)."))
+                        result.SetFailed(New IO.InvalidDataException("Invalid packet size (less than header size)."))
                         Return False.Futurized
                     ElseIf totalSize > maxPacketSize Then
                         'too large
-                        result.SetFailed(New IO.IOException("Packet exceeded maximum size."))
+                        result.SetFailed(New IO.InvalidDataException("Packet exceeded maximum size."))
                         Return False.Futurized
                     ElseIf totalSize > HeaderSize Then
                         'begin reading packet body
