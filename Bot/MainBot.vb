@@ -193,11 +193,11 @@ Public NotInheritable Class MainBot
         ThrowRemovedWidget(widget)
     End Sub
 
-    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As BnetClient
+    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = Nothing) As BnetClient
         Contract.Requires(name IsNot Nothing)
-        Contract.Requires(profileName IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BnetClient)() IsNot Nothing)
 
+        If profileName Is Nothing Then profileName = "Default"
         Dim profile = FindClientProfile(profileName)
         If name.Trim = "" Then
             Throw New ArgumentException("Invalid client name.")
@@ -452,7 +452,7 @@ Public NotInheritable Class MainBot
 
         'Process prefixed commands
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
-        Dim commandResult = ClientCommands.ProcessCommand(client, user, BreakQuotedWords(commandText))
+        Dim commandResult = ClientCommands.Invoke(client, user, commandText)
         commandResult.CallWhenValueReady(
             Sub(message, messageException)
                 Contract.Assume(user IsNot Nothing)
@@ -497,7 +497,7 @@ Public NotInheritable Class MainBot
 
         'Process prefixed commands
         Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
-        game.QueueCommandProcessText(Me, player, BreakQuotedWords(commandText)).CallWhenValueReady(
+        game.QueueCommandProcessText(Me, player, commandText).CallWhenValueReady(
             Sub(message, messageException)
                 Contract.Assume(player IsNot Nothing)
                 If messageException IsNot Nothing Then
@@ -600,15 +600,10 @@ Public NotInheritable Class MainBot
                                    KillClient(name, expected, reason)
                                End Sub)
     End Function
-    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = "Default") As IFuture(Of BnetClient)
+    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = Nothing) As IFuture(Of BnetClient)
         Contract.Requires(name IsNot Nothing)
-        Contract.Requires(profileName IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture(Of BnetClient))() IsNot Nothing)
-        Return ref.QueueFunc(Function()
-                                 Contract.Assume(name IsNot Nothing)
-                                 Contract.Assume(profileName IsNot Nothing)
-                                 Return CreateClient(name, profileName)
-                             End Function)
+        Return ref.QueueFunc(Function() CreateClient(name, profileName))
     End Function
     Public Function QueueGetServers() As IFuture(Of List(Of W3Server))
         Contract.Ensures(Contract.Result(Of IFuture(Of List(Of W3Server)))() IsNot Nothing)

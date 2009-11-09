@@ -91,7 +91,7 @@
                         TrySetTeamSizes(TeamVersusStringToTeamSizes(arg2))
                     Case "-RESERVE=", "-R="
                         Dim slot = (From s In slots _
-                                    Where s.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept _
+                                    Where s.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Open _
                                     ).FirstOrDefault
                         If slot IsNot Nothing Then
                             ReserveSlot(slot.MatchableId, arg2)
@@ -326,18 +326,18 @@
 
             'Assign slot
             Dim bestSlot As W3Slot = Nothing
-            Dim bestMatch = W3SlotContents.WantPlayerPriority.Reject
+            Dim bestMatch = W3SlotContents.WantPlayerPriority.Filled
             slots.MaxPair(Function(slot) slot.Contents.WantPlayer(connectingPlayer.Name),
                                bestSlot,
                                bestMatch)
-            If bestMatch < W3SlotContents.WantPlayerPriority.Accept Then
+            If bestMatch < W3SlotContents.WantPlayerPriority.Open Then
                 Throw New InvalidOperationException("No slot available for player.")
             End If
             Contract.Assume(bestSlot IsNot Nothing)
 
             'Assign index
             Dim index As Byte = 0
-            If bestSlot.Contents.PlayerIndex <> 0 And bestMatch <> W3SlotContents.WantPlayerPriority.AcceptReservation Then
+            If bestSlot.Contents.PlayerIndex <> 0 And bestMatch <> W3SlotContents.WantPlayerPriority.Reserved Then
                 'the slot requires the player to take a specific index
                 index = bestSlot.Contents.PlayerIndex
             ElseIf freeIndexes.Count > 0 Then
@@ -356,7 +356,7 @@
             Contract.Assume(index <= 12)
 
             'Reservation
-            If bestMatch = W3SlotContents.WantPlayerPriority.AcceptReservation Then
+            If bestMatch = W3SlotContents.WantPlayerPriority.Reserved Then
                 For Each player In bestSlot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
                     RemovePlayer(player, True, W3PlayerLeaveType.Disconnect, "Reservation fulfilled")
@@ -608,15 +608,17 @@
         End Sub
 
         '''<summary>Reserves a slot for a player.</summary>
-        Private Function ReserveSlot(ByVal slotid As String, ByVal username As String) As W3Player
-            Contract.Requires(slotid IsNot Nothing)
+        Private Function ReserveSlot(ByVal username As String,
+                                     Optional ByVal slotid As String = Nothing) As W3Player
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
             If state >= W3GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't reserve slots after launch.")
             End If
-            Dim slot = TryFindMatchingSlot(slotid)
-            If slot Is Nothing Then Throw New InvalidOperationException("No slot matching {0}".Frmt(slotid))
+            Dim slot = If(slotid Is Nothing,
+                          (From s In slots Where s.Contents.WantPlayer(Nothing) = W3SlotContents.WantPlayerPriority.Open).FirstOrDefault,
+                          TryFindMatchingSlot(slotid))
+            If slot Is Nothing Then Throw New InvalidOperationException("No matching slot.".Frmt(slotid))
             If slot.Contents.ContentType = SlotContentType.Player Then
                 Throw New InvalidOperationException("Slot '{0}' can't be reserved because it already contains a player.".Frmt(slotid))
             Else
@@ -670,22 +672,22 @@
 
         Private Sub SetSlotRace(ByVal slotid As String, ByVal race As W3Slot.Races)
             Contract.Requires(slotid IsNot Nothing)
-            ModifySlotContents(slotid,Sub(slot) slot.race = race)
+            ModifySlotContents(slotid, Sub(slot) slot.race = race)
         End Sub
 
         Private Sub SetSlotTeam(ByVal slotid As String, ByVal team As Byte)
             Contract.Requires(slotid IsNot Nothing)
-            ModifySlotContents(slotid,Sub(slot) slot.Team = team)
+            ModifySlotContents(slotid, Sub(slot) slot.Team = team)
         End Sub
 
         Private Sub SetSlotHandicap(ByVal slotid As String, ByVal handicap As Byte)
             Contract.Requires(slotid IsNot Nothing)
-            ModifySlotContents(slotid,Sub(slot) slot.handicap = handicap)
+            ModifySlotContents(slotid, Sub(slot) slot.handicap = handicap)
         End Sub
 
         Private Sub SetSlotLocked(ByVal slotid As String, ByVal locked As W3Slot.Lock)
             Contract.Requires(slotid IsNot Nothing)
-            ModifySlotContents(slotid,Sub(slot) slot.locked = locked)
+            ModifySlotContents(slotid, Sub(slot) slot.locked = locked)
         End Sub
 
         Private Sub SetAllSlotsLocked(ByVal locked As W3Slot.Lock)
@@ -793,7 +795,7 @@
                     Contract.Assume(nextIndex >= 0)
                     Dim nextSlot = slots(nextIndex)
                     Contract.Assume(nextSlot IsNot Nothing)
-                    If nextSlot.Team = newTeam AndAlso nextSlot.Contents.WantPlayer(player.name) >= W3SlotContents.WantPlayerPriority.Accept Then
+                    If nextSlot.Team = newTeam AndAlso nextSlot.Contents.WantPlayer(player.Name) >= W3SlotContents.WantPlayerPriority.Open Then
                         SwapSlotContents(nextSlot, slot)
                         Exit For
                     End If
@@ -827,12 +829,11 @@
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub() CloseSlot(query))
         End Function
-        Public Function QueueReserveSlot(ByVal query As String,
-                                         ByVal userName As String) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueReserveSlot(ByVal userName As String,
+                                         Optional ByVal query As String = Nothing) As IFuture
             Contract.Requires(userName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() ReserveSlot(query, userName))
+            Return ref.QueueAction(Sub() ReserveSlot(userName, query))
         End Function
         Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture
             Contract.Requires(query1 IsNot Nothing)

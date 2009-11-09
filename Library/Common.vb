@@ -27,38 +27,6 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()>
-    Public Function BreakQuotedWords(ByVal text As String) As List(Of String)
-        Contract.Requires(text IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of List(Of String))() IsNot Nothing)
-
-        Dim quoted_words As New List(Of String)
-        If text = "" Then Return quoted_words
-        Dim curQuotedWord As String = Nothing
-        For Each word In text.Split(" "c)
-            Contract.Assume(word IsNot Nothing)
-            If word = "" Then Continue For
-            Contract.Assume(word.Length > 0)
-            If curQuotedWord Is Nothing Then
-                If word(0) = """"c Then
-                    If word(word.Length - 1) = """"c Then '[start and end of quoted word]
-                        Contract.Assume(word.Length >= 2)
-                        quoted_words.Add(word.Substring(1, word.Length - 2))
-                    Else '[start of quoted word]
-                        curQuotedWord = word.Substring(1) + " "
-                    End If
-                Else '[normal word]
-                    quoted_words.Add(word)
-                End If
-            ElseIf word(word.Length - 1) = """"c Then '[end of quoted word]
-                quoted_words.Add(curQuotedWord + word.Substring(0, word.Length - 1))
-                curQuotedWord = Nothing
-            Else '[middle of quoted word]
-                curQuotedWord += word + " "
-            End If
-        Next word
-        Return quoted_words
-    End Function
-    <Pure()>
     Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
                                                     ByVal parser As Func(Of String, T),
                                                     Optional ByVal pairDivider As String = ";"c,

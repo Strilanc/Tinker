@@ -21,102 +21,66 @@ Namespace Commands.Specializations
         Inherits CommandSet(Of W3Server)
 
         Public Sub New()
-            AddCommand(New CommandOpenInstance)
-            AddCommand(New CommandStartListening)
-            AddCommand(New CommandStopListening)
-            AddCommand(New CommandCloseInstance)
-            AddCommand(New CommandBot)
+            AddCommand(OpenInstance)
+            AddCommand(StartListening)
+            AddCommand(StopListening)
+            AddCommand(CloseInstance)
+            AddCommand(Bot)
         End Sub
 
-        Private NotInheritable Class CommandBot
-            Inherits BaseCommand(Of W3Server)
-            Public Sub New()
-                MyBase.New("bot",
-                            0, ArgumentLimitType.Free,
-                            "[--bot command, --bot CreateUser Strilanc, --bot help] Forwards text commands to the main bot.")
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Return target.Parent.BotCommands.ProcessCommand(target.Parent, user, arguments)
-            End Function
-        End Class
+        Private Shared ReadOnly Bot As New DelegatedCommand(Of W3Server)(
+            Name:="Bot",
+            Format:="...",
+            Description:="Forwards commands to the main bot.",
+            Permissions:="root=1",
+            func:=Function(client, user, argument)
+                      Return client.Parent.BotCommands.invoke(client.Parent, user, argument)
+                  End Function)
 
-        'Private NotInheritable Class CommandParentCommand
-        '    Inherits BaseCommand(Of W3GameServer)
-        '    Private parent_command As BaseCommand(Of MainBot)
-        '    Public Sub New(ByVal parent_command As BaseCommand(Of MainBot))
-        '        MyBase.New(parent_command.name, parent_command.argument_limit_value, parent_command.argument_limit_type, parent_command.help, parent_command.required_permissions)
-        '        Me.parent_command = parent_command
-        '    End Sub
-        '    Public Overrides Function process(ByVal target As W3GameServer, ByVal user As BotUser, ByVal arguments As IList(Of String)) As itfFuture(Of operationoutcome)
-        '        Return parent_command.processText(target.parent, user, mendQuotedWords(arguments))
-        '    End Function
-        'End Class
+        Private ReadOnly StartListening As New DelegatedTemplatedCommand(Of W3Server)(
+            Name:="Listen",
+            template:="port",
+            Description:="Starts listening for connections on a port.",
+            Permissions:="root=4",
+            func:=Function(target, user, argument)
+                      Dim port As UShort
+                      If Not UShort.TryParse(argument.RawValue(0), port) Then Throw New ArgumentException("Invalid port")
+                      Return target.QueueOpenPort(port).EvalOnSuccess(Function() "Port opened.")
+                  End Function)
 
-        '''<summary>A command which tells the server to stop listening on a port.</summary>
-        Private NotInheritable Class CommandStartListening
-            Inherits BaseCommand(Of W3Server)
-            Public Sub New()
-                MyBase.New("Listen",
-                            1, ArgumentLimitType.Exact,
-                            "[--Listen port]",
-                            "root=4", "")
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Dim port As UShort
-                If Not UShort.TryParse(arguments(0), port) Then Throw New ArgumentException("Invalid port")
-                Return target.QueueOpenPort(port).EvalOnSuccess(Function() "Port opened.")
-            End Function
-        End Class
+        Private ReadOnly StopListening As New DelegatedTemplatedCommand(Of W3Server)(
+            Name:="StopListening",
+            template:="-port=#",
+            Description:="Stops listening on a port. If no port is given, stops listening on all ports.",
+            Permissions:="root=4",
+            func:=Function(target, user, argument)
+                      If argument.TryGetOptionalNamedValue("port") Is Nothing Then
+                          Return target.QueueCloseAllPorts().EvalOnSuccess(Function() "Ports closed.")
+                      Else
+                          Dim port As UShort
+                          If Not UShort.TryParse(argument.TryGetOptionalNamedValue("port"), port) Then
+                              Throw New InvalidOperationException("Invalid port")
+                          End If
+                          Return target.QueueClosePort(port).EvalOnSuccess(Function() "Port closed.")
+                      End If
+                  End Function)
 
-        '''<summary>A command which tells the server to stop listening on a port or all ports.</summary>
-        Private NotInheritable Class CommandStopListening
-            Inherits BaseCommand(Of W3Server)
-            Public Sub New()
-                MyBase.New("StopListening",
-                            1, ArgumentLimitType.Max,
-                            "[--StopListening, --StopListening port] Tells the server to stop listening on a port or all ports.",
-                            "root=4", "")
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                If arguments.Count = 0 Then
-                    Return target.QueueCloseAllPorts().EvalOnSuccess(Function() "Ports closed.")
-                Else
-                    Dim port As UShort
-                    If Not UShort.TryParse(arguments(0), port) Then
-                        Throw New InvalidOperationException("Invalid port")
-                    End If
-                    Return target.QueueClosePort(port).EvalOnSuccess(Function() "Port closed.")
-                End If
-            End Function
-        End Class
+        Private ReadOnly OpenInstance As New DelegatedTemplatedCommand(Of W3Server)(
+            Name:="Open",
+            template:="name",
+            Description:="Opens a new game instance.",
+            Permissions:="root=4;games=4",
+            func:=Function(target, user, argument)
+                      Return target.QueueCreateGame(argument.RawValue(0)).EvalOnSuccess(Function() "Created instance.")
+                  End Function)
 
-        Private NotInheritable Class CommandOpenInstance
-            Inherits BaseCommand(Of W3Server)
-            Public Sub New()
-                MyBase.New("Open",
-                            1, ArgumentLimitType.Exact,
-                            "[Open name]",
-                            "root=4;games=4", "")
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 1)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Return target.QueueCreateGame(arguments(0)).EvalOnSuccess(Function() "Created instance.")
-            End Function
-        End Class
-        Private NotInheritable Class CommandCloseInstance
-            Inherits BaseCommand(Of W3Server)
-            Public Sub New()
-                MyBase.New("Close",
-                            1, ArgumentLimitType.Exact,
-                            "[--Close name]",
-                            "root=4;games=4", "")
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Server, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 1)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Return target.QueueRemoveGame(arguments(0), ignorePermanent:=True).EvalOnSuccess(Function() "Closed instance.")
-            End Function
-        End Class
+        Private ReadOnly CloseInstance As New DelegatedTemplatedCommand(Of W3Server)(
+            Name:="Close",
+            template:="name",
+            Description:="Closes the named game instance.",
+            Permissions:="root=4;games=4",
+            func:=Function(target, user, argument)
+                      Return target.QueueRemoveGame(argument.RawValue(0), ignorePermanent:=True).EvalOnSuccess(Function() "Closed instance.")
+                  End Function)
     End Class
 End Namespace

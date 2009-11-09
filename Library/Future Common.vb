@@ -18,8 +18,11 @@ Public Module FutureExtensionsEx
 
         Dim result = New FutureFunction(Of Integer)
         Try
-            this.BeginRead(buffer:=buffer, offset:=offset, count:=count, state:=Nothing,
-                 callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar)))
+            this.BeginRead(buffer:=buffer,
+                           offset:=offset,
+                           count:=count,
+                           state:=Nothing,
+                           callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar)))
         Catch e As Exception
             result.SetFailed(e)
         End Try

@@ -195,17 +195,13 @@
 
 #Region "Player Methods"
         Public Enum WantPlayerPriority
-            '''<summary>This slot is already in use.</summary>
-            Reject = 0
-            '''<summary>This slot could technically accept a player, but shouldn't (eg. closed).</summary>
-            Reluctant = 1
-            '''<summary>This slot is available for players to enter.</summary>
-            Accept = 2
-            '''<summary>This slot is reserved for the player. Pick it before the just-acceptable slots.</summary>
-            AcceptReservation = 3
+            Filled = 0
+            Closed = 1
+            Open = 2
+            Reserved = 3
         End Enum
         Public Overridable Function WantPlayer(ByVal name As String) As WantPlayerPriority
-            Return WantPlayerPriority.Reject
+            Return WantPlayerPriority.Filled
         End Function
         Public Overridable Function TakePlayer(ByVal player As W3Player) As W3SlotContents
             Contract.Requires(player IsNot Nothing)
@@ -260,7 +256,7 @@
             Return New W3SlotContentsPlayer(Parent, player)
         End Function
         Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
-            Return WantPlayerPriority.Accept
+            Return WantPlayerPriority.Open
         End Function
         Public Overrides Function GenerateDescription() As IFuture(Of String)
             Return "Open".Futurized
@@ -277,7 +273,7 @@
             Contract.Requires(parent IsNot Nothing)
         End Sub
         Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
-            Return WantPlayerPriority.Reluctant
+            Return WantPlayerPriority.Closed
         End Function
         Public Overrides Function GenerateDescription() As IFuture(Of String)
             Return "Closed".Futurized
@@ -352,9 +348,9 @@
             If player IsNot Nothing AndAlso name IsNot Nothing AndAlso
                                             player.isFake AndAlso
                                             player.name.ToUpperInvariant = name.ToUpperInvariant Then
-                Return WantPlayerPriority.AcceptReservation
+                Return WantPlayerPriority.Reserved
             Else
-                Return WantPlayerPriority.Reject
+                Return WantPlayerPriority.Filled
             End If
         End Function
         Public Overrides Function Clone(ByVal parent As W3Slot) As W3SlotContents

@@ -101,31 +101,31 @@ Namespace Warcraft3
         End Sub
         Private Function CommandProcessText(ByVal bot As MainBot,
                                             ByVal player As W3Player,
-                                            ByVal arguments As IList(Of String)) As IFuture(Of String)
-            Contract.Requires(arguments IsNot Nothing)
+                                            ByVal argument As String) As IFuture(Of String)
+            Contract.Requires(argument IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
-            Dim user = New BotUser(player.name)
+            Dim user = New BotUser(player.Name)
             If player IsNot adminPlayer Then
                 Select Case state
                     Case Is < W3GameState.Loading
-                        Return W3Game.GameGuestCommandsLobby.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameGuestCommandsLobby.Invoke(Me, user, argument)
                     Case W3GameState.Loading
-                        Return W3Game.GameGuestCommandsLoadScreen.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameGuestCommandsLoadScreen.Invoke(Me, user, argument)
                     Case Is > W3GameState.Loading
-                        Return W3Game.GameGuestCommandsGamePlay.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameGuestCommandsGamePlay.Invoke(Me, user, argument)
                     Case Else
                         Throw New UnreachableException()
                 End Select
             ElseIf settings.isAdminGame Then
-                Return New Commands.Specializations.InstanceAdminCommands(bot).ProcessCommand(Me, Nothing, arguments)
+                Return New Commands.Specializations.InstanceAdminCommands(bot).Invoke(Me, Nothing, argument)
             Else
                 Select Case state
                     Case Is < W3GameState.Loading
-                        Return W3Game.GameCommandsLobby.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameCommandsLobby.Invoke(Me, user, argument)
                     Case W3GameState.Loading
-                        Return W3Game.GameCommandsLoadScreen.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameCommandsLoadScreen.Invoke(Me, user, argument)
                     Case Is > W3GameState.Loading
-                        Return W3Game.GameCommandsGamePlay.ProcessCommand(Me, user, arguments)
+                        Return W3Game.GameCommandsGamePlay.Invoke(Me, user, argument)
                     Case Else
                         Throw New UnreachableException()
                 End Select
@@ -292,7 +292,7 @@ Namespace Warcraft3
         <Pure()>
         Private Function CountFreeSlots() As Integer
             Return (From slot In slots
-                    Where slot.AssumeNotNull.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Accept).
+                    Where slot.AssumeNotNull.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Open).
                     AssumeNotNull.Count
         End Function
 
@@ -540,12 +540,12 @@ Namespace Warcraft3
         End Function
         Public Function QueueCommandProcessText(ByVal bot As MainBot,
                                                 ByVal player As W3Player,
-                                                ByVal arguments As IList(Of String)) As IFuture(Of String)
+                                                ByVal argument As String) As IFuture(Of String)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
-            Contract.Requires(arguments IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-            Return ref.QueueFunc(Function() CommandProcessText(bot, player, arguments)).Defuturized
+            Return ref.QueueFunc(Function() CommandProcessText(bot, player, argument)).Defuturized
         End Function
         Public Function QueueTryElevatePlayer(ByVal name As String,
                                               Optional ByVal password As String = Nothing) As IFuture

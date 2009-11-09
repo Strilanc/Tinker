@@ -6,300 +6,179 @@ Namespace Commands.Specializations
         Inherits InstanceCommands
 
         Public Sub New()
-            AddCommand(New CommandDisconnect)
+            AddCommand(Disconnect)
         End Sub
 
-        '''<summary>A command which disconnects the bot from the instance.</summary>
-        Public NotInheritable Class CommandDisconnect
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Disconnect,
-                           0, ArgumentLimitType.Min,
-                           My.Resources.Command_Instance_Disconnect_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                target.QueueClose()
-                Return "Disconnected".Futurized
-            End Function
-        End Class
+        Private Shared ReadOnly Disconnect As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Disconnect",
+            template:="",
+            Description:="Causes the bot to disconnect from the game. The game may continue if one of the players can host.",
+            func:=Function(target, user, argument)
+                      Return target.QueueClose.EvalOnSuccess(Function() "Disconnected")
+                  End Function)
     End Class
 
     Public NotInheritable Class InstanceSetupCommands
         Inherits InstanceCommands
 
         Public Sub New()
-            AddCommand(New CommandCancel)
-            AddCommand(New CommandClose)
-            AddCommand(New CommandFreeze)
-            AddCommand(New CommandLock)
-            AddCommand(New CommandOpen)
-            AddCommand(New CommandReserve)
-            AddCommand(New CommandSetColor)
-            AddCommand(New CommandSetComputer)
-            AddCommand(New CommandSetHandicap)
-            AddCommand(New CommandSetTeam)
-            AddCommand(New CommandSetTeams)
-            AddCommand(New CommandStart)
-            AddCommand(New CommandSwap)
-            AddCommand(New CommandUnlock)
+            AddCommand(Cancel)
+            AddCommand(Close)
+            AddCommand(Lock)
+            AddCommand(Open)
+            AddCommand(Reserve)
+            AddCommand(Color)
+            AddCommand(CPU)
+            AddCommand(Handicap)
+            AddCommand(SetTeam)
+            AddCommand(SetupTeams)
+            AddCommand(Start)
+            AddCommand(Swap)
+            AddCommand(Unlock)
         End Sub
 
-        '''<summary>A command which opens a slot.</summary>
-        Public NotInheritable Class CommandOpen
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Open,
-                           1, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_Open_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 1)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Return target.QueueOpenSlot(arguments(0)).EvalOnSuccess(Function() "Opened")
-            End Function
-        End Class
+        Private Shared ReadOnly Open As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Open",
+            template:="slot",
+            Description:="Opens a slot.",
+            func:=Function(target, user, argument)
+                      Return target.QueueOpenSlot(argument.RawValue(0)).EvalOnSuccess(Function() "Opened")
+                  End Function)
 
-        '''<summary>A command which closes a slot.</summary>
-        Public NotInheritable Class CommandClose
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Close,
-                           1, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_Close_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 1)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Return target.QueueCloseSlot(arguments(0)).EvalOnSuccess(Function() "Closed")
-            End Function
-        End Class
+        Private Shared ReadOnly Close As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Close",
+            template:="slot",
+            Description:="Closes a slot.",
+            func:=Function(target, user, argument)
+                      Return target.QueueCloseSlot(argument.RawValue(0)).EvalOnSuccess(Function() "Closed")
+                  End Function)
 
-        '''<summary>A command which sets a slot's team.</summary>
-        Public NotInheritable Class CommandSetTeam
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_SetTeam,
-                           2, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_SetTeam_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 2)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Contract.Assume(arguments(1) IsNot Nothing)
-                Dim arg_slot = arguments(0)
-                Dim arg_team = arguments(1)
-                Dim val_team As Byte
-                If Not Byte.TryParse(arg_team, val_team) Then
-                    Throw New ArgumentException("Invalid team: '{0}'.".Frmt(arg_team))
-                End If
-                Return target.QueueSetSlotTeam(arg_slot, val_team).EvalOnSuccess(Function() "Set Team")
-            End Function
-        End Class
+        Private Shared ReadOnly SetTeam As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="SetTeam",
+            template:="slot team",
+            Description:="Sets a slot's team. Only works in melee games.",
+            func:=Function(target, user, argument)
+                      If Not target.Map.isMelee Then Throw New InvalidOperationException("A slot's team is fixed in a custom game.")
+                      Dim arg_slot = argument.RawValue(0)
+                      Dim arg_team = argument.RawValue(1)
+                      Dim val_team As Byte
+                      If Not Byte.TryParse(arg_team, val_team) Then
+                          Throw New ArgumentException("Invalid team: '{0}'.".Frmt(arg_team))
+                      End If
+                      Return target.QueueSetSlotTeam(arg_slot, val_team).EvalOnSuccess(Function() "Set Team")
+                  End Function)
 
-        '''<summary>A command which preps slots for a particular number of players.</summary>
-        Public NotInheritable Class CommandSetTeams
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_SetTeams,
-                           1, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_SetTeams_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 1)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Return target.QueueTrySetTeamSizes(TeamVersusStringToTeamSizes(arguments(0))).EvalOnSuccess(Function() "Set Teams")
-            End Function
-        End Class
+        Private Shared ReadOnly SetupTeams As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="SetupTeams",
+            template:="teams",
+            Description:="Sets up the number of slots on each team (eg. 'SetupTeams 2v2' will leave two open slots on each team).",
+            func:=Function(target, user, argument)
+                      Return target.QueueTrySetTeamSizes(TeamVersusStringToTeamSizes(argument.RawValue(0))).EvalOnSuccess(Function() "Set Teams")
+                  End Function)
 
-        '''<summary>A command which sets a slot's handicap.</summary>
-        Public NotInheritable Class CommandSetHandicap
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_SetHandicap,
-                           2, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_SetHandicap_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 2)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Contract.Assume(arguments(1) IsNot Nothing)
-                Dim argSlot = arguments(0)
-                Dim argHandicap = arguments(1)
-                Dim newHandicap As Byte
-                If Not Byte.TryParse(argHandicap, newHandicap) Then newHandicap = 0
-                Select Case newHandicap
-                    Case 50, 60, 70, 80, 90, 100
-                        Return target.QueueSetSlotHandicap(argSlot, newHandicap).EvalOnSuccess(Function() "Set Handicap")
-                    Case Else
-                        Throw New InvalidOperationException("Invalid handicap: '{0}'.".Frmt(argHandicap))
-                End Select
-            End Function
-        End Class
+        Private Shared ReadOnly Handicap As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Handicap",
+            template:="slot value",
+            Description:="Sets the handicap of a slot.",
+            func:=Function(target, user, argument)
+                      Dim argSlot = argument.RawValue(0)
+                      Dim argHandicap = argument.RawValue(1)
+                      Dim newHandicap As Byte
+                      If Not Byte.TryParse(argHandicap, newHandicap) Then newHandicap = 0
+                      Select Case newHandicap
+                          Case 50, 60, 70, 80, 90, 100
+                              Return target.QueueSetSlotHandicap(argSlot, newHandicap).EvalOnSuccess(Function() "Set Handicap")
+                          Case Else
+                              Throw New InvalidOperationException("Invalid handicap: '{0}'.".Frmt(argHandicap))
+                      End Select
+                  End Function)
 
-        '''<summary>A command which sets a slot's color.</summary>
-        Public NotInheritable Class CommandSetColor
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_SetColor,
-                           2, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_SetColor_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 2)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Contract.Assume(arguments(1) IsNot Nothing)
-                Dim arg_slot = arguments(0)
-                Dim arg_color = arguments(1)
-                Dim ret_color As W3Slot.PlayerColor
-                If EnumTryParse(Of W3Slot.PlayerColor)(arg_color, True, ret_color) Then
-                    Return target.QueueSetSlotColor(arg_slot, ret_color).EvalOnSuccess(Function() "Set Color")
-                End If
-                Throw New InvalidOperationException("Unrecognized color: '{0}'.".Frmt(arg_color))
-            End Function
-        End Class
+        Private Shared ReadOnly Color As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Color",
+            template:="slot value",
+            Description:="Sets the color of a slot. Only works in melee games.",
+            func:=Function(target, user, argument)
+                      If Not target.Map.isMelee Then Throw New InvalidOperationException("A slot's color is fixed in a custom game.")
+                      Dim arg_slot = argument.RawValue(0)
+                      Dim arg_color = argument.RawValue(1)
+                      Dim ret_color As W3Slot.PlayerColor
+                      If EnumTryParse(Of W3Slot.PlayerColor)(arg_color, True, ret_color) Then
+                          Return target.QueueSetSlotColor(arg_slot, ret_color).EvalOnSuccess(Function() "Set Color")
+                      End If
+                      Throw New InvalidOperationException("Unrecognized color: '{0}'.".Frmt(arg_color))
+                  End Function)
 
-        '''<summary>A command which swaps the contents of two slots.</summary>
-        Public NotInheritable Class CommandSwap
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Swap,
-                           2, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_Swap_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count = 2)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Contract.Assume(arguments(1) IsNot Nothing)
-                Return target.QueueSwapSlotContents(arguments(0), arguments(1)).EvalOnSuccess(Function() "Swapped Slots")
-            End Function
-        End Class
+        Private Shared ReadOnly Swap As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Swap",
+            template:="slot1 slot2",
+            Description:="Swaps the contents of two slots.",
+            func:=Function(target, user, argument)
+                      Return target.QueueSwapSlotContents(argument.RawValue(0), argument.RawValue(1)).EvalOnSuccess(Function() "Swapped Slots")
+                  End Function)
 
-        '''<summary>A command which places a computer in a slot.</summary>
-        Public NotInheritable Class CommandSetComputer
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_SetComputer,
-                           1, ArgumentLimitType.Min,
-                           My.Resources.Command_Instance_SetComputer_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(arguments.Count >= 1)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Contract.Assume(arguments.Count < 2 OrElse arguments(1) IsNot Nothing)
-                Dim arg_slot = arguments(0)
-                Dim arg_difficulty = If(arguments.Count >= 2, arguments(1), W3Slot.ComputerLevel.Normal.ToString)
-                Dim ret_difficulty As W3Slot.ComputerLevel
-                If EnumTryParse(Of W3Slot.ComputerLevel)(arg_difficulty, True, ret_difficulty) Then
-                    Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).EvalOnSuccess(Function() "Set Computer Slot")
-                End If
-                Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(arg_difficulty))
-            End Function
-        End Class
+        Private Shared ReadOnly CPU As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="CPU",
+            template:="slot ?difficulty",
+            Description:="Places a computer in a slot, unless it contains a player.",
+            func:=Function(target, user, argument)
+                      Dim arg_slot = argument.RawValue(0)
+                      Dim arg_difficulty = If(argument.rawvalueCount >= 2, argument.RawValue(1), W3Slot.ComputerLevel.Normal.ToString)
+                      Dim ret_difficulty As W3Slot.ComputerLevel
+                      If EnumTryParse(Of W3Slot.ComputerLevel)(arg_difficulty, True, ret_difficulty) Then
+                          Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).EvalOnSuccess(Function() "Set Computer Slot")
+                      End If
+                      Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(arg_difficulty))
+                  End Function)
 
-        '''<summary>A command which stops players from leaving a slot.</summary>
-        Public NotInheritable Class CommandLock
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Lock,
-                           1, ArgumentLimitType.Max,
-                           My.Resources.Command_Instance_Lock_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Contract.Assume(arguments.Count <= 1)
-                If arguments.Count = 0 Then
-                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Sticky).EvalOnSuccess(Function() "Locked slots")
-                Else
-                    Contract.Assume(arguments(0) IsNot Nothing)
-                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Sticky).EvalOnSuccess(Function() "Locked slots")
-                End If
-            End Function
-        End Class
+        Private Shared ReadOnly Lock As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Lock",
+            template:="?slot -full",
+            Description:="Prevents players from leaving a slot or from changing slot properties (if -full). Omit the slot argument to affect all slots.",
+            func:=Function(target, user, argument)
+                      Dim lockType = If(argument.HasOptionalSwitch("full"), W3Slot.Lock.Sticky, W3Slot.Lock.Frozen)
+                      If argument.RawValueCount = 0 Then
+                          Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Locked slots")
+                      Else
+                          Return target.QueueSetSlotLocked(argument.TryGetRawValue(0), lockType).EvalOnSuccess(Function() "Locked slot")
+                      End If
+                  End Function)
 
-        '''<summary>A command which enables players to leave and modify a slot.</summary>
-        Public NotInheritable Class CommandUnlock
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Unlock,
-                           1, ArgumentLimitType.Max,
-                           My.Resources.Command_Instance_Unlock_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Contract.Assume(arguments.Count <= 1)
-                If arguments.Count = 0 Then
-                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Unlocked).EvalOnSuccess(Function() "Unlocked slots")
-                Else
-                    Contract.Assume(arguments(0) IsNot Nothing)
-                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Unlocked).EvalOnSuccess(Function() "Unlocked slots")
-                End If
-            End Function
-        End Class
+        Private Shared ReadOnly Unlock As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Unlock",
+            template:="?slot",
+            Description:="Allows players to leave a slot and change its properties. Omit the slot argument to affect all slots.",
+            func:=Function(target, user, argument)
+                      Dim lockType = W3Slot.Lock.Unlocked
+                      If argument.RawValueCount = 0 Then
+                          Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Unlocked slots")
+                      Else
+                          Return target.QueueSetSlotLocked(argument.TryGetRawValue(0), lockType).EvalOnSuccess(Function() "Unlocked slot")
+                      End If
+                  End Function)
 
-        '''<summary>A command which stops players from modifying or leaving a slot.</summary>
-        Public NotInheritable Class CommandFreeze
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Freeze,
-                           1, ArgumentLimitType.Max,
-                           My.Resources.Command_Instance_Freeze_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Contract.Assume(arguments.Count <= 1)
-                If arguments.Count = 0 Then
-                    Return target.QueueSetAllSlotsLocked(W3Slot.Lock.Frozen).EvalOnSuccess(Function() "Froze slots")
-                Else
-                    Contract.Assume(arguments(0) IsNot Nothing)
-                    Return target.QueueSetSlotLocked(arguments(0), W3Slot.Lock.Frozen).EvalOnSuccess(Function() "Froze slots")
-                End If
-            End Function
-        End Class
+        Private Shared ReadOnly Reserve As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Reserve",
+            template:="name -slot=any",
+            Description:="Reserves a slot for a player.",
+            func:=Function(target, user, argument)
+                      Return target.QueueReserveSlot(argument.RawValue(0), argument.TryGetOptionalNamedValue("slot")).EvalOnSuccess(Function() "Reserved Slot")
+                  End Function)
 
-        '''<summary>A command which reserves a slot for a player.</summary>
-        Public NotInheritable Class CommandReserve
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Reserve,
-                           2, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_Reserve_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Contract.Assume(arguments.Count = 2)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Contract.Assume(arguments(1) IsNot Nothing)
-                Return target.QueueReserveSlot(arguments(0), arguments(1)).EvalOnSuccess(Function() "Reserved Slot")
-            End Function
-        End Class
+        Private Shared ReadOnly Start As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Start",
+            template:="",
+            Description:="Starts the launch countdown.",
+            func:=Function(target, user, argument)
+                      Return target.QueueStartCountdown().EvalOnSuccess(Function() "Started Countdown")
+                  End Function)
 
-        '''<summary>A command which starts the launch countdown.</summary>
-        Public NotInheritable Class CommandStart
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Start,
-                           0, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_Start_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Return target.QueueStartCountdown().EvalOnSuccess(Function() "Started Countdown")
-            End Function
-        End Class
-
-        '''<summary>A command which kills the instance.</summary>
-        Public NotInheritable Class CommandCancel
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Cancel,
-                           0, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_Cancel_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Return target.QueueClose.EvalOnSuccess(Function() "Cancelled")
-            End Function
-        End Class
+        Private Shared ReadOnly Cancel As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Cancel",
+            template:="",
+            Description:="Closes this game instance.",
+            func:=Function(target, user, argument)
+                      Return target.QueueClose.EvalOnSuccess(Function() "Cancelled")
+                  End Function)
     End Class
 
     Public NotInheritable Class InstanceAdminCommands
@@ -310,17 +189,17 @@ Namespace Commands.Specializations
         End Sub
 
         Public NotInheritable Class CommandBot
-            Inherits BaseCommand(Of W3Game)
+            Inherits Command(Of W3Game)
             Private ReadOnly bot As MainBot
             Public Sub New(ByVal bot As MainBot)
-                MyBase.New(My.Resources.Command_Instance_Bot,
-                           0, ArgumentLimitType.Free,
-                           My.Resources.Command_Instance_Bot_Help)
+                MyBase.New(Name:="Bot",
+                           Format:="subcommand...",
+                           Description:="Forwards commands to the bot.")
+                Contract.Requires(bot IsNot Nothing)
                 Me.bot = bot
             End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Return bot.BotCommands.ProcessCommand(bot, user, arguments)
+            Protected Overrides Function PerformInvoke(ByVal target As Warcraft3.W3Game, ByVal user As BotUser, ByVal argument As String) As Strilbrary.Threading.IFuture(Of String)
+                Return bot.BotCommands.Invoke(bot, user, argument)
             End Function
         End Class
     End Class
@@ -329,173 +208,115 @@ Namespace Commands.Specializations
         Inherits InstanceBaseCommands
 
         Public Sub New()
-            AddCommand(New CommandBoot)
-            AddCommand(New CommandGetSetting)
-            AddCommand(New CommandSetSetting)
+            AddCommand(Boot)
+            AddCommand([Get])
+            AddCommand([Set])
         End Sub
 
-        '''<summary>A command which boots players from a slot.</summary>
-        Public NotInheritable Class CommandBoot
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Boot,
-                           1, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_Boot_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Contract.Assume(arguments.Count = 1)
-                Contract.Assume(arguments(0) IsNot Nothing)
-                Return target.QueueBootSlot(arguments(0)).EvalOnSuccess(Function() "Booted")
-            End Function
-        End Class
+        Private Shared ReadOnly Boot As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Boot",
+            template:="Name/Color",
+            Description:="Kicks a player from the game.",
+            func:=Function(target, user, argument)
+                      Return target.QueueBootSlot(argument.rawvalue(0)).EvalOnSuccess(Function() "Booted")
+                  End Function)
 
-        Public NotInheritable Class CommandGetSetting
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New("Get",
-                           1, ArgumentLimitType.Exact,
-                           "[Get setting] Displays a game setting. Available settings are tickperiod laglimit gamerate.")
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Contract.Assume(arguments.Count = 1)
-                Dim val As Object
-                Select Case arguments(0).ToUpperInvariant
-                    Case "TICKPERIOD" : val = target.SettingTickPeriod
-                    Case "LAGLIMIT" : val = target.SettingLagLimit
-                    Case "GAMERATE" : val = target.SettingSpeedFactor
-                    Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(arguments(0)))
-                End Select
-                Return "{0} = '{1}'".Frmt(arguments(0), val).Futurized
-            End Function
-        End Class
-        Public NotInheritable Class CommandSetSetting
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New("Set",
-                           2, ArgumentLimitType.Exact,
-                           "[Set setting] Changes a game setting. Available settings are tickperiod laglimit gamerate.")
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Contract.Assume(arguments.Count = 2)
-                Dim val_us As UShort
-                Dim vald As Double
-                Dim is_short = UShort.TryParse(arguments(1), val_us)
-                Dim is_double = Double.TryParse(arguments(1), vald)
-                Select Case arguments(0).ToUpperInvariant
-                    Case "TICKPERIOD"
-                        If Not is_short Or val_us < 50 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
-                        target.SettingTickPeriod = val_us
-                    Case "LAGLIMIT"
-                        If Not is_short Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
-                        target.SettingLagLimit = val_us
-                    Case "GAMERATE"
-                        If Not is_double Or vald < 0.01 Or vald > 10 Then Throw New ArgumentException("Invalid value")
-                        target.SettingSpeedFactor = vald
-                    Case Else
-                        Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(arguments(0)))
-                End Select
-                Return "{0} set to {1}".Frmt(arguments(0), arguments(1)).Futurized
-            End Function
-        End Class
+        Private Shared ReadOnly [Get] As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Get",
+            template:="setting",
+            Description:="Returns settings for this game {tickperiod, laglimit, gamerate}.",
+            func:=Function(target, user, argument)
+                      Dim val As Object
+                      Select Case argument.RawValue(0).ToUpperInvariant
+                          Case "TICKPERIOD" : val = target.SettingTickPeriod
+                          Case "LAGLIMIT" : val = target.SettingLagLimit
+                          Case "GAMERATE" : val = target.SettingSpeedFactor
+                          Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argument.RawValue(0)))
+                      End Select
+                      Return "{0} = '{1}'".Frmt(argument.RawValue(0), val).Futurized
+                  End Function)
+
+        Private Shared ReadOnly [Set] As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Set",
+            template:="setting value",
+            Description:="Sets settings for this game {tickperiod, laglimit, gamerate}.",
+            func:=Function(target, user, argument)
+                      Dim val_us As UShort
+                      Dim vald As Double
+                      Dim is_short = UShort.TryParse(argument.RawValue(1), val_us)
+                      Dim is_double = Double.TryParse(argument.RawValue(1), vald)
+                      Select Case argument.RawValue(0).ToUpperInvariant
+                          Case "TICKPERIOD"
+                              If Not is_short Or val_us < 50 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
+                              target.SettingTickPeriod = val_us
+                          Case "LAGLIMIT"
+                              If Not is_short Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
+                              target.SettingLagLimit = val_us
+                          Case "GAMERATE"
+                              If Not is_double Or vald < 0.01 Or vald > 10 Then Throw New ArgumentException("Invalid value")
+                              target.SettingSpeedFactor = vald
+                          Case Else
+                              Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argument.RawValue(0)))
+                      End Select
+                      Return "{0} set to {1}".Frmt(argument.RawValue(0), argument.RawValue(1)).Futurized
+                  End Function)
     End Class
 
     Public Class InstanceBaseCommands
         Inherits CommandSet(Of W3Game)
 
         Public Sub New()
-            AddCommand(New CommandPing)
-            AddCommand(New CommandLeave)
+            AddCommand(Ping)
         End Sub
 
-        '''<summary>A command which disconnects the bot from the instance.</summary>
-        Public NotInheritable Class CommandPing
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Ping,
-                           0, ArgumentLimitType.Min,
-                           My.Resources.Command_Instance_Ping_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Dim futurePlayers = target.QueueGetPlayers()
-
-                Dim futureLatencies = futurePlayers.Select(
-                    Function(players)
-                        Return (From player In players
-                                Select player.GetLatencyDescription).
-                                ToList.Defuturized
-                    End Function
-                ).Defuturized
-
-                Return futureLatencies.Select(
-                    Function(latencies)
-                        Dim players = futurePlayers.Value
-                        Dim msg = "Estimated RTT:"
-                        For i = 0 To players.Count - 1
-                            If players(i).isFake Then  Continue For
-                            msg += " {0}={1}".Frmt(players(i).name, latencies(i))
-                        Next i
-                        Return msg
-                    End Function
-                )
-            End Function
-        End Class
-
-        Public NotInheritable Class CommandLeave
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New("Leave",
-                           0, ArgumentLimitType.Exact,
-                           "Disconnects you from the game (for when countdown is cancelled and you can't leave normally).")
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                If user Is Nothing Then Throw New InvalidOperationException("You are not in the game.")
-                Return target.QueueBootSlot(user.Name).EvalOnSuccess(Function() "Left.")
-            End Function
-        End Class
+        Private Shared ReadOnly Ping As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Ping",
+            template:="",
+            Description:="Returns estimated network round trip times for each player.",
+            func:=Function(target, user, argument)
+                      Dim futurePlayers = target.QueueGetPlayers()
+                      Return futurePlayers.Select(
+                          Function(players)
+                              Dim futureLatencies = (From player In players Select player.GetLatencyDescription).ToList.Defuturized
+                              Return futureLatencies.Select(
+                                  Function(latencies)
+                                      Return "Estimated RTT: {0}".Frmt((From i In Enumerable.Range(0, players.Count)
+                                                                        Select "{0}={1}".Frmt(players(i).Name, latencies(i))
+                                                                        ).StringJoin(" "))
+                                  End Function
+                              )
+                                  End Function
+                      ).defuturized
+                          End Function)
     End Class
 
     Public NotInheritable Class InstanceGuestSetupCommands
         Inherits InstanceBaseCommands
 
         Public Sub New()
-            AddCommand(New CommandElevate)
-            AddCommand(New CommandVoteStart)
+            AddCommand(Elevate)
+            AddCommand(VoteStart)
         End Sub
 
-        Public NotInheritable Class CommandVoteStart
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_VoteStart,
-                           1, ArgumentLimitType.Max,
-                           My.Resources.Command_Instance_VoteStart_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                If arguments.Count = 1 AndAlso arguments(0).ToUpperInvariant <> "CANCEL" Then Throw New ArgumentException("Incorrect argument.")
-                If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
-                Return target.QueueSetPlayerVoteToStart(user.name, arguments.Count = 0).EvalOnSuccess(Function() "Voted to start")
-            End Function
-        End Class
+        Private Shared ReadOnly VoteStart As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="VoteStart",
+            template:="-cancel",
+            Description:="Places or cancels a vote to prematurely start an autostarted game. Requires at least 2 players and at least a 2/3 majority.",
+            func:=Function(target, user, argument)
+                      If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
+                      Return target.QueueSetPlayerVoteToStart(user.name,
+                                                              wantsToStart:=Not argument.HasOptionalSwitch("cancel")
+                                                              ).EvalOnSuccess(Function() "Voted to start")
+                  End Function)
 
-        Public NotInheritable Class CommandElevate
-            Inherits BaseCommand(Of W3Game)
-            Public Sub New()
-                MyBase.New(My.Resources.Command_Instance_Elevate,
-                           1, ArgumentLimitType.Exact,
-                           My.Resources.Command_Instance_Elevate_Help)
-            End Sub
-            Public Overrides Function Process(ByVal target As W3Game, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Contract.Assume(arguments.Count = 1)
-                If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
-                Return target.QueueTryElevatePlayer(user.Name, arguments(0)).EvalOnSuccess(Function() "Elevated")
-            End Function
-        End Class
+        Private Shared ReadOnly Elevate As New DelegatedTemplatedCommand(Of W3Game)(
+            Name:="Elevate",
+            template:="password",
+            Description:="Gives access to admin or host commands.",
+            func:=Function(target, user, argument)
+                      If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
+                      Return target.QueueTryElevatePlayer(user.Name, argument.RawValue(0)).EvalOnSuccess(Function() "Elevated")
+                  End Function)
     End Class
     Public NotInheritable Class InstanceGuestLoadCommands
         Inherits InstanceBaseCommands

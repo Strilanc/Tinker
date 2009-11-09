@@ -165,6 +165,11 @@
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
     <Compile Include="Battlenet\CDKey.vb" />
+    <Compile Include="Library\Commands\Command Extensions.vb" />
+    <Compile Include="Library\Commands\CommandTemplate.vb" />
+    <Compile Include="Library\Commands\Delegated Commands.vb" />
+    <Compile Include="Library\Commands\PartialCommand.vb" />
+    <Compile Include="Library\Commands\TemplatedCommand.vb" />
     <Compile Include="Warcraft3\W3GameStatsJar.vb" />
     <Compile Include="Warcraft3\KeyedEvent.vb" />
     <Compile Include="Warcraft3\Pinger.vb" />
@@ -190,8 +195,8 @@
     <Compile Include="BNLS\BNLSWardenPacket.vb" />
     <Compile Include="Bot\Commands\CKL Commands.vb" />
     <Compile Include="Library\Commands\CommandSet.vb" />
-    <Compile Include="Library\Commands\BaseCommand.vb" />
-    <Compile Include="Library\Commands\CommandArguments.vb" />
+    <Compile Include="Library\Commands\Command.vb" />
+    <Compile Include="Library\Commands\CommandArgument.vb" />
     <Compile Include="Library\Commands\HelpCommand.vb" />
     <Compile Include="Bot\Commands\Lan Commands.vb" />
     <Compile Include="Bot\Widgets\CKL Client.vb" />
@@ -211,7 +216,6 @@
     <Compile Include="Warcraft3\W3DummyPlayer.vb" />
     <Compile Include="Warcraft3\W3LanAdvertiser.vb" />
     <Compile Include="Warcraft3\TransferScheduler.vb" />
-    <Compile Include="Library\Commands\ICommand.vb" />
     <Compile Include="Bot\Commands\Bot Commands.vb" />
     <Compile Include="Bot\Commands\Client Commands.vb" />
     <Compile Include="Bot\Commands\Game Commands.vb" />

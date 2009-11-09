@@ -1,66 +1,83 @@
 ﻿Namespace Commands
-    '''<summary>Implements a command for access to a list of commands and help with specific commands.</summary>
+    ''' <summary>
+    ''' A command which provides help using commands.
+    ''' </summary>
     Public NotInheritable Class HelpCommand(Of T)
-        Inherits BaseCommand(Of T)
+        Inherits Command(Of T)
+
         Private ReadOnly helpMap As New Dictionary(Of String, String)
-        Private ReadOnly commands As New List(Of ICommand(Of T))
+        Private ReadOnly commands As New List(Of Command(Of T))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(commands IsNot Nothing)
             Contract.Invariant(helpMap IsNot Nothing)
+            Contract.Invariant(commands IsNot Nothing)
         End Sub
 
         Public Sub New()
-            MyBase.New(My.Resources.Command_General_Help,
-                       2, ArgumentLimitType.Max,
-                       My.Resources.Command_General_Help_Help)
+            MyBase.New(Name:="Help",
+                       Format:="* or ? or + or Command or Command or *",
+                       Description:="Provides help for using commands.")
+
+            helpMap("") = {"'Help ?' for how to use commands",
+                           "'Help *' for available commands",
+                           "'Help +' for all commands",
+                           "'Help command' for help with specific commands."
+                           }.StringJoin(", ")
+            helpMap("?") = {"Use 'Help command' to for a command's description, arguments and required permissions.",
+                            "For example, 'Help host' could return 'Hosts a game. [name=<game name> -map=query -private'] {games:1}",
+                            "The argument format is inside the [] brackets and the permissions are inside the {} brackets.",
+                            "In this case, 'name' is a required named argument, 'map' is an optional named argument, and -private is an optional switch.",
+                            "Given that format, you could host a public game of castle fight like this: 'Host name=<Castle Fight!!> -map=<castle*1.14b>'.",
+                            "Arguments can be re-ordered but must be separated by spaces (use brackets for argument values with spaces; eg. '<game name>')."
+                            }.StringJoin(" ")
         End Sub
 
-        '''<summary>Adds a command to the list of commands and specific help.</summary>
-        Public Sub AddCommand(ByVal command As ICommand(Of T))
+        Public Sub AddCommand(ByVal command As Command(Of T))
             Contract.Requires(command IsNot Nothing)
-            helpMap(command.Name.ToUpperInvariant) = command.Help
             commands.Add(command)
-            Dim extraHelpNormalKeys = From pair In command.ExtraHelp Where pair.Value <> "[*]" Select pair.Key
-            Dim extraHelpSummaryKeys = From pair In command.ExtraHelp Where pair.Value = "[*]" Select pair.Key
-            For Each key In extraHelpNormalKeys
-                Contract.Assume(key IsNot Nothing)
-                helpMap("{0} {1}".Frmt(command.Name, key).ToUpperInvariant) = command.ExtraHelp(key)
-            Next key
-            Dim helpKeysSummary = extraHelpNormalKeys.StringJoin(", ")
-            For Each key In extraHelpSummaryKeys
-                Contract.Assume(key IsNot Nothing)
-                helpMap("{0} {1}".Frmt(command.Name, key).ToUpperInvariant) = helpKeysSummary
-            Next key
+            'Basic help
+            helpMap(command.Name.ToUpperInvariant) = "{0} [{1} {2}] {{{3}}}".Frmt(command.Description,
+                                                                                  command.Name,
+                                                                                  command.Format,
+                                                                                  command.Permissions)
+            'Extra help
+            If command.HelpTopics.Count > 0 Then
+                helpMap("{0} *".Frmt(command.Name.ToUpperInvariant)) = command.HelpTopics.Keys.StringJoin(" ")
+                For Each pair In command.HelpTopics
+                    helpMap("{0} {1}".Frmt(command.Name.ToUpperInvariant, pair.Key.ToUpperInvariant)) = pair.Value
+                Next pair
+            End If
         End Sub
-
-        Public Sub RemoveCommand(ByVal command As ICommand(Of T))
+        Public Sub RemoveCommand(ByVal command As Command(Of T))
             Contract.Requires(command IsNot Nothing)
             If Not commands.Contains(command) Then Return
-            commands.Remove(command)
+            'Basic help
             helpMap.Remove(command.Name.ToUpperInvariant)
-            For Each key In command.ExtraHelp.Keys
-                Contract.Assume(key IsNot Nothing)
-                helpMap.Remove("{0} {1}".Frmt(command.Name, key).ToUpperInvariant)
-            Next key
+            'Extra help
+            If command.HelpTopics.Count > 0 Then
+                helpMap.Remove("{0} *".Frmt(command.Name.ToUpperInvariant))
+                For Each pair In command.HelpTopics
+                    helpMap.Remove("{0} {1}".Frmt(command.Name.ToUpperInvariant, pair.Key.ToUpperInvariant))
+                Next pair
+            End If
         End Sub
 
-        Public Overrides Function Process(ByVal target As T, ByVal user As BotUser, ByVal arguments As IList(Of String)) As IFuture(Of String)
-            Dim arg As String = Nothing
-            If arguments.Count > 0 Then arg = arguments(0)
-            If arguments.Count = 2 Then arg += " " + arguments(1)
-            If arg Is Nothing Then
-                '[list of commands]
-                Return (From command In commands
-                        Where command.IsUserAllowed(user)
-                        Select command.Name).StringJoin(" ").Futurized
-            ElseIf helpMap.ContainsKey(arg.ToUpperInvariant) Then
-                '[specific command help]
-                Return helpMap(arg.ToUpperInvariant).Futurized
-            Else
-                '[no matching command]
-                Throw New ArgumentException("{0} is not a recognized help topic.".Frmt(arg))
+        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+            Select Case argument
+                Case "*"
+                    Return (From command In commands
+                            Where command.IsUserAllowed(user)
+                            Select command.Name).StringJoin(" ").Futurized
+                Case "+"
+                    Return (From command In commands
+                            Select command.Name).StringJoin(" ").Futurized
+            End Select
+
+            If helpMap.ContainsKey(argument.ToUpperInvariant) Then
+                Return helpMap(argument.ToUpperInvariant).Futurized
             End If
+
+            Throw New ArgumentException("No help found for '{0}'.".Frmt(argument))
         End Function
     End Class
 End Namespace

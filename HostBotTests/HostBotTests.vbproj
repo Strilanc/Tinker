@@ -68,7 +68,8 @@
   <ItemGroup>
     <Compile Include="CDKeyTest.vb" />
     <Compile Include="BnetAuthenticationTest.vb" />
-    <Compile Include="CommandArgumentsTest.vb" />
+    <Compile Include="CommandArgumentTest.vb" />
+    <Compile Include="CommandTemplateTest.vb" />
     <Compile Include="W3GameStatsTest.vb" />
     <Compile Include="PacketStreamTest.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
