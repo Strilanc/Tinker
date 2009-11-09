@@ -222,44 +222,21 @@ Namespace Commands.Specializations
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="CreateServer",
-                           template:="name",
+                           template:=Concat({"name", "map=<search query>"}, ServerSettings.PartialArgumentTemplates).StringJoin(" "),
                            Description:="Creates a new wc3 game server. 'Help CreateSever *' for help with options.",
-                           permissions:="root=4",
-                           extraHelp:={"Admin=-Admin=Strilanc,-a=user,-a: Sets the auto-elevated username. Use no argument to match your name.",
-                                       "Autostart=-Autostart, -as: Instances will start automatically when they fill up.",
-                                       "Instances=-Instances=X, -i=X: Sets the initial number of instances. Use =0 for unlimited instances.",
-                                       "FullShare=-FullShare: Turns on wc3's 'full shared control' option.",
-                                       "MultiObs=-MultiObs,-mo: Turns on observers, and creates a special slot which can accept large amounts of players. The map must have two available obs slots for this to work.",
-                                       "NoUL=-NoUL: Turns off uploads from the bot, but still allows players to download from each other.",
-                                       "NoDL=-NoDL: Boots players who need to DL the map.",
-                                       "Obs=-Obs, -o: Turns on full observers.",
-                                       "ObsOnDefeat=-ObsOnDefeat, -od: Turns on observers on defeat.",
-                                       "Permanent=-Permanent, -perm: Automatically recreate closed instances and automatically advertises when new instances are available.",
-                                       "RandomHero=-RandomHero, -rh: Turns on the wc3 'random hero' option.",
-                                       "RandomRace=-RandomRace, -rr: Turns on the wc3 'random race' option.",
-                                       "Referees=-Referees,-ref: Turns on observer referees.",
-                                       "Reserve=-Reserve=Name, -r: Reserves the first available slot for the player with the given name. Omit =Name to match your name.",
-                                       "Speed=-Speed=X: Changes default speed. Possible values for X are medium/slow.",
-                                       "Teams=-Teams=XvX, -t=XvXvX: Sets the initial number of open slots for each team.",
-                                       "TeamsApart=-TeamsApart: Turns off wc3's 'teams together' option.",
-                                       "UnlockTeams=-UnlockTeams: Turns off wc3's 'lock teams' option.",
-                                       "Visibility=-Visibility=X, -vis=X: Changes the default visibility option from map default. Possible values of X are All/Explored/None."
-                                       }.StringJoin(Environment.NewLine))
+                           Permissions:="root=4",
+                           extraHelp:=ServerSettings.PartialArgumentHelp.StringJoin(Environment.NewLine))
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Throw New NotImplementedException
-                'Contract.Assume(arguments.Count >= 2)
-                'Contract.Assume(arguments(0) IsNot Nothing)
-                'Contract.Assume(arguments(1) IsNot Nothing)
-                'Dim map = W3Map.FromArgument(arguments(1))
-                'Dim settings = New ServerSettings(map,
-                'W3GameDescription.FromArguments(arguments(0),
-                'arguments(1),
-                'If(user Is Nothing, My.Resources.ProgramName, user.Name),
-                'arguments))
-                'Dim name = arguments(0)
-                'Return target.QueueCreateServer(name, settings).
-                'EvalOnSuccess(Function() "Created server with name '{0}'. Admin password is {1}.".Frmt(name, settings.adminPassword))
+                Dim name = argument.NamedValue("name")
+                Dim map = W3Map.FromArgument(argument.NamedValue("map"))
+                Dim stats = New W3GameStats(map,
+                                            If(user Is Nothing, My.Resources.ProgramName, user.Name),
+                                            argument)
+                Dim desc = W3GameDescription.FromArguments(name,  map,  stats)
+                Dim settings = New ServerSettings(map,  desc, argument)
+                Return target.QueueCreateServer(name, settings).
+                      EvalOnSuccess(Function() "Created server with name '{0}'. Admin password is {1}.".Frmt(name, settings.AdminPassword))
             End Function
         End Class
 

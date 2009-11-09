@@ -298,62 +298,26 @@ Namespace Commands.Specializations
 
         Private Shared ReadOnly Host As New DelegatedTemplatedCommand(Of BnetClient)(
             Name:="Host",
-            template:={"name=<game name>", "map=<search query>", "-admin=user -admin -a=user -a", "-autoStart -as",
-                     "-instances=# -i=#", "-fullSharedControl", "-grab", "-loadInGame", "-lig", "-multiObs -mo",
-                     "-noUL", "-noDL", "-obs -o", "-obsOnDefeat -od", "-permanent -perm", "-private -p", "-randomHero -rh",
-                     "-randomRace -rr", "-referees -ref", "-reserve -reserve=<name1 name2 ...> -r -r=<name1 name2 ...>",
-                     "-speed={medium,slow}", "-teams=#v#... -t=#v#...", "-teamsApart", "-vis={all,explored,none}", "-port=#"
-                     }.StringJoin(" "),
-            Description:="Hosts a game in the custom games list. More help topics under 'Help Host *'.",
+            template:=Concat({"name=<game name>", "map=<search query>", "-private -p"},
+                             Warcraft3.ServerSettings.PartialArgumentTemplates,
+                             Warcraft3.W3GameStats.PartialArgumentHelp).StringJoin(" "),
+            Description:="Hosts a game in the custom games list. See 'Help Host *' for more help topics.",
             Permissions:="games=1",
-            extraHelp:={"Admin=admin, a: Sets the auto-elevated username. Use no argument to match your name.",
-                        "Autostart=autostart, as: Instances will start automatically when they fill up.",
-                        "Instances=instances, i: Sets the initial number of instances. Use 0 for unlimited instances.",
-                        "FullShare=fullShare: Turns on wc3's 'full shared control' option.",
-                        "Grab=grab: Downloads the map file from joining players. Meant for use when hosting a map by meta-data.",
-                        "LoadInGame=loadInGame, lig: Players wait for loaders in the game instead of at the load screen.",
-                        "MultiObs=multiObs, mo: Turns on observers, and creates a special slot which can accept large amounts of players. The map must have two available obs slots for this to work.",
-                        "NoUL=noUL: Turns off uploads from the bot, but still allows players to download from each other.",
-                        "NoDL=noDL: Boots players who don't already have the map.",
-                        "Obs=obs, -o: Turns on full observers.",
-                        "ObsOnDefeat=obsOnDefeat, -od: Turns on observers on defeat.",
-                        "Permanent=permanent, perm: Automatically recreate closed instances and automatically sets the game to private/public as new instances are available.",
-                        "Private=private, p: Creates a private game instead of a public game.",
-                        "RandomHero=randomHero, rh: Turns on the wc3 'random hero' option.",
-                        "RandomRace=randomRace, rr: Turns on the wc3 'random race' option.",
-                        "Referees=referees, ref: Turns on observer referees.",
-                        "Reserve=reserve, r: Reserves the slots for players or yourself.",
-                        "Speed=speed: Sets wc3's game speed option to medium or slow.",
-                        "Teams=Teams, t: Sets the initial number of open slots for each team.",
-                        "TeamsApart=teamsApart: Turns off wc3's 'teams together' option.",
-                        "UnlockTeams=unlockTeams: Turns off wc3's 'lock teams' option.",
-                        "Visibility=visibility, vis: Sets wc3's visibility option to all, explored, or none.",
-                        "Port=port: Sets the port the client will advertise on and the created server will listen on. Requires root:5."
-                        }.StringJoin(Environment.NewLine),
+            extraHelp:=Concat({"Private=-Private, -p: Creates a private game instead of a public game."},
+                              Warcraft3.ServerSettings.PartialArgumentHelp,
+                              Warcraft3.W3GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine),
             func:=Function(client, user, argument)
-                      Dim map = W3Map.FromArgument(argument.RawValue(1))
+                      Dim map = W3Map.FromArgument(argument.NamedValue("map"))
 
-                      If True Then Throw New NotImplementedException()
-                      'Server settings
-                      'arguments = arguments.ToList
-                      'For Each arg In argument.rawarguments
-                      'Select Case argument.RawValue(i).ToUpperInvariant
-                      'Case "-RESERVE", "-R"
-                      'If user IsNot Nothing Then
-                      'argument.RawValue(i) += "=" + user.Name
-                      'Else
-                      'argument.RawValue(i) = ""
-                      'End If
-                      'End Select
-                      'If arg.ToUpperInvariant Like "-PORT=*" AndAlso user IsNot Nothing AndAlso user.Permission("root") < 5 Then
-                      '    Throw New InvalidOperationException("You need root=5 to use -port.")
-                      'End If
-                      'Next
-                      Dim header = W3GameDescription.FromArguments(argument.RawValue(0),
-                                                                   argument.RawValue(1),
-                                                                   If(user Is Nothing, My.Resources.ProgramName, user.Name),
-                                                                   New String() {})
-                      Dim f_settings = client.QueueGetListenPort.Select(Function(port) New ServerSettings(map, header, defaultListenPorts:={port}))
+                      If argument.TryGetOptionalNamedValue("Port") IsNot Nothing AndAlso user IsNot Nothing AndAlso user.Permission("root") < 5 Then
+                          Throw New InvalidOperationException("You need root:5 to use -port.")
+                      End If
+                      Dim stats = New W3GameStats(map, If(user Is Nothing, My.Resources.ProgramName, user.Name), argument)
+                      Dim desc = W3GameDescription.FromArguments(argument.NamedValue("name"),
+                                                                 map,
+                                                                 stats,
+                                                                 argument.HasOptionalSwitch("Private") OrElse argument.HasOptionalSwitch("p"))
+                      Dim f_settings = client.QueueGetListenPort.Select(Function(port) New ServerSettings(map, desc, argument, defaultListenPorts:={port}))
                       Dim f_server = f_settings.Select(Function(settings) client.Parent.QueueCreateServer(client.Name, settings, "[Linked]", True)).Defuturized()
 
                       'Create the server, then advertise the game
@@ -361,13 +325,13 @@ Namespace Commands.Specializations
                           Function(server)
                               'Start advertising
                               client.QueueSetUserServer(User, server)
-                              Return client.QueueStartAdvertisingGame(header, server).EvalWhenReady(
+                              Return client.QueueStartAdvertisingGame(desc, server).EvalWhenReady(
                                   Function(advertiseException)
                                       If advertiseException IsNot Nothing Then
                                           server.QueueKill()
                                           Throw New OperationFailedException(innerException:=advertiseException)
                                       Else
-                                          Return "Succesfully created game {0} for map {1}.".Frmt(header.Name, header.GameStats.relativePath)
+                                          Return "Succesfully created game {0} for map {1}.".Frmt(desc.Name, desc.GameStats.relativePath)
                                       End If
                                   End Function
                               )
@@ -459,12 +423,12 @@ Namespace Commands.Specializations
             Description:="Places a game in the custom games list, but doesn't start a new game server to accept the joiners.",
             Permissions:="root=4;games=5",
             func:=Function(client, user, argument)
-                      Throw New NotImplementedException("args!")
+                      Dim map = W3Map.FromArgument(argument.NamedValue("map"))
                       Return client.QueueStartAdvertisingGame(
-                          W3GameDescription.FromArguments(argument.RawValue(0),
-                                                          argument.RawValue(1),
-                                                          If(user Is Nothing, My.Resources.ProgramName, user.Name),
-                                                          New List(Of String)(capacity:=-1)), Nothing).EvalOnSuccess(Function() "Started advertising")
+                          W3GameDescription.FromArguments(argument.NamedValue("name"),
+                                                          map,
+                                                          New W3GameStats(map, If(user Is Nothing, My.Resources.ProgramName, user.Name), argument)),
+                          server:=Nothing).EvalOnSuccess(Function() "Started advertising")
                   End Function)
 
         Private Shared ReadOnly StopAdvertising As New DelegatedTemplatedCommand(Of BnetClient)(

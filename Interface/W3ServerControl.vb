@@ -14,7 +14,7 @@ Public Class W3ServerControl
 
     Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of W3Server).QueueGetCaption
         Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-        Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".Frmt(server.Name, server.GetSuffix)))
+        Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".Frmt(server.Name, server.Suffix)))
     End Function
 
     Public Function QueueHook(ByVal child As W3Server) As IFuture Implements IHookable(Of W3Server).QueueHook

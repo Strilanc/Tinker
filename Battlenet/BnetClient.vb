@@ -50,15 +50,8 @@ Namespace Bnet
 
             Public Sub New(ByVal header As W3GameDescription)
                 Contract.Requires(header IsNot Nothing)
-                Me.private = [private]
+                Me.private = [private] OrElse header.priv
                 Me._header = header
-                For Each arg In header.Options
-                    Contract.Assume(arg IsNot Nothing)
-                    Select Case arg.ToUpperInvariant.Trim()
-                        Case "-P", "-PRIVATE"
-                            Me.private = True
-                    End Select
-                Next arg
             End Sub
         End Class
 #End Region

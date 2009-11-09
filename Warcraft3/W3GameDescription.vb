@@ -36,31 +36,49 @@ Namespace Warcraft3
         Private ReadOnly _creationTime As Date
         Private _gameType As GameTypes
         Private _state As Bnet.BnetPacket.GameStates
+        Public ReadOnly [priv] As Boolean
 
-        Private ReadOnly _options As IList(Of String)
         Private ReadOnly _numPlayerSlots As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_numPlayerSlots > 0)
             Contract.Invariant(_numPlayerSlots <= 12)
             Contract.Invariant(_gameStats IsNot Nothing)
-            Contract.Invariant(_options IsNot Nothing)
             Contract.Invariant(_name IsNot Nothing)
         End Sub
 
         Public Shared Function FromArguments(ByVal name As String,
+                                             ByVal map As W3Map,
+                                             ByVal stats As W3GameStats,
+                                             Optional ByVal priv As Boolean = False) As W3GameDescription
+            Contract.Requires(name IsNot Nothing)
+            Contract.Requires(map IsNot Nothing)
+            Contract.Requires(stats IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of W3GameDescription)() IsNot Nothing)
+            Return New W3GameDescription(name,
+                                         stats,
+                                         hostPort:=0,
+                                         GameId:=0,
+                                         lanKey:=0,
+                                         playerslotcount:=map.NumPlayerSlots,
+                                         GameType:=map.GameType,
+                                         state:=0,
+                                         priv:=priv)
+        End Function
+        Public Shared Function FromArguments(ByVal name As String,
                                              ByVal mapArgument As String,
                                              ByVal hostName As String,
-                                             ByVal arguments As IList(Of String)) As W3GameDescription
+                                             ByVal argument As Commands.CommandArgument,
+                                             Optional ByVal priv As Boolean = False) As W3GameDescription
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(mapArgument IsNot Nothing)
             Contract.Requires(hostName IsNot Nothing)
-            Contract.Requires(arguments IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3GameDescription)() IsNot Nothing)
             Dim map = W3Map.FromArgument(mapArgument)
             Return New W3GameDescription(name,
-                                         New W3GameStats(map, hostName, arguments),
-                                         0, 0, 0, arguments, map.NumPlayerSlots, map.GameType, 0)
+                                         New W3GameStats(map, hostName, argument),
+                                         0, 0, 0, map.NumPlayerSlots, map.GameType, 0, priv)
         End Function
         Public Sub New(ByVal subDesc As W3GameDescription,
                        Optional ByVal gameId As UInt32? = Nothing,
@@ -72,7 +90,6 @@ Namespace Warcraft3
                    subDesc.hostPort,
                    If(gameId, subDesc.GameId),
                    If(lanKey, subDesc.lanKey),
-                   subDesc.Options,
                    subDesc._numPlayerSlots,
                    If(gameType, subDesc.GameType),
                    If(state, subDesc.GameState))
@@ -82,22 +99,21 @@ Namespace Warcraft3
                        ByVal hostPort As UShort,
                        ByVal gameId As UInt32,
                        ByVal lanKey As UInteger,
-                       ByVal options As IList(Of String),
                        ByVal playerSlotCount As Integer,
                        ByVal gameType As GameTypes,
-                       ByVal state As Bnet.BnetPacket.GameStates)
+                       ByVal state As Bnet.BnetPacket.GameStates,
+                       Optional ByVal priv As Boolean = False)
             Contract.Requires(playerSlotCount > 0)
             Contract.Requires(playerSlotCount <= 12)
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(gameStats IsNot Nothing)
-            Contract.Requires(options IsNot Nothing)
             Me._name = name
             Me._gameStats = gameStats
             Me.hostPort = hostPort
             Me._gameType = gameType
             Me._gameId = gameId
+            Me.priv = priv
             Me.lanKey = lanKey
-            Me._options = options
             Me._numPlayerSlots = playerSlotCount
             Me._creationTime = Now()
         End Sub
@@ -112,12 +128,6 @@ Namespace Warcraft3
             Get
                 Contract.Ensures(Contract.Result(Of W3GameStats)() IsNot Nothing)
                 Return _gameStats
-            End Get
-        End Property
-        Public ReadOnly Property Options As IList(Of String)
-            Get
-                Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
-                Return _options
             End Get
         End Property
         Public ReadOnly Property GameType As GameTypes

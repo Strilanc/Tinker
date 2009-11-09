@@ -98,72 +98,77 @@
         ''' </summary>
         Public Sub New(ByVal map As W3Map,
                        ByVal hostName As String,
-                       ByVal arguments As IEnumerable(Of String))
+                       ByVal argument As Commands.CommandArgument)
             Contract.Requires(map IsNot Nothing)
-            Contract.Requires(arguments IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
             Contract.Requires(hostName IsNot Nothing)
 
-            Me.randomHero = False
-            Me.randomRace = False
-            Me.allowFullSharedControl = False
-            Me.lockTeams = True
-            Me.teamsTogether = True
-            Me.observers = GameObserverOption.NoObservers
-            Me.visibility = GameVisibilityOption.MapDefault
-            Me.speed = GameSpeedOption.Fast
             Me.playableWidth = map.playableWidth
             Me.playableHeight = map.playableHeight
             Me.mapChecksumXORO = map.MapChecksumXORO
-            Me._mapChecksumSHA1 = map.MapChecksumSHA1.ToView
+            Me._mapChecksumSHA1 = map.MapChecksumSHA1
             Me.relativePath = map.RelativePath
             Me._hostName = hostName
 
-            For Each arg In arguments
-                Contract.Assume(arg IsNot Nothing)
-                Dim arg2 = ""
-                If arg.Contains("="c) Then
-                    Dim n = arg.IndexOf("="c)
-                    arg2 = arg.Substring(n + 1)
-                    arg = arg.Substring(0, n + 1)
+            Me.randomHero = argument.HasOptionalSwitch("RandomHero")
+            Me.randomRace = argument.HasOptionalSwitch("RandomRace")
+            Me.lockTeams = Not argument.HasOptionalSwitch("UnlockTeams")
+            Me.allowFullSharedControl = argument.HasOptionalSwitch("FullShare")
+            Me.teamsTogether = Not argument.HasOptionalSwitch("TeamsApart")
+            'Observers
+            If argument.HasOptionalSwitch("Referees") OrElse argument.HasOptionalSwitch("ref") Then
+                Me.observers = GameObserverOption.Referees
+            ElseIf argument.HasOptionalSwitch("Obs") OrElse argument.HasOptionalSwitch("MultiObs") Then
+                Me.observers = GameObserverOption.FullObservers
+            ElseIf argument.HasOptionalSwitch("ObsOnDefeat") OrElse argument.HasOptionalSwitch("od") Then
+                Me.observers = GameObserverOption.ObsOnDefeat
+            Else
+                Me.observers = GameObserverOption.NoObservers
+            End If
+            'Speed
+            If argument.TryGetOptionalNamedValue("Speed") Is Nothing Then
+                Me.speed = GameSpeedOption.Fast
+            Else
+                'Parse
+                If Not EnumTryParse(argument.TryGetOptionalNamedValue("Speed"), ignoreCase:=True, ret:=Me.speed) Then
+                    Throw New ArgumentException("Invalid game speed value: {0}".Frmt(argument.TryGetOptionalNamedValue("Speed")))
                 End If
-                arg = arg.ToUpperInvariant.Trim()
-                arg2 = arg2.ToUpperInvariant.Trim()
-
-                Select Case arg
-                    Case "-OBS", "-MULTIOBS", "-MO", "-O"
-                        observers = GameObserverOption.FullObservers
-                    Case "-REFEREES", "-REF"
-                        observers = GameObserverOption.Referees
-                    Case "-OBSONDEFEAT", "-OD"
-                        observers = GameObserverOption.ObsOnDefeat
-                    Case "-RH", "-RANDOMHERO"
-                        randomHero = True
-                    Case "-RR", "-RANDOMRACE"
-                        randomRace = True
-                    Case "-UNLOCKTEAMS"
-                        lockTeams = False
-                    Case "-FULLSHARED", "-FULLSHARE", "-ALLOWFULLSHARED", "-ALLOWFULLSHARE", "-FULLSHAREDCONTROL", "-ALLOWFULLSHAREDCONTROL"
-                        allowFullSharedControl = True
-                    Case "-TEAMSAPART"
-                        teamsTogether = False
-                    Case "-SPEED="
-                        Select Case arg2
-                            Case "MEDIUM"
-                                speed = GameSpeedOption.Medium
-                            Case "SLOW"
-                                speed = GameSpeedOption.Slow
-                        End Select
-                    Case "-VISIBILITY=", "-VIS="
-                        Select Case arg2
-                            Case "ALL", "ALWAYSVISIBLE", "VISIBLE"
-                                visibility = GameVisibilityOption.AlwaysVisible
-                            Case "EXPLORED"
-                                visibility = GameVisibilityOption.Explored
-                            Case "NONE", "HIDE", "HIDETERRAIN"
-                                visibility = GameVisibilityOption.HideTerrain
-                        End Select
-                End Select
-            Next arg
+            End If
+            'Visibility
+            If argument.TryGetOptionalNamedValue("Visibility") Is Nothing Then
+                Me.visibility = GameVisibilityOption.MapDefault
+            Else
+                If Not EnumTryParse(argument.TryGetOptionalNamedValue("Visibility"), ignoreCase:=True, ret:=Me.visibility) Then
+                    Throw New ArgumentException("Invalid map visibility value: {0}".Frmt(argument.TryGetOptionalNamedValue("Visibility")))
+                End If
+            End If
         End Sub
+
+        Public Shared ReadOnly PartialArgumentTemplates As String() = {
+                "-Obs",
+                "-ObsOnDefeat -od",
+                "-Referees -ref",
+                "-MultiObs",
+                "-FullShare",
+                "-RandomHero",
+                "-RandomRace",
+                "-Speed={Medium,Slow}",
+                "-TeamsApart",
+                "-UnlockTeams",
+                "-Visibility={AlwaysVisible,Explored,HideTerrain}"
+            }
+        Public Shared ReadOnly PartialArgumentHelp As String() = {
+                "Obs=-Obs: Turns on full observers.",
+                "ObsOnDefeat=-ObsOnDefeat, -od: Turns on observers on defeat.",
+                "FullShare=-FullShare: Turns on wc3's 'full shared control' option.",
+                "MultiObs=-MultiObs, mo: Turns on observers, and creates a special slot which can accept large amounts of players. The map must have two available obs slots for this to work.",
+                "RandomHero=-RandomHero: Turns on the wc3 'random hero' option.",
+                "RandomRace=-RandomRace: Turns on the wc3 'random race' option.",
+                "Referees=-Referees, -ref: Turns on observer referees.",
+                "Speed=-Speed=value: Changes wc3's game speed option from Fast to Medium or Slow.",
+                "TeamsApart=-TeamsApart: Turns off wc3's 'teams together' option.",
+                "UnlockTeams=-UnlockTeams: Turns off wc3's 'lock teams' option.",
+                "Visibility=-Visibility=value: Changes wc3's visibility option from MapDefault to AlwaysVisible, Explored, or HideTerrain."
+            }
     End Class
 End Namespace

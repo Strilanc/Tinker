@@ -11,8 +11,8 @@
         Public Event PlayerEntered(ByVal sender As W3Game, ByVal player As W3Player)
 
 #Region "Life"
-        Private Sub LobbyNew(ByVal arguments As IEnumerable(Of String))
-            Contract.Ensures(downloadScheduler IsNot Nothing)
+        Private Sub LobbyNew()
+            Contract.Ensures(DownloadScheduler IsNot Nothing)
 
             Dim rate As FiniteDouble = 10 * 1024 / 1000
             Dim switchTime As FiniteDouble = 3000
@@ -20,11 +20,11 @@
             Me._downloadScheduler = New TransferScheduler(Of Byte)(typicalRate:=rate,
                                                                    typicalSwitchTime:=3000,
                                                                    filesize:=size)
-            AddHandler downloadScheduler.Actions, AddressOf OnDownloadSchedulerActions
+            AddHandler DownloadScheduler.Actions, AddressOf OnDownloadSchedulerActions
             AddHandler downloadTimer.Elapsed, Sub() OnScheduleDownloadsTick()
 
             InitCreateSlots()
-            InitProcessArguments(arguments)
+            InitProcessArguments()
             InitDownloads()
             downloadTimer.Start()
             ref.QueueAction(Sub() TryRestoreFakeHost())
@@ -57,47 +57,36 @@
                 Next i
             End If
         End Sub
-        Private Sub InitProcessArguments(ByVal arguments As IEnumerable(Of String))
-            If arguments Is Nothing Then Return
-
-            For Each arg In arguments
-                Contract.Assume(arg IsNot Nothing)
-                Dim arg2 = ""
-                If arg Like "-*=*" AndAlso Not arg Like "-*=*=*" Then
-                    Dim n = arg.IndexOf("="c)
-                    arg2 = arg.Substring(n + 1)
-                    arg = arg.Substring(0, n + 1)
+        Private Sub InitProcessArguments()
+            If settings.multiObs Then
+                Contract.Assume(slots.Count = 12)
+                Contract.Assume(freeIndexes.Count > 0)
+                If Map.NumPlayerSlots <= 10 Then
+                    For i = Map.NumPlayerSlots To 10 - 1
+                        Contract.Assume(slots(i) IsNot Nothing)
+                        slots(i).Contents = New W3SlotContentsClosed(slots(i))
+                    Next i
+                    Dim playerIndex = freeIndexes(0)
+                    freeIndexes.Remove(playerIndex)
+                    Contract.Assume(slots(10) IsNot Nothing)
+                    Contract.Assume(slots(11) IsNot Nothing)
+                    Contract.Assume(playerIndex > 0)
+                    Contract.Assume(playerIndex <= 12)
+                    AddFakePlayer("# multi obs", slots(10))
+                    SetupCoveredSlot(slots(10), slots(11), playerIndex)
                 End If
-
-                Select Case arg.ToUpperInvariant
-                    Case "-MULTIOBS", "-MO"
-                        Contract.Assume(slots.Count = 12)
-                        Contract.Assume(freeIndexes.Count > 0)
-                        If Map.NumPlayerSlots <= 10 Then
-                            For i = Map.NumPlayerSlots To 10 - 1
-                                Contract.Assume(slots(i) IsNot Nothing)
-                                slots(i).Contents = New W3SlotContentsClosed(slots(i))
-                            Next i
-                            Dim playerIndex = freeIndexes(0)
-                            freeIndexes.Remove(playerIndex)
-                            Contract.Assume(slots(10) IsNot Nothing)
-                            Contract.Assume(slots(11) IsNot Nothing)
-                            Contract.Assume(playerIndex > 0)
-                            Contract.Assume(playerIndex <= 12)
-                            AddFakePlayer("# multi obs", slots(10))
-                            SetupCoveredSlot(slots(10), slots(11), playerIndex)
-                        End If
-                    Case "-TEAMS=", "-T="
-                        TrySetTeamSizes(TeamVersusStringToTeamSizes(arg2))
-                    Case "-RESERVE=", "-R="
-                        Dim slot = (From s In slots _
-                                    Where s.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Open _
-                                    ).FirstOrDefault
-                        If slot IsNot Nothing Then
-                            ReserveSlot(slot.MatchableId, arg2)
-                        End If
-                End Select
-            Next arg
+            End If
+            If settings.teamSetup IsNot Nothing Then
+                TrySetTeamSizes(TeamVersusStringToTeamSizes(settings.teamSetup))
+            End If
+            For Each reservation In settings.Reservations
+                Dim slot = (From s In slots _
+                            Where s.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Open _
+                            ).FirstOrDefault
+                If slot IsNot Nothing Then
+                    ReserveSlot(slot.MatchableId, reservation)
+                End If
+            Next reservation
         End Sub
         Private Sub InitDownloads()
             If settings.allowUpload AndAlso Map.fileAvailable Then

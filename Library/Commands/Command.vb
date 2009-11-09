@@ -80,9 +80,9 @@
         Public Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
             Dim result = New FutureFunction(Of IFuture(Of String))
             If IsUserAllowed(user) Then
-                result.SetFailed(New InvalidOperationException("Unsufficient permissions. Need {0}.".Frmt(Me.Permissions)))
-            Else
                 result.SetByEvaluating(Function() PerformInvoke(target, user, argument))
+            Else
+                result.SetFailed(New InvalidOperationException("Unsufficient permissions. Need {0}.".Frmt(Me.Permissions)))
             End If
             Return result.Defuturized
         End Function

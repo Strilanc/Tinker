@@ -90,6 +90,12 @@ Public Class CommandArgumentTest
 
     <TestMethod()>
     <ExpectedException(GetType(ArgumentException))>
+    Public Sub SwitchDuplicateTest()
+        Dim result = New CommandArgument("-test -test")
+    End Sub
+
+    <TestMethod()>
+    <ExpectedException(GetType(ArgumentException))>
     Public Sub OptionalDuplicateTest()
         Dim result = New CommandArgument("-test=1 -test=2")
     End Sub

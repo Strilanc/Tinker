@@ -19,7 +19,7 @@ Namespace Commands
                 If this.CommandMap(subcommand).HasPrivateArguments Then
                     logger.Log("Command [arguments hidden]: {0}".Frmt(subcommand), LogMessageType.Typical)
                 Else
-                    logger.Log("Command: {0}".Frmt(subcommand), LogMessageType.Typical)
+                    logger.Log("Command: {0}".Frmt(argument), LogMessageType.Typical)
                 End If
 
                 logger.FutureLog("[running command '{0}'...]".Frmt(subcommand), this.Invoke(target, Nothing, argument).EvalWhenValueReady(

@@ -31,7 +31,7 @@ Namespace Warcraft3
         Public Event PlayerEntered(ByVal sender As W3Server, ByVal game As W3Game, ByVal player As W3Player)
 
         Private instanceCreationCount As Integer
-        Private suffix As String
+        Private _suffix As String
         Private _state As W3ServerState = W3ServerState.OnlyAcceptingPlayers
         Public ReadOnly Property Parent() As MainBot
             Get
@@ -59,7 +59,7 @@ Namespace Warcraft3
         Private Sub change_state(ByVal new_state As W3ServerState)
             Dim old_state = _state
             _state = new_state
-            suffix = "[" + new_state.ToString() + "]"
+            _suffix = "[" + new_state.ToString() + "]"
             e_ThrowStateChanged(old_state, new_state)
         End Sub
 #End Region
@@ -76,7 +76,7 @@ Namespace Warcraft3
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(eref IsNot Nothing)
-            Contract.Invariant(suffix IsNot Nothing)
+            Contract.Invariant(_suffix IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As String,
@@ -91,7 +91,7 @@ Namespace Warcraft3
                 Me._settings = settings
                 Me._parent = parent
                 Me._name = name
-                Me.suffix = suffix
+                Me._suffix = suffix
                 Me.logger = If(logger, New Logger)
                 Me.door = New W3ServerDoor(Me, Me.logger)
                 Me.eref = New ThreadPooledCallQueue
@@ -145,8 +145,8 @@ Namespace Warcraft3
                                             Me.logger.Log("Fake player {0}: {1}".Frmt(i_, exception.Message), LogMessageType.Negative)
                                         End If
                                     End Sub)
-                            Next i
-                        End Sub)
+                                        Next i
+                                    End Sub)
                 End If
 
                 If Me.settings.grabMap Then
@@ -211,7 +211,7 @@ Namespace Warcraft3
         Private Sub c_GameStateChanged(ByVal sender As W3Game, ByVal old_state As W3GameState, ByVal new_state As W3GameState)
             ref.QueueAction(
                 Sub()
-                    If Not games_all.Contains(sender) Then  Return
+                    If Not games_all.Contains(sender) Then Return
 
                     Select Case new_state
                         Case W3GameState.Loading
@@ -316,7 +316,7 @@ Namespace Warcraft3
                 Throw New InvalidOperationException("A game called '{0}' already exists.".Frmt(gameName))
             End If
 
-            game = New W3Game(gameName, Settings.Map, Settings, If(arguments, Settings.Header.Options))
+            game = New W3Game(gameName, Settings.Map, Settings)
             logger.Log(game.Name + " opened.", LogMessageType.Positive)
             instanceCreationCount += 1
             games_all.Add(game)
@@ -490,10 +490,10 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of FutureDisposable)() IsNot Nothing)
             Return New AdvertisingDependency(Me)
         End Function
-        Public ReadOnly Property GetSuffix As String
+        Public ReadOnly Property Suffix As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return suffix
+                Return _suffix
             End Get
         End Property
 #End Region

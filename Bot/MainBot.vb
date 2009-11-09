@@ -339,11 +339,10 @@ Public NotInheritable Class MainBot
         Contract.Assume(map.Slots(1) IsNot Nothing)
         map.slots(1).contents = New W3SlotContentsComputer(map.slots(1), W3Slot.ComputerLevel.Normal)
         Dim header = New W3GameDescription("Admin Game",
-                                      New W3GameStats(map, My.Resources.ProgramName, New String() {}),
+                                      New W3GameStats(map, My.Resources.ProgramName, New Commands.CommandArgument("")),
                                       0,
                                       0,
                                       0,
-                                      options:=New String() {"-permanent"},
                                       playerSlotCount:=map.NumPlayerSlots,
                                       gameType:=map.GameType,
                                       state:=0)
@@ -353,7 +352,8 @@ Public NotInheritable Class MainBot
                                           defaultSlotLockState:=W3Slot.Lock.Frozen,
                                           instances:=0,
                                           password:=password,
-                                          isAdminGame:=True)
+                                          isAdminGame:=True,
+                                          argument:=New Commands.CommandArgument("-permanent"))
         Dim server = CreateServer(name, settings)
         Dim lan As W3LanAdvertiser
         lan = New W3LanAdvertiser(Me, name, listenPort, remoteHost)

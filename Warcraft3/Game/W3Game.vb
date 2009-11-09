@@ -208,7 +208,6 @@ Namespace Warcraft3
         Public Sub New(ByVal name As String,
                        ByVal map As W3Map,
                        ByVal settings As ServerSettings,
-                       ByVal arguments As IEnumerable(Of String),
                        Optional ByVal logger As Logger = Nothing)
             'contract bug wrt interface event implementation requires this:
             'Contract.Requires(map IsNot Nothing)
@@ -225,7 +224,7 @@ Namespace Warcraft3
                 indexMap(i) = CByte(i)
             Next i
 
-            LobbyNew(arguments)
+            LobbyNew()
             LoadScreenNew()
             GamePlayNew()
         End Sub

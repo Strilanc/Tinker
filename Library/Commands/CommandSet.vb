@@ -50,10 +50,10 @@
         Protected NotOverridable Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Strilbrary.Threading.IFuture(Of String)
             Return ThreadPooledFunc(
                 Function()
-                    If Not _commandMap.ContainsKey(argumentHead) Then
+                    If Not _commandMap.ContainsKey(argumentHead.ToUpperInvariant) Then
                         Throw New ArgumentException("Unrecognized Command: {0}.".Frmt(argumentHead))
                     End If
-                    Return _commandMap(argumentHead).Invoke(target, user, argumentRest)
+                    Return _commandMap(argumentHead.ToUpperInvariant).Invoke(target, user, argumentRest)
                 End Function
             ).Defuturized()
         End Function
