@@ -434,17 +434,15 @@ Namespace Bnet
                     {"owner", cdKeyOwner}
                 })
         End Function
-        Public Shared Function MakeAccountLogOnBegin(ByVal userName As String,
-                                                     ByVal clientPublicKey As ViewableList(Of Byte)) As BnetPacket
-            Contract.Requires(userName IsNot Nothing)
-            Contract.Requires(clientPublicKey IsNot Nothing)
+        Public Shared Function MakeAccountLogOnBegin(ByVal credentials As ClientCredentials) As BnetPacket
+            Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Return New BnetPacket(BnetPacketId.AccountLogOnBegin, New Dictionary(Of String, Object) From {
-                    {"client public key", clientPublicKey.ToArray},
-                    {"username", userName}
+                    {"client public key", credentials.PublicKeyBytes.ToArray},
+                    {"username", credentials.UserName}
                 })
         End Function
-        Public Shared Function MakeAccountLogOnFinish(ByVal clientPasswordProof As ViewableList(Of Byte)) As BnetPacket
+        Public Shared Function MakeAccountLogOnFinish(ByVal clientPasswordProof As IList(Of Byte)) As BnetPacket
             Contract.Requires(clientPasswordProof IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Return New BnetPacket(BnetPacketId.AccountLogOnFinish, New Dictionary(Of String, Object) From {

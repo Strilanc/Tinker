@@ -14,39 +14,90 @@
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
 Imports System.Numerics
+Imports System.Security
 
 Namespace Bnet
-    ''' <summary>
-    ''' Implements some of the cryptographic checks and algorithms blizzard uses for warcraft 3.
-    ''' </summary>
-    Public Module Authentication
-#Region "User Authentication: Password Proof"
-        Private ReadOnly G As BigInteger = 47
-        Private ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719")
+    Public Class ClientCredentials
+        Private Shared ReadOnly G As BigInteger = 47
+        Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719")
 
-        Public Function GeneratePublicPrivateKeyPair(ByVal secureRandomNumberGenerator As System.Security.Cryptography.RandomNumberGenerator) As KeyPair
-            Contract.Requires(secureRandomNumberGenerator IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
+        Private ReadOnly _username As String
+        Private ReadOnly _password As String
+        Private ReadOnly _privateKey As BigInteger
+        Private ReadOnly _publicKey As BigInteger
 
-            'Generate random data for private key
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_username IsNot Nothing)
+            Contract.Invariant(_password IsNot Nothing)
+            Contract.Invariant(_privateKey >= 0)
+            Contract.Invariant(_publicKey >= 0)
+        End Sub
+
+        Public Sub New(ByVal username As String,
+                       ByVal password As String,
+                       ByVal privateKey As BigInteger)
+            Contract.Requires(username IsNot Nothing)
+            Contract.Requires(password IsNot Nothing)
+            Contract.Requires(privateKey >= 0)
+            Contract.Ensures(Me.UserName = username)
+            Me._username = username
+            Me._password = password
+            Me._privateKey = privateKey
+            Me._publicKey = BigInteger.ModPow(G, _privateKey, N)
+            Contract.Assume(Me._publicKey >= 0)
+        End Sub
+        Public Sub New(ByVal username As String,
+                       ByVal password As String,
+                       Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing)
+            Me.New(username, password, GeneratePrivateKey(rng))
+            Contract.Requires(username IsNot Nothing)
+            Contract.Requires(password IsNot Nothing)
+            Contract.Ensures(Me.UserName = username)
+        End Sub
+
+        Public ReadOnly Property UserName As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _username
+            End Get
+        End Property
+        Public ReadOnly Property PublicKey As BigInteger
+            Get
+                Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
+                Return _publicKey
+            End Get
+        End Property
+        Public ReadOnly Property PublicKeyBytes As IList(Of Byte)
+            Get
+                Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 32)
+                Return _publicKey.ToUnsignedByteArray.PaddedTo(minimumLength:=32)
+            End Get
+        End Property
+
+        ''' <summary>
+        ''' Generates a new private crypto key.
+        ''' </summary>
+        ''' <remarks>I'm not a cryptographer, but this is probably way more than safe enough given the application.</remarks>
+        Private Shared Function GeneratePrivateKey(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As BigInteger
+            Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
             Contract.Assume(N >= 0)
             Dim privateKeyDataBuffer = N.ToUnsignedByteArray
-            secureRandomNumberGenerator.GetBytes(privateKeyDataBuffer)
-
-            'Compute key-pair
-            Dim privateKeyValue = (privateKeyDataBuffer.ToUnsignedBigInteger Mod (N - 1)) + 1
-            Dim publicKeyValue = BigInteger.ModPow(G, privateKeyValue, N)
-
-            'Convert to bytes
-            Contract.Assume(privateKeyValue >= 0)
-            Contract.Assume(publicKeyValue >= 0)
-            Dim privateKeyBytes = privateKeyValue.ToUnsignedByteArray.PaddedTo(32)
-            Dim publicKeyBytes = publicKeyValue.ToUnsignedByteArray.PaddedTo(32)
-
-            Return New KeyPair(publicKeyBytes.ToView, privateKeyBytes.ToView)
+            If rng Is Nothing Then
+                Using r = New Cryptography.RNGCryptoServiceProvider()
+                    r.GetBytes(privateKeyDataBuffer)
+                End Using
+            Else
+                rng.GetBytes(privateKeyDataBuffer)
+            End If
+            Dim key = (privateKeyDataBuffer.ToUnsignedBigInteger Mod (N - 1)) + 1
+            Contract.Assume(key >= 0)
+            Return key
         End Function
-
-        Private ReadOnly Property FixedSalt() As Byte()
+        ''' <summary>
+        ''' Derives a fixed salt value from the shared crypto constants.
+        ''' </summary>
+        Private Shared ReadOnly Property FixedSalt() As Byte()
             Get
                 Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
@@ -61,80 +112,89 @@ Namespace Bnet
             End Get
         End Property
 
-        <Pure()>
-        Private Function ComputeSharedSecret(ByVal userName As String,
-                                             ByVal password As String,
-                                             ByVal accountSalt As ViewableList(Of Byte),
-                                             ByVal serverPublicKeyBytes As ViewableList(Of Byte),
-                                             ByVal clientPrivateKey As BigInteger) As Byte()
-            Contract.Requires(userName IsNot Nothing)
-            Contract.Requires(password IsNot Nothing)
-            Contract.Requires(clientPrivateKey >= 0)
-            Contract.Requires(serverPublicKeyBytes IsNot Nothing)
-            Contract.Requires(accountSalt IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Byte())().Length = 40)
-
-            Dim userIdAuthData = "{0}:{1}".Frmt(userName.ToUpperInvariant, password.ToUpperInvariant).ToAscBytes
-            Dim passwordKey = Concat(accountSalt.ToArray, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
-            Dim verifier = BigInteger.ModPow(G, passwordKey, N)
-            Dim serverKey = serverPublicKeyBytes.SHA1.SubArray(0, 4).Reverse.ToUnsignedBigInteger
-
-            'Shared value
-            Dim serverPublicKey = serverPublicKeyBytes.ToUnsignedBigInteger
-            Dim sharedValue = BigInteger.ModPow(serverPublicKey - verifier + N, clientPrivateKey + serverKey * passwordKey, N)
-            Contract.Assume(sharedValue >= 0)
-
-            'Hash odd and even bytes of the shared value
-            Dim sharedValueBytes = sharedValue.ToUnsignedByteArray.PaddedTo(32)
-            Dim sharedHashEven = (From i In Enumerable.Range(0, 16)
-                                  Select sharedValueBytes(i * 2)
-                                  ).SHA1
-            Dim sharedHashOdd = (From i In Enumerable.Range(0, 16)
-                                 Select sharedValueBytes(i * 2 + 1)
-                                 ).SHA1
-
-            'Interleave odd and even hashes
-            Return (From i In Enumerable.Range(0, 40)
-                    Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))
-                    ).ToArray
+        ''' <summary>
+        ''' Determines credentials for the same user, but with a new crypto key pair.
+        ''' </summary>
+        Public Function Regenerate(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As ClientCredentials
+            Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
+            Return New ClientCredentials(Me._username, Me._password, rng)
         End Function
 
-        <Pure()>
-        Public Function GenerateClientServerPasswordProofs(ByVal userName As String,
-                                                           ByVal password As String,
-                                                           ByVal accountSalt As ViewableList(Of Byte),
-                                                           ByVal serverPublicKeyBytes As ViewableList(Of Byte),
-                                                           ByVal clientPrivateKey As BigInteger,
-                                                           ByVal clientPublicKeyBytes As ViewableList(Of Byte)) As KeyPair
-            Contract.Requires(userName IsNot Nothing)
-            Contract.Requires(password IsNot Nothing)
-            Contract.Requires(clientPrivateKey >= 0)
-            Contract.Requires(clientPublicKeyBytes IsNot Nothing)
-            Contract.Requires(serverPublicKeyBytes IsNot Nothing)
-            Contract.Requires(accountSalt IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of KeyPair)() IsNot Nothing)
+        ''' <summary>
+        ''' Determines the shared secret value, which can be computed by both the client and server, using the client-side data.
+        ''' </summary>
+        Private ReadOnly Property SharedSecret(ByVal accountSalt As IList(Of Byte),
+                                               ByVal serverPublicKeyBytes As IList(Of Byte)) As Byte()
+            Get
+                Contract.Requires(serverPublicKeyBytes IsNot Nothing)
+                Contract.Requires(accountSalt IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Byte())().Length = 40)
 
-            Dim sharedSecret = ComputeSharedSecret(userName,
-                                                   password,
-                                                   accountSalt,
-                                                   serverPublicKeyBytes,
-                                                   clientPrivateKey)
-            Dim clientProof = Concat(FixedSalt,
-                                     userName.ToUpperInvariant.ToAscBytes.SHA1,
-                                     accountSalt.ToArray,
-                                     clientPublicKeyBytes.ToArray,
-                                     serverPublicKeyBytes.ToArray,
-                                     sharedSecret).SHA1
-            Dim serverProof = Concat(clientPublicKeyBytes.ToArray,
-                                     clientProof,
-                                     sharedSecret).SHA1
+                Dim userIdAuthData = "{0}:{1}".Frmt(Me._username.ToUpperInvariant, Me._password.ToUpperInvariant).ToAscBytes
+                Dim passwordKey = Concat(accountSalt.ToArray, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
+                Dim verifier = BigInteger.ModPow(G, passwordKey, N)
+                Dim serverKey = serverPublicKeyBytes.SHA1.SubArray(0, 4).Reverse.ToUnsignedBigInteger
 
-            Return New KeyPair(clientProof.ToView, serverProof.ToView)
-        End Function
-#End Region
+                'Shared value
+                Dim serverPublicKey = serverPublicKeyBytes.ToUnsignedBigInteger
+                Dim sharedValue = BigInteger.ModPow(serverPublicKey - verifier + N, Me._privateKey + serverKey * passwordKey, N)
+                Contract.Assume(sharedValue >= 0)
 
-#Region "Program Authentication: Revision Check"
+                'Hash odd and even bytes of the shared value
+                Dim sharedValueBytes = sharedValue.ToUnsignedByteArray.PaddedTo(32)
+                Dim sharedHashEven = (From i In Enumerable.Range(0, 16)
+                                      Select sharedValueBytes(i * 2)
+                                      ).SHA1
+                Dim sharedHashOdd = (From i In Enumerable.Range(0, 16)
+                                     Select sharedValueBytes(i * 2 + 1)
+                                     ).SHA1
+
+                'Interleave odd and even hashes
+                Return (From i In Enumerable.Range(0, 40)
+                        Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))
+                        ).ToArray
+            End Get
+        End Property
+        ''' <summary>
+        ''' Determines a proof for the server that the client knows the password.
+        ''' </summary>
+        Public ReadOnly Property ClientPasswordProof(ByVal accountSalt As IList(Of Byte),
+                                                     ByVal serverPublicKeyBytes As IList(Of Byte)) As IList(Of Byte)
+            Get
+                Contract.Requires(serverPublicKeyBytes IsNot Nothing)
+                Contract.Requires(accountSalt IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 20)
+
+                Return Concat(FixedSalt,
+                              UserName.ToUpperInvariant.ToAscBytes.SHA1,
+                              accountSalt.ToArray,
+                              Me.PublicKeyBytes.ToArray,
+                              serverPublicKeyBytes.ToArray,
+                              SharedSecret(accountSalt, serverPublicKeyBytes)).SHA1
+            End Get
+        End Property
+        ''' <summary>
+        ''' Determines the expected proof from the server that it knew the shared secret.
+        ''' </summary>
+        Public ReadOnly Property ServerPasswordProof(ByVal accountSalt As IList(Of Byte),
+                                                     ByVal serverPublicKeyBytes As IList(Of Byte)) As IList(Of Byte)
+            Get
+                Contract.Requires(serverPublicKeyBytes IsNot Nothing)
+                Contract.Requires(accountSalt IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 20)
+
+                Return Concat(Me.PublicKeyBytes.ToArray,
+                              ClientPasswordProof(accountSalt, serverPublicKeyBytes).ToArray,
+                              SharedSecret(accountSalt, serverPublicKeyBytes)).SHA1
+            End Get
+        End Property
+    End Class
+
+    Public Module ProgramAuthentication
         Private Structure RevisionCheckOperation
             Public ReadOnly leftOperand As Char
             Public ReadOnly rightOperand As Char
@@ -302,6 +362,5 @@ Namespace Bnet
             'Return value of Variable C
             Return variables("C"c)
         End Function
-#End Region
     End Module
 End Namespace

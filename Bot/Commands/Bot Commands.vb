@@ -287,23 +287,22 @@ Namespace Commands.Specializations
                     Dim profileName = arg '[Yes, client named same as profile]
                     'Create client, then connect to bnet, then login
                     Dim f = target.QueueCreateClient(clientName, profileName).Select(
-                    Function(client)
-                        'Connect to bnet, then login
-                        Dim futureLogOn = client.QueueConnectAndLogOn(client.profile.server.Split(" "c)(0),
-                        client.profile.userName,
-                        client.profile.password)
+                        Function(client)
+                            'Connect to bnet, then login
+                            Dim futureLogOn = client.QueueConnectAndLogOn(client.profile.server.Split(" "c)(0),
+                                                                          New ClientCredentials(client.profile.userName, client.profile.password))
 
-                        'Cleanup client if connection or login fail
-                        futureLogOn.CallWhenReady(
-                        Sub(finishedException)
-                            If finishedException IsNot Nothing Then
-                                target.QueueRemoveClient(clientName, expected:=False, reason:="Failed to Connect")
-                            End If
-                        End Sub
-                        )
+                            'Cleanup client if connection or login fail
+                            futureLogOn.CallWhenReady(
+                                Sub(finishedException)
+                                    If finishedException IsNot Nothing Then
+                                        target.QueueRemoveClient(clientName, expected:=False, reason:="Failed to Connect")
+                                    End If
+                                End Sub
+                            )
 
-                            Return futureLogOn.EvalOnSuccess(Function() client)
-                        End Function
+                                    Return futureLogOn.EvalOnSuccess(Function() client)
+                                End Function
                     ).Defuturized
                     futureClients.Add(f)
                 Next arg

@@ -134,7 +134,7 @@ Namespace Warcraft3
                 "-Permanent -perm",
                 "-Port=#",
                 "-reserve -reserve=<name1 name2 ...> -r -r=<name1 name2 ...>",
-                "-teams=#v#... -t=#v#...", "-port=#"
+                "-teams=#v#... -t=#v#..."
             }
         Public Shared ReadOnly PartialArgumentHelp As String() = {
                 "Admin=-Admin, -a, -Admin=user, -a=user: Sets the auto-elevated username. Use no argument to match your name.",

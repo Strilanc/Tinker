@@ -1,6 +1,6 @@
 Namespace Commands
     ''' <summary>
-    ''' A parsed text command argument.
+    ''' A parsed case-insensitive text command argument.
     ''' </summary>
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class CommandArgument
@@ -12,13 +12,13 @@ Namespace Commands
 
         Private ReadOnly _text As String
         Private ReadOnly _raw As New List(Of String)
-        Private ReadOnly _optionalRaw As New List(Of String)
+        Private ReadOnly _optionalSwitches As New HashSet(Of String)
         Private ReadOnly _named As New Dictionary(Of String, String)
         Private ReadOnly _optionalNamed As New Dictionary(Of String, String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_raw IsNot Nothing)
-            Contract.Invariant(_optionalRaw IsNot Nothing)
+            Contract.Invariant(_optionalSwitches IsNot Nothing)
             Contract.Invariant(_named IsNot Nothing)
             Contract.Invariant(_optionalNamed IsNot Nothing)
             Contract.Invariant(_text IsNot Nothing)
@@ -53,7 +53,10 @@ Namespace Commands
                     End If
                 Else
                     If isOptional Then
-                        _optionalRaw.Add(word)
+                        If _optionalSwitches.Contains(word.ToUpperInvariant) Then
+                            Throw New ArgumentException("The optional switch '{0}' is specified twice.".Frmt(word))
+                        End If
+                        _optionalSwitches.Add(word.ToUpperInvariant)
                     Else
                         _raw.Add(word)
                     End If
@@ -132,7 +135,7 @@ Namespace Commands
         Public ReadOnly Property Switches As IEnumerable(Of String)
             Get
                 Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)
-                Return _optionalRaw
+                Return _optionalSwitches
             End Get
         End Property
         '''<summary>Enumerates the names of named values in the argument.</summary>
@@ -160,7 +163,7 @@ Namespace Commands
         Public ReadOnly Property Count As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
-                Return _raw.Count + _optionalRaw.Count + _named.Count + _optionalNamed.Count
+                Return _raw.Count + _optionalSwitches.Count + _named.Count + _optionalNamed.Count
             End Get
         End Property
 
@@ -195,9 +198,7 @@ Namespace Commands
         Public ReadOnly Property HasOptionalSwitch(ByVal switch As String) As Boolean
             Get
                 Contract.Requires(switch IsNot Nothing)
-                Return (From val In _optionalRaw
-                        Where String.Equals(val, switch, StringComparison.InvariantCultureIgnoreCase)
-                        ).Any
+                Return _optionalSwitches.Contains(switch.ToUpperInvariant)
             End Get
         End Property
         ''' <summary>

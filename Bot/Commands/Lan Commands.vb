@@ -47,14 +47,14 @@ Namespace Commands.Specializations
             Name:="Host",
             template:=Concat({"name=<game name>", "map=<search query>"},
                              Warcraft3.ServerSettings.PartialArgumentTemplates,
-                             Warcraft3.W3GameStats.PartialArgumentHelp).StringJoin(" "),
-            Description:="Hosts a game in the custom games list. More help topics under 'Help Host *'.",
+                             Warcraft3.W3GameStats.PartialArgumentTemplates).StringJoin(" "),
+            Description:="Creates a server of a game and advertises it on lan. More help topics under 'Help Host *'.",
             Permissions:="games=1",
             extraHelp:=Concat(New String() {},
                               Warcraft3.ServerSettings.PartialArgumentHelp,
                               Warcraft3.W3GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine),
             func:=Function(target, user, argument)
-                      Dim map = W3Map.FromArgument(argument.RawValue(1))
+                      Dim map = W3Map.FromArgument(argument.NamedValue("map"))
 
                       If argument.TryGetOptionalNamedValue("Port") IsNot Nothing AndAlso user IsNot Nothing AndAlso user.Permission("root") < 5 Then
                           Throw New InvalidOperationException("You need root:5 to use -port.")

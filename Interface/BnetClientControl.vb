@@ -119,7 +119,7 @@ Public Class BnetClientControl
         If client Is Nothing Then Return
         e.Handled = True
         client.QueueSendText(txtTalk.Text)
-        logClient.LogMessage("{0}: {1}".Frmt(client.GetUserName, txtTalk.Text), Color.DarkBlue)
+        logClient.LogMessage("{0}: {1}".Frmt(client.UserName, txtTalk.Text), Color.DarkBlue)
         txtTalk.Text = ""
     End Sub
 
@@ -134,9 +134,9 @@ Public Class BnetClientControl
                 lstState.BackColor = SystemColors.Window
                 Select Case newState
                     Case BnetClientState.Channel, BnetClientState.CreatingGame
-                        If oldState = BnetClientState.Game Then lstState.Items.Clear()
+                        If oldState = BnetClientState.AdvertisingGame Then lstState.Items.Clear()
                         txtTalk.Enabled = True
-                    Case BnetClientState.Game
+                    Case BnetClientState.AdvertisingGame
                         lstState.Items.Clear()
                         lstState.Items.Add("Game")
                         Dim g = client.CurGame

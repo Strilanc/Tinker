@@ -67,7 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CDKeyTest.vb" />
-    <Compile Include="BnetAuthenticationTest.vb" />
+    <Compile Include="ClientCredentialsTest.vb" />
     <Compile Include="CommandArgumentTest.vb" />
     <Compile Include="CommandTemplateTest.vb" />
     <Compile Include="W3GameStatsTest.vb" />

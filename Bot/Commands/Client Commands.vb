@@ -21,11 +21,11 @@ Namespace Commands.Specializations
             Return target.QueueGetState.Select(
                 Function(state)
                     Select Case state
-                        Case BnetClientState.Channel, BnetClientState.CreatingGame, BnetClientState.Game
+                        Case BnetClientState.Channel, BnetClientState.CreatingGame, BnetClientState.AdvertisingGame
                             Return com_online
                         Case BnetClientState.Connecting, BnetClientState.Disconnected
                             Return com_offline
-                        Case BnetClientState.LogOn, BnetClientState.EnterUserName
+                        Case BnetClientState.AuthenticatingUser, BnetClientState.LogOnScreen
                             Return com_login
                         Case Else
                             Throw state.MakeImpossibleValueException()
@@ -292,7 +292,7 @@ Namespace Commands.Specializations
             Description:="Identifies and authenticates the client as a particular bnet user.",
             Permissions:="root=4",
             func:=Function(client, user, argument)
-                      Return client.QueueLogOn(argument.RawValue(0), argument.RawValue(1)).
+                      Return client.QueueLogOn(New ClientCredentials(argument.RawValue(0), argument.RawValue(1))).
                                     EvalOnSuccess(Function() "Logged in as {0}".Frmt(argument.RawValue(0)))
                   End Function)
 
