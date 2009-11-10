@@ -300,7 +300,7 @@ Namespace Commands.Specializations
             Name:="Host",
             template:=Concat({"name=<game name>", "map=<search query>", "-private -p"},
                              Warcraft3.ServerSettings.PartialArgumentTemplates,
-                             Warcraft3.W3GameStats.PartialArgumentHelp).StringJoin(" "),
+                             Warcraft3.W3GameStats.PartialArgumentTemplates).StringJoin(" "),
             Description:="Hosts a game in the custom games list. See 'Help Host *' for more help topics.",
             Permissions:="games=1",
             extraHelp:=Concat({"Private=-Private, -p: Creates a private game instead of a public game."},
@@ -315,8 +315,7 @@ Namespace Commands.Specializations
                       Dim stats = New W3GameStats(map, If(user Is Nothing, My.Resources.ProgramName, user.Name), argument)
                       Dim desc = W3GameDescription.FromArguments(argument.NamedValue("name"),
                                                                  map,
-                                                                 stats,
-                                                                 argument.HasOptionalSwitch("Private") OrElse argument.HasOptionalSwitch("p"))
+                                                                 stats)
                       Dim f_settings = client.QueueGetListenPort.Select(Function(port) New ServerSettings(map, desc, argument, defaultListenPorts:={port}))
                       Dim f_server = f_settings.Select(Function(settings) client.Parent.QueueCreateServer(client.Name, settings, "[Linked]", True)).Defuturized()
 
@@ -325,7 +324,7 @@ Namespace Commands.Specializations
                           Function(server)
                               'Start advertising
                               client.QueueSetUserServer(User, server)
-                              Return client.QueueStartAdvertisingGame(desc, server).EvalWhenReady(
+                              Return client.QueueStartAdvertisingGame(desc, argument.HasOptionalSwitch("Private") OrElse argument.HasOptionalSwitch("p"), server).EvalWhenReady(
                                   Function(advertiseException)
                                       If advertiseException IsNot Nothing Then
                                           server.QueueKill()
@@ -428,6 +427,7 @@ Namespace Commands.Specializations
                           W3GameDescription.FromArguments(argument.NamedValue("name"),
                                                           map,
                                                           New W3GameStats(map, If(user Is Nothing, My.Resources.ProgramName, user.Name), argument)),
+                          [private]:=argument.HasOptionalSwitch("Private") OrElse argument.hasoptionalswitch("p"),
                           server:=Nothing).EvalOnSuccess(Function() "Started advertising")
                   End Function)
 

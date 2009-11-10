@@ -139,7 +139,7 @@
         Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
             If data.Length < byteCount Then Throw New PicklingException("Not enough data")
             Dim datum = data.SubView(0, byteCount)
-            Dim value = data.ToUInt64(byteOrder)
+            Dim value = datum.ToUInt64(byteOrder)
             Return New Pickle(Of ULong)(Me.Name, value.AssumeNotNull, datum)
         End Function
     End Class

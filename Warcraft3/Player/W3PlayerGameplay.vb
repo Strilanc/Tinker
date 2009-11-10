@@ -62,7 +62,7 @@
             For Each action In actions
                 RaiseEvent ReceivedGameAction(Me, action)
             Next action
-            RaiseEvent ReceivedGameData(Me, pickle.Data.ToArray)
+            RaiseEvent ReceivedGameData(Me, pickle.Data.ToArray.SubArray(4))
         End Sub
         Private Sub ReceiveTock(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(Pickle IsNot Nothing)

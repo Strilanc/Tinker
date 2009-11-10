@@ -130,7 +130,7 @@
                 Me.speed = GameSpeedOption.Fast
             Else
                 'Parse
-                If Not EnumTryParse(argument.TryGetOptionalNamedValue("Speed"), ignoreCase:=True, ret:=Me.speed) Then
+                If Not argument.TryGetOptionalNamedValue("Speed").EnumTryParse(ignoreCase:=True, result:=Me.speed) Then
                     Throw New ArgumentException("Invalid game speed value: {0}".Frmt(argument.TryGetOptionalNamedValue("Speed")))
                 End If
             End If
@@ -138,7 +138,7 @@
             If argument.TryGetOptionalNamedValue("Visibility") Is Nothing Then
                 Me.visibility = GameVisibilityOption.MapDefault
             Else
-                If Not EnumTryParse(argument.TryGetOptionalNamedValue("Visibility"), ignoreCase:=True, ret:=Me.visibility) Then
+                If Not argument.TryGetOptionalNamedValue("Visibility").EnumTryParse(ignoreCase:=True, result:=Me.visibility) Then
                     Throw New ArgumentException("Invalid map visibility value: {0}".Frmt(argument.TryGetOptionalNamedValue("Visibility")))
                 End If
             End If

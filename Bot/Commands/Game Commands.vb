@@ -124,7 +124,7 @@ Namespace Commands.Specializations
                       Dim arg_slot = argument.RawValue(0)
                       Dim arg_difficulty = If(argument.rawvalueCount >= 2, argument.RawValue(1), W3Slot.ComputerLevel.Normal.ToString)
                       Dim ret_difficulty As W3Slot.ComputerLevel
-                      If EnumTryParse(Of W3Slot.ComputerLevel)(arg_difficulty, True, ret_difficulty) Then
+                      If arg_difficulty.EnumTryParse(ignoreCase:=True, result:=ret_difficulty) Then
                           Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).EvalOnSuccess(Function() "Set Computer Slot")
                       End If
                       Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(arg_difficulty))

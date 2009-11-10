@@ -48,9 +48,9 @@ Namespace Bnet
                 Contract.Invariant(_header IsNot Nothing)
             End Sub
 
-            Public Sub New(ByVal header As W3GameDescription)
+            Public Sub New(ByVal header As W3GameDescription, ByVal [private] As Boolean)
                 Contract.Requires(header IsNot Nothing)
-                Me.private = [private] OrElse header.priv
+                Me.private = [private]
                 Me._header = header
             End Sub
         End Class
@@ -454,6 +454,7 @@ Namespace Bnet
         End Sub
 
         Private Function BeginAdvertiseGame(ByVal game As W3GameDescription,
+                                            ByVal [private] As Boolean,
                                             ByVal server As W3Server) As IFuture
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
@@ -466,7 +467,7 @@ Namespace Bnet
                 Case BnetClientState.AdvertisingGame
                     Throw New InvalidOperationException("Already advertising a game.")
                 Case BnetClientState.Channel
-                    advertisedGameSettings = New GameSettings(game)
+                    advertisedGameSettings = New GameSettings(game, [private])
                     Me._futureCreatedGame.TrySetFailed(New OperationFailedException("Started advertising another game."))
                     Me._futureCreatedGame = New FutureAction
                     Me._futureCreatedGame.MarkAnyExceptionAsHandled()
@@ -602,7 +603,7 @@ Namespace Bnet
         Private Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameDescription, ByVal server As W3Server) Implements IGameSource.AddedGame
         Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameDescription, ByVal reason As String) Implements IGameSource.RemovedGame
         Private Sub _QueueAddGame(ByVal game As W3GameDescription, ByVal server As W3Server) Implements IGameSourceSink.AddGame
-            ref.QueueAction(Sub() BeginAdvertiseGame(game, server)).MarkAnyExceptionAsHandled()
+            ref.QueueAction(Sub() BeginAdvertiseGame(game, False, server)).MarkAnyExceptionAsHandled()
         End Sub
         Private Sub _QueueRemoveGame(ByVal game As W3GameDescription, ByVal reason As String) Implements IGameSourceSink.RemoveGame
             ref.QueueAction(Sub() StopAdvertisingGame(reason)).MarkAnyExceptionAsHandled()
@@ -957,10 +958,11 @@ Namespace Bnet
             Return ref.QueueAction(Sub() StopAdvertisingGame(reason))
         End Function
         Public Function QueueStartAdvertisingGame(ByVal header As W3GameDescription,
+                                                  ByVal [private] As Boolean,
                                                   ByVal server As W3Server) As IFuture
             Contract.Requires(header IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueFunc(Function() BeginAdvertiseGame(header, server)).Defuturized
+            Return ref.QueueFunc(Function() BeginAdvertiseGame(header, [private], server)).Defuturized
         End Function
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As IFuture
             Contract.Requires(reason IsNot Nothing)

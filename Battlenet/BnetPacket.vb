@@ -538,7 +538,7 @@ Namespace Bnet
             Dim clientCdKeySalt(0 To 3) As Byte
             secureRandomNumberGenerator.GetBytes(clientCdKeySalt)
 
-            Dim vals As New Dictionary(Of String, Object) From {
+            Dim vals = New Dictionary(Of String, Object) From {
                 {"client cd key salt", clientCdKeySalt},
                 {"exe version", version},
                 {"mpq challenge response", GenerateRevisionCheck(mpqFolder, mpqNumberString, mpqHashChallenge).Bytes},

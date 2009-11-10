@@ -50,9 +50,9 @@ Public Class W3GameControl
 
     Private Sub CatchGameUpdated(ByVal sender As W3Game, ByVal slots As List(Of W3Slot)) Handles game.Updated
         Dim descriptions = (From slot In slots Select slot.GenerateDescription).ToList
-        descriptions.Defuturized.QueueCallWhenReady(ref,
+        descriptions.Defuturized.QueueCallOnSuccess(ref,
             Sub()
-                If sender IsNot game Then  Return
+                If sender IsNot game Then Return
                 For i = 0 To descriptions.Count - 1
                     lstSlots.Items(i) = descriptions(i).Value
                 Next i

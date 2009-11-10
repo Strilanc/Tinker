@@ -1,4 +1,5 @@
 ﻿Public Enum ClientTransferState
+    None
     ''' <summary>Doesn't have file but not transfering.</summary>
     Idle
     ''' <summary>Has file but not transfering.</summary>
@@ -147,23 +148,24 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
 
     Public Function GetClientState(ByVal clientKey As TClientKey) As IFuture(Of ClientTransferState)
         Contract.Ensures(Contract.Result(Of IFuture(Of ClientTransferState))() IsNot Nothing)
-        Return ref.QueueFunc(Function()
-                                 If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client.")
-                                 Dim client = clients(clientKey)
-                                 If client.Busy Then
-                                     If client.completed Then
-                                         Return ClientTransferState.Uploading
-                                     Else
-                                         Return ClientTransferState.Downloading
-                                     End If
-                                 Else
-                                     If client.completed Then
-                                         Return ClientTransferState.Ready
-                                     Else
-                                         Return ClientTransferState.Idle
-                                     End If
-                                 End If
-                             End Function)
+        Return ref.QueueFunc(
+            Function()
+                If Not clients.ContainsKey(clientKey) Then Return ClientTransferState.None
+                Dim client = clients(clientKey)
+                If client.Busy Then
+                    If client.completed Then
+                        Return ClientTransferState.Uploading
+                    Else
+                        Return ClientTransferState.Downloading
+                    End If
+                Else
+                    If client.completed Then
+                        Return ClientTransferState.Ready
+                    Else
+                        Return ClientTransferState.Idle
+                    End If
+                End If
+            End Function)
     End Function
 
     '''<summary>Updates the progress of a transfer to or from the given client.</summary>

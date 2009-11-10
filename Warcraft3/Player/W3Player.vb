@@ -249,6 +249,7 @@
                         Dim downloadState = futureTransferState.Value
                         Dim r = futureLatency.Value
                         Select Case downloadState
+                            Case ClientTransferState.None : Return "-"
                             Case ClientTransferState.Downloading : Return "(dl)"
                             Case ClientTransferState.Uploading : Return "(ul)"
                             Case ClientTransferState.Idle : Return If(r = 0, "?", "{0:0}ms".Frmt(r))

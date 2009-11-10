@@ -29,14 +29,12 @@ Namespace Warcraft3
     Public Class W3GameDescription
         Private ReadOnly _name As String
         Private ReadOnly _gameStats As W3GameStats
-
         Public ReadOnly hostPort As UShort
         Private ReadOnly _gameId As UInt32
         Public ReadOnly lanKey As UInteger
         Private ReadOnly _creationTime As Date
         Private _gameType As GameTypes
         Private _state As Bnet.BnetPacket.GameStates
-        Public ReadOnly [priv] As Boolean
 
         Private ReadOnly _numPlayerSlots As Integer
 
@@ -49,8 +47,7 @@ Namespace Warcraft3
 
         Public Shared Function FromArguments(ByVal name As String,
                                              ByVal map As W3Map,
-                                             ByVal stats As W3GameStats,
-                                             Optional ByVal priv As Boolean = False) As W3GameDescription
+                                             ByVal stats As W3GameStats) As W3GameDescription
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
@@ -62,38 +59,8 @@ Namespace Warcraft3
                                          lanKey:=0,
                                          playerslotcount:=map.NumPlayerSlots,
                                          GameType:=map.GameType,
-                                         state:=0,
-                                         priv:=priv)
+                                         state:=0)
         End Function
-        Public Shared Function FromArguments(ByVal name As String,
-                                             ByVal mapArgument As String,
-                                             ByVal hostName As String,
-                                             ByVal argument As Commands.CommandArgument,
-                                             Optional ByVal priv As Boolean = False) As W3GameDescription
-            Contract.Requires(name IsNot Nothing)
-            Contract.Requires(mapArgument IsNot Nothing)
-            Contract.Requires(hostName IsNot Nothing)
-            Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of W3GameDescription)() IsNot Nothing)
-            Dim map = W3Map.FromArgument(mapArgument)
-            Return New W3GameDescription(name,
-                                         New W3GameStats(map, hostName, argument),
-                                         0, 0, 0, map.NumPlayerSlots, map.GameType, 0, priv)
-        End Function
-        Public Sub New(ByVal subDesc As W3GameDescription,
-                       Optional ByVal gameId As UInt32? = Nothing,
-                       Optional ByVal lanKey As UInt32? = Nothing,
-                       Optional ByVal gameType As GameTypes? = Nothing,
-                       Optional ByVal state As Bnet.BnetPacket.GameStates? = Nothing)
-            Me.New(subDesc.Name,
-                   subDesc.GameStats,
-                   subDesc.hostPort,
-                   If(gameId, subDesc.GameId),
-                   If(lanKey, subDesc.lanKey),
-                   subDesc._numPlayerSlots,
-                   If(gameType, subDesc.GameType),
-                   If(state, subDesc.GameState))
-        End Sub
         Public Sub New(ByVal name As String,
                        ByVal gameStats As W3GameStats,
                        ByVal hostPort As UShort,
@@ -101,8 +68,7 @@ Namespace Warcraft3
                        ByVal lanKey As UInteger,
                        ByVal playerSlotCount As Integer,
                        ByVal gameType As GameTypes,
-                       ByVal state As Bnet.BnetPacket.GameStates,
-                       Optional ByVal priv As Boolean = False)
+                       ByVal state As Bnet.BnetPacket.GameStates)
             Contract.Requires(playerSlotCount > 0)
             Contract.Requires(playerSlotCount <= 12)
             Contract.Requires(name IsNot Nothing)
@@ -112,7 +78,6 @@ Namespace Warcraft3
             Me.hostPort = hostPort
             Me._gameType = gameType
             Me._gameId = gameId
-            Me.priv = priv
             Me.lanKey = lanKey
             Me._numPlayerSlots = playerSlotCount
             Me._creationTime = Now()
