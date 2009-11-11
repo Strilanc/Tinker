@@ -38,8 +38,8 @@ Namespace Warcraft3
         Private ReadOnly _map As W3Map
         Private ReadOnly _name As String
         Private ReadOnly slots As New List(Of W3Slot)
-        Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
-        Private ReadOnly eventRef As ICallQueue = New ThreadPooledCallQueue
+        Private ReadOnly ref As ICallQueue = New TaskedCallQueue
+        Private ReadOnly eventRef As ICallQueue = New TaskedCallQueue
         Private ReadOnly _logger As Logger
         Private Const PING_PERIOD As UShort = 5000
         Private state As W3GameState = W3GameState.AcceptingPlayers

@@ -149,8 +149,8 @@ Namespace Bnet
             Me.profile = profile
             Me.listenPort = profile.listenPort
             Me.logger = If(logger, New Logger)
-            Me.eref = New ThreadPooledCallQueue
-            Me.ref = New ThreadPooledCallQueue
+            Me.eref = New TaskedCallQueue
+            Me.ref = New TaskedCallQueue
             AddHandler gameRefreshTimer.Elapsed, Sub() OnRefreshTimerTick()
 
             'Start packet machinery

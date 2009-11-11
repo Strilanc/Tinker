@@ -26,8 +26,8 @@
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
         Private ReadOnly packetHandler As W3PacketHandler
-        Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
-        Private ReadOnly eref As ICallQueue = New ThreadPooledCallQueue
+        Private ReadOnly ref As ICallQueue = New TaskedCallQueue
+        Private ReadOnly eref As ICallQueue = New TaskedCallQueue
         Private _numPeerConnections As Integer
         Private ReadOnly settings As ServerSettings
         Private ReadOnly scheduler As TransferScheduler(Of Byte)

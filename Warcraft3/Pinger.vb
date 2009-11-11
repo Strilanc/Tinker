@@ -6,7 +6,7 @@
     Private ReadOnly timeoutCount As Integer
     Private ReadOnly pingQueue As New Queue(Of Tuple(Of UInt32, ModInt32))
     Private ReadOnly rng As New Random()
-    Private ReadOnly ref As New ThreadPooledCallQueue()
+    Private ReadOnly ref As New TaskedCallQueue()
 
     Public Event SendPing(ByVal sender As Pinger, ByVal salt As UInteger)
     Public Event Timeout(ByVal sender As Pinger)

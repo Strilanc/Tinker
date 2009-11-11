@@ -50,7 +50,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
         Contract.Assume(fileSize > 0) 'bug in contracts required not using requires here
         Contract.Assume(typicalRate > 0)
         Contract.Assume(typicalSwitchTime >= 0)
-        Me.ref = If(pq, New ThreadPooledCallQueue)
+        Me.ref = If(pq, New TaskedCallQueue)
         Me.minSwithPeriod = minSwitchPeriodMilliseconds
         Me.freezePeriod = freezePeriodMilliseconds
         Me.typicalRate = typicalRate

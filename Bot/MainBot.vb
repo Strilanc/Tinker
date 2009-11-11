@@ -51,8 +51,8 @@ Public NotInheritable Class MainBot
 #Region "New"
     Public Sub New(Optional ByVal logger As Logger = Nothing)
         Me.logger = If(logger, New Logger)
-        Me.eref = New ThreadPooledCallQueue
-        Me.ref = New ThreadPooledCallQueue
+        Me.eref = New TaskedCallQueue
+        Me.ref = New TaskedCallQueue
         Dim serializedData = My.Settings.botstore
         If serializedData IsNot Nothing AndAlso serializedData <> "" Then
             Try

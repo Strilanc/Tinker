@@ -94,8 +94,8 @@ Namespace Warcraft3
                 Me._suffix = suffix
                 Me.logger = If(logger, New Logger)
                 Me.door = New W3ServerDoor(Me, Me.logger)
-                Me.eref = New ThreadPooledCallQueue
-                Me.ref = New ThreadPooledCallQueue
+                Me.eref = New TaskedCallQueue
+                Me.ref = New TaskedCallQueue
 
                 For Each port In Me.settings.defaultListenPorts
                     door.accepter.Accepter.OpenPort(port)

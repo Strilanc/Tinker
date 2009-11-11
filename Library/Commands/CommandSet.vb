@@ -43,19 +43,20 @@
         Public Sub RemoveCommand(ByVal command As Command(Of T))
             Contract.Requires(command IsNot Nothing)
             If Not _commandMap.ContainsKey(command.Name.ToUpperInvariant) Then Return
+            If Not _commandMap(command.Name.ToUpperInvariant) Is command Then Return
             _commandMap.Remove(command.Name.ToUpperInvariant)
             _help.RemoveCommand(command)
         End Sub
 
         Protected NotOverridable Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Strilbrary.Threading.IFuture(Of String)
-            Return ThreadPooledFunc(
+            Return TaskedFunc(
                 Function()
                     If Not _commandMap.ContainsKey(argumentHead.ToUpperInvariant) Then
                         Throw New ArgumentException("Unrecognized Command: {0}.".Frmt(argumentHead))
                     End If
                     Return _commandMap(argumentHead.ToUpperInvariant).Invoke(target, user, argumentRest)
                 End Function
-            ).Defuturized()
+            ).Defuturized
         End Function
     End Class
 End Namespace

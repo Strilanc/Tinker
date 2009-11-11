@@ -9,7 +9,7 @@ Namespace CKL
         Protected WithEvents Accepter As New ConnectionAccepter()
         Protected ReadOnly logger As New Logger()
         Protected ReadOnly keys As New List(Of CKLKey)
-        Protected ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
+        Protected ReadOnly ref As ICallQueue = New TaskedCallQueue
         Private keyIndex As Integer
         Private ReadOnly portHandle As PortPool.PortHandle
         Public Event KeyAdded(ByVal sender As CKLServer, ByVal key As CKLKey)

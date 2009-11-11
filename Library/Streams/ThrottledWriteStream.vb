@@ -64,7 +64,7 @@ Public NotInheritable Class ThrottledWriter
 
     Private ReadOnly destinationStream As IO.Stream
     Private ReadOnly consumptionQueue As New Queue(Of Byte())
-    Private ReadOnly ref As ICallQueue = New ThreadPooledCallQueue
+    Private ReadOnly ref As ICallQueue = New TaskedCallQueue
 
     Private ReadOnly costPerWrite As Double
     Private ReadOnly costPerCharacter As Double

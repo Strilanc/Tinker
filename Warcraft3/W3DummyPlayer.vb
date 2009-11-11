@@ -44,7 +44,7 @@ Namespace Warcraft3
             Me.name = name
             Me.mode = mode
             Me.listenPort = listenPort
-            Me.ref = New ThreadPooledCallQueue
+            Me.ref = New TaskedCallQueue
             Me.logger = If(logger, New Logger)
             If listenPort <> 0 Then accepter.Accepter.OpenPort(listenPort)
         End Sub

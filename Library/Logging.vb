@@ -18,7 +18,7 @@ Public NotInheritable Class Logger
     End Sub
 
     Public Sub New(Optional ByVal ref As ICallQueue = Nothing)
-        Me.ref = If(ref, New ThreadPooledCallQueue())
+        Me.ref = If(ref, New TaskedCallQueue())
     End Sub
 
     Public Sub FutureLog(ByVal placeholder As String, ByVal message As IFuture(Of String))
