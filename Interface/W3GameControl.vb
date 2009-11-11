@@ -5,6 +5,34 @@ Public Class W3GameControl
     Private WithEvents game As W3Game
     Private ReadOnly ref As New InvokedCallQueue(Me)
 
+    Private commandHistory As New List(Of String) From {""}
+    Private commandHistoryPointer As Integer
+    Private Sub txtCommand_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
+        Select Case e.KeyCode
+            Case Keys.Enter
+                If txtCommand.Text = "" Then Return
+                game.QueueCommandProcessLocalText(txtCommand.Text, logGame.Logger())
+
+                commandHistoryPointer = commandHistory.Count
+                commandHistory(commandHistoryPointer - 1) = txtCommand.Text
+                commandHistory.Add("")
+                txtCommand.Text = ""
+                e.Handled = True
+            Case Keys.Up
+                commandHistory(commandHistoryPointer) = txtCommand.Text
+                commandHistoryPointer = (commandHistoryPointer - 1).Between(0, commandHistory.Count - 1)
+                txtCommand.Text = commandHistory(commandHistoryPointer)
+                txtCommand.SelectionStart = txtCommand.TextLength
+                e.Handled = True
+            Case Keys.Down
+                commandHistory(commandHistoryPointer) = txtCommand.Text
+                commandHistoryPointer = (commandHistoryPointer + 1).Between(0, commandHistory.Count - 1)
+                txtCommand.Text = commandHistory(commandHistoryPointer)
+                txtCommand.SelectionStart = txtCommand.TextLength
+                e.Handled = True
+        End Select
+    End Sub
+
     Private Function QueueDispose() As IFuture Implements IHookable(Of W3Game).QueueDispose
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
@@ -37,15 +65,6 @@ Public Class W3GameControl
         game.QueueBroadcastMessage(txtInput.Text)
         txtInput.Text = ""
         e.Handled = True
-    End Sub
-
-    Private Sub txtCommand_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtCommand.KeyPress
-        If e.KeyChar <> ChrW(Keys.Enter) Then Return
-        If txtCommand.Text = "" Then Return
-        If game Is Nothing Then Return
-        e.Handled = True
-        game.QueueCommandProcessLocalText(txtCommand.Text, logGame.Logger())
-        txtCommand.Text = ""
     End Sub
 
     Private Sub CatchGameUpdated(ByVal sender As W3Game, ByVal slots As List(Of W3Slot)) Handles game.Updated

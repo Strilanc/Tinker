@@ -16,18 +16,17 @@ Namespace Commands
                     Return
                 End If
 
-                If this.CommandMap(subcommand).HasPrivateArguments Then
-                    logger.Log("Command [arguments hidden]: {0}".Frmt(subcommand), LogMessageType.Typical)
-                Else
-                    logger.Log("Command: {0}".Frmt(argument), LogMessageType.Typical)
-                End If
+                Dim argDesc = If(this.CommandMap(subcommand).HasPrivateArguments,
+                                 "{0} [arguments hidden]".Frmt(subcommand),
+                                 argument)
+                logger.Log("Command: {0}".Frmt(argDesc), LogMessageType.Typical)
 
-                logger.FutureLog("[running command '{0}'...]".Frmt(subcommand), this.Invoke(target, Nothing, argument).EvalWhenValueReady(
+                logger.FutureLog("[running command {0}...]".Frmt(argDesc), this.Invoke(target, Nothing, argument).EvalWhenValueReady(
                     Function(message, commandException)
                         If commandException IsNot Nothing Then
-                            Return "Failed: {0}".Frmt(commandException.ToString)
+                            Return "Failed: {0}".Frmt(commandException.Message)
                         ElseIf message Is Nothing OrElse message = "" Then
-                            Return "Command succeeded."
+                            Return "Command '{0}' succeeded.".Frmt(argDesc)
                         Else
                             Return message
                         End If

@@ -180,7 +180,7 @@ Namespace Commands.Specializations
                            permissions:="root=4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Strilbrary.Threading.IFuture(Of String)
-                Return target.QueueCreateClient(argument.NamedValue("name"), argument.TryGetOptionalNamedValue("profile")).
+                Return target.QueueCreateClient(argument.RawValue(0), argument.TryGetOptionalNamedValue("profile")).
                 EvalOnSuccess(Function() "Created client '{0}'.".Frmt(argument.RawValue(0)))
             End Function
         End Class

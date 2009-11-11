@@ -13,7 +13,7 @@
 
         Public Sub New()
             MyBase.New(Name:="Help",
-                       Format:="* or ? or + or Command or Command or *",
+                       Format:="?topic",
                        Description:="Provides help for using commands.")
         End Sub
 
@@ -41,12 +41,12 @@
                             }.StringJoin(", ").Futurized
 
                 Case "?" 'how to use commands
-                    Return {"Use 'Help command' to for a command's description, arguments and required permissions.",
+                    Return {"Use 'Help command' for a command's description, arguments and permissions.",
                             "For example, 'Help host' could return 'Hosts a game. [name=<game name> -map=query -private'] {games:1}",
                             "The argument format is inside the [] brackets and the permissions are inside the {} brackets.",
                             "In this case, 'name' is a required named argument, 'map' is an optional named argument, and -private is an optional switch.",
                             "Given that format, you could host a public game of castle fight like this: 'Host name=<Castle Fight!!> -map=<castle*1.14b>'.",
-                            "Arguments can be re-ordered but must be separated by spaces (use brackets for argument values with spaces; eg. '<game name>')."
+                            "Arguments can be re-ordered but must be separated by spaces (use brackets for argument values with spaces)."
                             }.StringJoin(" ").Futurized
 
                 Case "*" 'list available commands

@@ -10,6 +10,34 @@ Public Class BotControl
     Private servers As TabControlIHookableSet(Of W3Server, W3ServerControl)
     Private widgets As TabControlIHookableSet(Of IBotWidget, BotWidgetControl)
 
+    Private commandHistory As New List(Of String) From {""}
+    Private commandHistoryPointer As Integer
+    Private Sub txtCommand_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
+        Select Case e.KeyCode
+            Case Keys.Enter
+                If txtCommand.Text = "" Then Return
+                bot.BotCommands.ProcessLocalText(bot, txtCommand.Text, logBot.Logger())
+
+                commandHistoryPointer = commandHistory.Count
+                commandHistory(commandHistoryPointer - 1) = txtCommand.Text
+                commandHistory.Add("")
+                txtCommand.Text = ""
+                e.Handled = True
+            Case Keys.Up
+                commandHistory(commandHistoryPointer) = txtCommand.Text
+                commandHistoryPointer = (commandHistoryPointer - 1).Between(0, commandHistory.Count - 1)
+                txtCommand.Text = commandHistory(commandHistoryPointer)
+                txtCommand.SelectionStart = txtCommand.TextLength
+                e.Handled = True
+            Case Keys.Down
+                commandHistory(commandHistoryPointer) = txtCommand.Text
+                commandHistoryPointer = (commandHistoryPointer + 1).Between(0, commandHistory.Count - 1)
+                txtCommand.Text = commandHistory(commandHistoryPointer)
+                txtCommand.SelectionStart = txtCommand.TextLength
+                e.Handled = True
+        End Select
+    End Sub
+
     Private Function QueueDispose() As IFuture Implements IHookable(Of MainBot).QueueDispose
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
@@ -42,14 +70,6 @@ Public Class BotControl
             End Sub
         )
     End Function
-
-    Private Sub txtCommand_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtCommand.KeyPress
-        If e.KeyChar <> ChrW(Keys.Enter) Then Return
-        If txtCommand.Text = "" Then Return
-        e.Handled = True
-        bot.BotCommands.ProcessLocalText(bot, txtCommand.Text, logBot.Logger())
-        txtCommand.Text = ""
-    End Sub
 
     Private Sub CatchBotAddedClient(ByVal client As BnetClient) Handles bot.AddedClient
         ref.QueueAction(Sub() clients.Add(client))

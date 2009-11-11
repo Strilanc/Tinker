@@ -7,6 +7,34 @@ Public Class W3ServerControl
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
     Private games As TabControlIHookableSet(Of W3Game, W3GameControl)
 
+    Private commandHistory As New List(Of String) From {""}
+    Private commandHistoryPointer As Integer
+    Private Sub txtCommand_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
+        Select Case e.KeyCode
+            Case Keys.Enter
+                If txtCommand.Text = "" Then Return
+                server.Parent.ServerCommands.ProcessLocalText(server, txtCommand.Text, logServer.Logger())
+
+                commandHistoryPointer = commandHistory.Count
+                commandHistory(commandHistoryPointer - 1) = txtCommand.Text
+                commandHistory.Add("")
+                txtCommand.Text = ""
+                e.Handled = True
+            Case Keys.Up
+                commandHistory(commandHistoryPointer) = txtCommand.Text
+                commandHistoryPointer = (commandHistoryPointer - 1).Between(0, commandHistory.Count - 1)
+                txtCommand.Text = commandHistory(commandHistoryPointer)
+                txtCommand.SelectionStart = txtCommand.TextLength
+                e.Handled = True
+            Case Keys.Down
+                commandHistory(commandHistoryPointer) = txtCommand.Text
+                commandHistoryPointer = (commandHistoryPointer + 1).Between(0, commandHistory.Count - 1)
+                txtCommand.Text = commandHistory(commandHistoryPointer)
+                txtCommand.SelectionStart = txtCommand.TextLength
+                e.Handled = True
+        End Select
+    End Sub
+
     Private Function QueueDispose() As IFuture Implements IHookable(Of W3Server).QueueDispose
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(Sub() Me.Dispose())
@@ -93,13 +121,5 @@ Public Class W3ServerControl
                 End If
             End Sub
         )
-    End Sub
-
-    Private Sub txtCommand_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtCommand.KeyPress
-        If e.KeyChar <> ChrW(Keys.Enter) Then Return
-        If txtCommand.Text = "" Then Return
-        e.Handled = True
-        server.Parent.ServerCommands.ProcessLocalText(server, txtCommand.Text, logServer.Logger())
-        txtCommand.Text = ""
     End Sub
 End Class
