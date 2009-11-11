@@ -121,23 +121,23 @@ Public NotInheritable Class BotUser
     Public Property Permission(ByVal key As String) As UInteger
         Get
             Contract.Requires(key IsNot Nothing)
-            If Not permissionMap.ContainsKey(key) Then Return 0
-            Return permissionMap(key)
+            If Not PermissionMap.ContainsKey(key.ToUpperInvariant) Then Return 0
+            Return PermissionMap(key.ToUpperInvariant)
         End Get
         Set(ByVal value As UInteger)
             Contract.Requires(key IsNot Nothing)
-            permissionMap(key) = value
+            PermissionMap(key.ToUpperInvariant) = value
         End Set
     End Property
     Public Property Setting(ByVal key As String) As String
         Get
             Contract.Requires(key IsNot Nothing)
-            If Not settingMap.ContainsKey(key) Then Return Nothing
-            Return settingMap(key)
+            If Not SettingMap.ContainsKey(key.ToUpperInvariant) Then Return Nothing
+            Return SettingMap(key.ToUpperInvariant)
         End Get
         Set(ByVal value As String)
             Contract.Requires(key IsNot Nothing)
-            settingMap(key) = value
+            SettingMap(key.ToUpperInvariant) = value
         End Set
     End Property
 
@@ -162,10 +162,10 @@ Public NotInheritable Class BotUser
         Contract.Requires(reader IsNot Nothing)
         Me._name = reader.ReadString()
         For i = 1 To reader.ReadUInt16()
-            settingMap(reader.ReadString()) = reader.ReadString()
+            SettingMap(reader.ReadString().ToUpperInvariant) = reader.ReadString()
         Next i
         For i = 1 To reader.ReadUInt16()
-            permissionMap(reader.ReadString()) = reader.ReadUInt32()
+            PermissionMap(reader.ReadString().ToUpperInvariant) = reader.ReadUInt32()
         Next i
     End Sub
 
@@ -175,10 +175,10 @@ Public NotInheritable Class BotUser
         Dim newUser As New BotUser(newName)
         For Each key In SettingMap.Keys
             Contract.Assume(key IsNot Nothing)
-            newUser.SettingMap(key) = SettingMap(key)
+            newUser.SettingMap(key.ToUpperInvariant) = SettingMap(key)
         Next key
         For Each key In PermissionMap.Keys
-            newUser.PermissionMap(key) = PermissionMap(key)
+            newUser.PermissionMap(key.ToUpperInvariant) = PermissionMap(key)
         Next key
         Return newUser
     End Function

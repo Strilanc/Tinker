@@ -63,11 +63,20 @@
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(format IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
+            Contract.Requires(Not name.Contains(" "c))
             Me._name = name
             Me._format = format
             Me._description = description
-            Me._permissions = BuildDictionaryFromString(If(permissions, ""), Function(x) UInteger.Parse(x, CultureInfo.InvariantCulture))
-            Me._extraHelp = BuildDictionaryFromString(If(extraHelp, ""), Function(x) x, pairDivider:=Environment.NewLine)
+            Me._permissions = BuildDictionaryFromString(If(permissions, ""),
+                                                        parser:=Function(x) UInteger.Parse(x, CultureInfo.InvariantCulture),
+                                                        pairDivider:=";",
+                                                        valueDivider:="=",
+                                                        useUpperInvariantKeys:=True)
+            Me._extraHelp = BuildDictionaryFromString(If(extraHelp, ""),
+                                                      parser:=Function(x) x,
+                                                      pairDivider:=Environment.NewLine,
+                                                      valueDivider:="=",
+                                                      useUpperInvariantKeys:=True)
             Me._hasPrivateArguments = hasPrivateArguments
         End Sub
 

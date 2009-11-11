@@ -29,10 +29,10 @@ Public Module PoorlyCategorizedFunctions
     <Pure()>
     Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
                                                     ByVal parser As Func(Of String, T),
-                                                    Optional ByVal pairDivider As String = ";"c,
-                                                    Optional ByVal valueDivider As String = "="c) As Dictionary(Of String, T)
+                                                    ByVal pairDivider As String,
+                                                    ByVal valueDivider As String,
+                                                    ByVal useUpperInvariantKeys As Boolean) As Dictionary(Of String, T)
         Contract.Requires(text IsNot Nothing)
-        Contract.Requires(parser IsNot Nothing)
         Contract.Requires(pairDivider IsNot Nothing)
         Contract.Requires(valueDivider IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Dictionary(Of String, T))() IsNot Nothing)
@@ -41,12 +41,14 @@ Public Module PoorlyCategorizedFunctions
         Dim vd = New String() {valueDivider}
         For Each pair In text.Split(pd, StringSplitOptions.RemoveEmptyEntries)
             Contract.Assume(pair IsNot Nothing)
-            Dim args = pair.Split(vd, StringSplitOptions.None)
-            Contract.Assume(args IsNot Nothing)
-            If args.Count < 2 Then Continue For
-            Contract.Assume(args(0) IsNot Nothing)
-            Contract.Assume(args(0).Length < pair.Length)
-            d(args(0)) = parser(pair.Substring(args(0).Length + 1))
+            If Not pair.Contains(valueDivider) Then
+                Throw New ArgumentException("'{0}' didn't include a value dividing '{1}'.".Frmt(pair, valueDivider))
+            End If
+            Dim p = pair.IndexOf(valueDivider)
+            Dim key = pair.Substring(0, p)
+            Dim value = pair.Substring(p + valueDivider.Length)
+            If useUpperInvariantKeys Then key = key.ToUpperInvariant
+            d(key) = parser(value)
         Next pair
         Return d
     End Function

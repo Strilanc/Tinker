@@ -270,7 +270,8 @@ Public Class TransferSchedulerTest
         Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
         Dim f = ts.GetClientState(clientKey:=0)
         BlockOnFuture(f)
-        Assert.IsTrue(f.State = FutureState.Failed)
+        Assert.IsTrue(f.State = FutureState.Succeeded)
+        Assert.IsTrue(f.Value = ClientTransferState.None)
     End Sub
     <TestMethod()>
     Public Sub GetClientStateTest_Idle()
