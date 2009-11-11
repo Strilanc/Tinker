@@ -27,20 +27,21 @@ Namespace Warcraft3
     End Enum
 
     Public Class W3GameDescription
+        Implements ILocalGameDescription
+
         Private ReadOnly _name As String
         Private ReadOnly _gameStats As W3GameStats
-        Public ReadOnly hostPort As UShort
+        Private ReadOnly _hostPort As UShort
         Private ReadOnly _gameId As UInt32
-        Public ReadOnly lanKey As UInteger
-        Private ReadOnly _creationTime As Date
+        Private ReadOnly _lanKey As UInteger
+        Private ReadOnly _creationTick As ModInt32
         Private _gameType As GameTypes
         Private _state As Bnet.BnetPacket.GameStates
-
-        Private ReadOnly _numPlayerSlots As Integer
+        Private ReadOnly _totalSlotCount As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_numPlayerSlots > 0)
-            Contract.Invariant(_numPlayerSlots <= 12)
+            Contract.Invariant(_totalSlotCount > 0)
+            Contract.Invariant(_totalSlotCount <= 12)
             Contract.Invariant(_gameStats IsNot Nothing)
             Contract.Invariant(_name IsNot Nothing)
         End Sub
@@ -56,7 +57,7 @@ Namespace Warcraft3
                                          stats,
                                          hostPort:=0,
                                          GameId:=0,
-                                         lanKey:=0,
+                                         LanKey:=0,
                                          playerslotcount:=map.NumPlayerSlots,
                                          GameType:=map.GameType,
                                          state:=0)
@@ -75,67 +76,55 @@ Namespace Warcraft3
             Contract.Requires(gameStats IsNot Nothing)
             Me._name = name
             Me._gameStats = gameStats
-            Me.hostPort = hostPort
+            Me._hostPort = hostPort
             Me._gameType = gameType
             Me._gameId = gameId
-            Me.lanKey = lanKey
-            Me._numPlayerSlots = playerSlotCount
-            Me._creationTime = Now()
+            Me._lanKey = lanKey
+            Me._creationTick = Environment.TickCount
+            Me._totalSlotCount = playerSlotCount
+            If gameStats.observers = GameObserverOption.FullObservers OrElse gameStats.observers = GameObserverOption.Referees Then
+                Me._totalSlotCount = 12
+            End If
         End Sub
 
-        Public ReadOnly Property Name As String
+        Public ReadOnly Property Name As String Implements ILocalGameDescription.Name
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property GameStats As W3GameStats
+        Public ReadOnly Property GameStats As W3GameStats Implements ILocalGameDescription.GameStats
             Get
                 Contract.Ensures(Contract.Result(Of W3GameStats)() IsNot Nothing)
                 Return _gameStats
             End Get
         End Property
-        Public ReadOnly Property GameType As GameTypes
+        Public ReadOnly Property GameType As GameTypes Implements ILocalGameDescription.Type
             Get
                 Return _gameType
             End Get
         End Property
-
-        Public ReadOnly Property TotalSlotCount() As Integer
+        Public ReadOnly Property TotalSlotCount() As Integer Implements ILocalGameDescription.TotalSlotCount
             Get
-                Contract.Ensures(Contract.Result(Of Integer)() > 0)
-                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
-                Select Case GameStats.observers
-                    Case GameObserverOption.FullObservers, GameObserverOption.Referees
-                        Return 12
-                    Case GameObserverOption.NoObservers, GameObserverOption.ObsOnDefeat
-                        Return _numPlayerSlots
-                    Case Else
-                        Throw GameStats.observers.MakeImpossibleValueException()
-                End Select
+                Return _totalSlotCount
             End Get
         End Property
-
-        Public ReadOnly Property CreationTime As Date
+        Public ReadOnly Property AgeSeconds As UInteger Implements ILocalGameDescription.AgeSeconds
             Get
-                Return _creationTime
+                Return CUInt(Environment.TickCount - _creationTick) \ 1000UI
             End Get
         End Property
-        Public ReadOnly Property GameId As UInteger
+        Public ReadOnly Property GameId As UInteger Implements ILocalGameDescription.GameId
             Get
                 Return _gameId
             End Get
         End Property
-
-        Public ReadOnly Property UsedSlotCount As Integer
+        Public ReadOnly Property UsedSlotCount As Integer Implements ILocalGameDescription.UsedSlotCount
             Get
-                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
-                Contract.Ensures(Contract.Result(Of Integer)() <= TotalSlotCount)
                 Return 0
             End Get
         End Property
-
-        Public Overridable ReadOnly Property GameState As Bnet.BnetPacket.GameStates
+        Public Overridable ReadOnly Property GameState As Bnet.BnetPacket.GameStates Implements ILocalGameDescription.State
             Get
                 Return _state
             End Get
@@ -144,5 +133,96 @@ Namespace Warcraft3
             Me._state = state
             Me._gameType = type
         End Sub
+        Public ReadOnly Property Port As UShort Implements ILocalGameDescription.Port
+            Get
+                Return _hostPort
+            End Get
+        End Property
+        Public ReadOnly Property LanKey As UInteger Implements ILocalGameDescription.LanKey
+            Get
+                Return _lanKey
+            End Get
+        End Property
     End Class
+
+    Public Interface ILocalGameDescription
+        'Location
+        ReadOnly Property Port As UInt16
+        'Static
+        ReadOnly Property Name As String
+        ReadOnly Property LanKey As UInt32
+        ReadOnly Property GameId As UInt32
+        ReadOnly Property GameStats As W3GameStats
+        'Dynamic
+        ReadOnly Property Type As GameTypes
+        ReadOnly Property State As Bnet.BnetPacket.GameStates
+        ReadOnly Property TotalSlotCount As Integer
+        ReadOnly Property UsedSlotCount As Integer
+        ReadOnly Property AgeSeconds As UInteger
+
+        <ContractClassFor(GetType(ILocalGameDescription))>
+        Class ContractClass
+            Implements ILocalGameDescription
+            Public ReadOnly Property AgeSeconds As UInteger Implements ILocalGameDescription.AgeSeconds
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property Name As String Implements ILocalGameDescription.Name
+                Get
+                    Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property TotalSlotCount As Integer Implements ILocalGameDescription.TotalSlotCount
+                Get
+                    Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                    Contract.Ensures(Contract.Result(Of Integer)() <= 12)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property UsedSlotCount As Integer Implements ILocalGameDescription.UsedSlotCount
+                Get
+                    Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                    Contract.Ensures(Contract.Result(Of Integer)() <= TotalSlotCount)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property GameId As UInteger Implements ILocalGameDescription.GameId
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property GameStats As W3GameStats Implements ILocalGameDescription.GameStats
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property LanKey As UInteger Implements ILocalGameDescription.LanKey
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property Port As UShort Implements ILocalGameDescription.Port
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property State As Bnet.BnetPacket.GameStates Implements ILocalGameDescription.State
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property Type As GameTypes Implements ILocalGameDescription.Type
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+        End Class
+    End Interface
+    Public Interface IRemoteGameDescription
+        Inherits ILocalGameDescription
+        'Location
+        ReadOnly Property Address As Net.IPAddress
+    End Interface
 End Namespace

@@ -827,18 +827,18 @@ Namespace Warcraft3
                     {"game id", gameId}})
         End Function
         Public Shared Function MakeLanRefreshGame(ByVal gameId As UInteger,
-                                                  ByVal game As W3GameDescription) As W3Packet
+                                                  ByVal game As ILocalGameDescription) As W3Packet
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of W3Packet)() IsNot Nothing)
             Return New W3Packet(W3PacketId.LanRefreshGame, New Dictionary(Of String, Object) From {
                     {"game id", gameId},
                     {"num players", 0},
-                    {"free slots", game.TotalSlotCount}})
+                    {"free slots", game.TotalSlotCount - game.UsedSlotCount}})
         End Function
         Public Shared Function MakeLanDescribeGame(ByVal creationTime As ModInt32,
                                                    ByVal majorVersion As UInteger,
                                                    ByVal gameId As UInteger,
-                                                   ByVal game As W3GameDescription,
+                                                   ByVal game As ILocalGameDescription,
                                                    ByVal listenPort As UShort,
                                                    Optional ByVal gameType As GameTypes = GameTypes.CreateGameUnknown0) As W3Packet
             Contract.Requires(game IsNot Nothing)
@@ -854,7 +854,7 @@ Namespace Warcraft3
                     {"num slots", game.TotalSlotCount()},
                     {"game type", gameType},
                     {"num players + 1", 1},
-                    {"free slots + 1", game.TotalSlotCount() + 1},
+                    {"free slots + 1", game.TotalSlotCount + 1 - game.UsedSlotCount},
                     {"age", CUInt(Environment.TickCount - creationTime)},
                     {"listen port", listenPort}})
         End Function

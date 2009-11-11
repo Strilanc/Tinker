@@ -4,7 +4,6 @@
         Private mapDownloadPosition As Integer = -1
         Public IsGettingMapFromBot As Boolean
         Private mapUploadPosition As Integer
-        Private countdowns As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
 
         Private Sub AddQueuePacketHandler(ByVal jar As W3Packet.DefParser,
@@ -98,28 +97,13 @@
                 Return mapDownloadPosition
             End Get
         End Property
-        Public ReadOnly Property IsOverCounted() As Boolean
-            Get
-                Return countdowns > 1
-            End Get
-        End Property
         Public Function QueueBufferMap() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf BufferMap)
         End Function
-        Public Function QueueStartCountdown() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(AddressOf StartCountdown)
-        End Function
 #End Region
 
 #Region "Misc"
-        Private Sub StartCountdown()
-            countdowns += 1
-            If countdowns > 1 Then Return
-            SendPacket(W3Packet.MakeStartCountdown())
-        End Sub
-
         Public Event WantMapSender(ByVal sender As W3Player)
         Public Sub GiveMapSender(ByVal senderIndex As Byte)
             Contract.Requires(senderIndex >= 0)

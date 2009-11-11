@@ -3,10 +3,6 @@
         Private NotInheritable Class GameTickDatum
             Private ReadOnly _source As W3Player
             Private ReadOnly _data As Byte()
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(_source IsNot Nothing)
-                Contract.Invariant(_data IsNot Nothing)
-            End Sub
             Public ReadOnly Property Source As W3Player
                 Get
                     Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
@@ -19,6 +15,12 @@
                     Return _data
                 End Get
             End Property
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(_source IsNot Nothing)
+                Contract.Invariant(_data IsNot Nothing)
+            End Sub
+
             Public Sub New(ByVal source As W3Player, ByVal data As Byte())
                 Contract.Requires(source IsNot Nothing)
                 Contract.Requires(data IsNot Nothing)
@@ -65,9 +67,7 @@
         End Sub
 
         Private Sub e_ThrowPlayerSentData(ByVal player As W3Player, ByVal data As Byte())
-            eventRef.QueueAction(Sub()
-                                     RaiseEvent PlayerSentData(Me, player, data)
-                                 End Sub)
+            eventRef.QueueAction(Sub() RaiseEvent PlayerSentData(Me, player, data))
         End Sub
 
 #Region "Play"
@@ -83,9 +83,7 @@
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(action IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return eventRef.QueueAction(Sub()
-                                            RaiseEvent PlayerAction(Me, player, action)
-                                        End Sub)
+            Return eventRef.QueueAction(Sub() RaiseEvent PlayerAction(Me, player, action))
         End Function
 
         '''<summary>Drops the players currently lagging.</summary>
@@ -124,7 +122,7 @@
         End Sub
         Private Sub UpdateLagScreen()
             If laggingPlayers.Count > 0 Then
-                For Each p In laggingPlayers.ToList()
+                For Each p In laggingPlayers.ToList
                     Contract.Assume(p IsNot Nothing)
                     If Not players.Contains(p) Then
                         laggingPlayers.Remove(p)
@@ -133,17 +131,17 @@
                         Dim p_ = p
                         If IsPlayerVisible(p) OrElse (From q In laggingPlayers
                                                       Where GetVisiblePlayer(q) Is GetVisiblePlayer(p_)).None Then
-                            BroadcastPacket(
-                                    W3Packet.MakeRemovePlayerFromLagScreen(
-                                            GetVisiblePlayer(p),
-                                            CUInt(lastTickTime - lagStartTime)))
+                            BroadcastPacket(W3Packet.MakeRemovePlayerFromLagScreen(
+                                player:=GetVisiblePlayer(p),
+                                lagTimeInMilliseconds:=CUInt(lastTickTime - lagStartTime)))
                         End If
                     End If
                 Next p
             Else
                 laggingPlayers = (From p In players
-                                   Where Not p.isFake _
-                                   AndAlso p.GetTockTime < _gameTime - Me.SettingLagLimit).ToList()
+                                  Where Not p.isFake _
+                                  AndAlso p.GetTockTime < _gameTime - Me.SettingLagLimit
+                                  ).ToList
                 If laggingPlayers.Count > 0 Then
                     BroadcastPacket(W3Packet.MakeShowLagScreen(laggingPlayers), Nothing)
                     lagStartTime = lastTickTime
@@ -164,7 +162,7 @@
 
                 'append client data to broadcast game data
                 Dim data = Concat({GetVisiblePlayer(e.Source).Index},
-                                  CUShort(e.Data.Length).Bytes(),
+                                  CUShort(e.Data.Length).Bytes,
                                   e.Data)
                 dataList.Add(data)
                 dataLength += data.Length
@@ -187,12 +185,9 @@
             Contract.Requires(receiver IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-            Dim receiver_ = receiver
-            Dim data_ = data
-            Return Concat((From e In data_
-                           Select Concat({If(e.Source Is receiver_, receiver_, GetVisiblePlayer(e.Source)).index},
-                                         CUShort(e.Data.Length).Bytes(),
-                                         e.Data)))
+            Return Concat((From e In data Select Concat({If(e.Source Is receiver, receiver, GetVisiblePlayer(e.Source)).Index},
+                                                        CUShort(e.Data.Length).Bytes,
+                                                        e.Data)))
         End Function
 #End Region
 

@@ -206,10 +206,7 @@
         End Sub
 
         Private Sub CatchSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
-            ref.QueueAction(Sub()
-                                Contract.Assume(reason IsNot Nothing)
-                                Disconnect(expected, W3PlayerLeaveType.Disconnect, reason)
-                            End Sub)
+            ref.QueueAction(Sub() Disconnect(expected, W3PlayerLeaveType.Disconnect, reason))
         End Sub
 
         Public ReadOnly Property CanHost() As HostTestResult
@@ -252,8 +249,8 @@
                             Case ClientTransferState.None : Return "-"
                             Case ClientTransferState.Downloading : Return "(dl)"
                             Case ClientTransferState.Uploading : Return "(ul)"
-                            Case ClientTransferState.Idle : Return If(r = 0, "?", "{0:0}ms".Frmt(r))
-                            Case ClientTransferState.Ready : Return If(r = 0, "?", "{0:0}ms".Frmt(r))
+                            Case ClientTransferState.Idle : Return If(r = 0, "?", "{0:0}ms".Frmt(r.Value))
+                            Case ClientTransferState.Ready : Return If(r = 0, "?", "{0:0}ms".Frmt(r.Value))
                             Case Else : Throw downloadState.MakeImpossibleValueException()
                         End Select
                     End Function)
@@ -270,18 +267,12 @@
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String) As IFuture
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(reason IsNot Nothing)
-                                       Disconnect(expected, leaveType, reason)
-                                   End Sub)
+            Return ref.QueueAction(Sub() Disconnect(expected, leaveType, reason))
         End Function
         Public Function QueueSendPacket(ByVal packet As W3Packet) As IFuture
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(packet IsNot Nothing)
-                                       SendPacket(packet)
-                                   End Sub)
+            Return ref.QueueAction(Sub() SendPacket(packet))
         End Function
     End Class
 End Namespace

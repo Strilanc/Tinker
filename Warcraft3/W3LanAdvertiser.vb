@@ -9,7 +9,7 @@ Public NotInheritable Class W3LanAdvertiser
 
     Private ReadOnly games1 As New HashSet(Of LanGame)
     Private ReadOnly idmap As New Dictionary(Of UInteger, LanGame)
-    Private ReadOnly headermap As New Dictionary(Of W3GameDescription, LanGame)
+    Private ReadOnly headerMap As New Dictionary(Of ILocalGameDescription, LanGame)
     Private ReadOnly socket As UdpClient
     Public Const WidgetTypeName As String = "LanAdvertiser"
 
@@ -39,8 +39,8 @@ Public NotInheritable Class W3LanAdvertiser
     Private NotInheritable Class LanGame
         Public ReadOnly id As UInteger
         Public ReadOnly creation_time As Integer
-        Public ReadOnly header As W3GameDescription
-        Public Sub New(ByVal id As UInteger, ByVal header As W3GameDescription)
+        Public ReadOnly header As ILocalGameDescription
+        Public Sub New(ByVal id As UInteger, ByVal header As ILocalGameDescription)
             Me.id = id
             Me.creation_time = Environment.TickCount
             Me.header = header
@@ -161,18 +161,18 @@ Public NotInheritable Class W3LanAdvertiser
     End Function
 
     '''<summary>Adds a game to be advertised</summary>
-    Public Function AddGame(ByVal gameHeader As W3GameDescription) As UInteger
+    Public Function AddGame(ByVal gameHeader As ILocalGameDescription) As UInteger
         Dim id As UInteger
         Dim game As LanGame
 
         'Create
         SyncLock lock
-            If headermap.ContainsKey(gameHeader) Then Return headermap(gameHeader).id
+            If headerMap.ContainsKey(gameHeader) Then Return headerMap(gameHeader).id
             createCount += CByte(1)
             id = createCount
             game = New LanGame(id, gameHeader)
             idmap(id) = game
-            headermap(gameHeader) = game
+            headerMap(gameHeader) = game
             games1.Add(game)
         End SyncLock
 
@@ -193,7 +193,7 @@ Public NotInheritable Class W3LanAdvertiser
             game = idmap(id)
             games1.Remove(game)
             idmap.Remove(id)
-            headermap.Remove(game.header)
+            headerMap.Remove(game.header)
 
             'Notify
             Dim pk = W3Packet.MakeLanDestroyGame(id)
@@ -205,13 +205,13 @@ Public NotInheritable Class W3LanAdvertiser
         RaiseEvent RemoveStateString("{0}={1}".Frmt(game.id, game.header.Name))
         Return True
     End Function
-    Public Function RemoveGame(ByVal header As W3GameDescription) As Boolean
+    Public Function RemoveGame(ByVal header As ILocalGameDescription) As Boolean
         Dim game As LanGame
 
         SyncLock lock
             'Remove
-            If Not headermap.ContainsKey(header) Then Return False
-            game = headermap(header)
+            If Not headerMap.ContainsKey(header) Then Return False
+            game = headerMap(header)
         End SyncLock
 
         Return RemoveGame(game.id)

@@ -80,12 +80,7 @@
                 TrySetTeamSizes(TeamVersusStringToTeamSizes(settings.teamSetup))
             End If
             For Each reservation In settings.Reservations
-                Dim slot = (From s In slots _
-                            Where s.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Open _
-                            ).FirstOrDefault
-                If slot IsNot Nothing Then
-                    ReserveSlot(slot.MatchableId, reservation)
-                End If
+                ReserveSlot(reservation)
             Next reservation
         End Sub
         Private Sub InitDownloads()
@@ -159,11 +154,6 @@
             ChangeState(W3GameState.CountingDown)
             flagHasPlayerLeft = False
 
-            For Each player In players
-                Contract.Assume(player IsNot Nothing)
-                player.QueueStartCountdown()
-            Next player
-
             Logger.Log("Starting Countdown", LogMessageType.Positive)
             FutureWait(1.Seconds).QueueCallWhenReady(ref, Sub() _TryContinueCountdown(5))
             Return True
@@ -191,9 +181,9 @@
             If ticksLeft > 0 Then
                 'Next tick
                 Logger.Log("Game starting in {0}".Frmt(ticksLeft), LogMessageType.Positive)
-                For Each player In (From p In players Where p.IsOverCounted)
+                For Each player In players
                     Contract.Assume(player IsNot Nothing)
-                    SendMessageTo("Game starting in {0}...".Frmt(ticksLeft), player, display:=False)
+                    SendMessageTo("Starting in {0}...".Frmt(ticksLeft), player, display:=False)
                 Next player
 
                 FutureWait(1.Seconds).QueueCallWhenReady(ref, Sub() _TryContinueCountdown(ticksLeft - 1))

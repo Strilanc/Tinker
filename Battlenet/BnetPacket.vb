@@ -497,7 +497,7 @@ Namespace Bnet
 
             Return New BnetPacket(BnetPacketId.CreateGame3, New Dictionary(Of String, Object) From {
                     {"game state", game.GameState},
-                    {"seconds since creation", CUInt((DateTime.Now() - game.CreationTime).TotalSeconds)},
+                    {"seconds since creation", game.AgeSeconds},
                     {"game type", game.GameType},
                     {"unknown1=1023", 1023},
                     {"ladder", 0},

@@ -362,7 +362,7 @@ Namespace Warcraft3
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
             If Not players.Contains(player) Then
-                Throw New InvalidOperationException("Player is not in the game.")
+                Return
             End If
 
             'Clean slot
