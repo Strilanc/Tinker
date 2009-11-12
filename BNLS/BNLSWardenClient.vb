@@ -44,9 +44,16 @@ Namespace BNLS
             Contract.Invariant(socket IsNot Nothing)
         End Sub
 
+        ''' <summary>
+        ''' Constructs a BNLSWardenClient
+        ''' </summary>
+        ''' <param name="socket">A socket already connected and introduced to a BNLS server.</param>
+        ''' <param name="cookie">The cookie value the server associates with this instance.</param>
+        ''' <param name="logger">Logger</param>
         Private Sub New(ByVal socket As PacketSocket,
                         ByVal cookie As UInteger,
                         Optional ByVal logger As Logger = Nothing)
+            Contract.Requires(socket IsNot Nothing)
             logger = If(logger, New Logger())
             Me.logger = logger
             Me.socket = socket
@@ -56,37 +63,27 @@ Namespace BNLS
 
         '''<summary>Asynchronously reads packets until an exception occurs, raising events to the outside.</summary>
         Private Sub BeginReading()
-            'Read packets until an exception occurs
-            Dim readLoop = FutureIterateExcept(Function() FutureReadBnlsPacket(socket, logger),
-                Sub(packet)
-                    Contract.Assume(packet IsNot Nothing)
+            AsyncProduceConsumeUntilError2(
+                producer:=Function() FutureReadBnlsPacket(socket, logger),
+                consumer:=Sub(packet)
+                              'Check packet type
+                              If packet.id <> BNLSWardenPacketId.FullServiceHandleWardenPacket Then
+                                  Throw New IO.InvalidDataException("Incorrect packet type received from BNLS server.")
+                              End If
 
-                    'Check packet type
-                    If packet.id <> BNLSWardenPacketId.FullServiceHandleWardenPacket Then
-                        Throw New IO.InvalidDataException("Incorrect packet type received from server.")
-                    End If
+                              'Check packet contents
+                              Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of String, Object))).Value
+                              Contract.Assume(vals IsNot Nothing)
+                              If CUInt(vals("cookie")) <> cookie Then
+                                  Throw New IO.InvalidDataException("Incorrect cookie from BNLS server.")
+                              ElseIf CUInt(vals("result")) <> 0 Then
+                                  Throw New IO.IOException("BNLS server indicated there was a failure.")
+                              End If
 
-                    'Check packet contents
-                    Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of String, Object))).Value
-                    Contract.Assume(vals IsNot Nothing)
-                    If CUInt(vals("cookie")) <> cookie Then
-                        Throw New IO.InvalidDataException("Incorrect cookie from server.")
-                    ElseIf CUInt(vals("result")) <> 0 Then
-                        Throw New IO.IOException("Server indicated there was a failure.")
-                    End If
-
-                    'Pass warden data out (and continue reading)
-                    RaiseEvent Send(CType(vals("data"), Byte()))
-                End Sub
-            )
-
-            'Pass exception out when readLoop fails
-            readLoop.CallWhenReady(
-                Sub(exception)
-                    If exception IsNot Nothing Then
-                        RaiseEvent Fail(exception)
-                    End If
-                End Sub
+                              'Warden response data for bnet client
+                              RaiseEvent Send(CType(vals("data"), Byte()))
+                          End Sub,
+                errorHandler:=Sub(exception) RaiseEvent Fail(exception)
             )
         End Sub
 
@@ -103,14 +100,13 @@ Namespace BNLS
             'Connect and send first packet
             Dim futurePacketSocket = FutureCreateConnectedTcpClient(hostName, port).Select(
                 Function(tcpClient)
-                    Contract.Assume(tcpClient IsNot Nothing)
                     Dim socket = New PacketSocket(tcpClient,
                                                   timeout:=5.Minutes,
                                                   numBytesBeforeSize:=0,
                                                   numSizeBytes:=2,
                                                   logger:=logger,
                                                   name:="BNLS")
-                    WritePacket(socket, logger, BNLSWardenPacket.MakeFullServiceConnect(seed, seed))
+                    WritePacket(socket, logger, BNLSWardenPacket.MakeFullServiceConnect(cookie, seed))
                     Return socket
                 End Function
             )
@@ -123,9 +119,7 @@ Namespace BNLS
             'Process response packet and construct bnls client on success
             Dim futureBnlsClient = futureReadPacket.Select(
                 Function(packet)
-                    Contract.Assume(packet IsNot Nothing)
                     Dim packetSocket = futurePacketSocket.Value
-                    Contract.Assume(packetSocket IsNot Nothing)
 
                     'Check packet type
                     If packet.id <> BNLSWardenPacketId.FullServiceConnect Then
@@ -177,8 +171,6 @@ Namespace BNLS
                                                      ByVal logger As Logger) As IFuture(Of BNLSWardenPacket)
             Return socket.FutureReadPacket().Select(
                 Function(packetData)
-                    Contract.Assume(packetData IsNot Nothing)
-
                     'Check packet
                     If packetData.Length < 3 Then
                         Throw New IO.InvalidDataException("Packet doesn't have a header.")

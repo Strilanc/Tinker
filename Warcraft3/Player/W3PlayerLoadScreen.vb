@@ -16,14 +16,14 @@
             Ready = True
             logger.Log(name + " is ready", LogMessageType.Positive)
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'
-            eref.QueueAction(Sub()
-                                 RaiseEvent ReceivedReady(Me)
-                             End Sub)
+            outQueue.QueueAction(Sub()
+                                     RaiseEvent ReceivedReady(Me)
+                                 End Sub)
         End Sub
 
         Public Function QueueStartLoading() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(AddressOf LoadScreenStart)
+            Return inQueue.QueueAction(AddressOf LoadScreenStart)
         End Function
     End Class
 End Namespace

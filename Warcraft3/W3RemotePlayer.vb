@@ -133,10 +133,14 @@ Namespace Warcraft3
         Public Sub SetSocket(ByVal socket As W3Socket)
             Me._socket = socket
             If socket Is Nothing Then Return
-            FutureIterateExcept(AddressOf socket.FutureReadPacket,
-                Sub(packetData)
-                    RaiseEvent ReceivedPacket(Me, W3Packet.FromData(CType(packetData(1), W3PacketId), packetData.SubView(4)))
-                End Sub)
+            AsyncProduceConsumeUntilError2(
+                producer:=AddressOf socket.FutureReadPacket,
+                consumer:=Sub(packetData)
+                              RaiseEvent ReceivedPacket(Me, W3Packet.FromData(CType(packetData(1), W3PacketId), packetData.SubView(4)))
+                          End Sub,
+                errorHandler:=Sub(exception)
+                                  'ignore
+                              End Sub)
         End Sub
 
         Private Sub socket_Disconnected(ByVal sender As Warcraft3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected

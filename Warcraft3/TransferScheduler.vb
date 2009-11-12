@@ -125,9 +125,9 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return ref.QueueFunc(
                 Function()
-                    If Not clients.ContainsKey(clientKey) Then  Return "?"
+                    If Not clients.ContainsKey(clientKey) Then Return "?"
                     With clients(clientKey)
-                        If Not .HasRateBeenMeasured AndAlso Not .Busy Then  Return "?"
+                        If Not .HasRateBeenMeasured AndAlso Not .Busy Then Return "?"
 
                         Dim d = .GetCurRateEstimate * 1000
                         Dim f = New FiniteDouble(1.0)
@@ -135,12 +135,12 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
                             Dim f2 = f * 1024
                             If d < f2 Then
                                 Contract.Assume(f <> 0)
-                                Return "{0:0.0} {1}/s".Frmt(d / f, s)
+                                Return "{0:0.0} {1}/s".Frmt((d / f).Value, s)
                             End If
                             f = f2
                         Next s
 
-                        Return ">HiB/s" '... It could happen.
+                        Return ">HiB/s" '... What? It could happen...
                     End With
                 End Function)
         End Get

@@ -485,10 +485,8 @@ Namespace Bnet
                     {"flags", CUInt(flags).Bytes()},
                     {"channel", channel}})
         End Function
-        Public Shared Function MakeCreateGame3(ByVal game As W3GameDescription,
-                                               ByVal gameId As Integer) As BnetPacket
+        Public Shared Function MakeCreateGame3(ByVal game As W3GameDescription) As BnetPacket
             Contract.Requires(game IsNot Nothing)
-            Contract.Requires(gameId >= 0)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
             Const MAX_GAME_NAME_LENGTH As UInteger = 31
             If game.Name.Length > MAX_GAME_NAME_LENGTH Then
@@ -504,7 +502,7 @@ Namespace Bnet
                     {"name", game.Name},
                     {"password", ""},
                     {"num free slots", game.TotalSlotCount - game.UsedSlotCount},
-                    {"game id", gameId},
+                    {"game id", game.GameId},
                     {"statstring", game.GameStats}})
         End Function
         Public Shared Function MakeCloseGame3() As BnetPacket

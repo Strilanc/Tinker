@@ -99,14 +99,14 @@
             Contract.Requires(record IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(record IsNot Nothing)
-                                       SendTick(record, data)
-                                   End Sub)
+            Return inQueue.QueueAction(Sub()
+                                           Contract.Assume(record IsNot Nothing)
+                                           SendTick(record, data)
+                                       End Sub)
         End Function
         Public Function QueueStartPlaying() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(AddressOf GamePlayStart)
+            Return inQueue.QueueAction(AddressOf GamePlayStart)
         End Function
 #End Region
     End Class

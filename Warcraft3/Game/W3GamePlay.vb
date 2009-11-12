@@ -52,7 +52,7 @@
             SettingSpeedFactor = gsf
             SettingTickPeriod = gtp
             SettingLagLimit = gll
-            AddHandler tickTimer.Elapsed, Sub() c_Tick()
+            AddHandler tickTimer.Elapsed, Sub() OnTick()
         End Sub
         Private Sub GameplayStart()
             For Each player In players
@@ -95,7 +95,7 @@
         End Sub
 
         '''<summary>Advances game time</summary>
-        Private Sub c_Tick()
+        Private Sub OnTick()
             ref.QueueAction(
                 Sub()
                     Dim t As ModInt32 = Environment.TickCount

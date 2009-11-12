@@ -26,8 +26,8 @@
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
         Private ReadOnly packetHandler As W3PacketHandler
-        Private ReadOnly ref As ICallQueue = New TaskedCallQueue
-        Private ReadOnly eref As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
         Private _numPeerConnections As Integer
         Private ReadOnly settings As ServerSettings
         Private ReadOnly scheduler As TransferScheduler(Of Byte)
@@ -63,8 +63,8 @@
             Contract.Invariant(tickQueue IsNot Nothing)
             Contract.Invariant(packetHandler IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
-            Contract.Invariant(ref IsNot Nothing)
-            Contract.Invariant(eref IsNot Nothing)
+            Contract.Invariant(inQueue IsNot Nothing)
+            Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(socket Is Nothing = isFake)
             Contract.Invariant(testCanHost IsNot Nothing)
             Contract.Invariant(numAdminTries >= 0)
@@ -134,7 +134,10 @@
 
             packetHandler.AddHandler(packetId:=W3PacketId.Pong,
                                      jar:=W3Packet.Jars.Pong,
-                                     handler:=Function(pickle) pinger.QueueReceivedPong(CUInt(pickle.Value("salt"))))
+                                     handler:=Function(pickle)
+                                                  outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
+                                                  Return pinger.QueueReceivedPong(CUInt(pickle.Value("salt")))
+                                              End Function)
             AddQueuePacketHandler(id:=W3PacketId.NonGameAction,
                                   jar:=W3Packet.Jars.NonGameAction,
                                   handler:=AddressOf ReceiveNonGameAction)
@@ -158,34 +161,23 @@
         End Sub
 
         Private Sub BeginReading()
-            Dim readLoop = FutureIterateExcept(AddressOf socket.FutureReadPacket,
-                Sub(packetData)
-                    Contract.Assume(packetData IsNot Nothing)
-                    Contract.Assume(packetData.Length >= 4)
-                    ProcessPacket(packetData)
-                End Sub
-            )
-            readLoop.QueueCallWhenReady(ref,
-                Sub(exception)
-                    If exception Is Nothing Then Return
-                    Me.Disconnect(expected:=False,
-                                  leaveType:=W3PlayerLeaveType.Disconnect,
-                                  reason:="Error receiving packet: {0}".Frmt(exception.Message))
-                End Sub
+            AsyncProduceConsumeUntilError(
+                producer:=AddressOf socket.FutureReadPacket,
+                consumer:=AddressOf ProcessPacket,
+                errorHandler:=Sub(exception) Me.QueueDisconnect(expected:=False,
+                                                                leaveType:=W3PlayerLeaveType.Disconnect,
+                                                                reason:="Error receiving packet: {0}".Frmt(exception.Message))
             )
         End Sub
-        Private Sub ProcessPacket(ByVal packetData As ViewableList(Of Byte))
+        Private Function ProcessPacket(ByVal packetData As ViewableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)
             Contract.Requires(packetData.Length >= 4)
-            packetHandler.HandlePacket(packetData).CallWhenReady(
-                Sub(exception)
-                    If exception Is Nothing Then Return
-                    Disconnect(expected:=False,
-                               leaveType:=W3PlayerLeaveType.Disconnect,
-                               reason:=exception.Message)
-                End Sub
-            )
-        End Sub
+            Dim result = packetHandler.HandlePacket(packetData)
+            result.Catch(Sub(exception) QueueDisconnect(expected:=False,
+                                                        leaveType:=W3PlayerLeaveType.Disconnect,
+                                                        reason:=exception.Message))
+            Return result
+        End Function
 
         '''<summary>Disconnects this player and removes them from the system.</summary>
         Private Sub Disconnect(ByVal expected As Boolean,
@@ -206,7 +198,7 @@
         End Sub
 
         Private Sub CatchSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
-            ref.QueueAction(Sub() Disconnect(expected, W3PlayerLeaveType.Disconnect, reason))
+            inQueue.QueueAction(Sub() Disconnect(expected, W3PlayerLeaveType.Disconnect, reason))
         End Sub
 
         Public ReadOnly Property CanHost() As HostTestResult
@@ -267,12 +259,12 @@
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String) As IFuture
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() Disconnect(expected, leaveType, reason))
+            Return inQueue.QueueAction(Sub() Disconnect(expected, leaveType, reason))
         End Function
         Public Function QueueSendPacket(ByVal packet As W3Packet) As IFuture
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SendPacket(packet))
+            Return inQueue.QueueAction(Sub() SendPacket(packet))
         End Function
     End Class
 End Namespace

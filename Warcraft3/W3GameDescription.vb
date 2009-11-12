@@ -36,13 +36,14 @@ Namespace Warcraft3
         Private ReadOnly _gameStats As W3GameStats
         Private ReadOnly _hostPort As UShort
         Private ReadOnly _gameId As UInt32
-        Private ReadOnly _lanKey As UInteger
+        Private ReadOnly _entryKey As UInteger
         Private ReadOnly _creationTick As ModInt32
         Private _gameType As GameTypes
         Private _state As Bnet.BnetPacket.GameStates
         Private ReadOnly _totalSlotCount As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_gameId > 0)
             Contract.Invariant(_totalSlotCount > 0)
             Contract.Invariant(_totalSlotCount <= 12)
             Contract.Invariant(_gameStats IsNot Nothing)
@@ -59,8 +60,8 @@ Namespace Warcraft3
             Return New W3GameDescription(name,
                                          stats,
                                          hostPort:=0,
-                                         GameId:=0,
-                                         LanKey:=0,
+                                         GameId:=1,
+                                         entryKey:=0,
                                          playerslotcount:=map.NumPlayerSlots,
                                          GameType:=map.GameType,
                                          state:=0)
@@ -69,10 +70,11 @@ Namespace Warcraft3
                        ByVal gameStats As W3GameStats,
                        ByVal hostPort As UShort,
                        ByVal gameId As UInt32,
-                       ByVal lanKey As UInteger,
+                       ByVal entryKey As UInteger,
                        ByVal playerSlotCount As Integer,
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.BnetPacket.GameStates)
+            Contract.Requires(gameId > 0)
             Contract.Requires(playerSlotCount > 0)
             Contract.Requires(playerSlotCount <= 12)
             Contract.Requires(name IsNot Nothing)
@@ -82,7 +84,7 @@ Namespace Warcraft3
             Me._hostPort = hostPort
             Me._gameType = gameType
             Me._gameId = gameId
-            Me._lanKey = lanKey
+            Me._entryKey = entryKey
             Me._creationTick = Environment.TickCount
             Me._totalSlotCount = playerSlotCount
             If gameStats.observers = GameObserverOption.FullObservers OrElse gameStats.observers = GameObserverOption.Referees Then
@@ -141,9 +143,9 @@ Namespace Warcraft3
                 Return _hostPort
             End Get
         End Property
-        Public ReadOnly Property LanKey As UInteger Implements ILocalGameDescription.LanKey
+        Public ReadOnly Property EntryKey As UInteger Implements ILocalGameDescription.EntryKey
             Get
-                Return _lanKey
+                Return _entryKey
             End Get
         End Property
     End Class
@@ -153,7 +155,7 @@ Namespace Warcraft3
         ReadOnly Property Port As UInt16
         'Static
         ReadOnly Property Name As String
-        ReadOnly Property LanKey As UInt32
+        ReadOnly Property EntryKey As UInt32
         ReadOnly Property GameId As UInt32
         ReadOnly Property GameStats As W3GameStats
         'Dynamic
@@ -193,6 +195,7 @@ Namespace Warcraft3
             End Property
             Public ReadOnly Property GameId As UInteger Implements ILocalGameDescription.GameId
                 Get
+                    Contract.Ensures(Contract.Result(Of UInteger)() > 0)
                     Throw New NotSupportedException
                 End Get
             End Property
@@ -201,7 +204,7 @@ Namespace Warcraft3
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public ReadOnly Property LanKey As UInteger Implements ILocalGameDescription.LanKey
+            Public ReadOnly Property EntryKey As UInteger Implements ILocalGameDescription.EntryKey
                 Get
                     Throw New NotSupportedException
                 End Get

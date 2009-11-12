@@ -20,7 +20,7 @@
         Public Sub AddCommand(ByVal command As Command(Of T))
             Contract.Requires(command IsNot Nothing)
             If _commandMap.ContainsKey(command.Name.ToUpperInvariant) Then
-                Throw New InvalidOperationException("There is already a command named '{0}'.".Frmt(command.Name))
+                Throw New InvalidOperationException("There is already help for a command named '{0}'.".Frmt(command.Name))
             End If
             _commandMap.Add(command.Name.ToUpperInvariant, command)
         End Sub
@@ -42,10 +42,10 @@
 
                 Case "?" 'how to use commands
                     Return {"Use 'Help command' for a command's description, arguments and permissions.",
-                            "For example, 'Help host' could return 'Hosts a game. [name=<game name> -map=query -private'] {games:1}",
+                            "For example, 'Help host' could return 'Hosts a game. [name=<game name> -map=<search query> -private'] {games:1}",
                             "The argument format is inside the [] brackets and the permissions are inside the {} brackets.",
                             "In this case, 'name' is a required named argument, 'map' is an optional named argument, and -private is an optional switch.",
-                            "Given that format, you could host a public game of castle fight like this: 'Host name=<Castle Fight!!> -map=<castle*1.14b>'.",
+                            "Given that format, you could host a public game of castle fight like this: 'Host name=<Castle Fight!!> -map=castle*1.14b'.",
                             "Arguments can be re-ordered but must be separated by spaces (use brackets for argument values with spaces)."
                             }.StringJoin(Environment.NewLine).Futurized
 
@@ -80,8 +80,11 @@
                         Dim command As Command(Of T) = Nothing
                         If _commandMap.TryGetValue(key:=firstWord.ToUpperInvariant, value:=command) Then
                             Dim result As String = Nothing
-                            If rest = "*" Then
-                                Return (From key In command.HelpTopics.Keys Order By key).StringJoin(" ").Futurized
+                            If rest = "*" Then 'list subtopics
+                                Return (From key In command.HelpTopics.Keys
+                                        Order By key
+                                        Select key.ToLower
+                                        ).StringJoin(" ").Futurized
                             ElseIf command.HelpTopics.TryGetValue(key:=rest.ToUpperInvariant, value:=result) Then
                                 Return result.Futurized
                             End If

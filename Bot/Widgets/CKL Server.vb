@@ -74,48 +74,50 @@ Namespace CKL
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(acceptedClient IsNot Nothing)
             Dim socket = New PacketSocket(acceptedClient, 10.Seconds, Me.logger)
-            FutureIterateExcept(AddressOf socket.FutureReadPacket, Sub(packetData) ref.QueueAction(
-                Sub()
-                    Contract.Assume(packetData IsNot Nothing)
-                    Contract.Assume(packetData.Length >= 4)
-                    Dim flag = packetData(0)
-                    Dim id = packetData(0)
-                    Dim data = packetData.SubView(4)
-                    Dim responseData As Byte() = Nothing
-                    Dim errorMessage As String = Nothing
-                    If flag <> PacketPrefixValue Then
-                        errorMessage = "Invalid header id."
-                    Else
-                        Select Case CType(id, CKLPacketId)
-                            Case CKLPacketId.[Error]
-                                'ignore
-                            Case CKLPacketId.Keys
-                                If keys.Count <= 0 Then
-                                    errorMessage = "No keys to lend."
-                                ElseIf data.Length <> 8 Then
-                                    errorMessage = "Invalid length. Require client token [4] + server token [4]."
-                                Else
-                                    If keyIndex >= keys.Count Then  keyIndex = 0
-                                    responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4),
-                                                                       serverToken:=data.SubView(4, 4)).ToArray
-                                    logger.Log("Provided key '{0}' to {1}".Frmt(keys(keyIndex).Name, socket.Name), LogMessageType.Positive)
-                                    keyIndex += 1
-                                End If
-                            Case Else
-                                errorMessage = "Invalid packet id."
-                        End Select
-                    End If
+            logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 
-                    If responseData IsNot Nothing Then
-                        socket.WritePacket(Concat({PacketPrefixValue, id, 0, 0}, responseData))
-                    End If
-                    If errorMessage IsNot Nothing Then
-                        logger.Log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
-                        socket.WritePacket(Concat({PacketPrefixValue, CKLPacketId.[Error]}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
-                    End If
-                End Sub
-            ))
-            logger.Log("Connection from " + socket.Name, LogMessageType.Positive)
+            AsyncProduceConsumeUntilError(
+                producer:=AddressOf socket.FutureReadPacket,
+                consumer:=Function(packetData) ref.QueueAction(
+                    Sub()
+                        Dim flag = packetData(0)
+                        Dim id = packetData(0)
+                        Dim data = packetData.SubView(4)
+                        Dim responseData As Byte() = Nothing
+                        Dim errorMessage As String = Nothing
+                        If flag <> PacketPrefixValue Then
+                            errorMessage = "Invalid header id."
+                        Else
+                            Select Case CType(id, CKLPacketId)
+                                Case CKLPacketId.[Error]
+                                    'ignore
+                                Case CKLPacketId.Keys
+                                    If keys.Count <= 0 Then
+                                        errorMessage = "No keys to lend."
+                                    ElseIf data.Length <> 8 Then
+                                        errorMessage = "Invalid length. Require client token [4] + server token [4]."
+                                    Else
+                                        If keyIndex >= keys.Count Then keyIndex = 0
+                                        responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4),
+                                                                           serverToken:=data.SubView(4, 4)).ToArray
+                                        logger.Log("Provided key '{0}' to {1}".Frmt(keys(keyIndex).Name, socket.Name), LogMessageType.Positive)
+                                        keyIndex += 1
+                                    End If
+                                Case Else
+                                    errorMessage = "Invalid packet id."
+                            End Select
+                        End If
+
+                        If responseData IsNot Nothing Then
+                            socket.WritePacket(Concat({PacketPrefixValue, id, 0, 0}, responseData))
+                        End If
+                        If errorMessage IsNot Nothing Then
+                            logger.Log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
+                            socket.WritePacket(Concat({PacketPrefixValue, CKLPacketId.[Error]}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
+                        End If
+                    End Sub),
+                errorHandler:=Sub(exception) logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, exception.Message), LogMessageType.Problem)
+            )
         End Sub
 
         Public Overridable Sub [Stop]()

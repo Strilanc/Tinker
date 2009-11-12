@@ -153,11 +153,15 @@ Namespace Warcraft3
             Contract.Requires(dst IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Dim buffer(0 To 4096 - 1) As Byte
-            Return FutureIterateExcept(Function() src.FutureRead(buffer, 0, buffer.Length),
-                Sub(result)
-                    If result = 0 Then Throw New IO.IOException("End of stream")
-                    dst.Write(buffer, 0, result)
-                End Sub
+            Return AsyncProduceConsumeUntilError2(
+                producer:=Function() src.FutureRead(buffer, 0, buffer.Length),
+                consumer:=Sub(numRead)
+                              If numRead = 0 Then Throw New IO.IOException("End of stream")
+                              dst.Write(buffer, 0, numRead)
+                          End Sub,
+                errorHandler:=Sub(exception)
+                                  'ignore
+                              End Sub
             )
         End Function
     End Class

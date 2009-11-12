@@ -34,7 +34,7 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return GetLatencyDescription.Select(
                 Function(latencyDesc)
-                    Dim base = name.Padded(20) +
+                    Dim base = Name.Padded(20) +
                                "Host={0}".Frmt(CanHost()).Padded(12) +
                                "{0}c".Frmt(_numPeerConnections).Padded(5) +
                                latencyDesc.Padded(12)

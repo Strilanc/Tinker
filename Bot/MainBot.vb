@@ -340,9 +340,9 @@ Public NotInheritable Class MainBot
         map.slots(1).contents = New W3SlotContentsComputer(map.slots(1), W3Slot.ComputerLevel.Normal)
         Dim header = New W3GameDescription("Admin Game",
                                       New W3GameStats(map, My.Resources.ProgramName, New Commands.CommandArgument("")),
-                                      0,
-                                      0,
-                                      0,
+                                      hostport:=0,
+                                      gameid:=1,
+                                      entryKey:=0,
                                       playerSlotCount:=map.NumPlayerSlots,
                                       gameType:=map.GameType,
                                       state:=0)

@@ -10,14 +10,14 @@
                                           ByVal handler As Action(Of IPickle(Of Dictionary(Of String, Object))))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
-            packetHandler.AddHandler(jar.id, jar, Function(data) ref.QueueAction(Sub() handler(data)))
+            packetHandler.AddHandler(jar.id, jar, Function(data) inQueue.QueueAction(Sub() handler(data)))
         End Sub
         Private Sub AddQueuePacketHandler(Of T)(ByVal id As W3PacketId,
                                                 ByVal jar As IJar(Of T),
                                                 ByVal handler As Action(Of IPickle(Of T)))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
-            packetHandler.AddHandler(id, jar, Function(data) ref.QueueAction(Sub() handler(data)))
+            packetHandler.AddHandler(id, jar, Function(data) inQueue.QueueAction(Sub() handler(data)))
         End Sub
         Private Sub LobbyStart()
             state = W3PlayerState.Lobby
@@ -26,8 +26,8 @@
         End Sub
 
 #Region "Networking"
-        Public Event GameStateUpdated1(ByVal sender As W3Player)
-        Public Event GameStateUpdated2(ByVal sender As W3Player)
+        Public Event SuperficialStateUpdated(ByVal sender As W3Player)
+        Public Event StateUpdated(ByVal sender As W3Player)
         Private Sub ReceivePeerConnectionInfo(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = CType(pickle.Value, Dictionary(Of String, Object))
@@ -44,7 +44,7 @@
                     scheduler.SetLink(Me.Index, flag.pid, flag.connected).MarkAnyExceptionAsHandled()
                 Next flag
             End If
-            RaiseEvent GameStateUpdated1(Me)
+            RaiseEvent SuperficialStateUpdated(Me)
         End Sub
         Private Sub ReceiveClientMapInfo(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(pickle IsNot Nothing)
@@ -86,7 +86,7 @@
                 End If
             End If
 
-            RaiseEvent GameStateUpdated2(Me)
+            RaiseEvent StateUpdated(Me)
         End Sub
 #End Region
 
@@ -99,7 +99,7 @@
         End Property
         Public Function QueueBufferMap() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(AddressOf BufferMap)
+            Return inQueue.QueueAction(AddressOf BufferMap)
         End Function
 #End Region
 
@@ -108,7 +108,7 @@
         Public Sub GiveMapSender(ByVal senderIndex As Byte)
             Contract.Requires(senderIndex >= 0)
             Contract.Requires(senderIndex <= 12)
-            ref.QueueAction(
+            inQueue.QueueAction(
                 Sub()
                     While mapUploadPosition < Math.Min(settings.Map.FileSize, mapDownloadPosition + MAX_BUFFERED_MAP_SIZE)
                         Dim out_DataSize = 0

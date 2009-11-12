@@ -385,8 +385,8 @@
             AddHandler newPlayer.ReceivedGameData, AddressOf QueueGameData
             AddHandler newPlayer.Disconnected, AddressOf QueueRemovePlayer
             AddHandler newPlayer.ReceivedReady, AddressOf QueueReceiveReady
-            AddHandler newPlayer.GameStateUpdated1, Sub() QueueThrowUpdated()
-            AddHandler newPlayer.GameStateUpdated2, Sub() QueueUpdatedGameState()
+            AddHandler newPlayer.SuperficialStateUpdated, Sub() QueueThrowUpdated()
+            AddHandler newPlayer.StateUpdated, Sub() QueueUpdatedGameState()
             AddHandler newPlayer.ReceivedNonGameAction, AddressOf QueueReceiveNonGameAction
             AddHandler newPlayer.WantMapSender, Sub(sender)
                                                     QueueGetFakeHostPlayer.CallOnValueSuccess(

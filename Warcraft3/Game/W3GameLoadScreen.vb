@@ -9,7 +9,7 @@
 
         Private Sub LoadScreenNew()
             fakeTickTimer = New Timers.Timer(30.Seconds.TotalMilliseconds)
-            AddHandler fakeTickTimer.Elapsed, Sub() c_FakeTick()
+            AddHandler fakeTickTimer.Elapsed, Sub() OnFakeTick()
         End Sub
         Private Sub LoadScreenStart()
             For Each player In players
@@ -130,12 +130,11 @@
             TryLaunch()
         End Sub
 
-
-        Private Sub c_FakeTick()
+        Private Sub OnFakeTick()
             ref.QueueAction(
                 Sub()
-                    If state > W3GameState.Loading Then  Return
-                    If readyPlayers.Count = 0 Then  Return
+                    If state > W3GameState.Loading Then Return
+                    If readyPlayers.Count = 0 Then Return
 
                     numFakeTicks += 1
                     For Each player In readyPlayers
