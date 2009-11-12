@@ -80,7 +80,9 @@
                         Dim command As Command(Of T) = Nothing
                         If _commandMap.TryGetValue(key:=firstWord.ToUpperInvariant, value:=command) Then
                             Dim result As String = Nothing
-                            If command.HelpTopics.TryGetValue(key:=rest.ToUpperInvariant, value:=result) Then
+                            If rest = "*" Then
+                                Return (From key In command.HelpTopics.Keys Order By key).StringJoin(" ").Futurized
+                            ElseIf command.HelpTopics.TryGetValue(key:=rest.ToUpperInvariant, value:=result) Then
                                 Return result.Futurized
                             End If
                         End If

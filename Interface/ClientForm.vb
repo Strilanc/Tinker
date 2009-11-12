@@ -93,17 +93,18 @@ Public Class ClientForm
         SettingsForm.ShowBotSettings(bot)
     End Sub
 
-    Private Sub ShowHide() Handles mnuShowHide.Click, trayIcon.MouseDoubleClick
-        mnuShowHide.Checked = Not mnuShowHide.Checked
-        If mnuShowHide.Checked Then
-            Me.Show()
-            If Me.WindowState = FormWindowState.Minimized Then Me.WindowState = FormWindowState.Normal
-        Else
-            Me.Hide()
-        End If
+    Private Sub ShowHide() Handles mnuRestore.Click, trayIcon.MouseDoubleClick
+        Me.Show()
+        If Me.WindowState = FormWindowState.Minimized Then Me.WindowState = FormWindowState.Normal
+        trayIcon.Visible = False
     End Sub
 
     Private Sub OnMenuClickClose() Handles mnuClose.Click
         Me.Close()
+    End Sub
+
+    Private Sub btnMinimizeToTray_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnMinimizeToTray.Click
+        trayIcon.Visible = True
+        Me.Visible = False
     End Sub
 End Class
