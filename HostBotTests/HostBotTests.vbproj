@@ -70,6 +70,7 @@
     <Compile Include="ClientCredentialsTest.vb" />
     <Compile Include="CommandArgumentTest.vb" />
     <Compile Include="CommandTemplateTest.vb" />
+    <Compile Include="CommonTest.vb" />
     <Compile Include="HelpCommandTest.vb" />
     <Compile Include="W3GameStatsTest.vb" />
     <Compile Include="PacketStreamTest.vb" />

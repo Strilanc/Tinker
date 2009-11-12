@@ -559,14 +559,13 @@ Namespace Bnet
 #End Region
 
 #Region "Packers: Misc"
-        Public Shared Function MakeChatCommand(ByVal text As String) As BnetPacket
+        Public Const MaxChatCommandTextLength As Integer = 222
+        Shared Function MakeChatCommand(ByVal text As String) As BnetPacket
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BnetPacket)() IsNot Nothing)
 
-            Const MAX_TEXT_LENGTH As Integer = 222
-            If text.Length > MAX_TEXT_LENGTH Then
-                text = text.Substring(0, MAX_TEXT_LENGTH)
-                'Throw New ArgumentException(String.Format("Text cannot exceed {0} characters.", MAX_TEXT_LENGTH), "text")
+            If text.Length > MaxChatCommandTextLength Then
+                Throw New ArgumentException("Text cannot exceed {0} characters.".Frmt(MaxChatCommandTextLength), "text")
             End If
             Return New BnetPacket(BnetPacketId.ChatCommand, New Dictionary(Of String, Object) From {
                     {"text", text}})

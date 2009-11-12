@@ -47,7 +47,7 @@
                             "In this case, 'name' is a required named argument, 'map' is an optional named argument, and -private is an optional switch.",
                             "Given that format, you could host a public game of castle fight like this: 'Host name=<Castle Fight!!> -map=<castle*1.14b>'.",
                             "Arguments can be re-ordered but must be separated by spaces (use brackets for argument values with spaces)."
-                            }.StringJoin(" ").Futurized
+                            }.StringJoin(Environment.NewLine).Futurized
 
                 Case "*" 'list available commands
                     Return (From command In _commandMap.Values

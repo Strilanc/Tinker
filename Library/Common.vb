@@ -27,6 +27,54 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()>
+    Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IList(Of String)
+        Contract.Requires(body IsNot Nothing)
+        Contract.Requires(maxLineLength > 0)
+        Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
+
+        Dim result = New List(Of String)()
+        For Each line In Split(body, Delimiter:=Environment.NewLine)
+            If line.Length <= maxLineLength Then
+                result.Add(line)
+                Continue For
+            End If
+
+            Dim subline As New System.Text.StringBuilder(capacity:=maxLineLength)
+            For Each word In line.Split(" "c)
+                If word.Length > maxLineLength Then
+                    If subline.Length > 0 Then
+                        Dim n = maxLineLength - subline.Length - 1
+                        If n > 0 Then
+                            subline.Append(" ")
+                            subline.Append(word.Substring(0, n))
+                            word = word.Substring(n)
+                        End If
+                        result.Add(subline.ToString)
+                        subline.Clear()
+                    End If
+                    Dim i = 0
+                    For i = 0 To word.Length - 1 - maxLineLength Step maxLineLength
+                        result.Add(word.Substring(i, maxLineLength))
+                    Next i
+                    word = word.Substring(i)
+                ElseIf subline.Length = 0 Then
+                    'no action needed
+                ElseIf subline.Length + 1 + word.Length <= maxLineLength Then
+                    subline.Append(" ")
+                Else
+                    result.Add(subline.ToString)
+                    subline.Clear()
+                End If
+                subline.Append(word)
+            Next word
+            If subline.Length > 0 Then
+                result.Add(subline.ToString)
+            End If
+        Next line
+        Return result
+    End Function
+
+    <Pure()>
     Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
                                                     ByVal parser As Func(Of String, T),
                                                     ByVal pairDivider As String,

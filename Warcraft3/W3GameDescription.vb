@@ -3,10 +3,13 @@
 Namespace Warcraft3
     <Flags()>
     Public Enum GameTypes As UInteger
-        CreateGameUnknown0 = 1 << 0
+        CreateGameUnknown0 = 1 << 0 'this bit always seems to be set by wc3
+
+        '''<summary>Setting this bit causes wc3 to check the map and disc if it is not signed by Blizzard</summary>
         AuthenticatedMakerBlizzard = 1 << 3
 
         PrivateGame = 1 << 11
+
         MakerUser = 1 << 13
         MakerBlizzard = 1 << 14
         TypeMelee = 1 << 15

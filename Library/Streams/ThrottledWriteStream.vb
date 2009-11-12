@@ -69,11 +69,11 @@ Public NotInheritable Class ThrottledWriter
     Private ReadOnly costPerWrite As Double
     Private ReadOnly costPerCharacter As Double
     Private ReadOnly costLimit As Double
-    Private ReadOnly recoveryRate As Double
+    Private ReadOnly recoveryRatePerMillisecond As Double
 
     Private availableSlack As Double
     Private usedCost As Double
-    Private lastContinueConsumeTime As Date = DateTime.Now()
+    Private lastTick As ModInt32 = Environment.TickCount
     Private consuming As Boolean
 
     Public Sub New(ByVal destinationStream As IO.Stream,
@@ -94,7 +94,7 @@ Public NotInheritable Class ThrottledWriter
         Me.costPerWrite = costPerWrite
         Me.costPerCharacter = costPerCharacter
         Me.costLimit = costLimit
-        Me.recoveryRate = costRecoveredPerSecond / TimeSpan.TicksPerSecond
+        Me.recoveryRatePerMillisecond = costRecoveredPerSecond / 1000
     End Sub
 
     Public Sub QueueWrite(ByVal data As Byte())
@@ -108,29 +108,31 @@ Public NotInheritable Class ThrottledWriter
         ref.QueueAction(Sub() ContinueConsume(item))
     End Sub
     Private Sub ContinueConsume(ByVal item As Byte())
-        If item IsNot Nothing Then consumptionQueue.Enqueue(item)
-        If consuming Then Return
-        consuming = True
+        If item IsNot Nothing Then
+            consumptionQueue.Enqueue(item)
+            If consuming Then Return
+            consuming = True
+        End If
 
         While consumptionQueue.Count > 0
-            'Recover
-            Dim d = DateTime.Now()
-            usedCost -= (d - lastContinueConsumeTime).Ticks * recoveryRate
-            lastContinueConsumeTime = d
+            'Recover over time
+            Dim t As ModInt32 = Environment.TickCount
+            Dim dt = t - lastTick
+            lastTick = t
+            usedCost -= CUInt(dt) * recoveryRatePerMillisecond
             If usedCost < 0 Then usedCost = 0
-
-            'Wait
-            If usedCost > costLimit + availableSlack Then
-                FutureWait(New TimeSpan(CLng((usedCost - costLimit) / recoveryRate))).
-                                CallWhenReady(Sub() ref.QueueAction(Sub() ContinueConsume(Nothing)))
-                Return
+            'Recover using slack
+            If availableSlack > 0 Then
+                Dim slack = Math.Min(usedCost, availableSlack)
+                availableSlack -= slack
+                usedCost -= slack
             End If
 
-            'Cut into slack
-            If availableSlack > 0 Then
-                Dim x = Math.Min(usedCost, availableSlack)
-                availableSlack -= x
-                usedCost -= x
+            'Wait if necessary
+            If usedCost > costLimit Then
+                Dim delay = New TimeSpan(ticks:=CLng((usedCost - costLimit) / recoveryRatePerMillisecond * TimeSpan.TicksPerMillisecond))
+                delay.FutureWait.QueueCallWhenReady(ref, Sub() ContinueConsume(Nothing))
+                Return
             End If
 
             'Perform write

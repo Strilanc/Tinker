@@ -183,7 +183,9 @@ Namespace Bnet
                     Throw New InvalidOperationException("Can't send text unless you're logged in.")
             End Select
 
-            SendPacket(BnetPacket.MakeChatCommand(text))
+            For Each line In SplitText(text, maxLineLength:=Bnet.BnetPacket.MaxChatCommandTextLength)
+                SendPacket(BnetPacket.MakeChatCommand(line))
+            Next line
         End Sub
 
         Private Sub SendWhisper(ByVal username As String, ByVal text As String)
@@ -191,9 +193,13 @@ Namespace Bnet
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(username.Length > 0)
             Contract.Requires(text.Length > 0)
-            Dim message = "/w {0} {1}".Frmt(username, text)
-            Contract.Assume(message.Length >= 6)
-            SendText(message)
+            Dim prefix = "/w {0} ".Frmt(username)
+            If prefix.Length >= Bnet.BnetPacket.MaxChatCommandTextLength Then
+                Throw New ArgumentOutOfRangeException("username", "Username is too long.")
+            End If
+            For Each line In SplitText(text, maxLineLength:=Bnet.BnetPacket.MaxChatCommandTextLength - prefix.Length - 1)
+                SendText(prefix + line)
+            Next line
         End Sub
 
         Private Sub SetListenPort(ByVal newPort As UShort)
