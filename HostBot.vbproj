@@ -165,6 +165,7 @@
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
     <Compile Include="Battlenet\CDKey.vb" />
+    <Compile Include="Battlenet\ClientCredentials.vb" />
     <Compile Include="Library\Commands\Command Extensions.vb" />
     <Compile Include="Library\Commands\CommandTemplate.vb" />
     <Compile Include="Library\Commands\Delegated Commands.vb" />
@@ -272,7 +273,7 @@
     </Compile>
     <Compile Include="Bot\MainBot.vb" />
     <Compile Include="Battlenet\BnetClient.vb" />
-    <Compile Include="Battlenet\BnetAuthentication.vb" />
+    <Compile Include="Battlenet\RevisionCheck.vb" />
     <Compile Include="Battlenet\BnetSocket.vb" />
     <Compile Include="Interface\W3GameControl.Designer.vb">
       <DependentUpon>W3GameControl.vb</DependentUpon>

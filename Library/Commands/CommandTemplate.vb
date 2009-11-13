@@ -96,12 +96,12 @@ Namespace Commands
             'Correct number of raw arguments must be included
             If argument.RawValueCount > rawMaxCount Then
                 Return New ArgumentException(
-                    "Expected only {0} raw arguments ({1}), but received {2}.".
-                        Frmt(rawMaxCount, template.RawValues.StringJoin(", "), argument.RawValueCount))
+                    "Expected only {0} raw arguments ({1}), but received {2}: '{3}'.".
+                        Frmt(rawMaxCount, template.RawValues.StringJoin(", "), argument.RawValueCount, argument.RawValues.StringJoin(" ")))
             ElseIf argument.RawValueCount < rawMinCount Then
                 Return New ArgumentException(
-                    "Expected {0} raw arguments ({1}), but only received {2}.".
-                        Frmt(rawMinCount, template.RawValues.StringJoin(", "), argument.RawValueCount))
+                    "Expected {0} raw arguments ({1}), but only received {2}: '{3}'.".
+                        Frmt(rawMinCount, template.RawValues.StringJoin(", "), argument.RawValueCount, argument.RawValues.StringJoin(" ")))
             End If
 
             Return Nothing
