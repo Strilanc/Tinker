@@ -1,18 +1,18 @@
-﻿Namespace Warcraft3
-    Partial Public NotInheritable Class W3Player
+﻿Namespace WC3
+    Partial Public NotInheritable Class Player
         Private knowMapState As Boolean
         Private mapDownloadPosition As Integer = -1
         Public IsGettingMapFromBot As Boolean
         Private mapUploadPosition As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
 
-        Private Sub AddQueuePacketHandler(ByVal jar As W3Packet.DefParser,
+        Private Sub AddQueuePacketHandler(ByVal jar As Packet.DefParser,
                                           ByVal handler As Action(Of IPickle(Of Dictionary(Of String, Object))))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             packetHandler.AddHandler(jar.id, jar, Function(data) inQueue.QueueAction(Sub() handler(data)))
         End Sub
-        Private Sub AddQueuePacketHandler(Of T)(ByVal id As W3PacketId,
+        Private Sub AddQueuePacketHandler(Of T)(ByVal id As PacketId,
                                                 ByVal jar As IJar(Of T),
                                                 ByVal handler As Action(Of IPickle(Of T)))
             Contract.Requires(jar IsNot Nothing)
@@ -20,14 +20,14 @@
             packetHandler.AddHandler(id, jar, Function(data) inQueue.QueueAction(Sub() handler(data)))
         End Sub
         Private Sub LobbyStart()
-            state = W3PlayerState.Lobby
-            AddQueuePacketHandler(W3Packet.Jars.ClientMapInfo, AddressOf ReceiveClientMapInfo)
-            AddQueuePacketHandler(W3Packet.Jars.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
+            state = PlayerState.Lobby
+            AddQueuePacketHandler(Packet.Jars.ClientMapInfo, AddressOf ReceiveClientMapInfo)
+            AddQueuePacketHandler(Packet.Jars.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
         End Sub
 
 #Region "Networking"
-        Public Event SuperficialStateUpdated(ByVal sender As W3Player)
-        Public Event StateUpdated(ByVal sender As W3Player)
+        Public Event SuperficialStateUpdated(ByVal sender As Player)
+        Public Event StateUpdated(ByVal sender As Player)
         Private Sub ReceivePeerConnectionInfo(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = CType(pickle.Value, Dictionary(Of String, Object))
@@ -38,7 +38,7 @@
             _numPeerConnections = (From flag In flags Where flag.connected).Count
             Contract.Assume(_numPeerConnections <= 12)
 
-            If state = W3PlayerState.Lobby Then
+            If state = PlayerState.Lobby Then
                 For Each flag In flags
                     Contract.Assume(flag IsNot Nothing)
                     scheduler.SetLink(Me.Index, flag.pid, flag.connected).MarkAnyExceptionAsHandled()
@@ -52,10 +52,10 @@
             Dim newMapDownloadPosition = CInt(CUInt(vals("total downloaded")))
             Dim delta = newMapDownloadPosition - mapDownloadPosition
             If delta < 0 Then
-                Disconnect(True, W3PlayerLeaveType.Disconnect, "auto-booted: moved download position backwards from {1} to {2}.".Frmt(mapDownloadPosition, newMapDownloadPosition))
+                Disconnect(True, PlayerLeaveType.Disconnect, "auto-booted: moved download position backwards from {1} to {2}.".Frmt(mapDownloadPosition, newMapDownloadPosition))
                 Return
             ElseIf newMapDownloadPosition > settings.Map.FileSize Then
-                Disconnect(True, W3PlayerLeaveType.Disconnect, "auto-booted: moved download position past file size")
+                Disconnect(True, PlayerLeaveType.Disconnect, "auto-booted: moved download position past file size")
                 Return
             ElseIf mapDownloadPosition = settings.Map.FileSize Then
                 '[previously finished download]
@@ -67,12 +67,12 @@
             If Not knowMapState Then
                 Dim hasMap = mapDownloadPosition = settings.Map.FileSize
                 If Not hasMap AndAlso Not settings.allowDownloads Then
-                    Disconnect(True, W3PlayerLeaveType.Disconnect, "no dls allowed")
+                    Disconnect(True, PlayerLeaveType.Disconnect, "no dls allowed")
                     Return
                 End If
 
                 scheduler.AddClient(Index, hasMap).MarkAnyExceptionAsHandled()
-                scheduler.SetLink(Index, W3Game.LocalTransferClientKey, linked:=True).MarkAnyExceptionAsHandled()
+                scheduler.SetLink(Index, Game.LocalTransferClientKey, linked:=True).MarkAnyExceptionAsHandled()
                 knowMapState = True
             ElseIf mapDownloadPosition = settings.Map.FileSize Then
                 logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
@@ -104,7 +104,7 @@
 #End Region
 
 #Region "Misc"
-        Public Event WantMapSender(ByVal sender As W3Player)
+        Public Event WantMapSender(ByVal sender As Player)
         Public Sub GiveMapSender(ByVal senderIndex As Byte)
             Contract.Requires(senderIndex >= 0)
             Contract.Requires(senderIndex <= 12)
@@ -114,7 +114,7 @@
                         Dim out_DataSize = 0
                         Contract.Assume(senderIndex >= 0)
                         Contract.Assume(senderIndex <= 12)
-                        Dim pk = W3Packet.MakeMapFileData(settings.Map, Index, mapUploadPosition, out_DataSize, senderIndex)
+                        Dim pk = Packet.MakeMapFileData(settings.Map, Index, mapUploadPosition, out_DataSize, senderIndex)
                         mapUploadPosition += out_DataSize
                         Try
                             SendPacket(pk)

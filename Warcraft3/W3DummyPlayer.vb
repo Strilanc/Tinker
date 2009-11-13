@@ -1,7 +1,6 @@
-﻿Imports HostBot.Warcraft3.W3PacketId
-Imports HostBot.Warcraft3
+﻿Imports HostBot.WC3.PacketId
 
-Namespace Warcraft3
+Namespace WC3
     Public Enum DummyPlayerMode
         DownloadMap
         EnterGame
@@ -17,7 +16,7 @@ Namespace Warcraft3
         Private WithEvents accepter As New W3PeerConnectionAccepter()
         Public readyDelay As TimeSpan = TimeSpan.Zero
         Private index As Byte
-        Private dl As W3MapDownload
+        Private dl As MapDownload
         Private poolPort As PortPool.PortHandle
         Private mode As DummyPlayerMode
 
@@ -70,7 +69,7 @@ Namespace Warcraft3
                 producer:=AddressOf socket.FutureReadPacket,
                 consumer:=Function(packetData) ref.QueueAction(
                     Sub()
-                        Dim packet = W3Packet.FromData(CType(packetData(1), W3PacketId), packetData.SubView(4))
+                        Dim packet = WC3.Packet.FromData(CType(packetData(1), PacketId), packetData.SubView(4))
                         Dim id = packet.id
                         Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                         Contract.Assume(vals IsNot Nothing)
@@ -80,17 +79,17 @@ Namespace Warcraft3
                                     index = CByte(vals("player index"))
                                 Case HostMapInfo
                                     If mode = DummyPlayerMode.DownloadMap Then
-                                        dl = New W3MapDownload(CStr(vals("path")),
+                                        dl = New MapDownload(CStr(vals("path")),
                                                                CUInt(vals("size")),
                                                                CUInt(vals("crc32")),
                                                                CUInt(vals("xoro checksum")),
                                                                CType(vals("sha1 checksum"), ViewableList(Of Byte)))
-                                        socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, 0))
+                                        socket.SendPacket(packet.MakeClientMapInfo(packet.DownloadState.NotDownloading, 0))
                                     Else
-                                        socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, CUInt(vals("size"))))
+                                        socket.SendPacket(packet.MakeClientMapInfo(packet.DownloadState.NotDownloading, CUInt(vals("size"))))
                                     End If
                                 Case Ping
-                                    socket.SendPacket(W3Packet.MakePong(CUInt(vals("salt"))))
+                                    socket.SendPacket(packet.MakePong(CUInt(vals("salt"))))
                                 Case OtherPlayerJoined
                                     Dim ext_addr = CType(vals("external address"), Dictionary(Of String, Object))
                                     Dim player = New W3Peer(CStr(vals("name")),
@@ -112,18 +111,18 @@ Namespace Warcraft3
                                     If mode = DummyPlayerMode.DownloadMap Then
                                         Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
                                     ElseIf mode = DummyPlayerMode.EnterGame Then
-                                        FutureWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(W3Packet.MakeReady()))
+                                        FutureWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(packet.MakeReady()))
                                     End If
                                 Case Tick
                                     If CUShort(vals("time span")) > 0 Then
-                                        socket.SendPacket(W3Packet.MakeTock())
+                                        socket.SendPacket(packet.MakeTock())
                                     End If
                                 Case MapFileData
                                     Dim pos = CUInt(dl.file.Position)
                                     If ReceiveDLMapChunk(vals) Then
                                         Disconnect(expected:=True, reason:="Download finished.")
                                     Else
-                                        socket.SendPacket(W3Packet.MakeMapFileDataReceived(1, Me.index, pos))
+                                        socket.SendPacket(packet.MakeMapFileDataReceived(1, Me.index, pos))
                                     End If
                             End Select
                         Catch e As Exception
@@ -137,7 +136,7 @@ Namespace Warcraft3
                               End Sub
             )
 
-            socket.SendPacket(W3Packet.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
+            socket.SendPacket(Packet.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
         End Sub
 
         Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of String, Object)) As Boolean
@@ -148,15 +147,15 @@ Namespace Warcraft3
             Contract.Assume(fileData IsNot Nothing)
 
             If dl.ReceiveChunk(position, fileData) Then
-                socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.NotDownloading, dl.size))
+                socket.SendPacket(Packet.MakeClientMapInfo(Packet.DownloadState.NotDownloading, dl.size))
                 Return True
             Else
-                socket.SendPacket(W3Packet.MakeClientMapInfo(W3Packet.DownloadState.Downloading, CUInt(dl.file.Position)))
+                socket.SendPacket(Packet.MakeClientMapInfo(Packet.DownloadState.Downloading, CUInt(dl.file.Position)))
                 Return False
             End If
         End Function
         Private Sub SendPlayersConnected()
-            socket.SendPacket(W3Packet.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.Index))
+            socket.SendPacket(Packet.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.Index))
         End Sub
 
         Private Sub c_Disconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
@@ -200,7 +199,7 @@ Namespace Warcraft3
                         logger.Log("{0} is a peer connection from {1}.".Frmt(socket.Name, player.name), LogMessageType.Positive)
                         socket.Name = player.name
                         player.SetSocket(socket)
-                        socket.SendPacket(W3Packet.MakePeerKnock(player.peerKey, Me.index, 0))
+                        socket.SendPacket(Packet.MakePeerKnock(player.peerKey, Me.index, 0))
                     End If
                 End Sub
             )
@@ -217,22 +216,22 @@ Namespace Warcraft3
         End Sub
 
         Private Sub OnPeerReceivePacket(ByVal sender As W3Peer,
-                                        ByVal packet As W3Packet)
+                                        ByVal packet As Packet)
             ref.QueueAction(
                 Sub()
                     Try
                         Select Case packet.id
                             Case PeerPing
                                 Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
-                                sender.Socket.SendPacket(W3Packet.MakePeerPing(CType(vals("salt"), Byte()), 1))
-                                sender.Socket.SendPacket(W3Packet.MakePeerPong(CType(vals("salt"), Byte())))
+                                sender.Socket.SendPacket(Packet.MakePeerPing(CType(vals("salt"), Byte()), 1))
+                                sender.Socket.SendPacket(Packet.MakePeerPong(CType(vals("salt"), Byte())))
                             Case MapFileData
                                 Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                                 Dim pos = CUInt(dl.file.Position)
                                 If ReceiveDLMapChunk(vals) Then
                                     Disconnect(expected:=True, reason:="Download finished.")
                                 Else
-                                    sender.Socket.SendPacket(W3Packet.MakeMapFileDataReceived(sender.Index, Me.index, pos))
+                                    sender.Socket.SendPacket(Packet.MakeMapFileDataReceived(sender.Index, Me.index, pos))
                                 End If
                         End Select
                     Catch e As Exception

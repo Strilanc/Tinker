@@ -1,9 +1,7 @@
-﻿Imports HostBot.Bnet.BnetPacket
-
-Namespace Warcraft3
+﻿Namespace WC3
     Public Class RemoteGameDescription
         Private ReadOnly _name As String
-        Private ReadOnly _stats As W3GameStats
+        Private ReadOnly _stats As GameStats
         Private ReadOnly _totalSlotCount As Integer
         Private ReadOnly _usedPlayerSlotCount As Integer
         Private ReadOnly _hostAddress As Net.IPAddress
@@ -12,7 +10,7 @@ Namespace Warcraft3
         Public ReadOnly entryKey As UInt32
         Public ReadOnly age As TimeSpan
         Public ReadOnly type As GameTypes
-        Public ReadOnly state As Bnet.BnetPacket.GameStates
+        Public ReadOnly state As Bnet.Packet.GameStates
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_totalSlotCount > 0)
@@ -25,7 +23,7 @@ Namespace Warcraft3
         End Sub
 
         Public Sub New(ByVal name As String,
-                       ByVal stats As W3GameStats,
+                       ByVal stats As GameStats,
                        ByVal hostPort As UShort,
                        ByVal hostAddress As Net.IPAddress,
                        ByVal gameId As UInt32,
@@ -34,7 +32,7 @@ Namespace Warcraft3
                        ByVal totalPlayerSlotCount As Integer,
                        ByVal usedPlayerSlotCount As Integer,
                        ByVal type As GameTypes,
-                       ByVal state As GameStates)
+                       ByVal state As Bnet.Packet.GameStates)
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
             Contract.Requires(hostAddress IsNot Nothing)
@@ -60,9 +58,9 @@ Namespace Warcraft3
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property Stats As W3GameStats
+        Public ReadOnly Property Stats As GameStats
             Get
-                Contract.Ensures(Contract.Result(Of W3GameStats)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
                 Return _stats
             End Get
         End Property
@@ -89,14 +87,14 @@ Namespace Warcraft3
     End Class
     Public Class LocalGameDescription
         Private ReadOnly _name As String
-        Private ReadOnly _stats As W3GameStats
+        Private ReadOnly _stats As GameStats
         Private ReadOnly _totalSlotCount As Integer
         Private ReadOnly _usedPlayerSlotCount As Integer
         Public ReadOnly entryId As UInt32
         Public ReadOnly entryKey As UInt32
         Public ReadOnly age As TimeSpan
         Public ReadOnly type As GameTypes
-        Public ReadOnly state As Bnet.BnetPacket.GameStates
+        Public ReadOnly state As Bnet.Packet.GameStates
     End Class
 
     Public Class W3RelayServer
@@ -122,7 +120,7 @@ Namespace Warcraft3
                     End If
 
                     Dim w = New W3Socket(New PacketSocket(result))
-                    w.SendPacket(W3Packet.MakeKnock(connector.Name,
+                    w.SendPacket(Packet.MakeKnock(connector.Name,
                                                     connector.ListenPort,
                                                     CUShort(connector.RemoteEndPoint.Port),
                                                     game.entryId,

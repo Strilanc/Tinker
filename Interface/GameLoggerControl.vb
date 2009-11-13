@@ -1,9 +1,7 @@
-﻿Imports HostBot.Warcraft3
-
-Public Class GameLoggerControl
-    Private WithEvents game As W3Game
+﻿Public Class GameLoggerControl
+    Private WithEvents game As WC3.Game
     Private actionMode As CallbackMode = CallbackMode.Off
-    Public Sub SetGame(ByVal game As W3Game)
+    Public Sub SetGame(ByVal game As WC3.Game)
         SyncLock lock
             If Me.game Is game Then Return
             Me.game = game
@@ -21,12 +19,12 @@ Public Class GameLoggerControl
         End Select
     End Sub
 
-    Private Sub OnPlayerAction(ByVal sender As Warcraft3.W3Game,
-                               ByVal player As Warcraft3.W3Player,
-                               ByVal action As W3GameAction) Handles game.PlayerAction
+    Private Sub OnPlayerAction(ByVal sender As WC3.Game,
+                               ByVal player As WC3.Player,
+                               ByVal action As WC3.GameAction) Handles game.PlayerAction
         Dim mode = actionMode
         If mode = CallbackMode.Off Then Return
-        LogMessage(New LazyValue(Of String)(Function() "{0}: {1}".Frmt(player.name, action.Payload.Description.Value)),
+        LogMessage(New LazyValue(Of String)(Function() "{0}: {1}".Frmt(player.Name, action.Payload.Description.Value)),
                    Color.DarkBlue,
                    mode = CallbackMode.File)
     End Sub

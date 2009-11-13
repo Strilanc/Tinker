@@ -13,8 +13,6 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
-Imports HostBot.Bnet
-Imports HostBot.Warcraft3
 Imports HostBot.Links
 Imports HostBot.Commands.Specializations
 
@@ -34,18 +32,18 @@ Public NotInheritable Class MainBot
     Private ReadOnly ref As ICallQueue
     Private ReadOnly eref As ICallQueue
 
-    Private ReadOnly clients As New List(Of BnetClient)
-    Private ReadOnly servers As New List(Of W3Server)
+    Private ReadOnly clients As New List(Of Bnet.Client)
+    Private ReadOnly servers As New List(Of WC3.GameServer)
     Private ReadOnly widgets As New List(Of IBotWidget)
 
     Public Event AddedWidget(ByVal widget As IBotWidget)
     Public Event RemovedWidget(ByVal widget As IBotWidget)
-    Public Event ServerStateChanged(ByVal server As W3Server, ByVal oldState As W3ServerState, ByVal newState As W3ServerState)
-    Public Event AddedServer(ByVal server As W3Server)
-    Public Event RemovedServer(ByVal server As W3Server)
-    Public Event ClientStateChanged(ByVal client As BnetClient, ByVal oldState As BnetClientState, ByVal newState As BnetClientState)
-    Public Event AddedClient(ByVal client As BnetClient)
-    Public Event RemovedClient(ByVal client As BnetClient)
+    Public Event ServerStateChanged(ByVal server As WC3.GameServer, ByVal oldState As WC3.ServerState, ByVal newState As WC3.ServerState)
+    Public Event AddedServer(ByVal server As WC3.GameServer)
+    Public Event RemovedServer(ByVal server As WC3.GameServer)
+    Public Event ClientStateChanged(ByVal client As Bnet.Client, ByVal oldState As Bnet.ClientState, ByVal newState As Bnet.ClientState)
+    Public Event AddedClient(ByVal client As Bnet.Client)
+    Public Event RemovedClient(ByVal client As Bnet.Client)
 #End Region
 
 #Region "New"
@@ -136,10 +134,10 @@ Public NotInheritable Class MainBot
     End Sub
 
     Private Function CreateServer(ByVal name As String,
-                                  ByVal serverSettings As ServerSettings,
+                                  ByVal serverSettings As WC3.ServerSettings,
                                   Optional ByVal suffix As String = "",
-                                  Optional ByVal avoidNameCollision As Boolean = False) As W3Server
-        Contract.Ensures(Contract.Result(Of W3Server)() IsNot Nothing)
+                                  Optional ByVal avoidNameCollision As Boolean = False) As WC3.GameServer
+        Contract.Ensures(Contract.Result(Of WC3.GameServer)() IsNot Nothing)
         If name.Trim = "" Then
             Throw New ArgumentException("Invalid server name.")
         ElseIf HaveServer(name) Then
@@ -153,7 +151,7 @@ Public NotInheritable Class MainBot
             name += i.ToString(CultureInfo.InvariantCulture)
         End If
 
-        Dim server As W3Server = New W3Server(name, Me, serverSettings, suffix)
+        Dim server As WC3.GameServer = New WC3.GameServer(name, Me, serverSettings, suffix)
         AddHandler server.PlayerTalked, AddressOf CatchServerPlayerTalked
         AddHandler server.ChangedState, AddressOf CatchServerStateChanged
         servers.Add(server)
@@ -193,21 +191,21 @@ Public NotInheritable Class MainBot
         ThrowRemovedWidget(widget)
     End Sub
 
-    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = Nothing) As BnetClient
+    Private Function CreateClient(ByVal name As String, Optional ByVal profileName As String = Nothing) As Bnet.Client
         Contract.Requires(name IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of BnetClient)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Bnet.Client)() IsNot Nothing)
 
         If profileName Is Nothing Then profileName = "Default"
         Dim profile = FindClientProfile(profileName)
         If name.Trim = "" Then
             Throw New ArgumentException("Invalid client name.")
         ElseIf HaveClient(name) Then
-            Throw New ArgumentException("Client named '{0}' already exists.".Frmt(name))
+            Throw New ArgumentException("Bnet.Client named '{0}' already exists.".Frmt(name))
         ElseIf profile Is Nothing Then
             Throw New ArgumentException("Invalid profile.")
         End If
 
-        Dim client = New BnetClient(Me, profile, name)
+        Dim client = New Bnet.Client(Me, profile, name)
         AddHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
         AddHandler client.StateChanged, AddressOf CatchClientStateChanged
         clients.Add(client)
@@ -239,11 +237,11 @@ Public NotInheritable Class MainBot
         Return FindServer(name) IsNot Nothing
     End Function
 
-    Private Function FindClient(ByVal name As String) As BnetClient
+    Private Function FindClient(ByVal name As String) As Bnet.Client
         Contract.Requires(name IsNot Nothing)
         Return (From x In clients Where x.Name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault()
     End Function
-    Private Function FindServer(ByVal name As String) As W3Server
+    Private Function FindServer(ByVal name As String) As WC3.GameServer
         Contract.Requires(name IsNot Nothing)
         Return (From x In servers Where x.Name.ToUpperInvariant = name.ToUpperInvariant).FirstOrDefault()
     End Function
@@ -329,7 +327,7 @@ Public NotInheritable Class MainBot
                                     ByVal password As String,
                                     Optional ByVal remoteHost As String = "localhost",
                                     Optional ByVal listenPort As UShort = 0) As IFuture
-        Dim map = New W3Map("Maps\",
+        Dim map = New WC3.Map("Maps\",
                             "Maps\AdminGame.w3x",
                             filesize:=1,
                             fileChecksumCRC32:=&H12345678UI,
@@ -337,26 +335,27 @@ Public NotInheritable Class MainBot
                             mapChecksumXORO:=&H2357BDUI,
                             slotCount:=2)
         Contract.Assume(map.Slots(1) IsNot Nothing)
-        map.slots(1).contents = New W3SlotContentsComputer(map.slots(1), W3Slot.ComputerLevel.Normal)
-        Dim header = New W3GameDescription("Admin Game",
-                                      New W3GameStats(map, My.Resources.ProgramName, New Commands.CommandArgument("")),
+        map.Slots(1).Contents = New WC3.SlotContentsComputer(map.Slots(1), WC3.Slot.ComputerLevel.Normal)
+        Dim header = New WC3.GameDescription("Admin Game",
+                                      New WC3.GameStats(map, My.Resources.ProgramName, New Commands.CommandArgument("")),
                                       hostport:=0,
                                       gameid:=1,
                                       entryKey:=0,
-                                      playerSlotCount:=map.NumPlayerSlots,
+                                      totalSlotCount:=map.NumPlayerSlots,
                                       gameType:=map.GameType,
-                                      state:=0)
-        Dim settings = New ServerSettings(map:=map,
+                                      state:=0,
+                                      usedSlotCount:=0)
+        Dim settings = New WC3.ServerSettings(map:=map,
                                           header:=header,
                                           allowUpload:=False,
-                                          defaultSlotLockState:=W3Slot.Lock.Frozen,
+                                          defaultSlotLockState:=WC3.Slot.Lock.Frozen,
                                           instances:=0,
                                           password:=password,
                                           isAdminGame:=True,
                                           argument:=New Commands.CommandArgument("-permanent"))
         Dim server = CreateServer(name, settings)
-        Dim lan As W3LanAdvertiser
-        lan = New W3LanAdvertiser(Me, name, listenPort, remoteHost)
+        Dim lan As WC3.LanAdvertiser
+        lan = New WC3.LanAdvertiser(Me, name, listenPort, remoteHost)
         Try
             AddWidget(lan)
             lan.AddGame(header)
@@ -396,43 +395,43 @@ Public NotInheritable Class MainBot
                              RaiseEvent RemovedWidget(widget)
                          End Sub)
     End Sub
-    Private Sub ThrowAddedServer(ByVal server As W3Server)
+    Private Sub ThrowAddedServer(ByVal server As WC3.GameServer)
         Contract.Requires(server IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent AddedServer(server)
                          End Sub)
     End Sub
-    Private Sub ThrowRemovedServer(ByVal server As W3Server)
+    Private Sub ThrowRemovedServer(ByVal server As WC3.GameServer)
         Contract.Requires(server IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent RemovedServer(server)
                          End Sub)
     End Sub
-    Private Sub ThrowAddedClient(ByVal client As BnetClient)
+    Private Sub ThrowAddedClient(ByVal client As Bnet.Client)
         Contract.Requires(client IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent AddedClient(client)
                          End Sub)
     End Sub
-    Private Sub ThrowRemovedClient(ByVal client As BnetClient)
+    Private Sub ThrowRemovedClient(ByVal client As Bnet.Client)
         Contract.Requires(client IsNot Nothing)
         eref.QueueAction(Sub()
                              RaiseEvent RemovedClient(client)
                          End Sub)
     End Sub
 
-    Private Sub CatchClientReceivedPacket(ByVal client As BnetClient, ByVal packet As BnetPacket)
+    Private Sub CatchClientReceivedPacket(ByVal client As Bnet.Client, ByVal packet As Bnet.Packet)
         Contract.Requires(client IsNot Nothing)
         Contract.Requires(packet IsNot Nothing)
-        If packet.id <> BnetPacketId.ChatEvent Then Return
+        If packet.id <> Bnet.PacketId.ChatEvent Then Return
 
-        Dim vals = CType(packet.payload.Value, Dictionary(Of String, Object))
-        Dim id = CType(vals("event id"), BnetPacket.ChatEventId)
+        Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+        Dim id = CType(vals("event id"), Bnet.Packet.ChatEventId)
         Dim username = CStr(vals("username"))
         Dim text = CStr(vals("text"))
 
         'Exit if this is not a command
-        If id <> Bnet.BnetPacket.ChatEventId.Talk And id <> Bnet.BnetPacket.ChatEventId.Whisper Then
+        If id <> Bnet.Packet.ChatEventId.Talk And id <> Bnet.Packet.ChatEventId.Whisper Then
             Return
         ElseIf text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix Then
             If text.ToUpperInvariant <> "?TRIGGER" Then
@@ -474,9 +473,9 @@ Public NotInheritable Class MainBot
             )
     End Sub
 
-    Private Sub CatchServerPlayerTalked(ByVal sender As W3Server,
-                                        ByVal game As W3Game,
-                                        ByVal player As W3Player,
+    Private Sub CatchServerPlayerTalked(ByVal sender As WC3.GameServer,
+                                        ByVal game As WC3.Game,
+                                        ByVal player As WC3.Player,
                                         ByVal text As String)
         Contract.Requires(sender IsNot Nothing)
         Contract.Requires(game IsNot Nothing)
@@ -511,23 +510,20 @@ Public NotInheritable Class MainBot
         )
     End Sub
 
-    Private Sub CatchClientStateChanged(ByVal sender As BnetClient, ByVal oldState As BnetClientState, ByVal newState As BnetClientState)
+    Private Sub CatchClientStateChanged(ByVal sender As Bnet.Client, ByVal oldState As Bnet.ClientState, ByVal newState As Bnet.ClientState)
         Contract.Requires(sender IsNot Nothing)
         RaiseEvent ClientStateChanged(sender, oldState, newState)
     End Sub
-    Private Sub CatchServerStateChanged(ByVal sender As W3Server, ByVal oldState As W3ServerState, ByVal newState As W3ServerState)
+    Private Sub CatchServerStateChanged(ByVal sender As WC3.GameServer, ByVal oldState As WC3.ServerState, ByVal newState As WC3.ServerState)
         Contract.Requires(sender IsNot Nothing)
         RaiseEvent ServerStateChanged(sender, oldState, newState)
     End Sub
 #End Region
 
 #Region "Remote Calls"
-    Public Function QueueFindServer(ByVal name As String) As IFuture(Of W3Server)
+    Public Function QueueFindServer(ByVal name As String) As IFuture(Of WC3.GameServer)
         Contract.Requires(name IsNot Nothing)
-        Return ref.QueueFunc(Function()
-                                 Contract.Assume(name IsNot Nothing)
-                                 Return FindServer(name)
-                             End Function)
+        Return ref.QueueFunc(Function() FindServer(name))
     End Function
     Public Function QueueKill() As IFuture
         Return ref.QueueAction(AddressOf Kill)
@@ -544,73 +540,51 @@ Public NotInheritable Class MainBot
     Public Function QueueAddWidget(ByVal widget As IBotWidget) As IFuture
         Contract.Requires(widget IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        Return ref.QueueAction(Sub()
-                                   Contract.Assume(widget IsNot Nothing)
-                                   AddWidget(widget)
-                               End Sub)
+        Return ref.QueueAction(Sub() AddWidget(widget))
     End Function
     Public Function QueueRemoveWidget(ByVal typeName As String, ByVal name As String) As IFuture
         Contract.Requires(name IsNot Nothing)
         Contract.Requires(typeName IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        Return ref.QueueAction(Sub()
-                                   Contract.Assume(typeName IsNot Nothing)
-                                   Contract.Assume(name IsNot Nothing)
-                                   RemoveWidget(typeName, name)
-                               End Sub)
+        Return ref.QueueAction(Sub() RemoveWidget(typeName, name))
     End Function
     Public Function QueueRemoveServer(ByVal name As String) As IFuture
         Contract.Requires(name IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        Return ref.QueueAction(Sub()
-                                   Contract.Assume(name IsNot Nothing)
-                                   KillServer(name)
-                               End Sub)
+        Return ref.QueueAction(Sub() KillServer(name))
     End Function
     Public Function QueueCreateServer(ByVal name As String,
-                                      ByVal defaultSettings As ServerSettings,
+                                      ByVal defaultSettings As WC3.ServerSettings,
                                       Optional ByVal suffix As String = "",
-                                      Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of W3Server)
+                                      Optional ByVal avoidNameCollisions As Boolean = False) As IFuture(Of WC3.GameServer)
         Contract.Requires(name IsNot Nothing)
         Contract.Requires(defaultSettings IsNot Nothing)
         Contract.Requires(suffix IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of W3Server))() IsNot Nothing)
-        Return ref.QueueFunc(Function()
-                                 Contract.Assume(name IsNot Nothing)
-                                 Contract.Assume(defaultSettings IsNot Nothing)
-                                 Contract.Assume(suffix IsNot Nothing)
-                                 Return CreateServer(name, defaultSettings, suffix, avoidNameCollisions)
-                             End Function)
+        Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameServer))() IsNot Nothing)
+        Return ref.QueueFunc(Function() CreateServer(name, defaultSettings, suffix, avoidNameCollisions))
     End Function
-    Public Function QueueFindClient(ByVal name As String) As IFuture(Of BnetClient)
+    Public Function QueueFindClient(ByVal name As String) As IFuture(Of Bnet.Client)
         Contract.Requires(name IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of BnetClient))() IsNot Nothing)
-        Return ref.QueueFunc(Function()
-                                 Contract.Assume(name IsNot Nothing)
-                                 Return FindClient(name)
-                             End Function)
+        Contract.Ensures(Contract.Result(Of IFuture(Of Bnet.Client))() IsNot Nothing)
+        Return ref.QueueFunc(Function() FindClient(name))
     End Function
     Public Function QueueRemoveClient(ByVal name As String, ByVal expected As Boolean, ByVal reason As String) As IFuture
         Contract.Requires(name IsNot Nothing)
         Contract.Requires(reason IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        Return ref.QueueAction(Sub()
-                                   Contract.Assume(name IsNot Nothing)
-                                   Contract.Assume(reason IsNot Nothing)
-                                   KillClient(name, expected, reason)
-                               End Sub)
+        Return ref.QueueAction(Sub() KillClient(name, expected, reason))
     End Function
-    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = Nothing) As IFuture(Of BnetClient)
+    Public Function QueueCreateClient(ByVal name As String, Optional ByVal profileName As String = Nothing) As IFuture(Of Bnet.Client)
         Contract.Requires(name IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of BnetClient))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of Bnet.Client))() IsNot Nothing)
         Return ref.QueueFunc(Function() CreateClient(name, profileName))
     End Function
-    Public Function QueueGetServers() As IFuture(Of List(Of W3Server))
-        Contract.Ensures(Contract.Result(Of IFuture(Of List(Of W3Server)))() IsNot Nothing)
+    Public Function QueueGetServers() As IFuture(Of List(Of WC3.GameServer))
+        Contract.Ensures(Contract.Result(Of IFuture(Of List(Of WC3.GameServer)))() IsNot Nothing)
         Return ref.QueueFunc(Function() servers.ToList)
     End Function
-    Public Function QueueGetClients() As IFuture(Of List(Of BnetClient))
-        Contract.Ensures(Contract.Result(Of IFuture(Of List(Of BnetClient)))() IsNot Nothing)
+    Public Function QueueGetClients() As IFuture(Of List(Of Bnet.Client))
+        Contract.Ensures(Contract.Result(Of IFuture(Of List(Of Bnet.Client)))() IsNot Nothing)
         Return ref.QueueFunc(Function() clients.ToList)
     End Function
     Public Function QueueGetWidgets() As IFuture(Of List(Of IBotWidget))

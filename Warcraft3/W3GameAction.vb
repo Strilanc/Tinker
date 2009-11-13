@@ -1,4 +1,4 @@
-﻿Namespace Warcraft3
+﻿Namespace WC3
     '''<summary>Game actions which can be performed by players.</summary>
     '''<original-source>http://www.wc3c.net/tools/specs/W3GActions.txt</original-source>
     Public Enum W3GameActionId As Byte
@@ -121,7 +121,7 @@
         TriggerArrowKeyEvent = &H75
     End Enum
 
-    Public NotInheritable Class W3GameAction
+    Public NotInheritable Class GameAction
         Public ReadOnly id As W3GameActionId
         Private ReadOnly _payload As IPickle(Of Object)
         Private Shared ReadOnly packetJar As PrefixSwitchJar(Of W3GameActionId) = MakeJar()
@@ -138,10 +138,10 @@
             Me.id = payload.Value.index
         End Sub
 
-        Public Shared Function FromData(ByVal data As ViewableList(Of Byte)) As W3GameAction
+        Public Shared Function FromData(ByVal data As ViewableList(Of Byte)) As GameAction
             Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of W3GameAction)() IsNot Nothing)
-            Return New W3GameAction(packetJar.Parse(data))
+            Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
+            Return New GameAction(packetJar.Parse(data))
         End Function
 
         Public Overrides Function ToString() As String
@@ -507,19 +507,19 @@
     End Class
 
     Public NotInheritable Class W3GameActionJar
-        Inherits Jar(Of W3GameAction)
+        Inherits Jar(Of GameAction)
         Public Sub New(ByVal name As String)
             MyBase.New(name)
         End Sub
 
-        Public Overrides Function Pack(Of TValue As W3GameAction)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+        Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
             Return New Pickle(Of TValue)(Name, value, Concat({value.id}, value.Payload.Data.ToArray).ToView)
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of W3GameAction)
-            Dim val = W3GameAction.FromData(data)
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of GameAction)
+            Dim val = GameAction.FromData(data)
             Dim n = val.Payload.Data.Length
-            Return New Pickle(Of W3GameAction)(Name, val, data.SubView(0, n + 1))
+            Return New Pickle(Of GameAction)(Name, val, data.SubView(0, n + 1))
         End Function
     End Class
 End Namespace

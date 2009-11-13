@@ -1,11 +1,11 @@
 Imports HostBot.Commands
-Imports HostBot.Warcraft3
+Imports HostBot.WC3
 
 Public Class W3ServerControl
-    Implements IHookable(Of W3Server)
-    Private WithEvents server As W3Server = Nothing
+    Implements IHookable(Of GameServer)
+    Private WithEvents server As GameServer = Nothing
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
-    Private games As TabControlIHookableSet(Of W3Game, W3GameControl)
+    Private games As TabControlIHookableSet(Of Game, W3GameControl)
 
     Private commandHistory As New List(Of String) From {""}
     Private commandHistoryPointer As Integer
@@ -35,17 +35,17 @@ Public Class W3ServerControl
         End Select
     End Sub
 
-    Private Function QueueDispose() As IFuture Implements IHookable(Of W3Server).QueueDispose
+    Private Function QueueDispose() As IFuture Implements IHookable(Of GameServer).QueueDispose
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
 
-    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of W3Server).QueueGetCaption
+    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of GameServer).QueueGetCaption
         Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
         Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".Frmt(server.Name, server.Suffix)))
     End Function
 
-    Public Function QueueHook(ByVal child As W3Server) As IFuture Implements IHookable(Of W3Server).QueueHook
+    Public Function QueueHook(ByVal child As GameServer) As IFuture Implements IHookable(Of GameServer).QueueHook
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
@@ -54,7 +54,7 @@ Public Class W3ServerControl
                 If games IsNot Nothing Then
                     games.Clear()
                 Else
-                    games = New TabControlIHookableSet(Of W3Game, W3GameControl)(tabsServer)
+                    games = New TabControlIHookableSet(Of Game, W3GameControl)(tabsServer)
                 End If
                 Me.server = child
 
@@ -101,10 +101,10 @@ Public Class W3ServerControl
         )
     End Function
 
-    Private Sub CatchAddedGame(ByVal sender As W3Server, ByVal instance As W3Game) Handles server.AddedGame
+    Private Sub CatchAddedGame(ByVal sender As GameServer, ByVal instance As Game) Handles server.AddedGame
         ref.QueueAction(
             Sub()
-                If sender IsNot server Then  Return
+                If sender IsNot server Then Return
                 If Not games.Contains(instance) Then
                     games.Add(instance)
                 End If
@@ -112,10 +112,10 @@ Public Class W3ServerControl
         )
     End Sub
 
-    Private Sub CatchRemovedGame(ByVal sender As W3Server, ByVal instance As W3Game) Handles server.RemovedGame
+    Private Sub CatchRemovedGame(ByVal sender As GameServer, ByVal instance As Game) Handles server.RemovedGame
         ref.QueueAction(
             Sub()
-                If sender IsNot server Then  Return
+                If sender IsNot server Then Return
                 If games.Contains(instance) Then
                     games.Remove(instance)
                 End If

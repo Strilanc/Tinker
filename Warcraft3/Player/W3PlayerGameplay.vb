@@ -1,4 +1,4 @@
-﻿Namespace Warcraft3
+﻿Namespace WC3
     Public NotInheritable Class TickRecord
         Public ReadOnly length As UShort
         Public ReadOnly startTime As Integer
@@ -26,19 +26,19 @@
         'End Function
     End Class
 
-    Partial Public NotInheritable Class W3Player
-        Public Event ReceivedDropLagger(ByVal sender As W3Player)
-        Public Event ReceivedGameAction(ByVal sender As W3Player, ByVal action As W3GameAction)
-        Public Event ReceivedGameData(ByVal sender As W3Player, ByVal data As Byte())
+    Partial Public NotInheritable Class Player
+        Public Event ReceivedDropLagger(ByVal sender As Player)
+        Public Event ReceivedGameAction(ByVal sender As Player, ByVal action As GameAction)
+        Public Event ReceivedGameData(ByVal sender As Player, ByVal data As Byte())
 
         Private ReadOnly tickQueue As New Queue(Of TickRecord)
         Private totalTockTime As Integer
         Private maxTockTime As Integer
 
         Public Sub GamePlayStart()
-            state = W3PlayerState.Playing
-            AddQueuePacketHandler(W3Packet.Jars.Tock, AddressOf ReceiveTock)
-            AddQueuePacketHandler(W3Packet.Jars.ClientDropLagger, AddressOf ReceiveDropLagger)
+            state = PlayerState.Playing
+            AddQueuePacketHandler(Packet.Jars.Tock, AddressOf ReceiveTock)
+            AddQueuePacketHandler(Packet.Jars.ClientDropLagger, AddressOf ReceiveDropLagger)
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord, ByVal data As Byte())
@@ -46,10 +46,9 @@
             If isFake Then Return
             tickQueue.Enqueue(record)
             maxTockTime += record.length
-            SendPacket(W3Packet.MakeTick(record.length, data))
+            SendPacket(Packet.MakeTick(record.length, data))
         End Sub
 
-#Region "Networking"
         Private Sub ReceiveDropLagger(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             RaiseEvent ReceivedDropLagger(Me)
         End Sub
@@ -57,7 +56,7 @@
         Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(Pickle IsNot Nothing)
             Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
-            Dim actions = CType(vals("actions"), IEnumerable(Of W3GameAction))
+            Dim actions = CType(vals("actions"), IEnumerable(Of GameAction))
             Contract.Assume(actions IsNot Nothing)
             For Each action In actions
                 RaiseEvent ReceivedGameAction(Me, action)
@@ -69,7 +68,7 @@
             Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
             If tickQueue.Count <= 0 Then
                 logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageType.Problem)
-                Disconnect(True, W3PlayerLeaveType.Disconnect, "overticked")
+                Disconnect(True, PlayerLeaveType.Disconnect, "overticked")
                 Return
             End If
 
@@ -86,9 +85,7 @@
             '    End If
             'End If
         End Sub
-#End Region
 
-#Region "Interface"
         Public ReadOnly Property GetTockTime() As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
@@ -108,6 +105,5 @@
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(AddressOf GamePlayStart)
         End Function
-#End Region
     End Class
 End Namespace

@@ -1,11 +1,11 @@
 ﻿Imports Strilbrary.Enumeration
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
-Imports HostBot.Bnet
-Imports HostBot.Warcraft3
+Imports HostBot
 Imports Strilbrary
+Imports Strilbrary.Numerics
 
 <TestClass()>
-Public Class W3GameStatsTest
+Public Class GameStatsTest
     <TestMethod()>
     Public Sub JarTest_TypicalDota()
         Dim testData As Byte() = New Byte() {
@@ -16,7 +16,7 @@ Public Class W3GameStatsTest
                                    &H65, &H65, &H69, &HF5, &H75, &H6F, &H6F, &H63, &H65, &H61, &H67, &HC7, &H61, &H69, &H6F,
                                    &H1, &H1, &HF3, &H35, &HC9, &H89, &H1F, &H71, &HD5, &HC9, &H41, &H4D, &H3B, &H29, &H43,
                                    &H39, &H6F, &H6B, &H59, &HAF, &H17, &HA3, &HCD, &H9B, &H6F, &H0}
-        Dim jar = New W3GameStatsJar("Test")
+        Dim jar = New wc3.GameStatsJar("Test")
 
         Dim stats = jar.Parse(testData.ToView).Value
         Assert.IsTrue(Not stats.randomHero)
@@ -24,9 +24,9 @@ Public Class W3GameStatsTest
         Assert.IsTrue(Not stats.allowFullSharedControl)
         Assert.IsTrue(stats.lockTeams)
         Assert.IsTrue(stats.teamsTogether)
-        Assert.IsTrue(stats.observers = GameObserverOption.NoObservers)
-        Assert.IsTrue(stats.visibility = GameVisibilityOption.MapDefault)
-        Assert.IsTrue(stats.speed = GameSpeedOption.Fast)
+        Assert.IsTrue(stats.observers = WC3.GameObserverOption.NoObservers)
+        Assert.IsTrue(stats.visibility = WC3.GameVisibilityOption.MapDefault)
+        Assert.IsTrue(stats.speed = WC3.GameSpeedOption.Fast)
         Assert.IsTrue(stats.playableWidth = 118)
         Assert.IsTrue(stats.playableHeight = 120)
         Assert.IsTrue(stats.mapChecksumXORO = 374747339)
@@ -35,7 +35,7 @@ Public Class W3GameStatsTest
         Assert.IsTrue(stats.HostName = "Madeitonceagain")
 
         'Cycle back
-        Dim weirdPos = Strilbrary.Numerics.ModFloor(testData.Length, 8) 'the last block has undefined bits in the header
+        Dim weirdPos = testData.Length.ModFloor(8) 'the last block has undefined bits in the header
         Assert.IsTrue(jar.Pack(stats).Data.Take(weirdPos).HasSameItemsAs(testData.Take(weirdPos)))
         Assert.IsTrue(jar.Pack(stats).Data.Skip(weirdPos + 1).HasSameItemsAs(testData.Skip(weirdPos + 1)))
     End Sub

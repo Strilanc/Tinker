@@ -1,13 +1,11 @@
-Imports HostBot.Bnet
-Imports HostBot.Warcraft3
 Imports HostBot.Commands
 
 Public Class BotControl
     Implements IHookable(Of MainBot)
     Private WithEvents bot As MainBot
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
-    Private clients As TabControlIHookableSet(Of BnetClient, BnetClientControl)
-    Private servers As TabControlIHookableSet(Of W3Server, W3ServerControl)
+    Private clients As TabControlIHookableSet(Of Bnet.Client, BnetClientControl)
+    Private servers As TabControlIHookableSet(Of WC3.GameServer, W3ServerControl)
     Private widgets As TabControlIHookableSet(Of IBotWidget, BotWidgetControl)
 
     Private commandHistory As New List(Of String) From {""}
@@ -49,11 +47,11 @@ Public Class BotControl
     Public Function QueueHook(ByVal child As MainBot) As IFuture Implements IHookable(Of MainBot).QueueHook
         Return ref.QueueAction(
             Sub()
-                If Me.bot Is child Then  Return
+                If Me.bot Is child Then Return
 
                 If clients Is Nothing Then
-                    clients = New TabControlIHookableSet(Of BnetClient, BnetClientControl)(tabsBot)
-                    servers = New TabControlIHookableSet(Of W3Server, W3ServerControl)(tabsBot)
+                    clients = New TabControlIHookableSet(Of Bnet.Client, BnetClientControl)(tabsBot)
+                    servers = New TabControlIHookableSet(Of WC3.GameServer, W3ServerControl)(tabsBot)
                     widgets = New TabControlIHookableSet(Of IBotWidget, BotWidgetControl)(tabsBot)
                 Else
                     clients.Clear()
@@ -71,19 +69,19 @@ Public Class BotControl
         )
     End Function
 
-    Private Sub CatchBotAddedClient(ByVal client As BnetClient) Handles bot.AddedClient
+    Private Sub CatchBotAddedClient(ByVal client As Bnet.Client) Handles bot.AddedClient
         ref.QueueAction(Sub() clients.Add(client))
     End Sub
 
-    Private Sub CatchBotRemovedClient(ByVal client As BnetClient) Handles bot.RemovedClient
+    Private Sub CatchBotRemovedClient(ByVal client As Bnet.Client) Handles bot.RemovedClient
         ref.QueueAction(Sub() clients.Remove(client))
     End Sub
 
-    Private Sub CatchBotAddedServer(ByVal server As W3Server) Handles bot.AddedServer
+    Private Sub CatchBotAddedServer(ByVal server As WC3.GameServer) Handles bot.AddedServer
         ref.QueueAction(Sub() servers.Add(server))
     End Sub
 
-    Private Sub CatchBotRemovedServer(ByVal server As W3Server) Handles bot.RemovedServer
+    Private Sub CatchBotRemovedServer(ByVal server As WC3.GameServer) Handles bot.RemovedServer
         ref.QueueAction(Sub() servers.Remove(server))
     End Sub
 
@@ -95,7 +93,7 @@ Public Class BotControl
         ref.QueueAction(Sub() widgets.Remove(widget))
     End Sub
 
-    Private Sub CatchBotServerStateChanged(ByVal server As W3Server, ByVal oldState As W3ServerState, ByVal newState As W3ServerState) Handles bot.ServerStateChanged
+    Private Sub CatchBotServerStateChanged(ByVal server As WC3.GameServer, ByVal oldState As WC3.ServerState, ByVal newState As WC3.ServerState) Handles bot.ServerStateChanged
         ref.QueueAction(Sub() servers.Update(server))
     End Sub
 End Class

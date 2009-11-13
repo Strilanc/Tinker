@@ -1,5 +1,5 @@
-Namespace Warcraft3
-    Public NotInheritable Class W3Map
+Namespace WC3
+    Public NotInheritable Class Map
         Public ReadOnly playableWidth As Integer
         Public ReadOnly playableHeight As Integer
         Public ReadOnly isMelee As Boolean
@@ -13,10 +13,10 @@ Namespace Warcraft3
         Private ReadOnly _relativePath As String
         Private ReadOnly _fullPath As String
         Public ReadOnly fileAvailable As Boolean
-        Private ReadOnly _slots As New List(Of W3Slot)
-        Public ReadOnly Property Slots As IList(Of W3Slot)
+        Private ReadOnly _slots As New List(Of Slot)
+        Public ReadOnly Property Slots As IList(Of Slot)
             Get
-                Contract.Ensures(Contract.Result(Of IList(Of W3Slot))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IList(Of Slot))() IsNot Nothing)
                 Return _slots
             End Get
         End Property
@@ -120,10 +120,10 @@ Namespace Warcraft3
         End Property
 
 #Region "New"
-        Public Shared Function FromArgument(ByVal arg As String) As W3Map
+        Public Shared Function FromArgument(ByVal arg As String) As Map
             Contract.Requires(arg IsNot Nothing)
             Contract.Requires(arg.Length > 0)
-            Contract.Ensures(Contract.Result(Of W3Map)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
             If arg(0) = "-"c Then
                 Throw New ArgumentException("Map argument begins with '-', is probably an option. (did you forget an argument?)")
             ElseIf arg.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase) Then 'Map specified by HostMapInfo packet data
@@ -134,7 +134,7 @@ Namespace Warcraft3
                 Dim hexData = (From i In Enumerable.Range(1, arg.Length \ 2 - 1)
                                Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
                                ).ToArray
-                Dim packet = W3Packet.FromData(W3PacketId.HostMapInfo, hexData.ToView)
+                Dim packet = WC3.Packet.FromData(PacketId.HostMapInfo, hexData.ToView)
                 Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
 
                 'Extract values
@@ -149,9 +149,9 @@ Namespace Warcraft3
                 Contract.Assume(sha1.Length = 20)
                 Contract.Assume(size > 0)
 
-                Return New W3Map(My.Settings.mapPath.AssumeNotNull, path, size, crc32, sha1, xoro, slotCount:=3)
+                Return New Map(My.Settings.mapPath.AssumeNotNull, path, size, crc32, sha1, xoro, slotCount:=3)
             Else 'Map specified by path
-                Return New W3Map(My.Settings.mapPath.AssumeNotNull,
+                Return New Map(My.Settings.mapPath.AssumeNotNull,
                                  FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", My.Settings.mapPath.AssumeNotNull),
                                  My.Settings.war3path.AssumeNotNull)
             End If
@@ -186,9 +186,9 @@ Namespace Warcraft3
             Me._mapChecksumSHA1 = mapChecksumSHA1.ToView
             Me._mapChecksumXORO = mapChecksumXORO
             For slotId = 1 To slotCount
-                Dim slot = New W3Slot(Nothing, CByte(slotId))
-                slot.color = CType(slotId - 1, W3Slot.PlayerColor)
-                slot.Contents = New W3SlotContentsOpen(slot)
+                Dim slot = New Slot(Nothing, CByte(slotId))
+                slot.color = CType(slotId - 1, Slot.PlayerColor)
+                slot.Contents = New SlotContentsOpen(slot)
                 Slots.Add(slot)
                 Contract.Assume(Slots.Count = slotId)
             Next slotId
@@ -449,13 +449,13 @@ Namespace Warcraft3
             Public ReadOnly playableWidth As Integer
             Public ReadOnly playableHeight As Integer
             Public ReadOnly isMelee As Boolean
-            Public ReadOnly slots As List(Of W3Slot)
+            Public ReadOnly slots As List(Of Slot)
             Public ReadOnly name As String
             Public Sub New(ByVal name As String,
                            ByVal playableWidth As Integer,
                            ByVal playableHeight As Integer,
                            ByVal isMelee As Boolean,
-                           ByVal slots As List(Of W3Slot))
+                           ByVal slots As List(Of Slot))
                 Me.playableHeight = playableHeight
                 Me.playableWidth = playableWidth
                 Me.isMelee = isMelee
@@ -538,28 +538,28 @@ Namespace Warcraft3
                 If numSlotsInFile <= 0 OrElse numSlotsInFile > 12 Then
                     Throw New IO.InvalidDataException("Invalid number of slots.")
                 End If
-                Dim slots = New List(Of W3Slot)
-                Dim slotColorMap = New Dictionary(Of W3Slot.PlayerColor, W3Slot)
+                Dim slots = New List(Of Slot)
+                Dim slotColorMap = New Dictionary(Of Slot.PlayerColor, Slot)
                 For repeat = 0 To numSlotsInFile - 1
-                    Dim slot = New W3Slot(Nothing, CByte(slots.Count + 1))
+                    Dim slot = New Slot(Nothing, CByte(slots.Count + 1))
                     'color
-                    slot.color = CType(br.ReadInt32(), W3Slot.PlayerColor)
+                    slot.color = CType(br.ReadInt32(), Slot.PlayerColor)
                     If Not slot.color.EnumValueIsDefined Then Throw New IO.InvalidDataException("Unrecognized map slot color.")
                     'type
                     Select Case br.ReadInt32() '0=?, 1=available, 2=cpu, 3=unused
-                        Case 1 : slot.Contents = New W3SlotContentsOpen(slot)
-                        Case 2 : slot.Contents = New W3SlotContentsComputer(slot, W3Slot.ComputerLevel.Normal)
+                        Case 1 : slot.Contents = New SlotContentsOpen(slot)
+                        Case 2 : slot.Contents = New SlotContentsComputer(slot, Slot.ComputerLevel.Normal)
                         Case 3 : slot = Nothing
                         Case Else
                             Throw New IO.InvalidDataException("Unrecognized map slot type.")
                     End Select
                     'race
-                    Dim race = W3Slot.Races.Random
+                    Dim race = Slot.Races.Random
                     Select Case br.ReadInt32()
-                        Case 1 : race = W3Slot.Races.Human
-                        Case 2 : race = W3Slot.Races.Orc
-                        Case 3 : race = W3Slot.Races.Undead
-                        Case 4 : race = W3Slot.Races.NightElf
+                        Case 1 : race = Slot.Races.Human
+                        Case 2 : race = Slot.Races.Orc
+                        Case 3 : race = Slot.Races.Undead
+                        Case 4 : race = Slot.Races.NightElf
                         Case Else
                             Throw New IO.InvalidDataException("Unrecognized map slot race.")
                     End Select
@@ -588,7 +588,7 @@ Namespace Warcraft3
                     Dim memberBitField = br.ReadUInt32() 'force members
                     br.ReadNullTerminatedString() 'force name
 
-                    For Each color In EnumValues(Of W3Slot.PlayerColor)()
+                    For Each color In EnumValues(Of Slot.PlayerColor)()
                         If Not CBool((memberBitField >> CInt(color)) And &H1) Then Continue For
                         If Not slotColorMap.ContainsKey(color) Then Continue For
                         Contract.Assume(slotColorMap(color) IsNot Nothing)
@@ -602,7 +602,7 @@ Namespace Warcraft3
                 If isMelee Then
                     For i = 0 To slots.Count - 1
                         slots(i).Team = CByte(i)
-                        slots(i).race = W3Slot.Races.Random
+                        slots(i).race = Slot.Races.Random
                     Next i
                 End If
                 Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, isMelee, slots)

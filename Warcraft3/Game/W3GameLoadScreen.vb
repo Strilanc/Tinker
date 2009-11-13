@@ -1,9 +1,9 @@
-﻿Namespace Warcraft3
-    Partial Public NotInheritable Class W3Game
-        Private ReadOnly readyPlayers As New HashSet(Of W3Player)
-        Private ReadOnly unreadyPlayers As New HashSet(Of W3Player)
-        Private ReadOnly visibleReadyPlayers As New HashSet(Of W3Player)
-        Private ReadOnly visibleUnreadyPlayers As New HashSet(Of W3Player)
+﻿Namespace WC3
+    Partial Public NotInheritable Class Game
+        Private ReadOnly readyPlayers As New HashSet(Of Player)
+        Private ReadOnly unreadyPlayers As New HashSet(Of Player)
+        Private ReadOnly visibleReadyPlayers As New HashSet(Of Player)
+        Private ReadOnly visibleUnreadyPlayers As New HashSet(Of Player)
         Private numFakeTicks As Integer
         Private fakeTickTimer As Timers.Timer
 
@@ -32,7 +32,7 @@
                 visibleReadyPlayers.Add(player)
                 visibleUnreadyPlayers.Remove(player)
                 player.Ready = True
-                BroadcastPacket(W3Packet.MakeOtherPlayerReady(player), Nothing)
+                BroadcastPacket(Packet.MakeOtherPlayerReady(player), Nothing)
             Next player
 
             If settings.loadInGame Then
@@ -43,7 +43,7 @@
             fakeTickTimer.Stop()
         End Sub
 
-        Private Sub OnLoadScreenRemovedPlayer(ByVal player As W3Player, ByVal slot As W3Slot)
+        Private Sub OnLoadScreenRemovedPlayer(ByVal player As Player, ByVal slot As Slot)
             TryLaunch()
         End Sub
 
@@ -52,7 +52,7 @@
             If (From x In players Where Not x.Ready AndAlso Not x.isFake).Any Then
                 Return False
             End If
-            ChangeState(W3GameState.Playing)
+            ChangeState(GameState.Playing)
             Logger.Log("Launching", LogMessageType.Positive)
 
             'start gameplay
@@ -68,15 +68,15 @@
             End If
         End Sub
 
-        Private Sub ReceiveReady(ByVal sendingPlayer As W3Player)
+        Private Sub ReceiveReady(ByVal sendingPlayer As Player)
             Contract.Requires(sendingPlayer IsNot Nothing)
 
             'Get if there is a visible readied player
-            Dim visibleReadiedPlayer As W3Player = Nothing
+            Dim visibleReadiedPlayer As Player = Nothing
             If IsPlayerVisible(sendingPlayer) Then
                 visibleReadiedPlayer = sendingPlayer
             Else
-                sendingPlayer.QueueSendPacket(W3Packet.MakeOtherPlayerReady(sendingPlayer))
+                sendingPlayer.QueueSendPacket(Packet.MakeOtherPlayerReady(sendingPlayer))
                 readyPlayers.Add(sendingPlayer)
                 unreadyPlayers.Remove(sendingPlayer)
 
@@ -98,11 +98,11 @@
                 For Each player In players
                     Contract.Assume(player IsNot Nothing)
                     If IsPlayerVisible(player) Then
-                        sendingPlayer.QueueSendPacket(W3Packet.MakeOtherPlayerReady(player))
+                        sendingPlayer.QueueSendPacket(Packet.MakeOtherPlayerReady(player))
                     End If
                 Next player
                 For i = 1 To numFakeTicks
-                    sendingPlayer.QueueSendPacket(W3Packet.MakeTick(0))
+                    sendingPlayer.QueueSendPacket(Packet.MakeTick(0))
                 Next i
 
                 If unreadyPlayers.Any Then
@@ -113,17 +113,17 @@
                     If player IsNot sendingPlayer Then
                         SendMessageTo("{0} is ready.".Frmt(sendingPlayer.name), player)
                         If visibleReadiedPlayer IsNot Nothing Then
-                            player.QueueSendPacket(W3Packet.MakeRemovePlayerFromLagScreen(visibleReadiedPlayer, 0))
+                            player.QueueSendPacket(Packet.MakeRemovePlayerFromLagScreen(visibleReadiedPlayer, 0))
                         End If
                     End If
                 Next player
 
                 If visibleUnreadyPlayers.Count > 0 Then
-                    sendingPlayer.QueueSendPacket(W3Packet.MakeShowLagScreen(visibleUnreadyPlayers))
+                    sendingPlayer.QueueSendPacket(Packet.MakeShowLagScreen(visibleUnreadyPlayers))
                 End If
             Else
                 If visibleReadiedPlayer IsNot Nothing Then
-                    BroadcastPacket(W3Packet.MakeOtherPlayerReady(visibleReadiedPlayer), Nothing)
+                    BroadcastPacket(Packet.MakeOtherPlayerReady(visibleReadiedPlayer), Nothing)
                 End If
             End If
 
@@ -133,7 +133,7 @@
         Private Sub OnFakeTick()
             ref.QueueAction(
                 Sub()
-                    If state > W3GameState.Loading Then Return
+                    If state > GameState.Loading Then Return
                     If readyPlayers.Count = 0 Then Return
 
                     numFakeTicks += 1
@@ -141,16 +141,16 @@
                         Contract.Assume(player IsNot Nothing)
                         For Each other In visibleUnreadyPlayers
                             Contract.Assume(other IsNot Nothing)
-                            player.QueueSendPacket(W3Packet.MakeRemovePlayerFromLagScreen(other, 0))
+                            player.QueueSendPacket(Packet.MakeRemovePlayerFromLagScreen(other, 0))
                         Next other
-                        player.QueueSendPacket(W3Packet.MakeTick(0))
-                        player.QueueSendPacket(W3Packet.MakeShowLagScreen(visibleUnreadyPlayers))
+                        player.QueueSendPacket(Packet.MakeTick(0))
+                        player.QueueSendPacket(Packet.MakeShowLagScreen(visibleUnreadyPlayers))
                     Next player
                 End Sub
             )
         End Sub
 
-        Public Function QueueReceiveReady(ByVal player As W3Player) As IFuture
+        Public Function QueueReceiveReady(ByVal player As Player) As IFuture
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub()

@@ -71,8 +71,8 @@
     <Compile Include="CommandArgumentTest.vb" />
     <Compile Include="CommandTemplateTest.vb" />
     <Compile Include="CommonTest.vb" />
+    <Compile Include="GameStatsTest.vb" />
     <Compile Include="HelpCommandTest.vb" />
-    <Compile Include="W3GameStatsTest.vb" />
     <Compile Include="PacketStreamTest.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="TransferSchedulerTest.vb" />

@@ -1,10 +1,10 @@
-﻿Namespace Warcraft3
+﻿Namespace WC3
     Public Enum HostTestResult As Integer
         Fail = -1
         Test = 0
         Pass = 1
     End Enum
-    Public Enum W3PlayerLeaveType As Byte
+    Public Enum PlayerLeaveType As Byte
         Disconnect = 1
         Lose = 7
         MeleeLose = 8
@@ -13,14 +13,14 @@
         Observer = 11
         Lobby = 13
     End Enum
-    Public Enum W3PlayerState
+    Public Enum PlayerState
         Lobby
         Loading
         Playing
     End Enum
 
-    Partial Public NotInheritable Class W3Player
-        Private state As W3PlayerState = W3PlayerState.Lobby
+    Partial Public NotInheritable Class Player
+        Private state As PlayerState = PlayerState.Lobby
         Private ReadOnly _index As Byte
         Private ReadOnly testCanHost As IFuture
         Private Const MAX_NAME_LENGTH As Integer = 15
@@ -41,7 +41,7 @@
 
         Public hasVotedToStart As Boolean
         Public numAdminTries As Integer
-        Public Event Disconnected(ByVal sender As W3Player, ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String)
+        Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
 
         Public ReadOnly Property Name As String
             Get
@@ -132,18 +132,18 @@
             Me._index = index
             AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
 
-            packetHandler.AddHandler(packetId:=W3PacketId.Pong,
-                                     jar:=W3Packet.Jars.Pong,
+            packetHandler.AddHandler(packetId:=PacketId.Pong,
+                                     jar:=Packet.Jars.Pong,
                                      handler:=Function(pickle)
                                                   outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
                                                   Return pinger.QueueReceivedPong(CUInt(pickle.Value("salt")))
                                               End Function)
-            AddQueuePacketHandler(id:=W3PacketId.NonGameAction,
-                                  jar:=W3Packet.Jars.NonGameAction,
+            AddQueuePacketHandler(id:=PacketId.NonGameAction,
+                                  jar:=Packet.Jars.NonGameAction,
                                   handler:=AddressOf ReceiveNonGameAction)
-            AddQueuePacketHandler(W3Packet.Jars.Leaving, AddressOf ReceiveLeaving)
-            AddQueuePacketHandler(W3Packet.Jars.MapFileDataReceived, AddressOf IgnorePacket)
-            AddQueuePacketHandler(W3Packet.Jars.MapFileDataProblem, AddressOf IgnorePacket)
+            AddQueuePacketHandler(Packet.Jars.Leaving, AddressOf ReceiveLeaving)
+            AddQueuePacketHandler(Packet.Jars.MapFileDataReceived, AddressOf IgnorePacket)
+            AddQueuePacketHandler(Packet.Jars.MapFileDataProblem, AddressOf IgnorePacket)
 
             LobbyStart()
             BeginReading()
@@ -154,9 +154,9 @@
 
             'Pings
             pinger = New Pinger(period:=5.Seconds, timeoutCount:=10)
-            AddHandler pinger.SendPing, Sub(sender, salt) QueueSendPacket(W3Packet.MakePing(salt))
+            AddHandler pinger.SendPing, Sub(sender, salt) QueueSendPacket(Packet.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) QueueDisconnect(expected:=False,
-                                                                   leaveType:=W3PlayerLeaveType.Disconnect,
+                                                                   leaveType:=PlayerLeaveType.Disconnect,
                                                                    reason:="Stopped responding to pings.")
         End Sub
 
@@ -165,7 +165,7 @@
                 producer:=AddressOf socket.FutureReadPacket,
                 consumer:=AddressOf ProcessPacket,
                 errorHandler:=Sub(exception) Me.QueueDisconnect(expected:=False,
-                                                                leaveType:=W3PlayerLeaveType.Disconnect,
+                                                                leaveType:=PlayerLeaveType.Disconnect,
                                                                 reason:="Error receiving packet: {0}".Frmt(exception.Message))
             )
         End Sub
@@ -174,14 +174,14 @@
             Contract.Requires(packetData.Length >= 4)
             Dim result = packetHandler.HandlePacket(packetData)
             result.Catch(Sub(exception) QueueDisconnect(expected:=False,
-                                                        leaveType:=W3PlayerLeaveType.Disconnect,
+                                                        leaveType:=PlayerLeaveType.Disconnect,
                                                         reason:=exception.Message))
             Return result
         End Function
 
         '''<summary>Disconnects this player and removes them from the system.</summary>
         Private Sub Disconnect(ByVal expected As Boolean,
-                               ByVal leaveType As W3PlayerLeaveType,
+                               ByVal leaveType As PlayerLeaveType,
                                ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
             If Not Me.isFake Then
@@ -191,14 +191,14 @@
             RaiseEvent Disconnected(Me, expected, leaveType, reason)
         End Sub
 
-        Private Sub SendPacket(ByVal pk As W3Packet)
+        Private Sub SendPacket(ByVal pk As Packet)
             Contract.Requires(pk IsNot Nothing)
             If Me.isFake Then Return
             socket.SendPacket(pk)
         End Sub
 
         Private Sub CatchSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
-            inQueue.QueueAction(Sub() Disconnect(expected, W3PlayerLeaveType.Disconnect, reason))
+            inQueue.QueueAction(Sub() Disconnect(expected, PlayerLeaveType.Disconnect, reason))
         End Sub
 
         Public ReadOnly Property CanHost() As HostTestResult
@@ -256,12 +256,12 @@
             End Get
         End Property
 
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String) As IFuture
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() Disconnect(expected, leaveType, reason))
         End Function
-        Public Function QueueSendPacket(ByVal packet As W3Packet) As IFuture
+        Public Function QueueSendPacket(ByVal packet As Packet) As IFuture
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendPacket(packet))

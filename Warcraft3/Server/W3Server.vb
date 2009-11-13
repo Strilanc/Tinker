@@ -1,20 +1,18 @@
 Imports System.Net.Sockets
-Imports HostBot.Bnet
-Imports HostBot.Warcraft3.W3Server
 Imports HostBot.Links
 
-Namespace Warcraft3
-    Public NotInheritable Class W3Server
+Namespace WC3
+    Public NotInheritable Class GameServer
         Inherits FutureDisposable
 #Region "Properties"
         Private ReadOnly _parent As MainBot
         Private ReadOnly _name As String
         Private ReadOnly _settings As ServerSettings
 
-        Private ReadOnly games_all As New List(Of W3Game)
-        Private ReadOnly games_lobby As New List(Of W3Game)
-        Private ReadOnly games_load_screen As New List(Of W3Game)
-        Private ReadOnly games_gameplay As New List(Of W3Game)
+        Private ReadOnly games_all As New List(Of Game)
+        Private ReadOnly games_lobby As New List(Of Game)
+        Private ReadOnly games_load_screen As New List(Of Game)
+        Private ReadOnly games_gameplay As New List(Of Game)
 
         Private ReadOnly door As W3ServerDoor
         Public ReadOnly logger As Logger
@@ -22,24 +20,24 @@ Namespace Warcraft3
         Private ReadOnly ref As ICallQueue
         Private ReadOnly eref As ICallQueue
 
-        Public Event ChangedState(ByVal sender As W3Server, ByVal oldState As W3ServerState, ByVal newState As W3ServerState)
-        Public Event AddedGame(ByVal sender As W3Server, ByVal game As W3Game)
-        Public Event RemovedGame(ByVal sender As W3Server, ByVal game As W3Game)
-        Public Event PlayerTalked(ByVal sender As W3Server, ByVal game As W3Game, ByVal player As W3Player, ByVal text As String)
-        Public Event PlayerLeft(ByVal sender As W3Server, ByVal game As W3Game, ByVal gameState As W3GameState, ByVal player As W3Player, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String)
-        Public Event PlayerSentData(ByVal sever As W3Server, ByVal game As W3Game, ByVal player As W3Player, ByVal data As Byte())
-        Public Event PlayerEntered(ByVal sender As W3Server, ByVal game As W3Game, ByVal player As W3Player)
+        Public Event ChangedState(ByVal sender As GameServer, ByVal oldState As ServerState, ByVal newState As ServerState)
+        Public Event AddedGame(ByVal sender As GameServer, ByVal game As Game)
+        Public Event RemovedGame(ByVal sender As GameServer, ByVal game As Game)
+        Public Event PlayerTalked(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player, ByVal text As String)
+        Public Event PlayerLeft(ByVal sender As GameServer, ByVal game As Game, ByVal gameState As GameState, ByVal player As Player, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
+        Public Event PlayerSentData(ByVal sever As GameServer, ByVal game As Game, ByVal player As Player, ByVal data As Byte())
+        Public Event PlayerEntered(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player)
 
         Private instanceCreationCount As Integer
         Private _suffix As String
-        Private _state As W3ServerState = W3ServerState.OnlyAcceptingPlayers
+        Private _state As ServerState = ServerState.OnlyAcceptingPlayers
         Public ReadOnly Property Parent() As MainBot
             Get
                 Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
                 Return _parent
             End Get
         End Property
-        Private ReadOnly Property state() As W3ServerState
+        Private ReadOnly Property state() As ServerState
             Get
                 Return _state
             End Get
@@ -56,7 +54,7 @@ Namespace Warcraft3
                 Return _settings
             End Get
         End Property
-        Private Sub change_state(ByVal new_state As W3ServerState)
+        Private Sub change_state(ByVal new_state As ServerState)
             Dim old_state = _state
             _state = new_state
             _suffix = "[" + new_state.ToString() + "]"
@@ -173,21 +171,21 @@ Namespace Warcraft3
         End Sub
 
 #Region "Events"
-        Private Sub e_ThrowStateChanged(ByVal old_state As W3ServerState, ByVal new_state As W3ServerState)
+        Private Sub e_ThrowStateChanged(ByVal old_state As ServerState, ByVal new_state As ServerState)
             eref.QueueAction(
                 Sub()
                     RaiseEvent ChangedState(Me, old_state, new_state)
                 End Sub
             )
         End Sub
-        Private Sub e_ThrowAddedGame(ByVal game As W3Game)
+        Private Sub e_ThrowAddedGame(ByVal game As Game)
             eref.QueueAction(
                 Sub()
                     RaiseEvent AddedGame(Me, game)
                 End Sub
             )
         End Sub
-        Private Sub e_ThrowRemovedGame(ByVal game As W3Game)
+        Private Sub e_ThrowRemovedGame(ByVal game As Game)
             eref.QueueAction(
                 Sub()
                     RaiseEvent RemovedGame(Me, game)
@@ -195,47 +193,47 @@ Namespace Warcraft3
             )
         End Sub
 
-        Private Sub c_PlayerTalked(ByVal game As W3Game, ByVal player As W3Player, ByVal text As String)
+        Private Sub c_PlayerTalked(ByVal game As Game, ByVal player As Player, ByVal text As String)
             RaiseEvent PlayerTalked(Me, game, player, text)
         End Sub
-        Private Sub c_PlayerSentData(ByVal game As W3Game, ByVal player As W3Player, ByVal data As Byte())
+        Private Sub c_PlayerSentData(ByVal game As Game, ByVal player As Player, ByVal data As Byte())
             RaiseEvent PlayerSentData(Me, game, player, data)
         End Sub
-        Private Sub c_PlayerLeft(ByVal game As W3Game, ByVal game_state As W3GameState, ByVal player As W3Player, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String)
+        Private Sub c_PlayerLeft(ByVal game As Game, ByVal game_state As GameState, ByVal player As Player, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
             logger.Log("{0} left game {1}. ({2})".Frmt(player.name, game.Name, reason), LogMessageType.Negative)
             RaiseEvent PlayerLeft(Me, game, game_state, player, leaveType, reason)
         End Sub
-        Private Sub c_PlayerEntered(ByVal game As W3Game, ByVal player As W3Player)
+        Private Sub c_PlayerEntered(ByVal game As Game, ByVal player As Player)
             RaiseEvent PlayerEntered(Me, game, player)
         End Sub
-        Private Sub c_GameStateChanged(ByVal sender As W3Game, ByVal old_state As W3GameState, ByVal new_state As W3GameState)
+        Private Sub c_GameStateChanged(ByVal sender As Game, ByVal old_state As GameState, ByVal new_state As GameState)
             ref.QueueAction(
                 Sub()
                     If Not games_all.Contains(sender) Then Return
 
                     Select Case new_state
-                        Case W3GameState.Loading
+                        Case GameState.Loading
                             logger.Log(sender.Name + " has begun loading.", LogMessageType.Positive)
                             games_lobby.Remove(sender)
                             games_load_screen.Add(sender)
-                        Case W3GameState.Playing
+                        Case GameState.Playing
                             logger.Log(sender.Name + " has started play.", LogMessageType.Positive)
                             games_load_screen.Remove(sender)
                             games_gameplay.Add(sender)
-                        Case W3GameState.Closed
+                        Case GameState.Closed
                             logger.Log(sender.Name + " has closed.", LogMessageType.Negative)
                             RemoveGame(sender.Name)
                     End Select
 
                     'Advance from only_accepting if there is a game started
-                    If state = W3ServerState.OnlyAcceptingPlayers Then
+                    If state = ServerState.OnlyAcceptingPlayers Then
                         If games_all.Count > games_lobby.Count Then
-                            change_state(W3ServerState.AcceptingPlayersAndPlayingGames)
+                            change_state(ServerState.AcceptingPlayersAndPlayingGames)
                         End If
                     End If
 
                     'Advance from accepting_and_playing if there are no more games accepting players
-                    If state = W3ServerState.AcceptingPlayersAndPlayingGames AndAlso settings.instances > 0 Then
+                    If state = ServerState.AcceptingPlayersAndPlayingGames AndAlso settings.instances > 0 Then
                         If games_lobby.Count = 0 Then
                             If settings.permanent Then
                                 SetAdvertiserOptions(True)
@@ -246,7 +244,7 @@ Namespace Warcraft3
                     End If
 
                     'Advance from only_playing_out if there are no more games being played
-                    If state = W3ServerState.OnlyPlayingGames Then
+                    If state = ServerState.OnlyPlayingGames Then
                         If games_all.Count = 0 Then
                             Kill()
                         End If
@@ -259,8 +257,8 @@ Namespace Warcraft3
 #Region "Access"
         '''<summary>Stops listening for connections and kills all non-started instances.</summary>
         Private Sub StopAcceptingPlayers()
-            If state > W3ServerState.AcceptingPlayersAndPlayingGames Then Return
-            change_state(W3ServerState.OnlyPlayingGames)
+            If state > ServerState.AcceptingPlayersAndPlayingGames Then Return
+            change_state(ServerState.OnlyPlayingGames)
 
             door.Reset()
             For Each game In games_lobby.ToList
@@ -278,7 +276,7 @@ Namespace Warcraft3
 
         '''<summary>Stops listening for connections, kills all instances, and shuts down the server.</summary>
         Private Sub Kill()
-            If state >= W3ServerState.Disposed Then
+            If state >= ServerState.Disposed Then
                 Return
             End If
 
@@ -292,7 +290,7 @@ Namespace Warcraft3
                 adv.RemoveGame(Me.settings.header, "Server killed.")
             Next adv
 
-            change_state(W3ServerState.Disposed)
+            change_state(ServerState.Disposed)
             Me.Dispose()
             parent.QueueRemoveServer(Me.name)
         End Sub
@@ -306,9 +304,9 @@ Namespace Warcraft3
 #Region "Games"
         '''<summary>Adds a game to the server.</summary>
         Private Function CreateGame(Optional ByVal gameName As String = Nothing,
-                                    Optional ByVal arguments As IEnumerable(Of String) = Nothing) As W3Game
+                                    Optional ByVal arguments As IEnumerable(Of String) = Nothing) As Game
             gameName = If(gameName, instanceCreationCount.ToString(CultureInfo.InvariantCulture))
-            If state > W3ServerState.AcceptingPlayersAndPlayingGames Then
+            If state > ServerState.AcceptingPlayersAndPlayingGames Then
                 Throw New InvalidOperationException("No longer accepting players. Can't create new instances.")
             End If
             Dim game = FindGame(gameName)
@@ -316,7 +314,7 @@ Namespace Warcraft3
                 Throw New InvalidOperationException("A game called '{0}' already exists.".Frmt(gameName))
             End If
 
-            game = New W3Game(gameName, Settings.Map, Settings)
+            game = New Game(gameName, Settings.Map, Settings)
             logger.Log(game.Name + " opened.", LogMessageType.Positive)
             instanceCreationCount += 1
             games_all.Add(game)
@@ -334,12 +332,12 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Finds a game with the given name.</summary>
-        Private Function FindGame(ByVal game_name As String) As W3Game
+        Private Function FindGame(ByVal game_name As String) As Game
             Return (From game In games_all Where game.Name.ToUpperInvariant = game_name.ToUpperInvariant).FirstOrDefault
         End Function
 
         '''<summary>Finds a player with the given name in any of the server's games.</summary>
-        Private Function f_FindPlayer(ByVal username As String) As IFuture(Of W3Player)
+        Private Function f_FindPlayer(ByVal username As String) As IFuture(Of Player)
             Dim futureFoundPlayers = (From game In games_all
                                       Select game.QueueFindPlayer(username)
                                       ).ToList
@@ -351,7 +349,7 @@ Namespace Warcraft3
         End Function
 
         '''<summary>Finds a game containing a player with the given name.</summary>
-        Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of W3Game)
+        Private Function f_FindPlayerGame(ByVal username As String) As IFuture(Of Game)
             Return games_lobby.ToList.
                    FutureSelect(Function(game) game.QueueFindPlayer(username).
                                                     Select(Function(player) player IsNot Nothing))
@@ -378,7 +376,7 @@ Namespace Warcraft3
 
             If Not ignorePermanent AndAlso settings.permanent AndAlso
                                            settings.instances > 0 AndAlso
-                                           state < W3ServerState.OnlyPlayingGames Then
+                                           state < ServerState.OnlyPlayingGames Then
                 CreateGame()
             End If
         End Sub
@@ -387,7 +385,7 @@ Namespace Warcraft3
 #Region "Link"
         Private ReadOnly linkedAdvertisers As New HashSet(Of IGameSourceSink)
         Private Sub AddAdvertiser(ByVal m As IGameSourceSink)
-            If state > W3ServerState.AcceptingPlayersAndPlayingGames Then Throw New InvalidOperationException("Not accepting players anymore.")
+            If state > ServerState.AcceptingPlayersAndPlayingGames Then Throw New InvalidOperationException("Not accepting players anymore.")
             If linkedAdvertisers.Contains(m) Then Throw New InvalidOperationException("Already have that advertiser.")
             AddHandler m.RemovedGame, AddressOf c_AdvertiserRemovedGame
             linkedAdvertisers.Add(m)
@@ -398,7 +396,7 @@ Namespace Warcraft3
             Next m
         End Sub
 
-        Private Sub c_AdvertiserRemovedGame(ByVal _m As IGameSource, ByVal header As W3GameDescription, ByVal reason As String)
+        Private Sub c_AdvertiserRemovedGame(ByVal _m As IGameSource, ByVal header As GameDescription, ByVal reason As String)
             If header IsNot settings.header Then Return
             Dim m = CType(_m, IGameSourceSink)
             ref.QueueAction(
@@ -411,9 +409,9 @@ Namespace Warcraft3
         End Sub
         Private NotInheritable Class AdvertisingDependency
             Inherits FutureDisposable
-            Private WithEvents server As W3Server
+            Private WithEvents server As GameServer
 
-            Public Sub New(ByVal server As W3Server)
+            Public Sub New(ByVal server As GameServer)
                 'contract bug wrt interface event implementation requires this:
                 'Contract.Requires(server IsNot Nothing)
                 Contract.Assume(server IsNot Nothing)
@@ -427,10 +425,10 @@ Namespace Warcraft3
                 End If
             End Sub
 
-            Private Sub c_ServerStateChanged(ByVal sender As W3Server,
-                                             ByVal oldState As W3ServerState,
-                                             ByVal newState As W3ServerState) Handles server.ChangedState
-                If oldState <= W3ServerState.AcceptingPlayersAndPlayingGames And newState > W3ServerState.AcceptingPlayersAndPlayingGames Then
+            Private Sub c_ServerStateChanged(ByVal sender As GameServer,
+                                             ByVal oldState As ServerState,
+                                             ByVal newState As ServerState) Handles server.ChangedState
+                If oldState <= ServerState.AcceptingPlayersAndPlayingGames And newState > ServerState.AcceptingPlayersAndPlayingGames Then
                     Dispose()
                 End If
             End Sub
@@ -438,24 +436,24 @@ Namespace Warcraft3
 #End Region
 
 #Region "Interface"
-        Public Function QueueFindGame(ByVal gameName As String) As IFuture(Of W3Game)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3Game))() IsNot Nothing)
+        Public Function QueueFindGame(ByVal gameName As String) As IFuture(Of Game)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
             Return ref.QueueFunc(Function() FindGame(gameName))
         End Function
-        Public Function QueueFindPlayer(ByVal userName As String) As IFuture(Of W3Player)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
+        Public Function QueueFindPlayer(ByVal userName As String) As IFuture(Of Player)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() f_FindPlayer(userName)).Defuturized
         End Function
-        Public Function QueueFindPlayerGame(ByVal username As String) As IFuture(Of W3Game)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3Game))() IsNot Nothing)
+        Public Function QueueFindPlayerGame(ByVal username As String) As IFuture(Of Game)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
             Return ref.QueueFunc(Function() f_FindPlayerGame(username)).Defuturized
         End Function
-        Public Function QueueGetGames() As IFuture(Of IEnumerable(Of W3Game))
-            Contract.Ensures(Contract.Result(Of IFuture(Of IEnumerable(Of W3Game)))() IsNot Nothing)
-            Return ref.QueueFunc(Function() CType(games_all.ToList, IEnumerable(Of W3Game)))
+        Public Function QueueGetGames() As IFuture(Of IEnumerable(Of Game))
+            Contract.Ensures(Contract.Result(Of IFuture(Of IEnumerable(Of Game)))() IsNot Nothing)
+            Return ref.QueueFunc(Function() CType(games_all.ToList, IEnumerable(Of Game)))
         End Function
-        Public Function QueueCreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of W3Game)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3Game))() IsNot Nothing)
+        Public Function QueueCreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of Game)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
             Return ref.QueueFunc(Function() CreateGame(gameName))
         End Function
         Public Function QueueRemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture

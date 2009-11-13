@@ -1,6 +1,4 @@
 Imports HostBot.Commands
-Imports HostBot.Bnet
-Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations
     Public NotInheritable Class BotCommands
@@ -114,9 +112,9 @@ Namespace Commands.Specializations
                       If argListenPort = 0 Then
                           Dim out = target.portPool.TryAcquireAnyPort()
                           If out Is Nothing Then Throw New OperationFailedException("Failed to get a port from pool.")
-                          futureLanAdvertiser = target.QueueAddWidget(New W3LanAdvertiser(target, argName, out, argRemoteHost))
+                          futureLanAdvertiser = target.QueueAddWidget(New WC3.LanAdvertiser(target, argName, out, argRemoteHost))
                       Else
-                          futureLanAdvertiser = target.QueueAddWidget(New W3LanAdvertiser(target, argName, argListenPort, argRemoteHost))
+                          futureLanAdvertiser = target.QueueAddWidget(New WC3.LanAdvertiser(target, argName, argListenPort, argRemoteHost))
                       End If
                       Return futureLanAdvertiser.EvalOnSuccess(Function() "Created lan advertiser.")
                   End Function)
@@ -128,7 +126,7 @@ Namespace Commands.Specializations
             Permissions:="root=5",
             func:=Function(target, user, argument)
                       Dim argName = argument.RawValue(0)
-                      Return target.QueueRemoveWidget(W3LanAdvertiser.WidgetTypeName,
+                      Return target.QueueRemoveWidget(WC3.LanAdvertiser.WidgetTypeName,
                                                       argName).EvalOnSuccess(Function() "Removed Lan Advertiser")
                   End Function)
 
@@ -222,19 +220,19 @@ Namespace Commands.Specializations
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="CreateServer",
-                           template:=Concat({"name", "map=<search query>"}, ServerSettings.PartialArgumentTemplates).StringJoin(" "),
+                           template:=Concat({"name", "map=<search query>"}, WC3.ServerSettings.PartialArgumentTemplates).StringJoin(" "),
                            Description:="Creates a new wc3 game server. 'Help CreateSever *' for help with options.",
                            Permissions:="root=4",
-                           extraHelp:=ServerSettings.PartialArgumentHelp.StringJoin(Environment.NewLine))
+                           extraHelp:=WC3.ServerSettings.PartialArgumentHelp.StringJoin(Environment.NewLine))
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Dim name = argument.NamedValue("name")
-                Dim map = W3Map.FromArgument(argument.NamedValue("map"))
-                Dim stats = New W3GameStats(map,
+                Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
+                Dim stats = New WC3.GameStats(map,
                                             If(user Is Nothing, My.Resources.ProgramName, user.Name),
                                             argument)
-                Dim desc = W3GameDescription.FromArguments(name,  map,  stats)
-                Dim settings = New ServerSettings(map,  desc, argument)
+                Dim desc = WC3.GameDescription.FromArguments(name, map, stats)
+                Dim settings = New WC3.ServerSettings(map, desc, argument)
                 Return target.QueueCreateServer(name, settings).
                       EvalOnSuccess(Function() "Created server with name '{0}'. Admin password is {1}.".Frmt(name, settings.AdminPassword))
             End Function
@@ -281,7 +279,7 @@ Namespace Commands.Specializations
                 If arguments.Length = 0 Then Throw New ArgumentException("No profiles specified.")
 
                 'Attempt to connect to each listed profile
-                Dim futureClients = New List(Of IFuture(Of BnetClient))(capacity:=arguments.Count)
+                Dim futureClients = New List(Of IFuture(Of Bnet.Client))(capacity:=arguments.Count)
                 For Each arg In arguments
                     Dim clientName = arg
                     Dim profileName = arg '[Yes, client named same as profile]
@@ -290,7 +288,7 @@ Namespace Commands.Specializations
                         Function(client)
                             'Connect to bnet, then login
                             Dim futureLogOn = client.QueueConnectAndLogOn(client.profile.server.Split(" "c)(0),
-                                                                          New ClientCredentials(client.profile.userName, client.profile.password))
+                                                                          New Bnet.ClientCredentials(client.profile.userName, client.profile.password))
 
                             'Cleanup client if connection or login fail
                             futureLogOn.CallWhenReady(

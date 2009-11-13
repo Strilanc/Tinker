@@ -1,9 +1,9 @@
-﻿Imports HostBot.Warcraft3.W3PacketId
+﻿Imports HostBot.WC3.PacketId
 Imports System.Runtime.CompilerServices
 Imports System.Net
 Imports System.Net.Sockets
 
-Namespace Warcraft3
+Namespace WC3
     Public NotInheritable Class W3Socket
         Private WithEvents _socket As PacketSocket
         Public Event Disconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
@@ -66,7 +66,7 @@ Namespace Warcraft3
             _socket.Disconnect(expected, reason)
         End Sub
 
-        Public Sub SendPacket(ByVal packet As W3Packet)
+        Public Sub SendPacket(ByVal packet As Packet)
             Contract.Requires(packet IsNot Nothing)
 
             Try
@@ -80,7 +80,7 @@ Namespace Warcraft3
                 Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
                 'Send
-                _socket.WritePacket(Concat({W3Packet.PacketPrefixValue, packet.id, 0, 0},
+                _socket.WritePacket(Concat({Packet.PacketPrefixValue, packet.id, 0, 0},
                                            packet.Payload.Data.ToArray))
 
             Catch e As Pickling.PicklingException

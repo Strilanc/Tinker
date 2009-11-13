@@ -1,7 +1,7 @@
 ﻿Imports HostBot.Links
 
-Namespace Warcraft3
-    Public Enum W3ServerState As Byte
+Namespace WC3
+    Public Enum ServerState As Byte
         OnlyAcceptingPlayers = 0
         AcceptingPlayersAndPlayingGames = 1
         OnlyPlayingGames = 2
@@ -9,8 +9,8 @@ Namespace Warcraft3
     End Enum
 
     Public NotInheritable Class ServerSettings
-        Private ReadOnly _map As W3Map
-        Private ReadOnly _header As W3GameDescription
+        Private ReadOnly _map As Map
+        Private ReadOnly _header As GameDescription
         Public ReadOnly creationTime As Date = DateTime.Now()
         Public ReadOnly isAdminGame As Boolean
         Public ReadOnly allowDownloads As Boolean
@@ -21,7 +21,7 @@ Namespace Warcraft3
         Public ReadOnly teamSetup As String
         Public ReadOnly Reservations As New HashSet(Of String)
         Public ReadOnly permanent As Boolean
-        Public ReadOnly defaultSlotLockState As W3Slot.Lock
+        Public ReadOnly defaultSlotLockState As Slot.Lock
         Public ReadOnly autoElevateUserName As String
         Public ReadOnly grabMap As Boolean
         Public ReadOnly defaultListenPorts As New List(Of UShort)
@@ -30,15 +30,15 @@ Namespace Warcraft3
         Public ReadOnly HCLMode As String = ""
         Public ReadOnly multiObs As Boolean
         Public Const HCLChars As String = "abcdefghijklmnopqrstuvwxyz0123456789 -=,."
-        Public ReadOnly Property Map() As W3Map
+        Public ReadOnly Property Map() As Map
             Get
-                Contract.Ensures(Contract.Result(Of W3Map)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
                 Return _map
             End Get
         End Property
-        Public ReadOnly Property Header As W3GameDescription
+        Public ReadOnly Property Header As GameDescription
             Get
-                Contract.Ensures(Contract.Result(Of W3GameDescription)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
                 Return _header
             End Get
         End Property
@@ -57,13 +57,13 @@ Namespace Warcraft3
             Contract.Invariant(HCLMode IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal map As W3Map,
-                       ByVal header As W3GameDescription,
+        Public Sub New(ByVal map As Map,
+                       ByVal header As GameDescription,
                        ByVal argument As Commands.CommandArgument,
                        Optional ByVal allowDownloads As Boolean = True,
                        Optional ByVal allowUpload As Boolean = True,
                        Optional ByVal isAutoStarted As Boolean = False,
-                       Optional ByVal defaultSlotLockState As W3Slot.Lock = W3Slot.Lock.Unlocked,
+                       Optional ByVal defaultSlotLockState As Slot.Lock = Slot.Lock.Unlocked,
                        Optional ByVal instances As Integer = 1,
                        Optional ByVal password As String = Nothing,
                        Optional ByVal autoElevateUserName As String = Nothing,

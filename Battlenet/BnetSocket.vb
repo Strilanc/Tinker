@@ -63,7 +63,7 @@ Public NotInheritable Class BnetSocket
         _socket.Disconnect(expected, reason)
     End Sub
 
-    Public Sub SendPacket(ByVal packet As Bnet.BnetPacket)
+    Public Sub SendPacket(ByVal packet As Bnet.Packet)
         Contract.Requires(packet IsNot Nothing)
 
         'Validate
@@ -77,7 +77,7 @@ Public NotInheritable Class BnetSocket
             Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
             'Send
-            _socket.WritePacket(Concat({Bnet.BnetPacket.PacketPrefixValue, packet.id, 0, 0},
+            _socket.WritePacket(Concat({Bnet.Packet.PacketPrefixValue, packet.id, 0, 0},
                                       packet.Payload.Data.ToArray))
 
         Catch e As Pickling.PicklingException
@@ -92,25 +92,25 @@ Public NotInheritable Class BnetSocket
         End Try
     End Sub
 
-    Public Function FutureReadPacket() As IFuture(Of Bnet.BnetPacket)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Bnet.BnetPacket))() IsNot Nothing)
+    Public Function FutureReadPacket() As IFuture(Of Bnet.Packet)
+        Contract.Ensures(Contract.Result(Of IFuture(Of Bnet.Packet))() IsNot Nothing)
         Return _socket.FutureReadPacket().Select(
             Function(data)
                 Contract.Assume(data IsNot Nothing)
                 If data.Length < 4 Then
                     Disconnect(expected:=False, reason:="Packer didn't include a header.")
                     Throw New IO.InvalidDataException("Invalid packet prefix")
-                ElseIf data(0) <> Bnet.BnetPacket.PacketPrefixValue Then
+                ElseIf data(0) <> Bnet.Packet.PacketPrefixValue Then
                     Disconnect(expected:=False, reason:="Invalid packet prefix")
                     Throw New IO.InvalidDataException("Invalid packet prefix")
                 End If
-                Dim id = CType(data(1), Bnet.BnetPacketId)
+                Dim id = CType(data(1), Bnet.PacketId)
                 data = data.SubView(4)
 
                 Try
                     'Handle
                     Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageType.DataEvent)
-                    Dim pk = Bnet.BnetPacket.FromData(id, data)
+                    Dim pk = Bnet.Packet.FromData(id, data)
                     If pk.Payload.Data.Length <> data.Length Then
                         Throw New Pickling.PicklingException("Data left over after parsing.")
                     End If

@@ -1,12 +1,12 @@
-﻿Namespace Warcraft3
+﻿Namespace WC3
     Public NotInheritable Class W3ServerDoor
-        Public ReadOnly server As W3Server
+        Public ReadOnly server As GameServer
         Public ReadOnly logger As Logger
         Private WithEvents _accepter As W3ConnectionAccepter
         Private connectingPlayers As New List(Of W3ConnectingPlayer)
         Private ReadOnly lock As New Object()
 
-        Public Sub New(ByVal server As W3Server,
+        Public Sub New(ByVal server As GameServer,
                        Optional ByVal logger As Logger = Nothing)
             'contract bug wrt interface event implementation requires this:
             'Contract.Requires(server IsNot Nothing)
@@ -46,11 +46,11 @@
         End Sub
 
         Private Sub FindGameForPlayer(ByVal player As W3ConnectingPlayer)
-            Dim addedPlayerFilter = Function(game As W3Game)
+            Dim addedPlayerFilter = Function(game As Game)
                                         Return game.QueueTryAddPlayer(player).EvalWhenValueReady(
                                             Function(addedPlayer, playerException) addedPlayer IsNot Nothing
                                         )
-                                    End Function
+                                            End Function
 
             Dim futureSelectedGame = server.QueueGetGames.Select(
                                                      Function(games) games.FutureSelect(addedPlayerFilter)).Defuturized()
@@ -67,17 +67,17 @@
                                 End If
                             End Sub
                         )
-                    Else
-                        If gameException IsNot Nothing Then
-                            FailConnectingPlayer(player, "Failed to find game for player (eg. {0}).".Frmt(gameException.Message))
-                        Else
-                            SyncLock lock
-                                connectingPlayers.Remove(player)
-                            End SyncLock
-                            logger.Log("Player {0} entered game {1}.".Frmt(player.Name, game.Name), LogMessageType.Positive)
-                        End If
-                    End If
-                End Sub
+                                Else
+                                    If gameException IsNot Nothing Then
+                                        FailConnectingPlayer(player, "Failed to find game for player (eg. {0}).".Frmt(gameException.Message))
+                                    Else
+                                        SyncLock lock
+                                            connectingPlayers.Remove(player)
+                                        End SyncLock
+                                        logger.Log("Player {0} entered game {1}.".Frmt(player.Name, game.Name), LogMessageType.Positive)
+                                    End If
+                                End If
+                            End Sub
             )
         End Sub
         Private Sub FailConnectingPlayer(ByVal player As W3ConnectingPlayer, ByVal reason As String)
@@ -87,7 +87,7 @@
                 connectingPlayers.Remove(player)
             End SyncLock
             logger.Log("Couldn't find a game for player {0}.".Frmt(player.Name), LogMessageType.Negative)
-            player.Socket.SendPacket(W3Packet.MakeReject(W3Packet.RejectReason.GameFull))
+            player.Socket.SendPacket(Packet.MakeReject(Packet.RejectReason.GameFull))
             player.Socket.Disconnect(expected:=True, reason:=reason)
         End Sub
     End Class

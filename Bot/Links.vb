@@ -1,15 +1,13 @@
-﻿Imports HostBot.Warcraft3
-Imports HostBot.Bnet
-
+﻿
 Namespace Links
     Public Interface IGameSource
-        Event AddedGame(ByVal sender As IGameSource, ByVal game As W3GameDescription, ByVal server As W3Server)
-        Event RemovedGame(ByVal sender As IGameSource, ByVal game As W3GameDescription, ByVal reason As String)
+        Event AddedGame(ByVal sender As IGameSource, ByVal game As WC3.GameDescription, ByVal server As WC3.GameServer)
+        Event RemovedGame(ByVal sender As IGameSource, ByVal game As WC3.GameDescription, ByVal reason As String)
         Event DisposedLink(ByVal sender As IGameSource, ByVal partner As IGameSink)
     End Interface
     Public Interface IGameSink
-        Sub AddGame(ByVal game As W3GameDescription, ByVal server As W3Server)
-        Sub RemoveGame(ByVal game As W3GameDescription, ByVal reason As String)
+        Sub AddGame(ByVal game As WC3.GameDescription, ByVal server As WC3.GameServer)
+        Sub RemoveGame(ByVal game As WC3.GameDescription, ByVal reason As String)
         Sub SetAdvertisingOptions(ByVal isPrivate As Boolean)
     End Interface
     Public Interface IGameSourceSink
@@ -61,12 +59,12 @@ Namespace Links
             End If
         End Sub
         Private Sub c_StartedAdvertising(ByVal sender As IGameSource,
-                                         ByVal game As W3GameDescription,
-                                         ByVal server As W3Server)
+                                         ByVal game As WC3.GameDescription,
+                                         ByVal server As WC3.GameServer)
             servant.AddGame(game, server)
         End Sub
         Private Sub c_StoppedAdvertising(ByVal sender As IGameSource,
-                                         ByVal game As W3GameDescription,
+                                         ByVal game As WC3.GameDescription,
                                          ByVal reason As String)
             servant.RemoveGame(game, reason)
         End Sub
@@ -83,7 +81,7 @@ Namespace Links
             Me.member = member
             AddHandler Me.member.RemovedGame, AddressOf CatchStoppedAdvertising
         End Sub
-        Private Sub CatchStoppedAdvertising(ByVal sender As Links.IGameSource, ByVal game As W3GameDescription, ByVal reason As String)
+        Private Sub CatchStoppedAdvertising(ByVal sender As Links.IGameSource, ByVal game As WC3.GameDescription, ByVal reason As String)
             Dispose()
         End Sub
 

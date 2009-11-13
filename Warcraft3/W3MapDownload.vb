@@ -1,8 +1,5 @@
-﻿Imports HostBot.Warcraft3.W3PacketId
-Imports HostBot.Warcraft3
-
-Namespace Warcraft3
-    Public NotInheritable Class W3MapDownload
+﻿Namespace WC3
+    Public NotInheritable Class MapDownload
         Public file As IO.Stream
         Private destinationPath As String
         Private downloadPath As String
@@ -66,7 +63,7 @@ Namespace Warcraft3
                 'Finished Download
                 file.Close()
                 file = Nothing
-                Dim map As New W3Map(My.Settings.mapPath, downloadPath.Substring(My.Settings.mapPath.Length), My.Settings.war3path)
+                Dim map = New Map(My.Settings.mapPath, downloadPath.Substring(My.Settings.mapPath.Length), My.Settings.war3path)
                 If Not map.MapChecksumSHA1.HasSameItemsAs(mapChecksumSHA1) Then Throw New IO.InvalidDataException("Completed map doesn't match reported SHA1 checksum.")
                 If map.MapChecksumXORO <> mapChecksumXORO Then Throw New IO.InvalidDataException("Completed map doesn't match reported XORO checksum.")
                 If map.FileChecksumCRC32 <> fileChecksumCRC32 Then Throw New IO.InvalidDataException("Completed map doesn't match reported CRC32 checksum.")

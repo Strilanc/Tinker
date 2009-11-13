@@ -1,7 +1,6 @@
 ﻿Imports Strilbrary.Enumeration
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports HostBot.Bnet
-Imports HostBot.Warcraft3
 Imports Strilbrary
 Imports System.Numerics
 Imports Strilbrary.Numerics

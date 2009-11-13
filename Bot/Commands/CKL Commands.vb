@@ -1,6 +1,4 @@
 ﻿Imports HostBot.Commands
-Imports HostBot.Bnet
-Imports HostBot.Warcraft3
 Imports HostBot.Links
 Imports HostBot.CKL
 

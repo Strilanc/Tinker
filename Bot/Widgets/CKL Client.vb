@@ -50,8 +50,8 @@
                             Dim keyLength = body.Length \ 2
                             Dim rocKeyData = body.SubView(0, keyLength).ToArray
                             Dim tftKeyData = body.SubView(keyLength, keyLength).ToArray
-                            Return New CKLEncodedKey(Bnet.BnetPacket.CDKeyJar.PackBorrowedCDKey(rocKeyData),
-                                                     Bnet.BnetPacket.CDKeyJar.PackBorrowedCDKey(tftKeyData))
+                            Return New CKLEncodedKey(Bnet.Packet.CDKeyJar.PackBorrowedCDKey(rocKeyData),
+                                                     Bnet.Packet.CDKeyJar.PackBorrowedCDKey(tftKeyData))
                         Case Else
                             Throw New IO.InvalidDataException("Incorrect packet id in data returned from CKL server.")
                     End Select

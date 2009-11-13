@@ -1,15 +1,15 @@
-﻿Namespace Warcraft3
-    Partial Public NotInheritable Class W3Player
+﻿Namespace WC3
+    Partial Public NotInheritable Class Player
         Public Property Ready As Boolean
 
         Public Sub LoadScreenStart()
-            state = W3PlayerState.Loading
-            SendPacket(W3Packet.MakeStartLoading())
-            AddQueuePacketHandler(W3Packet.Jars.Ready, AddressOf ReceiveReady)
-            AddQueuePacketHandler(W3Packet.Jars.GameAction, AddressOf ReceiveGameAction)
+            state = PlayerState.Loading
+            SendPacket(Packet.MakeStartLoading())
+            AddQueuePacketHandler(Packet.Jars.Ready, AddressOf ReceiveReady)
+            AddQueuePacketHandler(Packet.Jars.GameAction, AddressOf ReceiveGameAction)
         End Sub
 
-        Public Event ReceivedReady(ByVal sender As W3Player)
+        Public Event ReceivedReady(ByVal sender As Player)
         Private Sub ReceiveReady(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(Pickle IsNot Nothing)
             Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))

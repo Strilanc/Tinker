@@ -170,6 +170,10 @@
     <Compile Include="Library\Commands\Delegated Commands.vb" />
     <Compile Include="Library\Commands\PartialCommand.vb" />
     <Compile Include="Library\Commands\TemplatedCommand.vb" />
+    <Compile Include="Warcraft3\Player\W3PlayerGameplay.vb" />
+    <Compile Include="Warcraft3\Player\W3PlayerLoadScreen.vb" />
+    <Compile Include="Warcraft3\Player\W3PlayerLobby.vb" />
+    <Compile Include="Warcraft3\Player\W3PlayerPart.vb" />
     <Compile Include="Warcraft3\W3GameStatsJar.vb" />
     <Compile Include="Warcraft3\KeyedEvent.vb" />
     <Compile Include="Warcraft3\Pinger.vb" />
@@ -182,9 +186,6 @@
     <Compile Include="Warcraft3\Game\W3GameLobby.vb" />
     <Compile Include="Warcraft3\Game\W3GamePlay.vb" />
     <Compile Include="Warcraft3\Player\W3Player.vb" />
-    <Compile Include="Warcraft3\Player\W3PlayerLoadScreen.vb" />
-    <Compile Include="Warcraft3\Player\W3PlayerLobby.vb" />
-    <Compile Include="Warcraft3\Player\W3PlayerGameplay.vb" />
     <Compile Include="Warcraft3\Server\W3ServerDoor.vb" />
     <Compile Include="Warcraft3\Server\W3ServerInterface.vb" />
     <Compile Include="Warcraft3\W3ConnectionAccepter.vb" />
@@ -292,7 +293,6 @@
     </Compile>
     <Compile Include="Warcraft3\Game\W3Game.vb" />
     <Compile Include="Warcraft3\Server\W3Server.vb" />
-    <Compile Include="Warcraft3\Player\W3PlayerPart.vb" />
     <Compile Include="Warcraft3\W3Map.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">

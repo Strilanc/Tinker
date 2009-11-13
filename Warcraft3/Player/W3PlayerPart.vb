@@ -1,6 +1,6 @@
-Namespace Warcraft3
-    Partial Public NotInheritable Class W3Player
-        Public Event ReceivedNonGameAction(ByVal sender As W3Player, ByVal vals As Dictionary(Of String, Object))
+Namespace WC3
+    Partial Public NotInheritable Class Player
+        Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of String, Object))
 #Region "Networking"
         Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(Pickle IsNot Nothing)
@@ -14,14 +14,14 @@ Namespace Warcraft3
         Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(Pickle IsNot Nothing)
             Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
-            Dim leaveType = CType(vals("leave type"), W3PlayerLeaveType)
-            Disconnect(True, leaveType, "manually leaving ({0})".Frmt(leaveType))
+            Dim leaveType = CType(vals("leave type"), PlayerLeaveType)
+            Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
         End Sub
 #End Region
 
         Public ReadOnly Property GetDownloadPercent() As Byte
             Get
-                If state <> W3PlayerState.Lobby Then Return 100
+                If state <> PlayerState.Lobby Then Return 100
                 Dim pos = mapDownloadPosition
                 If isFake Then Return 254 'Not a real player, show "|CF"
                 If pos = -1 Then Return 255 'Not known yet, show "?"
@@ -39,7 +39,7 @@ Namespace Warcraft3
                                "{0}c".Frmt(_numPeerConnections).Padded(5) +
                                latencyDesc.Padded(12)
                     Select Case state
-                        Case W3PlayerState.Lobby
+                        Case PlayerState.Lobby
                             Dim dl = GetDownloadPercent().ToString(CultureInfo.InvariantCulture)
                             Select Case dl
                                 Case "255" : dl = "?"
@@ -52,9 +52,9 @@ Namespace Warcraft3
                                            Padded("DL={0}".Frmt(dl), 9) +
                                            "EB={0}".Frmt(rateDescription)
                                 End Function)
-                                        Case W3PlayerState.Loading
+                                        Case PlayerState.Loading
                                             Return (base + "Ready={0}".Frmt(Ready)).Futurized
-                                        Case W3PlayerState.Playing
+                                        Case PlayerState.Playing
                                             Return (base + "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime)).Futurized
                                         Case Else
                                             Throw state.MakeImpossibleValueException

@@ -13,12 +13,11 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
-Imports HostBot.Warcraft3
 Imports System.Runtime.CompilerServices
 Imports HostBot.Commands
 
-Namespace Warcraft3
-    Public Enum W3GameState
+Namespace WC3
+    Public Enum GameState
         AcceptingPlayers = 0
         PreCounting = 1
         CountingDown = 2
@@ -27,34 +26,34 @@ Namespace Warcraft3
         Closed = 5
     End Enum
 
-    Partial Public NotInheritable Class W3Game
-        Public Shared ReadOnly GameCommandsLoadScreen As New Commands.CommandSet(Of W3Game)
+    Partial Public NotInheritable Class Game
+        Public Shared ReadOnly GameCommandsLoadScreen As New Commands.CommandSet(Of Game)
         Public Shared ReadOnly GameGuestCommandsLobby As New Commands.Specializations.InstanceGuestSetupCommands
         Public Shared ReadOnly GameGuestCommandsLoadScreen As New Commands.Specializations.InstanceGuestLoadCommands
         Public Shared ReadOnly GameGuestCommandsGamePlay As New Commands.Specializations.InstanceGuestPlayCommands
         Public Shared ReadOnly GameCommandsGamePlay As New Commands.Specializations.InstancePlayCommands
         Public Shared ReadOnly GameCommandsLobby As New Commands.Specializations.InstanceSetupCommands
 
-        Private ReadOnly _map As W3Map
+        Private ReadOnly _map As Map
         Private ReadOnly _name As String
-        Private ReadOnly slots As New List(Of W3Slot)
+        Private ReadOnly slots As New List(Of Slot)
         Private ReadOnly ref As ICallQueue = New TaskedCallQueue
         Private ReadOnly eventRef As ICallQueue = New TaskedCallQueue
         Private ReadOnly _logger As Logger
         Private Const PING_PERIOD As UShort = 5000
-        Private state As W3GameState = W3GameState.AcceptingPlayers
-        Private fakeHostPlayer As W3Player
+        Private state As GameState = GameState.AcceptingPlayers
+        Private fakeHostPlayer As Player
         Private flagHasPlayerLeft As Boolean
-        Private adminPlayer As W3Player
-        Private ReadOnly players As New List(Of W3Player)
+        Private adminPlayer As Player
+        Private ReadOnly players As New List(Of Player)
         Private ReadOnly indexMap(0 To 12) As Byte
         Private ReadOnly settings As ServerSettings
 
-        Public Event PlayerAction(ByVal sender As W3Game, ByVal player As W3Player, ByVal action As W3GameAction)
-        Public Event Updated(ByVal sender As W3Game, ByVal slots As List(Of W3Slot))
-        Public Event PlayerTalked(ByVal sender As W3Game, ByVal speaker As W3Player, ByVal text As String)
-        Public Event PlayerLeft(ByVal sender As W3Game, ByVal state As W3GameState, ByVal leaver As W3Player, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String)
-        Public Event ChangedState(ByVal sender As W3Game, ByVal oldState As W3GameState, ByVal newState As W3GameState)
+        Public Event PlayerAction(ByVal sender As Game, ByVal player As Player, ByVal action As GameAction)
+        Public Event Updated(ByVal sender As Game, ByVal slots As List(Of Slot))
+        Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String)
+        Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
+        Public Event ChangedState(ByVal sender As Game, ByVal oldState As GameState, ByVal newState As GameState)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_map IsNot Nothing)
@@ -89,30 +88,30 @@ Namespace Warcraft3
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             Select Case state
-                Case Is < W3GameState.Loading
-                    W3Game.GameCommandsLobby.ProcessLocalText(Me, text, logger)
-                Case W3GameState.Loading
-                    W3Game.GameCommandsLoadScreen.ProcessLocalText(Me, text, logger)
-                Case Is > W3GameState.Loading
-                    W3Game.GameCommandsGamePlay.ProcessLocalText(Me, text, logger)
+                Case Is < GameState.Loading
+                    Game.GameCommandsLobby.ProcessLocalText(Me, text, logger)
+                Case GameState.Loading
+                    Game.GameCommandsLoadScreen.ProcessLocalText(Me, text, logger)
+                Case Is > GameState.Loading
+                    Game.GameCommandsGamePlay.ProcessLocalText(Me, text, logger)
                 Case Else
                     Throw New UnreachableException()
             End Select
         End Sub
         Private Function CommandProcessText(ByVal bot As MainBot,
-                                            ByVal player As W3Player,
+                                            ByVal player As Player,
                                             ByVal argument As String) As IFuture(Of String)
             Contract.Requires(argument IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Dim user = New BotUser(player.Name)
             If player IsNot adminPlayer Then
                 Select Case state
-                    Case Is < W3GameState.Loading
-                        Return W3Game.GameGuestCommandsLobby.Invoke(Me, user, argument)
-                    Case W3GameState.Loading
-                        Return W3Game.GameGuestCommandsLoadScreen.Invoke(Me, user, argument)
-                    Case Is > W3GameState.Loading
-                        Return W3Game.GameGuestCommandsGamePlay.Invoke(Me, user, argument)
+                    Case Is < GameState.Loading
+                        Return Game.GameGuestCommandsLobby.Invoke(Me, user, argument)
+                    Case GameState.Loading
+                        Return Game.GameGuestCommandsLoadScreen.Invoke(Me, user, argument)
+                    Case Is > GameState.Loading
+                        Return Game.GameGuestCommandsGamePlay.Invoke(Me, user, argument)
                     Case Else
                         Throw New UnreachableException()
                 End Select
@@ -120,22 +119,22 @@ Namespace Warcraft3
                 Return New Commands.Specializations.InstanceAdminCommands(bot).Invoke(Me, Nothing, argument)
             Else
                 Select Case state
-                    Case Is < W3GameState.Loading
-                        Return W3Game.GameCommandsLobby.Invoke(Me, user, argument)
-                    Case W3GameState.Loading
-                        Return W3Game.GameCommandsLoadScreen.Invoke(Me, user, argument)
-                    Case Is > W3GameState.Loading
-                        Return W3Game.GameCommandsGamePlay.Invoke(Me, user, argument)
+                    Case Is < GameState.Loading
+                        Return Game.GameCommandsLobby.Invoke(Me, user, argument)
+                    Case GameState.Loading
+                        Return Game.GameCommandsLoadScreen.Invoke(Me, user, argument)
+                    Case Is > GameState.Loading
+                        Return Game.GameCommandsGamePlay.Invoke(Me, user, argument)
                     Case Else
                         Throw New UnreachableException()
                 End Select
             End If
         End Function
 
-        Private Sub ReceiveChat(ByVal sender As W3Player,
+        Private Sub ReceiveChat(ByVal sender As Player,
                                 ByVal text As String,
-                                ByVal type As W3Packet.ChatType,
-                                ByVal receiverType As W3Packet.ChatReceiverType,
+                                ByVal type As Packet.ChatType,
+                                ByVal receiverType As Packet.ChatReceiverType,
                                 ByVal requestedReceiverIndexes As IList(Of Byte))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
@@ -152,7 +151,7 @@ Namespace Warcraft3
                 text = visibleSender.name + ": " + text
             End If
             'packet
-            Dim pk = W3Packet.MakeText(text, type, receiverType, players, visibleSender)
+            Dim pk = Packet.MakeText(text, type, receiverType, players, visibleSender)
             'receivers
             For Each receiver In players
                 Contract.Assume(receiver IsNot Nothing)
@@ -164,19 +163,19 @@ Namespace Warcraft3
                 End If
             Next receiver
         End Sub
-        Private Sub ReceiveNonGameAction(ByVal sender As W3Player, ByVal vals As Dictionary(Of String, Object))
+        Private Sub ReceiveNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of String, Object))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
-            Dim commandType = CType(vals("command type"), W3Packet.NonGameAction)
+            Dim commandType = CType(vals("command type"), Packet.NonGameAction)
 
             'Player Chat
             Select Case commandType
-                Case W3Packet.NonGameAction.GameChat, W3Packet.NonGameAction.LobbyChat
+                Case Packet.NonGameAction.GameChat, Packet.NonGameAction.LobbyChat
                     Dim message = CStr(vals("message")).AssumeNotNull
-                    Dim chatType = If(commandType = W3Packet.NonGameAction.GameChat, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby)
-                    Dim receiverType As W3Packet.ChatReceiverType
-                    If chatType = W3Packet.ChatType.Game Then
-                        receiverType = CType(vals("receiver type"), W3Packet.ChatReceiverType)
+                    Dim chatType = If(commandType = Packet.NonGameAction.GameChat, Packet.ChatType.Game, Packet.ChatType.Lobby)
+                    Dim receiverType As Packet.ChatReceiverType
+                    If chatType = Packet.ChatType.Game Then
+                        receiverType = CType(vals("receiver type"), Packet.ChatReceiverType)
                     End If
                     Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IList(Of Byte)).AssumeNotNull
 
@@ -186,27 +185,27 @@ Namespace Warcraft3
                                 receiverType,
                                 receivingPlayerIndexes)
 
-                Case W3Packet.NonGameAction.SetTeam
+                Case Packet.NonGameAction.SetTeam
                     ReceiveSetTeam(sender, CByte(vals("new value")))
 
-                Case W3Packet.NonGameAction.SetHandicap
+                Case Packet.NonGameAction.SetHandicap
                     ReceiveSetHandicap(sender, CByte(vals("new value")))
 
-                Case W3Packet.NonGameAction.SetRace
-                    ReceiveSetRace(sender, CType(vals("new value"), W3Slot.Races))
+                Case Packet.NonGameAction.SetRace
+                    ReceiveSetRace(sender, CType(vals("new value"), Slot.Races))
 
-                Case W3Packet.NonGameAction.SetColor
-                    ReceiveSetColor(sender, CType(vals("new value"), W3Slot.PlayerColor))
+                Case Packet.NonGameAction.SetColor
+                    ReceiveSetColor(sender, CType(vals("new value"), Slot.PlayerColor))
 
                 Case Else
-                    RemovePlayer(sender, True, W3PlayerLeaveType.Disconnect, "Sent unrecognized client command type: {0}".Frmt(commandType))
+                    RemovePlayer(sender, True, PlayerLeaveType.Disconnect, "Sent unrecognized client command type: {0}".Frmt(commandType))
             End Select
         End Sub
 #End Region
 
 #Region "Life"
         Public Sub New(ByVal name As String,
-                       ByVal map As W3Map,
+                       ByVal map As Map,
                        ByVal settings As ServerSettings,
                        Optional ByVal logger As Logger = Nothing)
             'contract bug wrt interface event implementation requires this:
@@ -231,17 +230,17 @@ Namespace Warcraft3
 
         '''<summary>Disconnects from all players and kills the instance. Passes hosting to a player if possible.</summary>
         Private Sub Close()
-            If state >= W3GameState.Closed Then
+            If state >= GameState.Closed Then
                 Return
             End If
 
             'disconnect from all players
             For Each p In players.ToList
                 Contract.Assume(p IsNot Nothing)
-                RemovePlayer(p, True, W3PlayerLeaveType.Disconnect, "Closing game")
+                RemovePlayer(p, True, PlayerLeaveType.Disconnect, "Closing game")
             Next p
 
-            ChangeState(W3GameState.Closed)
+            ChangeState(GameState.Closed)
         End Sub
 #End Region
 
@@ -252,18 +251,18 @@ Namespace Warcraft3
                                                                               RaiseEvent Updated(Me, slots)
                                                                           End Sub))
         End Sub
-        Private Sub ThrowPlayerTalked(ByVal speaker As W3Player, ByVal text As String)
+        Private Sub ThrowPlayerTalked(ByVal speaker As Player, ByVal text As String)
             eventRef.QueueAction(Sub()
                                      RaiseEvent PlayerTalked(Me, speaker, text)
                                  End Sub)
         End Sub
-        Private Sub ThrowPlayerLeft(ByVal leaver As W3Player, ByVal leaveType As W3PlayerLeaveType, ByVal reason As String)
+        Private Sub ThrowPlayerLeft(ByVal leaver As Player, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
             Dim state = Me.state
             eventRef.QueueAction(Sub()
                                      RaiseEvent PlayerLeft(Me, state, leaver, leaveType, reason)
                                  End Sub)
         End Sub
-        Private Sub ThrowStateChanged(ByVal old_state As W3GameState, ByVal new_state As W3GameState)
+        Private Sub ThrowStateChanged(ByVal old_state As GameState, ByVal new_state As GameState)
             eventRef.QueueAction(Sub()
                                      RaiseEvent ChangedState(Me, old_state, new_state)
                                  End Sub)
@@ -271,15 +270,15 @@ Namespace Warcraft3
 #End Region
 
 #Region "Access"
-        Private Sub ChangeState(ByVal newState As W3GameState)
+        Private Sub ChangeState(ByVal newState As GameState)
             Dim oldState = state
             state = newState
             ThrowStateChanged(oldState, newState)
         End Sub
 
         '''<summary>Broadcasts a packet to all players. Requires a packer for the packet, and values matching the packer.</summary>
-        Private Sub BroadcastPacket(ByVal pk As W3Packet,
-                                    Optional ByVal source As W3Player = Nothing)
+        Private Sub BroadcastPacket(ByVal pk As Packet,
+                                    Optional ByVal source As Player = Nothing)
             Contract.Requires(pk IsNot Nothing)
             For Each player In (From _player In players
                                 Where _player IsNot source)
@@ -291,20 +290,20 @@ Namespace Warcraft3
         <Pure()>
         Private Function CountFreeSlots() As Integer
             Return (From slot In slots
-                    Where slot.AssumeNotNull.Contents.WantPlayer(Nothing) >= W3SlotContents.WantPlayerPriority.Open).
+                    Where slot.AssumeNotNull.Contents.WantPlayer(Nothing) >= SlotContents.WantPlayerPriority.Open).
                     AssumeNotNull.Count
         End Function
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
-        Private Function TryFindMatchingSlot(ByVal query As String) As W3Slot
+        Private Function TryFindMatchingSlot(ByVal query As String) As Slot
             Contract.Requires(query IsNot Nothing)
 
-            Dim bestSlot As W3Slot = Nothing
-            Dim bestMatch = W3Slot.Match.None
+            Dim bestSlot As Slot = Nothing
+            Dim bestMatch = Slot.Match.None
             slots.MaxPair(Function(slot) slot.Matches(query), bestSlot, bestMatch)
 
-            If bestMatch = W3Slot.Match.None Then
+            If bestMatch = Slot.Match.None Then
                 Return Nothing
             Else
                 Return bestSlot
@@ -313,7 +312,7 @@ Namespace Warcraft3
 
         '''<summary>Returns the slot containing the given player.</summary>
         <Pure()>
-        Private Function TryFindPlayerSlot(ByVal player As W3Player) As W3Slot
+        Private Function TryFindPlayerSlot(ByVal player As Player) As Slot
             Contract.Requires(player IsNot Nothing)
             Return (From slot In slots
                     Where (From resident In slot.Contents.EnumPlayers Where resident Is player).Any
@@ -324,7 +323,7 @@ Namespace Warcraft3
 #Region "Messaging"
         '''<summary>Sends text to all players. Uses spoof chat if necessary.</summary>
         Private Sub BroadcastMessage(ByVal message As String,
-                                     Optional ByVal playerToAvoid As W3Player = Nothing)
+                                     Optional ByVal playerToAvoid As Player = Nothing)
             Contract.Requires(message IsNot Nothing)
             For Each player In (From _player In players Where _player IsNot playerToAvoid)
                 SendMessageTo(message, player.AssumeNotNull, display:=False)
@@ -334,16 +333,16 @@ Namespace Warcraft3
 
         '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
         Private Sub SendMessageTo(ByVal message As String,
-                                  ByVal player As W3Player,
+                                  ByVal player As Player,
                                   Optional ByVal display As Boolean = True)
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
 
             'Send Text
             'text comes from fake host or spoofs from the receiving player
-            player.QueueSendPacket(W3Packet.MakeText(text:=If(fakeHostPlayer Is Nothing, My.Resources.ProgramName + ": ", "") + message,
-                                                     chatType:=If(state >= W3GameState.Loading, W3Packet.ChatType.Game, W3Packet.ChatType.Lobby),
-                                                     receiverType:=W3Packet.ChatReceiverType.AllPlayers,
+            player.QueueSendPacket(Packet.MakeText(text:=If(fakeHostPlayer Is Nothing, My.Resources.ProgramName + ": ", "") + message,
+                                                     chatType:=If(state >= GameState.Loading, Packet.ChatType.Game, Packet.ChatType.Lobby),
+                                                     receiverType:=Packet.ChatReceiverType.AllPlayers,
                                                      receivingPlayers:=players,
                                                      sender:=If(fakeHostPlayer, player)))
 
@@ -355,9 +354,9 @@ Namespace Warcraft3
 
 #Region "Players"
         '''<summary>Removes the given player from the instance</summary>
-        Private Sub RemovePlayer(ByVal player As W3Player,
+        Private Sub RemovePlayer(ByVal player As Player,
                                  ByVal wasExpected As Boolean,
-                                 ByVal leaveType As W3PlayerLeaveType,
+                                 ByVal leaveType As PlayerLeaveType,
                                  ByVal reason As String)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
@@ -375,7 +374,7 @@ Namespace Warcraft3
 
             'Clean player
             If IsPlayerVisible(player) Then
-                BroadcastPacket(W3Packet.MakeOtherPlayerLeft(player, leaveType), player)
+                BroadcastPacket(Packet.MakeOtherPlayerLeft(player, leaveType), player)
             End If
             If player Is adminPlayer Then
                 adminPlayer = Nothing
@@ -383,18 +382,18 @@ Namespace Warcraft3
             player.QueueDisconnect(True, leaveType, reason)
             players.Remove(player)
             Select Case state
-                Case Is < W3GameState.Loading
+                Case Is < GameState.Loading
                     LobbyCatchRemovedPlayer(player, slot)
-                Case W3GameState.Loading
+                Case GameState.Loading
                     OnLoadScreenRemovedPlayer(player, slot)
-                Case Is > W3GameState.Loading
+                Case Is > GameState.Loading
             End Select
             If player Is fakeHostPlayer Then
                 fakeHostPlayer = Nothing
             End If
 
             'Clean game
-            If state >= W3GameState.Loading AndAlso Not (From x In players Where Not x.isFake).Any Then
+            If state >= GameState.Loading AndAlso Not (From x In players Where Not x.isFake).Any Then
                 'the game has started and everyone has left, time to die
                 Close()
             End If
@@ -432,13 +431,13 @@ Namespace Warcraft3
             SendMessageTo("You are now the admin.", player)
         End Sub
 
-        Private Function TryFindPlayer(ByVal username As String) As W3Player
+        Private Function TryFindPlayer(ByVal username As String) As Player
             Contract.Requires(username IsNot Nothing)
             Return (From player In players
                     Where String.Compare(player.AssumeNotNull.name, username, StringComparison.InvariantCultureIgnoreCase) = 0).
                     FirstOrDefault
         End Function
-        Private Function TryFindPlayer(ByVal index As Byte) As W3Player
+        Private Function TryFindPlayer(ByVal index As Byte) As Player
             Return (From player In players
                     Where player.AssumeNotNull.Index = index).
                     FirstOrDefault
@@ -457,36 +456,36 @@ Namespace Warcraft3
                           Where player.name.ToUpperInvariant = slotQuery.ToUpperInvariant).FirstOrDefault
             If target IsNot Nothing Then
                 slot.Contents = slot.Contents.RemovePlayer(target)
-                RemovePlayer(target, True, W3PlayerLeaveType.Disconnect, "Booted")
+                RemovePlayer(target, True, PlayerLeaveType.Disconnect, "Booted")
                 Return
             End If
 
             For Each player In slot.Contents.EnumPlayers
                 Contract.Assume(player IsNot Nothing)
                 slot.Contents = slot.Contents.RemovePlayer(player)
-                RemovePlayer(player, True, W3PlayerLeaveType.Disconnect, "Booted")
+                RemovePlayer(player, True, PlayerLeaveType.Disconnect, "Booted")
             Next player
         End Sub
 #End Region
 
 #Region "Invisible Players"
         <Pure()>
-        Private Function IsPlayerVisible(ByVal player As W3Player) As Boolean
+        Private Function IsPlayerVisible(ByVal player As Player) As Boolean
             Contract.Requires(player IsNot Nothing)
             Return indexMap(player.Index) = player.Index
         End Function
         <Pure()>
-        Private Function GetVisiblePlayer(ByVal player As W3Player) As W3Player
+        Private Function GetVisiblePlayer(ByVal player As Player) As Player
             Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of W3Player)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
             If IsPlayerVisible(player) Then Return player
             Dim visibleIndex = indexMap(player.Index)
             Dim visiblePlayer = (From p In players Where p.Index = visibleIndex).First
             Contract.Assume(visiblePlayer IsNot Nothing)
             Return visiblePlayer
         End Function
-        Private Shared Sub SetupCoveredSlot(ByVal coveringSlot As W3Slot,
-                                            ByVal coveredSlot As W3Slot,
+        Private Shared Sub SetupCoveredSlot(ByVal coveringSlot As Slot,
+                                            ByVal coveredSlot As Slot,
                                             ByVal playerIndex As Byte)
             Contract.Requires(coveringSlot IsNot Nothing)
             Contract.Requires(coveredSlot IsNot Nothing)
@@ -496,8 +495,8 @@ Namespace Warcraft3
             If coveredSlot.Contents.EnumPlayers.Any Then Throw New InvalidOperationException()
             Dim player = coveringSlot.Contents.EnumPlayers.First
             Contract.Assume(player IsNot Nothing)
-            coveringSlot.Contents = New W3SlotContentsCovering(coveringSlot, coveredSlot, player)
-            coveredSlot.Contents = New W3SlotContentsCovered(coveredSlot, coveringSlot, playerIndex, coveredSlot.Contents.EnumPlayers)
+            coveringSlot.Contents = New SlotContentsCovering(coveringSlot, coveredSlot, player)
+            coveredSlot.Contents = New SlotContentsCovered(coveredSlot, coveringSlot, playerIndex, coveredSlot.Contents.EnumPlayers)
         End Sub
 #End Region
 
@@ -509,9 +508,9 @@ Namespace Warcraft3
             End Get
         End Property
 
-        Public ReadOnly Property Map As W3Map
+        Public ReadOnly Property Map As Map
             Get
-                Contract.Ensures(Contract.Result(Of W3Map)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
                 Return _map
             End Get
         End Property
@@ -523,12 +522,12 @@ Namespace Warcraft3
             End Get
         End Property
 
-        Public Function QueueGetAdminPlayer() As IFuture(Of W3Player)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
+        Public Function QueueGetAdminPlayer() As IFuture(Of Player)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() adminPlayer)
         End Function
-        Public Function QueueGetFakeHostPlayer() As IFuture(Of W3Player)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
+        Public Function QueueGetFakeHostPlayer() As IFuture(Of Player)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() fakeHostPlayer)
         End Function
         Public Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture
@@ -538,7 +537,7 @@ Namespace Warcraft3
             Return ref.QueueAction(Sub() CommandProcessLocalText(text, logger))
         End Function
         Public Function QueueCommandProcessText(ByVal bot As MainBot,
-                                                ByVal player As W3Player,
+                                                ByVal player As Player,
                                                 ByVal argument As String) As IFuture(Of String)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
@@ -552,22 +551,22 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub() ElevatePlayer(name, password))
         End Function
-        Public Function QueueFindPlayer(ByVal userName As String) As IFuture(Of W3Player)
+        Public Function QueueFindPlayer(ByVal userName As String) As IFuture(Of Player)
             Contract.Requires(userName IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3Player))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() TryFindPlayer(userName))
         End Function
-        Public Function QueueRemovePlayer(ByVal player As W3Player,
+        Public Function QueueRemovePlayer(ByVal player As Player,
                                           ByVal expected As Boolean,
-                                          ByVal leaveType As W3PlayerLeaveType,
+                                          ByVal leaveType As PlayerLeaveType,
                                           ByVal reason As String) As IFuture
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub() RemovePlayer(player, expected, leaveType, reason))
         End Function
-        Public Function QueueGetPlayers() As IFuture(Of List(Of W3Player))
-            Contract.Ensures(Contract.Result(Of IFuture(Of List(Of W3Player)))() IsNot Nothing)
+        Public Function QueueGetPlayers() As IFuture(Of List(Of Player))
+            Contract.Ensures(Contract.Result(Of IFuture(Of List(Of Player)))() IsNot Nothing)
             Return ref.QueueFunc(Function() players.ToList)
         End Function
         Public Function QueueThrowUpdated() As IFuture
@@ -583,7 +582,7 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub() BroadcastMessage(message))
         End Function
-        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As W3Player) As IFuture
+        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As Player) As IFuture
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
@@ -594,11 +593,11 @@ Namespace Warcraft3
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(Sub() Boot(slotQuery))
         End Function
-        Public Function QueueGetState() As IFuture(Of W3GameState)
-            Contract.Ensures(Contract.Result(Of IFuture(Of W3GameState))() IsNot Nothing)
+        Public Function QueueGetState() As IFuture(Of GameState)
+            Contract.Ensures(Contract.Result(Of IFuture(Of GameState))() IsNot Nothing)
             Return ref.QueueFunc(Function() Me.state)
         End Function
-        Public Function QueueReceiveNonGameAction(ByVal player As W3Player,
+        Public Function QueueReceiveNonGameAction(ByVal player As Player,
                                                   ByVal values As Dictionary(Of String, Object)) As IFuture
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(values IsNot Nothing)

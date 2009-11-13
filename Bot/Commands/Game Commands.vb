@@ -1,5 +1,4 @@
 Imports HostBot.Commands
-Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations
     Public NotInheritable Class InstancePlayCommands
@@ -9,7 +8,7 @@ Namespace Commands.Specializations
             AddCommand(Disconnect)
         End Sub
 
-        Private Shared ReadOnly Disconnect As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Disconnect As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Disconnect",
             template:="",
             Description:="Causes the bot to disconnect from the game. The game may continue if one of the players can host.",
@@ -37,7 +36,7 @@ Namespace Commands.Specializations
             AddCommand(Unlock)
         End Sub
 
-        Private Shared ReadOnly Open As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Open As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Open",
             template:="slot",
             Description:="Opens a slot.",
@@ -45,7 +44,7 @@ Namespace Commands.Specializations
                       Return target.QueueOpenSlot(argument.RawValue(0)).EvalOnSuccess(Function() "Opened")
                   End Function)
 
-        Private Shared ReadOnly Close As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Close As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Close",
             template:="slot",
             Description:="Closes a slot.",
@@ -53,7 +52,7 @@ Namespace Commands.Specializations
                       Return target.QueueCloseSlot(argument.RawValue(0)).EvalOnSuccess(Function() "Closed")
                   End Function)
 
-        Private Shared ReadOnly SetTeam As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly SetTeam As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="SetTeam",
             template:="slot team",
             Description:="Sets a slot's team. Only works in melee games.",
@@ -68,7 +67,7 @@ Namespace Commands.Specializations
                       Return target.QueueSetSlotTeam(arg_slot, val_team).EvalOnSuccess(Function() "Set Team")
                   End Function)
 
-        Private Shared ReadOnly SetupTeams As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly SetupTeams As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="SetupTeams",
             template:="teams",
             Description:="Sets up the number of slots on each team (eg. 'SetupTeams 2v2' will leave two open slots on each team).",
@@ -76,7 +75,7 @@ Namespace Commands.Specializations
                       Return target.QueueTrySetTeamSizes(TeamVersusStringToTeamSizes(argument.RawValue(0))).EvalOnSuccess(Function() "Set Teams")
                   End Function)
 
-        Private Shared ReadOnly Handicap As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Handicap As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Handicap",
             template:="slot value",
             Description:="Sets the handicap of a slot.",
@@ -93,7 +92,7 @@ Namespace Commands.Specializations
                       End Select
                   End Function)
 
-        Private Shared ReadOnly Color As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Color As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Color",
             template:="slot value",
             Description:="Sets the color of a slot. Only works in melee games.",
@@ -101,14 +100,14 @@ Namespace Commands.Specializations
                       If Not target.Map.isMelee Then Throw New InvalidOperationException("A slot's color is fixed in a custom game.")
                       Dim arg_slot = argument.RawValue(0)
                       Dim arg_color = argument.RawValue(1)
-                      Dim ret_color As W3Slot.PlayerColor
-                      If EnumTryParse(Of W3Slot.PlayerColor)(arg_color, True, ret_color) Then
+                      Dim ret_color As WC3.Slot.PlayerColor
+                      If EnumTryParse(Of WC3.Slot.PlayerColor)(arg_color, True, ret_color) Then
                           Return target.QueueSetSlotColor(arg_slot, ret_color).EvalOnSuccess(Function() "Set Color")
                       End If
                       Throw New InvalidOperationException("Unrecognized color: '{0}'.".Frmt(arg_color))
                   End Function)
 
-        Private Shared ReadOnly Swap As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Swap As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Swap",
             template:="slot1 slot2",
             Description:="Swaps the contents of two slots.",
@@ -116,26 +115,26 @@ Namespace Commands.Specializations
                       Return target.QueueSwapSlotContents(argument.RawValue(0), argument.RawValue(1)).EvalOnSuccess(Function() "Swapped Slots")
                   End Function)
 
-        Private Shared ReadOnly CPU As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly CPU As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="CPU",
             template:="slot ?difficulty",
             Description:="Places a computer in a slot, unless it contains a player.",
             func:=Function(target, user, argument)
                       Dim arg_slot = argument.RawValue(0)
-                      Dim arg_difficulty = If(argument.rawvalueCount >= 2, argument.RawValue(1), W3Slot.ComputerLevel.Normal.ToString)
-                      Dim ret_difficulty As W3Slot.ComputerLevel
+                      Dim arg_difficulty = If(argument.rawvalueCount >= 2, argument.RawValue(1), WC3.Slot.ComputerLevel.Normal.ToString)
+                      Dim ret_difficulty As WC3.Slot.ComputerLevel
                       If arg_difficulty.EnumTryParse(ignoreCase:=True, result:=ret_difficulty) Then
-                          Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).EvalOnSuccess(Function() "Set Computer Slot")
+                          Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).EvalOnSuccess(Function() "Set Computer Wc3.Slot")
                       End If
                       Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(arg_difficulty))
                   End Function)
 
-        Private Shared ReadOnly Lock As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Lock As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Lock",
             template:="?slot -full",
             Description:="Prevents players from leaving a slot or from changing slot properties (if -full). Omit the slot argument to affect all slots.",
             func:=Function(target, user, argument)
-                      Dim lockType = If(argument.HasOptionalSwitch("full"), W3Slot.Lock.Sticky, W3Slot.Lock.Frozen)
+                      Dim lockType = If(argument.HasOptionalSwitch("full"), WC3.Slot.Lock.Sticky, WC3.Slot.Lock.Frozen)
                       If argument.RawValueCount = 0 Then
                           Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Locked slots")
                       Else
@@ -143,12 +142,12 @@ Namespace Commands.Specializations
                       End If
                   End Function)
 
-        Private Shared ReadOnly Unlock As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Unlock As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Unlock",
             template:="?slot",
             Description:="Allows players to leave a slot and change its properties. Omit the slot argument to affect all slots.",
             func:=Function(target, user, argument)
-                      Dim lockType = W3Slot.Lock.Unlocked
+                      Dim lockType = WC3.Slot.Lock.Unlocked
                       If argument.RawValueCount = 0 Then
                           Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Unlocked slots")
                       Else
@@ -156,15 +155,15 @@ Namespace Commands.Specializations
                       End If
                   End Function)
 
-        Private Shared ReadOnly Reserve As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Reserve As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Reserve",
             template:="name -slot=any",
             Description:="Reserves a slot for a player.",
             func:=Function(target, user, argument)
-                      Return target.QueueReserveSlot(argument.RawValue(0), argument.TryGetOptionalNamedValue("slot")).EvalOnSuccess(Function() "Reserved Slot")
+                      Return target.QueueReserveSlot(argument.RawValue(0), argument.TryGetOptionalNamedValue("slot")).EvalOnSuccess(Function() "Reserved Wc3.Slot")
                   End Function)
 
-        Private Shared ReadOnly Start As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Start As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Start",
             template:="",
             Description:="Starts the launch countdown.",
@@ -172,7 +171,7 @@ Namespace Commands.Specializations
                       Return target.QueueStartCountdown().EvalOnSuccess(Function() "Started Countdown")
                   End Function)
 
-        Private Shared ReadOnly Cancel As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Cancel As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Cancel",
             template:="",
             Description:="Closes this game instance.",
@@ -182,14 +181,14 @@ Namespace Commands.Specializations
     End Class
 
     Public NotInheritable Class InstanceAdminCommands
-        Inherits CommandSet(Of W3Game)
+        Inherits CommandSet(Of WC3.Game)
 
         Public Sub New(ByVal bot As MainBot)
             AddCommand(New CommandBot(bot))
         End Sub
 
         Public NotInheritable Class CommandBot
-            Inherits Command(Of W3Game)
+            Inherits Command(Of WC3.Game)
             Private ReadOnly bot As MainBot
             Public Sub New(ByVal bot As MainBot)
                 MyBase.New(Name:="Bot",
@@ -198,7 +197,7 @@ Namespace Commands.Specializations
                 Contract.Requires(bot IsNot Nothing)
                 Me.bot = bot
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Warcraft3.W3Game, ByVal user As BotUser, ByVal argument As String) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As WC3.Game, ByVal user As BotUser, ByVal argument As String) As Strilbrary.Threading.IFuture(Of String)
                 Return bot.BotCommands.Invoke(bot, user, argument)
             End Function
         End Class
@@ -213,7 +212,7 @@ Namespace Commands.Specializations
             AddCommand([Set])
         End Sub
 
-        Private Shared ReadOnly Boot As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Boot As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Boot",
             template:="Name/Color",
             Description:="Kicks a player from the game.",
@@ -221,7 +220,7 @@ Namespace Commands.Specializations
                       Return target.QueueBootSlot(argument.rawvalue(0)).EvalOnSuccess(Function() "Booted")
                   End Function)
 
-        Private Shared ReadOnly [Get] As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly [Get] As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Get",
             template:="setting",
             Description:="Returns settings for this game {tickperiod, laglimit, gamerate}.",
@@ -236,7 +235,7 @@ Namespace Commands.Specializations
                       Return "{0} = '{1}'".Frmt(argument.RawValue(0), val).Futurized
                   End Function)
 
-        Private Shared ReadOnly [Set] As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly [Set] As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Set",
             template:="setting value",
             Description:="Sets settings for this game {tickperiod, laglimit, gamerate}.",
@@ -263,13 +262,13 @@ Namespace Commands.Specializations
     End Class
 
     Public Class InstanceBaseCommands
-        Inherits CommandSet(Of W3Game)
+        Inherits CommandSet(Of WC3.Game)
 
         Public Sub New()
             AddCommand(Ping)
         End Sub
 
-        Private Shared ReadOnly Ping As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Ping As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Ping",
             template:="",
             Description:="Returns estimated network round trip times for each player.",
@@ -298,7 +297,7 @@ Namespace Commands.Specializations
             AddCommand(VoteStart)
         End Sub
 
-        Private Shared ReadOnly VoteStart As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly VoteStart As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="VoteStart",
             template:="-cancel",
             Description:="Places or cancels a vote to prematurely start an autostarted game. Requires at least 2 players and at least a 2/3 majority.",
@@ -309,7 +308,7 @@ Namespace Commands.Specializations
                                                               ).EvalOnSuccess(Function() "Voted to start")
                   End Function)
 
-        Private Shared ReadOnly Elevate As New DelegatedTemplatedCommand(Of W3Game)(
+        Private Shared ReadOnly Elevate As New DelegatedTemplatedCommand(Of WC3.Game)(
             Name:="Elevate",
             template:="password",
             Description:="Gives access to admin or host commands.",

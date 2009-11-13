@@ -1,10 +1,9 @@
 Imports HostBot.Bnet
-Imports HostBot.Bnet.BnetClient
-Imports HostBot.Bnet.BnetPacket
+Imports HostBot.Bnet.Packet
 
 Public Class BnetClientControl
-    Implements IHookable(Of BnetClient)
-    Private WithEvents client As BnetClient
+    Implements IHookable(Of Client)
+    Private WithEvents client As Client
     Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
     Private numPrimaryStates As Integer
 
@@ -36,16 +35,16 @@ Public Class BnetClientControl
         End Select
     End Sub
 
-    Private Function QueueDispose() As IFuture Implements IHookable(Of BnetClient).QueueDispose
+    Private Function QueueDispose() As IFuture Implements IHookable(Of Client).QueueDispose
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
-    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of BnetClient).QueueGetCaption
+    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of Client).QueueGetCaption
         Return ref.QueueFunc(Function() If(client Is Nothing, "[No Client]", "Client {0}".Frmt(client.Name)))
     End Function
-    Public Function QueueHook(ByVal child As BnetClient) As IFuture Implements IHookable(Of BnetClient).QueueHook
+    Public Function QueueHook(ByVal child As Client) As IFuture Implements IHookable(Of Client).QueueHook
         Return ref.QueueAction(
             Sub()
-                If Me.client Is child Then  Return
+                If Me.client Is child Then Return
                 Me.client = child
                 lstState.Items.Clear()
 
@@ -61,14 +60,14 @@ Public Class BnetClientControl
         )
     End Function
 
-    Private Sub CatchReceivedPacket(ByVal sender As BnetClient, ByVal packet As BnetPacket) Handles client.ReceivedPacket
+    Private Sub CatchReceivedPacket(ByVal sender As Client, ByVal packet As Packet) Handles client.ReceivedPacket
         ref.QueueAction(
             Sub()
                 If sender IsNot client Then Return
                 Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
                 Select Case packet.id
-                    Case BnetPacketId.ChatEvent
-                        Dim id = CType(vals("event id"), BnetPacket.ChatEventId)
+                    Case PacketId.ChatEvent
+                        Dim id = CType(vals("event id"), Packet.ChatEventId)
                         Dim user = CStr(vals("username"))
                         Dim text = CStr(vals("text"))
                         Select Case id
@@ -113,7 +112,7 @@ Public Class BnetClientControl
                             Case ChatEventId.Emote
                                 logClient.LogMessage("{0} {1}".Frmt(user, text), Color.DarkGray)
                         End Select
-                    Case BnetPacketId.QueryGamesList
+                    Case PacketId.QueryGamesList
                         While lstState.Items.Count > numPrimaryStates
                             lstState.Items.RemoveAt(lstState.Items.Count - 1)
                         End While
@@ -122,7 +121,7 @@ Public Class BnetClientControl
                         lstState.Items.Add(Date.Now().ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture))
                         For Each game In CType(vals("games"), IEnumerable(Of Dictionary(Of String, Object)))
                             lstState.Items.Add("---")
-                            Dim stats = CType(game("game statstring"), Warcraft3.W3GameStats)
+                            Dim stats = CType(game("game statstring"), WC3.GameStats)
                             lstState.Items.Add(CStr(game("game name")))
                             lstState.Items.Add(CStr(stats.HostName))
                             lstState.Items.Add(stats.relativePath.Split("\"c).Last)
@@ -142,9 +141,9 @@ Public Class BnetClientControl
         txtTalk.Text = ""
     End Sub
 
-    Private Sub CatchClientStateChanged(ByVal sender As BnetClient,
-                                        ByVal oldState As BnetClientState,
-                                        ByVal newState As BnetClientState) Handles client.StateChanged
+    Private Sub CatchClientStateChanged(ByVal sender As Client,
+                                        ByVal oldState As ClientState,
+                                        ByVal newState As ClientState) Handles client.StateChanged
         ref.QueueAction(
             Sub()
                 If sender IsNot client Then Return
@@ -152,10 +151,10 @@ Public Class BnetClientControl
                 lstState.Enabled = True
                 lstState.BackColor = SystemColors.Window
                 Select Case newState
-                    Case BnetClientState.Channel, BnetClientState.CreatingGame
-                        If oldState = BnetClientState.AdvertisingGame Then lstState.Items.Clear()
+                    Case ClientState.Channel, ClientState.CreatingGame
+                        If oldState = ClientState.AdvertisingGame Then lstState.Items.Clear()
                         txtTalk.Enabled = True
-                    Case BnetClientState.AdvertisingGame
+                    Case ClientState.AdvertisingGame
                         lstState.Items.Clear()
                         lstState.Items.Add("Game")
                         Dim g = client.CurGame

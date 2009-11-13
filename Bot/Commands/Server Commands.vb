@@ -14,11 +14,10 @@
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
 Imports HostBot.Commands
-Imports HostBot.Warcraft3
 
 Namespace Commands.Specializations
     Public NotInheritable Class ServerCommands
-        Inherits CommandSet(Of W3Server)
+        Inherits CommandSet(Of WC3.GameServer)
 
         Public Sub New()
             AddCommand(OpenInstance)
@@ -28,7 +27,7 @@ Namespace Commands.Specializations
             AddCommand(Bot)
         End Sub
 
-        Private Shared ReadOnly Bot As New DelegatedCommand(Of W3Server)(
+        Private Shared ReadOnly Bot As New DelegatedCommand(Of WC3.GameServer)(
             Name:="Bot",
             Format:="...",
             Description:="Forwards commands to the main bot.",
@@ -37,7 +36,7 @@ Namespace Commands.Specializations
                       Return client.Parent.BotCommands.invoke(client.Parent, user, argument)
                   End Function)
 
-        Private ReadOnly StartListening As New DelegatedTemplatedCommand(Of W3Server)(
+        Private ReadOnly StartListening As New DelegatedTemplatedCommand(Of WC3.GameServer)(
             Name:="Listen",
             template:="port",
             Description:="Starts listening for connections on a port.",
@@ -48,7 +47,7 @@ Namespace Commands.Specializations
                       Return target.QueueOpenPort(port).EvalOnSuccess(Function() "Port opened.")
                   End Function)
 
-        Private ReadOnly StopListening As New DelegatedTemplatedCommand(Of W3Server)(
+        Private ReadOnly StopListening As New DelegatedTemplatedCommand(Of WC3.GameServer)(
             Name:="StopListening",
             template:="-port=#",
             Description:="Stops listening on a port. If no port is given, stops listening on all ports.",
@@ -65,7 +64,7 @@ Namespace Commands.Specializations
                       End If
                   End Function)
 
-        Private ReadOnly OpenInstance As New DelegatedTemplatedCommand(Of W3Server)(
+        Private ReadOnly OpenInstance As New DelegatedTemplatedCommand(Of WC3.GameServer)(
             Name:="Open",
             template:="name",
             Description:="Opens a new game instance.",
@@ -74,7 +73,7 @@ Namespace Commands.Specializations
                       Return target.QueueCreateGame(argument.RawValue(0)).EvalOnSuccess(Function() "Created instance.")
                   End Function)
 
-        Private ReadOnly CloseInstance As New DelegatedTemplatedCommand(Of W3Server)(
+        Private ReadOnly CloseInstance As New DelegatedTemplatedCommand(Of WC3.GameServer)(
             Name:="Close",
             template:="name",
             Description:="Closes the named game instance.",

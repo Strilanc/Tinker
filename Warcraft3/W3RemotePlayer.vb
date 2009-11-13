@@ -1,7 +1,6 @@
-﻿Imports HostBot.Warcraft3.W3PacketId
-Imports HostBot.Warcraft3
+﻿Imports HostBot.WC3.PacketId
 
-Namespace Warcraft3
+Namespace WC3
     Public NotInheritable Class W3ConnectingPlayer
         Private ReadOnly _name As String
         Private ReadOnly _peerKey As UInteger
@@ -99,7 +98,7 @@ Namespace Warcraft3
         Public ReadOnly ip As Net.IPAddress
         Public ReadOnly peerKey As UInteger
         Private WithEvents _socket As W3Socket
-        Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal packet As W3Packet)
+        Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal packet As Packet)
         Public Event Disconnected(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
         Public ReadOnly Property Index As Byte
             Get
@@ -136,14 +135,14 @@ Namespace Warcraft3
             AsyncProduceConsumeUntilError2(
                 producer:=AddressOf socket.FutureReadPacket,
                 consumer:=Sub(packetData)
-                              RaiseEvent ReceivedPacket(Me, W3Packet.FromData(CType(packetData(1), W3PacketId), packetData.SubView(4)))
+                              RaiseEvent ReceivedPacket(Me, Packet.FromData(CType(packetData(1), PacketId), packetData.SubView(4)))
                           End Sub,
                 errorHandler:=Sub(exception)
                                   'ignore
                               End Sub)
         End Sub
 
-        Private Sub socket_Disconnected(ByVal sender As Warcraft3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
+        Private Sub socket_Disconnected(ByVal sender As WC3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
             RaiseEvent Disconnected(Me, expected, reason)
         End Sub
     End Class

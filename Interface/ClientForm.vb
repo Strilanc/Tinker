@@ -1,9 +1,7 @@
 Imports System.Threading
-Imports HostBot.Bnet
 
 Public Class ClientForm
     Private WithEvents bot As MainBot
-    Private WithEvents client As BnetClient
 
     Private Shadows Sub OnLoad() Handles Me.Load
         Try
@@ -81,11 +79,9 @@ Public Class ClientForm
         botcMain.QueueHook(Nothing)
         botcMain.Dispose()
 
-        With bot
-            bot = Nothing
-            client = Nothing
-            .QueueKill()
-        End With
+        Dim r = bot
+        bot = Nothing
+        r.QueueKill()
         My.Settings.Save()
     End Sub
 

@@ -1,8 +1,8 @@
-Imports HostBot.Warcraft3
+Imports HostBot.WC3
 
 Public Class W3GameControl
-    Implements IHookable(Of W3Game)
-    Private WithEvents game As W3Game
+    Implements IHookable(Of Game)
+    Private WithEvents game As Game
     Private ReadOnly ref As New InvokedCallQueue(Me)
 
     Private commandHistory As New List(Of String) From {""}
@@ -33,15 +33,15 @@ Public Class W3GameControl
         End Select
     End Sub
 
-    Private Function QueueDispose() As IFuture Implements IHookable(Of W3Game).QueueDispose
+    Private Function QueueDispose() As IFuture Implements IHookable(Of Game).QueueDispose
         Return ref.QueueAction(Sub() Me.Dispose())
     End Function
 
-    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of Warcraft3.W3Game).QueueGetCaption
+    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of WC3.Game).QueueGetCaption
         Return ref.QueueFunc(Function() If(game Is Nothing, "[No Game]", game.Name))
     End Function
 
-    Public Function QueueHook(ByVal child As W3Game) As IFuture Implements IHookable(Of Warcraft3.W3Game).QueueHook
+    Public Function QueueHook(ByVal child As Game) As IFuture Implements IHookable(Of WC3.Game).QueueHook
         Return ref.QueueAction(
             Sub()
                 For i = 0 To lstSlots.Items.Count - 1
@@ -67,7 +67,7 @@ Public Class W3GameControl
         e.Handled = True
     End Sub
 
-    Private Sub CatchGameUpdated(ByVal sender As W3Game, ByVal slots As List(Of W3Slot)) Handles game.Updated
+    Private Sub CatchGameUpdated(ByVal sender As Game, ByVal slots As List(Of Slot)) Handles game.Updated
         Dim descriptions = (From slot In slots Select slot.GenerateDescription).ToList
         descriptions.Defuturized.QueueCallOnSuccess(ref,
             Sub()

@@ -1,4 +1,4 @@
-﻿Namespace Warcraft3
+﻿Namespace WC3
     Public Enum GameSpeedOption
         Slow
         Medium
@@ -20,7 +20,7 @@
     ''' <summary>
     ''' Stores the data contained in a warcraft 3 game 'statstring'.
     ''' </summary>
-    Public NotInheritable Class W3GameStats
+    Public NotInheritable Class GameStats
         Public ReadOnly randomHero As Boolean
         Public ReadOnly randomRace As Boolean
         Public ReadOnly allowFullSharedControl As Boolean
@@ -96,7 +96,7 @@
         ''' <summary>
         ''' Constructs the game stats based on a map and arguments.
         ''' </summary>
-        Public Sub New(ByVal map As W3Map,
+        Public Sub New(ByVal map As Map,
                        ByVal hostName As String,
                        ByVal argument As Commands.CommandArgument)
             Contract.Requires(map IsNot Nothing)

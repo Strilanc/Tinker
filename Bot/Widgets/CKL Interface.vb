@@ -1,5 +1,4 @@
 ﻿Imports HostBot.Commands
-Imports HostBot.Bnet.BnetPacket
 
 Namespace CKL
     Public Enum CKLPacketId As Byte
@@ -8,7 +7,7 @@ Namespace CKL
     End Enum
 
     Public NotInheritable Class CKLKey
-        Private Shared ReadOnly cdKeyJar As New CDKeyJar("cdkey data")
+        Private Shared ReadOnly cdKeyJar As New Bnet.Packet.CDKeyJar("cdkey data")
         Private ReadOnly _name As String
         Public ReadOnly _cdKeyROC As String
         Public ReadOnly _cdKeyTFT As String
@@ -56,7 +55,8 @@ Namespace CKL
             Contract.Requires(serverToken IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
             Return Concat(From key In {CDKeyROC, CDKeyTFT}
-                          Select cdKeyJar.Pack(cdKeyJar.PackCDKey(key, clientToken, serverToken)).Data.ToArray).ToView
+                          Select vals = Bnet.Packet.CDKeyJar.PackCDKey(key, clientToken, serverToken)
+                          Select cdKeyJar.Pack(vals).Data.ToArray).ToView
         End Function
     End Class
     Public NotInheritable Class CKLEncodedKey

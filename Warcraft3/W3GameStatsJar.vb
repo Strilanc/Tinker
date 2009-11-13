@@ -1,6 +1,6 @@
-﻿Namespace Warcraft3
-    Public NotInheritable Class W3GameStatsJar
-        Inherits Jar(Of W3GameStats)
+﻿Namespace WC3
+    Public NotInheritable Class GameStatsJar
+        Inherits Jar(Of GameStats)
 
         Private Enum GameSettings As UInteger
             SpeedMedium = 1 << 0
@@ -40,7 +40,7 @@
             Contract.Requires(name IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(Of TValue As W3GameStats)(ByVal value As TValue) As IPickle(Of TValue)
+        Public Overrides Function Pack(Of TValue As GameStats)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
 
             'Encode settings
@@ -102,7 +102,7 @@
                                                   Data:=Concat(EncodeStatStringData(rawPickle.Data).ToArray(), {0}).ToView,
                                                   description:=rawPickle.Description)
         End Function
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of W3GameStats)
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of GameStats)
             'StatString is null-terminated
             Dim n As Integer
             For n = 0 To data.Length - 1
@@ -159,7 +159,7 @@
             Dim hostName = CStr(vals("host name")).AssumeNotNull
 
             'Finish
-            Dim value = New W3GameStats(randomHero,
+            Dim value = New GameStats(randomHero,
                                         randomRace,
                                         allowFullSharedControl,
                                         lockTeams,
@@ -173,7 +173,7 @@
                                         sha1Checksum,
                                         relativePath,
                                         hostName)
-            Return New Pickling.Pickle(Of W3GameStats)(value, data, pickle.Description)
+            Return New Pickling.Pickle(Of GameStats)(value, data, pickle.Description)
         End Function
 
         Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As ViewableList(Of Byte)
