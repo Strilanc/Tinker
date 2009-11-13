@@ -65,31 +65,24 @@ Namespace Bnet
         Public ReadOnly logger As Logger
         Private _socket As BnetSocket
 
-        'refs
         Private ReadOnly outQueue As ICallQueue
         Private ReadOnly inQueue As ICallQueue
-
-        'packets
-        Private ReadOnly packetHandlers As New Dictionary(Of PacketId, Action(Of Object))
+        Private ReadOnly _packetHandler As BnetPacketHandler
 
         'game
         Private advertisedGameSettings As GameSettings
         Private ReadOnly gameRefreshTimer As New Timers.Timer(RefreshPeriod.TotalMilliseconds)
+        Private _futureCreatedGame As New FutureAction
 
-        'crypto
+        'connection
         Private _userCredentials As ClientCredentials
         Private expectedServerPasswordProof As IList(Of Byte)
-
         Private allowRetryConnect As Boolean
-
-        'futures
         Private _futureConnected As New FutureAction
         Private _futureLoggedIn As New FutureAction
-        Private _futureCreatedGame As New FutureAction
 
         'events
         Public Event StateChanged(ByVal sender As Client, ByVal oldState As ClientState, ByVal newState As ClientState)
-        Public Event ReceivedPacket(ByVal sender As Client, ByVal packet As Bnet.Packet)
 
         'warden
         Private _futureWardenHandler As IFuture(Of BNLS.BNLSWardenClient)
@@ -117,6 +110,7 @@ Namespace Bnet
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_name IsNot Nothing)
+            Contract.Invariant(_packetHandler IsNot Nothing)
             Contract.Invariant(_parent IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
@@ -151,21 +145,43 @@ Namespace Bnet
             AddHandler gameRefreshTimer.Elapsed, Sub() OnRefreshTimerTick()
 
             'Start packet machinery
-            packetHandlers(Bnet.PacketId.AuthenticationBegin) = AddressOf ReceiveAuthenticationBegin
-            packetHandlers(Bnet.PacketId.AuthenticationFinish) = AddressOf ReceiveAuthenticationFinish
-            packetHandlers(Bnet.PacketId.AccountLogOnBegin) = AddressOf ReceiveAccountLogonBegin
-            packetHandlers(Bnet.PacketId.AccountLogOnFinish) = AddressOf ReceiveAccountLogonFinish
-            packetHandlers(Bnet.PacketId.ChatEvent) = AddressOf ReceiveChatEvent
-            packetHandlers(Bnet.PacketId.EnterChat) = AddressOf ReceiveEnterChat
-            packetHandlers(Bnet.PacketId.Null) = AddressOf ReceiveNull
-            packetHandlers(Bnet.PacketId.Ping) = AddressOf ReceivePing
-            packetHandlers(Bnet.PacketId.MessageBox) = AddressOf ReceiveMessageBox
-            packetHandlers(Bnet.PacketId.CreateGame3) = AddressOf ReceiveCreateGame3
-            packetHandlers(Bnet.PacketId.Warden) = AddressOf ReceiveWarden
+            Me._packetHandler = New BnetPacketHandler(Me.logger)
+            AddQueuePacketHandler(Packet.Parsers.AuthenticationBegin, AddressOf ReceiveAuthenticationBegin)
+            AddQueuePacketHandler(Packet.Parsers.AuthenticationFinish, AddressOf ReceiveAuthenticationFinish)
+            AddQueuePacketHandler(Packet.Parsers.AccountLogOnBegin, AddressOf ReceiveAccountLogonBegin)
+            AddQueuePacketHandler(Packet.Parsers.AccountLogOnFinish, AddressOf ReceiveAccountLogonFinish)
+            AddQueuePacketHandler(Packet.Parsers.ChatEvent, AddressOf ReceiveChatEvent)
+            AddQueuePacketHandler(Packet.Parsers.EnterChat, AddressOf ReceiveEnterChat)
+            AddQueuePacketHandler(Packet.Parsers.MessageBox, AddressOf ReceiveMessageBox)
+            AddQueuePacketHandler(Packet.Parsers.CreateGame3, AddressOf ReceiveCreateGame3)
+            AddQueuePacketHandler(Packet.Parsers.Warden, AddressOf ReceiveWarden)
+            AddQueuePacketHandler(Packet.Parsers.Ping, AddressOf ReceivePing)
 
-            packetHandlers(Bnet.PacketId.QueryGamesList) = AddressOf IgnorePacket
-            packetHandlers(Bnet.PacketId.FriendsUpdate) = AddressOf IgnorePacket
+            AddQueuePacketHandler(Packet.Parsers.Null, AddressOf IgnorePacket)
+            AddQueuePacketHandler(Packet.Parsers.QueryGamesList, AddressOf IgnorePacket)
+            AddQueuePacketHandler(Packet.Parsers.FriendsUpdate, AddressOf IgnorePacket)
         End Sub
+
+        Private Sub AddQueuePacketHandler(ByVal jar As Packet.DefParser,
+                                          ByVal handler As Action(Of IPickle(Of Dictionary(Of String, Object))))
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            _packetHandler.AddHandler(jar.id, jar, Function(data) inQueue.QueueAction(Sub() handler(data)))
+        End Sub
+        Private Sub AddQueuePacketHandler(Of T)(ByVal id As PacketId,
+                                                ByVal jar As IParseJar(Of T),
+                                                ByVal handler As Action(Of IPickle(Of T)))
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            _packetHandler.AddHandler(id, jar, Function(data) inQueue.QueueAction(Sub() handler(data)))
+        End Sub
+        Public Function QueueAddPacketHandler(Of T)(ByVal id As PacketId,
+                                                    ByVal jar As IParseJar(Of T),
+                                                    ByVal handler As Func(Of IPickle(Of T), ifuture)) As IFuture(Of IDisposable)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Return inQueue.QueueFunc(Function() _packetHandler.AddHandler(id, jar, handler))
+        End Function
 
         Private Sub SendText(ByVal text As String)
             Contract.Requires(text IsNot Nothing)
@@ -312,20 +328,20 @@ Namespace Bnet
             Return result
         End Function
         Private Sub BeginHandlingPackets()
-            AsyncProduceConsumeUntilError(
+            AsyncProduceConsumeUntilError(Of ViewableList(Of Byte))(
                 producer:=AddressOf _socket.FutureReadPacket,
-                consumer:=Function(packet) inQueue.QueueAction(
-                    Sub()
-                        outQueue.QueueAction(Sub() RaiseEvent ReceivedPacket(Me, packet))
-                        If packetHandlers.ContainsKey(packet.id) Then
-                            Call packetHandlers(packet.id)(packet.Payload.Value)
-                        Else
-                            logger.Log("Ignored a packet of type {0}, because there is no handler defined for it.".Frmt(packet.id), LogMessageType.Negative)
-                        End If
-                    End Sub),
+                consumer:=AddressOf ProcessPacket,
                 errorHandler:=Sub(exception) QueueDisconnect(expected:=False, reason:="Error receiving packet: {0}.".Frmt(exception.Message))
             )
         End Sub
+        Private Function ProcessPacket(ByVal packetData As ViewableList(Of Byte)) As ifuture
+            Contract.Requires(packetData IsNot Nothing)
+            Contract.Requires(packetData.Length >= 4)
+            Dim result = Me._packetHandler.HandlePacket(packetData)
+            result.Catch(Sub(exception) QueueDisconnect(expected:=False,
+                                                        reason:=exception.Message))
+            Return result
+        End Function
         Private Sub BeginConnectBnlsServer(ByVal seed As ModInt32)
             'Parse address setting
             Dim address = My.Settings.bnls
@@ -620,10 +636,9 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Connect)"
-        Private Sub ReceiveAuthenticationBegin(ByVal value As Object)
+        Private Sub ReceiveAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+            Dim vals = value.Value
             Const LOGON_TYPE_WC3 As UInteger = 2
 
             If state <> ClientState.Connecting Then
@@ -698,9 +713,9 @@ Namespace Bnet
             End If
         End Sub
 
-        Private Sub ReceiveAuthenticationFinish(ByVal value As Object)
+        Private Sub ReceiveAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
+            Dim vals = value.Value
             If state <> ClientState.Connecting Then
                 Throw New IO.InvalidDataException("Invalid state for receiving AUTHENTICATION_FINISHED")
             End If
@@ -736,9 +751,9 @@ Namespace Bnet
             Throw New Exception(errmsg)
         End Sub
 
-        Private Sub ReceiveAccountLogonBegin(ByVal value As Object)
+        Private Sub ReceiveAccountLogonBegin(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
+            Dim vals = value.Value
 
             If state <> ClientState.AuthenticatingUser Then
                 Throw New Exception("Invalid state for receiving ACCOUNT_LOGON_BEGIN")
@@ -771,10 +786,9 @@ Namespace Bnet
         End Sub
 
         <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
-        Private Sub ReceiveAccountLogonFinish(ByVal value As Object)
+        Private Sub ReceiveAccountLogonFinish(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
-            Contract.Requires(vals IsNot Nothing)
+            Dim vals = value.Value
             If state <> ClientState.AuthenticatingUser Then
                 Throw New Exception("Invalid state for receiving ACCOUNT_LOGON_FINISH")
             End If
@@ -823,18 +837,18 @@ Namespace Bnet
             SendPacket(Bnet.Packet.MakeEnterChat())
         End Sub
 
-        Private Sub ReceiveEnterChat(ByVal value As Object)
+        Private Sub ReceiveEnterChat(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
+            Dim vals = value.Value
             logger.Log("Entered chat", LogMessageType.Typical)
             EnterChannel(profile.initialChannel)
         End Sub
 #End Region
 
 #Region "Networking (Warden)"
-        Private Sub ReceiveWarden(ByVal value As Object)
+        Private Sub ReceiveWarden(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
+            Dim vals = value.Value
             If _futureWardenHandler Is Nothing Then Return
             Dim encryptedData = CType(vals("encrypted data"), Byte()).AssumeNotNull
             _futureWardenHandler.CallOnValueSuccess(
@@ -852,9 +866,9 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Games)"
-        Private Sub ReceiveCreateGame3(ByVal value As Object)
+        Private Sub ReceiveCreateGame3(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
+            Dim vals = value.Value
             Dim succeeded = CUInt(vals("result")) = 0
 
             If succeeded Then
@@ -879,30 +893,24 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Misc)"
-        Private Sub ReceiveChatEvent(ByVal value As Object)
+        Private Sub ReceiveChatEvent(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
+            Dim vals = value.Value
             Dim eventId = CType(vals("event id"), Bnet.Packet.ChatEventId)
             Dim text = CStr(vals("text"))
             If eventId = Bnet.Packet.ChatEventId.Channel Then lastChannel = text
         End Sub
 
-        Private Sub ReceivePing(ByVal value As Object)
+        Private Sub ReceivePing(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
+            Dim vals = value.Value
             Dim salt = CUInt(vals("salt"))
             SendPacket(Bnet.Packet.MakePing(salt))
         End Sub
 
-        Private Sub ReceiveNull(ByVal value As Object)
+        Private Sub ReceiveMessageBox(ByVal value As IPickle(Of Dictionary(Of String, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
-            '[ignore]
-        End Sub
-
-        Private Sub ReceiveMessageBox(ByVal value As Object)
-            Contract.Requires(value IsNot Nothing)
-            Dim vals = CType(value, Dictionary(Of String, Object))
+            Dim vals = value.Value
             Dim msg = "MESSAGE BOX FROM BNET: " + CStr(vals("caption")) + ": " + CStr(vals("text"))
             logger.Log(msg, LogMessageType.Problem)
         End Sub

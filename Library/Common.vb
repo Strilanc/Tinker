@@ -422,3 +422,22 @@ Public NotInheritable Class KeyPair
         Me._value2 = value2
     End Sub
 End Class
+
+Public Class DelegatedDisposable
+    Implements IDisposable
+    Private ReadOnly disposer As action
+    Private ReadOnly disposed As New OnetimeLock
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(disposer IsNot Nothing)
+        Contract.Invariant(disposed IsNot Nothing)
+    End Sub
+
+    Public Sub New(ByVal disposer As Action)
+        Contract.Requires(disposer IsNot Nothing)
+        Me.disposer = disposer
+    End Sub
+    Public Sub Dispose() Implements IDisposable.Dispose
+        If disposed.TryAcquire Then disposer()
+    End Sub
+End Class

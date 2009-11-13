@@ -237,7 +237,90 @@ Namespace Bnet
             Contract.Requires(subJars IsNot Nothing)
             jar.AddParser(id, New TupleParseJar(id.ToString(), subJars))
         End Sub
+        Private Shared Sub regParse(ByVal jar As ManualSwitchJar,
+                                    ByVal subjar As DefParser)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(subjar IsNot Nothing)
+            jar.AddParser(subjar.id, subjar)
+        End Sub
+        Public Class DefParser
+            Inherits TupleParseJar
+            Public ReadOnly id As PacketId
+            Public Sub New(ByVal id As PacketId, ByVal ParamArray subjars() As IParseJar(Of Object))
+                MyBase.New(id.ToString, subjars)
+                Contract.Requires(subjars IsNot Nothing)
+                Me.id = id
+            End Sub
+        End Class
 
+        Public Class Parsers
+            Public Shared ReadOnly AuthenticationBegin As New DefParser(PacketId.AuthenticationBegin,
+                    New EnumUInt32Jar(Of AuthenticationBeginLogOnType)("logon type").Weaken,
+                    New ArrayJar("server cd key salt", 4),
+                    New ArrayJar("udp value", 4),
+                    New ArrayJar("mpq file time", 8),
+                    New StringJar("mpq number string"),
+                    New StringJar("mpq hash challenge"),
+                    New ArrayJar("server signature", 128))
+            Public Shared ReadOnly AuthenticationFinish As New DefParser(PacketId.AuthenticationFinish,
+                    New EnumUInt32Jar(Of AuthenticationFinishResult)("result").Weaken,
+                    New StringJar("info"))
+            Public Shared ReadOnly AccountLogOnBegin As New DefParser(PacketId.AccountLogOnBegin,
+                    New EnumUInt32Jar(Of AccountLogOnBeginResult)("result").Weaken,
+                    New ArrayJar("account password salt", 32),
+                    New ArrayJar("server public key", 32))
+            Public Shared ReadOnly AccountLogOnFinish As New DefParser(PacketId.AccountLogOnFinish,
+                    New EnumUInt32Jar(Of AccountLogOnFinishResult)("result").Weaken,
+                    New ArrayJar("server password proof", 20),
+                    New StringJar("custom error info"))
+            Public Shared ReadOnly RequiredWork As New DefParser(PacketId.RequiredWork,
+                    New StringJar("filename"))
+
+            Public Shared ReadOnly ChatEvent As New DefParser(PacketId.ChatEvent,
+                    New EnumUInt32Jar(Of ChatEventId)("event id").Weaken,
+                    New ArrayJar("flags", 4),
+                    New UInt32Jar("ping").Weaken,
+                    New WC3.IPAddressJar("ip"),
+                    New ArrayJar("acc#", 4),
+                    New ArrayJar("authority", 4),
+                    New StringJar("username"),
+                    New StringJar("text"))
+            Public Shared ReadOnly MessageBox As New DefParser(PacketId.MessageBox,
+                    New UInt32Jar("style").Weaken,
+                    New StringJar("text"),
+                    New StringJar("caption"))
+            Public Shared ReadOnly FriendsUpdate As New DefParser(PacketId.FriendsUpdate,
+                    New ByteJar("entry number").Weaken,
+                    New ByteJar("location id").Weaken,
+                    New ByteJar("status").Weaken,
+                    New StringJar("product id", False, True, 4),
+                    New StringJar("location"))
+            Public Shared ReadOnly QueryGamesList As New DefParser(PacketId.QueryGamesList,
+                New ListParseJar(Of Dictionary(Of String, Object))("games", numSizePrefixBytes:=4, subJar:=New TupleParseJar("game",
+                    New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
+                    New UInt32Jar("language id").Weaken,
+                    New WC3.AddressJar("host address"),
+                    New EnumUInt32Jar(Of GameStates)("game state").Weaken,
+                    New UInt32Jar("elapsed seconds").Weaken,
+                    New StringJar("game name", True),
+                    New StringJar("game password", True),
+                    New TextHexValueJar("num free slots", numdigits:=1).Weaken,
+                    New TextHexValueJar("game id", numdigits:=8).Weaken,
+                    New WC3.GameStatsJar("game statstring").Weaken)))
+
+            Public Shared ReadOnly EnterChat As New DefParser(PacketId.EnterChat,
+                    New StringJar("chat username"),
+                    New StringJar("statstring", , True),
+                    New StringJar("account username"))
+            Public Shared ReadOnly CreateGame3 As New DefParser(PacketId.CreateGame3,
+                    New UInt32Jar("result").Weaken)
+
+            Public Shared ReadOnly Null As New DefParser(PacketId.Null)
+            Public Shared ReadOnly Ping As New DefParser(PacketId.Ping,
+                    New UInt32Jar("salt").Weaken)
+            Public Shared ReadOnly Warden As New DefParser(PacketId.Warden,
+                    New ArrayJar("encrypted data", takeRest:=True))
+        End Class
         Private Shared Function MakeBnetPacketJar() As ManualSwitchJar
             Contract.Ensures(Contract.Result(Of ManualSwitchJar)() IsNot Nothing)
             Dim jar As New ManualSwitchJar
@@ -255,14 +338,6 @@ Namespace Bnet
                     New UInt32Jar("language id").Weaken,
                     New StringJar("country abrev").Weaken,
                     New StringJar("country name").Weaken)
-            regParse(jar, PacketId.AuthenticationBegin,
-                    New EnumUInt32Jar(Of AuthenticationBeginLogOnType)("logon type").Weaken,
-                    New ArrayJar("server cd key salt", 4),
-                    New ArrayJar("udp value", 4),
-                    New ArrayJar("mpq file time", 8),
-                    New StringJar("mpq number string"),
-                    New StringJar("mpq hash challenge"),
-                    New ArrayJar("server signature", 128))
             regPack(jar, PacketId.AuthenticationFinish,
                     New ArrayJar("client cd key salt", 4).Weaken,
                     New ArrayJar("exe version", 4).Weaken,
@@ -273,47 +348,20 @@ Namespace Bnet
                     New CDKeyJar("TFT cd key").Weaken,
                     New StringJar("exe info").Weaken,
                     New StringJar("owner").Weaken)
-            regParse(jar, PacketId.AuthenticationFinish,
-                    New EnumUInt32Jar(Of AuthenticationFinishResult)("result").Weaken,
-                    New StringJar("info"))
             regPack(jar, PacketId.AccountLogOnBegin,
                     New ArrayJar("client public key", 32).Weaken,
                     New StringJar("username").Weaken)
-            regParse(jar, PacketId.AccountLogOnBegin,
-                    New EnumUInt32Jar(Of AccountLogOnBeginResult)("result").Weaken,
-                    New ArrayJar("account password salt", 32),
-                    New ArrayJar("server public key", 32))
-            regParse(jar, PacketId.AccountLogOnFinish,
-                    New EnumUInt32Jar(Of AccountLogOnFinishResult)("result").Weaken,
-                    New ArrayJar("server password proof", 20),
-                    New StringJar("custom error info"))
             regPack(jar, PacketId.AccountLogOnFinish,
                     New ArrayJar("client password proof", 20).Weaken)
-            regParse(jar, PacketId.RequiredWork,
-                    New StringJar("filename"))
+            regParse(jar, Parsers.AuthenticationBegin)
+            regParse(jar, Parsers.AuthenticationFinish)
+            regParse(jar, Parsers.AccountLogOnBegin)
+            regParse(jar, Parsers.AccountLogOnFinish)
+            regParse(jar, Parsers.RequiredWork)
 
             'Interaction
-            regParse(jar, PacketId.ChatEvent,
-                    New EnumUInt32Jar(Of ChatEventId)("event id").Weaken,
-                    New ArrayJar("flags", 4),
-                    New UInt32Jar("ping").Weaken,
-                    New WC3.IPAddressJar("ip"),
-                    New ArrayJar("acc#", 4),
-                    New ArrayJar("authority", 4),
-                    New StringJar("username"),
-                    New StringJar("text"))
-            regParse(jar, PacketId.MessageBox,
-                    New UInt32Jar("style").Weaken,
-                    New StringJar("text"),
-                    New StringJar("caption"))
             regPack(jar, PacketId.ChatCommand,
                     New StringJar("text").Weaken)
-            regParse(jar, PacketId.FriendsUpdate,
-                    New ByteJar("entry number").Weaken,
-                    New ByteJar("location id").Weaken,
-                    New ByteJar("status").Weaken,
-                    New StringJar("product id", False, True, 4),
-                    New StringJar("location"))
             regPack(jar, PacketId.QueryGamesList,
                     New EnumUInt32Jar(Of WC3.GameTypes)("filter").Weaken,
                     New EnumUInt32Jar(Of WC3.GameTypes)("filter mask").Weaken,
@@ -322,26 +370,15 @@ Namespace Bnet
                     New StringJar("game name", True, , , "empty means list games").Weaken,
                     New StringJar("game password", True).Weaken,
                     New StringJar("game stats", True).Weaken)
-            regParse(jar, PacketId.QueryGamesList, New ListParseJar(Of Dictionary(Of String, Object))("games", numSizePrefixBytes:=4, subJar:=New TupleParseJar("game",
-                    New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
-                    New UInt32Jar("language id").Weaken,
-                    New WC3.AddressJar("host address"),
-                    New EnumUInt32Jar(Of GameStates)("game state").Weaken,
-                    New UInt32Jar("elapsed seconds").Weaken,
-                    New StringJar("game name", True),
-                    New StringJar("game password", True),
-                    New TextHexValueJar("num free slots", numdigits:=1).Weaken,
-                    New TextHexValueJar("game id", numdigits:=8).Weaken,
-                    New WC3.GameStatsJar("game statstring").Weaken)))
+            regParse(jar, Parsers.ChatEvent)
+            regParse(jar, Parsers.MessageBox)
+            regParse(jar, Parsers.FriendsUpdate)
+            regParse(jar, Parsers.QueryGamesList)
 
             'State
             regPack(jar, PacketId.EnterChat,
                     New StringJar("username", , , , "[unused]").Weaken,
                     New StringJar("statstring", , , , "[unused]").Weaken)
-            regParse(jar, PacketId.EnterChat,
-                    New StringJar("chat username"),
-                    New StringJar("statstring", , True),
-                    New StringJar("account username"))
             regPack(jar, PacketId.CreateGame3,
                     New EnumUInt32Jar(Of GameStates)("game state").Weaken,
                     New UInt32Jar("seconds since creation").Weaken,
@@ -353,26 +390,24 @@ Namespace Bnet
                     New TextHexValueJar("num free slots", numdigits:=1).Weaken,
                     New TextHexValueJar("game id", numdigits:=8).Weaken,
                     New WC3.GameStatsJar("statstring").Weaken)
-            regParse(jar, PacketId.CreateGame3,
-                    New ValueJar("result", 4, "0=success").Weaken)
             regPack(jar, PacketId.CloseGame3)
             regPack(jar, PacketId.JoinChannel,
                     New ArrayJar("flags", 4, , , "0=no create, 1=first join, 2=forced join, 3=diablo2 join").Weaken,
                     New StringJar("channel").Weaken)
             regPack(jar, PacketId.NetGamePort,
                     New UInt16Jar("port").Weaken)
+            regParse(jar, Parsers.EnterChat)
+            regParse(jar, Parsers.CreateGame3)
 
             'Periodic
-            regParse(jar, PacketId.Null)
             regPack(jar, PacketId.Null)
-            regParse(jar, PacketId.Ping,
-                    New UInt32Jar("salt").Weaken)
             regPack(jar, PacketId.Ping,
                     New UInt32Jar("salt").Weaken)
-            regParse(jar, PacketId.Warden,
-                    New ArrayJar("encrypted data", takeRest:=True))
             regPack(jar, PacketId.Warden,
                     New ArrayJar("encrypted data", takeRest:=True).Weaken)
+            regParse(jar, Parsers.Null)
+            regParse(jar, Parsers.Ping)
+            regParse(jar, Parsers.Warden)
 
             Return jar
         End Function
@@ -678,5 +713,23 @@ Namespace Bnet
             End Function
         End Class
 #End Region
+    End Class
+
+    Public NotInheritable Class BnetPacketHandler
+        Inherits PacketHandler(Of PacketId)
+
+        Public Sub New(ByVal logger As Logger)
+            MyBase.New(logger)
+        End Sub
+
+        Public Overrides ReadOnly Property HeaderSize As Integer
+            Get
+                Return 4
+            End Get
+        End Property
+        Protected Overrides Function ExtractKey(ByVal header As Strilbrary.ViewableList(Of Byte)) As PacketId
+            If header(0) <> Packet.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
+            Return CType(header(1), PacketId)
+        End Function
     End Class
 End Namespace

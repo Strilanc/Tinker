@@ -226,7 +226,7 @@ Namespace Commands.Specializations
                            extraHelp:=WC3.ServerSettings.PartialArgumentHelp.StringJoin(Environment.NewLine))
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Dim name = argument.NamedValue("name")
+                Dim name = argument.RawValue(0)
                 Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
                 Dim stats = New WC3.GameStats(map,
                                             If(user Is Nothing, My.Resources.ProgramName, user.Name),
@@ -306,20 +306,22 @@ Namespace Commands.Specializations
                 Next arg
 
                 'Once all connection attempts have resolved, link them together, or dispose them all if any fail to connect
-                Return futureClients.Defuturized.EvalWhenReady(
-                    Function(exception)
+                Dim result = New FutureFunction(Of String)
+                futureClients.Defuturized.CallWhenReady(
+                    Sub(exception)
                         Dim clients = From e In futureClients Where e.State = FutureState.Succeeded Select e.Value
                         If exception IsNot Nothing Then
                             'cleanup other clients
                             For Each e In clients
                                 target.QueueRemoveClient(e.Name, expected:=False, reason:="Linked client failed to Connect")
                             Next e
-                            Throw New OperationFailedException(innerException:=exception)
+                            result.SetFailed(exception)
                         End If
                         Links.AdvertisingLink.CreateMultiWayLink(clients)
-                        Return "Connected"
-                    End Function
+                        result.SetSucceeded("Connected")
+                    End Sub
                 )
+                Return result
             End Function
         End Class
 

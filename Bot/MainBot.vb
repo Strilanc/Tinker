@@ -206,7 +206,9 @@ Public NotInheritable Class MainBot
         End If
 
         Dim client = New Bnet.Client(Me, profile, name)
-        AddHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
+        client.QueueAddPacketHandler(id:=Bnet.PacketId.ChatEvent,
+                                     jar:=Bnet.Packet.Parsers.ChatEvent,
+                                     handler:=Function(pickle) ref.QueueAction(Sub() OnClientReceivedChatEvent(client, pickle.Value)))
         AddHandler client.StateChanged, AddressOf CatchClientStateChanged
         clients.Add(client)
 
@@ -221,7 +223,6 @@ Public NotInheritable Class MainBot
             Throw New InvalidOperationException("No client named {0}.".Frmt(name))
         End If
 
-        RemoveHandler client.ReceivedPacket, AddressOf CatchClientReceivedPacket
         RemoveHandler client.StateChanged, AddressOf CatchClientStateChanged
         client.QueueDisconnect(expected, reason)
         clients.Remove(client)
@@ -420,12 +421,10 @@ Public NotInheritable Class MainBot
                          End Sub)
     End Sub
 
-    Private Sub CatchClientReceivedPacket(ByVal client As Bnet.Client, ByVal packet As Bnet.Packet)
+    Private Sub OnClientReceivedChatEvent(ByVal client As Bnet.Client, ByVal vals As Dictionary(Of String, Object))
         Contract.Requires(client IsNot Nothing)
-        Contract.Requires(packet IsNot Nothing)
-        If packet.id <> Bnet.PacketId.ChatEvent Then Return
+        Contract.Requires(vals IsNot Nothing)
 
-        Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
         Dim id = CType(vals("event id"), Bnet.Packet.ChatEventId)
         Dim username = CStr(vals("username"))
         Dim text = CStr(vals("text"))

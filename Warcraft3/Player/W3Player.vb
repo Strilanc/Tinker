@@ -132,7 +132,7 @@
             Me._index = index
             AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
 
-            packetHandler.AddHandler(packetId:=PacketId.Pong,
+            packetHandler.AddHandler(key:=PacketId.Pong,
                                      jar:=Packet.Jars.Pong,
                                      handler:=Function(pickle)
                                                   outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))

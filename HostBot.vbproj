@@ -170,6 +170,7 @@
     <Compile Include="Library\Commands\Delegated Commands.vb" />
     <Compile Include="Library\Commands\PartialCommand.vb" />
     <Compile Include="Library\Commands\TemplatedCommand.vb" />
+    <Compile Include="Library\PacketHandler.vb" />
     <Compile Include="Warcraft3\Player\W3PlayerGameplay.vb" />
     <Compile Include="Warcraft3\Player\W3PlayerLoadScreen.vb" />
     <Compile Include="Warcraft3\Player\W3PlayerLobby.vb" />

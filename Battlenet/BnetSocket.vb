@@ -92,44 +92,9 @@ Public NotInheritable Class BnetSocket
         End Try
     End Sub
 
-    Public Function FutureReadPacket() As IFuture(Of Bnet.Packet)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Bnet.Packet))() IsNot Nothing)
-        Return _socket.FutureReadPacket().Select(
-            Function(data)
-                Contract.Assume(data IsNot Nothing)
-                If data.Length < 4 Then
-                    Disconnect(expected:=False, reason:="Packer didn't include a header.")
-                    Throw New IO.InvalidDataException("Invalid packet prefix")
-                ElseIf data(0) <> Bnet.Packet.PacketPrefixValue Then
-                    Disconnect(expected:=False, reason:="Invalid packet prefix")
-                    Throw New IO.InvalidDataException("Invalid packet prefix")
-                End If
-                Dim id = CType(data(1), Bnet.PacketId)
-                data = data.SubView(4)
-
-                Try
-                    'Handle
-                    Logger.Log(Function() "Received {0} from {1}".Frmt(id, Name), LogMessageType.DataEvent)
-                    Dim pk = Bnet.Packet.FromData(id, data)
-                    If pk.Payload.Data.Length <> data.Length Then
-                        Throw New Pickling.PicklingException("Data left over after parsing.")
-                    End If
-                    Logger.Log(pk.Payload.Description, LogMessageType.DataParsed)
-                    Return pk
-
-                Catch e As Pickling.PicklingException
-                    Dim msg = "(Ignored) Error parsing {0} from {1}: {2}".Frmt(id, Name, e)
-                    Logger.Log(msg, LogMessageType.Negative)
-                    Throw
-
-                Catch e As Exception
-                    Dim msg = "(Ignored) Error receiving {0} from {1}: {2}".Frmt(id, Name, e)
-                    Logger.Log(msg, LogMessageType.Problem)
-                    e.RaiseAsUnexpected(msg)
-                    Throw
-                End Try
-            End Function
-        )
+    Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
+        Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
+        Return _socket.FutureReadPacket()
     End Function
 
     Public ReadOnly Property Socket As PacketSocket

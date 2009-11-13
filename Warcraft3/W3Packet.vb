@@ -1039,50 +1039,20 @@ Namespace WC3
 #End Region
 
     Public NotInheritable Class W3PacketHandler
-        Private ReadOnly handlers As New KeyedEvent(Of PacketId, ViewableList(Of Byte))
-        Private ReadOnly logger As Logger
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(handlers IsNot Nothing)
-            Contract.Invariant(logger IsNot Nothing)
-        End Sub
+        Inherits PacketHandler(Of PacketId)
 
         Public Sub New(ByVal logger As Logger)
-            Me.logger = If(logger, New Logger)
+            MyBase.New(logger)
         End Sub
 
-        Public Sub [AddHandler](Of TData)(ByVal packetId As PacketId,
-                                          ByVal jar As IJar(Of TData),
-                                          ByVal handler As Func(Of IPickle(Of TData), IFuture))
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(handler IsNot Nothing)
-            packetId = packetId.AssumeNotNull
-            handlers.AddHandler(packetId, Function(data As ViewableList(Of Byte))
-                                              Dim value = jar.Parse(data)
-                                              logger.Log(Function() "{0}".Frmt(value.Description.Value), LogMessageType.DataParsed)
-                                              Return handler(value)
-                                          End Function)
-        End Sub
-
-        Public Function HandlePacket(ByVal packetData As ViewableList(Of Byte)) As IFuture
-            Contract.Requires(packetData IsNot Nothing)
-            Contract.Requires(packetData.Length >= 4)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-
-            'Prep
-            Dim packetId = CType(packetData(1), PacketId)
-            Dim packetBody = packetData.SubView(4)
-            If packetData(0) <> Packet.PacketPrefixValue Then
-                Return New IO.InvalidDataException("Invalid packet header").FuturizedFail
-            End If
-            logger.Log(Function() "Received {0}".Frmt(packetId), LogMessageType.DataEvent)
-
-            'Handle
-            Dim result = handlers.Raise(packetId, packetBody)
-            If result.Count = 0 Then
-                Return New IO.IOException("No handler for {0}".Frmt(packetId)).FuturizedFail
-            End If
-            Return result.Defuturized
+        Public Overrides ReadOnly Property HeaderSize As Integer
+            Get
+                Return 4
+            End Get
+        End Property
+        Protected Overrides Function ExtractKey(ByVal header As Strilbrary.ViewableList(Of Byte)) As PacketId
+            If header(0) <> Packet.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
+            Return CType(header(1), PacketId)
         End Function
     End Class
 End Namespace
