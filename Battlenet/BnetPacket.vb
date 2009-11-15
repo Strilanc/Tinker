@@ -1,3 +1,5 @@
+Imports System.Diagnostics.Contracts
+
 ''HostBot - Warcraft 3 game hosting bot
 ''Copyright (C) 2008 Craig Gidney
 ''
@@ -136,12 +138,16 @@ Namespace Bnet
     Public NotInheritable Class Packet
         Public Const PacketPrefixValue As Byte = &HFF
         Private ReadOnly _payload As IPickle(Of Object)
-        Public ReadOnly id As PacketId
-        Private Shared ReadOnly packetJar As ManualSwitchJar = MakeBnetPacketJar()
+        Private ReadOnly _id As PacketId
         Public ReadOnly Property Payload As IPickle(Of Object)
             Get
                 Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
                 Return _payload
+            End Get
+        End Property
+        Public ReadOnly Property Id As PacketId
+            Get
+                Return _id
             End Get
         End Property
 
@@ -149,20 +155,20 @@ Namespace Bnet
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
+        Private Sub New(ByVal packer As DefPacker, ByVal vals As Dictionary(Of String, Object))
+            Contract.Requires(packer IsNot Nothing)
+            Contract.Requires(vals IsNot Nothing)
+            Contract.Ensures(Me.Id = packer.id)
+            Me._id = packer.id
+            Me._payload = packer.Pack(vals)
+        End Sub
         Private Sub New(ByVal id As PacketId, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
+            Contract.Ensures(Me.Id = id)
+            Contract.Ensures(Me.Payload Is payload)
+            Me._id = id
             Me._payload = payload
-            Me.id = id
         End Sub
-        Private Sub New(ByVal id As PacketId, ByVal value As Object)
-            Me.New(id, packetJar.Pack(id, value))
-            Contract.Requires(value IsNot Nothing)
-        End Sub
-        Public Shared Function FromData(ByVal id As PacketId, ByVal data As ViewableList(Of Byte)) As Packet
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(id, packetJar.Parse(id, data))
-        End Function
 
 #Region "Enums"
         Public Enum AuthenticationBeginLogOnType As Byte
@@ -220,29 +226,16 @@ Namespace Bnet
             ForcedJoin = 2
             Diablo2Join = 3
         End Enum
+        Public Enum QueryGameResponse As UInteger
+            OK = 0
+            NotFound = 1
+            IncorrectPassword = 2
+            Full = 3
+            AlreadyStarted = 4
+            TooManyServerRequests = 6
+        End Enum
 #End Region
 
-#Region "Definition"
-        Private Shared Sub regPack(ByVal jar As ManualSwitchJar,
-                                   ByVal id As PacketId,
-                                   ByVal ParamArray subJars() As IPackJar(Of Object))
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(subJars IsNot Nothing)
-            jar.AddPacker(id, New TuplePackJar(id.ToString(), subJars).Weaken)
-        End Sub
-        Private Shared Sub regParse(ByVal jar As ManualSwitchJar,
-                                    ByVal id As PacketId,
-                                    ByVal ParamArray subJars() As IParseJar(Of Object))
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(subJars IsNot Nothing)
-            jar.AddParser(id, New TupleParseJar(id.ToString(), subJars))
-        End Sub
-        Private Shared Sub regParse(ByVal jar As ManualSwitchJar,
-                                    ByVal subjar As DefParser)
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(subjar IsNot Nothing)
-            jar.AddParser(subjar.id, subjar)
-        End Sub
         Public Class DefParser
             Inherits TupleParseJar
             Public ReadOnly id As PacketId
@@ -251,6 +244,99 @@ Namespace Bnet
                 Contract.Requires(subjars IsNot Nothing)
                 Me.id = id
             End Sub
+        End Class
+        Public Class DefPacker
+            Inherits TuplePackJar
+            Public ReadOnly id As PacketId
+            Public Sub New(ByVal id As PacketId, ByVal ParamArray subjars() As IPackJar(Of Object))
+                MyBase.New(id.ToString, subjars)
+                Contract.Requires(subjars IsNot Nothing)
+                Me.id = id
+            End Sub
+        End Class
+        Public Class QueryGamesListResponse
+            Private ReadOnly _games As WC3.RemoteGameDescription()
+            Private ReadOnly _result As QueryGameResponse
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(_games IsNot Nothing)
+            End Sub
+
+            Public Sub New(ByVal result As QueryGameResponse, ByVal games As IEnumerable(Of WC3.RemoteGameDescription))
+                Contract.Requires(games IsNot Nothing)
+                Me._games = games.ToArray
+                Me._result = result
+            End Sub
+
+            Public ReadOnly Property Games As IList(Of WC3.RemoteGameDescription)
+                Get
+                    Return _games
+                End Get
+            End Property
+            Public ReadOnly Property Result As QueryGameResponse
+                Get
+                    Return _result
+                End Get
+            End Property
+        End Class
+        Public Class QueryGamesListResponseJar
+            Inherits ParseJar(Of QueryGamesListResponse)
+
+            Private Shared ReadOnly gameDataJar As New TupleParseJar("game",
+                    New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
+                    New UInt32Jar("language id").Weaken,
+                    New WC3.AddressJar("host address"),
+                    New EnumUInt32Jar(Of GameStates)("game state").Weaken,
+                    New UInt32Jar("elapsed seconds").Weaken,
+                    New StringJar("game name", True),
+                    New StringJar("game password", True),
+                    New TextHexValueJar("num free slots", numdigits:=1).Weaken,
+                    New TextHexValueJar("game id", numdigits:=8).Weaken,
+                    New WC3.GameStatsJar("game statstring").Weaken)
+
+            Public Sub New()
+                MyBase.new(PacketId.QueryGamesList.ToString)
+            End Sub
+
+            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
+                Dim count = data.SubView(0, 4).ToUInt32
+                Dim games = New List(Of WC3.RemoteGameDescription)(capacity:=CInt(count))
+                Dim pickles = New List(Of IPickle(Of Object))(capacity:=CInt(count + 1))
+                Dim result = QueryGameResponse.OK
+                Dim offset = 4
+                If count = 0 Then
+                    'result of single-game query
+                    result = CType(data.SubView(4, 4).ToUInt32, QueryGameResponse)
+                    offset += 4
+                    pickles.Add(New Pickle(Of Object)("Result", result, data.SubView(4, 4)))
+                Else
+                    'games matching query
+                    For repeat = 1UI To count
+                        Dim pickle = gameDataJar.Parse(data.SubView(offset))
+                        pickles.Add(pickle)
+                        offset += pickle.Data.Length
+                        Dim vals = pickle.Value
+                        Dim sock = CType(vals("host address"), Dictionary(Of String, Object))
+                        games.Add(New WC3.RemoteGameDescription(Name:=CStr(vals("game name")).AssumeNotNull,
+                                                                gamestats:=CType(vals("game statstring"), WC3.GameStats).AssumeNotNull,
+                                                                hostport:=CUShort(sock("port")),
+                                                                address:=New Net.IPAddress(CType(sock("ip"), Byte()).AssumeNotNull),
+                                                                gameid:=CUInt(vals("game id")),
+                                                                entryKey:=0,
+                                                                totalSlotCount:=CInt(vals("num free slots")),
+                                                                gameType:=CType(vals("game type"), WC3.GameTypes),
+                                                                state:=CType(vals("game state"), GameStates),
+                                                                usedSlotCount:=0,
+                                                                baseageseconds:=CUInt(vals("elapsed seconds"))))
+                    Next repeat
+                End If
+
+                Return New Pickle(Of QueryGamesListResponse)(
+                    jarname:=Me.Name,
+                    value:=New QueryGamesListResponse(result, games),
+                    data:=data.SubView(0, offset),
+                    valueDescription:=Function() Pickle(Of Object).MakeListDescription(pickles))
+            End Function
         End Class
 
         Public Class Parsers
@@ -295,18 +381,7 @@ Namespace Bnet
                     New ByteJar("status").Weaken,
                     New StringJar("product id", False, True, 4),
                     New StringJar("location"))
-            Public Shared ReadOnly QueryGamesList As New DefParser(PacketId.QueryGamesList,
-                New ListParseJar(Of Dictionary(Of String, Object))("games", numSizePrefixBytes:=4, subJar:=New TupleParseJar("game",
-                    New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
-                    New UInt32Jar("language id").Weaken,
-                    New WC3.AddressJar("host address"),
-                    New EnumUInt32Jar(Of GameStates)("game state").Weaken,
-                    New UInt32Jar("elapsed seconds").Weaken,
-                    New StringJar("game name", True),
-                    New StringJar("game password", True),
-                    New TextHexValueJar("num free slots", numdigits:=1).Weaken,
-                    New TextHexValueJar("game id", numdigits:=8).Weaken,
-                    New WC3.GameStatsJar("game statstring").Weaken)))
+            Public Shared ReadOnly QueryGamesList As New QueryGamesListResponseJar()
 
             Public Shared ReadOnly EnterChat As New DefParser(PacketId.EnterChat,
                     New StringJar("chat username"),
@@ -316,17 +391,12 @@ Namespace Bnet
                     New UInt32Jar("result").Weaken)
 
             Public Shared ReadOnly Null As New DefParser(PacketId.Null)
-            Public Shared ReadOnly Ping As New DefParser(PacketId.Ping,
-                    New UInt32Jar("salt").Weaken)
+            Public Shared ReadOnly Ping As New UInt32Jar("salt")
             Public Shared ReadOnly Warden As New DefParser(PacketId.Warden,
                     New ArrayJar("encrypted data", takeRest:=True))
         End Class
-        Private Shared Function MakeBnetPacketJar() As ManualSwitchJar
-            Contract.Ensures(Contract.Result(Of ManualSwitchJar)() IsNot Nothing)
-            Dim jar As New ManualSwitchJar
-
-            'Connection
-            regPack(jar, PacketId.AuthenticationBegin,
+        Public Class Packers
+            Public Shared ReadOnly AuthenticationBegin As New DefPacker(PacketId.AuthenticationBegin,
                     New UInt32Jar("protocol").Weaken,
                     New StringJar("platform", False, True, 4).Weaken,
                     New StringJar("product", False, True, 4).Weaken,
@@ -338,7 +408,7 @@ Namespace Bnet
                     New UInt32Jar("language id").Weaken,
                     New StringJar("country abrev").Weaken,
                     New StringJar("country name").Weaken)
-            regPack(jar, PacketId.AuthenticationFinish,
+            Public Shared ReadOnly AuthenticationFinish As New DefPacker(PacketId.AuthenticationFinish,
                     New ArrayJar("client cd key salt", 4).Weaken,
                     New ArrayJar("exe version", 4).Weaken,
                     New ArrayJar("mpq challenge response", 4).Weaken,
@@ -348,21 +418,15 @@ Namespace Bnet
                     New CDKeyJar("TFT cd key").Weaken,
                     New StringJar("exe info").Weaken,
                     New StringJar("owner").Weaken)
-            regPack(jar, PacketId.AccountLogOnBegin,
+            Public Shared ReadOnly AccountLogOnBegin As New DefPacker(PacketId.AccountLogOnBegin,
                     New ArrayJar("client public key", 32).Weaken,
                     New StringJar("username").Weaken)
-            regPack(jar, PacketId.AccountLogOnFinish,
+            Public Shared ReadOnly AccountLogOnFinish As New DefPacker(PacketId.AccountLogOnFinish,
                     New ArrayJar("client password proof", 20).Weaken)
-            regParse(jar, Parsers.AuthenticationBegin)
-            regParse(jar, Parsers.AuthenticationFinish)
-            regParse(jar, Parsers.AccountLogOnBegin)
-            regParse(jar, Parsers.AccountLogOnFinish)
-            regParse(jar, Parsers.RequiredWork)
 
-            'Interaction
-            regPack(jar, PacketId.ChatCommand,
+            Public Shared ReadOnly ChatCommand As New DefPacker(PacketId.ChatCommand,
                     New StringJar("text").Weaken)
-            regPack(jar, PacketId.QueryGamesList,
+            Public Shared ReadOnly QueryGamesList As New DefPacker(PacketId.QueryGamesList,
                     New EnumUInt32Jar(Of WC3.GameTypes)("filter").Weaken,
                     New EnumUInt32Jar(Of WC3.GameTypes)("filter mask").Weaken,
                     New UInt32Jar("unknown0").Weaken,
@@ -370,16 +434,11 @@ Namespace Bnet
                     New StringJar("game name", True, , , "empty means list games").Weaken,
                     New StringJar("game password", True).Weaken,
                     New StringJar("game stats", True).Weaken)
-            regParse(jar, Parsers.ChatEvent)
-            regParse(jar, Parsers.MessageBox)
-            regParse(jar, Parsers.FriendsUpdate)
-            regParse(jar, Parsers.QueryGamesList)
 
-            'State
-            regPack(jar, PacketId.EnterChat,
+            Public Shared ReadOnly EnterChat As New DefPacker(PacketId.EnterChat,
                     New StringJar("username", , , , "[unused]").Weaken,
                     New StringJar("statstring", , , , "[unused]").Weaken)
-            regPack(jar, PacketId.CreateGame3,
+            Public Shared ReadOnly CreateGame3 As New DefPacker(PacketId.CreateGame3,
                     New EnumUInt32Jar(Of GameStates)("game state").Weaken,
                     New UInt32Jar("seconds since creation").Weaken,
                     New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
@@ -390,33 +449,24 @@ Namespace Bnet
                     New TextHexValueJar("num free slots", numdigits:=1).Weaken,
                     New TextHexValueJar("game id", numdigits:=8).Weaken,
                     New WC3.GameStatsJar("statstring").Weaken)
-            regPack(jar, PacketId.CloseGame3)
-            regPack(jar, PacketId.JoinChannel,
-                    New ArrayJar("flags", 4, , , "0=no create, 1=first join, 2=forced join, 3=diablo2 join").Weaken,
+            Public Shared ReadOnly CloseGame3 As New DefPacker(PacketId.CloseGame3)
+            Public Shared ReadOnly JoinChannel As New DefPacker(PacketId.JoinChannel,
+                    New EnumUInt32Jar(Of JoinChannelType)("flags").Weaken,
                     New StringJar("channel").Weaken)
-            regPack(jar, PacketId.NetGamePort,
+            Public Shared ReadOnly NetGamePort As New DefPacker(PacketId.NetGamePort,
                     New UInt16Jar("port").Weaken)
-            regParse(jar, Parsers.EnterChat)
-            regParse(jar, Parsers.CreateGame3)
 
-            'Periodic
-            regPack(jar, PacketId.Null)
-            regPack(jar, PacketId.Ping,
+            Public Shared ReadOnly Null As New DefPacker(PacketId.Null)
+            Public Shared ReadOnly Ping As New DefPacker(PacketId.Ping,
                     New UInt32Jar("salt").Weaken)
-            regPack(jar, PacketId.Warden,
+            Public Shared ReadOnly Warden As New DefPacker(PacketId.Warden,
                     New ArrayJar("encrypted data", takeRest:=True).Weaken)
-            regParse(jar, Parsers.Null)
-            regParse(jar, Parsers.Ping)
-            regParse(jar, Parsers.Warden)
-
-            Return jar
-        End Function
-#End Region
+        End Class
 
 #Region "Packers: Logon"
         Public Shared Function MakeAuthenticationBegin(ByVal version As UInteger, ByVal localIPAddress As Byte()) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(PacketId.AuthenticationBegin, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.AuthenticationBegin, New Dictionary(Of String, Object) From {
                     {"protocol", 0},
                     {"platform", "IX86"},
                     {"product", "W3XP"},
@@ -455,7 +505,7 @@ Namespace Bnet
             Dim clientCdKeySalt(0 To 3) As Byte
             secureRandomNumberGenerator.GetBytes(clientCdKeySalt)
 
-            Return New Packet(PacketId.AuthenticationFinish, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.AuthenticationFinish, New Dictionary(Of String, Object) From {
                     {"client cd key salt", clientCdKeySalt},
                     {"exe version", version},
                     {"mpq challenge response", Bnet.GenerateRevisionCheck(mpqFolder, indexString, mpqHashChallenge).Bytes()},
@@ -470,7 +520,7 @@ Namespace Bnet
         Public Shared Function MakeAccountLogOnBegin(ByVal credentials As ClientCredentials) As Packet
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(PacketId.AccountLogOnBegin, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.AccountLogOnBegin, New Dictionary(Of String, Object) From {
                     {"client public key", credentials.PublicKeyBytes.ToArray},
                     {"username", credentials.UserName}
                 })
@@ -478,13 +528,13 @@ Namespace Bnet
         Public Shared Function MakeAccountLogOnFinish(ByVal clientPasswordProof As IList(Of Byte)) As Packet
             Contract.Requires(clientPasswordProof IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(PacketId.AccountLogOnFinish, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.AccountLogOnFinish, New Dictionary(Of String, Object) From {
                     {"client password proof", clientPasswordProof.ToArray}
                 })
         End Function
         Public Shared Function MakeEnterChat() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(PacketId.EnterChat, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.EnterChat, New Dictionary(Of String, Object) From {
                     {"username", ""},
                     {"statstring", ""}
                 })
@@ -496,12 +546,12 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Dim vals As New Dictionary(Of String, Object)
             vals("port") = port
-            Return New Packet(PacketId.NetGamePort, vals)
+            Return New Packet(Packers.NetGamePort, vals)
         End Function
         Public Shared Function MakeQueryGamesList(Optional ByVal specificGameName As String = "",
                                                   Optional ByVal listCount As Integer = 20) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(PacketId.QueryGamesList, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.QueryGamesList, New Dictionary(Of String, Object) From {
                     {"filter", WC3.GameTypes.MaskFilterable},
                     {"filter mask", 0},
                     {"unknown0", 0},
@@ -514,11 +564,11 @@ Namespace Bnet
                                                ByVal channel As String) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Dim vals As New Dictionary(Of String, Object)
-            Return New Packet(PacketId.JoinChannel, New Dictionary(Of String, Object) From {
-                    {"flags", CUInt(flags).Bytes()},
+            Return New Packet(Packers.JoinChannel, New Dictionary(Of String, Object) From {
+                    {"flags", flags},
                     {"channel", channel}})
         End Function
-        Public Shared Function MakeCreateGame3(ByVal game As WC3.IGameDescription) As Packet
+        Public Shared Function MakeCreateGame3(ByVal game As WC3.GameDescription) As Packet
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Const MAX_GAME_NAME_LENGTH As UInteger = 31
@@ -526,10 +576,10 @@ Namespace Bnet
                 Throw New ArgumentException("Game name must be less than 32 characters long.", "name")
             End If
 
-            Return New Packet(PacketId.CreateGame3, New Dictionary(Of String, Object) From {
-                    {"game state", game.State},
+            Return New Packet(Packers.CreateGame3, New Dictionary(Of String, Object) From {
+                    {"game state", game.GameState},
                     {"seconds since creation", game.AgeSeconds},
-                    {"game type", game.Type},
+                    {"game type", game.GameType},
                     {"unknown1=1023", 1023},
                     {"ladder", 0},
                     {"name", game.Name},
@@ -540,7 +590,7 @@ Namespace Bnet
         End Function
         Public Shared Function MakeCloseGame3() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(PacketId.CloseGame3, New Dictionary(Of String, Object))
+            Return New Packet(Packers.CloseGame3, New Dictionary(Of String, Object))
         End Function
 #End Region
 
@@ -579,11 +629,11 @@ Namespace Bnet
                 {"owner", cdKeyOwner}}
 
             'Asynchronously borrow keys from server and return completed packet
-            Return CKL.CKLClient.BeginBorrowKeys(remoteHostName, remotePort, clientCdKeySalt, serverCDKeySalt).Select(
+            Return CKL.CKLClient.AsyncBorrowKeys(remoteHostName, remotePort, clientCdKeySalt, serverCDKeySalt).Select(
                 Function(borrowedKeys)
                     vals("ROC cd key") = borrowedKeys.CDKeyROC
                     vals("TFT cd key") = borrowedKeys.CDKeyTFT
-                    Return New Packet(PacketId.AuthenticationFinish, vals)
+                    Return New Packet(Packers.AuthenticationFinish, vals)
                 End Function
             )
         End Function
@@ -598,20 +648,20 @@ Namespace Bnet
             If text.Length > MaxChatCommandTextLength Then
                 Throw New ArgumentException("Text cannot exceed {0} characters.".Frmt(MaxChatCommandTextLength), "text")
             End If
-            Return New Packet(PacketId.ChatCommand, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.ChatCommand, New Dictionary(Of String, Object) From {
                     {"text", text}})
         End Function
         Public Shared Function MakePing(ByVal salt As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
 
-            Return New Packet(PacketId.Ping, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.Ping, New Dictionary(Of String, Object) From {
                     {"salt", salt}})
         End Function
         Public Shared Function MakeWarden(ByVal encryptedData As Byte()) As Packet
             Contract.Requires(encryptedData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
 
-            Return New Packet(PacketId.Warden, New Dictionary(Of String, Object) From {
+            Return New Packet(Packers.Warden, New Dictionary(Of String, Object) From {
                     {"encrypted data", encryptedData}})
         End Function
 #End Region
@@ -662,7 +712,7 @@ Namespace Bnet
             Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
                 If data.Length < numDigits Then Throw New PicklingException("Not enough data")
                 data = data.SubView(0, numDigits)
-                Dim value = data.ParseChrString(nullTerminated:=False).FromHexStringToBytes(byteOrder)
+                Dim value = data.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder)
                 Return New Pickling.Pickle(Of ULong)(Me.Name, value, data)
             End Function
         End Class

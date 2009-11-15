@@ -96,7 +96,7 @@ Namespace WC3
                 Me.ref = New TaskedCallQueue
 
                 For Each port In Me.settings.defaultListenPorts
-                    door.accepter.Accepter.OpenPort(port)
+                    door.Accepter.Accepter.OpenPort(port)
                 Next port
                 For i = 1 To Me.settings.instances
                     CreateGame()
@@ -444,9 +444,9 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() f_FindPlayer(userName)).Defuturized
         End Function
-        Public Function QueueFindPlayerGame(ByVal username As String) As IFuture(Of Game)
+        Public Function QueueFindPlayerGame(ByVal userName As String) As IFuture(Of Game)
             Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
-            Return ref.QueueFunc(Function() f_FindPlayerGame(username)).Defuturized
+            Return ref.QueueFunc(Function() f_FindPlayerGame(userName)).Defuturized
         End Function
         Public Function QueueGetGames() As IFuture(Of IEnumerable(Of Game))
             Contract.Ensures(Contract.Result(Of IFuture(Of IEnumerable(Of Game)))() IsNot Nothing)
@@ -462,15 +462,15 @@ Namespace WC3
         End Function
         Public Function QueueClosePort(ByVal port As UShort) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() door.accepter.Accepter.ClosePort(port))
+            Return ref.QueueAction(Sub() door.Accepter.Accepter.ClosePort(port))
         End Function
         Public Function QueueOpenPort(ByVal port As UShort) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() door.accepter.Accepter.OpenPort(port))
+            Return ref.QueueAction(Sub() door.Accepter.Accepter.OpenPort(port))
         End Function
         Public Function QueueCloseAllPorts() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() door.accepter.Accepter.CloseAllPorts())
+            Return ref.QueueAction(Sub() door.Accepter.Accepter.CloseAllPorts())
         End Function
         Public Function QueueStopAcceptingPlayers() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)

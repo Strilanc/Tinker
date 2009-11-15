@@ -3,7 +3,7 @@
     Public NotInheritable Class CKLClient
         Private Sub New()
         End Sub
-        Public Shared Function BeginBorrowKeys(ByVal remoteHost As String,
+        Public Shared Function AsyncBorrowKeys(ByVal remoteHost As String,
                                                ByVal remotePort As UShort,
                                                ByVal clientCDKeySalt As Byte(),
                                                ByVal serverCDKeySalt As Byte()) As IFuture(Of CKLEncodedKey)

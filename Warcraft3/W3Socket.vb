@@ -52,7 +52,7 @@ Namespace WC3
                 Return _socket.RemoteEndPoint
             End Get
         End Property
-        Public Function connected() As Boolean
+        Public Function Connected() As Boolean
             Return _socket.IsConnected
         End Function
 

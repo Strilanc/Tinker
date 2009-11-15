@@ -78,7 +78,7 @@ Public NotInheritable Class BnetSocket
 
             'Send
             _socket.WritePacket(Concat({Bnet.Packet.PacketPrefixValue, packet.id, 0, 0},
-                                      packet.Payload.Data.ToArray))
+                                       packet.Payload.Data.ToArray))
 
         Catch e As Pickling.PicklingException
             Dim msg = "Error packing {0} for {1}: {2}".Frmt(packet.id, Name, e)
@@ -236,7 +236,7 @@ Public NotInheritable Class PacketSocket
 
     Public Sub WritePacket(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
-        packetStreamer.WritePacket(data)
+        packetStreamer.WritePacket(data) '[modifies size bytes, do not move after log statement]
         Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)
     End Sub
 

@@ -827,7 +827,7 @@ Namespace WC3
                     {"game id", gameId}})
         End Function
         Public Shared Function MakeLanRefreshGame(ByVal gameId As UInteger,
-                                                  ByVal game As IGameDescription) As Packet
+                                                  ByVal game As GameDescription) As Packet
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(PacketId.LanRefreshGame, New Dictionary(Of String, Object) From {
@@ -838,7 +838,7 @@ Namespace WC3
         Public Shared Function MakeLanDescribeGame(ByVal creationTime As ModInt32,
                                                    ByVal majorVersion As UInteger,
                                                    ByVal gameId As UInteger,
-                                                   ByVal game As IGameDescription,
+                                                   ByVal game As GameDescription,
                                                    ByVal listenPort As UShort,
                                                    Optional ByVal gameType As GameTypes = GameTypes.CreateGameUnknown0) As Packet
             Contract.Requires(game IsNot Nothing)
@@ -945,9 +945,8 @@ Namespace WC3
 #Region "Jars"
     Public Class IPAddressJar
         Inherits ArrayJar
-        Public Sub New(ByVal name As String,
-                       Optional ByVal info As String = "No Info")
-            MyBase.New(name, expectedSize:=4, info:=info)
+        Public Sub New(ByVal name As String)
+            MyBase.New(name, expectedSize:=4)
             Contract.Requires(name IsNot Nothing)
         End Sub
         Protected Overrides Function DescribeValue(ByVal value As Byte()) As String

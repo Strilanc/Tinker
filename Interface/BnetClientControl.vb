@@ -96,7 +96,7 @@ Public Class BnetClientControl
         End If
     End Sub
 
-    Private Sub OnClientReceivedQueryGamesList(ByVal sender As Client, ByVal vals As Dictionary(Of String, Object))
+    Private Sub OnClientReceivedQueryGamesList(ByVal sender As Client, ByVal value As QueryGamesListResponse)
         If sender IsNot _client Then Return
         While lstState.Items.Count > numPrimaryStates
             lstState.Items.RemoveAt(lstState.Items.Count - 1)
@@ -104,12 +104,11 @@ Public Class BnetClientControl
         lstState.Items.Add("--------")
         lstState.Items.Add("Games List")
         lstState.Items.Add(Date.Now().ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture))
-        For Each game In CType(vals("games"), IEnumerable(Of Dictionary(Of String, Object)))
+        For Each game In value.Games
             lstState.Items.Add("---")
-            Dim stats = CType(game("game statstring"), WC3.GameStats)
-            lstState.Items.Add(CStr(game("game name")))
-            lstState.Items.Add(CStr(stats.HostName))
-            lstState.Items.Add(stats.relativePath.Split("\"c).Last)
+            lstState.Items.Add(game.Name)
+            lstState.Items.Add(game.GameStats.HostName)
+            lstState.Items.Add(game.GameStats.relativePath.Split("\"c).Last)
         Next game
     End Sub
     Private Sub OnClientReceivedChatEvent(ByVal sender As Client, ByVal vals As Dictionary(Of String, Object))

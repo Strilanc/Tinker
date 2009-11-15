@@ -1,118 +1,111 @@
 ﻿Namespace WC3
-    Public Class RemoteGameDescription
-        Private ReadOnly _name As String
-        Private ReadOnly _stats As GameStats
-        Private ReadOnly _totalSlotCount As Integer
-        Private ReadOnly _usedPlayerSlotCount As Integer
-        Private ReadOnly _hostAddress As Net.IPAddress
-        Public ReadOnly hostPort As UShort
-        Public ReadOnly entryId As UInt32
-        Public ReadOnly entryKey As UInt32
-        Public ReadOnly age As TimeSpan
-        Public ReadOnly type As GameTypes
-        Public ReadOnly state As Bnet.Packet.GameStates
+    Public Class W3RelayServer
+        Implements IDisposable
+
+        Private Class GamePair
+            Private _remoteGame As RemoteGameDescription
+            Private _localGame As LocalGameDescription
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(_remoteGame IsNot Nothing)
+                Contract.Invariant(_localGame IsNot Nothing)
+            End Sub
+
+            Public Sub New(ByVal remoteGame As RemoteGameDescription,
+                           ByVal localGame As LocalGameDescription)
+                Me._remoteGame = remoteGame
+                Me._localGame = localGame
+            End Sub
+            Public Sub Update(ByVal game As RemoteGameDescription)
+                Contract.Requires(game IsNot Nothing)
+                Me._remoteGame = New RemoteGameDescription(_remoteGame.Name,
+                                                           _remoteGame.GameStats,
+                                                           _remoteGame.Port,
+                                                           _remoteGame.Address,
+                                                           _remoteGame.GameId,
+                                                           _remoteGame.EntryKey,
+                                                           game.TotalSlotCount,
+                                                           game.GameType,
+                                                           game.GameState,
+                                                           game.UsedSlotCount,
+                                                           game.AgeSeconds)
+                Me._localGame = New LocalGameDescription(_localGame.Name,
+                                                         _localGame.GameStats,
+                                                         _localGame.Port,
+                                                         _localGame.GameId,
+                                                         _localGame.EntryKey,
+                                                         game.TotalSlotCount,
+                                                         game.GameType,
+                                                         game.GameState,
+                                                         game.UsedSlotCount,
+                                                         game.AgeSeconds)
+            End Sub
+            Public ReadOnly Property RemoteGame As RemoteGameDescription
+                Get
+                    Contract.Ensures(Contract.Result(Of RemoteGameDescription)() IsNot Nothing)
+                    Return _remoteGame
+                End Get
+            End Property
+            Public ReadOnly Property LocalGame As LocalGameDescription
+                Get
+                    Contract.Ensures(Contract.Result(Of LocalGameDescription)() IsNot Nothing)
+                    Return _localGame
+                End Get
+            End Property
+        End Class
+
+        Private ReadOnly _games As New Dictionary(Of UInteger, GamePair)
+        Private ReadOnly _portHandle As PortPool.PortHandle
+        Private ReadOnly _accepter As New W3ConnectionAccepter()
+        Private _gameCount As UInteger
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_totalSlotCount > 0)
-            Contract.Invariant(_totalSlotCount <= 12)
-            Contract.Invariant(_usedPlayerSlotCount >= 0)
-            Contract.Invariant(_usedPlayerSlotCount <= _totalSlotCount)
-            Contract.Invariant(_stats IsNot Nothing)
-            Contract.Invariant(_name IsNot Nothing)
-            Contract.Invariant(_hostAddress IsNot Nothing)
+            Contract.Invariant(_portHandle IsNot Nothing)
+            Contract.Invariant(_games IsNot Nothing)
+            Contract.Invariant(_accepter IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
-                       ByVal stats As GameStats,
-                       ByVal hostPort As UShort,
-                       ByVal hostAddress As Net.IPAddress,
-                       ByVal gameId As UInt32,
-                       ByVal lanKey As UInteger,
-                       ByVal elapsedSeconds As UInt32,
-                       ByVal totalPlayerSlotCount As Integer,
-                       ByVal usedPlayerSlotCount As Integer,
-                       ByVal type As GameTypes,
-                       ByVal state As Bnet.Packet.GameStates)
-            Contract.Requires(name IsNot Nothing)
-            Contract.Requires(stats IsNot Nothing)
-            Contract.Requires(hostAddress IsNot Nothing)
-            Contract.Requires(totalPlayerSlotCount > 0)
-            Contract.Requires(totalPlayerSlotCount <= 12)
-            Contract.Requires(usedPlayerSlotCount >= 0)
-            Contract.Requires(usedPlayerSlotCount < totalPlayerSlotCount)
-            Me._name = name
-            Me._stats = stats
-            Me._totalSlotCount = totalPlayerSlotCount
-            Me._usedPlayerSlotCount = usedPlayerSlotCount
-            Me.hostPort = hostPort
-            Me.type = type
-            Me.entryId = gameId
-            Me.entryKey = lanKey
-            Me.age = CInt(elapsedSeconds).Seconds
-            Me._hostAddress = hostAddress
+        Public Sub New(ByVal portHandle As PortPool.PortHandle)
+            Contract.Requires(portHandle IsNot Nothing)
+            Me._portHandle = portHandle
+            Me._accepter.Accepter.OpenPort(portHandle.Port)
         End Sub
-
-        Public ReadOnly Property Name As String
-            Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return _name
-            End Get
-        End Property
-        Public ReadOnly Property Stats As GameStats
-            Get
-                Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
-                Return _stats
-            End Get
-        End Property
-        Public ReadOnly Property HostAddress As Net.IPAddress
-            Get
-                Contract.Ensures(Contract.Result(Of Net.IPAddress)() IsNot Nothing)
-                Return _hostAddress
-            End Get
-        End Property
-        Public ReadOnly Property TotalSlotCount() As Integer
-            Get
-                Contract.Ensures(Contract.Result(Of Integer)() > 0)
-                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
-                Return _totalSlotCount
-            End Get
-        End Property
-        Public ReadOnly Property UsedSlotCount As Integer
-            Get
-                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
-                Contract.Ensures(Contract.Result(Of Integer)() <= TotalSlotCount)
-                Return _usedPlayerSlotCount
-            End Get
-        End Property
-    End Class
-    Public Class LocalGameDescription
-        Private ReadOnly _name As String
-        Private ReadOnly _stats As GameStats
-        Private ReadOnly _totalSlotCount As Integer
-        Private ReadOnly _usedPlayerSlotCount As Integer
-        Public ReadOnly entryId As UInt32
-        Public ReadOnly entryKey As UInt32
-        Public ReadOnly age As TimeSpan
-        Public ReadOnly type As GameTypes
-        Public ReadOnly state As Bnet.Packet.GameStates
-    End Class
-
-    Public Class W3RelayServer
-        Private ReadOnly games As New Dictionary(Of UInteger, RemoteGameDescription)
-        Private n As UInteger
-        Public accepter As New W3ConnectionAccepter()
-
-        Public Function AddGame(ByVal remoteGame As RemoteGameDescription) As UInteger
-            Dim r = n
-            games(r) = remoteGame
-            n += 1UI
-            Return r
+        Public Function AddGame(ByVal game As RemoteGameDescription) As UInteger
+            _gameCount += 1UI
+            Dim localGame = New LocalGameDescription(game.Name,
+                                                     game.GameStats,
+                                                     _portHandle.Port,
+                                                     _gameCount,
+                                                     game.EntryKey,
+                                                     game.TotalSlotCount,
+                                                     game.GameType,
+                                                     game.GameState,
+                                                     game.UsedSlotCount,
+                                                     game.AgeSeconds)
+            _games(_gameCount) = New GamePair(game, localGame)
+            Return _gameCount
         End Function
+        Public ReadOnly Property TryGetLocalGameDescription(ByVal gameId As UInteger) As LocalGameDescription
+            Get
+                If Not _games.ContainsKey(gameId) Then Return Nothing
+                Return _games(gameId).LocalGame
+            End Get
+        End Property
+        Public Function TryUpdateGameDescription(ByVal gameId As UInteger, ByVal game As RemoteGameDescription) As Boolean
+            Contract.Requires(game IsNot Nothing)
+            If Not _games.ContainsKey(gameId) Then Return False
+            _games(gameId).Update(game)
+            Return True
+        End Function
+        Public Sub RemoveGame(ByVal gameId As UInteger)
+            If Not _games.ContainsKey(gameId) Then Return
+            _games.Remove(gameId)
+        End Sub
 
-        Private Sub accept(ByVal connector As W3ConnectingPlayer)
-            If Not games.ContainsKey(connector.GameId) Then Throw New IO.InvalidDataException()
-            Dim game = games(connector.GameId)
-            FutureCreateConnectedTcpClient(game.HostAddress, game.hostPort).CallWhenValueReady(
+        Private Sub Accept(ByVal connector As W3ConnectingPlayer)
+            If Not _games.ContainsKey(connector.GameId) Then Throw New IO.InvalidDataException()
+            Dim game = _games(connector.GameId)
+            FutureCreateConnectedTcpClient(game.RemoteGame.Address, game.RemoteGame.Port).CallWhenValueReady(
                 Sub(result, exception)
                     If exception IsNot Nothing Then
                         connector.Socket.Disconnect(expected:=False, reason:="Failed to interconnect with game host.")
@@ -121,21 +114,26 @@
 
                     Dim w = New W3Socket(New PacketSocket(result))
                     w.SendPacket(Packet.MakeKnock(connector.Name,
-                                                    connector.ListenPort,
-                                                    CUShort(connector.RemoteEndPoint.Port),
-                                                    game.entryId,
-                                                    game.entryKey,
-                                                    connector.PeerKey,
-                                                    connector.RemoteEndPoint.Address))
+                                                  connector.ListenPort,
+                                                  CUShort(connector.RemoteEndPoint.Port),
+                                                  game.RemoteGame.GameId,
+                                                  game.RemoteGame.EntryKey,
+                                                  connector.PeerKey,
+                                                  connector.RemoteEndPoint.Address))
 
-                    StreamRelay.CreateRelay(w.Socket.SubStream, connector.Socket.Socket.SubStream)
+                    StreamRelay.InterShunt(w.Socket.SubStream, connector.Socket.Socket.SubStream)
                 End Sub
             )
+        End Sub
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            _portHandle.Dispose()
+            _accepter.Accepter.CloseAllPorts()
         End Sub
     End Class
 
     Public Class StreamRelay
-        Public Shared Function CreateRelay(ByVal stream1 As IO.Stream, ByVal stream2 As IO.Stream) As FutureDisposable
+        Public Shared Function InterShunt(ByVal stream1 As IO.Stream, ByVal stream2 As IO.Stream) As FutureDisposable
             Contract.Requires(stream1 IsNot Nothing)
             Contract.Requires(stream2 IsNot Nothing)
             Contract.Ensures(Contract.Result(Of FutureDisposable)() IsNot Nothing)

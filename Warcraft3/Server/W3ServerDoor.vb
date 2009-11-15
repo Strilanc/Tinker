@@ -16,7 +16,7 @@
             Me._accepter = New W3ConnectionAccepter(Me.logger)
         End Sub
 
-        Public ReadOnly Property accepter() As W3ConnectionAccepter
+        Public ReadOnly Property Accepter() As W3ConnectionAccepter
             Get
                 Return _accepter
             End Get
@@ -29,7 +29,7 @@
         ''' </summary>
         Public Sub Reset()
             SyncLock lock
-                accepter.Reset()
+                Accepter.Reset()
                 For Each player In connectingPlayers
                     player.Socket.Disconnect(expected:=True, reason:="Reset Server Door")
                 Next player

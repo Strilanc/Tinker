@@ -8,7 +8,7 @@ Imports Strilbrary.Numerics
 <TestClass()>
 Public Class ClientCredentialsTest
     Private Shared ReadOnly creds As New ClientCredentials(
-        username:="AuthTest",
+        userName:="AuthTest",
         password:="HostBot123",
         privatekey:=BigInteger.Parse("37562757284532284543721581696906433407594704334921877140391950043405102871633"))
 

@@ -166,6 +166,7 @@
     <Compile Include="Battlenet\BnetPacket.vb" />
     <Compile Include="Battlenet\CDKey.vb" />
     <Compile Include="Battlenet\ClientCredentials.vb" />
+    <Compile Include="Bot\PortPool.vb" />
     <Compile Include="Library\Commands\Command Extensions.vb" />
     <Compile Include="Library\Commands\CommandTemplate.vb" />
     <Compile Include="Library\Commands\Delegated Commands.vb" />

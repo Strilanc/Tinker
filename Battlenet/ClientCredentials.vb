@@ -25,13 +25,13 @@ Namespace Bnet
         Private Shared ReadOnly G As BigInteger = 47
         Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719")
 
-        Private ReadOnly _username As String
+        Private ReadOnly _userName As String
         Private ReadOnly _password As String
         Private ReadOnly _privateKey As BigInteger
         Private ReadOnly _publicKey As BigInteger
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_username IsNot Nothing)
+            Contract.Invariant(_userName IsNot Nothing)
             Contract.Invariant(_password IsNot Nothing)
             Contract.Invariant(_privateKey >= 0)
             Contract.Invariant(_publicKey >= 0)
@@ -43,14 +43,15 @@ Namespace Bnet
         ''' </summary>
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
-        Public Sub New(ByVal username As String,
+        ''' <param name="privateKey">The privateKey used for authentication.</param>
+        Public Sub New(ByVal userName As String,
                        ByVal password As String,
                        ByVal privateKey As BigInteger)
-            Contract.Requires(username IsNot Nothing)
+            Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Requires(privateKey >= 0)
-            Contract.Ensures(Me.UserName = username)
-            Me._username = username
+            Contract.Ensures(Me.UserName = userName)
+            Me._userName = userName
             Me._password = password
             Me._privateKey = privateKey
             Me._publicKey = BigInteger.ModPow(G, _privateKey, N)
@@ -65,20 +66,20 @@ Namespace Bnet
         ''' An optional random number generator to generate the private key.
         ''' A System.Cryptography.RNGCryptoServiceProvider is created and used if this argument is omitted.
         ''' </param>
-        Public Sub New(ByVal username As String,
+        Public Sub New(ByVal userName As String,
                        ByVal password As String,
                        Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing)
-            Me.New(username, password, GeneratePrivateKey(rng))
-            Contract.Requires(username IsNot Nothing)
+            Me.New(userName, password, GeneratePrivateKey(rng))
+            Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
-            Contract.Ensures(Me.UserName = username)
+            Contract.Ensures(Me.UserName = userName)
         End Sub
 
         '''<summary>The client's username used for identification.</summary>
         Public ReadOnly Property UserName As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return _username
+                Return _userName
             End Get
         End Property
         '''<summary>The public key used for authentication.</summary>
@@ -134,7 +135,7 @@ Namespace Bnet
         Public Function Regenerate(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As ClientCredentials
             Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
-            Return New ClientCredentials(Me._username, Me._password, rng)
+            Return New ClientCredentials(Me._userName, Me._password, rng)
         End Function
 
         ''' <summary>
@@ -148,7 +149,7 @@ Namespace Bnet
                 Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Byte())().Length = 40)
 
-                Dim userIdAuthData = "{0}:{1}".Frmt(Me._username.ToUpperInvariant, Me._password.ToUpperInvariant).ToAscBytes
+                Dim userIdAuthData = "{0}:{1}".Frmt(Me._userName.ToUpperInvariant, Me._password.ToUpperInvariant).ToAscBytes
                 Dim passwordKey = Concat(accountSalt.ToArray, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
                 Dim verifier = BigInteger.ModPow(G, passwordKey, N)
                 Dim serverKey = serverPublicKeyBytes.SHA1.SubArray(0, 4).Reverse.ToUnsignedBigInteger
@@ -193,7 +194,7 @@ Namespace Bnet
             End Get
         End Property
         ''' <summary>
-        ''' Determines the expected proof from the server that it knew the shared secret.
+        ''' Determines the expected proof, from the server, that it knew the shared secret.
         ''' </summary>
         Public ReadOnly Property ServerPasswordProof(ByVal accountSalt As IList(Of Byte),
                                                      ByVal serverPublicKeyBytes As IList(Of Byte)) As IList(Of Byte)

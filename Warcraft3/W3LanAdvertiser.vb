@@ -9,7 +9,7 @@ Namespace WC3
 
         Private ReadOnly games1 As New HashSet(Of LanGame)
         Private ReadOnly idmap As New Dictionary(Of UInteger, LanGame)
-        Private ReadOnly headerMap As New Dictionary(Of IGameDescription, LanGame)
+        Private ReadOnly headerMap As New Dictionary(Of GameDescription, LanGame)
         Private ReadOnly socket As UdpClient
         Public Const WidgetTypeName As String = "LanAdvertiser"
 
@@ -39,8 +39,8 @@ Namespace WC3
         Private NotInheritable Class LanGame
             Public ReadOnly id As UInteger
             Public ReadOnly creation_time As Integer
-            Public ReadOnly header As IGameDescription
-            Public Sub New(ByVal id As UInteger, ByVal header As IGameDescription)
+            Public ReadOnly header As GameDescription
+            Public Sub New(ByVal id As UInteger, ByVal header As GameDescription)
                 Me.id = id
                 Me.creation_time = Environment.TickCount
                 Me.header = header
@@ -161,7 +161,7 @@ Namespace WC3
         End Function
 
         '''<summary>Adds a game to be advertised</summary>
-        Public Function AddGame(ByVal gameHeader As IGameDescription) As UInteger
+        Public Function AddGame(ByVal gameHeader As GameDescription) As UInteger
             Dim id As UInteger
             Dim game As LanGame
 
@@ -205,7 +205,7 @@ Namespace WC3
             RaiseEvent RemoveStateString("{0}={1}".Frmt(game.id, game.header.Name))
             Return True
         End Function
-        Public Function RemoveGame(ByVal header As IGameDescription) As Boolean
+        Public Function RemoveGame(ByVal header As GameDescription) As Boolean
             Dim game As LanGame
 
             SyncLock lock

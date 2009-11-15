@@ -22,7 +22,7 @@ Namespace Commands.Specializations
                             Return com_online
                         Case Bnet.ClientState.Connecting, Bnet.ClientState.Disconnected
                             Return com_offline
-                        Case Bnet.ClientState.AuthenticatingUser, Bnet.ClientState.LogOnScreen
+                        Case Bnet.ClientState.AuthenticatingUser, Bnet.ClientState.EnterUserCredentials
                             Return com_login
                         Case Else
                             Throw state.MakeImpossibleValueException()

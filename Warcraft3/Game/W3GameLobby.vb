@@ -299,7 +299,7 @@
 
             If state > GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
-            ElseIf Not connectingPlayer.Socket.connected Then
+            ElseIf Not connectingPlayer.Socket.Connected Then
                 Throw New InvalidOperationException("Player isn't connected.")
             End If
 

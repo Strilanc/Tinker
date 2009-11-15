@@ -18,11 +18,11 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function FuturizedFail(ByVal e As Exception) As IFuture
-        Contract.Requires(e IsNot Nothing)
+    Public Function FuturizedFail(ByVal exception As Exception) As IFuture
+        Contract.Requires(exception IsNot Nothing)
         Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
         Dim result = New FutureAction
-        result.SetFailed(e)
+        result.SetFailed(exception)
         Return result
     End Function
 

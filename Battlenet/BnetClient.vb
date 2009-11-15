@@ -21,7 +21,7 @@ Namespace Bnet
     Public Enum ClientState
         Disconnected
         Connecting
-        LogOnScreen
+        EnterUserCredentials
         AuthenticatingUser
         Channel
         CreatingGame
@@ -35,13 +35,7 @@ Namespace Bnet
 #Region "Inner"
         Public NotInheritable Class GameSettings
             Public [private] As Boolean
-            Private ReadOnly _header As WC3.GameDescription
-            Public ReadOnly Property Header As WC3.GameDescription
-                Get
-                    Contract.Ensures(Contract.Result(Of WC3.GameDescription)() IsNot Nothing)
-                    Return _header
-                End Get
-            End Property
+            Private _header As WC3.GameDescription
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_header IsNot Nothing)
@@ -51,6 +45,24 @@ Namespace Bnet
                 Contract.Requires(header IsNot Nothing)
                 Me.private = [private]
                 Me._header = header
+            End Sub
+
+            Public ReadOnly Property Header As WC3.GameDescription
+                Get
+                    Contract.Ensures(Contract.Result(Of WC3.GameDescription)() IsNot Nothing)
+                    Return _header
+                End Get
+            End Property
+            Public Sub Update(ByVal type As WC3.GameTypes, ByVal state As Bnet.Packet.GameStates)
+                Me._header = New WC3.GameDescription(_header.Name,
+                                                     _header.GameStats,
+                                                     _header.GameId,
+                                                     _header.EntryKey,
+                                                     _header.TotalSlotCount,
+                                                     type,
+                                                     state,
+                                                     _header.UsedSlotCount,
+                                                     _header.AgeSeconds)
             End Sub
         End Class
 #End Region
@@ -155,10 +167,10 @@ Namespace Bnet
             AddQueuePacketHandler(Packet.Parsers.MessageBox, AddressOf ReceiveMessageBox)
             AddQueuePacketHandler(Packet.Parsers.CreateGame3, AddressOf ReceiveCreateGame3)
             AddQueuePacketHandler(Packet.Parsers.Warden, AddressOf ReceiveWarden)
-            AddQueuePacketHandler(Packet.Parsers.Ping, AddressOf ReceivePing)
+            AddQueuePacketHandler(PacketId.Ping, Packet.Parsers.Ping, AddressOf ReceivePing)
 
             AddQueuePacketHandler(Packet.Parsers.Null, AddressOf IgnorePacket)
-            AddQueuePacketHandler(Packet.Parsers.QueryGamesList, AddressOf IgnorePacket)
+            AddQueuePacketHandler(PacketId.QueryGamesList, Packet.Parsers.QueryGamesList, AddressOf IgnorePacket)
             AddQueuePacketHandler(Packet.Parsers.FriendsUpdate, AddressOf IgnorePacket)
         End Sub
 
@@ -374,7 +386,7 @@ Namespace Bnet
         Private Function BeginLogOn(ByVal credentials As ClientCredentials) As IFuture
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            If state <> ClientState.LogOnScreen Then
+            If state <> ClientState.EnterUserCredentials Then
                 Throw New InvalidOperationException("Incorrect state for login.")
             End If
 
@@ -457,7 +469,7 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
 
             Select Case state
-                Case ClientState.Disconnected, ClientState.Connecting, ClientState.LogOnScreen, ClientState.AuthenticatingUser
+                Case ClientState.Disconnected, ClientState.Connecting, ClientState.EnterUserCredentials, ClientState.AuthenticatingUser
                     Throw New InvalidOperationException("Can't advertise a game until connected.")
                 Case ClientState.CreatingGame
                     Throw New InvalidOperationException("Already creating a game.")
@@ -526,7 +538,7 @@ Namespace Bnet
                     gameType = gameType Or WC3.GameTypes.ObsNone
             End Select
 
-            advertisedGameSettings.Header.Update(gameType, gameState)
+            advertisedGameSettings.Update(gameType, gameState)
             SendPacket(Bnet.Packet.MakeCreateGame3(advertisedGameSettings.Header))
         End Sub
 
@@ -724,7 +736,7 @@ Namespace Bnet
             Dim errmsg As String
             Select Case result
                 Case Bnet.Packet.AuthenticationFinishResult.Passed
-                    ChangeState(ClientState.LogOnScreen)
+                    ChangeState(ClientState.EnterUserCredentials)
                     _futureConnected.TrySetSucceeded()
                     allowRetryConnect = True
                     Return
@@ -901,11 +913,9 @@ Namespace Bnet
             If eventId = Bnet.Packet.ChatEventId.Channel Then lastChannel = text
         End Sub
 
-        Private Sub ReceivePing(ByVal value As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub ReceivePing(ByVal value As IPickle(Of UInt32))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
-            Dim salt = CUInt(vals("salt"))
-            SendPacket(Bnet.Packet.MakePing(salt))
+            SendPacket(Bnet.Packet.MakePing(salt:=value.Value))
         End Sub
 
         Private Sub ReceiveMessageBox(ByVal value As IPickle(Of Dictionary(Of String, Object)))

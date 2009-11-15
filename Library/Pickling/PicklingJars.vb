@@ -9,8 +9,7 @@ Namespace Pickling.Jars
         Public Sub New(ByVal name As String,
                        Optional ByVal expectedSize As Integer = 0,
                        Optional ByVal sizePrefixSize As Integer = 0,
-                       Optional ByVal takeRest As Boolean = False,
-                       Optional ByVal info As String = Nothing)
+                       Optional ByVal takeRest As Boolean = False)
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
             If expectedSize < 0 Then Throw New ArgumentOutOfRangeException("expectedSize")
@@ -198,7 +197,7 @@ Namespace Pickling.Jars
     End Class
 
     '''<summary>Combines jars to pickle ordered tuples of objects</summary>
-    Public NotInheritable Class TuplePackJar
+    Public Class TuplePackJar
         Inherits PackJar(Of Dictionary(Of String, Object))
         Private ReadOnly subJars() As IPackJar(Of Object)
 
