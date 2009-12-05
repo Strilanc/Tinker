@@ -1,102 +1,49 @@
-Imports HostBot.Bnet
-Imports HostBot.Bnet.Packet
+Imports Tinker.Bnet.Packet
+Imports Tinker.Commands
 
 Public Class BnetClientControl
-    Implements IHookable(Of Client)
-    Private WithEvents _client As Client
-    Private _clientHooks As IFuture(Of IEnumerable(Of IDisposable))
-    Private ReadOnly inQueue As ICallQueue = New InvokedCallQueue(Me)
+    Private ReadOnly _manager As Components.BnetClientManager
+    Private ReadOnly _client As Bnet.Client
+    Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+    Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
     Private numPrimaryStates As Integer
 
-    Private commandHistory As New List(Of String) From {""}
-    Private commandHistoryPointer As Integer
-
-    '<ContractInvariantMethod()> Private Sub ObjectInvariant()
-    'Contract.Invariant((_client IsNot Nothing) = (_clientHooks IsNot Nothing))
-    'Contract.Invariant(inQueue IsNot Nothing)
-    'Contract.Invariant(numPrimaryStates >= 0)
-    'Contract.Invariant(commandHistory IsNot Nothing)
-    'Contract.Invariant(commandHistoryPointer >= 0)
-    'Contract.Invariant(commandHistoryPointer < commandHistory.Count)
-    'End Sub
-    Private Sub txtCommand_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
-        Select Case e.KeyCode
-            Case Keys.Enter
-                If txtCommand.Text = "" Then Return
-                _client.Parent.ClientCommands.ProcessLocalText(_client, txtCommand.Text, logClient.Logger())
-
-                commandHistoryPointer = commandHistory.Count
-                commandHistory(commandHistoryPointer - 1) = txtCommand.Text
-                commandHistory.Add("")
-                txtCommand.Text = ""
-                e.Handled = True
-            Case Keys.Up
-                commandHistory(commandHistoryPointer) = txtCommand.Text
-                commandHistoryPointer = (commandHistoryPointer - 1).Between(0, commandHistory.Count - 1)
-                txtCommand.Text = commandHistory(commandHistoryPointer)
-                txtCommand.SelectionStart = txtCommand.TextLength
-                e.Handled = True
-            Case Keys.Down
-                commandHistory(commandHistoryPointer) = txtCommand.Text
-                commandHistoryPointer = (commandHistoryPointer + 1).Between(0, commandHistory.Count - 1)
-                txtCommand.Text = commandHistory(commandHistoryPointer)
-                txtCommand.SelectionStart = txtCommand.TextLength
-                e.Handled = True
-        End Select
+    Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
+        If Me.Parent IsNot Nothing Then inQueue.Start()
     End Sub
 
-    Private Function QueueDispose() As IFuture Implements IHookable(Of Client).QueueDispose
+    Public Sub New(ByVal manager As Components.BnetClientManager)
+        Contract.Requires(manager IsNot Nothing)
+        InitializeComponent()
+
+        Me._client = manager.Client
+        Me._manager = manager
+        logClient.SetLogger(Me._client.logger, "Client")
+
+        Me._hooks.Add(Me._client.QueueAddPacketHandler(
+            id:=Bnet.PacketId.ChatEvent,
+            jar:=Bnet.Packet.ServerPackets.ChatEvent,
+            handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedChatEvent(Me._client, pickle.Value))))
+        Me._hooks.Add(Me._client.QueueAddPacketHandler(
+            id:=Bnet.PacketId.QueryGamesList,
+            jar:=Bnet.Packet.ServerPackets.QueryGamesList,
+            handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value))))
+
+        Me._client.QueueGetState.CallOnValueSuccess(Sub(state) OnClientStateChanged(Me._client, state, state))
+        AddHandler Me._client.StateChanged, AddressOf OnClientStateChanged
+        Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.StateChanged, AddressOf OnClientStateChanged).Futurized)
+    End Sub
+
+    Public Function QueueDispose() As IFuture
         Return inQueue.QueueAction(Sub() Me.Dispose())
     End Function
-    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of Client).QueueGetCaption
-        Return inQueue.QueueFunc(Function() If(_client Is Nothing, "[No Client]", "Client {0}".Frmt(_client.Name)))
-    End Function
-    Public Function QueueHook(ByVal child As Client) As IFuture Implements IHookable(Of Client).QueueHook
-        Return inQueue.QueueAction(Sub() PerformHook(child))
-    End Function
-    Private Sub PerformHook(ByVal child As Client)
-        If Me._client Is child Then Return
-
-        'Unhook
-        If _client IsNot Nothing Then
-            _clientHooks.CallOnValueSuccess(
-                Sub(hooks)
-                    For Each hook In hooks
-                        hook.Dispose()
-                    Next hook
-                End Sub)
-            _clientHooks = Nothing
-            _client = Nothing
-        End If
-        lstState.Items.Clear()
-
-        'Hook
-        _client = child
-        If child Is Nothing Then
-            logClient.SetLogger(Nothing, Nothing)
-            lstState.Enabled = False
-            txtTalk.Enabled = False
-        Else
-            logClient.SetLogger(child.logger, "Client")
-            Me._client.QueueGetState.CallOnValueSuccess(Sub(state) CatchClientStateChanged(child, state, state))
-            Dim hooks = New List(Of IFuture(Of IDisposable))
-            hooks.Add(Me._client.QueueAddPacketHandler(
-                id:=PacketId.ChatEvent,
-                jar:=Packet.Parsers.ChatEvent,
-                handler:=Function(pickle)
-                             Return inQueue.QueueAction(Sub() OnClientReceivedChatEvent(child, pickle.Value))
-                         End Function))
-            hooks.Add(Me._client.QueueAddPacketHandler(
-                id:=PacketId.QueryGamesList,
-                jar:=Packet.Parsers.QueryGamesList,
-                handler:=Function(pickle)
-                             Return inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(child, pickle.Value))
-                         End Function))
-            Me._clientHooks = hooks.Defuturized
-        End If
+    Private Sub BnetClientControl_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
+        For Each hook In _hooks
+            hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+        Next hook
     End Sub
 
-    Private Sub OnClientReceivedQueryGamesList(ByVal sender As Client, ByVal value As QueryGamesListResponse)
+    Private Sub OnClientReceivedQueryGamesList(ByVal sender As Bnet.Client, ByVal value As QueryGamesListResponse)
         If sender IsNot _client Then Return
         While lstState.Items.Count > numPrimaryStates
             lstState.Items.RemoveAt(lstState.Items.Count - 1)
@@ -111,9 +58,10 @@ Public Class BnetClientControl
             lstState.Items.Add(game.GameStats.relativePath.Split("\"c).Last)
         Next game
     End Sub
-    Private Sub OnClientReceivedChatEvent(ByVal sender As Client, ByVal vals As Dictionary(Of String, Object))
+    Private Sub OnClientReceivedChatEvent(ByVal sender As Bnet.Client, ByVal vals As Dictionary(Of InvariantString, Object))
+        If IsDisposed Then Return
         If sender IsNot Me._client Then Return
-        Dim id = CType(vals("event id"), Packet.ChatEventId)
+        Dim id = CType(vals("event id"), ChatEventId)
         Dim user = CStr(vals("username"))
         Dim text = CStr(vals("text"))
         Select Case id
@@ -170,27 +118,29 @@ Public Class BnetClientControl
         txtTalk.Text = ""
     End Sub
 
-    Private Sub CatchClientStateChanged(ByVal sender As Client,
-                                        ByVal oldState As ClientState,
-                                        ByVal newState As ClientState) Handles _client.StateChanged
+    Private Sub OnClientStateChanged(ByVal sender As Bnet.Client,
+                                     ByVal oldState As Bnet.ClientState,
+                                     ByVal newState As Bnet.ClientState)
         inQueue.QueueAction(
             Sub()
+                If IsDisposed Then Return
                 If sender IsNot _client Then Return
                 txtTalk.Enabled = False
                 lstState.Enabled = True
                 lstState.BackColor = SystemColors.Window
                 Select Case newState
-                    Case ClientState.Channel, ClientState.CreatingGame
-                        If oldState = ClientState.AdvertisingGame Then lstState.Items.Clear()
+                    Case Bnet.ClientState.Channel, Bnet.ClientState.CreatingGame
+                        If oldState = Bnet.ClientState.AdvertisingGame Then lstState.Items.Clear()
                         txtTalk.Enabled = True
-                    Case ClientState.AdvertisingGame
+                    Case Bnet.ClientState.AdvertisingGame
                         lstState.Items.Clear()
                         lstState.Items.Add("Game")
-                        Dim g = _client.CurGame
+                        Dim g = _client.AdvertisedGameDescription
+                        Dim p = _client.AdvertisedPrivate
                         If g IsNot Nothing Then
-                            lstState.Items.Add(g.Header.Name)
-                            lstState.Items.Add(g.Header.GameStats.relativePath)
-                            lstState.Items.Add(If(g.private, "Private", "Public"))
+                            lstState.Items.Add(g.Name)
+                            lstState.Items.Add(g.GameStats.relativePath)
+                            lstState.Items.Add(If(p, "Private", "Public"))
                             lstState.Items.Add("Refreshed: {0}".Frmt(Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
                         End If
                         numPrimaryStates = lstState.Items.Count
@@ -201,5 +151,9 @@ Public Class BnetClientControl
                 End Select
             End Sub
         )
+    End Sub
+
+    Private Sub comClient_IssuedCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comClient.IssuedCommand
+        Tinker.Components.UIInvokeCommand(_manager, argument)
     End Sub
 End Class

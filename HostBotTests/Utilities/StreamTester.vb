@@ -1,5 +1,5 @@
 ﻿Imports System.Net.Sockets
-Imports HostBot
+Imports Tinker
 Imports Strilbrary.Numerics
 Imports Strilbrary.Threading
 Imports Strilbrary.Enumeration

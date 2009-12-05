@@ -19,11 +19,11 @@ Partial Class W3ServerControl
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.tabsServer = New System.Windows.Forms.TabControl
-        Me.tabServer = New System.Windows.Forms.TabPage
-        Me.txtInfo = New System.Windows.Forms.TextBox
-        Me.txtCommand = New System.Windows.Forms.TextBox
-        Me.logServer = New HostBot.LoggerControl
+        Me.tabsServer = New System.Windows.Forms.TabControl()
+        Me.tabServer = New System.Windows.Forms.TabPage()
+        Me.txtInfo = New System.Windows.Forms.TextBox()
+        Me.logServer = New Tinker.LoggerControl()
+        Me.comServer = New Tinker.CommandControl()
         Me.tabsServer.SuspendLayout()
         Me.tabServer.SuspendLayout()
         Me.SuspendLayout()
@@ -42,8 +42,8 @@ Partial Class W3ServerControl
         '
         'tabServer
         '
+        Me.tabServer.Controls.Add(Me.comServer)
         Me.tabServer.Controls.Add(Me.txtInfo)
-        Me.tabServer.Controls.Add(Me.txtCommand)
         Me.tabServer.Controls.Add(Me.logServer)
         Me.tabServer.Location = New System.Drawing.Point(4, 22)
         Me.tabServer.Name = "tabServer"
@@ -65,16 +65,6 @@ Partial Class W3ServerControl
         Me.txtInfo.Size = New System.Drawing.Size(204, 481)
         Me.txtInfo.TabIndex = 3
         '
-        'txtCommand
-        '
-        Me.txtCommand.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.txtCommand.BackColor = System.Drawing.SystemColors.Info
-        Me.txtCommand.Location = New System.Drawing.Point(0, 487)
-        Me.txtCommand.Name = "txtCommand"
-        Me.txtCommand.Size = New System.Drawing.Size(861, 20)
-        Me.txtCommand.TabIndex = 2
-        '
         'logServer
         '
         Me.logServer.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
@@ -85,12 +75,21 @@ Partial Class W3ServerControl
         Me.logServer.Size = New System.Drawing.Size(651, 481)
         Me.logServer.TabIndex = 1
         '
-        'W3GameServerControl
+        'comServer
+        '
+        Me.comServer.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
+                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.comServer.Location = New System.Drawing.Point(0, 487)
+        Me.comServer.Name = "comServer"
+        Me.comServer.Size = New System.Drawing.Size(861, 20)
+        Me.comServer.TabIndex = 6
+        '
+        'W3ServerControl
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.Controls.Add(Me.tabsServer)
-        Me.Name = "W3GameServerControl"
+        Me.Name = "W3ServerControl"
         Me.Size = New System.Drawing.Size(869, 533)
         Me.tabsServer.ResumeLayout(False)
         Me.tabServer.ResumeLayout(False)
@@ -100,8 +99,8 @@ Partial Class W3ServerControl
     End Sub
     Friend WithEvents tabsServer As System.Windows.Forms.TabControl
     Friend WithEvents tabServer As System.Windows.Forms.TabPage
-    Friend WithEvents txtCommand As System.Windows.Forms.TextBox
-    Friend WithEvents logServer As HostBot.LoggerControl
+    Friend WithEvents logServer As Tinker.LoggerControl
     Friend WithEvents txtInfo As System.Windows.Forms.TextBox
+    Friend WithEvents comServer As Tinker.CommandControl
 
 End Class

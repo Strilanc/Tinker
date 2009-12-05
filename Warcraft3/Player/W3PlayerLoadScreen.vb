@@ -5,16 +5,16 @@
         Public Sub LoadScreenStart()
             state = PlayerState.Loading
             SendPacket(Packet.MakeStartLoading())
-            AddQueuePacketHandler(Packet.Jars.Ready, AddressOf ReceiveReady)
-            AddQueuePacketHandler(Packet.Jars.GameAction, AddressOf ReceiveGameAction)
+            AddQueuedPacketHandler(Packet.Jars.Ready, AddressOf ReceiveReady)
+            AddQueuedPacketHandler(Packet.Jars.GameAction, AddressOf ReceiveGameAction)
         End Sub
 
         Public Event ReceivedReady(ByVal sender As Player)
-        Private Sub ReceiveReady(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub ReceiveReady(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
+            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
             Ready = True
-            logger.Log(name + " is ready", LogMessageType.Positive)
+            logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'
             outQueue.QueueAction(Sub()
                                      RaiseEvent ReceivedReady(Me)

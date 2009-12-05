@@ -28,7 +28,7 @@
         End Sub
 
 
-        Private Sub New(ByVal payload As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub New(ByVal payload As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(payload IsNot Nothing)
             Me._payload = payload
             Me.id = CType(payload.Value("type"), BNLSWardenPacketId)
@@ -38,7 +38,7 @@
             Me._payload = payload
             Me.id = id
         End Sub
-        Private Sub New(ByVal id As BNLSWardenPacketId, ByVal value As Dictionary(Of String, Object))
+        Private Sub New(ByVal id As BNLSWardenPacketId, ByVal value As Dictionary(Of InvariantString, Object))
             Me.New(id, clientJar.Pack(id, value))
             Contract.Requires(value IsNot Nothing)
         End Sub
@@ -119,7 +119,7 @@
 #Region "Packers"
         Public Shared Function MakeFullServiceConnect(ByVal cookie As UInteger, ByVal seed As UInteger) As BNLSWardenPacket
             Contract.Ensures(Contract.Result(Of BNLSWardenPacket)() IsNot Nothing)
-            Return New BNLSWardenPacket(BNLSWardenPacketId.FullServiceConnect, New Dictionary(Of String, Object) From {
+            Return New BNLSWardenPacket(BNLSWardenPacketId.FullServiceConnect, New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
                     {"client type", BNLSClientType.Warcraft3TFT},
                     {"seed", seed.Bytes()},
@@ -129,7 +129,7 @@
         End Function
         Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As Byte()) As BNLSWardenPacket
             Contract.Ensures(Contract.Result(Of BNLSWardenPacket)() IsNot Nothing)
-            Return New BNLSWardenPacket(BNLSWardenPacketId.FullServiceHandleWardenPacket, New Dictionary(Of String, Object) From {
+            Return New BNLSWardenPacket(BNLSWardenPacketId.FullServiceHandleWardenPacket, New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
                     {"raw warden packet data", data},
                     {"unspecified", New Byte() {}}})

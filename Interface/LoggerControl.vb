@@ -2,7 +2,7 @@ Public Class LoggerControl
     Private callbackModeMap As New Dictionary(Of LogMessageType, CallbackMode)
     Private callbackColorMap As New Dictionary(Of LogMessageType, Color)
     Private WithEvents _logger As Logger
-    Private ReadOnly uiRef As New InvokedCallQueue(Me)
+    Private ReadOnly uiRef As New StartableCallQueue(New InvokedCallQueue(Me))
     Private lastQueuedMessage As New QueuedMessage(Nothing, Color.Black)
     Private nextQueuedMessage As QueuedMessage
     Private numQueuedMessages As Integer
@@ -10,6 +10,10 @@ Public Class LoggerControl
     Private filename As String
     Private filestream As IO.Stream
     Private isLoggingUnexpectedExceptions As Boolean
+
+    Private Sub LoggerControl_HandleCreated(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.HandleCreated
+        uiRef.Start()
+    End Sub
 
     Private NotInheritable Class QueuedMessage
         Public ReadOnly message As String

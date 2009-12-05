@@ -1,5 +1,5 @@
 Public NotInheritable Class ClientProfile
-    Public name As String
+    Public name As InvariantString
     Public users As New BotUserSet()
     Public cdKeyROC As String = ""
     Public cdKeyTFT As String = ""
@@ -8,7 +8,7 @@ Public NotInheritable Class ClientProfile
     Public server As String = "useast.battle.net (Azeroth)"
     Public listenPort As UShort = 6113
     Private _lanHost As String = " (None)"
-    Public initialChannel As String = My.Resources.ProgramName
+    Public initialChannel As String = "HostBot"
     Private _cklServerAddress As String = ""
     Private Const version As UInt16 = 1
 
@@ -33,7 +33,6 @@ Public NotInheritable Class ClientProfile
         End Set
     End Property
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(name IsNot Nothing)
         Contract.Invariant(users IsNot Nothing)
         Contract.Invariant(cdKeyROC IsNot Nothing)
         Contract.Invariant(cdKeyTFT IsNot Nothing)
@@ -45,8 +44,7 @@ Public NotInheritable Class ClientProfile
         Contract.Invariant(_cklServerAddress IsNot Nothing)
     End Sub
 
-    Public Sub New(Optional ByVal name As String = "Default")
-        Contract.Requires(name IsNot Nothing)
+    Public Sub New(ByVal name As InvariantString)
         Me.name = name
     End Sub
     Public Sub New(ByVal reader As IO.BinaryReader)
@@ -96,8 +94,8 @@ Public NotInheritable Class ClientProfile
         End If
     End Sub
 
-    Public Function Clone(Optional ByVal newName As String = Nothing) As ClientProfile
-        Dim newProfile = New ClientProfile
+    Public Function Clone(Optional ByVal newName As InvariantString? = Nothing) As ClientProfile
+        Dim newProfile = New ClientProfile("Default")
         With newProfile
             .users = users.Clone()
             .cdKeyROC = cdKeyROC
@@ -105,7 +103,7 @@ Public NotInheritable Class ClientProfile
             .userName = userName
             .password = password
             .server = server
-            .name = If(newName, Me.name)
+            .name = If(newName Is Nothing, Me.name, newName.Value)
             .listenPort = listenPort
             .initialChannel = initialChannel
             ._cklServerAddress = _cklServerAddress

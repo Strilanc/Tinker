@@ -49,13 +49,17 @@
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
             Try
-                Dim socket = New W3Socket(New PacketSocket(client, timeout:=60.Seconds, logger:=logger))
+                Dim socket = New W3Socket(New PacketSocket(stream:=client.GetStream,
+                                                           localendpoint:=CType(client.Client.LocalEndPoint, Net.IPEndPoint),
+                                                           remoteendpoint:=CType(client.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                           timeout:=60.Seconds,
+                                                           logger:=logger))
                 logger.Log("New player connecting from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 
                 SyncLock lock
                     sockets.Add(socket)
                 End SyncLock
-                socket.FutureReadPacket().CallWhenValueReady(
+                socket.AsyncReadPacket().CallWhenValueReady(
                     Sub(packetData, readException)
                         If Not TryRemoveSocket(socket) Then Return
                         If readException IsNot Nothing Then
@@ -73,7 +77,7 @@
                         End Try
                     End Sub
                 )
-                FutureWait(FirstPacketTimeout).CallWhenReady(
+                FirstPacketTimeout.AsyncWait().CallWhenReady(
                     Sub()
                         If Not TryRemoveSocket(socket) Then Return
                         logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)
@@ -125,14 +129,12 @@
 
             Dim pickle = Packet.Jars.Knock.Parse(packetData.SubView(4))
             Dim vals = pickle.Value.AssumeNotNull
-            Dim name = CStr(vals("name")).AssumeNotNull
-            Dim internalAddress = CType(vals("internal address"), Dictionary(Of String, Object)).AssumeNotNull
-            Dim player = New W3ConnectingPlayer(name,
+            Dim player = New W3ConnectingPlayer(CStr(vals("name")).AssumeNotNull,
                                                 CUInt(vals("game id")),
                                                 CUInt(vals("entry key")),
                                                 CUInt(vals("peer key")),
                                                 CUShort(vals("listen port")),
-                                                AddressJar.ExtractIPEndpoint(internalAddress),
+                                                CType(vals("internal address"), Net.IPEndPoint).AssumeNotNull,
                                                 socket)
 
             socket.Name = player.Name

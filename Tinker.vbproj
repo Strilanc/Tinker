@@ -7,9 +7,9 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{2986B2AE-1AEB-4A71-8EEA-D102866A42AB}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <StartupObject>HostBot.My.MyApplication</StartupObject>
-    <RootNamespace>HostBot</RootNamespace>
-    <AssemblyName>HostBot</AssemblyName>
+    <StartupObject>Tinker.My.MyApplication</StartupObject>
+    <RootNamespace>Tinker</RootNamespace>
+    <AssemblyName>Tinker</AssemblyName>
     <MyType>WindowsForms</MyType>
     <OptionStrict>On</OptionStrict>
     <ApplicationIcon>Resources\HostBotIcon.ico</ApplicationIcon>
@@ -55,7 +55,7 @@
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
     <OutputPath>bin\Debug\</OutputPath>
-    <DocumentationFile>HostBot.xml</DocumentationFile>
+    <DocumentationFile>Tinker.xml</DocumentationFile>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
     <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
     <CodeContractsCustomRewriterAssembly>
@@ -78,7 +78,7 @@
     <CodeContractsBaseLineFile>baseline.xml</CodeContractsBaseLineFile>
     <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
     <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
-    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <CodeContractsShowSquigglies>False</CodeContractsShowSquigglies>
     <PlatformTarget>x86</PlatformTarget>
     <CodeAnalysisRuleSet>Code Analysis Rules.ruleset</CodeAnalysisRuleSet>
     <CodeContractsRuntimeThrowOnFailure>True</CodeContractsRuntimeThrowOnFailure>
@@ -93,7 +93,7 @@
     <DefineTrace>true</DefineTrace>
     <Optimize>false</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DocumentationFile>HostBot.xml</DocumentationFile>
+    <DocumentationFile>Tinker.xml</DocumentationFile>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
     <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
     <CodeContractsCustomRewriterAssembly>
@@ -142,8 +142,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Import Include="HostBot.Pickling" />
-    <Import Include="HostBot.Pickling.Jars" />
     <Import Include="Microsoft.VisualBasic" />
     <Import Include="Strilbrary" />
     <Import Include="Strilbrary.Enumeration" />
@@ -161,22 +159,58 @@
     <Import Include="System.Linq" />
     <Import Include="System.Runtime.CompilerServices" />
     <Import Include="System.Windows.Forms" />
+    <Import Include="Tinker.Pickling" />
+    <Import Include="Tinker.Pickling.Jars" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
     <Compile Include="Battlenet\CDKey.vb" />
     <Compile Include="Battlenet\ClientCredentials.vb" />
+    <Compile Include="Bot\Commands\Generic Commands.vb" />
+    <Compile Include="Bot\Components\CKLServerManager.vb" />
+    <Compile Include="Bot\Components\MainBotManager.vb" />
+    <Compile Include="Bot\Components\WC3GameManager.vb" />
+    <Compile Include="Bot\Components\PluginManager.vb" />
+    <Compile Include="Bot\Components\WC3GameServerManager.vb" />
+    <Compile Include="Bot\Components\IBotComponent.vb" />
+    <Compile Include="Bot\Components\BnetClientManager.vb" />
+    <Compile Include="Bot\Components\LanAdvertiserManager.vb" />
+    <Compile Include="Bot\Plugins\PluginSet.vb" />
+    <Compile Include="Bot\Plugins\Plugin Interfaces.vb" />
+    <Compile Include="Bot\Plugins\PluginProfile.vb" />
     <Compile Include="Bot\PortPool.vb" />
-    <Compile Include="Library\Commands\Command Extensions.vb" />
+    <Compile Include="Interface\CommandControl.Designer.vb">
+      <DependentUpon>CommandControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\CommandControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\LanAdvertiserControl.Designer.vb">
+      <DependentUpon>LanAdvertiserControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\LanAdvertiserControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Interface\GenericBotComponentControl.Designer.vb">
+      <DependentUpon>GenericBotComponentControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\GenericBotComponentControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Library\Commands\CommandTemplate.vb" />
     <Compile Include="Library\Commands\Delegated Commands.vb" />
     <Compile Include="Library\Commands\PartialCommand.vb" />
+    <Compile Include="Library\Commands\ProjectedCommand.vb" />
     <Compile Include="Library\Commands\TemplatedCommand.vb" />
+    <Compile Include="Library\AsyncViewableCollection.vb" />
+    <Compile Include="Library\PacketSocket.vb" />
     <Compile Include="Library\PacketHandler.vb" />
     <Compile Include="Warcraft3\Player\W3PlayerGameplay.vb" />
     <Compile Include="Warcraft3\Player\W3PlayerLoadScreen.vb" />
     <Compile Include="Warcraft3\Player\W3PlayerLobby.vb" />
     <Compile Include="Warcraft3\Player\W3PlayerPart.vb" />
+    <Compile Include="Warcraft3\Server\GameSet.vb" />
+    <Compile Include="Warcraft3\Server\ServerEntry.vb" />
     <Compile Include="Warcraft3\W3GameStatsJar.vb" />
     <Compile Include="Warcraft3\KeyedEvent.vb" />
     <Compile Include="Warcraft3\Pinger.vb" />
@@ -190,7 +224,6 @@
     <Compile Include="Warcraft3\Game\W3GamePlay.vb" />
     <Compile Include="Warcraft3\Player\W3Player.vb" />
     <Compile Include="Warcraft3\Server\W3ServerDoor.vb" />
-    <Compile Include="Warcraft3\Server\W3ServerInterface.vb" />
     <Compile Include="Warcraft3\W3ConnectionAccepter.vb" />
     <Compile Include="Warcraft3\W3GameStats.vb" />
     <Compile Include="Warcraft3\W3Slot.vb" />
@@ -204,7 +237,7 @@
     <Compile Include="Library\Commands\HelpCommand.vb" />
     <Compile Include="Bot\Commands\Lan Commands.vb" />
     <Compile Include="Bot\Widgets\CKL Client.vb" />
-    <Compile Include="Bot\Widgets\CKL Interface.vb" />
+    <Compile Include="Bot\Widgets\CKL Keys.vb" />
     <Compile Include="Interface\GameLoggerControl.Designer.vb">
       <DependentUpon>GameLoggerControl.vb</DependentUpon>
     </Compile>
@@ -218,7 +251,7 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Warcraft3\W3DummyPlayer.vb" />
-    <Compile Include="Warcraft3\W3LanAdvertiser.vb" />
+    <Compile Include="Bot\Components\LanAdvertiser.vb" />
     <Compile Include="Warcraft3\TransferScheduler.vb" />
     <Compile Include="Bot\Commands\Bot Commands.vb" />
     <Compile Include="Bot\Commands\Client Commands.vb" />
@@ -226,16 +259,10 @@
     <Compile Include="Bot\Commands\Server Commands.vb" />
     <Compile Include="Bot\Links.vb" />
     <Compile Include="Bot\Profile.vb" />
-    <Compile Include="Interface\BotControl.Designer.vb">
-      <DependentUpon>BotControl.vb</DependentUpon>
+    <Compile Include="Interface\ComponentsControl.Designer.vb">
+      <DependentUpon>ComponentsControl.vb</DependentUpon>
     </Compile>
-    <Compile Include="Interface\BotControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Interface\BotWidgetControl.Designer.vb">
-      <DependentUpon>BotWidgetControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\BotWidgetControl.vb">
+    <Compile Include="Interface\ComponentsControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Library\Common.vb" />
@@ -250,7 +277,7 @@
     <Compile Include="Library\Pickling\Jars Numeric.vb" />
     <Compile Include="Library\Streams\PacketStream.vb" />
     <Compile Include="Library\Streams\ThrottledWriteStream.vb" />
-    <Compile Include="Bot\Plugins.vb" />
+    <Compile Include="Bot\Plugins\PluginSocket.vb" />
     <Compile Include="Bot\Widgets\CKL Server.vb" />
     <Compile Include="Warcraft3\W3Packet.vb" />
     <Compile Include="Bot\BotUser.vb" />
@@ -295,7 +322,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Warcraft3\Game\W3Game.vb" />
-    <Compile Include="Warcraft3\Server\W3Server.vb" />
+    <Compile Include="Warcraft3\Server\GameServer.vb" />
     <Compile Include="Warcraft3\W3Map.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
@@ -314,15 +341,23 @@
     </Compile>
     <Compile Include="Library\Future Common.vb" />
     <Compile Include="Test\Test.vb" />
-    <Compile Include="Bot\Widgets\Hookable.vb" />
+    <Compile Include="Bot\Widgets\ComponentTabSetIWidget.vb" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Interface\BotControl.resx">
+    <EmbeddedResource Include="Interface\ComponentsControl.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>BotControl.vb</DependentUpon>
+      <DependentUpon>ComponentsControl.vb</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\BotWidgetControl.resx">
-      <DependentUpon>BotWidgetControl.vb</DependentUpon>
+    <EmbeddedResource Include="Interface\CommandControl.resx">
+      <DependentUpon>CommandControl.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\LanAdvertiserControl.resx">
+      <DependentUpon>LanAdvertiserControl.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\GenericBotComponentControl.resx">
+      <DependentUpon>GenericBotComponentControl.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\GameLoggerControl.resx">
@@ -411,6 +446,7 @@
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
     <Content Include="Docs.txt" />
+    <None Include="Resources\Tinker.ico" />
     <None Include="HostBot_TemporaryKey.pfx" />
     <None Include="Resources\HostBotIcon.ico" />
   </ItemGroup>

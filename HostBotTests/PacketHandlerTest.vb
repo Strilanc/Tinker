@@ -1,11 +1,12 @@
 ﻿Imports Strilbrary
 Imports Strilbrary.Threading
+Imports Strilbrary.Numerics
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 
 <TestClass()>
 Public Class PacketHandlerTest
     Private Class SimplePacketHandler
-        Inherits HostBot.PacketHandler(Of Byte)
+        Inherits Tinker.PacketHandler(Of Byte)
         Protected Overrides Function ExtractKey(ByVal header As Strilbrary.ViewableList(Of Byte)) As Byte
             If header(0) = 255 Then Throw New InvalidOperationException("Mock Exception")
             Return header(0)
@@ -21,10 +22,9 @@ Public Class PacketHandlerTest
     Public Sub ValueTest()
         Dim flag = 0UI
         Dim p = New SimplePacketHandler()
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub() flag = pickle.Value))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView)
+        p.AddHandler(key:=1,
+                     handler:=Function(data) TaskedAction(Sub() flag = data.SubView(0, 4).touint32))
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(flag = &H78563412)
         Assert.IsTrue(result.State = FutureState.Succeeded)
@@ -35,13 +35,11 @@ Public Class PacketHandlerTest
         Dim flag1 = True
         Dim flag2 = False
         Dim p = New SimplePacketHandler()
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub() flag1 = False))
-        p.AddHandler(Of UInt32)(key:=2,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub() flag2 = True))
-        Dim result = p.HandlePacket(New Byte() {2, &H12, &H34, &H56, &H78}.ToView)
+        p.AddHandler(key:=1,
+                     handler:=Function(data) TaskedAction(Sub() flag1 = False))
+        p.AddHandler(key:=2,
+                     handler:=Function(data) TaskedAction(Sub() flag2 = True))
+        Dim result = p.HandlePacket(New Byte() {2, &H12, &H34, &H56, &H78}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
@@ -53,13 +51,11 @@ Public Class PacketHandlerTest
         Dim flag1 = False
         Dim flag2 = False
         Dim p = New SimplePacketHandler()
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub() flag2 = True))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView)
+        p.AddHandler(key:=1,
+                     handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
+        p.AddHandler(key:=1,
+                     handler:=Function(pickle) TaskedAction(Sub() flag2 = True))
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
@@ -69,12 +65,11 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub HandleFailTest()
         Dim p = New SimplePacketHandler()
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle)
-                                             Throw New InvalidOperationException("Mock Exception")
-                                         End Function)
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView)
+        p.AddHandler(key:=1,
+                     handler:=Function(pickle)
+                                  Throw New InvalidOperationException("Mock Exception")
+                              End Function)
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
     End Sub
@@ -82,12 +77,9 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub HandleFutureFailTest()
         Dim p = New SimplePacketHandler()
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub()
-                                                                           Throw New InvalidOperationException("Mock Exception")
-                                                                       End Sub))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView)
+        p.AddHandler(key:=1,
+                     handler:=Function(pickle) TaskedAction(Sub() Throw New InvalidOperationException("Mock Exception")))
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
     End Sub
@@ -96,12 +88,9 @@ Public Class PacketHandlerTest
     Public Sub ExtractKeyFailTest()
         Dim flag = True
         Dim p = New SimplePacketHandler()
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub()
-                                                                           flag = False
-                                                                       End Sub))
-        Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.ToView)
+        p.AddHandler(key:=1,
+                     handler:=Function(pickle) TaskedAction(Sub() flag = False))
+        Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
         Assert.IsTrue(flag)
@@ -110,7 +99,7 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub MissingHandlerTest()
         Dim p = New SimplePacketHandler()
-        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.ToView)
+        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
     End Sub
@@ -118,11 +107,11 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub DisposedHandlerTest()
         Dim p = New SimplePacketHandler()
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub()
-                                                                       End Sub)).Dispose()
-        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.ToView)
+        p.AddHandler(key:=1,
+                     handler:=Function(pickle) TaskedAction(Sub()
+                                                            End Sub)
+                     ).Dispose()
+        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
     End Sub
@@ -132,14 +121,12 @@ Public Class PacketHandlerTest
         Dim flag1 = False
         Dim flag2 = True
         Dim p = New SimplePacketHandler()
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
-        p.AddHandler(Of UInt32)(key:=1,
-                                jar:=New HostBot.Pickling.Jars.UInt32Jar("test"),
-                                handler:=Function(pickle) TaskedAction(Sub() flag2 = False)
-                                ).Dispose()
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView)
+        p.AddHandler(key:=1,
+                     handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
+        p.AddHandler(key:=1,
+                     handler:=Function(pickle) TaskedAction(Sub() flag2 = False)
+                     ).Dispose()
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.ToView, "test")
         BlockOnFuture(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)

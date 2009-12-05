@@ -15,7 +15,7 @@
             MyBase.New(name:=name,
                        Format:="{0} ...".Frmt(headType),
                        description:=description,
-                       permissions:=permissions,
+                       Permissions:=Permissions,
                        extraHelp:=extraHelp,
                        hasPrivateArguments:=hasPrivateArguments)
             Contract.Requires(name IsNot Nothing)

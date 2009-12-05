@@ -20,9 +20,9 @@ Partial Class W3GameControl
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.txtInput = New System.Windows.Forms.TextBox()
-        Me.txtCommand = New System.Windows.Forms.TextBox()
         Me.lstSlots = New System.Windows.Forms.ListBox()
-        Me.logGame = New HostBot.GameLoggerControl()
+        Me.logGame = New Tinker.GameLoggerControl()
+        Me.comGame = New Tinker.CommandControl()
         Me.SuspendLayout()
         '
         'txtInput
@@ -33,16 +33,6 @@ Partial Class W3GameControl
         Me.txtInput.Name = "txtInput"
         Me.txtInput.Size = New System.Drawing.Size(783, 20)
         Me.txtInput.TabIndex = 3
-        '
-        'txtCommand
-        '
-        Me.txtCommand.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.txtCommand.BackColor = System.Drawing.SystemColors.Info
-        Me.txtCommand.Location = New System.Drawing.Point(0, 513)
-        Me.txtCommand.Name = "txtCommand"
-        Me.txtCommand.Size = New System.Drawing.Size(783, 20)
-        Me.txtCommand.TabIndex = 4
         '
         'lstSlots
         '
@@ -67,14 +57,23 @@ Partial Class W3GameControl
         Me.logGame.Size = New System.Drawing.Size(782, 303)
         Me.logGame.TabIndex = 5
         '
+        'comGame
+        '
+        Me.comGame.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
+                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.comGame.Location = New System.Drawing.Point(0, 513)
+        Me.comGame.Name = "comGame"
+        Me.comGame.Size = New System.Drawing.Size(783, 20)
+        Me.comGame.TabIndex = 6
+        '
         'W3GameControl
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink
+        Me.Controls.Add(Me.comGame)
         Me.Controls.Add(Me.logGame)
         Me.Controls.Add(Me.lstSlots)
-        Me.Controls.Add(Me.txtCommand)
         Me.Controls.Add(Me.txtInput)
         Me.Name = "W3GameControl"
         Me.Size = New System.Drawing.Size(783, 533)
@@ -84,7 +83,7 @@ Partial Class W3GameControl
     End Sub
     Friend WithEvents txtInput As System.Windows.Forms.TextBox
 
-    Friend WithEvents txtCommand As System.Windows.Forms.TextBox
     Friend WithEvents lstSlots As System.Windows.Forms.ListBox
-    Friend WithEvents logGame As HostBot.GameLoggerControl
+    Friend WithEvents logGame As Tinker.GameLoggerControl
+    Friend WithEvents comGame As Tinker.CommandControl
 End Class

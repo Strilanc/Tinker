@@ -1,23 +1,42 @@
 Imports System.IO.Path
 
 Public Class SettingsForm
-    Private bot As MainBot
-    Dim profiles As List(Of ClientProfile)
+    Private ReadOnly _clientProfiles As List(Of ClientProfile)
+    Private ReadOnly _pluginProfiles As List(Of Plugins.PluginProfile)
+    Private ReadOnly _portPool As PortPool
+    Private wantSave As Boolean
 
-    Public Shared Sub ShowBotSettings(ByVal bot As MainBot)
-        Using f = New SettingsForm
-            f.LoadFromBot(bot)
+    Public Shared Function ShowWithProfiles(ByRef clientProfiles As IEnumerable(Of ClientProfile),
+                                            ByRef pluginProfiles As IEnumerable(Of Plugins.PluginProfile),
+                                            ByVal portPool As PortPool) As Boolean
+        Contract.Requires(clientProfiles IsNot Nothing)
+        Contract.Requires(pluginProfiles IsNot Nothing)
+        Contract.Requires(portPool IsNot Nothing)
+        Using f = New SettingsForm(clientProfiles, pluginProfiles, portPool)
             f.ShowDialog()
+            If f.wantSave Then
+                clientProfiles = f._clientProfiles.ToList
+                pluginProfiles = f._pluginProfiles.ToList
+            End If
+            Return f.wantSave
         End Using
-    End Sub
+    End Function
 
-    Public Sub LoadFromBot(ByVal target As MainBot)
-        Me.bot = target
-        Me.profiles = target.clientProfiles.ToList
-        For Each profile In profiles
+    Public Sub New(ByVal clientProfiles As IEnumerable(Of ClientProfile),
+                   ByVal pluginProfiles As IEnumerable(Of Plugins.PluginProfile),
+                   ByVal portPool As PortPool)
+        Contract.Requires(clientProfiles IsNot Nothing)
+        Contract.Requires(pluginProfiles IsNot Nothing)
+        Contract.Requires(portPool IsNot Nothing)
+        InitializeComponent()
+        Me._clientProfiles = clientProfiles.ToList
+        Me._pluginProfiles = pluginProfiles.ToList
+        Me._portPool = portPool
+
+        For Each profile In _clientProfiles
             AddTabForProfile(profile)
         Next profile
-        For Each profile In target.pluginProfiles
+        For Each profile In _pluginProfiles
             gridPlugins.Rows.Add(profile.name, profile.location, profile.argument)
         Next profile
 
@@ -33,6 +52,7 @@ Public Class SettingsForm
         txtInGameName.Text = My.Settings.ingame_name
         txtInitialPlugins.Text = My.Settings.initial_plugins
         txtBnlsServer.Text = My.Settings.bnls
+        txtGreeting.Text = My.Settings.DefaultGameGreet
     End Sub
 
     Public Shared Function ParsePortList(ByVal text As String, ByRef refText As String) As IEnumerable(Of UShort)
@@ -60,9 +80,9 @@ Public Class SettingsForm
         refText = String.Join(",", out_words.ToArray())
         Return ports
     End Function
-    Private Function get_profile_with_name(ByVal name As String) As ClientProfile
-        For Each profile In profiles
-            If profile.name.ToUpperInvariant = name.ToUpperInvariant Then Return profile
+    Private Function GetProfileWithName(ByVal name As InvariantString) As ClientProfile
+        For Each profile In _clientProfiles
+            If profile.name = name Then Return profile
         Next profile
         Return Nothing
     End Function
@@ -75,16 +95,16 @@ Public Class SettingsForm
                             buttons:=MessageBoxButtons.OK,
                             icon:=MessageBoxIcon.Exclamation)
             Return
-        ElseIf get_profile_with_name(name) IsNot Nothing Then
+        ElseIf GetProfileWithName(name) IsNot Nothing Then
             MessageBox.Show("The profile name ""{0}"" is already used.".Frmt(name), "Notice", MessageBoxButtons.OK, MessageBoxIcon.Exclamation)
             Return
         ElseIf MessageBox.Show("Create profile '{0}'?".Frmt(name), "Confirm", MessageBoxButtons.YesNo) = Windows.Forms.DialogResult.No Then
             Return
         End If
 
-        Dim new_profile = New ClientProfile(name)
-        profiles.Add(new_profile)
-        AddTabForProfile(new_profile)
+        Dim newProfile = New ClientProfile(name)
+        _clientProfiles.Add(newProfile)
+        AddTabForProfile(newProfile)
     End Sub
     Private Sub AddTabForProfile(ByVal profile As ClientProfile)
         Dim tab = New TabPage("Profile:" + profile.name)
@@ -110,7 +130,7 @@ Public Class SettingsForm
 
         For Each tab As TabPage In tabsSettings.TabPages
             If tab.Controls.Contains(sender) Then
-                profiles.Remove(sender.lastLoadedProfile)
+                _clientProfiles.Remove(sender.lastLoadedProfile)
                 tabsSettings.TabPages.Remove(tab)
                 RemoveHandler sender.Delete, AddressOf remove_profile_tab
                 Return
@@ -119,11 +139,7 @@ Public Class SettingsForm
     End Sub
 
     Private Sub btnSave_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnSave.Click
-        bot.clientProfiles.Clear()
-        For Each profile In profiles
-            bot.clientProfiles.Add(profile)
-        Next profile
-        bot.pluginProfiles.Clear()
+        _pluginProfiles.Clear()
         For Each row As DataGridViewRow In gridPlugins.Rows
             If row.Cells(0).Value Is Nothing Then Continue For
             Dim name = If(row.Cells(0).Value, "").ToString
@@ -131,7 +147,7 @@ Public Class SettingsForm
             Dim arg = If(row.Cells(2).Value, "").ToString
             If name.Trim = "" Then Continue For
             If path.Trim = "" Then Continue For
-            bot.pluginProfiles.Add(New Plugins.PluginProfile(name, path, arg))
+            _pluginProfiles.Add(New Plugins.PluginProfile(name, path, arg))
         Next row
 
         For Each tab As TabPage In tabsSettings.TabPages
@@ -146,13 +162,13 @@ Public Class SettingsForm
         'Sync desired port pool with bot port pool
         Dim portPoolText = txtPortPool.Text
         Dim ports = ParsePortList(portPoolText, portPoolText)
-        For Each port In bot.PortPool.EnumPorts
+        For Each port In Me._portPool.EnumPorts
             If Not ports.Contains(port) Then
-                bot.PortPool.TryRemovePort(port)
+                Me._portPool.TryRemovePort(port)
             End If
         Next port
         For Each port In ports
-            bot.PortPool.TryAddPort(port)
+            Me._portPool.TryAddPort(port)
         Next port
 
         My.Settings.war3path = txtProgramPath.Text
@@ -167,15 +183,10 @@ Public Class SettingsForm
         My.Settings.initial_plugins = txtInitialPlugins.Text
         My.Settings.port_pool = portPoolText
         My.Settings.bnls = txtBnlsServer.Text
-
-        Using m As New IO.MemoryStream()
-            Using w As New IO.BinaryWriter(m)
-                bot.Save(w)
-            End Using
-            My.Settings.botstore = m.ToArray().ParseChrString(nullTerminated:=False)
-        End Using
+        My.Settings.DefaultGameGreet = txtGreeting.Text
 
         My.Settings.Save()
+        Me.wantSave = True
 
         Dispose()
     End Sub
@@ -188,9 +199,9 @@ Public Class SettingsForm
         MessageBox.Show(("Name: \n" _
                         + "\tThe user's name.\n" _
                     + "Permissions: \n" _
-                        + "\tThe user's permissions. Permissions are 'word=number' values which grant the user capabilities.\n" _
+                        + "\tThe user's permissions. Permissions are 'word:number' values which grant the user capabilities.\n" _
                         + "\tPermissions typically range from 0 to 5.\n" _
-                        + "\tExample: games=2;users=3\n" _
+                        + "\tExample: games:2,users:3\n" _
                     + "\n" _
                     + "Special User Names:\n" _
                         + "\t'*unknown' - Unknown User [users not in access list; no *unknown means ignore unknown users]\n" _
@@ -225,9 +236,9 @@ Public Class SettingsForm
                 Try
                     Dim path = .FileName
                     My.Settings.last_plugin_dir = IO.Path.GetDirectoryName(path)
-                    Dim pluginName = IO.Path.GetFileNameWithoutExtension(path)
-                    If pluginName.Substring(pluginName.Length - "PLUGIN".Length).ToUpperInvariant = "PLUGIN" Then
-                        pluginName = pluginName.Substring(0, pluginName.Length - "PLUGIN".Length)
+                    Dim pluginName As InvariantString = IO.Path.GetFileNameWithoutExtension(path)
+                    If pluginName.EndsWith("plugin") Then
+                        pluginName = pluginName.Substring(0, pluginName.Length - "plugin".Length)
                     End If
                     Dim rel_path = "Plugins{0}{1}".Frmt(IO.Path.DirectorySeparatorChar, IO.Path.GetFileName(path))
                     Dim newPath = Application.StartupPath + IO.Path.DirectorySeparatorChar + rel_path

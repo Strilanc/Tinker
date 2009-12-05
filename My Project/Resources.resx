@@ -121,27 +121,7 @@
   <data name="HostBotIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\HostBotIcon.ico;System.Drawing.Icon, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Instance_AlreadyClosed_f0name" xml:space="preserve">
-    <value>Instance '{0}' is already closed.</value>
-    <comment>{0} = instance name</comment>
-  </data>
-  <data name="Instance_Closed_f0name" xml:space="preserve">
-    <value>Instance '{0}' closed.</value>
-    <comment>{0} = instance name</comment>
-  </data>
-  <data name="Instance_Launched_f0name" xml:space="preserve">
-    <value>Instance '{0}' launched.</value>
-    <comment>{0} = instance name</comment>
-  </data>
-  <data name="ProgramName" xml:space="preserve">
-    <value>HostBot</value>
-  </data>
-  <data name="ProgramShowoff_f0name" xml:space="preserve">
-    <value />
-    <comment>{0} = program name, leave blank means don't use</comment>
-  </data>
-  <data name="Slot_NotMatched_f0pattern" xml:space="preserve">
-    <value>No slot matching '{0}'.</value>
-    <comment>{0} = pattern to match</comment>
+  <data name="TinkerIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Tinker.ico;System.Drawing.Icon, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

@@ -22,8 +22,8 @@
     End Sub
 
     Public Sub New(ByVal period As TimeSpan, ByVal timeoutCount As Integer)
-        Contract.Requires(period.Ticks > 0)
-        Contract.Requires(timeoutCount > 0)
+        Contract.Assume(period.Ticks > 0)
+        Contract.Assume(timeoutCount > 0)
         Me.timeoutCount = timeoutCount
         Me.timer = New Timers.Timer(period.TotalMilliseconds)
         AddHandler Me.timer.Elapsed, Sub() OnTick()

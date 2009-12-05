@@ -1,4 +1,4 @@
-﻿Imports HostBot.WC3.PacketId
+﻿Imports Tinker.WC3.PacketId
 Imports System.Runtime.CompilerServices
 Imports System.Net
 Imports System.Net.Sockets
@@ -101,9 +101,9 @@ Namespace WC3
             End Try
         End Sub
 
-        Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
+        Public Function AsyncReadPacket() As IFuture(Of ViewableList(Of Byte))
             Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
-            Return _socket.FutureReadPacket()
+            Return _socket.AsyncReadPacket()
         End Function
 
         Public ReadOnly Property Socket As PacketSocket

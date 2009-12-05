@@ -2,7 +2,7 @@
 Imports Strilbrary.Numerics
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
-Imports HostBot
+Imports Tinker
 
 <TestClass()>
 Public Class TransferSchedulerTest

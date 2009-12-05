@@ -5,27 +5,28 @@
         End Sub
         Public Shared Function AsyncBorrowKeys(ByVal remoteHost As String,
                                                ByVal remotePort As UShort,
-                                               ByVal clientCDKeySalt As Byte(),
-                                               ByVal serverCDKeySalt As Byte()) As IFuture(Of CKLEncodedKey)
+                                               ByVal clientCDKeySalt As UInt32,
+                                               ByVal serverCDKeySalt As UInt32) As IFuture(Of CKLEncodedKey)
             Contract.Requires(remoteHost IsNot Nothing)
-            Contract.Requires(clientCDKeySalt IsNot Nothing)
-            Contract.Requires(serverCDKeySalt IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of CKLEncodedKey))() IsNot Nothing)
             Dim requestPacket = Concat({CKLServer.PacketPrefixValue, CKLPacketId.Keys, 0, 0},
-                                       clientCDKeySalt,
-                                       serverCDKeySalt)
+                                       clientCDKeySalt.Bytes,
+                                       serverCDKeySalt.Bytes)
 
             'Connect to CKL server and send request
-            Dim futureSocket = FutureCreateConnectedTcpClient(remoteHost, remotePort).Select(
+            Dim futureSocket = AsyncTcpConnect(remoteHost, remotePort).Select(
                 Function(tcpClient)
-                    Dim socket = New PacketSocket(tcpClient, timeout:=10.Seconds)
+                    Dim socket = New PacketSocket(stream:=tcpClient.GetStream,
+                                                  localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                  remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                  timeout:=10.Seconds)
                     socket.WritePacket(requestPacket)
                     Return socket
                 End Function)
 
             'Read response
             Dim futureReadPacket = futureSocket.Select(
-                Function(socket) socket.FutureReadPacket()
+                Function(socket) socket.AsyncReadPacket()
             ).Defuturized
 
             'Process response

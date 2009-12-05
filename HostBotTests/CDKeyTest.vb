@@ -1,6 +1,6 @@
 ﻿Imports Strilbrary.Enumeration
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
-Imports HostBot.Bnet
+Imports Tinker.Bnet
 
 '''<remarks>Tested cd keys are banned or fake.</remarks>
 <TestClass()>

@@ -5,7 +5,7 @@ Namespace CKL
     Public Class CKLServer
         Public Const PacketPrefixValue As Byte = 1
 
-        Public ReadOnly name As String
+        Public ReadOnly name As InvariantString
         Protected WithEvents Accepter As New ConnectionAccepter()
         Protected ReadOnly logger As New Logger()
         Protected ReadOnly keys As New List(Of CKLKey)
@@ -16,36 +16,32 @@ Namespace CKL
         Public Event KeyRemoved(ByVal sender As CKLServer, ByVal key As CKLKey)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(Accepter IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(keys IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal listenPort As PortPool.PortHandle)
-            Contract.Assume(name IsNot Nothing) 'bug in contracts required not using requires here
             Contract.Assume(listenPort IsNot Nothing)
             Me.name = name
             Me.portHandle = listenPort
             Me.Accepter.OpenPort(listenPort.Port)
         End Sub
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal listenPort As UShort)
-            Contract.Assume(name IsNot Nothing) 'bug in contracts required not using requires here
             Me.name = name
             Me.Accepter.OpenPort(listenPort)
         End Sub
 
-        Public Function AddKey(ByVal keyName As String, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As IFuture
-            Contract.Requires(keyName IsNot Nothing)
+        Public Function AddKey(ByVal keyName As InvariantString, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As IFuture
             Contract.Requires(cdKeyROC IsNot Nothing)
             Contract.Requires(cdKeyTFT IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return ref.QueueAction(
                 Sub()
-                    If (From k In keys Where k.Name.ToUpperInvariant = keyName.ToUpperInvariant).Any Then
+                    If (From k In keys Where k.Name = keyName).Any Then
                         Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(keyName))
                     End If
                     Dim key = New CKLKey(keyName, cdKeyROC, cdKeyTFT)
@@ -54,15 +50,12 @@ Namespace CKL
                 End Sub
             )
         End Function
-        Public Function RemoveKey(ByVal keyName As String) As IFuture
-            Contract.Requires(keyName IsNot Nothing)
+        Public Function RemoveKey(ByVal keyName As InvariantString) As IFuture
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return ref.QueueAction(
                 Sub()
-                    Dim key = (From k In keys
-                               Where k.Name.ToUpperInvariant = keyName.ToUpperInvariant).
-                               FirstOrDefault
-                    If key Is Nothing Then  Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(keyName))
+                    Dim key = (From k In keys Where k.Name = keyName).FirstOrDefault
+                    If key Is Nothing Then Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(keyName))
                     keys.Remove(key)
                     RaiseEvent KeyRemoved(Me, key)
                 End Sub
@@ -73,11 +66,15 @@ Namespace CKL
                                          ByVal acceptedClient As Net.Sockets.TcpClient) Handles Accepter.AcceptedConnection
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(acceptedClient IsNot Nothing)
-            Dim socket = New PacketSocket(acceptedClient, 10.Seconds, Me.logger)
+            Dim socket = New PacketSocket(stream:=acceptedClient.GetStream,
+                                          localendpoint:=CType(acceptedClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                          remoteendpoint:=CType(acceptedClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                          timeout:=10.Seconds,
+                                          logger:=Me.logger)
             logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 
             AsyncProduceConsumeUntilError(
-                producer:=AddressOf socket.FutureReadPacket,
+                producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Function(packetData) ref.QueueAction(
                     Sub()
                         Dim flag = packetData(0)
@@ -98,8 +95,8 @@ Namespace CKL
                                         errorMessage = "Invalid length. Require client token [4] + server token [4]."
                                     Else
                                         If keyIndex >= keys.Count Then keyIndex = 0
-                                        responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4),
-                                                                           serverToken:=data.SubView(4, 4)).ToArray
+                                        responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4).ToUInt32,
+                                                                           serverToken:=data.SubView(4, 4).ToUInt32).ToArray
                                         logger.Log("Provided key '{0}' to {1}".Frmt(keys(keyIndex).Name, socket.Name), LogMessageType.Positive)
                                         keyIndex += 1
                                     End If

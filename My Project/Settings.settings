@@ -9,13 +9,13 @@
       <Value Profile="(Default)">!</Value>
     </Setting>
     <Setting Name="exeVersion" Type="System.String" Scope="User">
-      <Value Profile="(Default)">1.24.0.6372</Value>
+      <Value Profile="(Default)">1.24.1.6374</Value>
     </Setting>
     <Setting Name="exeInformation" Type="System.String" Scope="User">
       <Value Profile="(Default)">war3.exe 12/28/06 20:35:21 1572307</Value>
     </Setting>
     <Setting Name="cdKeyOwner" Type="System.String" Scope="User">
-      <Value Profile="(Default)">HostBot</Value>
+      <Value Profile="(Default)">Tinker</Value>
     </Setting>
     <Setting Name="war3path" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
@@ -30,7 +30,7 @@
       <Value Profile="(Default)">100</Value>
     </Setting>
     <Setting Name="ingame_name" Type="System.String" Scope="User">
-      <Value Profile="(Default)">|cFFFF0000Hobo</Value>
+      <Value Profile="(Default)">|cFFFF0000Tinkr</Value>
     </Setting>
     <Setting Name="initial_plugins" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
@@ -42,10 +42,13 @@
       <Value Profile="(Default)">1</Value>
     </Setting>
     <Setting Name="port_pool" Type="System.String" Scope="User">
-      <Value Profile="(Default)">6115-6119</Value>
+      <Value Profile="(Default)">6114-6119</Value>
     </Setting>
     <Setting Name="bnls" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="DefaultGameGreet" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Hosted by Tinker</Value>
     </Setting>
   </Settings>
 </SettingsFile>

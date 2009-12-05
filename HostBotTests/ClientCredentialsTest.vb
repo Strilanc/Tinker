@@ -1,6 +1,6 @@
 ﻿Imports Strilbrary.Enumeration
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
-Imports HostBot.Bnet
+Imports Tinker.Bnet
 Imports Strilbrary
 Imports System.Numerics
 Imports Strilbrary.Numerics

@@ -2,11 +2,6 @@
     Public lastLoadedProfile As ClientProfile
     Public Event Delete(ByVal sender As ProfileSettingsControl)
 
-    Private Sub RepairValues()
-        txtTftKey.Text = txtTftKey.Text.Replace("-", "").ToUpperInvariant
-        txtRocKey.Text = txtRocKey.Text.Replace("-", "").ToUpperInvariant
-    End Sub
-
     Public Sub LoadFromProfile(ByVal profile As ClientProfile)
         If profile Is Nothing Then Return
 
@@ -22,7 +17,7 @@
 
         gridUsers.Rows.Clear()
         For Each user As BotUser In profile.users.Users
-            gridUsers.Rows.Add(user.Name, user.PackPermissions(), user.PackSettings())
+            gridUsers.Rows.Add(user.Name.ToString, user.PackPermissions(), user.PackSettings())
         Next user
 
         btnDeleteProfile.Enabled = profile.name <> "Default"
@@ -31,7 +26,6 @@
     End Sub
     Public Sub SaveToProfile(ByVal profile As ClientProfile)
         If profile Is Nothing Then Return
-        RepairValues()
 
         profile.userName = txtUsername.Text
         profile.password = txtPassword.Text
@@ -43,19 +37,19 @@
         profile.CKLServerAddress = txtCKLServer.Text
         profile.LanHost = cboLanHost.Text
 
-        Dim existing_users As New List(Of String)
+        Dim currentUsers = New List(Of InvariantString)
         For i = 0 To gridUsers.RowCount - 1
             With gridUsers.Rows(i)
                 If .Cells(0).Value Is Nothing Then Continue For
                 Dim s = CStr(.Cells(0).Value)
-                existing_users.Add(s)
+                currentUsers.Add(s)
                 profile.users.UpdateUser(New BotUser( _
                             s,
                             CStr(.Cells(1).Value),
                             CStr(.Cells(2).Value)))
             End With
         Next i
-        profile.users.RemoveOtherUsers(existing_users)
+        profile.users.RemoveAllExcept(currentUsers)
     End Sub
 
     Private Sub btnDeleteProfile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnDeleteProfile.Click

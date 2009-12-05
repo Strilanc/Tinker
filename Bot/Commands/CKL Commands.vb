@@ -1,6 +1,6 @@
-﻿Imports HostBot.Commands
-Imports HostBot.Links
-Imports HostBot.CKL
+﻿Imports Tinker.Commands
+Imports Tinker.Links
+Imports Tinker.CKL
 
 Namespace Commands.Specializations
     Public NotInheritable Class CKLCommands

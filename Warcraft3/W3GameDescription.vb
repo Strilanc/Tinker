@@ -28,7 +28,7 @@
     End Enum
 
     Public Class GameDescription
-        Private ReadOnly _name As String
+        Private ReadOnly _name As InvariantString
         Private ReadOnly _gameStats As GameStats
         Private ReadOnly _gameId As UInt32
         Private ReadOnly _entryKey As UInteger
@@ -42,16 +42,14 @@
             Contract.Invariant(_gameId > 0)
             Contract.Invariant(_totalSlotCount > 0)
             Contract.Invariant(_totalSlotCount <= 12)
-            Contract.Invariant(_usedSlotCount > 0)
+            Contract.Invariant(_usedSlotCount >= 0)
             Contract.Invariant(_usedSlotCount <= _totalSlotCount)
             Contract.Invariant(_gameStats IsNot Nothing)
-            Contract.Invariant(_name IsNot Nothing)
         End Sub
 
-        Public Shared Function FromArguments(ByVal name As String,
+        Public Shared Function FromArguments(ByVal name As InvariantString,
                                              ByVal map As Map,
                                              ByVal stats As GameStats) As GameDescription
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
@@ -61,15 +59,15 @@
             End If
 
             Return New GameDescription(name,
-                                         stats,
-                                         GameId:=1,
-                                         EntryKey:=0,
-                                         totalSlotCount:=totalSlotCount,
-                                         GameType:=map.GameType,
-                                         state:=0,
-                                         UsedSlotCount:=0)
+                                       stats,
+                                       GameId:=1,
+                                       EntryKey:=0,
+                                       totalSlotCount:=totalSlotCount,
+                                       GameType:=map.GameType,
+                                       state:=0,
+                                       UsedSlotCount:=0)
         End Function
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal gameStats As GameStats,
                        ByVal gameId As UInt32,
                        ByVal entryKey As UInteger,
@@ -77,27 +75,25 @@
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
-                       Optional ByVal baseAgeSeconds As UInteger = 0)
+                       Optional ByVal baseAgeMilliSeconds As UInt32 = 0) 'change to uint32
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
-            Contract.Requires(usedSlotCount > 0)
+            Contract.Requires(usedSlotCount >= 0)
             Contract.Requires(usedSlotCount <= totalSlotCount)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(gameStats IsNot Nothing)
             Me._name = name
             Me._gameStats = gameStats
             Me._gameType = gameType
             Me._gameId = gameId
             Me._entryKey = entryKey
-            Me._creationTick = CType(baseAgeSeconds, ModInt32) + Environment.TickCount
+            Me._creationTick = Environment.TickCount - CType(baseAgeMilliSeconds, ModInt32)
             Me._totalSlotCount = totalSlotCount
             Me._usedSlotCount = usedSlotCount
         End Sub
 
-        Public ReadOnly Property Name As String
+        Public ReadOnly Property Name As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _name
             End Get
         End Property
@@ -122,6 +118,11 @@
         Public ReadOnly Property AgeSeconds As UInteger
             Get
                 Return CUInt(Environment.TickCount - _creationTick) \ 1000UI
+            End Get
+        End Property
+        Public ReadOnly Property AgeMilliseconds As UInteger
+            Get
+                Return CUInt(Environment.TickCount - _creationTick)
             End Get
         End Property
         Public ReadOnly Property GameId As UInteger
@@ -152,7 +153,43 @@
         Inherits GameDescription
         Private ReadOnly _hostPort As UShort
 
-        Public Sub New(ByVal name As String,
+        Public Shared Shadows Function FromArguments(ByVal name As InvariantString,
+                                                     ByVal map As Map,
+                                                     ByVal stats As GameStats) As LocalGameDescription
+            Contract.Requires(map IsNot Nothing)
+            Contract.Requires(stats IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of LocalGameDescription)() IsNot Nothing)
+            Dim totalSlotCount = map.NumPlayerSlots
+            If stats.observers = GameObserverOption.FullObservers OrElse stats.observers = GameObserverOption.Referees Then
+                totalSlotCount = 12
+            End If
+
+            Return New LocalGameDescription(name,
+                                            stats,
+                                            GameId:=1,
+                                            EntryKey:=0,
+                                            totalSlotCount:=totalSlotCount,
+                                            GameType:=map.GameType,
+                                            state:=0,
+                                            UsedSlotCount:=0,
+                                            hostPort:=0)
+        End Function
+
+        Public Sub New(ByVal gameDescription As GameDescription,
+                       ByVal port As UShort)
+            Me.New(gameDescription.Name,
+                   gameDescription.GameStats,
+                   port,
+                   gameDescription.GameId,
+                   gameDescription.EntryKey,
+                   gameDescription.TotalSlotCount,
+                   gameDescription.GameType,
+                   gameDescription.GameState,
+                   gameDescription.UsedSlotCount,
+                   gameDescription.AgeMilliseconds)
+            Contract.Requires(gameDescription IsNot Nothing)
+        End Sub
+        Public Sub New(ByVal name As InvariantString,
                        ByVal gameStats As GameStats,
                        ByVal hostPort As UShort,
                        ByVal gameId As UInt32,
@@ -161,14 +198,13 @@
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
-                       Optional ByVal baseAgeSeconds As UInteger = 0)
-            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAgeSeconds)
+                       Optional ByVal baseAgeMilliSeconds As UInteger = 0)
+            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAgeMilliSeconds)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
-            Contract.Requires(usedSlotCount > 0)
+            Contract.Requires(usedSlotCount >= 0)
             Contract.Requires(usedSlotCount <= totalSlotCount)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(gameStats IsNot Nothing)
             Me._hostPort = hostPort
         End Sub
@@ -187,10 +223,9 @@
             Contract.Invariant(_address IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal gameStats As GameStats,
-                       ByVal hostPort As UShort,
-                       ByVal address As Net.IPAddress,
+                       ByVal location As Net.IPEndPoint,
                        ByVal gameId As UInt32,
                        ByVal entryKey As UInteger,
                        ByVal totalSlotCount As Integer,
@@ -198,16 +233,15 @@
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
                        Optional ByVal baseAgeSeconds As UInteger = 0)
-            MyBase.new(name, gameStats, hostPort, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAgeSeconds)
+            MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAgeSeconds)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
-            Contract.Requires(usedSlotCount > 0)
+            Contract.Requires(usedSlotCount >= 0)
             Contract.Requires(usedSlotCount <= totalSlotCount)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(gameStats IsNot Nothing)
-            Contract.Requires(address IsNot Nothing)
-            Me._address = address
+            Contract.Requires(location IsNot Nothing)
+            Me._address = location.Address
         End Sub
 
         Public ReadOnly Property Address As Net.IPAddress

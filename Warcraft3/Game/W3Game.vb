@@ -14,7 +14,7 @@
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
 Imports System.Runtime.CompilerServices
-Imports HostBot.Commands
+Imports Tinker.Commands
 
 Namespace WC3
     Public Enum GameState
@@ -27,6 +27,8 @@ Namespace WC3
     End Enum
 
     Partial Public NotInheritable Class Game
+        Inherits FutureDisposable
+
         Public Shared ReadOnly GameCommandsLoadScreen As New Commands.CommandSet(Of Game)
         Public Shared ReadOnly GameGuestCommandsLobby As New Commands.Specializations.InstanceGuestSetupCommands
         Public Shared ReadOnly GameGuestCommandsLoadScreen As New Commands.Specializations.InstanceGuestLoadCommands
@@ -35,7 +37,7 @@ Namespace WC3
         Public Shared ReadOnly GameCommandsLobby As New Commands.Specializations.InstanceSetupCommands
 
         Private ReadOnly _map As Map
-        Private ReadOnly _name As String
+        Private ReadOnly _name As InvariantString
         Private ReadOnly slots As New List(Of Slot)
         Private ReadOnly ref As ICallQueue = New TaskedCallQueue
         Private ReadOnly eventRef As ICallQueue = New TaskedCallQueue
@@ -47,7 +49,7 @@ Namespace WC3
         Private adminPlayer As Player
         Private ReadOnly players As New List(Of Player)
         Private ReadOnly indexMap(0 To 12) As Byte
-        Private ReadOnly settings As ServerSettings
+        Private ReadOnly settings As GameSettings
 
         Public Event PlayerAction(ByVal sender As Game, ByVal player As Player, ByVal action As GameAction)
         Public Event Updated(ByVal sender As Game, ByVal slots As List(Of Slot))
@@ -57,7 +59,6 @@ Namespace WC3
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_map IsNot Nothing)
-            Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(slots IsNot Nothing)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(eventRef IsNot Nothing)
@@ -84,27 +85,13 @@ Namespace WC3
         End Sub
 
 #Region "Commands"
-        Private Sub CommandProcessLocalText(ByVal text As String, ByVal logger As Logger)
-            Contract.Requires(text IsNot Nothing)
-            Contract.Requires(logger IsNot Nothing)
-            Select Case state
-                Case Is < GameState.Loading
-                    Game.GameCommandsLobby.ProcessLocalText(Me, text, logger)
-                Case GameState.Loading
-                    Game.GameCommandsLoadScreen.ProcessLocalText(Me, text, logger)
-                Case Is > GameState.Loading
-                    Game.GameCommandsGamePlay.ProcessLocalText(Me, text, logger)
-                Case Else
-                    Throw New UnreachableException()
-            End Select
-        End Sub
         Private Function CommandProcessText(ByVal bot As MainBot,
                                             ByVal player As Player,
                                             ByVal argument As String) As IFuture(Of String)
+            Contract.Requires(bot IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Requires(player IsNot Nothing)
-            Dim user = New BotUser(player.Name)
-            If player IsNot adminPlayer Then
+            Dim user = If(player Is Nothing, Nothing, New BotUser(player.Name))
+            If player IsNot adminPlayer AndAlso player IsNot Nothing Then
                 Select Case state
                     Case Is < GameState.Loading
                         Return Game.GameGuestCommandsLobby.Invoke(Me, user, argument)
@@ -115,7 +102,7 @@ Namespace WC3
                     Case Else
                         Throw New UnreachableException()
                 End Select
-            ElseIf settings.isAdminGame Then
+            ElseIf settings.IsAdminGame Then
                 Return New Commands.Specializations.InstanceAdminCommands(bot).Invoke(Me, Nothing, argument)
             Else
                 Select Case state
@@ -141,14 +128,14 @@ Namespace WC3
             Contract.Requires(requestedReceiverIndexes IsNot Nothing)
 
             'Log
-            Logger.Log(sender.name + ": " + text, LogMessageType.Typical)
+            Logger.Log("{0}: {1}".Frmt(sender.Name, text), LogMessageType.Typical)
             ThrowPlayerTalked(sender, text)
 
             'Forward to requested players
             'visible sender
             Dim visibleSender = GetVisiblePlayer(sender)
             If visibleSender IsNot sender Then
-                text = visibleSender.name + ": " + text
+                text = visibleSender.Name + ": " + text
             End If
             'packet
             Dim pk = Packet.MakeText(text, type, receiverType, players, visibleSender)
@@ -163,7 +150,7 @@ Namespace WC3
                 End If
             Next receiver
         End Sub
-        Private Sub ReceiveNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of String, Object))
+        Private Sub ReceiveNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of InvariantString, Object))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Dim commandType = CType(vals("command type"), Packet.NonGameAction)
@@ -204,19 +191,16 @@ Namespace WC3
 #End Region
 
 #Region "Life"
-        Public Sub New(ByVal name As String,
-                       ByVal map As Map,
-                       ByVal settings As ServerSettings,
+        Public Sub New(ByVal name As InvariantString,
+                       ByVal settings As GameSettings,
                        Optional ByVal logger As Logger = Nothing)
             'contract bug wrt interface event implementation requires this:
             'Contract.Requires(map IsNot Nothing)
             'Contract.Requires(name IsNot Nothing)
-            Contract.Assume(map IsNot Nothing)
-            Contract.Assume(name IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
 
             Me.settings = settings
-            Me._map = map
+            Me._map = settings.Map
             Me._name = name
             Me._logger = If(logger, New Logger)
             For i = 0 To indexMap.Length - 1
@@ -228,20 +212,16 @@ Namespace WC3
             GamePlayNew()
         End Sub
 
-        '''<summary>Disconnects from all players and kills the instance. Passes hosting to a player if possible.</summary>
-        Private Sub Close()
-            If state >= GameState.Closed Then
-                Return
-            End If
-
-            'disconnect from all players
-            For Each p In players.ToList
-                Contract.Assume(p IsNot Nothing)
-                RemovePlayer(p, True, PlayerLeaveType.Disconnect, "Closing game")
-            Next p
-
-            ChangeState(GameState.Closed)
-        End Sub
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+            If finalizing Then Return Nothing
+            Return ref.QueueAction(
+                Sub()
+                    ChangeState(GameState.Closed)
+                    For Each player In players
+                        player.Dispose()
+                    Next player
+                End Sub)
+        End Function
 #End Region
 
 #Region "Events"
@@ -296,9 +276,7 @@ Namespace WC3
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
-        Private Function TryFindMatchingSlot(ByVal query As String) As Slot
-            Contract.Requires(query IsNot Nothing)
-
+        Private Function TryFindMatchingSlot(ByVal query As InvariantString) As Slot
             Dim bestSlot As Slot = Nothing
             Dim bestMatch = Slot.Match.None
             slots.MaxPair(Function(slot) slot.Matches(query), bestSlot, bestMatch)
@@ -328,7 +306,7 @@ Namespace WC3
             For Each player In (From _player In players Where _player IsNot playerToAvoid)
                 SendMessageTo(message, player.AssumeNotNull, display:=False)
             Next player
-            Logger.Log("{0}: {1}".Frmt(My.Resources.ProgramName, message), LogMessageType.Typical)
+            Logger.Log("{0}: {1}".Frmt(Application.ProductName, message), LogMessageType.Typical)
         End Sub
 
         '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
@@ -338,16 +316,21 @@ Namespace WC3
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
 
-            'Send Text
-            'text comes from fake host or spoofs from the receiving player
-            player.QueueSendPacket(Packet.MakeText(text:=If(fakeHostPlayer Is Nothing, My.Resources.ProgramName + ": ", "") + message,
-                                                     chatType:=If(state >= GameState.Loading, Packet.ChatType.Game, Packet.ChatType.Lobby),
-                                                     receiverType:=Packet.ChatReceiverType.AllPlayers,
-                                                     receivingPlayers:=players,
-                                                     sender:=If(fakeHostPlayer, player)))
+            'Send Text (from fake host or spoofed from receiver)
+            Dim prefix = If(fakeHostPlayer Is Nothing, "{0}: ".Frmt(Application.ProductName), "")
+            Dim chatType = If(state >= GameState.Loading, Packet.ChatType.Game, Packet.ChatType.Lobby)
+            Dim sender = If(fakeHostPlayer, player)
+            For Each line In SplitText(body:=message, maxLineLength:=Packet.MaxChatTextLength - prefix.Length)
+                player.QueueSendPacket(Packet.MakeText(text:=prefix + line,
+                                                       chatType:=chatType,
+                                                       receiverType:=Packet.ChatReceiverType.Private,
+                                                       receivingPlayers:=players,
+                                                       sender:=sender))
+
+            Next line
 
             If display Then
-                Logger.Log("(Private to {0}): {1}".Frmt(player.name, message), LogMessageType.Typical)
+                Logger.Log("(Private to {0}): {1}".Frmt(player.Name, message), LogMessageType.Typical)
             End If
         End Sub
 #End Region
@@ -395,34 +378,32 @@ Namespace WC3
             'Clean game
             If state >= GameState.Loading AndAlso Not (From x In players Where Not x.isFake).Any Then
                 'the game has started and everyone has left, time to die
-                Close()
+                Me.Dispose()
             End If
 
             'Log
             If player.isFake Then
-                Logger.Log("{0} has been removed from the game. ({1})".Frmt(player.name, reason), LogMessageType.Negative)
+                Logger.Log("{0} has been removed from the game. ({1})".Frmt(player.Name, reason), LogMessageType.Negative)
             Else
                 flagHasPlayerLeft = True
                 If wasExpected Then
-                    Logger.Log("{0} has left the game. ({1})".Frmt(player.name, reason), LogMessageType.Negative)
+                    Logger.Log("{0} has left the game. ({1})".Frmt(player.Name, reason), LogMessageType.Negative)
                 Else
-                    Logger.Log("{0} has disconnected. ({1})".Frmt(player.name, reason), LogMessageType.Problem)
+                    Logger.Log("{0} has disconnected. ({1})".Frmt(player.Name, reason), LogMessageType.Problem)
                 End If
                 ThrowPlayerLeft(player, leaveType, reason)
             End If
         End Sub
 
-        Private Sub ElevatePlayer(ByVal name As String,
+        Private Sub ElevatePlayer(ByVal name As InvariantString,
                                   Optional ByVal password As String = Nothing)
-            Contract.Requires(name IsNot Nothing)
-
             Dim player = TryFindPlayer(name)
             If player Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
             If adminPlayer IsNot Nothing Then Throw New InvalidOperationException("A player is already the admin.")
             If password IsNot Nothing Then
                 player.numAdminTries += 1
                 If player.numAdminTries > 5 Then Throw New InvalidOperationException("Too many tries.")
-                If password.ToUpperInvariant <> settings.AdminPassword.ToUpperInvariant Then
+                If password <> settings.AdminPassword Then
                     Throw New InvalidOperationException("Incorrect password.")
                 End If
             End If
@@ -431,10 +412,9 @@ Namespace WC3
             SendMessageTo("You are now the admin.", player)
         End Sub
 
-        Private Function TryFindPlayer(ByVal username As String) As Player
-            Contract.Requires(username IsNot Nothing)
+        Private Function TryFindPlayer(ByVal username As InvariantString) As Player
             Return (From player In players
-                    Where String.Compare(player.AssumeNotNull.name, username, StringComparison.InvariantCultureIgnoreCase) = 0).
+                    Where String.Compare(player.AssumeNotNull.Name, username, StringComparison.InvariantCultureIgnoreCase) = 0).
                     FirstOrDefault
         End Function
         Private Function TryFindPlayer(ByVal index As Byte) As Player
@@ -444,16 +424,14 @@ Namespace WC3
         End Function
 
         '''<summary>Boots players in the slot with the given index.</summary>
-        Private Sub Boot(ByVal slotQuery As String)
-            Contract.Requires(slotQuery IsNot Nothing)
+        Private Sub Boot(ByVal slotQuery As InvariantString)
             Dim slot = TryFindMatchingSlot(slotQuery)
             If slot Is Nothing Then Throw New InvalidOperationException("No slot {0}".Frmt(slotQuery))
             If Not slot.Contents.EnumPlayers.Any Then
                 Throw New InvalidOperationException("There is no player to boot in slot '{0}'.".Frmt(slotQuery))
             End If
 
-            Dim target = (From player In slot.Contents.EnumPlayers
-                          Where player.name.ToUpperInvariant = slotQuery.ToUpperInvariant).FirstOrDefault
+            Dim target = (From player In slot.Contents.EnumPlayers  Where player.Name = slotQuery).FirstOrDefault
             If target IsNot Nothing Then
                 slot.Contents = slot.Contents.RemovePlayer(target)
                 RemovePlayer(target, True, PlayerLeaveType.Disconnect, "Booted")
@@ -515,9 +493,8 @@ Namespace WC3
             End Get
         End Property
 
-        Public ReadOnly Property Name As String
+        Public ReadOnly Property Name As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _name
             End Get
         End Property
@@ -529,12 +506,6 @@ Namespace WC3
         Public Function QueueGetFakeHostPlayer() As IFuture(Of Player)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return ref.QueueFunc(Function() fakeHostPlayer)
-        End Function
-        Public Function QueueCommandProcessLocalText(ByVal text As String, ByVal logger As Logger) As IFuture
-            Contract.Requires(text IsNot Nothing)
-            Contract.Requires(logger IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() CommandProcessLocalText(text, logger))
         End Function
         Public Function QueueCommandProcessText(ByVal bot As MainBot,
                                                 ByVal player As Player,
@@ -573,10 +544,6 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return ref.QueueAction(AddressOf ThrowUpdated)
         End Function
-        Public Function QueueClose() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() Close())
-        End Function
         Public Function QueueBroadcastMessage(ByVal message As String) As IFuture
             Contract.Requires(message IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
@@ -598,7 +565,7 @@ Namespace WC3
             Return ref.QueueFunc(Function() Me.state)
         End Function
         Public Function QueueReceiveNonGameAction(ByVal player As Player,
-                                                  ByVal values As Dictionary(Of String, Object)) As IFuture
+                                                  ByVal values As Dictionary(Of InvariantString, Object)) As IFuture
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(values IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)

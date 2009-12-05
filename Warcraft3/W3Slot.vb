@@ -89,10 +89,9 @@
                 Return (index + 1).ToString(CultureInfo.InvariantCulture)
             End Get
         End Property
-        Public Function Matches(ByVal query As String) As Match
-            Contract.Requires(query IsNot Nothing)
+        Public Function Matches(ByVal query As InvariantString) As Match
             If query = (index + 1).ToString(CultureInfo.InvariantCulture) Then Return Match.Index
-            If query.ToUpperInvariant = color.ToString.ToUpperInvariant Then Return Match.Color
+            If query = color.ToString Then Return Match.Color
             If Contents.Matches(query) Then Return Match.Contents
             Return Match.None
         End Function
@@ -200,7 +199,7 @@
             Open = 2
             Reserved = 3
         End Enum
-        Public Overridable Function WantPlayer(ByVal name As String) As WantPlayerPriority
+        Public Overridable Function WantPlayer(ByVal name As InvariantString?) As WantPlayerPriority
             Return WantPlayerPriority.Filled
         End Function
         Public Overridable Function TakePlayer(ByVal player As Player) As SlotContents
@@ -225,8 +224,7 @@
             Contract.Ensures(Contract.Result(Of SlotContents)() IsNot Nothing)
             Throw New NotSupportedException()
         End Function
-        Public Overridable Function Matches(ByVal query As String) As Boolean
-            Contract.Requires(query IsNot Nothing)
+        Public Overridable Function Matches(ByVal query As InvariantString) As Boolean
             Return False
         End Function
 #End Region
@@ -255,7 +253,7 @@
         Public Overrides Function TakePlayer(ByVal player As Player) As SlotContents
             Return New SlotContentsPlayer(Parent, player)
         End Function
-        Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
+        Public Overrides Function WantPlayer(ByVal name As InvariantString?) As WantPlayerPriority
             Return WantPlayerPriority.Open
         End Function
         Public Overrides Function GenerateDescription() As IFuture(Of String)
@@ -272,7 +270,7 @@
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)
         End Sub
-        Public Overrides Function WantPlayer(ByVal name As String) As WantPlayerPriority
+        Public Overrides Function WantPlayer(ByVal name As InvariantString?) As WantPlayerPriority
             Return WantPlayerPriority.Closed
         End Function
         Public Overrides Function GenerateDescription() As IFuture(Of String)
@@ -344,10 +342,10 @@
                 Return player.Index
             End Get
         End Property
-        Public Overrides Function WantPlayer(ByVal name As String) As SlotContents.WantPlayerPriority
+        Public Overrides Function WantPlayer(ByVal name As InvariantString?) As SlotContents.WantPlayerPriority
             If player IsNot Nothing AndAlso name IsNot Nothing AndAlso
                                             player.isFake AndAlso
-                                            player.name.ToUpperInvariant = name.ToUpperInvariant Then
+                                            player.Name = name.Value Then
                 Return WantPlayerPriority.Reserved
             Else
                 Return WantPlayerPriority.Filled
@@ -356,8 +354,8 @@
         Public Overrides Function Clone(ByVal parent As Slot) As SlotContents
             Return New SlotContentsPlayer(parent, player)
         End Function
-        Public Overrides Function Matches(ByVal query As String) As Boolean
-            Return query.ToUpperInvariant = player.name.ToUpperInvariant
+        Public Overrides Function Matches(ByVal query As InvariantString) As Boolean
+            Return query = player.Name
         End Function
         Public Overrides Function RemovePlayer(ByVal targetPlayer As Player) As SlotContents
             If Me.player Is targetPlayer Then

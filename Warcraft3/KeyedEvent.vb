@@ -10,6 +10,7 @@
                                  ByVal handler As Func(Of TArg, IFuture)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
 
         SyncLock lock
             If Not handlers.ContainsKey(key) Then

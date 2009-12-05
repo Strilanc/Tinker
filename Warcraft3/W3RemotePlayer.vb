@@ -1,8 +1,8 @@
-﻿Imports HostBot.WC3.PacketId
+﻿Imports Tinker.WC3.PacketId
 
 Namespace WC3
     Public NotInheritable Class W3ConnectingPlayer
-        Private ReadOnly _name As String
+        Private ReadOnly _name As InvariantString
         Private ReadOnly _peerKey As UInteger
         Private ReadOnly _entryKey As UInteger
         Private ReadOnly _gameId As UInteger
@@ -11,14 +11,12 @@ Namespace WC3
         Private ReadOnly _socket As W3Socket
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(_remoteEndPoint IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
         End Sub
 
-        Public ReadOnly Property Name As String
+        Public ReadOnly Property Name As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _name
             End Get
         End Property
@@ -55,14 +53,13 @@ Namespace WC3
             End Get
         End Property
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal gameId As UInteger,
                        ByVal entryKey As UInteger,
                        ByVal peerKey As UInteger,
                        ByVal listenPort As UShort,
                        ByVal remoteEndPoint As Net.IPEndPoint,
                        ByVal socket As W3Socket)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(remoteEndPoint IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
             Me._name = name
@@ -133,7 +130,7 @@ Namespace WC3
             Me._socket = socket
             If socket Is Nothing Then Return
             AsyncProduceConsumeUntilError2(
-                producer:=AddressOf socket.FutureReadPacket,
+                producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Sub(packetData)
                               RaiseEvent ReceivedPacket(Me, Packet.FromData(CType(packetData(1), PacketId), packetData.SubView(4)))
                           End Sub,

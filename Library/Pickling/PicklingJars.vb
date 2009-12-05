@@ -96,6 +96,7 @@ Namespace Pickling.Jars
     Public Class StringJar
         Inherits Jar(Of String)
         Private ReadOnly nullTerminated As Boolean
+        Private ReadOnly maximumContentSize As Integer
         Private ReadOnly expectedSize As Integer
         Private ReadOnly reversed As Boolean
 
@@ -103,14 +104,17 @@ Namespace Pickling.Jars
                        Optional ByVal nullTerminated As Boolean = True,
                        Optional ByVal reversed As Boolean = False,
                        Optional ByVal expectedSize As Integer = 0,
+                       Optional ByVal maximumContentSize As Integer = 0,
                        Optional ByVal info As String = "No Info")
             MyBase.New(name)
             Contract.Requires(name IsNot Nothing)
             Contract.Requires(info IsNot Nothing)
+            Contract.Requires(maximumContentSize >= 0)
             If expectedSize < 0 Then Throw New ArgumentOutOfRangeException("expectedSize")
             If expectedSize = 0 And Not nullTerminated Then Throw New ArgumentException(Me.GetType.Name + " must be either nullTerminated or have an expectedSize")
             Me.nullTerminated = nullTerminated
             Me.expectedSize = expectedSize
+            Me.maximumContentSize = maximumContentSize
             Me.reversed = reversed
         End Sub
 
@@ -118,7 +122,7 @@ Namespace Pickling.Jars
             Contract.Assume(value IsNot Nothing)
             Dim size = value.Length + If(nullTerminated, 1, 0)
             If expectedSize <> 0 And size <> expectedSize Then Throw New PicklingException("Size doesn't match expected size")
-
+            If maximumContentSize <> 0 AndAlso value.Length > maximumContentSize Then Throw New PicklingException("Size exceeds maximum size.")
             'Pack
             Dim data(0 To size - 1) As Byte
             If nullTerminated Then size -= 1
@@ -153,6 +157,7 @@ Namespace Pickling.Jars
             Dim outputSize = inputSize - If(nullTerminated, 1, 0)
             'Validate
             If data.Length < inputSize Then Throw New PicklingException("Not enough data")
+            If maximumContentSize <> 0 AndAlso outputSize > maximumContentSize Then Throw New PicklingException("Size exceeds maximum size.")
 
             'Parse string data
             Dim cc(0 To outputSize - 1) As Char
@@ -198,7 +203,7 @@ Namespace Pickling.Jars
 
     '''<summary>Combines jars to pickle ordered tuples of objects</summary>
     Public Class TuplePackJar
-        Inherits PackJar(Of Dictionary(Of String, Object))
+        Inherits PackJar(Of Dictionary(Of InvariantString, Object))
         Private ReadOnly subJars() As IPackJar(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -221,7 +226,7 @@ Namespace Pickling.Jars
             Return New TuplePackJar(Name, Concat(subJars, New IPackJar(Of Object)() {jar.Weaken}))
         End Function
 
-        Public Overrides Function Pack(Of TValue As Dictionary(Of String, Object))(ByVal value As TValue) As IPickle(Of TValue)
+        Public Overrides Function Pack(Of TValue As Dictionary(Of InvariantString, Object))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             If value.Keys.Count > subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
 
@@ -237,7 +242,7 @@ Namespace Pickling.Jars
         End Function
     End Class
     Public Class TupleParseJar
-        Inherits ParseJar(Of Dictionary(Of String, Object))
+        Inherits ParseJar(Of Dictionary(Of InvariantString, Object))
         Private ReadOnly subJars() As IParseJar(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -260,9 +265,9 @@ Namespace Pickling.Jars
             Return New TupleParseJar(Name, Concat(subJars, {jar.Weaken}))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of String, Object))
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
             'Parse
-            Dim vals = New Dictionary(Of String, Object)
+            Dim vals = New Dictionary(Of InvariantString, Object)
             Dim pickles = New List(Of IPickle(Of Object))
             Dim curCount = data.Length
             Dim curOffset = 0
@@ -279,12 +284,12 @@ Namespace Pickling.Jars
                 If curCount < 0 Then Throw New InvalidStateException("subJar lied about data used.")
             Next j
 
-            Return New Pickle(Of Dictionary(Of String, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New Pickle(Of Dictionary(Of InvariantString, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
 
     Public Class TupleJar
-        Inherits FusionJar(Of Dictionary(Of String, Object))
+        Inherits FusionJar(Of Dictionary(Of InvariantString, Object))
         Private ReadOnly subJars() As IJar(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -302,7 +307,7 @@ Namespace Pickling.Jars
             Return New TupleJar(Name, Concat(subJars, {jar.Weaken}))
         End Function
 
-        Public Overrides Function Pack(Of TValue As Dictionary(Of String, Object))(ByVal value As TValue) As IPickle(Of TValue)
+        Public Overrides Function Pack(Of TValue As Dictionary(Of InvariantString, Object))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             If value.Keys.Count > subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
 
@@ -317,9 +322,9 @@ Namespace Pickling.Jars
             Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of String, Object))
+        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
             'Parse
-            Dim vals = New Dictionary(Of String, Object)
+            Dim vals = New Dictionary(Of InvariantString, Object)
             Dim pickles = New List(Of IPickle(Of Object))
             Dim curCount = data.Length
             Dim curOffset = 0
@@ -336,7 +341,7 @@ Namespace Pickling.Jars
                 If curCount < 0 Then Throw New InvalidStateException("subJar reported incorrect data length")
             Next subJar
 
-            Return New Pickle(Of Dictionary(Of String, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New Pickle(Of Dictionary(Of InvariantString, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
 

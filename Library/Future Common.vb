@@ -107,7 +107,7 @@ Public Module FutureExtensionsEx
                             End Sub
 
         'Start
-        producer().CallWhenValueReady(finishedProducing)
+        producer().AssumeNotNull.CallWhenValueReady(finishedProducing)
         result.Catch(errorHandler)
 
         Return result

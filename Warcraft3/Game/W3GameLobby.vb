@@ -45,20 +45,20 @@
             Next i
 
             'create observer slots
-            If settings.Header.GameStats.observers = GameObserverOption.FullObservers OrElse
-                                    settings.Header.GameStats.observers = GameObserverOption.Referees Then
-                For i = Map.NumPlayerSlots To 12 - 1
-                    Dim slot As Slot = New Slot(Me, CByte(i))
-                    slot.color = CType(Slot.ObserverTeamIndex, Slot.PlayerColor)
-                    slot.Team = Slot.ObserverTeamIndex
-                    slot.race = Slot.Races.Random
-                    slots.Add(slot)
-                    freeIndexes.Add(CByte(i + 1))
-                Next i
-            End If
+            Select Case settings.GameDescription.GameStats.observers
+                Case GameObserverOption.FullObservers, GameObserverOption.Referees
+                    For i = Map.NumPlayerSlots To 12 - 1
+                        Dim slot As Slot = New Slot(Me, CByte(i))
+                        slot.color = CType(slot.ObserverTeamIndex, Slot.PlayerColor)
+                        slot.Team = slot.ObserverTeamIndex
+                        slot.race = slot.Races.Random
+                        slots.Add(slot)
+                        freeIndexes.Add(CByte(i + 1))
+                    Next i
+            End Select
         End Sub
         Private Sub InitProcessArguments()
-            If settings.multiObs Then
+            If settings.useMultiObs Then
                 Contract.Assume(slots.Count = 12)
                 Contract.Assume(freeIndexes.Count > 0)
                 If Map.NumPlayerSlots <= 10 Then
@@ -76,10 +76,9 @@
                     SetupCoveredSlot(slots(10), slots(11), playerIndex)
                 End If
             End If
-            If settings.teamSetup IsNot Nothing Then
-                TrySetTeamSizes(TeamVersusStringToTeamSizes(settings.teamSetup))
-            End If
-            For Each reservation In settings.Reservations
+            TrySetTeamSizes(settings.TeamSizes)
+            For Each reservation In settings.reservations
+                Contract.Assume(reservation IsNot Nothing)
                 ReserveSlot(reservation)
             Next reservation
         End Sub
@@ -112,10 +111,10 @@
             ChangeState(GameState.PreCounting)
 
             'Give people a few seconds to realize the game is full before continuing
-            FutureWait(3.Seconds).QueueCallWhenReady(ref,
+            Call 3.Seconds.AsyncWait().QueueCallWhenReady(ref,
                 Sub()
                     If state <> GameState.PreCounting Then Return
-                    If Not settings.isAutoStarted OrElse CountFreeSlots() > 0 Then
+                    If Not settings.IsAutoStarted OrElse CountFreeSlots() > 0 Then
                         ChangeState(GameState.AcceptingPlayers)
                         Return
                     End If
@@ -125,10 +124,10 @@
                     BroadcastMessage("Game is Full. Waiting 5 seconds for stability.")
 
                     'Give jittery players a few seconds to leave
-                    FutureWait(5.Seconds).QueueCallWhenReady(ref,
+                    Call 5.Seconds.AsyncWait().QueueCallWhenReady(ref,
                         Sub()
                             If state <> GameState.PreCounting Then Return
-                            If Not settings.isAutoStarted OrElse CountFreeSlots() > 0 Then
+                            If Not settings.IsAutoStarted OrElse CountFreeSlots() > 0 Then
                                 ChangeState(GameState.AcceptingPlayers)
                                 Return
                             End If
@@ -155,7 +154,7 @@
             flagHasPlayerLeft = False
 
             Logger.Log("Starting Countdown", LogMessageType.Positive)
-            FutureWait(1.Seconds).QueueCallWhenReady(ref, Sub() _TryContinueCountdown(5))
+            Call 1.Seconds.AsyncWait().QueueCallWhenReady(ref, Sub() _TryContinueCountdown(5))
             Return True
         End Function
         Private Sub _TryContinueCountdown(ByVal ticksLeft As Integer)
@@ -186,7 +185,7 @@
                     SendMessageTo("Starting in {0}...".Frmt(ticksLeft), player, display:=False)
                 Next player
 
-                FutureWait(1.Seconds).QueueCallWhenReady(ref, Sub() _TryContinueCountdown(ticksLeft - 1))
+                Call 1.Seconds.AsyncWait().QueueCallWhenReady(ref, Sub() _TryContinueCountdown(ticksLeft - 1))
                 Return
             End If
 
@@ -270,7 +269,7 @@
 
             'Inform bot
             ThrowPlayerEntered(newPlayer)
-            Logger.Log(newPlayer.name + " has been placed in the game.", LogMessageType.Positive)
+            Logger.Log("{0} has been placed in the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Update state
             ChangedLobbyState()
@@ -343,7 +342,7 @@
             End If
 
             'Create player object
-            Dim newPlayer As Player = New Player(index, settings, _downloadScheduler, connectingPlayer, Logger)
+            Dim newPlayer = New Player(index, settings, _downloadScheduler, connectingPlayer, Logger)
             bestSlot.Contents = bestSlot.Contents.TakePlayer(newPlayer)
             players.Add(newPlayer)
 
@@ -353,9 +352,6 @@
                 newPlayer.QueueSendPacket(Packet.MakeOtherPlayerJoined(player))
             Next player
             newPlayer.QueueSendPacket(Packet.MakeHostMapInfo(Map))
-            If My.Resources.ProgramShowoff_f0name <> "" Then
-                SendMessageTo(My.Resources.ProgramShowoff_f0name.Frmt(My.Resources.ProgramName), newPlayer)
-            End If
 
             'Inform other players
             If IsPlayerVisible(newPlayer) Then
@@ -372,15 +368,19 @@
             ChangedLobbyState()
             TryBeginAutoStart()
             If settings.autoElevateUserName IsNot Nothing Then
-                If newPlayer.name.ToUpperInvariant = settings.autoElevateUserName.ToUpperInvariant Then
-                    ElevatePlayer(newPlayer.name)
+                If newPlayer.Name = settings.autoElevateUserName.Value Then
+                    ElevatePlayer(newPlayer.Name)
                 End If
             End If
-            If settings.isAutoStarted Then
-                SendMessageTo("This is an automated game. {0}help for a list of commands.".Frmt(My.Settings.commandPrefix), newPlayer)
+            If settings.Greeting <> "" Then
+                Logger.Log("Greeted {0}".Frmt(newPlayer.Name), LogMessageType.Positive)
+                SendMessageTo(message:=settings.Greeting, player:=newPlayer, display:=False)
+            End If
+            If settings.IsAutoStarted Then
+                SendMessageTo("This is an autostarted game. {0}help for a list of commands.".Frmt(My.Settings.commandPrefix), newPlayer, display:=False)
             End If
 
-            AddHandler newPlayer.ReceivedDropLagger, Sub() QueueDropLagger()
+            AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() QueueDropLagger()
             AddHandler newPlayer.ReceivedGameAction, AddressOf QueueReceiveGameAction
             AddHandler newPlayer.ReceivedGameData, AddressOf QueueGameData
             AddHandler newPlayer.Disconnected, AddressOf QueueRemovePlayer
@@ -461,7 +461,7 @@
             If slot Is Nothing OrElse slot.Contents.PlayerIndex <> player.Index Then
                 freeIndexes.Add(player.Index)
             End If
-            DownloadScheduler.RemoveClient(player.Index).MarkAnyExceptionAsHandled()
+            DownloadScheduler.RemoveClient(player.Index).SetHandled()
             If player IsNot fakeHostPlayer Then TryRestoreFakeHost()
             ChangedLobbyState()
         End Sub
@@ -538,10 +538,9 @@
             ChangedLobbyState()
         End Sub
 
-        Private Sub ModifySlotContents(ByVal slotQuery As String,
+        Private Sub ModifySlotContents(ByVal slotQuery As InvariantString,
                                        ByVal action As Action(Of Slot),
                                        Optional ByVal avoidPlayers As Boolean = False)
-            Contract.Requires(slotQuery IsNot Nothing)
             Contract.Requires(action IsNot Nothing)
 
             If state >= GameState.CountingDown Then
@@ -563,40 +562,36 @@
 #End Region
 #Region "Slot Contents"
         '''<summary>Opens the slot with the given index, unless the slot contains a player.</summary>
-        Private Sub OpenSlot(ByVal slotid As String)
-            Contract.Requires(slotid IsNot Nothing)
+        Private Sub OpenSlot(ByVal slotid As InvariantString)
             ModifySlotContents(slotid,
                                Sub(slot) slot.Contents = New SlotContentsOpen(slot),
                                avoidPlayers:=True)
         End Sub
 
         '''<summary>Places a computer with the given difficulty in the slot with the given index, unless the slot contains a player.</summary>
-        Private Sub ComputerizeSlot(ByVal slotid As String, ByVal cpu As Slot.ComputerLevel)
-            Contract.Requires(slotid IsNot Nothing)
+        Private Sub ComputerizeSlot(ByVal slotid As InvariantString, ByVal cpu As Slot.ComputerLevel)
             ModifySlotContents(slotid,
                                Sub(slot) slot.Contents = New SlotContentsComputer(slot, cpu),
                                avoidPlayers:=True)
         End Sub
 
         '''<summary>Closes the slot with the given index, unless the slot contains a player.</summary>
-        Private Sub CloseSlot(ByVal slotid As String)
-            Contract.Requires(slotid IsNot Nothing)
+        Private Sub CloseSlot(ByVal slotid As InvariantString)
             ModifySlotContents(slotid,
                                Sub(slot) slot.Contents = New SlotContentsClosed(slot),
                                avoidPlayers:=True)
         End Sub
 
         '''<summary>Reserves a slot for a player.</summary>
-        Private Function ReserveSlot(ByVal username As String,
-                                     Optional ByVal slotid As String = Nothing) As Player
-            Contract.Requires(username IsNot Nothing)
+        Private Function ReserveSlot(ByVal username As InvariantString,
+                                     Optional ByVal slotid As InvariantString? = Nothing) As Player
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
             If state >= GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't reserve slots after launch.")
             End If
             Dim slot = If(slotid Is Nothing,
                           (From s In slots Where s.Contents.WantPlayer(Nothing) = SlotContents.WantPlayerPriority.Open).FirstOrDefault,
-                          TryFindMatchingSlot(slotid))
+                          TryFindMatchingSlot(slotid.Value))
             If slot Is Nothing Then Throw New InvalidOperationException("No matching slot.".Frmt(slotid))
             If slot.Contents.ContentType = SlotContentType.Player Then
                 Throw New InvalidOperationException("Slot '{0}' can't be reserved because it already contains a player.".Frmt(slotid))
@@ -605,9 +600,7 @@
             End If
         End Function
 
-        Private Sub SwapSlotContents(ByVal query1 As String, ByVal query2 As String)
-            Contract.Requires(query1 IsNot Nothing)
-            Contract.Requires(query2 IsNot Nothing)
+        Private Sub SwapSlotContents(ByVal query1 As InvariantString, ByVal query2 As InvariantString)
             If state > GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't swap slots after launch.")
             End If
@@ -633,8 +626,7 @@
         End Sub
 #End Region
 #Region "Slot States"
-        Private Sub SetSlotColor(ByVal slotid As String, ByVal color As Slot.PlayerColor)
-            Contract.Requires(slotid IsNot Nothing)
+        Private Sub SetSlotColor(ByVal slotid As InvariantString, ByVal color As Slot.PlayerColor)
             If state > GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't change slot settings after launch.")
             End If
@@ -649,23 +641,19 @@
             ChangedLobbyState()
         End Sub
 
-        Private Sub SetSlotRace(ByVal slotid As String, ByVal race As Slot.Races)
-            Contract.Requires(slotid IsNot Nothing)
+        Private Sub SetSlotRace(ByVal slotid As InvariantString, ByVal race As Slot.Races)
             ModifySlotContents(slotid, Sub(slot) slot.race = race)
         End Sub
 
-        Private Sub SetSlotTeam(ByVal slotid As String, ByVal team As Byte)
-            Contract.Requires(slotid IsNot Nothing)
+        Private Sub SetSlotTeam(ByVal slotid As InvariantString, ByVal team As Byte)
             ModifySlotContents(slotid, Sub(slot) slot.Team = team)
         End Sub
 
-        Private Sub SetSlotHandicap(ByVal slotid As String, ByVal handicap As Byte)
-            Contract.Requires(slotid IsNot Nothing)
+        Private Sub SetSlotHandicap(ByVal slotid As InvariantString, ByVal handicap As Byte)
             ModifySlotContents(slotid, Sub(slot) slot.handicap = handicap)
         End Sub
 
-        Private Sub SetSlotLocked(ByVal slotid As String, ByVal locked As Slot.Lock)
-            Contract.Requires(slotid IsNot Nothing)
+        Private Sub SetSlotLocked(ByVal slotid As InvariantString, ByVal locked As Slot.Lock)
             ModifySlotContents(slotid, Sub(slot) slot.locked = locked)
         End Sub
 
@@ -753,7 +741,7 @@
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If state >= GameState.Loading Then Return '[too late]
             If newTeam = Slot.ObserverTeamIndex Then
-                Select Case settings.Header.GameStats.observers
+                Select Case settings.GameDescription.GameStats.observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         '[fine; continue]
                     Case Else

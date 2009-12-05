@@ -32,6 +32,7 @@ Namespace BNLS
     Public NotInheritable Class BNLSWardenClient
         Implements IDisposable
 
+        Private ReadOnly keepAlive As New DeadManSwitch(period:=60.Seconds, initiallyArmed:=True)
         Private WithEvents socket As PacketSocket
         Public ReadOnly logger As Logger
         Private ReadOnly cookie As UInteger
@@ -53,7 +54,7 @@ Namespace BNLS
         Private Sub New(ByVal socket As PacketSocket,
                         ByVal cookie As UInteger,
                         Optional ByVal logger As Logger = Nothing)
-            Contract.Requires(socket IsNot Nothing)
+            Contract.Assume(socket IsNot Nothing)
             logger = If(logger, New Logger())
             Me.logger = logger
             Me.socket = socket
@@ -64,7 +65,7 @@ Namespace BNLS
         '''<summary>Asynchronously reads packets until an exception occurs, raising events to the outside.</summary>
         Private Sub BeginReading()
             AsyncProduceConsumeUntilError2(
-                producer:=Function() FutureReadBnlsPacket(socket, logger),
+                producer:=Function() AsyncReadBnlsPacket(socket, logger),
                 consumer:=Sub(packet)
                               'Check packet type
                               If packet.id <> BNLSWardenPacketId.FullServiceHandleWardenPacket Then
@@ -72,7 +73,7 @@ Namespace BNLS
                               End If
 
                               'Check packet contents
-                              Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of String, Object))).Value
+                              Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of InvariantString, Object))).Value
                               Contract.Assume(vals IsNot Nothing)
                               If CUInt(vals("cookie")) <> cookie Then
                                   Throw New IO.InvalidDataException("Incorrect cookie from BNLS server.")
@@ -98,9 +99,11 @@ Namespace BNLS
             Dim cookie = seed
 
             'Connect and send first packet
-            Dim futurePacketSocket = FutureCreateConnectedTcpClient(hostName, port).Select(
+            Dim futurePacketSocket = AsyncTcpConnect(hostName, port).Select(
                 Function(tcpClient)
-                    Dim socket = New PacketSocket(tcpClient,
+                    Dim socket = New PacketSocket(stream:=tcpClient.GetStream,
+                                                  localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                  remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                                   timeout:=5.Minutes,
                                                   numBytesBeforeSize:=0,
                                                   numSizeBytes:=2,
@@ -113,7 +116,7 @@ Namespace BNLS
 
             'Read response packet
             Dim futureReadPacket = futurePacketSocket.Select(
-                Function(packetSocket) FutureReadBnlsPacket(packetSocket, logger)
+                Function(packetSocket) AsyncReadBnlsPacket(packetSocket, logger)
             ).Defuturized
 
             'Process response packet and construct bnls client on success
@@ -129,7 +132,7 @@ Namespace BNLS
                     End If
 
                     'Check packet contents
-                    Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of String, Object))).Value
+                    Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of InvariantString, Object))).Value
                     If CUInt(vals("cookie")) <> cookie Then
                         Dim msg = "Incorrect cookie from server."
                         packetSocket.Disconnect(expected:=False, reason:=msg)
@@ -167,11 +170,11 @@ Namespace BNLS
             End Try
         End Sub
 
-        Private Shared Function FutureReadBnlsPacket(ByVal socket As PacketSocket,
-                                                     ByVal logger As Logger) As IFuture(Of BNLSWardenPacket)
-            Return socket.FutureReadPacket().Select(
+        Private Shared Function AsyncReadBnlsPacket(ByVal socket As PacketSocket,
+                                                    ByVal logger As Logger) As IFuture(Of BNLSWardenPacket)
+            Return socket.AsyncReadPacket().Select(
                 Function(packetData)
-                    'Check packet
+                    'Check
                     If packetData.Length < 3 Then
                         Throw New IO.InvalidDataException("Packet doesn't have a header.")
                     ElseIf packetData(2) <> BNLSPacketId.Warden Then
@@ -188,6 +191,7 @@ Namespace BNLS
 
         Public Sub ProcessWardenPacket(ByVal data As ViewableList(Of Byte))
             Contract.Requires(data IsNot Nothing)
+            keepAlive.Reset()
             WritePacket(socket, logger, BNLSWardenPacket.MakeFullServiceHandleWardenPacket(cookie, data.ToArray))
         End Sub
 

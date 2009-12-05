@@ -19,9 +19,8 @@ Partial Class SettingsForm
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.components = New System.ComponentModel.Container()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(SettingsForm))
-        Me.tipNormal = New System.Windows.Forms.ToolTip(Me.components)
+        Me.tipNormal = New System.Windows.Forms.ToolTip()
         Me.txtMapPath = New System.Windows.Forms.TextBox()
         Me.txtProgramPath = New System.Windows.Forms.TextBox()
         Me.txtExeVersion = New System.Windows.Forms.TextBox()
@@ -34,8 +33,12 @@ Partial Class SettingsForm
         Me.txtInGameName = New System.Windows.Forms.TextBox()
         Me.txtInitialPlugins = New System.Windows.Forms.TextBox()
         Me.txtPortPool = New System.Windows.Forms.TextBox()
+        Me.txtBnlsServer = New System.Windows.Forms.TextBox()
+        Me.txtGreeting = New System.Windows.Forms.TextBox()
         Me.tabsSettings = New System.Windows.Forms.TabControl()
         Me.tabGlobalSettings = New System.Windows.Forms.TabPage()
+        Me.lblGreeting = New System.Windows.Forms.Label()
+        Me.lblBnlsServer = New System.Windows.Forms.Label()
         Me.lblPortPool = New System.Windows.Forms.Label()
         Me.Label1 = New System.Windows.Forms.Label()
         Me.lblLagLimit = New System.Windows.Forms.Label()
@@ -62,14 +65,9 @@ Partial Class SettingsForm
         Me.btnSave = New System.Windows.Forms.Button()
         Me.btnUserHelp = New System.Windows.Forms.Button()
         Me.OpenFileDialog = New System.Windows.Forms.OpenFileDialog()
-        Me.txtBnlsServer = New System.Windows.Forms.TextBox()
-        Me.lblBnlsServer = New System.Windows.Forms.Label()
-        CType(Me.numTickPeriod, System.ComponentModel.ISupportInitialize).BeginInit()
-        CType(Me.numLagLimit, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.tabsSettings.SuspendLayout()
         Me.tabGlobalSettings.SuspendLayout()
         Me.tabPlugins.SuspendLayout()
-        CType(Me.gridPlugins, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.tabNewProfile.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -86,8 +84,8 @@ Partial Class SettingsForm
         Me.txtMapPath.Name = "txtMapPath"
         Me.txtMapPath.Size = New System.Drawing.Size(446, 20)
         Me.txtMapPath.TabIndex = 36
-        Me.tipNormal.SetToolTip(Me.txtMapPath, "The location of the folder where maps are stored." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Default: C:\Program Files\Warc" & _
-                "raft III\Maps\HostBot\")
+        Me.tipNormal.SetToolTip(Me.txtMapPath, "The location of the folder where maps are stored." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Default: (program files)\Warcr" & _
+                "aft III\Maps\HostBot\")
         '
         'txtProgramPath
         '
@@ -96,7 +94,7 @@ Partial Class SettingsForm
         Me.txtProgramPath.Size = New System.Drawing.Size(446, 20)
         Me.txtProgramPath.TabIndex = 34
         Me.tipNormal.SetToolTip(Me.txtProgramPath, "The location of the folder containing the hash files (war3.exe, storm.dll, game.d" & _
-                "ll)" & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Default: C:\Program Files\Warcraft III\")
+                "ll)" & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Default: (program files)\Warcraft III\")
         '
         'txtExeVersion
         '
@@ -174,7 +172,8 @@ Partial Class SettingsForm
         '
         'txtInitialPlugins
         '
-        Me.txtInitialPlugins.Location = New System.Drawing.Point(6, 294)
+        Me.txtInitialPlugins.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.txtInitialPlugins.Location = New System.Drawing.Point(6, 374)
         Me.txtInitialPlugins.MaxLength = 15
         Me.txtInitialPlugins.Name = "txtInitialPlugins"
         Me.txtInitialPlugins.Size = New System.Drawing.Size(271, 20)
@@ -191,6 +190,27 @@ Partial Class SettingsForm
         Me.txtPortPool.TabIndex = 54
         Me.tipNormal.SetToolTip(Me.txtPortPool, resources.GetString("txtPortPool.ToolTip"))
         '
+        'txtBnlsServer
+        '
+        Me.txtBnlsServer.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.txtBnlsServer.Location = New System.Drawing.Point(6, 253)
+        Me.txtBnlsServer.Name = "txtBnlsServer"
+        Me.txtBnlsServer.Size = New System.Drawing.Size(220, 20)
+        Me.txtBnlsServer.TabIndex = 60
+        Me.tipNormal.SetToolTip(Me.txtBnlsServer, resources.GetString("txtBnlsServer.ToolTip"))
+        '
+        'txtGreeting
+        '
+        Me.txtGreeting.Location = New System.Drawing.Point(6, 292)
+        Me.txtGreeting.MaxLength = 15
+        Me.txtGreeting.Multiline = True
+        Me.txtGreeting.Name = "txtGreeting"
+        Me.txtGreeting.ScrollBars = System.Windows.Forms.ScrollBars.Both
+        Me.txtGreeting.Size = New System.Drawing.Size(446, 65)
+        Me.txtGreeting.TabIndex = 62
+        Me.tipNormal.SetToolTip(Me.txtGreeting, "The text sent to players as they join a game." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Leave blank for no greeting." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Line" & _
+                "s longer than 220 characters will be split.")
+        '
         'tabsSettings
         '
         Me.tabsSettings.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
@@ -202,12 +222,14 @@ Partial Class SettingsForm
         Me.tabsSettings.Location = New System.Drawing.Point(12, 12)
         Me.tabsSettings.Name = "tabsSettings"
         Me.tabsSettings.SelectedIndex = 0
-        Me.tabsSettings.Size = New System.Drawing.Size(481, 347)
+        Me.tabsSettings.Size = New System.Drawing.Size(481, 427)
         Me.tabsSettings.TabIndex = 30
         '
         'tabGlobalSettings
         '
         Me.tabGlobalSettings.AutoScroll = True
+        Me.tabGlobalSettings.Controls.Add(Me.lblGreeting)
+        Me.tabGlobalSettings.Controls.Add(Me.txtGreeting)
         Me.tabGlobalSettings.Controls.Add(Me.txtBnlsServer)
         Me.tabGlobalSettings.Controls.Add(Me.lblBnlsServer)
         Me.tabGlobalSettings.Controls.Add(Me.lblPortPool)
@@ -232,10 +254,28 @@ Partial Class SettingsForm
         Me.tabGlobalSettings.Controls.Add(Me.lblPath)
         Me.tabGlobalSettings.Location = New System.Drawing.Point(4, 22)
         Me.tabGlobalSettings.Name = "tabGlobalSettings"
-        Me.tabGlobalSettings.Size = New System.Drawing.Size(473, 321)
+        Me.tabGlobalSettings.Size = New System.Drawing.Size(473, 401)
         Me.tabGlobalSettings.TabIndex = 3
         Me.tabGlobalSettings.Text = "Global"
         Me.tabGlobalSettings.UseVisualStyleBackColor = True
+        '
+        'lblGreeting
+        '
+        Me.lblGreeting.AutoSize = True
+        Me.lblGreeting.Location = New System.Drawing.Point(3, 276)
+        Me.lblGreeting.Name = "lblGreeting"
+        Me.lblGreeting.Size = New System.Drawing.Size(82, 13)
+        Me.lblGreeting.TabIndex = 63
+        Me.lblGreeting.Text = "Default greeting"
+        '
+        'lblBnlsServer
+        '
+        Me.lblBnlsServer.AutoSize = True
+        Me.lblBnlsServer.Location = New System.Drawing.Point(3, 237)
+        Me.lblBnlsServer.Name = "lblBnlsServer"
+        Me.lblBnlsServer.Size = New System.Drawing.Size(161, 13)
+        Me.lblBnlsServer.TabIndex = 61
+        Me.lblBnlsServer.Text = "BattleNet Login Server (Warden)"
         '
         'lblPortPool
         '
@@ -337,7 +377,7 @@ Partial Class SettingsForm
         Me.tabPlugins.Location = New System.Drawing.Point(4, 22)
         Me.tabPlugins.Name = "tabPlugins"
         Me.tabPlugins.Padding = New System.Windows.Forms.Padding(3)
-        Me.tabPlugins.Size = New System.Drawing.Size(473, 321)
+        Me.tabPlugins.Size = New System.Drawing.Size(473, 401)
         Me.tabPlugins.TabIndex = 4
         Me.tabPlugins.Text = "Plugins"
         Me.tabPlugins.UseVisualStyleBackColor = True
@@ -353,8 +393,9 @@ Partial Class SettingsForm
         '
         'Label2
         '
+        Me.Label2.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.Label2.AutoSize = True
-        Me.Label2.Location = New System.Drawing.Point(3, 278)
+        Me.Label2.Location = New System.Drawing.Point(3, 358)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(123, 13)
         Me.Label2.TabIndex = 57
@@ -363,7 +404,7 @@ Partial Class SettingsForm
         'btnImportPlugin
         '
         Me.btnImportPlugin.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.btnImportPlugin.Location = New System.Drawing.Point(370, 289)
+        Me.btnImportPlugin.Location = New System.Drawing.Point(370, 369)
         Me.btnImportPlugin.Name = "btnImportPlugin"
         Me.btnImportPlugin.Size = New System.Drawing.Size(97, 29)
         Me.btnImportPlugin.TabIndex = 37
@@ -379,7 +420,7 @@ Partial Class SettingsForm
         Me.gridPlugins.Columns.AddRange(New System.Windows.Forms.DataGridViewColumn() {Me.colName, Me.colAccess, Me.colSettings})
         Me.gridPlugins.Location = New System.Drawing.Point(0, 19)
         Me.gridPlugins.Name = "gridPlugins"
-        Me.gridPlugins.Size = New System.Drawing.Size(473, 256)
+        Me.gridPlugins.Size = New System.Drawing.Size(473, 336)
         Me.gridPlugins.TabIndex = 33
         '
         'colName
@@ -411,7 +452,7 @@ Partial Class SettingsForm
         Me.tabNewProfile.Location = New System.Drawing.Point(4, 22)
         Me.tabNewProfile.Name = "tabNewProfile"
         Me.tabNewProfile.Padding = New System.Windows.Forms.Padding(3)
-        Me.tabNewProfile.Size = New System.Drawing.Size(473, 321)
+        Me.tabNewProfile.Size = New System.Drawing.Size(473, 401)
         Me.tabNewProfile.TabIndex = 0
         Me.tabNewProfile.Text = "[ New Profile ... ]"
         Me.tabNewProfile.UseVisualStyleBackColor = True
@@ -437,7 +478,7 @@ Partial Class SettingsForm
         'btnPluginsHelp
         '
         Me.btnPluginsHelp.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.btnPluginsHelp.Location = New System.Drawing.Point(115, 365)
+        Me.btnPluginsHelp.Location = New System.Drawing.Point(115, 445)
         Me.btnPluginsHelp.Name = "btnPluginsHelp"
         Me.btnPluginsHelp.Size = New System.Drawing.Size(97, 29)
         Me.btnPluginsHelp.TabIndex = 36
@@ -447,7 +488,7 @@ Partial Class SettingsForm
         'btnCancel
         '
         Me.btnCancel.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.btnCancel.Location = New System.Drawing.Point(396, 365)
+        Me.btnCancel.Location = New System.Drawing.Point(396, 445)
         Me.btnCancel.Name = "btnCancel"
         Me.btnCancel.Size = New System.Drawing.Size(97, 29)
         Me.btnCancel.TabIndex = 29
@@ -457,7 +498,7 @@ Partial Class SettingsForm
         'btnSave
         '
         Me.btnSave.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.btnSave.Location = New System.Drawing.Point(293, 365)
+        Me.btnSave.Location = New System.Drawing.Point(293, 445)
         Me.btnSave.Name = "btnSave"
         Me.btnSave.Size = New System.Drawing.Size(97, 29)
         Me.btnSave.TabIndex = 28
@@ -467,7 +508,7 @@ Partial Class SettingsForm
         'btnUserHelp
         '
         Me.btnUserHelp.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.btnUserHelp.Location = New System.Drawing.Point(12, 365)
+        Me.btnUserHelp.Location = New System.Drawing.Point(12, 445)
         Me.btnUserHelp.Name = "btnUserHelp"
         Me.btnUserHelp.Size = New System.Drawing.Size(97, 29)
         Me.btnUserHelp.TabIndex = 35
@@ -478,48 +519,25 @@ Partial Class SettingsForm
         '
         Me.OpenFileDialog.Title = "Select Plugin"
         '
-        'txtBnlsServer
-        '
-        Me.txtBnlsServer.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.txtBnlsServer.Location = New System.Drawing.Point(6, 253)
-        Me.txtBnlsServer.Name = "txtBnlsServer"
-        Me.txtBnlsServer.Size = New System.Drawing.Size(220, 20)
-        Me.txtBnlsServer.TabIndex = 60
-        Me.tipNormal.SetToolTip(Me.txtBnlsServer, "The address:port of a BNLS server which supports warden responses (e.g. example.com:9999)." _
-                                                    & vbNewLine & "The server is not given your username, password, or CD Keys." _
-                                                    & vbNewLine & "However, if the server accidentally or purposefully returns incorrect responses, bnet will think you are cheating.")
-        '
-        'lblBnlsServer
-        '
-        Me.lblBnlsServer.AutoSize = True
-        Me.lblBnlsServer.Location = New System.Drawing.Point(3, 237)
-        Me.lblBnlsServer.Name = "lblBnlsServer"
-        Me.lblBnlsServer.Size = New System.Drawing.Size(165, 13)
-        Me.lblBnlsServer.TabIndex = 61
-        Me.lblBnlsServer.Text = "BattleNet Login Server (Warden)"
-        '
-        'FrmSettings
+        'SettingsForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(505, 406)
+        Me.ClientSize = New System.Drawing.Size(505, 486)
         Me.ControlBox = False
         Me.Controls.Add(Me.btnUserHelp)
         Me.Controls.Add(Me.tabsSettings)
         Me.Controls.Add(Me.btnCancel)
         Me.Controls.Add(Me.btnSave)
         Me.Controls.Add(Me.btnPluginsHelp)
-        Me.Name = "FrmSettings"
+        Me.Name = "SettingsForm"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent
         Me.Text = "Settings"
-        CType(Me.numTickPeriod, System.ComponentModel.ISupportInitialize).EndInit()
-        CType(Me.numLagLimit, System.ComponentModel.ISupportInitialize).EndInit()
         Me.tabsSettings.ResumeLayout(False)
         Me.tabGlobalSettings.ResumeLayout(False)
         Me.tabGlobalSettings.PerformLayout()
         Me.tabPlugins.ResumeLayout(False)
         Me.tabPlugins.PerformLayout()
-        CType(Me.gridPlugins, System.ComponentModel.ISupportInitialize).EndInit()
         Me.tabNewProfile.ResumeLayout(False)
         Me.tabNewProfile.PerformLayout()
         Me.ResumeLayout(False)
@@ -568,4 +586,6 @@ Partial Class SettingsForm
     Friend WithEvents txtPortPool As System.Windows.Forms.TextBox
     Friend WithEvents txtBnlsServer As System.Windows.Forms.TextBox
     Friend WithEvents lblBnlsServer As System.Windows.Forms.Label
+    Friend WithEvents lblGreeting As System.Windows.Forms.Label
+    Friend WithEvents txtGreeting As System.Windows.Forms.TextBox
 End Class

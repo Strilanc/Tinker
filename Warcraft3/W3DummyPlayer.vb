@@ -1,4 +1,4 @@
-﻿Imports HostBot.WC3.PacketId
+﻿Imports Tinker.WC3.PacketId
 
 Namespace WC3
     Public Enum DummyPlayerMode
@@ -63,15 +63,19 @@ Namespace WC3
 
             Dim tcp = New Net.Sockets.TcpClient()
             tcp.Connect(hostName, port)
-            socket = New W3Socket(New PacketSocket(tcp, 60.Seconds, Me.logger))
+            socket = New W3Socket(New PacketSocket(stream:=tcp.GetStream,
+                                                   localendpoint:=CType(tcp.Client.LocalEndPoint, Net.IPEndPoint),
+                                                   remoteendpoint:=CType(tcp.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                   timeout:=60.Seconds,
+                                                   logger:=Me.logger))
 
             AsyncProduceConsumeUntilError(
-                producer:=AddressOf socket.FutureReadPacket,
+                producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Function(packetData) ref.QueueAction(
                     Sub()
                         Dim packet = WC3.Packet.FromData(CType(packetData(1), PacketId), packetData.SubView(4))
                         Dim id = packet.id
-                        Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+                        Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
                         Contract.Assume(vals IsNot Nothing)
                         Try
                             Select Case id
@@ -91,7 +95,7 @@ Namespace WC3
                                 Case Ping
                                     socket.SendPacket(packet.MakePong(CUInt(vals("salt"))))
                                 Case OtherPlayerJoined
-                                    Dim ext_addr = CType(vals("external address"), Dictionary(Of String, Object))
+                                    Dim ext_addr = CType(vals("external address"), Dictionary(Of InvariantString, Object))
                                     Dim player = New W3Peer(CStr(vals("name")),
                                                             CByte(vals("index")),
                                                             CUShort(ext_addr("port")),
@@ -111,7 +115,7 @@ Namespace WC3
                                     If mode = DummyPlayerMode.DownloadMap Then
                                         Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
                                     ElseIf mode = DummyPlayerMode.EnterGame Then
-                                        FutureWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(packet.MakeReady()))
+                                        readyDelay.AsyncWait().CallWhenReady(Sub() socket.SendPacket(packet.MakeReady()))
                                     End If
                                 Case Tick
                                     If CUShort(vals("time span")) > 0 Then
@@ -139,7 +143,7 @@ Namespace WC3
             socket.SendPacket(Packet.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
         End Sub
 
-        Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of String, Object)) As Boolean
+        Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of InvariantString, Object)) As Boolean
             If dl Is Nothing OrElse dl.file Is Nothing Then Throw New InvalidOperationException()
             Dim position = CInt(CUInt(vals("file position")))
             Dim fileData = CType(vals("file data"), Byte())
@@ -222,11 +226,11 @@ Namespace WC3
                     Try
                         Select Case packet.id
                             Case PeerPing
-                                Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+                                Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
                                 sender.Socket.SendPacket(Packet.MakePeerPing(CType(vals("salt"), Byte()), 1))
                                 sender.Socket.SendPacket(Packet.MakePeerPong(CType(vals("salt"), Byte())))
                             Case MapFileData
-                                Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+                                Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
                                 Dim pos = CUInt(dl.file.Position)
                                 If ReceiveDLMapChunk(vals) Then
                                     Disconnect(expected:=True, reason:="Download finished.")

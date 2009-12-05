@@ -1,5 +1,5 @@
-﻿''HostBot - Warcraft 3 game hosting bot
-''Copyright (C) 2008 Craig Gidney
+﻿''Tinker - Warcraft 3 game hosting bot
+''Copyright (C) 2009 Craig Gidney
 ''
 ''This program is free software: you can redistribute it and/or modify
 ''it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ Imports System.Security
 
 Namespace Bnet
     ''' <summary>
-    ''' Stores bnet login credentials and provides authentication services.
+    ''' Stores bnet login credentials for identification and authentication.
     ''' </summary>
     <DebuggerDisplay("{UserName}")>
     Public Class ClientCredentials
@@ -79,6 +79,7 @@ Namespace Bnet
         Public ReadOnly Property UserName As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of String)() = Me._userName)
                 Return _userName
             End Get
         End Property
@@ -86,6 +87,7 @@ Namespace Bnet
         Public ReadOnly Property PublicKey As BigInteger
             Get
                 Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
+                Contract.Ensures(Contract.Result(Of BigInteger)() = Me._publicKey)
                 Return _publicKey
             End Get
         End Property
@@ -94,7 +96,9 @@ Namespace Bnet
             Get
                 Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 32)
-                Return _publicKey.ToUnsignedByteArray.PaddedTo(minimumLength:=32)
+                Dim result = _publicKey.ToUnsignedByteArray.PaddedTo(minimumLength:=32)
+                Contract.Assume(result.Count = 32)
+                Return result
             End Get
         End Property
 
@@ -125,17 +129,18 @@ Namespace Bnet
                 Contract.Assume(N >= 0)
                 Dim hash1 = G.ToUnsignedByteArray.SHA1
                 Dim hash2 = N.ToUnsignedByteArray.SHA1
-                Return (From i In Enumerable.Range(0, 20)
-                        Select hash1(i) Xor hash2(i)
-                        ).ToArray
+                Dim result = (From i In Enumerable.Range(0, 20) Select hash1(i) Xor hash2(i)).ToArray
+                Contract.Assume(result.Length = 20)
+                Return result
             End Get
         End Property
 
         ''' <summary>Determines credentials for the same client, but with a new key pair.</summary>
+        ''' 
         Public Function Regenerate(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As ClientCredentials
             Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
-            Return New ClientCredentials(Me._userName, Me._password, rng)
+            Return New ClientCredentials(Me.UserName, Me._password, rng)
         End Function
 
         ''' <summary>
@@ -161,17 +166,13 @@ Namespace Bnet
 
                 'Hash odd and even bytes of the shared value
                 Dim sharedValueBytes = sharedValue.ToUnsignedByteArray.PaddedTo(32)
-                Dim sharedHashEven = (From i In Enumerable.Range(0, 16)
-                                      Select sharedValueBytes(i * 2)
-                                      ).SHA1
-                Dim sharedHashOdd = (From i In Enumerable.Range(0, 16)
-                                     Select sharedValueBytes(i * 2 + 1)
-                                     ).SHA1
+                Dim sharedHashEven = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2) ).SHA1
+                Dim sharedHashOdd = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2 + 1) ).SHA1
 
                 'Interleave odd and even hashes
-                Return (From i In Enumerable.Range(0, 40)
-                        Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))
-                        ).ToArray
+                Dim result = (From i In Enumerable.Range(0, 40) Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))).ToArray
+                Contract.Assume(result.Length = 40)
+                Return result
             End Get
         End Property
         ''' <summary>

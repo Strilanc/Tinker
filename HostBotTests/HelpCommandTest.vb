@@ -5,8 +5,8 @@ Imports Strilbrary.Enumeration
 Imports Strilbrary.Numerics
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
-Imports HostBot
-Imports HostBot.Commands
+Imports Tinker
+Imports Tinker.Commands
 
 <TestClass()>
 Public Class HelpCommandTest
@@ -14,7 +14,7 @@ Public Class HelpCommandTest
         name:="Test",
         template:="arg -option",
         description:="A test command.",
-        permissions:="root=1",
+        permissions:="root:1",
         func:=Function(target, user, arg)
                   Return "".Futurized
               End Function,

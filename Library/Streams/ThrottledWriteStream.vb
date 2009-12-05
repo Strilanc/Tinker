@@ -6,20 +6,22 @@ Public NotInheritable Class ThrottledWriteStream
     Inherits WrappedStream
     Private ReadOnly writer As ThrottledWriter
 
+    <ContractInvariantMethod()> Private Shadows Sub ObjectInvariant()
+        Contract.Invariant(writer IsNot Nothing)
+    End Sub
+
     Public Sub New(ByVal subStream As IO.Stream,
+                   ByVal costEstimator As Func(Of Byte(), Integer),
                    Optional ByVal initialSlack As Double = 0,
-                   Optional ByVal costPerWrite As Double = 0,
-                   Optional ByVal costPerCharacter As Double = 0,
                    Optional ByVal costLimit As Double = 0,
                    Optional ByVal costRecoveredPerSecond As Double = 1)
         MyBase.New(subStream)
         Contract.Requires(subStream IsNot Nothing)
         Contract.Requires(initialSlack >= 0)
-        Contract.Requires(costPerWrite >= 0)
-        Contract.Requires(costPerCharacter >= 0)
+        Contract.Requires(costEstimator IsNot Nothing)
         Contract.Requires(costLimit >= 0)
         Contract.Requires(costRecoveredPerSecond > 0)
-        writer = New ThrottledWriter(subStream, initialSlack, costPerWrite, costPerCharacter, costLimit, costRecoveredPerSecond)
+        writer = New ThrottledWriter(subStream, costEstimator, initialSlack, costLimit, costRecoveredPerSecond)
     End Sub
 
     Public Overrides ReadOnly Property CanSeek() As Boolean
@@ -29,7 +31,7 @@ Public NotInheritable Class ThrottledWriteStream
     End Property
     Public Overrides Property Position() As Long
         Get
-            Return subStream.Position
+            Return substream.Position
         End Get
         Set(ByVal value As Long)
             Throw New NotSupportedException
@@ -60,39 +62,42 @@ Public NotInheritable Class ThrottledWriteStream
 End Class
 
 Public NotInheritable Class ThrottledWriter
-    Inherits AbstractLockFreeConsumer(Of Byte())
+    Inherits BaseLockFreeConsumer(Of Byte())
 
     Private ReadOnly destinationStream As IO.Stream
     Private ReadOnly consumptionQueue As New Queue(Of Byte())
-    Private ReadOnly ref As ICallQueue = New TaskedCallQueue
+    Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
 
-    Private ReadOnly costPerWrite As Double
-    Private ReadOnly costPerCharacter As Double
     Private ReadOnly costLimit As Double
     Private ReadOnly recoveryRatePerMillisecond As Double
+    Private ReadOnly costEstimator As Func(Of Byte(), Integer)
 
     Private availableSlack As Double
     Private usedCost As Double
     Private lastTick As ModInt32 = Environment.TickCount
     Private consuming As Boolean
 
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(destinationStream IsNot Nothing)
+        Contract.Invariant(consumptionQueue IsNot Nothing)
+        Contract.Invariant(costEstimator IsNot Nothing)
+        Contract.Invariant(inQueue IsNot Nothing)
+    End Sub
+
     Public Sub New(ByVal destinationStream As IO.Stream,
+                   ByVal costEstimator As Func(Of Byte(), Integer),
                    Optional ByVal initialSlack As Double = 0,
-                   Optional ByVal costPerWrite As Double = 0,
-                   Optional ByVal costPerCharacter As Double = 0,
                    Optional ByVal costLimit As Double = 0,
                    Optional ByVal costRecoveredPerSecond As Double = 1)
         Contract.Requires(destinationStream IsNot Nothing)
         Contract.Requires(initialSlack >= 0)
-        Contract.Requires(costPerWrite >= 0)
-        Contract.Requires(costPerCharacter >= 0)
+        Contract.Requires(costEstimator IsNot Nothing)
         Contract.Requires(costLimit >= 0)
         Contract.Requires(costRecoveredPerSecond > 0)
 
         Me.destinationStream = destinationStream
         Me.availableSlack = initialSlack
-        Me.costPerWrite = costPerWrite
-        Me.costPerCharacter = costPerCharacter
+        Me.costEstimator = costEstimator
         Me.costLimit = costLimit
         Me.recoveryRatePerMillisecond = costRecoveredPerSecond / 1000
     End Sub
@@ -102,10 +107,10 @@ Public NotInheritable Class ThrottledWriter
     End Sub
 
     Protected Overrides Sub StartRunning()
-        ref.QueueAction(Sub() Run())
+        inQueue.QueueAction(Sub() Run())
     End Sub
     Protected Overrides Sub Consume(ByVal item As Byte())
-        ref.QueueAction(Sub() ContinueConsume(item))
+        inQueue.QueueAction(Sub() ContinueConsume(item))
     End Sub
     Private Sub ContinueConsume(ByVal item As Byte())
         If item IsNot Nothing Then
@@ -131,13 +136,13 @@ Public NotInheritable Class ThrottledWriter
             'Wait if necessary
             If usedCost > costLimit Then
                 Dim delay = New TimeSpan(ticks:=CLng((usedCost - costLimit) / recoveryRatePerMillisecond * TimeSpan.TicksPerMillisecond))
-                delay.FutureWait.QueueCallWhenReady(ref, Sub() ContinueConsume(Nothing))
+                delay.AsyncWait().QueueCallWhenReady(inQueue, Sub() ContinueConsume(Nothing))
                 Return
             End If
 
             'Perform write
             Dim data = consumptionQueue.Dequeue()
-            usedCost += costPerWrite + costPerCharacter * data.Length
+            usedCost += costEstimator(data)
             destinationStream.Write(data, 0, data.Length)
         End While
 

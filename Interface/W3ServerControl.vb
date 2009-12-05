@@ -1,125 +1,111 @@
-Imports HostBot.Commands
-Imports HostBot.WC3
+Imports Tinker.Commands
+Imports Tinker.WC3
 
 Public Class W3ServerControl
-    Implements IHookable(Of GameServer)
-    Private WithEvents server As GameServer = Nothing
-    Private ReadOnly ref As ICallQueue = New InvokedCallQueue(Me)
-    Private games As TabControlIHookableSet(Of Game, W3GameControl)
+    Private ReadOnly _manager As Components.WC3GameServerManager
+    Private ReadOnly _server As GameServer
+    Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
+    Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+    Private ReadOnly _games As New Dictionary(Of Game, Components.WC3GameManager)
+    Private ReadOnly _gameSets As New List(Of GameSet)
+    Private ReadOnly gameTabs As ComponentTabSet
 
-    Private commandHistory As New List(Of String) From {""}
-    Private commandHistoryPointer As Integer
-    Private Sub txtCommand_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
-        Select Case e.KeyCode
-            Case Keys.Enter
-                If txtCommand.Text = "" Then Return
-                server.Parent.ServerCommands.ProcessLocalText(server, txtCommand.Text, logServer.Logger())
-
-                commandHistoryPointer = commandHistory.Count
-                commandHistory(commandHistoryPointer - 1) = txtCommand.Text
-                commandHistory.Add("")
-                txtCommand.Text = ""
-                e.Handled = True
-            Case Keys.Up
-                commandHistory(commandHistoryPointer) = txtCommand.Text
-                commandHistoryPointer = (commandHistoryPointer - 1).Between(0, commandHistory.Count - 1)
-                txtCommand.Text = commandHistory(commandHistoryPointer)
-                txtCommand.SelectionStart = txtCommand.TextLength
-                e.Handled = True
-            Case Keys.Down
-                commandHistory(commandHistoryPointer) = txtCommand.Text
-                commandHistoryPointer = (commandHistoryPointer + 1).Between(0, commandHistory.Count - 1)
-                txtCommand.Text = commandHistory(commandHistoryPointer)
-                txtCommand.SelectionStart = txtCommand.TextLength
-                e.Handled = True
-        End Select
+    Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
+        If Me.Parent IsNot Nothing Then inQueue.Start()
     End Sub
 
-    Private Function QueueDispose() As IFuture Implements IHookable(Of GameServer).QueueDispose
-        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        Return ref.QueueAction(Sub() Me.Dispose())
-    End Function
-
-    Private Function QueueGetCaption() As IFuture(Of String) Implements IHookable(Of GameServer).QueueGetCaption
-        Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-        Return ref.QueueFunc(Function() If(server Is Nothing, "[No Server]", "Server {0}{1}".Frmt(server.Name, server.Suffix)))
-    End Function
-
-    Public Function QueueHook(ByVal child As GameServer) As IFuture Implements IHookable(Of GameServer).QueueHook
-        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        Return ref.QueueAction(
-            Sub()
-                If Me.server Is child Then Return
-                Me.server = Nothing
-                If games IsNot Nothing Then
-                    games.Clear()
-                Else
-                    games = New TabControlIHookableSet(Of Game, W3GameControl)(tabsServer)
-                End If
-                Me.server = child
-
-                Me.txtInfo.Text = ""
-                If child Is Nothing Then
-                    logServer.SetLogger(Nothing, Nothing)
-                Else
-                    logServer.SetLogger(child.logger, "Server")
-                    Dim map = child.Settings.Map
-
-                    Dim info = "Map Name\n{0}\n\n" +
-                               "Relative Path\n{1}\n\n" +
-                               "Map Type\n{2}\n\n" +
-                               "Player Count\n{3}\n\n" +
-                               "Playable Size\n{4} x {5}\n\n" +
-                               "File Size\n{6:###,###,###,###} bytes\n\n" +
-                               "File Checksum (crc32)\n{7}\n\n" +
-                               "Map Checksum (xoro)\n{8}\n\n" +
-                               "Map Checksum (sha1)\n{9}\n"
-                    info = info.Replace("\n", Environment.NewLine)
-                    info = info.Frmt(map.name,
-                                     map.RelativePath,
-                                     If(map.isMelee, "Melee", "Custom"),
-                                     map.NumPlayerSlots,
-                                     map.playableWidth,
-                                     map.playableHeight,
-                                     map.FileSize,
-                                     map.FileChecksumCRC32.Bytes.ToHexString,
-                                     map.MapChecksumXORO.Bytes.ToHexString,
-                                     map.MapChecksumSHA1.ToHexString)
-                    txtInfo.Text = info
-
-                    child.QueueGetGames().CallOnValueSuccess(Sub(games) ref.QueueAction(
-                        Sub()
-                            If child IsNot Me.server Then Return
-                            For Each game In games
-                                If Me.games.Contains(game) Then Continue For
-                                Me.games.Add(game)
-                            Next game
-                        End Sub
-                    ))
-                            End If
-                        End Sub
-        )
-    End Function
-
-    Private Sub CatchAddedGame(ByVal sender As GameServer, ByVal instance As Game) Handles server.AddedGame
-        ref.QueueAction(
-            Sub()
-                If sender IsNot server Then Return
-                If Not games.Contains(instance) Then
-                    games.Add(instance)
-                End If
-            End Sub
-        )
+    Private Shadows Sub OnDisposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
+        For Each hook In _hooks
+            hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+        Next hook
     End Sub
 
-    Private Sub CatchRemovedGame(ByVal sender As GameServer, ByVal instance As Game) Handles server.RemovedGame
-        ref.QueueAction(
-            Sub()
-                If sender IsNot server Then Return
-                If games.Contains(instance) Then
-                    games.Remove(instance)
-                End If
-            End Sub
-        )
+    Public Sub New(ByVal manager As Components.WC3GameServerManager)
+        Contract.Requires(manager IsNot Nothing)
+        InitializeComponent()
+        'if games is nothing then games = new TabControlIHookableSet(tabsserver)
+
+        Me._manager = manager
+        Me._server = manager.Server
+        gameTabs = New ComponentTabSet(Me.tabsServer)
+
+        Me.txtInfo.Text = ""
+        logServer.SetLogger(_server.Logger, "Server")
+        'Dim map = child.Settings.Map
+
+        'Dim info = "Map Name\n{0}\n\n" +
+        '"Relative Path\n{1}\n\n" +
+        '"Map Type\n{2}\n\n" +
+        '"Player Count\n{3}\n\n" +
+        '"Playable Size\n{4} x {5}\n\n" +
+        '"File Size\n{6:###,###,###,###} bytes\n\n" +
+        '"File Checksum (crc32)\n{7}\n\n" +
+        '"Map Checksum (xoro)\n{8}\n\n" +
+        '"Map Checksum (sha1)\n{9}\n"
+        'info = info.Replace("\n", Environment.NewLine)
+        'info = info.Frmt(map.name,
+        'map.RelativePath,
+        'If(map.isMelee, "Melee", "Custom"),
+        'map.NumPlayerSlots,
+        'map.playableWidth,
+        'map.playableHeight,
+        'map.FileSize,
+        'map.FileChecksumCRC32.Bytes.ToHexString,
+        'map.MapChecksumXORO.Bytes.ToHexString,
+        'map.MapChecksumSHA1.ToHexString)
+        'txtInfo.Text = info
+
+        _hooks.Add(_server.QueueCreateGameSetsAsyncView(AddressOf OnAddedGameSet, AddressOf OnRemovedGameSet))
+        _hooks.Add(_server.QueueCreateGamesAsyncView(AddressOf OnAddedGame, AddressOf OnRemovedGame))
+
+        BeginUpdateStateDisplay()
+    End Sub
+
+    Private Sub BeginUpdateStateDisplay()
+        Me._manager.QueueGetListenPort().QueueCallOnValueSuccess(inQueue, AddressOf UpdateStateDisplay)
+    End Sub
+    Private Sub UpdateStateDisplay(ByVal port As UShort)
+        If IsDisposed Then Return
+        Dim s = New System.Text.StringBuilder()
+        s.AppendLine("Listen Port: {0}".Frmt(port))
+        s.AppendLine("Games: {0}".Frmt(_gameSets.Count))
+        For Each game In _gameSets
+            s.AppendLine("")
+            s.AppendLine(game.GameSettings.GameDescription.Name)
+            s.AppendLine("ID: {0}".Frmt(game.GameSettings.GameDescription.GameId))
+            s.AppendLine("Map: {0}".Frmt(game.GameSettings.GameDescription.GameStats.relativePath))
+        Next game
+        txtInfo.Text = s.ToString
+    End Sub
+
+    Private Sub OnCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comServer.IssuedCommand
+        Tinker.Components.UIInvokeCommand(_manager, argument)
+    End Sub
+
+    Private Sub OnAddedGame(ByVal sender As GameServer, ByVal game As Game)
+        inQueue.QueueAction(Sub()
+                                _games(game) = New Components.WC3GameManager(game.Name, _manager.Bot, game)
+                                gameTabs.Add(_games(game))
+                                BeginUpdateStateDisplay()
+                            End Sub)
+    End Sub
+    Private Sub OnRemovedGame(ByVal sender As GameServer, ByVal game As Game)
+        inQueue.QueueAction(Sub()
+                                gameTabs.Remove(_games(game))
+                                _games.Remove(game)
+                                BeginUpdateStateDisplay()
+                            End Sub)
+    End Sub
+    Private Sub OnAddedGameSet(ByVal sender As GameServer, ByVal gameSet As GameSet)
+        inQueue.QueueAction(Sub()
+                                _gameSets.Add(gameSet)
+                                BeginUpdateStateDisplay()
+                            End Sub)
+    End Sub
+    Private Sub OnRemovedGameSet(ByVal sender As GameServer, ByVal gameSet As GameSet)
+        inQueue.QueueAction(Sub()
+                                _gameSets.Remove(gameSet)
+                                BeginUpdateStateDisplay()
+                            End Sub)
     End Sub
 End Class

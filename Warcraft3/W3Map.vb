@@ -122,9 +122,10 @@ Namespace WC3
 #Region "New"
         Public Shared Function FromArgument(ByVal arg As String) As Map
             Contract.Requires(arg IsNot Nothing)
-            Contract.Requires(arg.Length > 0)
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
-            If arg(0) = "-"c Then
+            If arg.Length <= 0 Then
+                Throw New ArgumentException("Empty argument.")
+            ElseIf arg(0) = "-"c Then
                 Throw New ArgumentException("Map argument begins with '-', is probably an option. (did you forget an argument?)")
             ElseIf arg.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase) Then 'Map specified by HostMapInfo packet data
                 'Parse
@@ -135,7 +136,7 @@ Namespace WC3
                                Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
                                ).ToArray
                 Dim packet = WC3.Packet.FromData(PacketId.HostMapInfo, hexData.ToView)
-                Dim vals = CType(packet.Payload.Value, Dictionary(Of String, Object))
+                Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
 
                 'Extract values
                 Dim path = CStr(vals("path")).AssumeNotNull
@@ -163,7 +164,7 @@ Namespace WC3
                        ByVal mapChecksumSHA1 As Byte(),
                        ByVal mapChecksumXORO As UInt32,
                        ByVal slotCount As Integer)
-            Contract.Requires(folder IsNot Nothing)
+            Contract.Requires(Folder IsNot Nothing)
             Contract.Requires(relativePath IsNot Nothing)
             Contract.Requires(relativePath.StartsWith("Maps\", StringComparison.InvariantCultureIgnoreCase))
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
@@ -173,9 +174,9 @@ Namespace WC3
             Contract.Requires(fileSize > 0)
             Contract.Ensures(Me.Slots.Count = slotCount)
 
-            Me._fullPath = folder + relativePath.Substring(5)
+            Me._fullPath = Folder + relativePath.Substring(5)
             Me._relativePath = relativePath
-            Me._folder = folder
+            Me._folder = Folder
             Me.playableHeight = 256
             Me.playableWidth = 256
             Me.isMelee = True
@@ -301,6 +302,7 @@ Namespace WC3
                 Using sha = New Security.Cryptography.SHA1Managed()
                     Dim result = sha.ComputeHash(f)
                     Contract.Assume(result IsNot Nothing)
+                    Contract.Assume(result.Length = 20)
                     Return result
                 End Using
             End Using
@@ -538,7 +540,7 @@ Namespace WC3
                 If numSlotsInFile <= 0 OrElse numSlotsInFile > 12 Then
                     Throw New IO.InvalidDataException("Invalid number of slots.")
                 End If
-                Dim slots = New List(Of Slot)
+                Dim slots = New List(Of Slot)(capacity:=numSlotsInFile)
                 Dim slotColorMap = New Dictionary(Of Slot.PlayerColor, Slot)
                 For repeat = 0 To numSlotsInFile - 1
                     Dim slot = New Slot(Nothing, CByte(slots.Count + 1))
@@ -576,7 +578,9 @@ Namespace WC3
                         slot.race = race
                         slotColorMap(slot.color) = slot
                     End If
+                    Contract.Assert(slots.Count <= numSlotsInFile)
                 Next repeat
+                Contract.Assert(slots.Count <= 12)
 
                 'Forces
                 Dim numForces = br.ReadInt32()
@@ -601,6 +605,7 @@ Namespace WC3
                 Dim isMelee = CBool(options And MapOptions.Melee)
                 If isMelee Then
                     For i = 0 To slots.Count - 1
+                        Contract.Assume(slots(i) IsNot Nothing)
                         slots(i).Team = CByte(i)
                         slots(i).race = Slot.Races.Random
                     Next i

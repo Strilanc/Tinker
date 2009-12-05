@@ -1,13 +1,13 @@
 ﻿
 Namespace Links
     Public Interface IGameSource
-        Event AddedGame(ByVal sender As IGameSource, ByVal game As WC3.GameDescription, ByVal server As WC3.GameServer)
-        Event RemovedGame(ByVal sender As IGameSource, ByVal game As WC3.GameDescription, ByVal reason As String)
+        Event AddedGame(ByVal sender As IGameSource, ByVal game As WC3.LocalGameDescription, ByVal server As WC3.GameServer)
+        Event RemovedGame(ByVal sender As IGameSource, ByVal game As WC3.LocalGameDescription, ByVal reason As String)
         Event DisposedLink(ByVal sender As IGameSource, ByVal partner As IGameSink)
     End Interface
     Public Interface IGameSink
-        Sub AddGame(ByVal game As WC3.GameDescription, ByVal server As WC3.GameServer)
-        Sub RemoveGame(ByVal game As WC3.GameDescription, ByVal reason As String)
+        Sub AddGame(ByVal game As WC3.LocalGameDescription, ByVal server As WC3.GameServer)
+        Sub RemoveGame(ByVal game As WC3.LocalGameDescription, ByVal reason As String)
         Sub SetAdvertisingOptions(ByVal isPrivate As Boolean)
     End Interface
     Public Interface IGameSourceSink
@@ -44,13 +44,14 @@ Namespace Links
             AddHandler master.DisposedLink, AddressOf c_DisposedLink
         End Sub
 
-        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
             If Not finalizing Then
                 RemoveHandler master.AddedGame, AddressOf c_StartedAdvertising
                 RemoveHandler master.RemovedGame, AddressOf c_StoppedAdvertising
                 RemoveHandler master.DisposedLink, AddressOf c_DisposedLink
             End If
-        End Sub
+            Return Nothing
+        End Function
 
         Private Sub c_DisposedLink(ByVal sender As IGameSource,
                                    ByVal partner As IGameSink)
@@ -59,12 +60,12 @@ Namespace Links
             End If
         End Sub
         Private Sub c_StartedAdvertising(ByVal sender As IGameSource,
-                                         ByVal game As WC3.GameDescription,
+                                         ByVal game As WC3.LocalGameDescription,
                                          ByVal server As WC3.GameServer)
             servant.AddGame(game, server)
         End Sub
         Private Sub c_StoppedAdvertising(ByVal sender As IGameSource,
-                                         ByVal game As WC3.GameDescription,
+                                         ByVal game As WC3.LocalGameDescription,
                                          ByVal reason As String)
             servant.RemoveGame(game, reason)
         End Sub
@@ -85,11 +86,11 @@ Namespace Links
             Dispose()
         End Sub
 
-        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
-            If Not finalizing Then
-                RemoveHandler Me.member.RemovedGame, AddressOf CatchStoppedAdvertising
-            End If
-        End Sub
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+            If finalizing Then Return Nothing
+            RemoveHandler Me.member.RemovedGame, AddressOf CatchStoppedAdvertising
+            Return Nothing
+        End Function
     End Class
 
     Public NotInheritable Class DisposeLink

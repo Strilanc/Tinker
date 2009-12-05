@@ -71,6 +71,8 @@
     <Compile Include="CommandArgumentTest.vb" />
     <Compile Include="CommandTemplateTest.vb" />
     <Compile Include="CommonTest.vb" />
+    <Compile Include="DeadManSwitchTest.vb" />
+    <Compile Include="GameServerTest.vb" />
     <Compile Include="PacketHandlerTest.vb" />
     <Compile Include="GameStatsTest.vb" />
     <Compile Include="HelpCommandTest.vb" />
@@ -79,11 +81,12 @@
     <Compile Include="TransferSchedulerTest.vb" />
     <Compile Include="Utilities\Common.vb" />
     <Compile Include="Utilities\StreamTester.vb" />
+    <Compile Include="Utilities\TestStream.vb" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\HostBot\HostBot.vbproj">
+    <ProjectReference Include="..\Tinker.vbproj">
       <Project>{2986B2AE-1AEB-4A71-8EEA-D102866A42AB}</Project>
-      <Name>HostBot</Name>
+      <Name>Tinker</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />

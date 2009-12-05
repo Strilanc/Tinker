@@ -1,4 +1,4 @@
-Imports HostBot.Commands
+Imports Tinker.Commands
 
 Namespace Commands.Specializations
     Public NotInheritable Class InstancePlayCommands
@@ -13,7 +13,8 @@ Namespace Commands.Specializations
             template:="",
             Description:="Causes the bot to disconnect from the game. The game may continue if one of the players can host.",
             func:=Function(target, user, argument)
-                      Return target.QueueClose.EvalOnSuccess(Function() "Disconnected")
+                      target.Dispose()
+                      Return target.FutureDisposed.EvalOnSuccess(Function() "Disconnected")
                   End Function)
     End Class
 
@@ -176,7 +177,8 @@ Namespace Commands.Specializations
             template:="",
             Description:="Closes this game instance.",
             func:=Function(target, user, argument)
-                      Return target.QueueClose.EvalOnSuccess(Function() "Cancelled")
+                      target.Dispose()
+                      Return target.futuredisposed.EvalOnSuccess(Function() "Cancelled")
                   End Function)
     End Class
 
@@ -184,6 +186,7 @@ Namespace Commands.Specializations
         Inherits CommandSet(Of WC3.Game)
 
         Public Sub New(ByVal bot As MainBot)
+            Contract.Requires(bot IsNot Nothing)
             AddCommand(New CommandBot(bot))
         End Sub
 
@@ -198,7 +201,7 @@ Namespace Commands.Specializations
                 Me.bot = bot
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As WC3.Game, ByVal user As BotUser, ByVal argument As String) As Strilbrary.Threading.IFuture(Of String)
-                Return bot.BotCommands.Invoke(bot, user, argument)
+                Return Components.MainBotManager.BotCommands.Invoke(bot, user, argument)
             End Function
         End Class
     End Class
@@ -226,10 +229,11 @@ Namespace Commands.Specializations
             Description:="Returns settings for this game {tickperiod, laglimit, gamerate}.",
             func:=Function(target, user, argument)
                       Dim val As Object
-                      Select Case argument.RawValue(0).ToUpperInvariant
-                          Case "TICKPERIOD" : val = target.SettingTickPeriod
-                          Case "LAGLIMIT" : val = target.SettingLagLimit
-                          Case "GAMERATE" : val = target.SettingSpeedFactor
+                      Dim argSetting As InvariantString = argument.RawValue(0)
+                      Select Case argSetting
+                          Case "TickPeriod" : val = target.SettingTickPeriod
+                          Case "LagLimit" : val = target.SettingLagLimit
+                          Case "GameRate" : val = target.SettingSpeedFactor
                           Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argument.RawValue(0)))
                       End Select
                       Return "{0} = '{1}'".Frmt(argument.RawValue(0), val).Futurized
@@ -244,14 +248,15 @@ Namespace Commands.Specializations
                       Dim vald As Double
                       Dim is_short = UShort.TryParse(argument.RawValue(1), val_us)
                       Dim is_double = Double.TryParse(argument.RawValue(1), vald)
-                      Select Case argument.RawValue(0).ToUpperInvariant
-                          Case "TICKPERIOD"
+                      Dim argSetting As InvariantString = argument.RawValue(0)
+                      Select Case argSetting
+                          Case "TickPeriod"
                               If Not is_short Or val_us < 50 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
                               target.SettingTickPeriod = val_us
-                          Case "LAGLIMIT"
+                          Case "LagLimit"
                               If Not is_short Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
                               target.SettingLagLimit = val_us
-                          Case "GAMERATE"
+                          Case "GameRate"
                               If Not is_double Or vald < 0.01 Or vald > 10 Then Throw New ArgumentException("Invalid value")
                               target.SettingSpeedFactor = vald
                           Case Else

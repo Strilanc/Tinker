@@ -27,7 +27,6 @@ Partial Class ClientForm
         Me.sep1 = New System.Windows.Forms.ToolStripSeparator()
         Me.mnuClose = New System.Windows.Forms.ToolStripMenuItem()
         Me.btnMinimizeToTray = New System.Windows.Forms.Button()
-        Me.botcMain = New HostBot.BotControl()
         Me.mnuTray.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -51,23 +50,23 @@ Partial Class ClientForm
         '
         Me.mnuTray.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.mnuRestore, Me.sep1, Me.mnuClose})
         Me.mnuTray.Name = "mnuTray"
-        Me.mnuTray.Size = New System.Drawing.Size(153, 76)
+        Me.mnuTray.Size = New System.Drawing.Size(114, 54)
         '
         'mnuRestore
         '
         Me.mnuRestore.Name = "mnuRestore"
-        Me.mnuRestore.Size = New System.Drawing.Size(152, 22)
+        Me.mnuRestore.Size = New System.Drawing.Size(113, 22)
         Me.mnuRestore.Text = "Restore"
         '
         'sep1
         '
         Me.sep1.Name = "sep1"
-        Me.sep1.Size = New System.Drawing.Size(149, 6)
+        Me.sep1.Size = New System.Drawing.Size(110, 6)
         '
         'mnuClose
         '
         Me.mnuClose.Name = "mnuClose"
-        Me.mnuClose.Size = New System.Drawing.Size(152, 22)
+        Me.mnuClose.Size = New System.Drawing.Size(113, 22)
         Me.mnuClose.Text = "Close"
         '
         'btnMinimizeToTray
@@ -80,26 +79,17 @@ Partial Class ClientForm
         Me.btnMinimizeToTray.Text = "Minimize to Tray"
         Me.btnMinimizeToTray.UseVisualStyleBackColor = True
         '
-        'botcMain
-        '
-        Me.botcMain.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
-                    Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.botcMain.Location = New System.Drawing.Point(12, 12)
-        Me.botcMain.Name = "botcMain"
-        Me.botcMain.Size = New System.Drawing.Size(981, 388)
-        Me.botcMain.TabIndex = 11
-        '
         'ClientForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.AutoScroll = True
         Me.ClientSize = New System.Drawing.Size(1005, 447)
         Me.Controls.Add(Me.btnMinimizeToTray)
-        Me.Controls.Add(Me.botcMain)
         Me.Controls.Add(Me.btnSettings)
         Me.DoubleBuffered = True
         Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
+        Me.MinimumSize = New System.Drawing.Size(500, 250)
         Me.Name = "ClientForm"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
         Me.Text = "{ProgramName}"
@@ -108,7 +98,6 @@ Partial Class ClientForm
 
     End Sub
     Friend WithEvents btnSettings As System.Windows.Forms.Button
-    Friend WithEvents botcMain As HostBot.BotControl
     Friend WithEvents trayIcon As System.Windows.Forms.NotifyIcon
     Friend WithEvents mnuTray As System.Windows.Forms.ContextMenuStrip
     Friend WithEvents mnuRestore As System.Windows.Forms.ToolStripMenuItem

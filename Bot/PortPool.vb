@@ -113,7 +113,7 @@
             End Get
         End Property
 
-        Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
             SyncLock pool.lock
                 Contract.Assume(pool.OutPorts.Contains(_port))
                 Contract.Assume(Not pool.InPorts.Contains(_port))
@@ -122,6 +122,7 @@
                     pool.InPorts.Add(_port)
                 End If
             End SyncLock
-        End Sub
+            Return Nothing
+        End Function
     End Class
 End Class

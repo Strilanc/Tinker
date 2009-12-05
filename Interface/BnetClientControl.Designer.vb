@@ -20,9 +20,9 @@ Partial Class BnetClientControl
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.lstState = New System.Windows.Forms.ListBox()
-        Me.txtCommand = New System.Windows.Forms.TextBox()
         Me.txtTalk = New System.Windows.Forms.TextBox()
-        Me.logClient = New HostBot.LoggerControl()
+        Me.logClient = New Tinker.LoggerControl()
+        Me.comClient = New Tinker.CommandControl()
         Me.SuspendLayout()
         '
         'lstState
@@ -35,16 +35,6 @@ Partial Class BnetClientControl
         Me.lstState.Name = "lstState"
         Me.lstState.Size = New System.Drawing.Size(206, 389)
         Me.lstState.TabIndex = 2
-        '
-        'txtCommand
-        '
-        Me.txtCommand.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.txtCommand.BackColor = System.Drawing.SystemColors.Info
-        Me.txtCommand.Location = New System.Drawing.Point(0, 395)
-        Me.txtCommand.Name = "txtCommand"
-        Me.txtCommand.Size = New System.Drawing.Size(740, 20)
-        Me.txtCommand.TabIndex = 3
         '
         'txtTalk
         '
@@ -65,12 +55,21 @@ Partial Class BnetClientControl
         Me.logClient.Size = New System.Drawing.Size(528, 363)
         Me.logClient.TabIndex = 0
         '
+        'comClient
+        '
+        Me.comClient.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
+                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.comClient.Location = New System.Drawing.Point(0, 395)
+        Me.comClient.Name = "comClient"
+        Me.comClient.Size = New System.Drawing.Size(740, 20)
+        Me.comClient.TabIndex = 4
+        '
         'BnetClientControl
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.Controls.Add(Me.comClient)
         Me.Controls.Add(Me.txtTalk)
-        Me.Controls.Add(Me.txtCommand)
         Me.Controls.Add(Me.logClient)
         Me.Controls.Add(Me.lstState)
         Me.Name = "BnetClientControl"
@@ -80,8 +79,8 @@ Partial Class BnetClientControl
 
     End Sub
     Friend WithEvents lstState As System.Windows.Forms.ListBox
-    Friend WithEvents txtCommand As System.Windows.Forms.TextBox
-    Friend WithEvents logClient As HostBot.LoggerControl
+    Friend WithEvents logClient As Tinker.LoggerControl
     Friend WithEvents txtTalk As System.Windows.Forms.TextBox
+    Friend WithEvents comClient As Tinker.CommandControl
 
 End Class

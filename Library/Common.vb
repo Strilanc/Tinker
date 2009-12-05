@@ -9,6 +9,34 @@ Imports Strilbrary.Enumeration
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
+    Public Function WC3MajorVersion() As Byte
+        Return WC3Version(2)
+    End Function
+    Public Function WC3Version() As Byte()
+        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Dim exeS = My.Settings.exeVersion
+        Contract.Assume(exeS IsNot Nothing)
+        Dim ss = exeS.Split("."c)
+        If ss.Length <> 4 Then Throw New ArgumentException("Invalid version specified in settings. Must have #.#.#.# form.")
+        Dim exeV(0 To 3) As Byte
+        For i = 0 To 3
+            Contract.Assume(ss(i) IsNot Nothing)
+            If Not Integer.TryParse(ss(i), 0) Or ss(i).Length > 8 Then
+                Throw New ArgumentException("Invalid version specified in settings. Must have #.#.#.# form.")
+            End If
+            exeV(i) = CByte(CInt(ss(i)) And &HFF)
+        Next i
+        Return exeV.Reverse.ToArray
+    End Function
+    Public Function WC3Path() As String
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return My.Settings.war3path.AssumeNotNull
+    End Function
+    Public Function MapPath() As String
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        Return My.Settings.mapPath.AssumeNotNull
+    End Function
+
 #Region "Strings Extra"
     <Extension()> <Pure()>
     Public Function Linefy(ByVal text As String) As String
@@ -31,44 +59,55 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(body IsNot Nothing)
         Contract.Requires(maxLineLength > 0)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IList(Of String))().Count > 0)
+        'Contract.Ensures(Contract.ForAll(Contract.Result(Of IList(Of String)), Function(item) item IsNot Nothing))
+        'Contract.Ensures(Contract.ForAll(Contract.Result(Of IList(Of String)), Function(item) item.Length <= maxLineLength))
 
         Dim result = New List(Of String)()
-        For Each line In Split(body, Delimiter:=Environment.NewLine)
+        For Each line In Microsoft.VisualBasic.Split(body, Delimiter:=Environment.NewLine)
+            Contract.Assume(line IsNot Nothing)
             If line.Length <= maxLineLength Then
                 result.Add(line)
                 Continue For
             End If
 
-            Dim subline As New System.Text.StringBuilder(capacity:=maxLineLength)
-            For Each word In line.Split(" "c)
-                If word.Length > maxLineLength Then
-                    If subline.Length > 0 Then
-                        Dim n = maxLineLength - subline.Length - 1
-                        If n > 0 Then
-                            subline.Append(" ")
-                            subline.Append(word.Substring(0, n))
-                            word = word.Substring(n)
-                        End If
-                        result.Add(subline.ToString)
-                        subline.Clear()
+            Dim ws = 0 'word start
+            Dim ls = 0 'line start
+            For i = 0 To line.Length
+                Contract.Assert(ls <= ws)
+                Contract.Assert(ws <= ls + maxLineLength + 1)
+                Contract.Assert(ws <= i)
+                If i < line.Length AndAlso line(i) <> " "c Then Continue For
+
+                If i - ws > maxLineLength Then 'word will not fit on a single line
+                    'Shove as much word as possible at end of current line
+                    If line(ls + maxLineLength - 1) = " "c Then
+                        result.Add(line.Substring(ls, maxLineLength - 1))
+                    ElseIf line.Length > ls + maxLineLength AndAlso line(ls + maxLineLength) = " "c Then
+                        result.Add(line.Substring(ls, maxLineLength))
+                        ls += 1
+                    Else
+                        result.Add(line.Substring(ls, maxLineLength))
                     End If
-                    Dim i = 0
-                    For i = 0 To word.Length - 1 - maxLineLength Step maxLineLength
-                        result.Add(word.Substring(i, maxLineLength))
-                    Next i
-                    word = word.Substring(i)
-                ElseIf subline.Length = 0 Then
-                    'no action needed
-                ElseIf subline.Length + 1 + word.Length <= maxLineLength Then
-                    subline.Append(" ")
-                Else
-                    result.Add(subline.ToString)
-                    subline.Clear()
+                    ls += maxLineLength
+                    'Divide remainder of word into lines
+                    While i - ls > maxLineLength
+                        result.Add(line.Substring(ls, maxLineLength))
+                        ls += maxLineLength
+                    End While
+                    ws = ls
+                ElseIf i - ls > maxLineLength Then 'word will not fit on current line
+                    Contract.Assert(ls < ws)
+                    result.Add(line.Substring(ls, ws - ls - 1))
+                    ls = ws
                 End If
-                subline.Append(word)
-            Next word
-            If subline.Length > 0 Then
-                result.Add(subline.ToString)
+
+                ws = i + 1
+            Next i
+
+            Contract.Assert(ls = 0 OrElse result.Count > 0)
+            If ls <= line.Length Then
+                result.Add(line.Substring(ls))
             End If
         Next line
         Return result
@@ -78,27 +117,24 @@ Public Module PoorlyCategorizedFunctions
     Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
                                                     ByVal parser As Func(Of String, T),
                                                     ByVal pairDivider As String,
-                                                    ByVal valueDivider As String,
-                                                    ByVal useUpperInvariantKeys As Boolean) As Dictionary(Of String, T)
+                                                    ByVal valueDivider As String) As Dictionary(Of InvariantString, T)
+        Contract.Requires(parser IsNot Nothing)
         Contract.Requires(text IsNot Nothing)
         Contract.Requires(pairDivider IsNot Nothing)
         Contract.Requires(valueDivider IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Dictionary(Of String, T))() IsNot Nothing)
-        Dim d As New Dictionary(Of String, T)
+        Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, T))() IsNot Nothing)
+        Dim result = New Dictionary(Of InvariantString, T)
         Dim pd = New String() {pairDivider}
         Dim vd = New String() {valueDivider}
         For Each pair In text.Split(pd, StringSplitOptions.RemoveEmptyEntries)
             Contract.Assume(pair IsNot Nothing)
-            If Not pair.Contains(valueDivider) Then
-                Throw New ArgumentException("'{0}' didn't include a value dividing '{1}'.".Frmt(pair, valueDivider))
-            End If
             Dim p = pair.IndexOf(valueDivider)
+            If p = -1 Then Throw New ArgumentException("'{0}' didn't include a value divider ('{1}').".Frmt(pair, valueDivider))
             Dim key = pair.Substring(0, p)
             Dim value = pair.Substring(p + valueDivider.Length)
-            If useUpperInvariantKeys Then key = key.ToUpperInvariant
-            d(key) = parser(value)
+            result(key) = parser(value)
         Next pair
-        Return d
+        Return result
     End Function
 #End Region
 
@@ -114,11 +150,10 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     Public Function FindFilesMatching(ByVal fileQuery As String,
-                                      ByVal likeQuery As String,
+                                      ByVal likeQuery As InvariantString,
                                       ByVal directory As String,
                                       ByVal maxResults As Integer) As IList(Of String)
         Contract.Requires(fileQuery IsNot Nothing)
-        Contract.Requires(likeQuery IsNot Nothing)
         Contract.Requires(directory IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
 
@@ -131,7 +166,7 @@ Public Module PoorlyCategorizedFunctions
 
         'Separate directory and filename patterns
         fileQuery = fileQuery.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
-        Dim dirQuery = "*"
+        Dim dirQuery As InvariantString = "*"
         If fileQuery.Contains(DirectorySeparatorChar) Then
             Dim words = fileQuery.Split(DirectorySeparatorChar)
             Dim filePattern = words(words.Length - 1)
@@ -141,17 +176,13 @@ Public Module PoorlyCategorizedFunctions
             fileQuery = "*" + filePattern
         End If
 
-        'patterns are not case-sensitive
-        dirQuery = dirQuery.ToUpperInvariant
-        likeQuery = likeQuery.ToUpperInvariant
-
         'Check files in folder
-        Dim matches As New List(Of String)
+        Dim matches = New List(Of String)
         For Each filename In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
             Contract.Assume(filename IsNot Nothing)
             Contract.Assume(filename.Length > directory.Length)
             filename = filename.Substring(directory.Length)
-            If filename.ToUpperInvariant Like likeQuery AndAlso filename.ToUpperInvariant Like dirQuery Then
+            If filename Like likeQuery AndAlso filename Like dirQuery Then
                 matches.Add(filename)
                 If matches.Count >= maxResults Then Exit For
             End If
@@ -214,8 +245,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(this IsNot Nothing)
         Contract.Requires(minimumLength >= 0)
         Contract.Ensures(Contract.Result(Of IList(Of T))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of T))().Count >= minimumLength)
-        Contract.Ensures(Contract.Result(Of IList(Of T))().Count >= this.Count)
+        Contract.Ensures(Contract.Result(Of IList(Of T))().Count = Math.Max(this.Count, minimumLength))
 
         Dim result(0 To Math.Max(minimumLength, this.Count) - 1) As T
         For i = 0 To this.Count - 1

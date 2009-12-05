@@ -35,7 +35,7 @@
                 BroadcastPacket(Packet.MakeOtherPlayerReady(player), Nothing)
             Next player
 
-            If settings.loadInGame Then
+            If settings.useLoadInGame Then
                 fakeTickTimer.Start()
             End If
         End Sub
@@ -94,7 +94,7 @@
                 visibleUnreadyPlayers.Remove(visibleReadiedPlayer)
             End If
 
-            If settings.loadInGame Then
+            If settings.useLoadInGame Then
                 For Each player In players
                     Contract.Assume(player IsNot Nothing)
                     If IsPlayerVisible(player) Then
@@ -111,7 +111,7 @@
                 For Each player In readyPlayers
                     Contract.Assume(player IsNot Nothing)
                     If player IsNot sendingPlayer Then
-                        SendMessageTo("{0} is ready.".Frmt(sendingPlayer.name), player)
+                        SendMessageTo("{0} is ready.".Frmt(sendingPlayer.Name), player)
                         If visibleReadiedPlayer IsNot Nothing Then
                             player.QueueSendPacket(Packet.MakeRemovePlayerFromLagScreen(visibleReadiedPlayer, 0))
                         End If

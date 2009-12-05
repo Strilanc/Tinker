@@ -1,23 +1,32 @@
-''HostBot - Warcraft 3 game hosting bot
-''Copyright (C) 2008 Craig Gidney
-''
-''This program is free software: you can redistribute it and/or modify
-''it under the terms of the GNU General Public License as published by
-''the Free Software Foundation, either version 3 of the License, or
-''(at your option) any later version.
-''
-''This program is distributed in the hope that it will be useful,
-''but WITHOUT ANY WARRANTY; without even the implied warranty of
-''MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-''GNU General Public License for more details.
-''You should have received a copy of the GNU General Public License
-''along with this program.  If not, see http://www.gnu.org/licenses/
-
-Imports System.Numerics
-Imports System.Security
+'Tinker - Warcraft 3 game hosting bot
+'Copyright (C) 2009 Craig Gidney
+'
+'This program is free software: you can redistribute it and/or modify
+'it under the terms of the GNU General Public License as published by
+'the Free Software Foundation, either version 3 of the License, or
+'(at your option) any later version.
+'
+'This program is distributed in the hope that it will be useful,
+'but WITHOUT ANY WARRANTY; without even the implied warranty of
+'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+'GNU General Public License for more details.
+'You should have received a copy of the GNU General Public License
+'along with this program.  If not, see http://www.gnu.org/licenses/
 
 Namespace Bnet
+    ''' <summary>
+    ''' A challenge/response hash function used by Blizzard to determine if a client has valid game files.
+    ''' The operations and initial state of the hash are specified in the challenge.
+    ''' </summary>
     Public Module RevisionCheck
+#Region "Data"
+        '''<summary>The files fed into the hashing process.</summary>
+        Private ReadOnly HashFiles As String() = {
+                "War3.exe",
+                "Storm.dll",
+                "Game.dll"
+            }
+        '''<summary>The operations usable by the hashing process.</summary>
         Private ReadOnly Operations As New Dictionary(Of Char, Func(Of ModInt32, ModInt32, ModInt32)) From {
                 {"+"c, Function(a, b) a + b},
                 {"-"c, Function(a, b) a - b},
@@ -26,7 +35,20 @@ Namespace Bnet
                 {"^"c, Function(a, b) a Xor b},
                 {"|"c, Function(a, b) a Or b}
             }
+        '''<summary>The values which the index string chooses from to XOR into variable A's initial value.</summary>
+        Private ReadOnly IndexStringSeeds As UInteger() = {
+                &HE7F4CB62UI,
+                &HF6A14FFCUI,
+                &HAA5504AFUI,
+                &H871FCDC2UI,
+                &H11BF6A18UI,
+                &HC57292E6UI,
+                &H7927D27EUI,
+                &H2FEC8733UI
+            }
+#End Region
 
+        '''<summary>A parsed hashing operation.</summary>
         Private Structure Operation
             Private ReadOnly leftVar As Char
             Private ReadOnly rightVar As Char
@@ -45,6 +67,7 @@ Namespace Bnet
             End Sub
         End Structure
 
+        '''<summary>Extracts the initial variable values from the challenge.</summary>
         Private Function ReadVariablesFrom(ByVal lines As IEnumerator(Of String)) As Dictionary(Of Char, ModInt32)
             Contract.Requires(lines IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))() IsNot Nothing)
@@ -72,6 +95,7 @@ Namespace Bnet
             Return variables
         End Function
 
+        '''<summary>Extracts the hash operations from the challenge.</summary>
         Private Function ReadOperationsFrom(ByVal lines As IEnumerator(Of String),
                                             ByVal variables As Dictionary(Of Char, ModInt32)) As IEnumerable(Of Operation)
             Contract.Requires(lines IsNot Nothing)
@@ -111,6 +135,22 @@ Namespace Bnet
             Return result
         End Function
 
+        '''<summary>Selects a seed based on the index string.</summary>
+        <Pure()>
+        Private Function ExtractIndexStringHashSeed(ByVal indexString As String) As UInteger
+            Contract.Requires(indexString IsNot Nothing)
+
+            Dim invIndexString As InvariantString = indexString
+            If Not invIndexString Like "ver-ix86-#.mpq" AndAlso Not invIndexString Like "ix86ver#.mpq" Then
+                Throw New ArgumentException("Unrecognized Index String: {0}".Frmt(indexString), "indexString")
+            End If
+            Contract.Assume(indexString.Length >= 5)
+
+            Dim index = Byte.Parse(indexString(indexString.Length - 5), CultureInfo.InvariantCulture)
+            If index >= IndexStringSeeds.Length Then Throw New ArgumentOutOfRangeException("Extracted index is larger than the hash seed table.")
+            Return IndexStringSeeds(index)
+        End Function
+
         ''' <summary>
         ''' Determines the revision check value used when connecting to bnet.
         ''' </summary>
@@ -131,30 +171,17 @@ Namespace Bnet
             Dim operations = ReadOperationsFrom(lines, variables)
             If lines.MoveNext Then Throw New ArgumentException("More revision check instructions than expected.")
 
-            'Adjust Variable A using mpq number string [the point of this? obfuscation I guess]
-            indexString = indexString.ToUpperInvariant
-            If Not indexString Like "VER-IX86-#.MPQ" AndAlso Not indexString Like "IX86VER#.MPQ" Then
-                Throw New ArgumentException("Unrecognized MPQ String: {0}".Frmt(indexString), "indexString")
-            End If
-            Contract.Assume(indexString.Length >= 5)
-            Dim table = {&HE7F4CB62UI,
-                         &HF6A14FFCUI,
-                         &HAA5504AFUI,
-                         &H871FCDC2UI,
-                         &H11BF6A18UI,
-                         &HC57292E6UI,
-                         &H7927D27EUI,
-                         &H2FEC8733UI}
-            variables("A"c) = variables("A"c) Xor table(Integer.Parse(indexString(indexString.Length - 5), CultureInfo.InvariantCulture))
+            'Seed variable A [the point of this? obfuscation I guess]
+            variables("A"c) = variables("A"c) Xor ExtractIndexStringHashSeed(indexString)
 
-            'Tail Buffer [rounds file data sizes to 1024]
+            'Init tail buffer [used to extend file data to a multiple of 1024]
             Dim tailBuffer(0 To 1024 - 1) As Byte
             For i = 0 To tailBuffer.Length - 1
                 tailBuffer(i) = CByte(255 - (i Mod 256))
             Next i
 
-            'Parse Files
-            For Each filename In {"War3.exe", "Storm.dll", "Game.dll"}
+            'Process hash files
+            For Each filename In HashFiles
                 Using file = New IO.FileStream(folder + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
                     'Apply operations using each dword in stream
                     Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({file, New IO.MemoryStream(tailBuffer)})))
@@ -167,7 +194,7 @@ Namespace Bnet
                 End Using
             Next filename
 
-            'Return final value of Variable C
+            'Result is the final value of Variable C
             Return variables("C"c)
         End Function
     End Module

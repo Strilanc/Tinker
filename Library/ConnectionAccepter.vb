@@ -25,7 +25,7 @@ Public NotInheritable Class ConnectionAccepter
             Dim listener = New TcpListener(IPAddress.Any, port)
             listener.Start()
             listeners.Add(listener)
-            FutureIterate(AddressOf listener.FutureAcceptConnection,
+            FutureIterate(AddressOf listener.AsyncAcceptConnection,
                 Function(client, clientException)
                     SyncLock lock
                         'succeeded?

@@ -35,7 +35,7 @@ Public NotInheritable Class PacketStreamer
         Me.headerBytesBeforeSizeCount = headerBytesBeforeSizeCount
     End Sub
 
-    Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
+    Public Function AsyncReadPacket() As IFuture(Of ViewableList(Of Byte))
         Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
         Dim readSize = 0
         Dim totalSize = 0

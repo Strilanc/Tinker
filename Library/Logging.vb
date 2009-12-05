@@ -22,6 +22,8 @@ Public NotInheritable Class Logger
     End Sub
 
     Public Sub FutureLog(ByVal placeholder As String, ByVal message As IFuture(Of String))
+        Contract.Requires(placeholder IsNot Nothing)
+        Contract.Requires(message IsNot Nothing)
         ref.QueueAction(Sub()
                             Contract.Assume(Me IsNot Nothing)
                             RaiseEvent LoggedFutureMessage(placeholder, message)

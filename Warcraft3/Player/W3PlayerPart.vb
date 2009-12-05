@@ -1,19 +1,19 @@
 Namespace WC3
     Partial Public NotInheritable Class Player
-        Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of String, Object))
+        Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of InvariantString, Object))
 #Region "Networking"
-        Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
+            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
             RaiseEvent ReceivedNonGameAction(Me, vals)
         End Sub
 
-        Private Sub IgnorePacket(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub IgnorePacket(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
         End Sub
 
-        Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
+            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
             Dim leaveType = CType(vals("leave type"), PlayerLeaveType)
             Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
         End Sub
@@ -34,7 +34,7 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return GetLatencyDescription.Select(
                 Function(latencyDesc)
-                    Dim base = Name.Padded(20) +
+                    Dim base = Name.Value.Padded(20) +
                                "Host={0}".Frmt(CanHost()).Padded(12) +
                                "{0}c".Frmt(_numPeerConnections).Padded(5) +
                                latencyDesc.Padded(12)

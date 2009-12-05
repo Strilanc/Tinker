@@ -39,7 +39,7 @@ Namespace My.Resources
         Friend ReadOnly Property ResourceManager() As Global.System.Resources.ResourceManager
             Get
                 If Object.ReferenceEquals(resourceMan, Nothing) Then
-                    Dim temp As Global.System.Resources.ResourceManager = New Global.System.Resources.ResourceManager("HostBot.Resources", GetType(Resources).Assembly)
+                    Dim temp As Global.System.Resources.ResourceManager = New Global.System.Resources.ResourceManager("Tinker.Resources", GetType(Resources).Assembly)
                     resourceMan = temp
                 End If
                 Return resourceMan
@@ -67,57 +67,10 @@ Namespace My.Resources
             End Get
         End Property
         
-        '''<summary>
-        '''  Looks up a localized string similar to Instance &apos;{0}&apos; is already closed..
-        '''</summary>
-        Friend ReadOnly Property Instance_AlreadyClosed_f0name() As String
+        Friend ReadOnly Property TinkerIcon() As System.Drawing.Icon
             Get
-                Return ResourceManager.GetString("Instance_AlreadyClosed_f0name", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to Instance &apos;{0}&apos; closed..
-        '''</summary>
-        Friend ReadOnly Property Instance_Closed_f0name() As String
-            Get
-                Return ResourceManager.GetString("Instance_Closed_f0name", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to Instance &apos;{0}&apos; launched..
-        '''</summary>
-        Friend ReadOnly Property Instance_Launched_f0name() As String
-            Get
-                Return ResourceManager.GetString("Instance_Launched_f0name", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to HostBot.
-        '''</summary>
-        Friend ReadOnly Property ProgramName() As String
-            Get
-                Return ResourceManager.GetString("ProgramName", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to .
-        '''</summary>
-        Friend ReadOnly Property ProgramShowoff_f0name() As String
-            Get
-                Return ResourceManager.GetString("ProgramShowoff_f0name", resourceCulture)
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized string similar to No slot matching &apos;{0}&apos;..
-        '''</summary>
-        Friend ReadOnly Property Slot_NotMatched_f0pattern() As String
-            Get
-                Return ResourceManager.GetString("Slot_NotMatched_f0pattern", resourceCulture)
+                Dim obj As Object = ResourceManager.GetObject("TinkerIcon", resourceCulture)
+                Return CType(obj,System.Drawing.Icon)
             End Get
         End Property
     End Module

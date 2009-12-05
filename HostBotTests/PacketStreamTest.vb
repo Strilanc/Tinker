@@ -5,7 +5,7 @@ Imports Strilbrary.Enumeration
 Imports Strilbrary.Numerics
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
-Imports HostBot
+Imports Tinker
 
 <TestClass()>
 Public Class PacketStreamTest
@@ -36,7 +36,7 @@ Public Class PacketStreamTest
         m.Write(d, 0, d.Length)
         m.Position = 0
         Dim p = New PacketStreamer(m, 2, 1, 1000)
-        Dim f = p.FutureReadPacket()
+        Dim f = p.AsyncReadPacket()
         BlockOnFuture(f)
         Assert.IsTrue(f.State = FutureState.Succeeded)
         Assert.IsTrue(f.Value.HasSameItemsAs({0, 1, 10, 3, 4, 5, 6, 7, 8, 9}))
@@ -48,8 +48,8 @@ Public Class PacketStreamTest
         m.Write(d, 0, d.Length)
         m.Position = 0
         Dim p = New PacketStreamer(m, 2, 1, 1000)
-        BlockOnFuture(p.FutureReadPacket())
-        Dim f = p.FutureReadPacket()
+        BlockOnFuture(p.AsyncReadPacket())
+        Dim f = p.AsyncReadPacket()
         BlockOnFuture(f)
         Assert.IsTrue(f.State = FutureState.Succeeded)
         Assert.IsTrue(f.Value.HasSameItemsAs({0, 0, 4, &HFF}))

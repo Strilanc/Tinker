@@ -10,20 +10,7 @@ Public Module NetworkingCommon
     Private cachedInternalIP As Byte()
     Public Sub CacheIPAddresses()
         'Internal IP
-        Dim interfaces = NetworkInterface.GetAllNetworkInterfaces
-        Contract.Assume(interfaces IsNot Nothing)
-        Dim addr = (From nic In interfaces
-                    Where nic.Supports(NetworkInterfaceComponent.IPv4)
-                    Select a = (From address In nic.GetIPProperties.UnicastAddresses
-                                Where address.Address.AddressFamily = Net.Sockets.AddressFamily.InterNetwork
-                                Where address.Address.ToString <> "127.0.0.1").FirstOrDefault()
-                    Where a IsNot Nothing).FirstOrDefault()
-        If addr IsNot Nothing Then
-            Contract.Assume(addr.Address IsNot Nothing)
-            cachedInternalIP = addr.Address.GetAddressBytes
-        Else
-            cachedInternalIP = New Byte() {127, 0, 0, 1}
-        End If
+        cachedInternalIP = GetInternalIPAddress.GetAddressBytes
 
         'External IP
         ThreadedAction(
@@ -39,9 +26,24 @@ Public Module NetworkingCommon
         )
     End Sub
 
+    Private Function GetInternalIPAddress() As Net.IPAddress
+        Dim interfaces = NetworkInterface.GetAllNetworkInterfaces
+        Contract.Assume(interfaces IsNot Nothing)
+        Dim addr = (From nic In interfaces
+                    Where nic.Supports(NetworkInterfaceComponent.IPv4)
+                    Select a = (From address In nic.GetIPProperties.UnicastAddresses
+                                Where address.Address.AddressFamily = Net.Sockets.AddressFamily.InterNetwork
+                                Where address.Address.ToString <> "127.0.0.1").FirstOrDefault()
+                    Where a IsNot Nothing).FirstOrDefault()
+        If addr IsNot Nothing Then
+            Return addr.Address
+        Else
+            Return Net.IPAddress.Loopback
+        End If
+    End Function
     Public Function GetCachedIPAddressBytes(ByVal external As Boolean) As Byte()
         Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-        If cachedInternalIP Is Nothing Then Throw New InvalidOperationException("IP address not cached.")
+        If cachedInternalIP Is Nothing Then Return GetInternalIPAddress().GetAddressBytes
 
         If external AndAlso cachedExternalIP IsNot Nothing Then
             Return cachedExternalIP
@@ -49,72 +51,106 @@ Public Module NetworkingCommon
             Return cachedInternalIP
         End If
     End Function
-    Public Function GetReadableIPFromBytes(ByVal value As Byte()) As String
-        Contract.Requires(value IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return value.StringJoin(".")
-    End Function
 
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
     <Pure()>
-    <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
-    Public Function FutureCreateConnectedTcpClient(ByVal host As String,
-                                                   ByVal port As UShort) As IFuture(Of TcpClient)
+    Public Function AsyncTcpConnect(ByVal host As String,
+                                    ByVal port As UShort) As IFuture(Of TcpClient)
+        Contract.Requires(host IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
         Dim result = New FutureFunction(Of TcpClient)
         Dim client = New TcpClient
-        Try
-            client.BeginConnect(host:=host, port:=port, state:=Nothing,
-                requestCallback:=Sub(ar)
-                                     Try
-                                         client.EndConnect(ar)
-                                         result.SetSucceeded(client)
-                                     Catch e As Exception
-                                         result.SetFailed(e)
-                                     End Try
-                                 End Sub)
-        Catch e As Exception
-            result.SetFailed(e)
-        End Try
+        result.DependentCall(Sub() client.BeginConnect(host:=host, port:=port, state:=Nothing,
+            requestCallback:=Sub(ar) result.SetByEvaluating(
+                Function()
+                    client.EndConnect(ar)
+                    Return client
+                End Function)))
         Return result
     End Function
 
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
     <Pure()>
-    <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
-    Public Function FutureCreateConnectedTcpClient(ByVal address As Net.IPAddress,
-                                                   ByVal port As UShort) As IFuture(Of TcpClient)
+    Public Function AsyncTcpConnect(ByVal address As Net.IPAddress,
+                                    ByVal port As UShort) As IFuture(Of TcpClient)
+        Contract.Requires(address IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
         Dim result = New FutureFunction(Of TcpClient)
         Dim client = New TcpClient
-        Try
-            client.BeginConnect(address:=address, port:=port, state:=Nothing,
-                requestCallback:=Sub(ar)
-                                     Try
-                                         client.EndConnect(ar)
-                                         result.SetSucceeded(client)
-                                     Catch e As Exception
-                                         result.SetFailed(e)
-                                     End Try
-                                 End Sub)
-        Catch e As Exception
-            result.SetFailed(e)
-        End Try
+        result.DependentCall(Sub() client.BeginConnect(address:=address, port:=port, state:=Nothing,
+            requestCallback:=Sub(ar) result.SetByEvaluating(
+                Function()
+                    client.EndConnect(ar)
+                    Return client
+                End Function)))
         Return result
     End Function
 
+    '''<summary>Asynchronously accepts an incoming connection attempt.</summary>
     <Extension()>
-    <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
-    Public Function FutureAcceptConnection(ByVal listener As TcpListener) As IFuture(Of TcpClient)
+    Public Function AsyncAcceptConnection(ByVal listener As TcpListener) As IFuture(Of TcpClient)
         Contract.Requires(listener IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
         Dim result = New FutureFunction(Of TcpClient)
-        Try
-            listener.BeginAcceptTcpClient(state:=Nothing,
-                callback:=Sub(ar) result.SetByEvaluating(Function() listener.EndAcceptTcpClient(ar)))
-        Catch e As Exception
-            result.SetFailed(e)
-        End Try
+        result.DependentCall(Sub() listener.BeginAcceptTcpClient(state:=Nothing,
+            callback:=Sub(ar) result.SetByEvaluating(Function() listener.EndAcceptTcpClient(ar))))
         Return result
     End Function
 End Module
+
+Public Class NetIPAddressJar
+    Inherits Jar(Of Net.IPAddress)
+
+    Public Sub New(ByVal name As String)
+        MyBase.New(name)
+        Contract.Requires(name IsNot Nothing)
+    End Sub
+
+    Public Overrides Function Pack(Of TValue As System.Net.IPAddress)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+        Dim data = value.GetAddressBytes()
+        Return New Pickle(Of TValue)(Name, value, data.ToView)
+    End Function
+    Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As Pickling.IPickle(Of System.Net.IPAddress)
+        If data.Length < 4 Then Throw New PicklingException("Not enough data.")
+        Dim datum = data.SubView(0, 4)
+        Dim value = New Net.IPAddress(datum.ToArray)
+        Return New Pickle(Of Net.IPAddress)(Name, value, datum)
+    End Function
+End Class
+
+Public Class NetIPEndPointJar
+    Inherits Jar(Of Net.IPEndPoint)
+
+    Private ReadOnly _dataJar As TupleJar
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(_dataJar IsNot Nothing)
+    End Sub
+
+    Public Sub New(ByVal name As String)
+        MyBase.New(name)
+        Contract.Requires(name IsNot Nothing)
+        Me._dataJar = New TupleJar(name,
+                New UInt16Jar("protocol").Weaken,
+                New UInt16Jar("port", ByteOrder:=ByteOrder.BigEndian).Weaken,
+                New NetIPAddressJar("ip").Weaken,
+                New ArrayJar("unknown", 8).Weaken)
+    End Sub
+
+    Public Overrides Function Pack(Of TValue As Net.IPEndPoint)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+        Dim vals = New Dictionary(Of InvariantString, Object) From {
+                {"protocol", If(value.Address.GetAddressBytes.HasSameItemsAs({0, 0, 0, 0}) AndAlso value.Port = 0, 0, 2)},
+                {"ip", value.Address},
+                {"port", value.Port},
+                {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}}}
+        Dim pickle = _dataJar.Pack(vals)
+        Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
+    End Function
+
+    Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As Pickling.IPickle(Of Net.IPEndPoint)
+        Dim pickle = _dataJar.Parse(data)
+        Dim vals = pickle.Value
+        Dim value = New Net.IPEndPoint(CType(vals("ip"), Net.IPAddress).AssumeNotNull, CUShort(vals("port")))
+        Return New Pickle(Of Net.IPEndPoint)(value, pickle.Data, pickle.Description)
+    End Function
+End Class

@@ -27,7 +27,7 @@
     End Class
 
     Partial Public NotInheritable Class Player
-        Public Event ReceivedDropLagger(ByVal sender As Player)
+        Public Event ReceivedRequestDropLaggers(ByVal sender As Player)
         Public Event ReceivedGameAction(ByVal sender As Player, ByVal action As GameAction)
         Public Event ReceivedGameData(ByVal sender As Player, ByVal data As Byte())
 
@@ -37,8 +37,9 @@
 
         Public Sub GamePlayStart()
             state = PlayerState.Playing
-            AddQueuePacketHandler(Packet.Jars.Tock, AddressOf ReceiveTock)
-            AddQueuePacketHandler(Packet.Jars.ClientDropLagger, AddressOf ReceiveDropLagger)
+            AddQueuedPacketHandler(Packet.Jars.Tock, AddressOf ReceiveTock)
+            AddQueuedPacketHandler(Packet.Jars.RequestDropLaggers, AddressOf ReceiveRequestDropLaggers)
+            AddQueuedPacketHandler(Packet.Jars.ClientConfirmHostLeaving, Sub() SendPacket(Packet.MakeHostConfirmHostLeaving()))
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord, ByVal data As Byte())
@@ -49,13 +50,13 @@
             SendPacket(Packet.MakeTick(record.length, data))
         End Sub
 
-        Private Sub ReceiveDropLagger(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
-            RaiseEvent ReceivedDropLagger(Me)
+        Private Sub ReceiveRequestDropLaggers(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            RaiseEvent ReceivedRequestDropLaggers(Me)
         End Sub
 
-        Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
+            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
             Dim actions = CType(vals("actions"), IEnumerable(Of GameAction))
             Contract.Assume(actions IsNot Nothing)
             For Each action In actions
@@ -63,9 +64,9 @@
             Next action
             RaiseEvent ReceivedGameData(Me, pickle.Data.ToArray.SubArray(4))
         End Sub
-        Private Sub ReceiveTock(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub ReceiveTock(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of String, Object))
+            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
             If tickQueue.Count <= 0 Then
                 logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageType.Problem)
                 Disconnect(True, PlayerLeaveType.Disconnect, "overticked")

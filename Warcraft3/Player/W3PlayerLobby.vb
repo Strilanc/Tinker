@@ -6,31 +6,34 @@
         Private mapUploadPosition As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
 
-        Private Sub AddQueuePacketHandler(ByVal jar As Packet.DefParser,
-                                          ByVal handler As Action(Of IPickle(Of Dictionary(Of String, Object))))
+        Private Function AddQueuedPacketHandler(ByVal jar As Packet.DefParser,
+                                                ByVal handler As Action(Of IPickle(Of Dictionary(Of InvariantString, Object)))) As IDisposable
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
-            packetHandler.AddHandler(jar.id, jar, Function(data) inQueue.QueueAction(Sub() handler(data)))
-        End Sub
-        Private Sub AddQueuePacketHandler(Of T)(ByVal id As PacketId,
-                                                ByVal jar As IJar(Of T),
-                                                ByVal handler As Action(Of IPickle(Of T)))
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return AddQueuedPacketHandler(jar.id, jar, handler)
+        End Function
+        Private Function AddQueuedPacketHandler(Of T)(ByVal id As PacketId,
+                                                      ByVal jar As IJar(Of T),
+                                                      ByVal handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
-            packetHandler.AddHandler(id, jar, Function(data) inQueue.QueueAction(Sub() handler(data)))
-        End Sub
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            packetHandler.AddLogger(id, jar.Weaken)
+            Return packetHandler.AddHandler(id, Function(data) inQueue.QueueAction(Sub() handler(jar.Parse(data))))
+        End Function
         Private Sub LobbyStart()
             state = PlayerState.Lobby
-            AddQueuePacketHandler(Packet.Jars.ClientMapInfo, AddressOf ReceiveClientMapInfo)
-            AddQueuePacketHandler(Packet.Jars.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
+            AddQueuedPacketHandler(Packet.Jars.ClientMapInfo, AddressOf ReceiveClientMapInfo)
+            AddQueuedPacketHandler(Packet.Jars.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
         End Sub
 
 #Region "Networking"
         Public Event SuperficialStateUpdated(ByVal sender As Player)
         Public Event StateUpdated(ByVal sender As Player)
-        Private Sub ReceivePeerConnectionInfo(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub ReceivePeerConnectionInfo(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(pickle IsNot Nothing)
-            Dim vals = CType(pickle.Value, Dictionary(Of String, Object))
+            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
             Dim dword = CUInt(vals("player bitflags"))
             Dim flags = From i In enumerable.Range(0, 12)
                         Select connected = ((dword >> i) And &H1) <> 0,
@@ -41,14 +44,14 @@
             If state = PlayerState.Lobby Then
                 For Each flag In flags
                     Contract.Assume(flag IsNot Nothing)
-                    scheduler.SetLink(Me.Index, flag.pid, flag.connected).MarkAnyExceptionAsHandled()
+                    scheduler.SetLink(Me.Index, flag.pid, flag.connected).SetHandled()
                 Next flag
             End If
             RaiseEvent SuperficialStateUpdated(Me)
         End Sub
-        Private Sub ReceiveClientMapInfo(ByVal pickle As IPickle(Of Dictionary(Of String, Object)))
+        Private Sub ReceiveClientMapInfo(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(pickle IsNot Nothing)
-            Dim vals = CType(pickle.Value, Dictionary(Of String, Object))
+            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
             Dim newMapDownloadPosition = CInt(CUInt(vals("total downloaded")))
             Dim delta = newMapDownloadPosition - mapDownloadPosition
             If delta < 0 Then
@@ -71,16 +74,16 @@
                     Return
                 End If
 
-                scheduler.AddClient(Index, hasMap).MarkAnyExceptionAsHandled()
-                scheduler.SetLink(Index, Game.LocalTransferClientKey, linked:=True).MarkAnyExceptionAsHandled()
+                scheduler.AddClient(Index, hasMap).SetHandled()
+                scheduler.SetLink(Index, Game.LocalTransferClientKey, linked:=True).SetHandled()
                 knowMapState = True
             ElseIf mapDownloadPosition = settings.Map.FileSize Then
                 logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
-                scheduler.SetNotTransfering(Index, completed:=True).MarkAnyExceptionAsHandled()
+                scheduler.SetNotTransfering(Index, completed:=True).SetHandled()
             Else
                 Dim progress = New FiniteDouble(mapDownloadPosition)
                 Contract.Assume(progress >= 0)
-                scheduler.UpdateProgress(Index, progress).MarkAnyExceptionAsHandled()
+                scheduler.UpdateProgress(Index, progress).SetHandled()
                 If IsGettingMapFromBot Then
                     BufferMap()
                 End If

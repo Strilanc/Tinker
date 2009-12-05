@@ -99,6 +99,18 @@
             Contract.Invariant(_privateKey IsNot Nothing)
         End Sub
 
+        Private Sub New(ByVal key As String,
+                        ByVal product As CDKeyProduct,
+                        ByVal publicKey As UInteger,
+                        ByVal privateKey As ViewableList(Of Byte))
+            Contract.Requires(key IsNot Nothing)
+            Contract.Requires(privateKey IsNot Nothing)
+            Me._key = key
+            Me._product = product
+            Me._publicKey = publicKey
+            Me._privateKey = privateKey
+        End Sub
+
         Public ReadOnly Property Key As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -127,18 +139,6 @@
                 Return _privateKey
             End Get
         End Property
-
-        Private Sub New(ByVal key As String,
-                        ByVal product As CDKeyProduct,
-                        ByVal publicKey As UInteger,
-                        ByVal privateKey As ViewableList(Of Byte))
-            Contract.Requires(key IsNot Nothing)
-            Contract.Requires(privateKey IsNot Nothing)
-            Me._key = key
-            Me._product = product
-            Me._publicKey = publicKey
-            Me._privateKey = privateKey
-        End Sub
 
         Public Shared Function FromWC3StyleKey(ByVal key As String) As CDKey
             Contract.Requires(key IsNot Nothing)

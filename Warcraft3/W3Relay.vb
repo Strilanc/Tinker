@@ -20,8 +20,7 @@
                 Contract.Requires(game IsNot Nothing)
                 Me._remoteGame = New RemoteGameDescription(_remoteGame.Name,
                                                            _remoteGame.GameStats,
-                                                           _remoteGame.Port,
-                                                           _remoteGame.Address,
+                                                           New Net.IPEndPoint(_remoteGame.Address, _remoteGame.Port),
                                                            _remoteGame.GameId,
                                                            _remoteGame.EntryKey,
                                                            game.TotalSlotCount,
@@ -105,14 +104,16 @@
         Private Sub Accept(ByVal connector As W3ConnectingPlayer)
             If Not _games.ContainsKey(connector.GameId) Then Throw New IO.InvalidDataException()
             Dim game = _games(connector.GameId)
-            FutureCreateConnectedTcpClient(game.RemoteGame.Address, game.RemoteGame.Port).CallWhenValueReady(
+            AsyncTcpConnect(game.RemoteGame.Address, game.RemoteGame.Port).CallWhenValueReady(
                 Sub(result, exception)
                     If exception IsNot Nothing Then
                         connector.Socket.Disconnect(expected:=False, reason:="Failed to interconnect with game host.")
                         Return
                     End If
 
-                    Dim w = New W3Socket(New PacketSocket(result))
+                    Dim w = New W3Socket(New PacketSocket(stream:=result.GetStream,
+                                                          localendpoint:=CType(result.Client.LocalEndPoint, Net.IPEndPoint),
+                                                          remoteendpoint:=CType(result.Client.RemoteEndPoint, Net.IPEndPoint)))
                     w.SendPacket(Packet.MakeKnock(connector.Name,
                                                   connector.ListenPort,
                                                   CUShort(connector.RemoteEndPoint.Port),

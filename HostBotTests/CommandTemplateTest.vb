@@ -5,8 +5,8 @@ Imports Strilbrary.Enumeration
 Imports Strilbrary.Numerics
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
-Imports HostBot
-Imports HostBot.Commands
+Imports Tinker
+Imports Tinker.Commands
 
 <TestClass()>
 Public Class CommandTemplateTest

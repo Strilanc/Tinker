@@ -20,6 +20,8 @@
     End Enum
 
     Partial Public NotInheritable Class Player
+        Inherits FutureDisposable
+
         Private state As PlayerState = PlayerState.Lobby
         Private ReadOnly _index As Byte
         Private ReadOnly testCanHost As IFuture
@@ -29,11 +31,11 @@
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
         Private _numPeerConnections As Integer
-        Private ReadOnly settings As ServerSettings
+        Private ReadOnly settings As GameSettings
         Private ReadOnly scheduler As TransferScheduler(Of Byte)
         Private ReadOnly pinger As Pinger
 
-        Private ReadOnly _name As String
+        Private ReadOnly _name As InvariantString
         Public ReadOnly listenPort As UShort
         Public ReadOnly peerKey As UInteger
         Public ReadOnly isFake As Boolean
@@ -43,9 +45,8 @@
         Public numAdminTries As Integer
         Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
 
-        Public ReadOnly Property Name As String
+        Public ReadOnly Property Name As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _name
             End Get
         End Property
@@ -68,7 +69,6 @@
             Contract.Invariant(socket Is Nothing = isFake)
             Contract.Invariant(testCanHost IsNot Nothing)
             Contract.Invariant(numAdminTries >= 0)
-            Contract.Invariant(_name IsNot Nothing)
             Contract.Invariant(settings IsNot Nothing)
             Contract.Invariant(socket IsNot Nothing)
             Contract.Invariant(scheduler IsNot Nothing)
@@ -80,34 +80,31 @@
 
         '''<summary>Creates a fake player.</summary>
         Public Sub New(ByVal index As Byte,
-                       ByVal settings As ServerSettings,
+                       ByVal settings As GameSettings,
                        ByVal scheduler As TransferScheduler(Of Byte),
-                       ByVal name As String,
+                       ByVal name As InvariantString,
                        Optional ByVal logger As Logger = Nothing)
-            Contract.Requires(index > 0)
-            Contract.Requires(index <= 12)
-            Contract.Requires(name IsNot Nothing)
+            Contract.Assume(index > 0)
+            Contract.Assume(index <= 12)
 
             Me.settings = settings
             Me.scheduler = scheduler
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New W3PacketHandler(Me.logger)
             Me._index = index
-            If name.Length > MAX_NAME_LENGTH Then
-                name = name.Substring(0, MAX_NAME_LENGTH)
-            End If
+            If name.Length > MAX_NAME_LENGTH Then Throw New ArgumentException("Player name must be less than 16 characters long.")
             Me._name = name
             isFake = True
             LobbyStart()
             Dim hostFail = New FutureAction
             hostFail.SetFailed(New ArgumentException("Fake players can't host."))
             Me.testCanHost = hostFail
-            Me.testCanHost.MarkAnyExceptionAsHandled()
+            Me.testCanHost.SetHandled()
         End Sub
 
         '''<summary>Creates a real player.</summary>
         Public Sub New(ByVal index As Byte,
-                       ByVal settings As ServerSettings,
+                       ByVal settings As GameSettings,
                        ByVal scheduler As TransferScheduler(Of Byte),
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        Optional ByVal logger As Logger = Nothing)
@@ -132,25 +129,25 @@
             Me._index = index
             AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
 
-            packetHandler.AddHandler(key:=PacketId.Pong,
-                                     jar:=Packet.Jars.Pong,
-                                     handler:=Function(pickle)
-                                                  outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
-                                                  Return pinger.QueueReceivedPong(CUInt(pickle.Value("salt")))
-                                              End Function)
-            AddQueuePacketHandler(id:=PacketId.NonGameAction,
-                                  jar:=Packet.Jars.NonGameAction,
-                                  handler:=AddressOf ReceiveNonGameAction)
-            AddQueuePacketHandler(Packet.Jars.Leaving, AddressOf ReceiveLeaving)
-            AddQueuePacketHandler(Packet.Jars.MapFileDataReceived, AddressOf IgnorePacket)
-            AddQueuePacketHandler(Packet.Jars.MapFileDataProblem, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(PacketId.Pong,
+                                   Packet.Jars.Pong,
+                                   handler:=Function(pickle)
+                                                outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
+                                                Return pinger.QueueReceivedPong(CUInt(pickle.Value("salt")))
+                                            End Function)
+            AddQueuedPacketHandler(PacketId.NonGameAction,
+                                   Packet.Jars.NonGameAction,
+                                   handler:=AddressOf ReceiveNonGameAction)
+            AddQueuedPacketHandler(Packet.Jars.Leaving, AddressOf ReceiveLeaving)
+            AddQueuedPacketHandler(Packet.Jars.MapFileDataReceived, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Packet.Jars.MapFileDataProblem, AddressOf IgnorePacket)
 
             LobbyStart()
             BeginReading()
 
             'Test hosting
-            Me.testCanHost = FutureCreateConnectedTcpClient(socket.RemoteEndPoint.Address, listenPort)
-            Me.testCanHost.MarkAnyExceptionAsHandled()
+            Me.testCanHost = AsyncTcpConnect(socket.RemoteEndPoint.Address, listenPort)
+            Me.testCanHost.SetHandled()
 
             'Pings
             pinger = New Pinger(period:=5.Seconds, timeoutCount:=10)
@@ -162,7 +159,7 @@
 
         Private Sub BeginReading()
             AsyncProduceConsumeUntilError(
-                producer:=AddressOf socket.FutureReadPacket,
+                producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=AddressOf ProcessPacket,
                 errorHandler:=Sub(exception) Me.QueueDisconnect(expected:=False,
                                                                 leaveType:=PlayerLeaveType.Disconnect,
@@ -172,7 +169,7 @@
         Private Function ProcessPacket(ByVal packetData As ViewableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)
             Contract.Requires(packetData.Length >= 4)
-            Dim result = packetHandler.HandlePacket(packetData)
+            Dim result = packetHandler.HandlePacket(packetData, "test")
             result.Catch(Sub(exception) QueueDisconnect(expected:=False,
                                                         leaveType:=PlayerLeaveType.Disconnect,
                                                         reason:=exception.Message))
@@ -217,6 +214,7 @@
             Get
                 Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address IsNot Nothing)
+                If isFake Then Return New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0)
                 Return socket.RemoteEndPoint
             End Get
         End Property
@@ -265,6 +263,11 @@
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendPacket(packet))
+        End Function
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+            If finalizing Then Return Nothing
+            Return QueueDisconnect(expected:=True, leaveType:=PlayerLeaveType.Disconnect, reason:="Disposed")
         End Function
     End Class
 End Namespace

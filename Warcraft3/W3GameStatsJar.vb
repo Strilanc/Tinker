@@ -87,7 +87,7 @@
             If value.allowFullSharedControl Then settings = settings Or GameSettings.OptionAllowFullSharedControl
 
             'Pack
-            Dim rawPickle = DataJar.Pack(New Dictionary(Of String, Object) From {
+            Dim rawPickle = DataJar.Pack(New Dictionary(Of InvariantString, Object) From {
                     {"playable width", value.playableWidth},
                     {"playable height", value.playableHeight},
                     {"settings", settings},
@@ -112,7 +112,7 @@
                 End If
             Next n
             Dim pickle = DataJar.Parse(DecodeStatStringData(data.SubView(0, n)))
-            Dim vals = CType(pickle.Value, Dictionary(Of String, Object))
+            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
 
             'Decode settings
             Dim settings = CType(CUInt(vals("settings")), GameSettings)

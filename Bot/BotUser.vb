@@ -1,32 +1,30 @@
 Public NotInheritable Class BotUser
-    Private ReadOnly _name As String
-    Private _settingMap As New Dictionary(Of String, String)
-    Private _permissionMap As New Dictionary(Of String, UInteger)
+    Private ReadOnly _name As InvariantString
+    Private _settingMap As New Dictionary(Of InvariantString, String)
+    Private _permissionMap As New Dictionary(Of InvariantString, UInteger)
     Private Const MAX_PERMISSION_VALUE As UInteger = 10
     Private Const MIN_PERMISSION_VALUE As UInteger = 0
-    Private Const SEPARATION_CHAR As Char = ";"c
-    Private ReadOnly Property PermissionMap As Dictionary(Of String, UInteger)
+    Private Const SEPARATION_CHAR As Char = ","c
+    Private ReadOnly Property PermissionMap As Dictionary(Of InvariantString, UInteger)
         Get
-            Contract.Ensures(Contract.Result(Of Dictionary(Of String, UInteger))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, UInteger))() IsNot Nothing)
             Return _permissionMap
         End Get
     End Property
-    Private ReadOnly Property SettingMap As Dictionary(Of String, String)
+    Private ReadOnly Property SettingMap As Dictionary(Of InvariantString, String)
         Get
-            Contract.Ensures(Contract.Result(Of Dictionary(Of String, String))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, String))() IsNot Nothing)
             Return _settingMap
         End Get
     End Property
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(_name IsNot Nothing)
         Contract.Invariant(_settingMap IsNot Nothing)
         Contract.Invariant(_permissionMap IsNot Nothing)
     End Sub
 
-    Public ReadOnly Property Name As String
+    Public ReadOnly Property Name As InvariantString
         Get
-            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Return _name
         End Get
     End Property
@@ -65,12 +63,12 @@ Public NotInheritable Class BotUser
                 ).StringJoin(SEPARATION_CHAR)
     End Function
 
-    Public Shared Function UnpackPermissions(ByVal packedPermissions As String) As Dictionary(Of String, UInteger)
+    Public Shared Function UnpackPermissions(ByVal packedPermissions As String) As Dictionary(Of InvariantString, UInteger)
         Contract.Requires(packedPermissions IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Dictionary(Of String, UInteger))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, UInteger))() IsNot Nothing)
 
-        Dim permissionMap = New Dictionary(Of String, UInteger)
-        For Each key In packedPermissions.Split(";"c)
+        Dim permissionMap = New Dictionary(Of InvariantString, UInteger)
+        For Each key In packedPermissions.Split(SEPARATION_CHAR)
             Contract.Assume(key IsNot Nothing)
             Dim pair = key.Split("="c)
             If pair.Length <> 2 Then Continue For
@@ -81,12 +79,12 @@ Public NotInheritable Class BotUser
         Next key
         Return permissionMap
     End Function
-    Public Shared Function UnpackSettings(ByVal packedSettings As String) As Dictionary(Of String, String)
+    Public Shared Function UnpackSettings(ByVal packedSettings As String) As Dictionary(Of InvariantString, String)
         Contract.Requires(packedSettings IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Dictionary(Of String, String))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, String))() IsNot Nothing)
 
-        Dim settingMap As New Dictionary(Of String, String)
-        For Each key In packedSettings.Split(";"c)
+        Dim settingMap As New Dictionary(Of InvariantString, String)
+        For Each key In packedSettings.Split(SEPARATION_CHAR)
             Contract.Assume(key IsNot Nothing)
             Dim pair = key.Split("="c)
             If pair.Length <> 2 Then Continue For
@@ -96,10 +94,9 @@ Public NotInheritable Class BotUser
         Return settingMap
     End Function
 
-    Public Sub New(ByVal name As String,
+    Public Sub New(ByVal name As InvariantString,
                    Optional ByVal packedPermissions As String = Nothing,
                    Optional ByVal packedSettings As String = Nothing)
-        Contract.Requires(name IsNot Nothing)
         Me._name = name
         If packedPermissions IsNot Nothing Then
             UpdatePermissions(packedPermissions)
@@ -118,26 +115,22 @@ Public NotInheritable Class BotUser
         _settingMap = UnpackSettings(packedSettings)
     End Sub
 
-    Public Property Permission(ByVal key As String) As UInteger
+    Public Property Permission(ByVal key As InvariantString) As UInteger
         Get
-            Contract.Requires(key IsNot Nothing)
-            If Not PermissionMap.ContainsKey(key.ToUpperInvariant) Then Return 0
-            Return PermissionMap(key.ToUpperInvariant)
+            If Not PermissionMap.ContainsKey(key) Then Return 0
+            Return PermissionMap(key)
         End Get
         Set(ByVal value As UInteger)
-            Contract.Requires(key IsNot Nothing)
-            PermissionMap(key.ToUpperInvariant) = value
+            PermissionMap(key) = value
         End Set
     End Property
-    Public Property Setting(ByVal key As String) As String
+    Public Property Setting(ByVal key As InvariantString) As String
         Get
-            Contract.Requires(key IsNot Nothing)
-            If Not SettingMap.ContainsKey(key.ToUpperInvariant) Then Return Nothing
-            Return SettingMap(key.ToUpperInvariant)
+            If Not SettingMap.ContainsKey(key) Then Return Nothing
+            Return SettingMap(key)
         End Get
         Set(ByVal value As String)
-            Contract.Requires(key IsNot Nothing)
-            SettingMap(key.ToUpperInvariant) = value
+            SettingMap(key) = value
         End Set
     End Property
 
@@ -146,14 +139,12 @@ Public NotInheritable Class BotUser
         writer.Write(Name)
         writer.Write(CUShort(settingMap.Keys.Count))
         For Each pair In settingMap
-            Contract.Assume(pair.Key IsNot Nothing)
             Contract.Assume(pair.Value IsNot Nothing)
             writer.Write(pair.Key)
             writer.Write(pair.Value)
         Next pair
         writer.Write(CUShort(permissionMap.Keys.Count))
         For Each pair In permissionMap
-            Contract.Assume(pair.Key IsNot Nothing)
             writer.Write(pair.Key)
             writer.Write(pair.Value)
         Next pair
@@ -162,23 +153,22 @@ Public NotInheritable Class BotUser
         Contract.Requires(reader IsNot Nothing)
         Me._name = reader.ReadString()
         For i = 1 To reader.ReadUInt16()
-            SettingMap(reader.ReadString().ToUpperInvariant) = reader.ReadString()
+            SettingMap(reader.ReadString()) = reader.ReadString()
         Next i
         For i = 1 To reader.ReadUInt16()
-            PermissionMap(reader.ReadString().ToUpperInvariant) = reader.ReadUInt32()
+            PermissionMap(reader.ReadString()) = reader.ReadUInt32()
         Next i
     End Sub
 
-    Public Function Clone(Optional ByVal newName As String = Nothing) As BotUser
+    Public Function Clone(Optional ByVal newName As InvariantString? = Nothing) As BotUser
         Contract.Ensures(Contract.Result(Of BotUser)() IsNot Nothing)
         If newName Is Nothing Then newName = Name
-        Dim newUser As New BotUser(newName)
+        Dim newUser As New BotUser(newName.Value)
         For Each key In SettingMap.Keys
-            Contract.Assume(key IsNot Nothing)
-            newUser.SettingMap(key.ToUpperInvariant) = SettingMap(key)
+            newUser.SettingMap(key) = SettingMap(key)
         Next key
         For Each key In PermissionMap.Keys
-            newUser.PermissionMap(key.ToUpperInvariant) = PermissionMap(key)
+            newUser.PermissionMap(key) = PermissionMap(key)
         Next key
         Return newUser
     End Function
@@ -191,7 +181,6 @@ Public NotInheritable Class BotUser
         For Each user As BotUser In New BotUser() {user1, user2}
             Contract.Assume(user IsNot Nothing)
             For Each key In user.permissionMap.Keys
-                Contract.Assume(key IsNot Nothing)
                 If user1.Permission(key) < user2.Permission(key) Then Return True
             Next key
         Next user
@@ -209,7 +198,6 @@ Public NotInheritable Class BotUser
         For Each user In {user1, user2}
             Contract.Assume(user IsNot Nothing)
             For Each key In user.permissionMap.Keys
-                Contract.Assume(key IsNot Nothing)
                 If user1.Permission(key) > user2.Permission(key) Then Return False
             Next key
         Next user
@@ -231,23 +219,21 @@ Public NotInheritable Class BotUser
 End Class
 
 Public NotInheritable Class BotUserSet
-    Private ReadOnly userMap As New Dictionary(Of String, BotUser)
-    Private ReadOnly tempUserMap As New Dictionary(Of String, BotUser)
-    Public Const UnknownUserKey As String = "*unknown"
-    Public Const NewUserKey As String = "*new"
+    Private ReadOnly _userMap As New Dictionary(Of InvariantString, BotUser)
+    Private ReadOnly tempUserMap As New Dictionary(Of InvariantString, BotUser)
+    Public Shared ReadOnly UnknownUserKey As InvariantString = "*unknown"
+    Public Shared ReadOnly NewUserKey As InvariantString = "*new"
 
     Public Function Users() As IEnumerable(Of BotUser)
-        Return userMap.Values()
+        Return _userMap.Values()
     End Function
 
-    Public Function CreateNewUser(ByVal name As String) As BotUser
-        Contract.Requires(name IsNot Nothing)
+    Public Function CreateNewUser(ByVal name As InvariantString) As BotUser
         Contract.Ensures(Contract.Result(Of BotUser)() IsNot Nothing)
-        Dim key = name.ToUpperInvariant
-        If userMap.ContainsKey(key) Then
+        If _userMap.ContainsKey(name) Then
             Throw New InvalidOperationException("User already exists")
-        ElseIf userMap.ContainsKey(NewUserKey) Then
-            Dim user = userMap(NewUserKey).Clone(name)
+        ElseIf _userMap.ContainsKey(NewUserKey) Then
+            Dim user = _userMap(NewUserKey).Clone(name)
             AddUser(user)
             Return user
         Else
@@ -257,21 +243,18 @@ Public NotInheritable Class BotUserSet
         End If
     End Function
 
-    Public Sub RemoveUser(ByVal name As String)
-        Contract.Requires(name IsNot Nothing)
+    Public Sub RemoveUser(ByVal name As InvariantString)
         If Not ContainsUser(name) Then Throw New InvalidOperationException("That user doesn't exist")
-        userMap.Remove(name.ToUpperInvariant)
+        _userMap.Remove(name)
     End Sub
-    Default Public ReadOnly Property User(ByVal name As String) As BotUser
+    Default Public ReadOnly Property User(ByVal name As InvariantString) As BotUser
         Get
-            Contract.Requires(name IsNot Nothing)
-            Dim key = name.ToUpperInvariant
-            If userMap.ContainsKey(key) Then
-                Return userMap(key)
-            ElseIf tempUserMap.ContainsKey(key) Then
-                Return tempUserMap(key)
-            ElseIf userMap.ContainsKey(UnknownUserKey) Then
-                tempUserMap(name) = userMap(UnknownUserKey).Clone(name)
+            If _userMap.ContainsKey(name) Then
+                Return _userMap(name)
+            ElseIf tempUserMap.ContainsKey(name) Then
+                Return tempUserMap(name)
+            ElseIf _userMap.ContainsKey(UnknownUserKey) Then
+                tempUserMap(name) = _userMap(UnknownUserKey).Clone(name)
                 Return tempUserMap(name)
             Else
                 Return Nothing
@@ -279,19 +262,18 @@ Public NotInheritable Class BotUserSet
         End Get
     End Property
 
-    Public Function ContainsUser(ByVal name As String) As Boolean
-        Contract.Requires(name IsNot Nothing)
-        Return userMap.ContainsKey(name.ToUpperInvariant)
+    Public Function ContainsUser(ByVal name As InvariantString) As Boolean
+        Return _userMap.ContainsKey(name)
     End Function
 
-    Public Sub RemoveOtherUsers(ByVal userNames As IList(Of String))
+    Public Sub RemoveAllExcept(ByVal userNames As IList(Of InvariantString))
         Contract.Requires(userNames IsNot Nothing)
         'Find users not in the usernames list
         Dim removedUsers = New List(Of String)
-        For Each key In userMap.Keys
+        For Each key In _userMap.Keys
             Dim keep = False
             For Each keptName In userNames
-                If keptName.ToUpperInvariant = key.ToUpperInvariant Then
+                If keptName = key Then
                     keep = True
                     Exit For
                 End If
@@ -319,7 +301,7 @@ Public NotInheritable Class BotUserSet
     Public Sub AddUser(ByVal user As BotUser)
         Contract.Requires(user IsNot Nothing)
         If ContainsUser(user.name) Then Throw New InvalidOperationException("That user already exists")
-        userMap(user.name.ToUpperInvariant) = user
+        _userMap(user.Name) = user
     End Sub
 
     Public Sub Load(ByVal reader As IO.BinaryReader)
@@ -330,15 +312,15 @@ Public NotInheritable Class BotUserSet
     End Sub
     Public Sub Save(ByVal bw As IO.BinaryWriter)
         Contract.Requires(bw IsNot Nothing)
-        bw.Write(CUShort(userMap.Keys.Count))
-        For Each e In userMap.Values
+        bw.Write(CUShort(_userMap.Keys.Count))
+        For Each e In _userMap.Values
             e.Save(bw)
         Next e
     End Sub
 
     Public Function Clone() As BotUserSet
         Dim newUserSet As New BotUserSet
-        For Each user As BotUser In userMap.Values
+        For Each user As BotUser In _userMap.Values
             Contract.Assume(user IsNot Nothing)
             newUserSet.AddUser(user.Clone())
         Next user
