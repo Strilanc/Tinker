@@ -28,8 +28,8 @@ Namespace Commands
             Contract.Requires(representativeArgument IsNot Nothing)
             Me.template = representativeArgument
             Me.rawMaxCount = Me.template.RawValueCount
-            Me.rawMinCount = (From arg In Me.template.RawValues Where Not arg.StartsWith("?"c)).Count
-            If (From arg In Me.template.RawValues.Take(Me.rawMinCount) Where arg.StartsWith("?"c)).Any Then
+            Me.rawMinCount = (From arg In Me.template.RawValues Where Not arg.StartsWith("?"c, StringComparison.Ordinal)).Count
+            If (From arg In Me.template.RawValues.Take(Me.rawMinCount) Where arg.StartsWith("?"c, StringComparison.Ordinal)).Any Then
                 Throw New ArgumentException("Optional raw values must come after required raw values.")
             End If
         End Sub

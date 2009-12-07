@@ -233,7 +233,7 @@
         Public MustInherit Class ContractClass
             Inherits SlotContents
 
-            Public Sub New(ByVal parent As Slot)
+            Protected Sub New(ByVal parent As Slot)
                 MyBase.New(parent)
                 Throw New NotSupportedException
             End Sub

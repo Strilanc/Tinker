@@ -414,8 +414,8 @@ Namespace WC3
 
         Private Function TryFindPlayer(ByVal username As InvariantString) As Player
             Return (From player In players
-                    Where String.Compare(player.AssumeNotNull.Name, username, StringComparison.InvariantCultureIgnoreCase) = 0).
-                    FirstOrDefault
+                    Where player.Name = username
+                    ).FirstOrDefault
         End Function
         Private Function TryFindPlayer(ByVal index As Byte) As Player
             Return (From player In players

@@ -100,7 +100,7 @@ Public Module PoorlyCategorizedFunctions
         Dim vd = New String() {valueDivider}
         For Each pair In text.Split(pd, StringSplitOptions.RemoveEmptyEntries)
             Contract.Assume(pair IsNot Nothing)
-            Dim p = pair.IndexOf(valueDivider)
+            Dim p = pair.IndexOf(valueDivider, StringComparison.OrdinalIgnoreCase)
             If p = -1 Then Throw New ArgumentException("'{0}' didn't include a value divider ('{1}').".Frmt(pair, valueDivider))
             Dim key = pair.Substring(0, p)
             Dim value = pair.Substring(p + valueDivider.Length)
@@ -425,7 +425,7 @@ Public NotInheritable Class KeyPair
     End Sub
 End Class
 
-Public Class DelegatedDisposable
+Public NotInheritable Class DelegatedDisposable
     Implements IDisposable
     Private ReadOnly disposer As action
     Private ReadOnly disposed As New OnetimeLock

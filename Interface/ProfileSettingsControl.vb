@@ -10,7 +10,6 @@
         txtTftKey.Text = profile.cdKeyTFT
         txtRocKey.Text = profile.cdKeyROC
         cboGateway.Text = profile.server
-        numLocalPort.Value = profile.listenPort
         txtInitialChannel.Text = profile.initialChannel
         txtCKLServer.Text = profile.CKLServerAddress
         cboLanHost.Text = profile.LanHost
@@ -32,7 +31,6 @@
         profile.cdKeyTFT = txtTftKey.Text
         profile.cdKeyROC = txtRocKey.Text
         profile.server = cboGateway.Text
-        profile.listenPort = CUShort(numLocalPort.Value)
         profile.initialChannel = txtInitialChannel.Text
         profile.CKLServerAddress = txtCKLServer.Text
         profile.LanHost = cboLanHost.Text
@@ -56,12 +54,12 @@
         RaiseEvent Delete(Me)
     End Sub
 
-    Private Sub tabSettings_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles tabSettings.Click
-
-    End Sub
-
     Private Sub txtRocKey_TextChanged() Handles txtRocKey.TextChanged
         lblROCKeyError.Text = ""
+        If txtCKLServer.Text <> "" Then
+            lblROCKeyError.Text = "(Using CKL)"
+            Return
+        End If
         If txtRocKey.Text = "" Then
             lblROCKeyError.Text = "No Key Entered"
             Return
@@ -77,6 +75,10 @@
     End Sub
     Private Sub txtTftKey_TextChanged() Handles txtTftKey.TextChanged
         lblTFTKeyError.Text = ""
+        If txtCKLServer.Text <> "" Then
+            lblTFTKeyError.Text = "(Using CKL)"
+            Return
+        End If
         If txtTftKey.Text = "" Then
             lblTFTKeyError.Text = "No Key Entered"
             Return
@@ -89,5 +91,10 @@
         Catch ex As ArgumentException
             lblTFTKeyError.Text = ex.Message
         End Try
+    End Sub
+
+    Private Sub txtCKLServer_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles txtCKLServer.TextChanged
+        txtRocKey_TextChanged()
+        txtTftKey_TextChanged()
     End Sub
 End Class

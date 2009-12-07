@@ -148,7 +148,7 @@ Namespace Bnet
         Private Sub SendText(ByVal text As String)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(text.Length > 0)
-            Dim isBnetCommand = text.StartsWith("/")
+            Dim isBnetCommand = text.StartsWith("/", StringComparison.Ordinal)
 
             Select Case state
                 Case ClientState.Channel

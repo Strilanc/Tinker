@@ -23,7 +23,8 @@ Namespace Bnet
     <DebuggerDisplay("{UserName}")>
     Public Class ClientCredentials
         Private Shared ReadOnly G As BigInteger = 47
-        Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719")
+        Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719",
+                                                                   CultureInfo.InvariantCulture)
 
         Private ReadOnly _userName As String
         Private ReadOnly _password As String

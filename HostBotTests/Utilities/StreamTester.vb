@@ -28,7 +28,7 @@ Friend Class StreamTester
             Select Case dataReader.ReadLine.ToUpper
                 Case "IGNORE"
                     Dim data = dataReader.ReadLine.FromHexStringToBytes
-                    testStream.FutureRead(data, 0, data.Length).CallWhenValueReady(
+                    testStream.AsyncRead(data, 0, data.Length).CallWhenValueReady(
                         Sub(value, exception)
                             If exception IsNot Nothing Then
                                 result.SetFailed(exception)
@@ -41,7 +41,7 @@ Friend Class StreamTester
                 Case "READ"
                     Dim expectedData = dataReader.ReadLine.FromHexStringToBytes
                     Dim data(0 To expectedData.Length - 1) As Byte
-                    testStream.FutureRead(data, 0, data.Length).CallWhenValueReady(
+                    testStream.AsyncRead(data, 0, data.Length).CallWhenValueReady(
                         Sub(value, exception)
                             If exception IsNot Nothing Then
                                 result.SetFailed(exception)

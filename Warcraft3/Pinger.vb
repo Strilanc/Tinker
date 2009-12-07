@@ -1,4 +1,4 @@
-﻿Public Class Pinger
+﻿Public NotInheritable Class Pinger
     Implements IDisposable
 
     Private _latency As FiniteDouble
@@ -67,7 +67,7 @@
                 Dim tick As ModInt32 = Environment.TickCount
                 _latency *= 1 - lambda
                 _latency += lambda * New FiniteDouble(CUInt(tick - stored.Item2))
-                If _latency <= 0 Then  _latency = Double.Epsilon
+                If _latency <= 0 Then _latency = Double.Epsilon
             End Sub)
     End Function
 

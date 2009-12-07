@@ -135,7 +135,7 @@
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
                 Contract.Ensures(Contract.Result(Of Integer)() <= TotalSlotCount)
-                Return 0
+                Return _usedSlotCount
             End Get
         End Property
         Public Overridable ReadOnly Property GameState As Bnet.Packet.GameStates

@@ -6,7 +6,6 @@ Public NotInheritable Class ClientProfile
     Public userName As String = ""
     Public password As String = ""
     Public server As String = "useast.battle.net (Azeroth)"
-    Public listenPort As UShort = 6113
     Private _lanHost As String = " (None)"
     Public initialChannel As String = "HostBot"
     Private _cklServerAddress As String = ""
@@ -62,7 +61,7 @@ Public NotInheritable Class ClientProfile
         userName = reader.ReadString()
         password = reader.ReadString()
         server = reader.ReadString()
-        listenPort = reader.ReadUInt16()
+        reader.ReadUInt16() 'listen port
         initialChannel = reader.ReadString()
         _cklServerAddress = reader.ReadString()
         If version >= 1 Then
@@ -83,7 +82,7 @@ Public NotInheritable Class ClientProfile
         bw.Write(userName)
         bw.Write(password)
         bw.Write(server)
-        bw.Write(listenPort)
+        bw.Write(6113) 'listen port
         bw.Write(initialChannel)
         bw.Write(_cklServerAddress)
         If version >= 1 Then
@@ -104,7 +103,6 @@ Public NotInheritable Class ClientProfile
             .password = password
             .server = server
             .name = If(newName Is Nothing, Me.name, newName.Value)
-            .listenPort = listenPort
             .initialChannel = initialChannel
             ._cklServerAddress = _cklServerAddress
         End With

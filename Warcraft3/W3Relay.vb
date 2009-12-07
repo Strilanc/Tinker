@@ -1,5 +1,5 @@
 ﻿Namespace WC3
-    Public Class W3RelayServer
+    Public NotInheritable Class W3RelayServer
         Implements IDisposable
 
         Private Class GamePair
@@ -151,7 +151,7 @@
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Dim buffer(0 To 4096 - 1) As Byte
             Return AsyncProduceConsumeUntilError2(
-                producer:=Function() src.FutureRead(buffer, 0, buffer.Length),
+                producer:=Function() src.AsyncRead(buffer, 0, buffer.Length),
                 consumer:=Sub(numRead)
                               If numRead = 0 Then Throw New IO.IOException("End of stream")
                               dst.Write(buffer, 0, numRead)

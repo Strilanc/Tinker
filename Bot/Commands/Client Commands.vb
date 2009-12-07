@@ -45,10 +45,10 @@ Namespace Commands
             template:="length=# times=# period=ms -burst=1",
             Description:="Repeats a message.",
             func:=Function(target, user, argument)
-                      Dim length = UInt32.Parse(argument.NamedValue("length"))
-                      Dim times = UInt32.Parse(argument.NamedValue("times"))
-                      Dim period = UInt32.Parse(argument.NamedValue("period"))
-                      Dim burst = UInt32.Parse(If(argument.TryGetOptionalNamedValue("burst"), "1"))
+                      Dim length = UInt32.Parse(argument.NamedValue("length"), CultureInfo.InvariantCulture)
+                      Dim times = UInt32.Parse(argument.NamedValue("times"), CultureInfo.InvariantCulture)
+                      Dim period = UInt32.Parse(argument.NamedValue("period"), CultureInfo.InvariantCulture)
+                      Dim burst = UInt32.Parse(If(argument.TryGetOptionalNamedValue("burst"), "1"), CultureInfo.InvariantCulture)
                       Dim r = New Random()
                       Dim t As ModInt32 = Environment.TickCount
                       For repeat = 0UI To times - 1UI

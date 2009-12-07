@@ -127,7 +127,7 @@ Namespace WC3
                 Throw New ArgumentException("Empty argument.")
             ElseIf arg(0) = "-"c Then
                 Throw New ArgumentException("Map argument begins with '-', is probably an option. (did you forget an argument?)")
-            ElseIf arg.StartsWith("0x", StringComparison.InvariantCultureIgnoreCase) Then 'Map specified by HostMapInfo packet data
+            ElseIf arg.StartsWith("0x", StringComparison.OrdinalIgnoreCase) Then 'Map specified by HostMapInfo packet data
                 'Parse
                 If arg Like "0x*[!0-9a-fA-F]" OrElse arg.Length Mod 2 <> 0 Then
                     Throw New ArgumentException("Invalid map meta data. [0x prefix should be followed by hex HostMapInfo packet data].")
@@ -144,7 +144,7 @@ Namespace WC3
                 Dim crc32 = CUInt(vals("crc32"))
                 Dim xoro = CUInt(vals("xoro checksum"))
                 Dim sha1 = CType(vals("sha1 checksum"), Byte()).AssumeNotNull
-                If Not path.StartsWith("Maps\", StringComparison.InvariantCultureIgnoreCase) Then
+                If Not path.StartsWith("Maps\", StringComparison.OrdinalIgnoreCase) Then
                     Throw New IO.InvalidDataException("Invalid map path.")
                 End If
                 Contract.Assume(sha1.Length = 20)
@@ -398,7 +398,7 @@ Namespace WC3
             End Using
 
             'Alternate key
-            If key.StartsWith("TRIGSTR_", StringComparison.InvariantCultureIgnoreCase) Then
+            If key.StartsWith("TRIGSTR_", StringComparison.OrdinalIgnoreCase) Then
                 Dim suffix = key.Substring("TRIGSTR_".Length)
                 Dim id As UInteger
                 If UInt32.TryParse(suffix, id) Then

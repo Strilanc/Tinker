@@ -65,7 +65,7 @@
         Private Function AddInstance() As Game
             Contract.Ensures(Contract.Result(Of Game)() IsNot Nothing)
 
-            Dim name = allocId.ToString
+            Dim name = allocId.ToString(CultureInfo.InvariantCulture)
             allocId += 1
 
             Dim game = New Game(name, _gameSettings)

@@ -154,7 +154,7 @@
 
             Dim prefix = My.Settings.commandPrefix
             Contract.Assume(prefix IsNot Nothing)
-            If Not text.StartsWith(prefix) AndAlso text <> MainBot.TriggerCommandText Then
+            If Not text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) AndAlso text <> MainBot.TriggerCommandText Then
                 Return
             End If
 

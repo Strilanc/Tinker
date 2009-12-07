@@ -242,8 +242,6 @@ Namespace WC3
             AllPlayers = 0
             Allies = 1
             Observers = 2
-            [Private] = 16
-
             Player1 = 3
             Player2 = 4
             Player3 = 5
@@ -256,6 +254,7 @@ Namespace WC3
             Player10 = 12
             Player11 = 13
             Player12 = 14
+            [Private] = 16
         End Enum
 #End Region
 

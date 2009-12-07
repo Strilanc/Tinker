@@ -34,7 +34,7 @@ Namespace Commands
             For Each word In Tokenize(text)
                 Contract.Assume(word IsNot Nothing)
                 Dim isNamed = word.Contains("="c)
-                Dim isOptional = word.StartsWith("-"c)
+                Dim isOptional = word.StartsWith("-"c, StringComparison.Ordinal)
                 If isOptional Then word = word.Substring(1)
 
                 If isNamed Then
@@ -82,7 +82,7 @@ Namespace Commands
                 Contract.Assume(word IsNot Nothing)
                 If fusingTokens Then
                     'building delimited value
-                    If word.EndsWith(e) Then
+                    If word.EndsWith(e, StringComparison.Ordinal) Then
                         Contract.Assume(word.Length >= 1) 'because word.EndsWith(e)
                         fusedTokens.Add(word.Substring(0, word.Length - 1))
                         result.Add(fusedTokens.StringJoin(" "))
@@ -95,7 +95,7 @@ Namespace Commands
                     'ignore; just a double-spaced argument separation
                 ElseIf Delimiters.TryGetValue(word(0), e) Then
                     'delimited raw value
-                    If word.EndsWith(e) Then
+                    If word.EndsWith(e, StringComparison.Ordinal) Then
                         Contract.Assume(word.Length >= 2) 'because word.Length > 0 and word.EndsWith(e) and e != word[0]
                         result.Add(word.Substring(1, word.Length - 2))
                     Else
@@ -107,7 +107,7 @@ Namespace Commands
                     Dim j = word.IndexOf("="c) + 1
                     If j < word.Length AndAlso Delimiters.TryGetValue(word(j), e) Then
                         'named delimited value
-                        If word.EndsWith(e) Then
+                        If word.EndsWith(e, StringComparison.Ordinal) Then
                             Contract.Assume(word.Length > j + 1) 'because word.EndsWith(e) and e != word(j)
                             result.Add(word.Substring(0, j) + word.Substring(j + 1, word.Length - j - 2))
                         Else

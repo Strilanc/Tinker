@@ -11,7 +11,7 @@
         Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
 
         <ContractClassFor(GetType(IBotComponent))>
-        Shadows Class ContractClass
+        NotInheritable Shadows Class ContractClass
             Implements IBotComponent
 
             Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger

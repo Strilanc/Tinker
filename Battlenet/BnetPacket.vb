@@ -460,7 +460,7 @@ Namespace Bnet
                     New WC3.GameStatsJar("statstring").Weaken)
             Public Shared ReadOnly CloseGame3 As New DefJar(PacketId.CloseGame3)
             Public Shared ReadOnly JoinChannel As New DefJar(PacketId.JoinChannel,
-                    New EnumUInt32Jar(Of JoinChannelType)("flags").Weaken,
+                    New EnumUInt32Jar(Of JoinChannelType)("join type").Weaken,
                     New StringJar("channel").Weaken)
             Public Shared ReadOnly NetGamePort As New DefJar(PacketId.NetGamePort,
                     New UInt16Jar("port").Weaken)
@@ -567,12 +567,12 @@ Namespace Bnet
                     {"game password", ""},
                     {"game stats", ""}})
         End Function
-        Public Shared Function MakeJoinChannel(ByVal flags As JoinChannelType,
+        Public Shared Function MakeJoinChannel(ByVal joinType As JoinChannelType,
                                                ByVal channel As String) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Dim vals As New Dictionary(Of InvariantString, Object)
             Return New Packet(ClientPackets.JoinChannel, New Dictionary(Of InvariantString, Object) From {
-                    {"flags", flags},
+                    {"join type", joinType},
                     {"channel", channel}})
         End Function
         Public Shared Function MakeCreateGame3(ByVal game As WC3.GameDescription) As Packet
@@ -653,7 +653,7 @@ Namespace Bnet
                 Dim u = CULng(value)
                 Dim digits As IList(Of Char) = New List(Of Char)
                 For i = 0 To numDigits - 1
-                    Dim val = Hex(u And CULng(&HF)).ToLowerInvariant()
+                    Dim val = Hex(u And CULng(&HF)).ToLowerInvariant
                     Contract.Assume(val.Length = 1)
                     digits.Add(val(0))
                     u >>= 4

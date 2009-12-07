@@ -15,7 +15,7 @@ Namespace Plugins
         ReadOnly Property Bot() As MainBot
 
         <ContractClassFor(GetType(IPluginSocket))>
-        Class ContractClass
+        NotInheritable Class ContractClass
             Implements IPluginSocket
             Public ReadOnly Property Bot As MainBot Implements IPluginSocket.Bot
                 Get
@@ -40,7 +40,7 @@ Namespace Plugins
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
 
         <ContractClassFor(GetType(IPlugin))>
-        Class ContractClass
+        NotInheritable Class ContractClass
             Implements IPlugin
             Public ReadOnly Property Description As String Implements IPlugin.Description
                 Get

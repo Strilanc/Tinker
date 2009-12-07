@@ -5,9 +5,9 @@ Imports System.Threading
 Public Module FutureExtensionsEx
     <Extension()>
     Public Function AsyncRead(ByVal this As IO.Stream,
-                               ByVal buffer() As Byte,
-                               ByVal offset As Integer,
-                               ByVal count As Integer) As IFuture(Of Integer)
+                              ByVal buffer() As Byte,
+                              ByVal offset As Integer,
+                              ByVal count As Integer) As IFuture(Of Integer)
         Contract.Requires(this IsNot Nothing)
         Contract.Requires(buffer IsNot Nothing)
         Contract.Requires(offset >= 0)

@@ -42,7 +42,7 @@ Public NotInheritable Class PacketStreamer
         Dim packetData(0 To HeaderSize - 1) As Byte
         Dim result = New FutureFunction(Of ViewableList(Of Byte))
 
-        FutureIterate(Function() subStream.FutureRead(packetData, readSize, packetData.Length - readSize),
+        FutureIterate(Function() subStream.AsyncRead(packetData, readSize, packetData.Length - readSize),
             Function(numBytesRead, readException)
                 'Check result
                 If readException IsNot Nothing Then 'read failed

@@ -25,8 +25,6 @@ Partial Class ProfileSettingsControl
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(ProfileSettingsControl))
         Me.tabsProfile = New System.Windows.Forms.TabControl()
         Me.tabSettings = New System.Windows.Forms.TabPage()
-        Me.lblTFTKeyError = New System.Windows.Forms.Label()
-        Me.lblROCKeyError = New System.Windows.Forms.Label()
         Me.btnDeleteProfile = New System.Windows.Forms.Button()
         Me.txtCKLServer = New System.Windows.Forms.TextBox()
         Me.lblCKLServer = New System.Windows.Forms.Label()
@@ -36,16 +34,16 @@ Partial Class ProfileSettingsControl
         Me.txtRocKey = New System.Windows.Forms.TextBox()
         Me.txtTftKey = New System.Windows.Forms.TextBox()
         Me.lblTftKey = New System.Windows.Forms.Label()
-        Me.numLocalPort = New System.Windows.Forms.NumericUpDown()
         Me.lblUsername = New System.Windows.Forms.Label()
         Me.lblInitialChannel = New System.Windows.Forms.Label()
         Me.txtInitialChannel = New System.Windows.Forms.TextBox()
         Me.lblGateway = New System.Windows.Forms.Label()
         Me.cboGateway = New System.Windows.Forms.ComboBox()
-        Me.lblLocalPort = New System.Windows.Forms.Label()
         Me.lblPassword = New System.Windows.Forms.Label()
         Me.txtPassword = New System.Windows.Forms.TextBox()
         Me.txtUsername = New System.Windows.Forms.TextBox()
+        Me.lblROCKeyError = New System.Windows.Forms.Label()
+        Me.lblTFTKeyError = New System.Windows.Forms.Label()
         Me.tabUsers = New System.Windows.Forms.TabPage()
         Me.gridUsers = New System.Windows.Forms.DataGridView()
         Me.colName = New System.Windows.Forms.DataGridViewTextBoxColumn()
@@ -65,7 +63,7 @@ Partial Class ProfileSettingsControl
         Me.tabsProfile.Location = New System.Drawing.Point(0, 0)
         Me.tabsProfile.Name = "tabsProfile"
         Me.tabsProfile.SelectedIndex = 0
-        Me.tabsProfile.Size = New System.Drawing.Size(482, 265)
+        Me.tabsProfile.Size = New System.Drawing.Size(482, 227)
         Me.tabsProfile.TabIndex = 43
         '
         'tabSettings
@@ -80,13 +78,11 @@ Partial Class ProfileSettingsControl
         Me.tabSettings.Controls.Add(Me.txtRocKey)
         Me.tabSettings.Controls.Add(Me.txtTftKey)
         Me.tabSettings.Controls.Add(Me.lblTftKey)
-        Me.tabSettings.Controls.Add(Me.numLocalPort)
         Me.tabSettings.Controls.Add(Me.lblUsername)
         Me.tabSettings.Controls.Add(Me.lblInitialChannel)
         Me.tabSettings.Controls.Add(Me.txtInitialChannel)
         Me.tabSettings.Controls.Add(Me.lblGateway)
         Me.tabSettings.Controls.Add(Me.cboGateway)
-        Me.tabSettings.Controls.Add(Me.lblLocalPort)
         Me.tabSettings.Controls.Add(Me.lblPassword)
         Me.tabSettings.Controls.Add(Me.txtPassword)
         Me.tabSettings.Controls.Add(Me.txtUsername)
@@ -95,36 +91,14 @@ Partial Class ProfileSettingsControl
         Me.tabSettings.Location = New System.Drawing.Point(4, 22)
         Me.tabSettings.Name = "tabSettings"
         Me.tabSettings.Padding = New System.Windows.Forms.Padding(3)
-        Me.tabSettings.Size = New System.Drawing.Size(474, 239)
+        Me.tabSettings.Size = New System.Drawing.Size(474, 201)
         Me.tabSettings.TabIndex = 0
         Me.tabSettings.Text = "Settings"
         Me.tabSettings.UseVisualStyleBackColor = True
         '
-        'lblTFTKeyError
-        '
-        Me.lblTFTKeyError.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblTFTKeyError.ForeColor = System.Drawing.Color.Red
-        Me.lblTFTKeyError.Location = New System.Drawing.Point(232, 82)
-        Me.lblTFTKeyError.Name = "lblTFTKeyError"
-        Me.lblTFTKeyError.Size = New System.Drawing.Size(220, 13)
-        Me.lblTFTKeyError.TabIndex = 62
-        Me.lblTFTKeyError.Text = "No Key Entered"
-        Me.lblTFTKeyError.TextAlign = System.Drawing.ContentAlignment.TopRight
-        '
-        'lblROCKeyError
-        '
-        Me.lblROCKeyError.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblROCKeyError.ForeColor = System.Drawing.Color.Red
-        Me.lblROCKeyError.Location = New System.Drawing.Point(6, 82)
-        Me.lblROCKeyError.Name = "lblROCKeyError"
-        Me.lblROCKeyError.Size = New System.Drawing.Size(220, 13)
-        Me.lblROCKeyError.TabIndex = 61
-        Me.lblROCKeyError.Text = "No Key Entered"
-        Me.lblROCKeyError.TextAlign = System.Drawing.ContentAlignment.TopRight
-        '
         'btnDeleteProfile
         '
-        Me.btnDeleteProfile.Location = New System.Drawing.Point(6, 203)
+        Me.btnDeleteProfile.Location = New System.Drawing.Point(6, 164)
         Me.btnDeleteProfile.Name = "btnDeleteProfile"
         Me.btnDeleteProfile.Size = New System.Drawing.Size(446, 27)
         Me.btnDeleteProfile.TabIndex = 60
@@ -134,7 +108,7 @@ Partial Class ProfileSettingsControl
         'txtCKLServer
         '
         Me.txtCKLServer.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.txtCKLServer.Location = New System.Drawing.Point(6, 177)
+        Me.txtCKLServer.Location = New System.Drawing.Point(6, 137)
         Me.txtCKLServer.Name = "txtCKLServer"
         Me.txtCKLServer.Size = New System.Drawing.Size(220, 20)
         Me.txtCKLServer.TabIndex = 58
@@ -143,7 +117,7 @@ Partial Class ProfileSettingsControl
         'lblCKLServer
         '
         Me.lblCKLServer.AutoSize = True
-        Me.lblCKLServer.Location = New System.Drawing.Point(3, 161)
+        Me.lblCKLServer.Location = New System.Drawing.Point(3, 121)
         Me.lblCKLServer.Name = "lblCKLServer"
         Me.lblCKLServer.Size = New System.Drawing.Size(174, 13)
         Me.lblCKLServer.TabIndex = 59
@@ -204,14 +178,6 @@ Partial Class ProfileSettingsControl
         Me.lblTftKey.TabIndex = 55
         Me.lblTftKey.Text = "TFT CD Key"
         '
-        'numLocalPort
-        '
-        Me.numLocalPort.Location = New System.Drawing.Point(6, 138)
-        Me.numLocalPort.Maximum = New Decimal(New Integer() {32767, 0, 0, 0})
-        Me.numLocalPort.Name = "numLocalPort"
-        Me.numLocalPort.Size = New System.Drawing.Size(220, 20)
-        Me.numLocalPort.TabIndex = 49
-        '
         'lblUsername
         '
         Me.lblUsername.AutoSize = True
@@ -257,15 +223,6 @@ Partial Class ProfileSettingsControl
         Me.cboGateway.TabIndex = 46
         Me.tipNormal.SetToolTip(Me.cboGateway, "The battle.net server to connect to.")
         '
-        'lblLocalPort
-        '
-        Me.lblLocalPort.AutoSize = True
-        Me.lblLocalPort.Location = New System.Drawing.Point(3, 121)
-        Me.lblLocalPort.Name = "lblLocalPort"
-        Me.lblLocalPort.Size = New System.Drawing.Size(94, 13)
-        Me.lblLocalPort.TabIndex = 50
-        Me.lblLocalPort.Text = "Default Listen Port"
-        '
         'lblPassword
         '
         Me.lblPassword.AutoSize = True
@@ -292,13 +249,35 @@ Partial Class ProfileSettingsControl
         Me.txtUsername.TabIndex = 43
         Me.tipNormal.SetToolTip(Me.txtUsername, "The username of the account to logon with.")
         '
+        'lblROCKeyError
+        '
+        Me.lblROCKeyError.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblROCKeyError.ForeColor = System.Drawing.Color.Red
+        Me.lblROCKeyError.Location = New System.Drawing.Point(6, 82)
+        Me.lblROCKeyError.Name = "lblROCKeyError"
+        Me.lblROCKeyError.Size = New System.Drawing.Size(220, 13)
+        Me.lblROCKeyError.TabIndex = 61
+        Me.lblROCKeyError.Text = "No Key Entered"
+        Me.lblROCKeyError.TextAlign = System.Drawing.ContentAlignment.TopRight
+        '
+        'lblTFTKeyError
+        '
+        Me.lblTFTKeyError.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblTFTKeyError.ForeColor = System.Drawing.Color.Red
+        Me.lblTFTKeyError.Location = New System.Drawing.Point(232, 82)
+        Me.lblTFTKeyError.Name = "lblTFTKeyError"
+        Me.lblTFTKeyError.Size = New System.Drawing.Size(220, 13)
+        Me.lblTFTKeyError.TabIndex = 62
+        Me.lblTFTKeyError.Text = "No Key Entered"
+        Me.lblTFTKeyError.TextAlign = System.Drawing.ContentAlignment.TopRight
+        '
         'tabUsers
         '
         Me.tabUsers.Controls.Add(Me.gridUsers)
         Me.tabUsers.Location = New System.Drawing.Point(4, 22)
         Me.tabUsers.Name = "tabUsers"
         Me.tabUsers.Padding = New System.Windows.Forms.Padding(3)
-        Me.tabUsers.Size = New System.Drawing.Size(474, 239)
+        Me.tabUsers.Size = New System.Drawing.Size(474, 201)
         Me.tabUsers.TabIndex = 1
         Me.tabUsers.Text = "Users"
         Me.tabUsers.UseVisualStyleBackColor = True
@@ -345,7 +324,7 @@ Partial Class ProfileSettingsControl
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.Controls.Add(Me.tabsProfile)
         Me.Name = "ProfileSettingsControl"
-        Me.Size = New System.Drawing.Size(482, 265)
+        Me.Size = New System.Drawing.Size(482, 227)
         Me.tabsProfile.ResumeLayout(False)
         Me.tabSettings.ResumeLayout(False)
         Me.tabSettings.PerformLayout()
@@ -364,13 +343,11 @@ Partial Class ProfileSettingsControl
     Friend WithEvents txtRocKey As System.Windows.Forms.TextBox
     Friend WithEvents txtTftKey As System.Windows.Forms.TextBox
     Friend WithEvents lblTftKey As System.Windows.Forms.Label
-    Friend WithEvents numLocalPort As System.Windows.Forms.NumericUpDown
     Friend WithEvents lblUsername As System.Windows.Forms.Label
     Friend WithEvents lblInitialChannel As System.Windows.Forms.Label
     Friend WithEvents txtInitialChannel As System.Windows.Forms.TextBox
     Friend WithEvents lblGateway As System.Windows.Forms.Label
     Friend WithEvents cboGateway As System.Windows.Forms.ComboBox
-    Friend WithEvents lblLocalPort As System.Windows.Forms.Label
     Friend WithEvents lblPassword As System.Windows.Forms.Label
     Friend WithEvents txtPassword As System.Windows.Forms.TextBox
     Friend WithEvents txtUsername As System.Windows.Forms.TextBox
