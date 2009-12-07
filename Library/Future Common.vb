@@ -4,8 +4,7 @@ Imports System.Threading
 
 Public Module FutureExtensionsEx
     <Extension()>
-    <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
-    Public Function FutureRead(ByVal this As IO.Stream,
+    Public Function AsyncRead(ByVal this As IO.Stream,
                                ByVal buffer() As Byte,
                                ByVal offset As Integer,
                                ByVal count As Integer) As IFuture(Of Integer)
@@ -17,15 +16,12 @@ Public Module FutureExtensionsEx
         Contract.Ensures(Contract.Result(Of IFuture(Of Integer))() IsNot Nothing)
 
         Dim result = New FutureFunction(Of Integer)
-        Try
-            this.BeginRead(buffer:=buffer,
-                           offset:=offset,
-                           count:=count,
-                           state:=Nothing,
-                           callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar)))
-        Catch e As Exception
-            result.SetFailed(e)
-        End Try
+        result.DependentCall(Sub() this.BeginRead(
+                buffer:=buffer,
+                offset:=offset,
+                count:=count,
+                state:=Nothing,
+                callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar))))
         Return result
     End Function
 
@@ -33,7 +29,7 @@ Public Module FutureExtensionsEx
     ''' Passes a produced future into a consumer, waits for the consumer to finish, and repeats while the consumer outputs true.
     ''' </summary>
     Public Function FutureIterate(Of T)(ByVal producer As Func(Of IFuture(Of T)),
-                                         ByVal consumer As Func(Of T, Exception, IFuture(Of Boolean))) As IFuture
+                                        ByVal consumer As Func(Of T, Exception, IFuture(Of Boolean))) As IFuture
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
         Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
@@ -65,7 +61,6 @@ Public Module FutureExtensionsEx
     ''' <param name="consumer">Consumes values produced by the producer.</param>
     ''' <param name="errorHandler">Called when the produce/consume cycle eventually terminates due to an exception.</param>
     ''' <returns>A future which fails once the produce/consume cycle terminates due to an exception.</returns>
-    <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
     Public Function AsyncProduceConsumeUntilError(Of T)(ByVal producer As Func(Of IFuture(Of T)),
                                                         ByVal consumer As Func(Of T, IFuture),
                                                         ByVal errorHandler As Action(Of Exception)) As IFuture
@@ -77,44 +72,31 @@ Public Module FutureExtensionsEx
         Dim result = New FutureAction
 
         'Setup iteration
-        Dim finishedConsuming As Action(Of Exception) = Nothing
-        Dim finishedProducing As Action(Of T, Exception) = Nothing
-        finishedConsuming = Sub(consumerException)
-                                If consumerException IsNot Nothing Then
-                                    result.SetFailed(consumerException)
-                                    Return
-                                End If
-
-                                'Produce
-                                Try
-                                    producer().CallWhenValueReady(finishedProducing)
-                                Catch e As Exception
-                                    result.SetFailed(e)
-                                End Try
-                            End Sub
-        finishedProducing = Sub(producedValue, producerException)
-                                If producerException IsNot Nothing Then
-                                    result.SetFailed(producerException)
-                                    Return
-                                End If
-
-                                'Consume
-                                Try
-                                    consumer(producedValue).CallWhenReady(finishedConsuming)
-                                Catch e As Exception
-                                    result.SetFailed(e)
-                                End Try
-                            End Sub
+        Dim onFinishedConsuming As Action(Of Exception) = Nothing
+        Dim onFinishedProducing As Action(Of T, Exception) = Nothing
+        onFinishedConsuming = Sub(consumerException)
+                                  If consumerException IsNot Nothing Then
+                                      result.SetFailed(consumerException)
+                                  Else
+                                      result.DependentCall(Sub() producer().CallWhenValueReady(onFinishedProducing))
+                                  End If
+                              End Sub
+        onFinishedProducing = Sub(producedValue, producerException)
+                                  If producerException IsNot Nothing Then
+                                      result.SetFailed(producerException)
+                                  Else
+                                      result.DependentCall(Sub() consumer(producedValue).CallWhenReady(onFinishedConsuming))
+                                  End If
+                              End Sub
 
         'Start
-        producer().AssumeNotNull.CallWhenValueReady(finishedProducing)
+        Call onFinishedConsuming(Nothing)
         result.Catch(errorHandler)
-
         Return result
     End Function
     Public Function AsyncProduceConsumeUntilError2(Of T)(ByVal producer As Func(Of IFuture(Of T)),
-                                                        ByVal consumer As Action(Of T),
-                                                        ByVal errorHandler As Action(Of Exception)) As IFuture
+                                                         ByVal consumer As Action(Of T),
+                                                         ByVal errorHandler As Action(Of Exception)) As IFuture
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
         Contract.Requires(errorHandler IsNot Nothing)

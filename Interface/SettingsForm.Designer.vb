@@ -23,7 +23,6 @@ Partial Class SettingsForm
         Me.tipNormal = New System.Windows.Forms.ToolTip()
         Me.txtMapPath = New System.Windows.Forms.TextBox()
         Me.txtProgramPath = New System.Windows.Forms.TextBox()
-        Me.txtExeVersion = New System.Windows.Forms.TextBox()
         Me.txtExeInformation = New System.Windows.Forms.TextBox()
         Me.txtCdKeyOwner = New System.Windows.Forms.TextBox()
         Me.txtCommandPrefix = New System.Windows.Forms.TextBox()
@@ -46,7 +45,6 @@ Partial Class SettingsForm
         Me.lblCommandPrefix = New System.Windows.Forms.Label()
         Me.lblExeInfo = New System.Windows.Forms.Label()
         Me.lblOwner = New System.Windows.Forms.Label()
-        Me.lblWc3Version = New System.Windows.Forms.Label()
         Me.lblMapPath = New System.Windows.Forms.Label()
         Me.lblPath = New System.Windows.Forms.Label()
         Me.tabPlugins = New System.Windows.Forms.TabPage()
@@ -95,14 +93,6 @@ Partial Class SettingsForm
         Me.txtProgramPath.TabIndex = 34
         Me.tipNormal.SetToolTip(Me.txtProgramPath, "The location of the folder containing the hash files (war3.exe, storm.dll, game.d" & _
                 "ll)" & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Default: (program files)\Warcraft III\")
-        '
-        'txtExeVersion
-        '
-        Me.txtExeVersion.Location = New System.Drawing.Point(232, 19)
-        Me.txtExeVersion.Name = "txtExeVersion"
-        Me.txtExeVersion.Size = New System.Drawing.Size(220, 20)
-        Me.txtExeVersion.TabIndex = 38
-        Me.tipNormal.SetToolTip(Me.txtExeVersion, "The current version of warcraft 3." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "(shown in bottom right of wc3 intro screen)")
         '
         'txtExeInformation
         '
@@ -193,7 +183,7 @@ Partial Class SettingsForm
         'txtBnlsServer
         '
         Me.txtBnlsServer.Font = New System.Drawing.Font("Courier New", 8.25!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.txtBnlsServer.Location = New System.Drawing.Point(6, 253)
+        Me.txtBnlsServer.Location = New System.Drawing.Point(232, 19)
         Me.txtBnlsServer.Name = "txtBnlsServer"
         Me.txtBnlsServer.Size = New System.Drawing.Size(220, 20)
         Me.txtBnlsServer.TabIndex = 60
@@ -201,7 +191,7 @@ Partial Class SettingsForm
         '
         'txtGreeting
         '
-        Me.txtGreeting.Location = New System.Drawing.Point(6, 292)
+        Me.txtGreeting.Location = New System.Drawing.Point(6, 253)
         Me.txtGreeting.MaxLength = 15
         Me.txtGreeting.Multiline = True
         Me.txtGreeting.Name = "txtGreeting"
@@ -246,8 +236,6 @@ Partial Class SettingsForm
         Me.tabGlobalSettings.Controls.Add(Me.txtExeInformation)
         Me.tabGlobalSettings.Controls.Add(Me.lblOwner)
         Me.tabGlobalSettings.Controls.Add(Me.txtCdKeyOwner)
-        Me.tabGlobalSettings.Controls.Add(Me.lblWc3Version)
-        Me.tabGlobalSettings.Controls.Add(Me.txtExeVersion)
         Me.tabGlobalSettings.Controls.Add(Me.lblMapPath)
         Me.tabGlobalSettings.Controls.Add(Me.txtMapPath)
         Me.tabGlobalSettings.Controls.Add(Me.txtProgramPath)
@@ -262,7 +250,7 @@ Partial Class SettingsForm
         'lblGreeting
         '
         Me.lblGreeting.AutoSize = True
-        Me.lblGreeting.Location = New System.Drawing.Point(3, 276)
+        Me.lblGreeting.Location = New System.Drawing.Point(3, 237)
         Me.lblGreeting.Name = "lblGreeting"
         Me.lblGreeting.Size = New System.Drawing.Size(82, 13)
         Me.lblGreeting.TabIndex = 63
@@ -271,7 +259,7 @@ Partial Class SettingsForm
         'lblBnlsServer
         '
         Me.lblBnlsServer.AutoSize = True
-        Me.lblBnlsServer.Location = New System.Drawing.Point(3, 237)
+        Me.lblBnlsServer.Location = New System.Drawing.Point(229, 3)
         Me.lblBnlsServer.Name = "lblBnlsServer"
         Me.lblBnlsServer.Size = New System.Drawing.Size(161, 13)
         Me.lblBnlsServer.TabIndex = 61
@@ -339,15 +327,6 @@ Partial Class SettingsForm
         Me.lblOwner.Size = New System.Drawing.Size(77, 13)
         Me.lblOwner.TabIndex = 41
         Me.lblOwner.Text = "CD Key Owner"
-        '
-        'lblWc3Version
-        '
-        Me.lblWc3Version.AutoSize = True
-        Me.lblWc3Version.Location = New System.Drawing.Point(229, 3)
-        Me.lblWc3Version.Name = "lblWc3Version"
-        Me.lblWc3Version.Size = New System.Drawing.Size(95, 13)
-        Me.lblWc3Version.TabIndex = 39
-        Me.lblWc3Version.Text = "Warcraft 3 Version"
         '
         'lblMapPath
         '
@@ -558,8 +537,6 @@ Partial Class SettingsForm
     Friend WithEvents txtExeInformation As System.Windows.Forms.TextBox
     Friend WithEvents lblOwner As System.Windows.Forms.Label
     Friend WithEvents txtCdKeyOwner As System.Windows.Forms.TextBox
-    Friend WithEvents lblWc3Version As System.Windows.Forms.Label
-    Friend WithEvents txtExeVersion As System.Windows.Forms.TextBox
     Friend WithEvents lblCommandPrefix As System.Windows.Forms.Label
     Friend WithEvents txtCommandPrefix As System.Windows.Forms.TextBox
     Friend WithEvents numTickPeriod As System.Windows.Forms.NumericUpDown

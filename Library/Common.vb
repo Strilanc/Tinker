@@ -9,34 +9,6 @@ Imports Strilbrary.Enumeration
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
-    Public Function WC3MajorVersion() As Byte
-        Return WC3Version(2)
-    End Function
-    Public Function WC3Version() As Byte()
-        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-        Dim exeS = My.Settings.exeVersion
-        Contract.Assume(exeS IsNot Nothing)
-        Dim ss = exeS.Split("."c)
-        If ss.Length <> 4 Then Throw New ArgumentException("Invalid version specified in settings. Must have #.#.#.# form.")
-        Dim exeV(0 To 3) As Byte
-        For i = 0 To 3
-            Contract.Assume(ss(i) IsNot Nothing)
-            If Not Integer.TryParse(ss(i), 0) Or ss(i).Length > 8 Then
-                Throw New ArgumentException("Invalid version specified in settings. Must have #.#.#.# form.")
-            End If
-            exeV(i) = CByte(CInt(ss(i)) And &HFF)
-        Next i
-        Return exeV.Reverse.ToArray
-    End Function
-    Public Function WC3Path() As String
-        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return My.Settings.war3path.AssumeNotNull
-    End Function
-    Public Function MapPath() As String
-        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return My.Settings.mapPath.AssumeNotNull
-    End Function
-
 #Region "Strings Extra"
     <Extension()> <Pure()>
     Public Function Linefy(ByVal text As String) As String

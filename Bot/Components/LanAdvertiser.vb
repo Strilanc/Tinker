@@ -180,7 +180,7 @@ Namespace WC3
             Next game
         End Sub
         Private Sub RefreshGame(ByVal game As LanGame)
-            Dim pk = Packet.MakeLanDescribeGame(WC3MajorVersion, game.GameDescription)
+            Dim pk = Packet.MakeLanDescribeGame(GetWC3MajorVersion, game.GameDescription)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host

@@ -76,7 +76,7 @@ Public NotInheritable Class DeadManSwitch
                 If _wasReset Then
                     _wasReset = False
                     _isTimerRunning = True
-                    Dim dt = _period - CInt(_timerStartTick - Environment.TickCount).Milliseconds
+                    Dim dt = _period - CInt(Environment.TickCount - _timerStartTick).Milliseconds
                     dt.AsyncWait().CallWhenReady(Sub() OnTimeout())
                 Else
                     _isArmed = False

@@ -2,6 +2,7 @@
     Public NotInheritable Class GameStatsJar
         Inherits Jar(Of GameStats)
 
+        <Flags()>
         Private Enum GameSettings As UInteger
             SpeedMedium = 1 << 0
             SpeedFast = 1 << 1

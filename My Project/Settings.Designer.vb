@@ -80,18 +80,6 @@ Namespace My
         
         <Global.System.Configuration.UserScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
-         Global.System.Configuration.DefaultSettingValueAttribute("1.24.1.6374")>  _
-        Public Property exeVersion() As String
-            Get
-                Return CType(Me("exeVersion"),String)
-            End Get
-            Set
-                Me("exeVersion") = value
-            End Set
-        End Property
-        
-        <Global.System.Configuration.UserScopedSettingAttribute(),  _
-         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
          Global.System.Configuration.DefaultSettingValueAttribute("war3.exe 12/28/06 20:35:21 1572307")>  _
         Public Property exeInformation() As String
             Get

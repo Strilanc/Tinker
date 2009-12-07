@@ -261,7 +261,7 @@ Namespace Bnet
 
                     'Introductions
                     tcpClient.GetStream.Write({1}, 0, 1) 'protocol version
-                    SendPacket(Bnet.Packet.MakeAuthenticationBegin(WC3MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
+                    SendPacket(Bnet.Packet.MakeAuthenticationBegin(GetWC3MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
 
                     BeginHandlingPackets()
                     Return Me._futureConnected
@@ -276,7 +276,8 @@ Namespace Bnet
             AsyncProduceConsumeUntilError(Of ViewableList(Of Byte))(
                 producer:=AddressOf _socket.FutureReadPacket,
                 consumer:=AddressOf ProcessPacket,
-                errorHandler:=Sub(exception) QueueDisconnect(expected:=False, reason:="Error receiving packet: {0}.".Frmt(exception.Message))
+                errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
+                                                             reason:="Error receiving packet: {0}.".Frmt(exception.Message))
             )
         End Sub
         Private Function ProcessPacket(ByVal packetData As ViewableList(Of Byte)) As ifuture
@@ -284,7 +285,7 @@ Namespace Bnet
             Contract.Requires(packetData.Length >= 4)
             Dim result = Me._packetHandler.HandlePacket(packetData, _socket.Name)
             result.Catch(Sub(exception) QueueDisconnect(expected:=False,
-                                                        reason:=exception.Message))
+                                                        reason:="Error handling packet {0}: {1}.".Frmt(CType(packetData(1), PacketId), exception.Message)))
             Return result
         End Function
         Private Sub BeginConnectBnlsServer(ByVal seed As ModInt32)
@@ -405,6 +406,7 @@ Namespace Bnet
                 Case ClientState.AdvertisingGame
                     Throw New InvalidOperationException("Already advertising a game.")
                 Case ClientState.Channel
+                    SetReportedListenPort(gameDescription.Port)
                     Me._advertisedGameDescription = gameDescription
                     Me._futureAdvertisedGame.TrySetFailed(New OperationFailedException("Started advertising another game."))
                     Me._futureAdvertisedGame = New FutureAction
@@ -634,9 +636,9 @@ Namespace Bnet
             futureKeys.CallOnValueSuccess(
                 Sub(keys)
                     Dim mpqChallengeResponse = GenerateRevisionCheck(My.Settings.war3path,
-                                                                     CStr(vals("mpq number string")),
-                                                                     CStr(vals("mpq hash challenge")))
-                    SendPacket(Bnet.Packet.MakeAuthenticationFinish(version:=WC3Version,
+                                                                     CStr(vals("revision check seed")),
+                                                                     CStr(vals("revision check challenge")))
+                    SendPacket(Bnet.Packet.MakeAuthenticationFinish(version:=GetWC3ExeVersion,
                                                                     mpqChallengeResponse:=mpqChallengeResponse,
                                                                     clientCDKeySalt:=clientCdKeySalt,
                                                                     serverCDKeySalt:=serverCdKeySalt,
@@ -645,7 +647,12 @@ Namespace Bnet
                                                                     packedROCKey:=keys.CDKeyROC,
                                                                     packedTFTKey:=keys.CDKeyTFT))
                     BeginConnectBnlsServer(seed:=CType(keys.CDKeyROC("hash"), Byte()).SubArray(0, 4).ToUInt32)
-                End Sub).SetHandled()
+                End Sub
+            ).Catch(
+                Sub(exception)
+                    QueueDisconnect(expected:=False, reason:="Error handling authentication begin: {0}".Frmt(exception.Message))
+                End Sub
+            )
         End Sub
 
         Private Sub ReceiveAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
@@ -720,7 +727,6 @@ Namespace Bnet
             SendPacket(Bnet.Packet.MakeAccountLogOnFinish(clientProof))
         End Sub
 
-        <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
         Private Sub ReceiveAccountLogonFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value

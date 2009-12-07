@@ -197,6 +197,7 @@
     <Compile Include="Interface\GenericBotComponentControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Library\CachedValues.vb" />
     <Compile Include="Library\Commands\CommandTemplate.vb" />
     <Compile Include="Library\Commands\Delegated Commands.vb" />
     <Compile Include="Library\Commands\PartialCommand.vb" />
@@ -341,7 +342,7 @@
     </Compile>
     <Compile Include="Library\Future Common.vb" />
     <Compile Include="Test\Test.vb" />
-    <Compile Include="Bot\Widgets\ComponentTabSetIWidget.vb" />
+    <Compile Include="Bot\Widgets\ComponentTabSet.vb" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Interface\ComponentsControl.resx">

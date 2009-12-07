@@ -155,24 +155,24 @@ Namespace Bnet
         ''' Determines the revision check value used when connecting to bnet.
         ''' </summary>
         ''' <param name="folder">The folder containing the hash files: War3.exe, Storm.dll, Game.dll.</param>
-        ''' <param name="indexString">Seeds the initial hash state.</param>
-        ''' <param name="instructions">Specifies initial hash state as well how the hash state is updated.</param>
+        ''' <param name="seedString">Seeds the initial hash state.</param>
+        ''' <param name="challengeString">Specifies initial hash state as well how the hash state is updated.</param>
         ''' <remarks>Example input: A=443747131 B=3328179921 C=1040998290 4 A=A^S B=B-C C=C^A A=A+B</remarks>
         Public Function GenerateRevisionCheck(ByVal folder As String,
-                                              ByVal indexString As String,
-                                              ByVal instructions As String) As UInteger
+                                              ByVal seedString As String,
+                                              ByVal challengeString As String) As UInteger
             Contract.Requires(folder IsNot Nothing)
-            Contract.Requires(indexString IsNot Nothing)
-            Contract.Requires(instructions IsNot Nothing)
+            Contract.Requires(seedString IsNot Nothing)
+            Contract.Requires(challengeString IsNot Nothing)
 
             'Parse
-            Dim lines = CType(instructions.Split(" "c), IEnumerable(Of String)).GetEnumerator()
+            Dim lines = CType(challengeString.Split(" "c), IEnumerable(Of String)).GetEnumerator()
             Dim variables = ReadVariablesFrom(lines)
             Dim operations = ReadOperationsFrom(lines, variables)
             If lines.MoveNext Then Throw New ArgumentException("More revision check instructions than expected.")
 
             'Seed variable A [the point of this? obfuscation I guess]
-            variables("A"c) = variables("A"c) Xor ExtractIndexStringHashSeed(indexString)
+            variables("A"c) = variables("A"c) Xor ExtractIndexStringHashSeed(seedString)
 
             'Init tail buffer [used to extend file data to a multiple of 1024]
             Dim tailBuffer(0 To 1024 - 1) As Byte

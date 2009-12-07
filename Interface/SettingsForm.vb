@@ -44,7 +44,6 @@ Public Class SettingsForm
         txtProgramPath.Text = My.Settings.war3path
         txtCdKeyOwner.Text = My.Settings.cdKeyOwner
         txtMapPath.Text = My.Settings.mapPath
-        txtExeVersion.Text = My.Settings.exeVersion
         txtExeInformation.Text = My.Settings.exeInformation
         txtCommandPrefix.Text = My.Settings.commandPrefix
         numLagLimit.Value = My.Settings.game_lag_limit
@@ -174,7 +173,6 @@ Public Class SettingsForm
         My.Settings.war3path = txtProgramPath.Text
         My.Settings.cdKeyOwner = txtCdKeyOwner.Text
         My.Settings.mapPath = txtMapPath.Text
-        My.Settings.exeVersion = txtExeVersion.Text
         My.Settings.exeInformation = txtExeInformation.Text
         My.Settings.commandPrefix = txtCommandPrefix.Text
         My.Settings.game_lag_limit = CUShort(numLagLimit.Value)
@@ -187,6 +185,8 @@ Public Class SettingsForm
 
         My.Settings.Save()
         Me.wantSave = True
+
+        CacheWc3Version()
 
         Dispose()
     End Sub

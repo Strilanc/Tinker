@@ -341,8 +341,8 @@ Namespace Bnet
                     New UInt32Jar("server cd key salt").Weaken,
                     New ArrayJar("udp value", 4).Weaken,
                     New FileTimeJar("mpq filetime").Weaken,
-                    New StringJar("mpq number string").Weaken,
-                    New StringJar("mpq hash challenge").Weaken,
+                    New StringJar("revision check seed").Weaken,
+                    New StringJar("revision check challenge").Weaken,
                     New ArrayJar("server signature", 128).Weaken)
             Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.AuthenticationFinish,
                     New EnumUInt32Jar(Of AuthenticationFinishResult)("result").Weaken,
@@ -409,8 +409,8 @@ Namespace Bnet
                     New UInt32Jar("protocol").Weaken,
                     New StringJar("platform", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
                     New StringJar("product", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
-                    New UInt32Jar("product version").Weaken,
-                    New StringJar("product language", False, , 4).Weaken,
+                    New UInt32Jar("product major version").Weaken,
+                    New StringJar("product language", nullTerminated:=False, expectedSize:=4).Weaken,
                     New NetIPAddressJar("internal ip").Weaken,
                     New UInt32Jar("time zone offset").Weaken,
                     New UInt32Jar("location id").Weaken,
@@ -419,10 +419,10 @@ Namespace Bnet
                     New StringJar("country name").Weaken)
             Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.AuthenticationFinish,
                     New UInt32Jar("client cd key salt").Weaken,
-                    New ArrayJar("exe version", 4).Weaken,
-                    New ArrayJar("mpq challenge response", 4).Weaken,
+                    New ArrayJar("exe version", expectedSize:=4).Weaken,
+                    New UInt32Jar("revision check response").Weaken,
                     New UInt32Jar("# cd keys").Weaken,
-                    New ValueJar("spawn [unused]", 4, "0=false, 1=true").Weaken,
+                    New ValueJar("spawn [unused]", byteCount:=4, info:="0=false, 1=true").Weaken,
                     New CDKeyJar("ROC cd key").Weaken,
                     New CDKeyJar("TFT cd key").Weaken,
                     New StringJar("exe info").Weaken,
@@ -479,13 +479,14 @@ Namespace Bnet
         End Class
 
 #Region "Packers: Logon"
-        Public Shared Function MakeAuthenticationBegin(ByVal version As UInteger, ByVal localIPAddress As Net.IPAddress) As Packet
+        Public Shared Function MakeAuthenticationBegin(ByVal majorVersion As UInteger,
+                                                       ByVal localIPAddress As Net.IPAddress) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(ClientPackets.AuthenticationBegin, New Dictionary(Of InvariantString, Object) From {
                     {"protocol", 0},
                     {"platform", "IX86"},
                     {"product", "W3XP"},
-                    {"product version", version},
+                    {"product major version", majorVersion},
                     {"product language", "SUne"},
                     {"internal ip", localIPAddress},
                     {"time zone offset", 240},
@@ -514,7 +515,7 @@ Namespace Bnet
             Return New Packet(ClientPackets.AuthenticationFinish, New Dictionary(Of InvariantString, Object) From {
                     {"client cd key salt", clientCDKeySalt},
                     {"exe version", version},
-                    {"mpq challenge response", mpqChallengeResponse.Bytes()},
+                    {"revision check response", mpqChallengeResponse},
                     {"# cd keys", 2},
                     {"spawn [unused]", 0},
                     {"ROC cd key", packedROCKey},
