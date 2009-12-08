@@ -12,7 +12,7 @@ Public Class LanAdvertiserControl
     End Sub
 
     Public Sub New(ByVal manager As Components.LanAdvertiserManager)
-        Contract.Requires(manager IsNot Nothing)
+        Contract.Assert(manager IsNot Nothing)
         InitializeComponent()
 
         Me._manager = manager

@@ -27,7 +27,7 @@ Namespace Plugins
         End Sub
         Public Sub Save(ByVal writer As IO.BinaryWriter)
             Contract.Requires(writer IsNot Nothing)
-            writer.Write(format_version)
+            writer.Write(CUInt(format_version))
             writer.Write(name)
             writer.Write(location)
             writer.Write(argument)

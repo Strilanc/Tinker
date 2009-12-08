@@ -13,7 +13,7 @@ Public Class ComponentsControl
     End Sub
 
     Public Sub New(ByVal bot As MainBot)
-        Contract.Requires(bot IsNot Nothing)
+        Contract.Assert(bot IsNot Nothing)
         InitializeComponent()
 
         _botComponentTabs = New ComponentTabSet(tabsBot)

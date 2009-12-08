@@ -27,7 +27,7 @@
             InitProcessArguments()
             InitDownloads()
             downloadTimer.Start()
-            ref.QueueAction(Sub() TryRestoreFakeHost())
+            inQueue.QueueAction(Sub() TryRestoreFakeHost())
         End Sub
         Private Sub InitCreateSlots()
             'create player slots
@@ -105,13 +105,13 @@
                 Return False
             ElseIf state >= GameState.PreCounting Then
                 Return False
-            ElseIf (From player In players Where Not player.isFake And player.GetDownloadPercent <> 100).Any Then
+            ElseIf (From player In _players Where Not player.isFake And player.GetDownloadPercent <> 100).Any Then
                 Return False
             End If
             ChangeState(GameState.PreCounting)
 
             'Give people a few seconds to realize the game is full before continuing
-            Call 3.Seconds.AsyncWait().QueueCallWhenReady(ref,
+            Call 3.Seconds.AsyncWait().QueueCallWhenReady(inQueue,
                 Sub()
                     If state <> GameState.PreCounting Then Return
                     If Not settings.IsAutoStarted OrElse CountFreeSlots() > 0 Then
@@ -124,7 +124,7 @@
                     BroadcastMessage("Game is Full. Waiting 5 seconds for stability.")
 
                     'Give jittery players a few seconds to leave
-                    Call 5.Seconds.AsyncWait().QueueCallWhenReady(ref,
+                    Call 5.Seconds.AsyncWait().QueueCallWhenReady(inQueue,
                         Sub()
                             If state <> GameState.PreCounting Then Return
                             If Not settings.IsAutoStarted OrElse CountFreeSlots() > 0 Then
@@ -146,7 +146,7 @@
                 Return False
             ElseIf state > GameState.CountingDown Then
                 Return False
-            ElseIf (From p In players Where Not p.isFake AndAlso p.GetDownloadPercent <> 100).Any Then
+            ElseIf (From p In _players Where Not p.isFake AndAlso p.GetDownloadPercent <> 100).Any Then
                 Return False
             End If
 
@@ -154,7 +154,7 @@
             flagHasPlayerLeft = False
 
             Logger.Log("Starting Countdown", LogMessageType.Positive)
-            Call 1.Seconds.AsyncWait().QueueCallWhenReady(ref, Sub() _TryContinueCountdown(5))
+            Call 1.Seconds.AsyncWait().QueueCallWhenReady(inQueue, Sub() _TryContinueCountdown(5))
             Return True
         End Function
         Private Sub _TryContinueCountdown(ByVal ticksLeft As Integer)
@@ -180,12 +180,12 @@
             If ticksLeft > 0 Then
                 'Next tick
                 Logger.Log("Game starting in {0}".Frmt(ticksLeft), LogMessageType.Positive)
-                For Each player In players
+                For Each player In _players
                     Contract.Assume(player IsNot Nothing)
                     SendMessageTo("Starting in {0}...".Frmt(ticksLeft), player, display:=False)
                 Next player
 
-                Call 1.Seconds.AsyncWait().QueueCallWhenReady(ref, Sub() _TryContinueCountdown(ticksLeft - 1))
+                Call 1.Seconds.AsyncWait().QueueCallWhenReady(inQueue, Sub() _TryContinueCountdown(ticksLeft - 1))
                 Return
             End If
 
@@ -197,7 +197,7 @@
             If state >= GameState.Loading Then Return
 
             'Remove fake players
-            For Each player In (From p In players.ToList Where p.isFake)
+            For Each player In (From p In _players.ToList Where p.isFake)
                 Contract.Assume(player IsNot Nothing)
                 Dim slot = TryFindPlayerSlot(player)
                 If slot Is Nothing OrElse slot.Contents.Moveable Then
@@ -229,8 +229,8 @@
             p.hasVotedToStart = val
             If Not val Then Return
 
-            Dim numPlayers = (From q In players Where Not q.isFake).Count
-            Dim numInFavor = (From q In players Where Not q.isFake AndAlso q.hasVotedToStart).Count
+            Dim numPlayers = (From q In _players Where Not q.isFake).Count
+            Dim numInFavor = (From q In _players Where Not q.isFake AndAlso q.hasVotedToStart).Count
             If numPlayers >= 2 And numInFavor * 3 >= numPlayers * 2 Then
                 TryStartCountdown()
             End If
@@ -259,10 +259,10 @@
             If newSlot IsNot Nothing Then
                 newSlot.Contents = New SlotContentsPlayer(newSlot, newPlayer)
             End If
-            players.Add(newPlayer)
+            _players.Add(newPlayer)
 
             'Inform other players
-            For Each player In players
+            For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueSendPacket(Packet.MakeOtherPlayerJoined(newPlayer, index))
             Next player
@@ -344,18 +344,18 @@
             'Create player object
             Dim newPlayer = New Player(index, settings, _downloadScheduler, connectingPlayer, Logger)
             bestSlot.Contents = bestSlot.Contents.TakePlayer(newPlayer)
-            players.Add(newPlayer)
+            _players.Add(newPlayer)
 
             'Greet new player
             newPlayer.QueueSendPacket(Packet.MakeGreet(newPlayer, index))
-            For Each player In (From p In players Where p IsNot newPlayer AndAlso IsPlayerVisible(p))
+            For Each player In (From p In _players Where p IsNot newPlayer AndAlso IsPlayerVisible(p))
                 newPlayer.QueueSendPacket(Packet.MakeOtherPlayerJoined(player))
             Next player
             newPlayer.QueueSendPacket(Packet.MakeHostMapInfo(Map))
 
             'Inform other players
             If IsPlayerVisible(newPlayer) Then
-                For Each player In (From p In players Where p IsNot newPlayer)
+                For Each player In (From p In _players Where p IsNot newPlayer)
                     player.QueueSendPacket(Packet.MakeOtherPlayerJoined(newPlayer, index))
                 Next player
             End If
@@ -400,14 +400,14 @@
 
 #Region "Events"
         Private Sub ThrowPlayerEntered(ByVal new_player As Player)
-            eventRef.QueueAction(Sub()
+            outQueue.QueueAction(Sub()
                                      RaiseEvent PlayerEntered(Me, new_player)
                                  End Sub)
         End Sub
 
         Private Sub OnDownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndpoints),
                                                ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndpoints))
-            ref.QueueAction(
+            inQueue.QueueAction(
                 Sub()
                     'Start transfers
                     For Each e In started
@@ -473,13 +473,13 @@
             ThrowUpdated()
 
             'Don't let update rate to clients become too high
-            slotStateUpdateThrottle.SetActionToRun(Sub() ref.QueueAction(AddressOf SendLobbyState))
+            slotStateUpdateThrottle.SetActionToRun(Sub() inQueue.QueueAction(AddressOf SendLobbyState))
         End Sub
         Private Sub SendLobbyState()
             If state >= GameState.Loading Then Return
 
             Dim time As ModInt32 = Environment.TickCount()
-            For Each player In players
+            For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 Dim pk = Packet.MakeLobbyState(player, Map, slots, time, settings.isAdminGame)
                 player.QueueSendPacket(pk)
@@ -783,86 +783,86 @@
 
         Public Function QueueUpdatedGameState() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(AddressOf ChangedLobbyState)
+            Return inQueue.QueueAction(AddressOf ChangedLobbyState)
         End Function
 
         Public Function QueueOpenSlot(ByVal query As String) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() OpenSlot(query))
+            Return inQueue.QueueAction(Sub() OpenSlot(query))
         End Function
         Public Function QueueCloseSlot(ByVal query As String) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() CloseSlot(query))
+            Return inQueue.QueueAction(Sub() CloseSlot(query))
         End Function
         Public Function QueueReserveSlot(ByVal userName As String,
                                          Optional ByVal query As String = Nothing) As IFuture
             Contract.Requires(userName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() ReserveSlot(userName, query))
+            Return inQueue.QueueAction(Sub() ReserveSlot(userName, query))
         End Function
         Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture
             Contract.Requires(query1 IsNot Nothing)
             Contract.Requires(query2 IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SwapSlotContents(query1, query2))
+            Return inQueue.QueueAction(Sub() SwapSlotContents(query1, query2))
         End Function
 
         Public Function QueueSetSlotCpu(ByVal query As String, ByVal newCpuLevel As Slot.ComputerLevel) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() ComputerizeSlot(query, newCpuLevel))
+            Return inQueue.QueueAction(Sub() ComputerizeSlot(query, newCpuLevel))
         End Function
         Public Function QueueSetSlotLocked(ByVal query As String, ByVal newLockState As Slot.Lock) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SetSlotLocked(query, newLockState))
+            Return inQueue.QueueAction(Sub() SetSlotLocked(query, newLockState))
         End Function
         Public Function QueueSetAllSlotsLocked(ByVal newLockState As Slot.Lock) As IFuture
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SetAllSlotsLocked(newLockState))
+            Return inQueue.QueueAction(Sub() SetAllSlotsLocked(newLockState))
         End Function
         Public Function QueueSetSlotHandicap(ByVal query As String, ByVal newHandicap As Byte) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SetSlotHandicap(query, newHandicap))
+            Return inQueue.QueueAction(Sub() SetSlotHandicap(query, newHandicap))
         End Function
         Public Function QueueSetSlotTeam(ByVal query As String, ByVal newTeam As Byte) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SetSlotTeam(query, newTeam))
+            Return inQueue.QueueAction(Sub() SetSlotTeam(query, newTeam))
         End Function
         Public Function QueueSetSlotRace(ByVal query As String, ByVal newRace As Slot.Races) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SetSlotRace(query, newRace))
+            Return inQueue.QueueAction(Sub() SetSlotRace(query, newRace))
         End Function
         Public Function QueueSetSlotColor(ByVal query As String, ByVal newColor As Slot.PlayerColor) As IFuture
             Contract.Requires(query IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SetSlotColor(query, newColor))
+            Return inQueue.QueueAction(Sub() SetSlotColor(query, newColor))
         End Function
 
         Public Function QueueTryAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
             Contract.Requires(newPlayer IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
-            Return ref.QueueFunc(Function() AddPlayer(newPlayer))
+            Return inQueue.QueueFunc(Function() AddPlayer(newPlayer))
         End Function
         Public Function QueueSetPlayerVoteToStart(ByVal name As String,
                                                   ByVal wantsToStart As Boolean) As IFuture
             Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
+            Return inQueue.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
         End Function
         Public Function QueueStartCountdown() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Function() TryStartCountdown())
+            Return inQueue.QueueAction(Function() TryStartCountdown())
         End Function
         Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture
             Contract.Requires(sizes IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub() TrySetTeamSizes(sizes))
+            Return inQueue.QueueAction(Sub() TrySetTeamSizes(sizes))
         End Function
 #End Region
     End Class

@@ -3,15 +3,12 @@ Imports System.Reflection
 Namespace Plugins
     Friend Class PluginSocket
         Inherits FutureDisposable
-        Implements IPluginSocket
 
         Private ReadOnly _plugin As IPlugin
-        Private ReadOnly _bot As MainBot
         Private ReadOnly _name As InvariantString
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_plugin IsNot Nothing)
-            Contract.Invariant(_bot IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -20,17 +17,14 @@ Namespace Plugins
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(assemblyPath IsNot Nothing)
             Me._name = name
-            Me._bot = bot
             Try
                 Dim asm = Assembly.LoadFrom(assemblyPath)
                 Contract.Assume(asm IsNot Nothing)
-                Dim classType = asm.GetType("HostBotPlugin")
-                Contract.Assume(classType IsNot Nothing)
-                Me._plugin = CType(Activator.CreateInstance(classType), IPlugin)
-                Contract.Assume(_plugin IsNot Nothing)
-                Me._plugin.Init(Me)
+                Dim classType = asm.GetType("TinkerPluginFactory")
+                If classType Is Nothing Then Throw New OperationFailedException("The target assembly doesn't contain a TinkerPluginFactory.")
+                Me._plugin = CType(Activator.CreateInstance(classType), IPluginFactory).CreatePlugin(bot)
             Catch e As Exception
-                Throw New PluginException("Error loading plugin assembly from '{1}'.".Frmt(assemblyPath), e)
+                Throw New PluginException("Error loading plugin assembly from '{0}': {1}.".Frmt(assemblyPath, e), e)
             End Try
         End Sub
 
@@ -39,13 +33,10 @@ Namespace Plugins
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property Bot As MainBot Implements IPluginSocket.Bot
-            Get
-                Return _bot
-            End Get
-        End Property
         Public ReadOnly Property Plugin As IPlugin
             Get
+                Contract.Ensures(Contract.Result(Of IPlugin)() IsNot Nothing)
+                If _plugin Is Nothing Then Throw New InvalidStateException("Used a PluginSocket whose constructor threw an exception.")
                 Return _plugin
             End Get
         End Property

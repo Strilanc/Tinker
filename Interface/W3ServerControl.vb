@@ -21,7 +21,7 @@ Public Class W3ServerControl
     End Sub
 
     Public Sub New(ByVal manager As Components.WC3GameServerManager)
-        Contract.Requires(manager IsNot Nothing)
+        Contract.Assert(manager IsNot Nothing)
         InitializeComponent()
         'if games is nothing then games = new TabControlIHookableSet(tabsserver)
 
@@ -82,14 +82,14 @@ Public Class W3ServerControl
         Tinker.Components.UIInvokeCommand(_manager, argument)
     End Sub
 
-    Private Sub OnAddedGame(ByVal sender As GameServer, ByVal game As Game)
+    Private Sub OnAddedGame(ByVal sender As GameServer, ByVal gameSet As GameSet, ByVal game As Game)
         inQueue.QueueAction(Sub()
                                 _games(game) = New Components.WC3GameManager(game.Name, _manager.Bot, game)
                                 gameTabs.Add(_games(game))
                                 BeginUpdateStateDisplay()
                             End Sub)
     End Sub
-    Private Sub OnRemovedGame(ByVal sender As GameServer, ByVal game As Game)
+    Private Sub OnRemovedGame(ByVal sender As GameServer, ByVal gameSet As GameSet, ByVal game As Game)
         inQueue.QueueAction(Sub()
                                 gameTabs.Remove(_games(game))
                                 _games.Remove(game)

@@ -1,9 +1,9 @@
 Namespace WC3
     Public NotInheritable Class Map
-        Public ReadOnly playableWidth As Integer
-        Public ReadOnly playableHeight As Integer
-        Public ReadOnly isMelee As Boolean
-        Public ReadOnly name As String
+        Private ReadOnly _name As InvariantString
+        Private ReadOnly _playableWidth As Integer
+        Private ReadOnly _playableHeight As Integer
+        Private ReadOnly _isMelee As Boolean
         Private ReadOnly _numPlayerSlots As Integer
         Private ReadOnly _fileSize As UInteger
         Private ReadOnly _fileChecksumCRC32 As UInt32
@@ -21,6 +21,8 @@ Namespace WC3
             End Get
         End Property
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_playableWidth > 0)
+            Contract.Invariant(_playableHeight > 0)
             Contract.Invariant(_fileSize > 0)
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(_mapChecksumSHA1.Length = 20)
@@ -77,6 +79,28 @@ Namespace WC3
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _fullPath
+            End Get
+        End Property
+        Public ReadOnly Property Name As InvariantString
+            Get
+                Return _name
+            End Get
+        End Property
+        Public ReadOnly Property IsMelee As Boolean
+            Get
+                Return _isMelee
+            End Get
+        End Property
+        Public ReadOnly Property PlayableWidth As Integer
+            Get
+                Contract.Ensures(Contract.Result(Of Integer)() > 0)
+                Return _playableWidth
+            End Get
+        End Property
+        Public ReadOnly Property PlayableHeight As Integer
+            Get
+                Contract.Ensures(Contract.Result(Of Integer)() > 0)
+                Return _playableHeight
             End Get
         End Property
 
@@ -177,10 +201,10 @@ Namespace WC3
             Me._fullPath = Folder + relativePath.Substring(5)
             Me._relativePath = relativePath
             Me._folder = Folder
-            Me.playableHeight = 256
-            Me.playableWidth = 256
-            Me.isMelee = True
-            Me.name = relativePath.Split("\"c).Last
+            Me._playableHeight = 256
+            Me._playableWidth = 256
+            Me._isMelee = True
+            Me._name = relativePath.Split("\"c).Last
             Me._numPlayerSlots = slotCount
             Me._fileSize = fileSize
             Me._fileChecksumCRC32 = fileChecksumCRC32
@@ -213,11 +237,11 @@ Namespace WC3
 
             Dim info = ReadMapInfo(mapArchive)
             Me._slots = info.slots
-            Me.isMelee = info.isMelee
+            Me._isMelee = info.isMelee
             Me._numPlayerSlots = info.slots.Count
-            Me.name = info.name
-            Me.playableHeight = info.playableHeight
-            Me.playableWidth = info.playableWidth
+            Me._name = info.name
+            Me._playableHeight = info.playableHeight
+            Me._playableWidth = info.playableWidth
         End Sub
 #End Region
 
@@ -452,12 +476,26 @@ Namespace WC3
             Public ReadOnly playableHeight As Integer
             Public ReadOnly isMelee As Boolean
             Public ReadOnly slots As List(Of Slot)
-            Public ReadOnly name As String
-            Public Sub New(ByVal name As String,
+            Public ReadOnly name As InvariantString
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(playableWidth > 0)
+                Contract.Invariant(playableHeight > 0)
+                Contract.Invariant(slots IsNot Nothing)
+                Contract.Invariant(slots.Count > 0)
+                Contract.Invariant(slots.Count <= 12)
+            End Sub
+
+            Public Sub New(ByVal name As InvariantString,
                            ByVal playableWidth As Integer,
                            ByVal playableHeight As Integer,
                            ByVal isMelee As Boolean,
                            ByVal slots As List(Of Slot))
+                Contract.Requires(playableWidth > 0)
+                Contract.Requires(playableHeight > 0)
+                Contract.Requires(slots IsNot Nothing)
+                Contract.Requires(slots.Count > 0)
+                Contract.Requires(slots.Count <= 12)
                 Me.playableHeight = playableHeight
                 Me.playableWidth = playableWidth
                 Me.isMelee = isMelee

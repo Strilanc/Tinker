@@ -15,7 +15,7 @@ Namespace Commands
             AddCommand(New GenericCommands.DownloadMap(Of MainBot))
             AddCommand(New GenericCommands.RecacheIP(Of MainBot))
             AddCommand(Dispose)
-            'AddCommand(New CommandLoadPlugin)
+            AddCommand(New CommandLoadPlugin)
             'AddCommand(Server)
             AddCommand([Get])
             AddCommand([Set])
@@ -213,18 +213,30 @@ Namespace Commands
         'End Function
         'End Class
 
-        'Public NotInheritable Class CommandLoadPlugin
-        'Inherits TemplatedCommand(Of MainBot)
-        'Public Sub New()
-        'MyBase.New(Name:="LoadPlugin",
-        'template:="name",
-        'Description:="Loads the named plugin.",
-        'permissions:="root:5")
-        'End Sub
-        'Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Strilbrary.Threading.IFuture(Of String)
-        'Return target.QueueLoadPlugin(argument.RawValue(0)).Select(Function(plugin) "Loaded plugin. Description: {0}".Frmt(plugin.Description))
-        'End Function
-        'End Class
+        Public NotInheritable Class CommandLoadPlugin
+            Inherits TemplatedCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="LoadPlugin",
+                template:="name",
+                Description:="Loads the named plugin.",
+                permissions:="root:5")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Dim futureProfile = From profiles In target.QueueGetPluginProfiles()
+                                    Select (From profile In profiles
+                                            Where profile.name = argument.RawValue(0)).FirstOrDefault
+
+                Return futureProfile.Select(
+                    Function(profile)
+                        If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
+                        Dim socket = New Plugins.PluginSocket(profile.name, target, profile.location)
+                        Dim manager = New Components.PluginManager(socket)
+                        Dim added = target.QueueAddComponent(manager)
+                        added.Catch(Sub() manager.Dispose())
+                        Return added.EvalOnSuccess(Function() "Loaded plugin. Description: {0}".Frmt(socket.Plugin.Description))
+                    End Function).Defuturized
+            End Function
+        End Class
 
         ''''<summary>A command which creates a battle.net client and logs on to a battle.net server.</summary>
         Private NotInheritable Class Connect

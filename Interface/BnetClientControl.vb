@@ -13,7 +13,7 @@ Public Class BnetClientControl
     End Sub
 
     Public Sub New(ByVal manager As Components.BnetClientManager)
-        Contract.Requires(manager IsNot Nothing)
+        Contract.Assert(manager IsNot Nothing)
         InitializeComponent()
 
         Me._client = manager.Client

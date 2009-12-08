@@ -18,7 +18,7 @@ Public Class W3GameControl
     End Sub
 
     Public Sub New(ByVal manager As Components.WC3GameManager)
-        Contract.Requires(manager IsNot Nothing)
+        Contract.Assert(manager IsNot Nothing)
         InitializeComponent()
 
         Me._manager = manager

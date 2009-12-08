@@ -13,7 +13,8 @@ Namespace WC3
         Private ReadOnly _logger As Logger
         Private ReadOnly _gameSets As New Dictionary(Of UInt32, GameSet)()
         Private ReadOnly _viewGameSets As New AsyncViewableCollection(Of GameSet)(outQueue:=outQueue)
-        Private ReadOnly _viewGames As New AsyncViewableCollection(Of Game)(outQueue:=outQueue)
+        Private ReadOnly _viewGames As New AsyncViewableCollection(Of Tuple(Of GameSet, Game))(outQueue:=outQueue)
+        Private ReadOnly _viewPlayers As New AsyncViewableCollection(Of Tuple(Of GameSet, Game, Player))(outQueue:=outQueue)
 
         Public Event PlayerTalked(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player, ByVal text As String)
         Public Event PlayerLeft(ByVal sender As GameServer, ByVal game As Game, ByVal gameState As GameState, ByVal player As Player, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
@@ -285,8 +286,11 @@ Namespace WC3
             _gameSets(id) = gameSet
             _viewGameSets.Add(gameSet)
             Dim gameLink = gameSet.QueueCreateGamesAsyncView(
-                                adder:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Add(game)),
-                                remover:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Remove(game)))
+                    adder:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Add(New Tuple(Of GameSet, Game)(gameSet, game))),
+                    remover:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Remove(New Tuple(Of GameSet, Game)(gameSet, game))))
+            Dim playerLink = gameSet.QueueCreatePlayersAsyncView(
+                    adder:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Add(New Tuple(Of GameSet, Game, Player)(gameSet, game, player))),
+                    remover:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(New Tuple(Of GameSet, Game, Player)(gameSet, game, player))))
 
             'Automatic removal
             _gameSets(id).FutureDisposed.QueueCallWhenReady(inQueue,
@@ -294,6 +298,7 @@ Namespace WC3
                     _gameSets.Remove(id)
                     _viewGameSets.Remove(gameSet)
                     gameLink.CallOnValueSuccess(Sub(link) link.Dispose()).SetHandled()
+                    playerLink.CallOnValueSuccess(Sub(link) link.Dispose()).SetHandled()
                 End Sub)
 
             Return gameSet
@@ -490,20 +495,36 @@ Namespace WC3
             Return inQueue.QueueFunc(Function() CreateGameSetsAsyncView(adder, remover))
         End Function
 
-        Private Function CreateGamesAsyncView(ByVal adder As Action(Of GameServer, Game),
-                                              ByVal remover As Action(Of GameServer, Game)) As IDisposable
+        Private Function CreateGamesAsyncView(ByVal adder As Action(Of GameServer, GameSet, Game),
+                                              ByVal remover As Action(Of GameServer, GameSet, Game)) As IDisposable
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _viewGames.BeginSync(adder:=Sub(sender, item) adder(Me, item),
-                                        remover:=Sub(sender, item) remover(Me, item))
+            Return _viewGames.BeginSync(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2),
+                                        remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2))
         End Function
-        Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of GameServer, Game),
-                                                  ByVal remover As Action(Of GameServer, Game)) As IFuture(Of IDisposable)
+        Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of GameServer, GameSet, Game),
+                                                  ByVal remover As Action(Of GameServer, GameSet, Game)) As IFuture(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CreateGamesAsyncView(adder, remover))
+        End Function
+
+        Private Function CreatePlayersAsyncView(ByVal adder As Action(Of GameServer, GameSet, Game, Player),
+                                            ByVal remover As Action(Of GameServer, GameSet, Game, Player)) As IDisposable
+            Contract.Requires(adder IsNot Nothing)
+            Contract.Requires(remover IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return _viewPlayers.BeginSync(adder:=Sub(sender, item) adder(Me, item.Item1, item.Item2, item.Item3),
+                                          remover:=Sub(sender, item) remover(Me, item.Item1, item.Item2, item.Item3))
+        End Function
+        Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of GameServer, GameSet, Game, Player),
+                                                    ByVal remover As Action(Of GameServer, GameSet, Game, Player)) As IFuture(Of IDisposable)
+            Contract.Requires(adder IsNot Nothing)
+            Contract.Requires(remover IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() CreatePlayersAsyncView(adder, remover))
         End Function
     End Class
 End Namespace

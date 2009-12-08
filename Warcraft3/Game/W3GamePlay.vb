@@ -55,7 +55,7 @@
             AddHandler tickTimer.Elapsed, Sub() OnTick()
         End Sub
         Private Sub GameplayStart()
-            For Each player In players
+            For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartPlaying()
             Next player
@@ -67,7 +67,7 @@
         End Sub
 
         Private Sub e_ThrowPlayerSentData(ByVal player As Player, ByVal data As Byte())
-            eventRef.QueueAction(Sub() RaiseEvent PlayerSentData(Me, player, data))
+            outQueue.QueueAction(Sub() RaiseEvent PlayerSentData(Me, player, data))
         End Sub
 
 #Region "Play"
@@ -83,7 +83,7 @@
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(action IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return eventRef.QueueAction(Sub() RaiseEvent PlayerAction(Me, player, action))
+            Return outQueue.QueueAction(Sub() RaiseEvent PlayerAction(Me, player, action))
         End Function
 
         '''<summary>Drops the players currently lagging.</summary>
@@ -96,7 +96,7 @@
 
         '''<summary>Advances game time</summary>
         Private Sub OnTick()
-            ref.QueueAction(
+            inQueue.QueueAction(
                 Sub()
                     Dim t As ModInt32 = Environment.TickCount
                     Dim dt = CUInt(t - lastTickTime) * Me.SettingSpeedFactor
@@ -124,7 +124,7 @@
             If laggingPlayers.Count > 0 Then
                 For Each p In laggingPlayers.ToList
                     Contract.Assume(p IsNot Nothing)
-                    If Not players.Contains(p) Then
+                    If Not _players.Contains(p) Then
                         laggingPlayers.Remove(p)
                     ElseIf p.GetTockTime >= _gameTime OrElse p.isFake Then
                         laggingPlayers.Remove(p)
@@ -138,7 +138,7 @@
                     End If
                 Next p
             Else
-                laggingPlayers = (From p In players
+                laggingPlayers = (From p In _players
                                   Where Not p.isFake _
                                   AndAlso p.GetTockTime < _gameTime - Me.SettingLagLimit
                                   ).ToList
@@ -170,7 +170,7 @@
 
             'Send data
             Dim normalData = Concat(dataList)
-            For Each receiver In players
+            For Each receiver In _players
                 Contract.Assume(receiver IsNot Nothing)
                 If IsPlayerVisible(receiver) Then
                     receiver.QueueSendTick(record, normalData)
@@ -200,18 +200,18 @@
         End Property
         Public Function QueueDropLagger() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(AddressOf DropLagger)
+            Return inQueue.QueueAction(AddressOf DropLagger)
         End Function
         Public Function QueueSendGameData(ByVal sender As Player,
                                           ByVal data() As Byte) As IFuture
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Ifuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(sender IsNot Nothing)
-                                       Contract.Assume(data IsNot Nothing)
-                                       QueueGameData(sender, data)
-                                   End Sub)
+            Return inQueue.QueueAction(Sub()
+                                           Contract.Assume(sender IsNot Nothing)
+                                           Contract.Assume(data IsNot Nothing)
+                                           QueueGameData(sender, data)
+                                       End Sub)
         End Function
 #End Region
     End Class

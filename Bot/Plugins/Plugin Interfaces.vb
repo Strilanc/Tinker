@@ -9,29 +9,9 @@ Namespace Plugins
         End Sub
     End Class
 
-    <ContractClass(GetType(IPluginSocket.ContractClass))>
-    Public Interface IPluginSocket
-        Inherits IDisposable
-        ReadOnly Property Bot() As MainBot
-
-        <ContractClassFor(GetType(IPluginSocket))>
-        NotInheritable Class ContractClass
-            Implements IPluginSocket
-            Public ReadOnly Property Bot As MainBot Implements IPluginSocket.Bot
-                Get
-                    Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
-                    Throw New NotSupportedException
-                End Get
-            End Property
-            Public Sub Dispose() Implements IDisposable.Dispose
-            End Sub
-        End Class
-    End Interface
-
     <ContractClass(GetType(IPlugin.ContractClass))>
     Public Interface IPlugin
-        Inherits IDisposable
-        Sub Init(ByVal plugout As IPluginSocket)
+        Inherits IFutureDisposable
         ReadOnly Property Description() As String
         ReadOnly Property Logger As Logger
         ReadOnly Property HasControl As Boolean
@@ -40,7 +20,7 @@ Namespace Plugins
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
 
         <ContractClassFor(GetType(IPlugin))>
-        NotInheritable Class ContractClass
+        NotInheritable Shadows Class ContractClass
             Implements IPlugin
             Public ReadOnly Property Description As String Implements IPlugin.Description
                 Get
@@ -48,9 +28,6 @@ Namespace Plugins
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public Sub Init(ByVal plugout As IPluginSocket) Implements IPlugin.Init
-                Contract.Requires(plugout IsNot Nothing)
-            End Sub
             Public Sub Dispose() Implements IDisposable.Dispose
             End Sub
             Public ReadOnly Property Control As Control Implements IPlugin.Control
@@ -79,6 +56,27 @@ Namespace Plugins
             Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IPlugin.IsArgumentPrivate
                 Contract.Requires(argument IsNot Nothing)
                 Throw New NotSupportedException
+            End Function
+            Public ReadOnly Property FutureDisposed As IFuture Implements IFutureDisposable.FutureDisposed
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+        End Class
+    End Interface
+
+    <ContractClass(GetType(IPluginFactory.ContractClass))>
+    Public Interface IPluginFactory
+        Function CreatePlugin(ByVal bot As MainBot) As IPlugin
+
+        <ContractClassFor(GetType(IPluginFactory))>
+        NotInheritable Class ContractClass
+            Implements IPluginFactory
+
+            Public Function CreatePlugin(ByVal bot As MainBot) As IPlugin Implements IPluginFactory.CreatePlugin
+                Contract.Requires(bot IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPlugin)() IsNot Nothing)
+                Throw New NotSupportedException()
             End Function
         End Class
     End Interface

@@ -12,7 +12,7 @@
             AddHandler fakeTickTimer.Elapsed, Sub() OnFakeTick()
         End Sub
         Private Sub LoadScreenStart()
-            For Each player In players
+            For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartLoading()
                 unreadyPlayers.Add(player)
@@ -23,7 +23,7 @@
             logger.log("Players Loading", LogMessageType.Positive)
 
             'Ready any lingering fake players
-            For Each player In (From p In players Where p.isFake _
+            For Each player In (From p In _players Where p.isFake _
                                                   AndAlso IsPlayerVisible(p) _
                                                   AndAlso TryFindPlayerSlot(p).Contents.Moveable)
                 Contract.Assume(player IsNot Nothing)
@@ -49,7 +49,7 @@
 
         '''<summary>Starts the in-game play if all players are ready</summary>
         Private Function TryLaunch() As Boolean
-            If (From x In players Where Not x.Ready AndAlso Not x.isFake).Any Then
+            If (From x In _players Where Not x.Ready AndAlso Not x.isFake).Any Then
                 Return False
             End If
             ChangeState(GameState.Playing)
@@ -95,7 +95,7 @@
             End If
 
             If settings.useLoadInGame Then
-                For Each player In players
+                For Each player In _players
                     Contract.Assume(player IsNot Nothing)
                     If IsPlayerVisible(player) Then
                         sendingPlayer.QueueSendPacket(Packet.MakeOtherPlayerReady(player))
@@ -131,7 +131,7 @@
         End Sub
 
         Private Sub OnFakeTick()
-            ref.QueueAction(
+            inQueue.QueueAction(
                 Sub()
                     If state > GameState.Loading Then Return
                     If readyPlayers.Count = 0 Then Return
@@ -153,10 +153,10 @@
         Public Function QueueReceiveReady(ByVal player As Player) As IFuture
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(player IsNot Nothing)
-                                       ReceiveReady(player)
-                                   End Sub)
+            Return inQueue.QueueAction(Sub()
+                                           Contract.Assume(player IsNot Nothing)
+                                           ReceiveReady(player)
+                                       End Sub)
         End Function
     End Class
 End Namespace
