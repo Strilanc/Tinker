@@ -89,15 +89,15 @@ Namespace Commands
         End Class
 
         Public NotInheritable Class FindMaps(Of T)
-            Inherits TemplatedCommand(Of T)
+            Inherits Command(Of T)
             Public Sub New()
                 MyBase.New(Name:="FindMaps",
                            Description:="Returns the first five maps matching a search query. The first match is the map used by other commands given the same query (eg. host).",
-                           template:="MapQuery",
+                           Format:="MapQuery...",
                            Permissions:="games:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Dim results = FindFilesMatching(fileQuery:="*{0}*".Frmt(argument.RawValue(0)),
+            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+                Dim results = FindFilesMatching(fileQuery:="*{0}*".Frmt(argument),
                                                 likeQuery:="*.[wW]3[mxMX]",
                                                 directory:=My.Settings.mapPath.AssumeNotNull,
                                                 maxResults:=5)

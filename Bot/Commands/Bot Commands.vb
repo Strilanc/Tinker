@@ -6,7 +6,6 @@ Namespace Commands
         Public Sub New()
             AddCommand([To])
             AddCommand(ListComponents)
-            'AddCommand(New CommandClient)
             AddCommand(New Connect)
             'AddCommand(CreateCKL)
             AddCommand(CreateClient)
@@ -16,7 +15,6 @@ Namespace Commands
             AddCommand(New GenericCommands.RecacheIP(Of MainBot))
             AddCommand(Dispose)
             AddCommand(New CommandLoadPlugin)
-            'AddCommand(Server)
             AddCommand([Get])
             AddCommand([Set])
             'AddCommand(CreateAdmin)
@@ -149,15 +147,6 @@ Namespace Commands
                           End Function
                       ).Defuturized()
                           End Function)
-
-        'Private Shared ReadOnly Server As New DelegatedCommand(Of MainBot)(
-        'Name:="Server",
-        'Description:="Forwards commands to the bot's game server.",
-        'Format:="command...",
-        'Permissions:="root:3",
-        'func:=Function(target, user, arguments)
-        'Return WC3.GameServer.ServerCommands.Invoke(target.GameServer, user, arguments)
-        'End Function)
 
         Private Shared ReadOnly CreateClient As New DelegatedTemplatedCommand(Of MainBot)(
             Name:="CreateClient",

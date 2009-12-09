@@ -46,7 +46,8 @@
                             "Raw arguments are just plain normal arguments, what you should expect. You can skip them if their format starts with a ?.",
                             "Named arguments, such as name=value, are arguments preceded by their name=.",
                             "Optional switches, such as -useFancyPants, are argument which can either be skipped or included.",
-                            "Optional named arguments, such as -optional=value, can be skipped but are otherwise named arguments prefixed with a -."
+                            "Optional named arguments, such as -optional=value, can be skipped but are otherwise named arguments prefixed with a -.",
+                            "There are also tail arguments, which aren't separated by spaces, like MapQuery in 'FindMaps MapQuery...'."
                             }.StringJoin(Environment.NewLine).Futurized
 
                 Case "*" 'list available commands

@@ -8,14 +8,13 @@ Namespace Commands
         Public Sub New()
             'AddCommand(AdLink)
             'AddCommand(AdUnlink)
-            'AddCommand(Bot)
+            AddCommand(Bot)
             AddCommand(AddUser)
             AddCommand(Demote)
             AddCommand(RemoveUser)
             AddCommand(Disconnect)
-            'AddCommand(New InheritedCommand(New BotCommands.CommandFindMaps))
-            'AddCommand(GetPort)
-            'AddCommand(SetPort)
+            AddCommand(New GenericCommands.FindMaps(Of Components.BnetClientManager))
+            AddCommand(New GenericCommands.DownloadMap(Of Components.BnetClientManager))
             AddCommand(Promote)
             AddCommand(User)
             AddCommand(Connect)
@@ -110,20 +109,8 @@ Namespace Commands
             Description:="Forwards commands to the main bot.",
             Permissions:="root:1",
             func:=Function(target, user, argument)
-                      Return Components.MainBotManager.BotCommands.Invoke(target.bot, user, argument)
+                      Return target.InvokeCommand(user, argument)
                   End Function)
-
-        'Public NotInheritable Class InheritedCommand
-        'Inherits Command(Of Bnet.Client)
-        'Private subCommand As Command(Of MainBot)
-        'Public Sub New(ByVal subCommand As Command(Of MainBot))
-        'MyBase.New(subCommand.Name, subCommand.Format, subCommand.Description, "", "", subCommand.HasPrivateArguments)
-        'Me.subCommand = subCommand
-        'End Sub
-        'Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As String) As Strilbrary.Threading.IFuture(Of String)
-        'Return subCommand.Invoke(target.Parent, user, argument)
-        'End Function
-        'End Class
 
         Private Shared ReadOnly Disconnect As New DelegatedTemplatedCommand(Of Bnet.Client)(
             Name:="Disconnect",
