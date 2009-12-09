@@ -7,7 +7,7 @@ Public Class LoggerControl
     Private nextQueuedMessage As QueuedMessage
     Private numQueuedMessages As Integer
     Protected lock As New Object()
-    Private filename As String
+    Private _logFilename As String
     Private filestream As IO.Stream
     Private isLoggingUnexpectedExceptions As Boolean
 
@@ -79,16 +79,16 @@ Public Class LoggerControl
                 If filestream IsNot Nothing Then
                     filestream.Dispose()
                     filestream = Nothing
-                    filename = Nothing
+                    _logFilename = Nothing
                     tips.SetToolTip(chkSaveFile, "Determines if data is logged to a file.")
                 End If
             End If
             Me._logger = logger
             If logger IsNot Nothing Then
-                filename = name + " " + DateTime.Now().ToString("MMM d, yyyy, HH-mm-ss", CultureInfo.InvariantCulture) + ".txt"
+                _logFilename = "{0} {1}.txt".Frmt(name, DateTime.Now().ToString("MMM d, yyyy, HH-mm-ss", CultureInfo.InvariantCulture))
                 tips.SetToolTip(chkSaveFile, "Outputs logged messages to a file." + vbNewLine + _
                                              "Unchecking does not remove messages from the file." + vbNewLine + _
-                                             "Current Target File: '(Documents)\HostBot\Logs\" + filename + "'")
+                                             "Current Target File: '(Documents)\{0}\Logs\{1}'".Frmt(Application.ProductName, _logFilename))
             End If
             If dataEventsMode <> CallbackMode.Unspecified Then
                 callbackModeMap(LogMessageType.DataEvent) = dataEventsMode
@@ -119,10 +119,11 @@ Public Class LoggerControl
             End If
 
             Try
-                filestream = New IO.FileStream(folder + IO.Path.DirectorySeparatorChar + filename, IO.FileMode.Append, IO.FileAccess.Write, IO.FileShare.Read)
+                filestream = New IO.FileStream(IO.Path.Combine(folder, _logFilename), IO.FileMode.Append, IO.FileAccess.Write, IO.FileShare.Read)
             Catch e As Exception
-                e.RaiseAsUnexpected("Error opening log file '" + filename + "' in My Documents\HostBot Logs.")
-                LogMessage("Error opening log file '" + filename + "' in Documents.", Color.Red)
+                Dim msg = "Error opening file for log {0}: {1}".Frmt(_logFilename, e.Message)
+                e.RaiseAsUnexpected(msg)
+                LogMessage(msg, Color.Red)
                 Return False
             End Try
             Dim bb = ("-------------------------" + Environment.NewLine).ToAscBytes

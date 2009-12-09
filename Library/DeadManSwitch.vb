@@ -3,8 +3,6 @@
 ''' </summary>
 <DebuggerDisplay("{ToString}")>
 Public NotInheritable Class DeadManSwitch
-    Inherits FutureDisposable
-
     Private ReadOnly _period As TimeSpan
     Private _isArmed As Boolean
     Private _wasReset As Boolean
@@ -31,7 +29,6 @@ Public NotInheritable Class DeadManSwitch
     ''' No effect if the timer is already started.
     ''' </summary>
     Public Sub Arm()
-        If Me.FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
         inQueue.QueueAction(
             Sub()
                 If _isArmed Then Return
@@ -46,7 +43,6 @@ Public NotInheritable Class DeadManSwitch
     ''' No effect if the timer is stopped.
     ''' </summary>
     Public Sub Reset()
-        If Me.FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
         inQueue.QueueAction(
             Sub()
                 _timerStartTick = Environment.TickCount
@@ -54,11 +50,10 @@ Public NotInheritable Class DeadManSwitch
             End Sub)
     End Sub
     ''' <summary>
-    ''' Stops the countdown timer.
+    ''' Cancels the countdown timer.
     ''' No effect if the timer is already stopped.
     ''' </summary>
     Public Sub Disarm()
-        If Me.FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
         inQueue.QueueAction(
             Sub()
                 _isArmed = False
@@ -68,7 +63,6 @@ Public NotInheritable Class DeadManSwitch
     Private Sub OnTimeout()
         inQueue.QueueAction(
             Sub()
-                If Me.FutureDisposed.State <> FutureState.Unknown Then Return
                 If Not _isTimerRunning Then Throw New InvalidStateException("OnTimeout called without running timer.")
                 _isTimerRunning = False
                 If Not _isArmed Then Return
@@ -84,14 +78,6 @@ Public NotInheritable Class DeadManSwitch
                 End If
             End Sub)
     End Sub
-
-    Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
-        inQueue.QueueAction(
-            Sub()
-                _isArmed = False
-            End Sub)
-        Return Nothing
-    End Function
 
     Public Overrides Function ToString() As String
         If _isArmed Then

@@ -82,7 +82,7 @@ Public NotInheritable Class ClientProfile
         bw.Write(userName)
         bw.Write(password)
         bw.Write(server)
-        bw.Write(6113) 'listen port
+        bw.Write(6113US) 'listen port
         bw.Write(initialChannel)
         bw.Write(_cklServerAddress)
         If version >= 1 Then

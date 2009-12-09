@@ -83,7 +83,7 @@ Partial Class SettingsForm
         Me.txtMapPath.Size = New System.Drawing.Size(446, 20)
         Me.txtMapPath.TabIndex = 36
         Me.tipNormal.SetToolTip(Me.txtMapPath, "The location of the folder where maps are stored." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Default: (program files)\Warcr" & _
-                "aft III\Maps\HostBot\")
+                "aft III\Maps\")
         '
         'txtProgramPath
         '

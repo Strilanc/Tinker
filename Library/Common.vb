@@ -162,16 +162,14 @@ Public Module PoorlyCategorizedFunctions
         Return matches
     End Function
     Public Function GetDataFolderPath(ByVal subfolder As String) As String
-        Dim folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments)
+        Dim path = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                                     Application.ProductName,
+                                     subfolder)
         Try
-            folder += IO.Path.DirectorySeparatorChar + "HostBot"
-            If Not IO.Directory.Exists(folder) Then IO.Directory.CreateDirectory(folder)
-            folder += IO.Path.DirectorySeparatorChar + subfolder
-            If Not IO.Directory.Exists(folder) Then IO.Directory.CreateDirectory(folder)
-            folder += IO.Path.DirectorySeparatorChar
-            Return folder
+            If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
+            Return path + IO.Path.DirectorySeparatorChar
         Catch e As Exception
-            e.RaiseAsUnexpected("Error getting folder Documents\HostBot\{0}.".Frmt(subfolder))
+            e.RaiseAsUnexpected("Error creating folder: {0}.".Frmt(path))
             Throw
         End Try
     End Function

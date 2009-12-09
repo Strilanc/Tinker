@@ -89,10 +89,10 @@ Namespace BNLS
         End Sub
 
         '''<summary>Asynchronously connects to a BNLS server.</summary>
-        Public Shared Function FutureConnectToBNLSServer(ByVal hostName As String,
-                                                         ByVal port As UShort,
-                                                         ByVal seed As UInteger,
-                                                         Optional ByVal logger As Logger = Nothing) As IFuture(Of BNLSWardenClient)
+        Public Shared Function AsyncConnectToBNLSServer(ByVal hostName As String,
+                                                        ByVal port As UShort,
+                                                        ByVal seed As UInteger,
+                                                        Optional ByVal logger As Logger = Nothing) As IFuture(Of BNLSWardenClient)
             Contract.Requires(hostName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of BNLSWardenClient))() IsNot Nothing)
             logger = If(logger, New Logger())
@@ -122,25 +122,28 @@ Namespace BNLS
             'Process response packet and construct bnls client on success
             Dim futureBnlsClient = futureReadPacket.Select(
                 Function(packet)
-                    Dim packetSocket = futurePacketSocket.Value
-
-                    'Check packet type
+                    'Check type
                     If packet.id <> BNLSWardenPacketId.FullServiceConnect Then
-                        Dim msg = "Bnls server responded with a non-FullServiceConnect packet."
-                        packetSocket.Disconnect(expected:=False, reason:=msg)
-                        Throw New IO.InvalidDataException(msg)
+                        Throw New IO.InvalidDataException("Bnls server responded with a non-FullServiceConnect packet.")
                     End If
 
-                    'Check packet contents
+                    'Check content
                     Dim vals = CType(packet.Payload, IPickle(Of Dictionary(Of InvariantString, Object))).Value
                     If CUInt(vals("cookie")) <> cookie Then
-                        Dim msg = "Incorrect cookie from server."
-                        packetSocket.Disconnect(expected:=False, reason:=msg)
-                        Throw New IO.InvalidDataException(msg)
+                        Throw New IO.InvalidDataException("Incorrect cookie from server.")
+                    ElseIf CUInt(vals("result")) <> 0 Then
+                        Throw New IO.InvalidDataException("Server result was non-zero: {0}".Frmt(CUInt(vals("result"))))
                     End If
 
-                    Return New BNLSWardenClient(packetSocket, cookie, logger)
+                    Return New BNLSWardenClient(futurePacketSocket.Value, cookie, logger)
                 End Function
+            )
+            futureBnlsClient.Catch(
+                Sub(exception)
+                    If futurePacketSocket.State = FutureState.Succeeded Then
+                        futurePacketSocket.Value.Disconnect(expected:=False, reason:=exception.Message)
+                    End If
+                End Sub
             )
 
             Return futureBnlsClient

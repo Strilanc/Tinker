@@ -113,7 +113,7 @@ Public NotInheritable Class PacketSocket
             Sub()
                 If Not _isConnected Then Return
                 _isConnected = False
-                If deadManSwitch IsNot Nothing Then deadManSwitch.Dispose()
+                If deadManSwitch IsNot Nothing Then deadManSwitch.Disarm()
                 _stream.Close()
                 outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
             End Sub)

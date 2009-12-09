@@ -305,7 +305,7 @@ Namespace Bnet
 
             'Attempt connection
             logger.Log("Connecting to bnls server at {0}...".Frmt(address), LogMessageType.Positive)
-            Me._futureWardenHandler = BNLS.BNLSWardenClient.FutureConnectToBNLSServer(host, port, seed, logger).QueueEvalOnValueSuccess(inQueue,
+            Me._futureWardenHandler = BNLS.BNLSWardenClient.AsyncConnectToBNLSServer(host, port, seed, logger).QueueEvalOnValueSuccess(inQueue,
                 Function(bnlsClient)
                     logger.Log("Connected to bnls server.", LogMessageType.Positive)
                     AddHandler bnlsClient.Send, AddressOf OnWardenSend
