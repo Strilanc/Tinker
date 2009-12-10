@@ -42,7 +42,6 @@ Namespace WC3
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly _logger As Logger
-        Private Const PING_PERIOD As UShort = 5000
         Private state As GameState = GameState.AcceptingPlayers
         Private fakeHostPlayer As Player
         Private flagHasPlayerLeft As Boolean

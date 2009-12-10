@@ -163,8 +163,10 @@ Public Module PoorlyCategorizedFunctions
     End Function
     Public Function GetDataFolderPath(ByVal subfolder As String) As String
         Dim path = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-                                     Application.ProductName,
-                                     subfolder)
+                                   Application.ProductName,
+                                   subfolder)
+        Contract.Assume(path IsNot Nothing)
+        Contract.Assume(path.Length > 0)
         Try
             If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
             Return path + IO.Path.DirectorySeparatorChar
@@ -297,16 +299,16 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)().Length <= maxLength)
 
-        Dim data(0 To maxLength - 1) As Byte
-        Dim numRead = 0
+        Dim data = New List(Of Byte)(capacity:=maxLength)
         Do
             Dim b = reader.ReadByte()
-
-            If b = 0 Then Return data.Take(numRead).ParseChrString(nullTerminated:=False)
-            If numRead >= maxLength Then Throw New InvalidDataException("Null-terminated string exceeded maximum length.")
-
-            data(numRead) = b
-            numRead += 1
+            If b = 0 Then
+                Return data.ParseChrString(nullTerminated:=False)
+            ElseIf data.Count < maxLength Then
+                data.Add(b)
+            Else
+                Throw New InvalidDataException("Null-terminated string exceeded maximum length.")
+            End If
         Loop
     End Function
 

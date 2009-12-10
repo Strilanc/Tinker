@@ -10,7 +10,6 @@
 
         Public Event PlayerEntered(ByVal sender As Game, ByVal player As Player)
 
-#Region "Life"
         Private Sub LobbyNew()
             Contract.Ensures(DownloadScheduler IsNot Nothing)
 
@@ -93,7 +92,13 @@
         Private Sub LobbyStop()
             downloadTimer.Stop()
         End Sub
-#End Region
+
+        Public ReadOnly Property DownloadScheduler() As TransferScheduler(Of Byte)
+            Get
+                Contract.Ensures(Contract.Result(Of TransferScheduler(Of Byte))() IsNot Nothing)
+                Return _downloadScheduler
+            End Get
+        End Property
 
 #Region "Advancing State"
         '''<summary>Autostarts the countdown if autostart is enabled and the game stays full for awhile.</summary>
@@ -191,6 +196,10 @@
 
             StartLoading()
         End Sub
+        Public Function QueueStartCountdown() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Function() TryStartCountdown())
+        End Function
 
         '''<summary>Launches the game, sending players to the loading screen.</summary>
         Private Sub StartLoading()
@@ -235,6 +244,12 @@
                 TryStartCountdown()
             End If
         End Sub
+        Public Function QueueSetPlayerVoteToStart(ByVal name As String,
+                                                  ByVal wantsToStart As Boolean) As IFuture
+            Contract.Requires(name IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
+        End Function
 
         Private Function AddFakePlayer(ByVal name As String,
                                        Optional ByVal newSlot As Slot = Nothing) As Player
@@ -396,6 +411,11 @@
 
             Return newPlayer
         End Function
+        Public Function QueueTryAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
+            Contract.Requires(newPlayer IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() AddPlayer(newPlayer))
+        End Function
 #End Region
 
 #Region "Events"
@@ -486,6 +506,10 @@
             Next player
             TryBeginAutoStart()
         End Sub
+        Public Function QueueUpdatedGameState() As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(AddressOf ChangedLobbyState)
+        End Function
 
         ''' <summary>Opens slots, closes slots and moves players around to try to match the desired team sizes.</summary>
         Private Sub TrySetTeamSizes(ByVal desiredTeamSizes As IList(Of Integer))
@@ -537,6 +561,11 @@
 
             ChangedLobbyState()
         End Sub
+        Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture
+            Contract.Requires(sizes IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() TrySetTeamSizes(sizes))
+        End Function
 
         Private Sub ModifySlotContents(ByVal slotQuery As InvariantString,
                                        ByVal action As Action(Of Slot),
@@ -567,6 +596,11 @@
                                Sub(slot) slot.Contents = New SlotContentsOpen(slot),
                                avoidPlayers:=True)
         End Sub
+        Public Function QueueOpenSlot(ByVal query As String) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() OpenSlot(query))
+        End Function
 
         '''<summary>Places a computer with the given difficulty in the slot with the given index, unless the slot contains a player.</summary>
         Private Sub ComputerizeSlot(ByVal slotid As InvariantString, ByVal cpu As Slot.ComputerLevel)
@@ -574,6 +608,11 @@
                                Sub(slot) slot.Contents = New SlotContentsComputer(slot, cpu),
                                avoidPlayers:=True)
         End Sub
+        Public Function QueueSetSlotCpu(ByVal query As String, ByVal newCpuLevel As Slot.ComputerLevel) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() ComputerizeSlot(query, newCpuLevel))
+        End Function
 
         '''<summary>Closes the slot with the given index, unless the slot contains a player.</summary>
         Private Sub CloseSlot(ByVal slotid As InvariantString)
@@ -581,6 +620,11 @@
                                Sub(slot) slot.Contents = New SlotContentsClosed(slot),
                                avoidPlayers:=True)
         End Sub
+        Public Function QueueCloseSlot(ByVal query As String) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() CloseSlot(query))
+        End Function
 
         '''<summary>Reserves a slot for a player.</summary>
         Private Function ReserveSlot(ByVal username As InvariantString,
@@ -598,6 +642,12 @@
             Else
                 Return AddFakePlayer(username, slot)
             End If
+        End Function
+        Public Function QueueReserveSlot(ByVal userName As String,
+                                         Optional ByVal query As String = Nothing) As IFuture
+            Contract.Requires(userName IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() ReserveSlot(userName, query))
         End Function
 
         Private Sub SwapSlotContents(ByVal query1 As InvariantString, ByVal query2 As InvariantString)
@@ -624,6 +674,12 @@
             slot2.Contents = t
             ChangedLobbyState()
         End Sub
+        Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture
+            Contract.Requires(query1 IsNot Nothing)
+            Contract.Requires(query2 IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SwapSlotContents(query1, query2))
+        End Function
 #End Region
 #Region "Slot States"
         Private Sub SetSlotColor(ByVal slotid As InvariantString, ByVal color As Slot.PlayerColor)
@@ -640,22 +696,47 @@
 
             ChangedLobbyState()
         End Sub
+        Public Function QueueSetSlotColor(ByVal query As String, ByVal newColor As Slot.PlayerColor) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetSlotColor(query, newColor))
+        End Function
 
         Private Sub SetSlotRace(ByVal slotid As InvariantString, ByVal race As Slot.Races)
             ModifySlotContents(slotid, Sub(slot) slot.race = race)
         End Sub
+        Public Function QueueSetSlotRace(ByVal query As String, ByVal newRace As Slot.Races) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetSlotRace(query, newRace))
+        End Function
 
         Private Sub SetSlotTeam(ByVal slotid As InvariantString, ByVal team As Byte)
             ModifySlotContents(slotid, Sub(slot) slot.Team = team)
         End Sub
+        Public Function QueueSetSlotTeam(ByVal query As String, ByVal newTeam As Byte) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetSlotTeam(query, newTeam))
+        End Function
 
         Private Sub SetSlotHandicap(ByVal slotid As InvariantString, ByVal handicap As Byte)
             ModifySlotContents(slotid, Sub(slot) slot.handicap = handicap)
         End Sub
+        Public Function QueueSetSlotHandicap(ByVal query As String, ByVal newHandicap As Byte) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetSlotHandicap(query, newHandicap))
+        End Function
 
         Private Sub SetSlotLocked(ByVal slotid As InvariantString, ByVal locked As Slot.Lock)
             ModifySlotContents(slotid, Sub(slot) slot.locked = locked)
         End Sub
+        Public Function QueueSetSlotLocked(ByVal query As String, ByVal newLockState As Slot.Lock) As IFuture
+            Contract.Requires(query IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetSlotLocked(query, newLockState))
+        End Function
 
         Private Sub SetAllSlotsLocked(ByVal locked As Slot.Lock)
             If state > GameState.AcceptingPlayers Then
@@ -666,6 +747,10 @@
                 slot.locked = locked
             Next slot
         End Sub
+        Public Function QueueSetAllSlotsLocked(ByVal newLockState As Slot.Lock) As IFuture
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetAllSlotsLocked(newLockState))
+        End Function
 #End Region
 
 #Region "Networking"
@@ -771,99 +856,6 @@
 
             ChangedLobbyState()
         End Sub
-#End Region
-
-#Region "Interface"
-        Public ReadOnly Property DownloadScheduler() As TransferScheduler(Of Byte)
-            Get
-                Contract.Ensures(Contract.Result(Of TransferScheduler(Of Byte))() IsNot Nothing)
-                Return _downloadScheduler
-            End Get
-        End Property
-
-        Public Function QueueUpdatedGameState() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(AddressOf ChangedLobbyState)
-        End Function
-
-        Public Function QueueOpenSlot(ByVal query As String) As IFuture
-            Contract.Requires(query IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() OpenSlot(query))
-        End Function
-        Public Function QueueCloseSlot(ByVal query As String) As IFuture
-            Contract.Requires(query IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() CloseSlot(query))
-        End Function
-        Public Function QueueReserveSlot(ByVal userName As String,
-                                         Optional ByVal query As String = Nothing) As IFuture
-            Contract.Requires(userName IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() ReserveSlot(userName, query))
-        End Function
-        Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture
-            Contract.Requires(query1 IsNot Nothing)
-            Contract.Requires(query2 IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SwapSlotContents(query1, query2))
-        End Function
-
-        Public Function QueueSetSlotCpu(ByVal query As String, ByVal newCpuLevel As Slot.ComputerLevel) As IFuture
-            Contract.Requires(query IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() ComputerizeSlot(query, newCpuLevel))
-        End Function
-        Public Function QueueSetSlotLocked(ByVal query As String, ByVal newLockState As Slot.Lock) As IFuture
-            Contract.Requires(query IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotLocked(query, newLockState))
-        End Function
-        Public Function QueueSetAllSlotsLocked(ByVal newLockState As Slot.Lock) As IFuture
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetAllSlotsLocked(newLockState))
-        End Function
-        Public Function QueueSetSlotHandicap(ByVal query As String, ByVal newHandicap As Byte) As IFuture
-            Contract.Requires(query IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotHandicap(query, newHandicap))
-        End Function
-        Public Function QueueSetSlotTeam(ByVal query As String, ByVal newTeam As Byte) As IFuture
-            Contract.Requires(query IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotTeam(query, newTeam))
-        End Function
-        Public Function QueueSetSlotRace(ByVal query As String, ByVal newRace As Slot.Races) As IFuture
-            Contract.Requires(query IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotRace(query, newRace))
-        End Function
-        Public Function QueueSetSlotColor(ByVal query As String, ByVal newColor As Slot.PlayerColor) As IFuture
-            Contract.Requires(query IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotColor(query, newColor))
-        End Function
-
-        Public Function QueueTryAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
-            Contract.Requires(newPlayer IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AddPlayer(newPlayer))
-        End Function
-        Public Function QueueSetPlayerVoteToStart(ByVal name As String,
-                                                  ByVal wantsToStart As Boolean) As IFuture
-            Contract.Requires(name IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
-        End Function
-        Public Function QueueStartCountdown() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Function() TryStartCountdown())
-        End Function
-        Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture
-            Contract.Requires(sizes IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() TrySetTeamSizes(sizes))
-        End Function
 #End Region
     End Class
 End Namespace

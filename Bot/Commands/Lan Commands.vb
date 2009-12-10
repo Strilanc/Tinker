@@ -62,7 +62,7 @@ Namespace Commands.Specializations
                               WC3.GameSettings.PartialArgumentHelp,
                               WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine),
             func:=Function(target, user, argument)
-                      Dim futureServer = target.Bot.QueueGetAnyGameServerManager()
+                      Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
                       Dim futureGameSet = (From server In futureServer
                                            Select server.QueueAddGameFromArguments(argument, user)
                                            ).Defuturized

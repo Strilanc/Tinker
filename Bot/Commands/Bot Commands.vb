@@ -172,11 +172,16 @@ Namespace Commands
             Permissions:="root:4",
             func:=Function(target, user, argument)
                       Dim args = argument.RawValue(0).Split(":"c)
-                      If args.Length <> 2 Then Throw New ArgumentException("Expected widget type:name.")
+                      If args.Length <> 2 Then Throw New ArgumentException("Expected a component argument like: type:name.")
                       Dim type As InvariantString = args(0)
                       Dim name As InvariantString = args(1)
-                      Return target.QueueRemoveComponent(type, name).EvalOnSuccess(Function() "Removed the {0} named {1}".Frmt(type, name))
-                  End Function)
+                      Dim futureComponent = target.QueueFindComponent(type, name)
+                      Return futureComponent.Select(
+                          Function(component)
+                              component.dispose()
+                              Return "Disposed {0}".Frmt(argument.RawValue(0))
+                          End Function)
+                          End Function)
 
         '''''<summary>A command which creates a new warcraft 3 game server.</summary>
         'Public NotInheritable Class CommandCreateServer
