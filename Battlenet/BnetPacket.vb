@@ -414,7 +414,7 @@ Namespace Bnet
                     New NetIPAddressJar("internal ip").Weaken,
                     New UInt32Jar("time zone offset").Weaken,
                     New UInt32Jar("location id").Weaken,
-                    New UInt32Jar("language id").Weaken,
+                    New EnumUInt32Jar(Of MPQ.LanguageId)("language id").Weaken,
                     New StringJar("country abrev").Weaken,
                     New StringJar("country name").Weaken)
             Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.AuthenticationFinish,
@@ -491,14 +491,14 @@ Namespace Bnet
                     {"internal ip", localIPAddress},
                     {"time zone offset", 240},
                     {"location id", 1033},
-                    {"language id", 1033},
+                    {"language id", MPQ.LanguageId.English},
                     {"country abrev", "USA"},
                     {"country name", "United States"}
                 })
         End Function
         <Pure()>
         Public Shared Function MakeAuthenticationFinish(ByVal version As Byte(),
-                                                        ByVal mpqChallengeResponse As UInt32,
+                                                        ByVal revisionCheckResponse As UInt32,
                                                         ByVal clientCDKeySalt As UInt32,
                                                         ByVal serverCDKeySalt As UInt32,
                                                         ByVal cdKeyOwner As String,
@@ -515,7 +515,7 @@ Namespace Bnet
             Return New Packet(ClientPackets.AuthenticationFinish, New Dictionary(Of InvariantString, Object) From {
                     {"client cd key salt", clientCDKeySalt},
                     {"exe version", version},
-                    {"revision check response", mpqChallengeResponse},
+                    {"revision check response", revisionCheckResponse},
                     {"# cd keys", 2},
                     {"spawn [unused]", 0},
                     {"ROC cd key", packedROCKey},
@@ -704,10 +704,10 @@ Namespace Bnet
             Public Sub New(ByVal name As String)
                 MyBase.New(name,
                         New UInt32Jar("length").Weaken,
-                        New EnumUInt32Jar(Of CDKeyProduct)("product key").Weaken,
+                        New EnumUInt32Jar(Of ProductType)("product key").Weaken,
                         New UInt32Jar("public key").Weaken,
                         New UInt32Jar("unknown").Weaken,
-                        New ArrayJar("hash", 20).Weaken)
+                        New ArrayJar("proof", 20).Weaken)
                 Contract.Requires(name IsNot Nothing)
             End Sub
 
@@ -716,17 +716,13 @@ Namespace Bnet
                                              ByVal serverToken As UInt32) As Dictionary(Of InvariantString, Object)
                 Contract.Requires(wc3Key IsNot Nothing)
 
-                Dim key = CDKey.FromWC3StyleKey(wc3Key)
+                Dim credentials = wc3Key.ToWC3CDKeyCredentials()
                 Return New Dictionary(Of InvariantString, Object) From {
                         {"length", CUInt(wc3Key.Length)},
-                        {"product key", key.Product},
-                        {"public key", key.PublicKey},
+                        {"product key", credentials.Product},
+                        {"public key", credentials.PublicKey},
                         {"unknown", 0},
-                        {"hash", Concat(clientToken.Bytes,
-                                        serverToken.Bytes,
-                                        CUInt(key.Product).Bytes,
-                                        key.PublicKey.Bytes,
-                                        key.PrivateKey.ToArray).SHA1}}
+                        {"proof", credentials.AuthenticationProof(clientToken.Bytes, serverToken.Bytes)}}
             End Function
 
             Public Shared Function PackBorrowedCDKey(ByVal data() As Byte) As Dictionary(Of InvariantString, Object)
@@ -738,7 +734,7 @@ Namespace Bnet
                         {"product key", data.SubArray(4, 4).ToUInt32},
                         {"public key", data.SubArray(8, 4).ToUInt32},
                         {"unknown", data.SubArray(12, 4).ToUInt32},
-                        {"hash", data.SubArray(16, 20)}}
+                        {"proof", data.SubArray(16, 20)}}
             End Function
         End Class
 #End Region

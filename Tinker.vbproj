@@ -168,7 +168,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Battlenet\BnetPacket.vb" />
-    <Compile Include="Battlenet\CDKey.vb" />
+    <Compile Include="Battlenet\ProductCredentials.vb" />
     <Compile Include="Battlenet\ClientCredentials.vb" />
     <Compile Include="Bot\Commands\Generic Commands.vb" />
     <Compile Include="Bot\Components\CKLServerManager.vb" />

@@ -80,18 +80,6 @@ Namespace My
         
         <Global.System.Configuration.UserScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
-         Global.System.Configuration.DefaultSettingValueAttribute("war3.exe 12/28/06 20:35:21 1572307")>  _
-        Public Property exeInformation() As String
-            Get
-                Return CType(Me("exeInformation"),String)
-            End Get
-            Set
-                Me("exeInformation") = value
-            End Set
-        End Property
-        
-        <Global.System.Configuration.UserScopedSettingAttribute(),  _
-         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
          Global.System.Configuration.DefaultSettingValueAttribute("Tinker")>  _
         Public Property cdKeyOwner() As String
             Get

@@ -635,17 +635,19 @@ Namespace Bnet
             'Respond and begin BNLS connection
             futureKeys.CallOnValueSuccess(
                 Sub(keys)
-                    Dim mpqChallengeResponse = GenerateRevisionCheck(My.Settings.war3path,
-                                                                     CStr(vals("revision check seed")),
-                                                                     CStr(vals("revision check challenge")))
-                    SendPacket(Bnet.Packet.MakeAuthenticationFinish(version:=GetWC3ExeVersion,
-                                                                    mpqChallengeResponse:=mpqChallengeResponse,
-                                                                    clientCDKeySalt:=clientCdKeySalt,
-                                                                    serverCDKeySalt:=serverCdKeySalt,
-                                                                    cdKeyOwner:=My.Settings.cdKeyOwner,
-                                                                    exeInformation:=My.Settings.exeInformation,
-                                                                    packedROCKey:=keys.CDKeyROC,
-                                                                    packedTFTKey:=keys.CDKeyTFT))
+                    Dim revisionCheckResponse = GenerateRevisionCheck(
+                                    folder:=My.Settings.war3path,
+                                    seedString:=CStr(vals("revision check seed")),
+                                    challengeString:=CStr(vals("revision check challenge")))
+                    SendPacket(Bnet.Packet.MakeAuthenticationFinish(
+                                    version:=GetWC3ExeVersion,
+                                    revisionCheckResponse:=revisionCheckResponse,
+                                    clientCDKeySalt:=clientCdKeySalt,
+                                    serverCDKeySalt:=serverCdKeySalt,
+                                    cdKeyOwner:=My.Settings.cdKeyOwner,
+                                    exeInformation:="war3.exe {0} {1}".Frmt(GetWC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss"), GetWC3FileSize),
+                                    packedROCKey:=keys.CDKeyROC,
+                                    packedTFTKey:=keys.CDKeyTFT))
                     BeginConnectBnlsServer(seed:=CType(keys.CDKeyROC("hash"), Byte()).SubArray(0, 4).ToUInt32)
                 End Sub
             ).Catch(

@@ -23,7 +23,6 @@ Partial Class SettingsForm
         Me.tipNormal = New System.Windows.Forms.ToolTip()
         Me.txtMapPath = New System.Windows.Forms.TextBox()
         Me.txtProgramPath = New System.Windows.Forms.TextBox()
-        Me.txtExeInformation = New System.Windows.Forms.TextBox()
         Me.txtCdKeyOwner = New System.Windows.Forms.TextBox()
         Me.txtCommandPrefix = New System.Windows.Forms.TextBox()
         Me.numTickPeriod = New System.Windows.Forms.NumericUpDown()
@@ -43,7 +42,6 @@ Partial Class SettingsForm
         Me.lblLagLimit = New System.Windows.Forms.Label()
         Me.lblTickPeriod = New System.Windows.Forms.Label()
         Me.lblCommandPrefix = New System.Windows.Forms.Label()
-        Me.lblExeInfo = New System.Windows.Forms.Label()
         Me.lblOwner = New System.Windows.Forms.Label()
         Me.lblMapPath = New System.Windows.Forms.Label()
         Me.lblPath = New System.Windows.Forms.Label()
@@ -93,15 +91,6 @@ Partial Class SettingsForm
         Me.txtProgramPath.TabIndex = 34
         Me.tipNormal.SetToolTip(Me.txtProgramPath, "The location of the folder containing the hash files (war3.exe, storm.dll, game.d" & _
                 "ll)" & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Default: (program files)\Warcraft III\")
-        '
-        'txtExeInformation
-        '
-        Me.txtExeInformation.Location = New System.Drawing.Point(232, 136)
-        Me.txtExeInformation.Name = "txtExeInformation"
-        Me.txtExeInformation.Size = New System.Drawing.Size(220, 20)
-        Me.txtExeInformation.TabIndex = 42
-        Me.tipNormal.SetToolTip(Me.txtExeInformation, "Extra information about the program, such as when it was installed." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "(not particu" & _
-                "larly important, but given to Bnet during authentication)")
         '
         'txtCdKeyOwner
         '
@@ -153,7 +142,7 @@ Partial Class SettingsForm
         '
         'txtInGameName
         '
-        Me.txtInGameName.Location = New System.Drawing.Point(6, 214)
+        Me.txtInGameName.Location = New System.Drawing.Point(232, 136)
         Me.txtInGameName.MaxLength = 15
         Me.txtInGameName.Name = "txtInGameName"
         Me.txtInGameName.Size = New System.Drawing.Size(220, 20)
@@ -173,7 +162,7 @@ Partial Class SettingsForm
         '
         'txtPortPool
         '
-        Me.txtPortPool.Location = New System.Drawing.Point(232, 214)
+        Me.txtPortPool.Location = New System.Drawing.Point(6, 214)
         Me.txtPortPool.MaxLength = 15
         Me.txtPortPool.Name = "txtPortPool"
         Me.txtPortPool.Size = New System.Drawing.Size(220, 20)
@@ -232,8 +221,6 @@ Partial Class SettingsForm
         Me.tabGlobalSettings.Controls.Add(Me.lblTickPeriod)
         Me.tabGlobalSettings.Controls.Add(Me.lblCommandPrefix)
         Me.tabGlobalSettings.Controls.Add(Me.txtCommandPrefix)
-        Me.tabGlobalSettings.Controls.Add(Me.lblExeInfo)
-        Me.tabGlobalSettings.Controls.Add(Me.txtExeInformation)
         Me.tabGlobalSettings.Controls.Add(Me.lblOwner)
         Me.tabGlobalSettings.Controls.Add(Me.txtCdKeyOwner)
         Me.tabGlobalSettings.Controls.Add(Me.lblMapPath)
@@ -268,7 +255,7 @@ Partial Class SettingsForm
         'lblPortPool
         '
         Me.lblPortPool.AutoSize = True
-        Me.lblPortPool.Location = New System.Drawing.Point(229, 198)
+        Me.lblPortPool.Location = New System.Drawing.Point(3, 198)
         Me.lblPortPool.Name = "lblPortPool"
         Me.lblPortPool.Size = New System.Drawing.Size(50, 13)
         Me.lblPortPool.TabIndex = 55
@@ -277,7 +264,7 @@ Partial Class SettingsForm
         'Label1
         '
         Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(3, 198)
+        Me.Label1.Location = New System.Drawing.Point(229, 120)
         Me.Label1.Name = "Label1"
         Me.Label1.Size = New System.Drawing.Size(74, 13)
         Me.Label1.TabIndex = 53
@@ -309,15 +296,6 @@ Partial Class SettingsForm
         Me.lblCommandPrefix.Size = New System.Drawing.Size(83, 13)
         Me.lblCommandPrefix.TabIndex = 47
         Me.lblCommandPrefix.Text = "Command Prefix"
-        '
-        'lblExeInfo
-        '
-        Me.lblExeInfo.AutoSize = True
-        Me.lblExeInfo.Location = New System.Drawing.Point(229, 120)
-        Me.lblExeInfo.Name = "lblExeInfo"
-        Me.lblExeInfo.Size = New System.Drawing.Size(80, 13)
-        Me.lblExeInfo.TabIndex = 43
-        Me.lblExeInfo.Text = "Exe Information"
         '
         'lblOwner
         '
@@ -533,8 +511,6 @@ Partial Class SettingsForm
     Friend WithEvents txtMapPath As System.Windows.Forms.TextBox
     Friend WithEvents txtProgramPath As System.Windows.Forms.TextBox
     Friend WithEvents lblPath As System.Windows.Forms.Label
-    Friend WithEvents lblExeInfo As System.Windows.Forms.Label
-    Friend WithEvents txtExeInformation As System.Windows.Forms.TextBox
     Friend WithEvents lblOwner As System.Windows.Forms.Label
     Friend WithEvents txtCdKeyOwner As System.Windows.Forms.TextBox
     Friend WithEvents lblCommandPrefix As System.Windows.Forms.Label
