@@ -101,7 +101,7 @@ Partial Class ProfileSettingsControl
         Me.btnDeleteProfile.Location = New System.Drawing.Point(6, 164)
         Me.btnDeleteProfile.Name = "btnDeleteProfile"
         Me.btnDeleteProfile.Size = New System.Drawing.Size(446, 27)
-        Me.btnDeleteProfile.TabIndex = 60
+        Me.btnDeleteProfile.TabIndex = 8
         Me.btnDeleteProfile.Text = "Delete this Profile"
         Me.btnDeleteProfile.UseVisualStyleBackColor = True
         '
@@ -111,7 +111,7 @@ Partial Class ProfileSettingsControl
         Me.txtCKLServer.Location = New System.Drawing.Point(6, 137)
         Me.txtCKLServer.Name = "txtCKLServer"
         Me.txtCKLServer.Size = New System.Drawing.Size(220, 20)
-        Me.txtCKLServer.TabIndex = 58
+        Me.txtCKLServer.TabIndex = 6
         Me.tipNormal.SetToolTip(Me.txtCKLServer, resources.GetString("txtCKLServer.ToolTip"))
         '
         'lblCKLServer
@@ -139,7 +139,7 @@ Partial Class ProfileSettingsControl
         Me.cboLanHost.Location = New System.Drawing.Point(232, 137)
         Me.cboLanHost.Name = "cboLanHost"
         Me.cboLanHost.Size = New System.Drawing.Size(220, 21)
-        Me.cboLanHost.TabIndex = 56
+        Me.cboLanHost.TabIndex = 7
         Me.tipNormal.SetToolTip(Me.cboLanHost, "Games hosted with this profile will be advertised on LAN to this address.")
         '
         'lblRocKey
@@ -157,7 +157,7 @@ Partial Class ProfileSettingsControl
         Me.txtRocKey.Location = New System.Drawing.Point(6, 98)
         Me.txtRocKey.Name = "txtRocKey"
         Me.txtRocKey.Size = New System.Drawing.Size(220, 20)
-        Me.txtRocKey.TabIndex = 53
+        Me.txtRocKey.TabIndex = 4
         Me.tipNormal.SetToolTip(Me.txtRocKey, "Reign of Chaos CD key." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Dashes and upper/lower case are ignored.")
         '
         'txtTftKey
@@ -166,7 +166,7 @@ Partial Class ProfileSettingsControl
         Me.txtTftKey.Location = New System.Drawing.Point(232, 98)
         Me.txtTftKey.Name = "txtTftKey"
         Me.txtTftKey.Size = New System.Drawing.Size(220, 20)
-        Me.txtTftKey.TabIndex = 54
+        Me.txtTftKey.TabIndex = 5
         Me.tipNormal.SetToolTip(Me.txtTftKey, "Frozen Throne CD key." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Dashes and upper/lower case are ignored.")
         '
         'lblTftKey
@@ -201,7 +201,7 @@ Partial Class ProfileSettingsControl
         Me.txtInitialChannel.Location = New System.Drawing.Point(232, 19)
         Me.txtInitialChannel.Name = "txtInitialChannel"
         Me.txtInitialChannel.Size = New System.Drawing.Size(220, 20)
-        Me.txtInitialChannel.TabIndex = 47
+        Me.txtInitialChannel.TabIndex = 1
         Me.tipNormal.SetToolTip(Me.txtInitialChannel, "The channel the bot will enter after it connects.")
         '
         'lblGateway
@@ -220,7 +220,7 @@ Partial Class ProfileSettingsControl
         Me.cboGateway.Location = New System.Drawing.Point(6, 19)
         Me.cboGateway.Name = "cboGateway"
         Me.cboGateway.Size = New System.Drawing.Size(220, 21)
-        Me.cboGateway.TabIndex = 46
+        Me.cboGateway.TabIndex = 0
         Me.tipNormal.SetToolTip(Me.cboGateway, "The battle.net server to connect to.")
         '
         'lblPassword
@@ -238,7 +238,7 @@ Partial Class ProfileSettingsControl
         Me.txtPassword.Name = "txtPassword"
         Me.txtPassword.PasswordChar = Global.Microsoft.VisualBasic.ChrW(42)
         Me.txtPassword.Size = New System.Drawing.Size(220, 20)
-        Me.txtPassword.TabIndex = 44
+        Me.txtPassword.TabIndex = 3
         Me.tipNormal.SetToolTip(Me.txtPassword, "The password of the account to logon with." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Passwords are not case sensitive.")
         '
         'txtUsername
@@ -246,7 +246,7 @@ Partial Class ProfileSettingsControl
         Me.txtUsername.Location = New System.Drawing.Point(6, 59)
         Me.txtUsername.Name = "txtUsername"
         Me.txtUsername.Size = New System.Drawing.Size(220, 20)
-        Me.txtUsername.TabIndex = 43
+        Me.txtUsername.TabIndex = 2
         Me.tipNormal.SetToolTip(Me.txtUsername, "The username of the account to logon with.")
         '
         'lblROCKeyError
@@ -289,7 +289,7 @@ Partial Class ProfileSettingsControl
         Me.gridUsers.Dock = System.Windows.Forms.DockStyle.Fill
         Me.gridUsers.Location = New System.Drawing.Point(3, 3)
         Me.gridUsers.Name = "gridUsers"
-        Me.gridUsers.Size = New System.Drawing.Size(468, 233)
+        Me.gridUsers.Size = New System.Drawing.Size(468, 195)
         Me.gridUsers.TabIndex = 32
         '
         'colName

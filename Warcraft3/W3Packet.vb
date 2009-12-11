@@ -297,10 +297,10 @@ Namespace WC3
 #Region "Player Entry"
             Public Shared ReadOnly Knock As New DefParser(PacketId.Knock,
                     New UInt32Jar("game id").Weaken,
-                    New UInt32Jar("entry key").Weaken,
+                    New UInt32Jar("entry key", showhex:=True).Weaken,
                     New ByteJar("unknown value").Weaken,
                     New UInt16Jar("listen port").Weaken,
-                    New UInt32Jar("peer key").Weaken,
+                    New UInt32Jar("peer key", showhex:=True).Weaken,
                     New StringJar("name", maximumContentSize:=15).Weaken,
                     New ArrayJar("unknown data", sizePrefixSize:=1).Weaken,
                     New NetIPEndPointJar("internal address").Weaken)
@@ -312,13 +312,13 @@ Namespace WC3
                     New UInt32Jar("unknown").Weaken,
                     New StringJar("path").Weaken,
                     New UInt32Jar("size").Weaken,
-                    New UInt32Jar("crc32").Weaken,
-                    New UInt32Jar("xoro checksum").Weaken,
+                    New UInt32Jar("crc32", showhex:=True).Weaken,
+                    New UInt32Jar("xoro checksum", showhex:=True).Weaken,
                     New ArrayJar("sha1 checksum", 20).Weaken)
             Public Shared ReadOnly RejectEntry As New DefParser(PacketId.RejectEntry,
                     New EnumUInt32Jar(Of RejectReason)("reason").Weaken)
             Public Shared ReadOnly OtherPlayerJoined As New DefParser(PacketId.OtherPlayerJoined,
-                    New UInt32Jar("peer key").Weaken,
+                    New UInt32Jar("peer key", showhex:=True).Weaken,
                     New ByteJar("index").Weaken,
                     New StringJar("name", maximumContentSize:=15).Weaken,
                     New ArrayJar("unknown data", sizePrefixSize:=1).Weaken,
@@ -339,7 +339,7 @@ Namespace WC3
                     New ByteJar("layout style").Weaken,
                     New ByteJar("num player slots").Weaken)
             Public Shared ReadOnly PeerConnectionInfo As New DefParser(PacketId.PeerConnectionInfo,
-                    New UInt16Jar("player bitflags").Weaken)
+                    New UInt16Jar("player bitflags", showhex:=True).Weaken)
             Public Shared ReadOnly NonGameAction As IJar(Of Dictionary(Of InvariantString, Object)) = MakeNonGameActionJar()
 #End Region
 
@@ -369,7 +369,7 @@ Namespace WC3
 
 #Region "Lan"
             Public Shared ReadOnly LanRequestGame As New DefParser(PacketId.LanRequestGame,
-                    New StringJar("product id", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
+                    New Bnet.Packet.DwordStringJar("product id").Weaken,
                     New UInt32Jar("major version").Weaken,
                     New UInt32Jar("unknown1").Weaken)
             Public Shared ReadOnly LanRefreshGame As New DefParser(PacketId.LanRefreshGame,
@@ -377,16 +377,16 @@ Namespace WC3
                     New UInt32Jar("num players").Weaken,
                     New UInt32Jar("free slots").Weaken)
             Public Shared ReadOnly LanCreateGame As New DefParser(PacketId.LanCreateGame,
-                    New StringJar("product id", False, True, 4).Weaken,
+                    New Bnet.Packet.DwordStringJar("product id").Weaken,
                     New UInt32Jar("major version").Weaken,
                     New UInt32Jar("game id").Weaken)
             Public Shared ReadOnly LanDestroyGame As New DefParser(PacketId.LanDestroyGame,
                     New UInt32Jar("game id").Weaken)
             Public Shared ReadOnly LanDescribeGame As New DefParser(PacketId.LanDescribeGame,
-                    New StringJar("product id", False, True, 4).Weaken,
+                    New Bnet.Packet.DwordStringJar("product id").Weaken,
                     New UInt32Jar("major version").Weaken,
                     New UInt32Jar("game id").Weaken,
-                    New UInt32Jar("entry key").Weaken,
+                    New UInt32Jar("entry key", showhex:=True).Weaken,
                     New StringJar("name", True).Weaken,
                     New StringJar("password", info:="unused").Weaken,
                     New GameStatsJar("statstring").Weaken,
@@ -400,17 +400,17 @@ Namespace WC3
 
 #Region "Peer"
             Public Shared ReadOnly PeerKnock As New DefParser(PacketId.PeerKnock,
-                    New UInt32Jar("receiver peer key").Weaken,
+                    New UInt32Jar("receiver peer key", showhex:=True).Weaken,
                     New UInt32Jar("unknown1").Weaken,
                     New ByteJar("sender player id").Weaken,
                     New ByteJar("unknown3").Weaken,
                     New UInt32Jar("sender peer connection flags").Weaken)
             Public Shared ReadOnly PeerPing As New DefParser(PacketId.PeerPing,
-                    New ArrayJar("salt", 4).Weaken,
+                    New UInt32Jar("salt", showhex:=True).Weaken,
                     New UInt32Jar("sender peer connection flags").Weaken,
                     New UInt32Jar("unknown2").Weaken)
             Public Shared ReadOnly PeerPong As New DefParser(PacketId.PeerPong,
-                    New ArrayJar("salt", 4).Weaken)
+                    New UInt32Jar("salt", showhex:=True).Weaken)
 #End Region
 
 #Region "Download"
@@ -430,7 +430,7 @@ Namespace WC3
                     New ByteJar("sending player index").Weaken,
                     New UInt32Jar("unknown").Weaken,
                     New UInt32Jar("file position").Weaken,
-                    New ArrayJar("crc32", 4).Weaken,
+                    New UInt32Jar("crc32", showhex:=True).Weaken,
                     New ArrayJar("file data", takerest:=True).Weaken)
             Public Shared ReadOnly MapFileDataReceived As New DefParser(PacketId.MapFileDataReceived,
                     New ByteJar("sender index").Weaken,
@@ -792,7 +792,7 @@ Namespace WC3
                     {"sending player index", senderIndex},
                     {"unknown", 1},
                     {"file position", filePosition},
-                    {"crc32", filedata.CRC32.Bytes},
+                    {"crc32", filedata.CRC32},
                     {"file data", filedata}})
         End Function
         Public Shared Function MakeSetUploadTarget(ByVal receiverIndex As Byte,
@@ -942,7 +942,7 @@ Namespace WC3
                     {"unknown3", &HFF},
                     {"sender peer connection flags", senderPeerConnectionFlags}})
         End Function
-        Public Shared Function MakePeerPing(ByVal salt As Byte(),
+        Public Shared Function MakePeerPing(ByVal salt As UInt32,
                                             ByVal senderFlags As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(PacketId.PeerPing, New Dictionary(Of InvariantString, Object) From {
@@ -950,7 +950,7 @@ Namespace WC3
                     {"sender peer connection flags", senderFlags},
                     {"unknown2", 0}})
         End Function
-        Public Shared Function MakePeerPong(ByVal salt As Byte()) As Packet
+        Public Shared Function MakePeerPong(ByVal salt As UInt32) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(PacketId.PeerPong, New Dictionary(Of InvariantString, Object) From {
                     {"salt", salt}})

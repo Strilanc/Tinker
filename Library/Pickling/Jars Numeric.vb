@@ -31,10 +31,13 @@
     Public Class UInt64Jar
         Inherits Jar(Of UInt64)
         Private ReadOnly byteOrder As ByteOrder
+        Private ReadOnly _showHex As Boolean
 
         Public Sub New(ByVal name As InvariantString,
-                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
+                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian,
+                       Optional ByVal showHex As Boolean = False)
             MyBase.New(name)
+            Me._showHex = showHex
             Me.byteOrder = byteOrder
         End Sub
 
@@ -51,17 +54,24 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As UInt64) As String
-            Return value.ToString(CultureInfo.InvariantCulture)
+            If _showHex Then
+                Return "0x" + value.ToString("X16", CultureInfo.InvariantCulture)
+            Else
+                Return value.ToString(CultureInfo.InvariantCulture)
+            End If
         End Function
     End Class
 
     Public Class UInt32Jar
         Inherits Jar(Of UInt32)
         Private ReadOnly byteOrder As ByteOrder
+        Private ReadOnly _showHex As Boolean
 
         Public Sub New(ByVal name As InvariantString,
-                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
+                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian,
+                       Optional ByVal showHex As Boolean = False)
             MyBase.New(name)
+            Me._showHex = showHex
             Me.byteOrder = byteOrder
         End Sub
 
@@ -78,17 +88,24 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As UInt32) As String
-            Return value.ToString(CultureInfo.InvariantCulture)
+            If _showHex Then
+                Return "0x" + value.ToString("X8", CultureInfo.InvariantCulture)
+            Else
+                Return value.ToString(CultureInfo.InvariantCulture)
+            End If
         End Function
     End Class
 
     Public Class UInt16Jar
         Inherits Jar(Of UInt16)
         Private ReadOnly byteOrder As ByteOrder
+        Private ReadOnly _showHex As Boolean
 
         Public Sub New(ByVal name As InvariantString,
-                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
+                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian,
+                       Optional ByVal showHex As Boolean = False)
             MyBase.New(name)
+            Me._showHex = showHex
             Me.byteOrder = byteOrder
         End Sub
 
@@ -104,15 +121,23 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As UInt16) As String
-            Return value.ToString(CultureInfo.InvariantCulture)
+            If _showHex Then
+                Return "0x" + value.ToString("X4", CultureInfo.InvariantCulture)
+            Else
+                Return value.ToString(CultureInfo.InvariantCulture)
+            End If
         End Function
     End Class
 
     Public Class ByteJar
         Inherits Jar(Of Byte)
 
-        Public Sub New(ByVal name As InvariantString)
+        Private ReadOnly _showHex As Boolean
+
+        Public Sub New(ByVal name As InvariantString,
+                       Optional ByVal showHex As Boolean = False)
             MyBase.New(name)
+            Me._showHex = showHex
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As Byte)(ByVal value As TValue) As IPickle(Of TValue)
@@ -127,7 +152,11 @@
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As Byte) As String
-            Return value.ToString(CultureInfo.InvariantCulture)
+            If _showHex Then
+                Return "0x" + value.ToString("X2", CultureInfo.InvariantCulture)
+            Else
+                Return value.ToString(CultureInfo.InvariantCulture)
+            End If
         End Function
     End Class
 

@@ -227,15 +227,15 @@ Namespace WC3
                         Select Case packet.id
                             Case PeerPing
                                 Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
-                                sender.Socket.SendPacket(Packet.MakePeerPing(CType(vals("salt"), Byte()), 1))
-                                sender.Socket.SendPacket(Packet.MakePeerPong(CType(vals("salt"), Byte())))
+                                sender.Socket.SendPacket(packet.MakePeerPing(CUInt(vals("salt")), 1))
+                                sender.Socket.SendPacket(packet.MakePeerPong(CUInt(vals("salt"))))
                             Case MapFileData
                                 Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
                                 Dim pos = CUInt(dl.file.Position)
                                 If ReceiveDLMapChunk(vals) Then
                                     Disconnect(expected:=True, reason:="Download finished.")
                                 Else
-                                    sender.Socket.SendPacket(Packet.MakeMapFileDataReceived(sender.Index, Me.index, pos))
+                                    sender.Socket.SendPacket(packet.MakeMapFileDataReceived(sender.Index, Me.index, pos))
                                 End If
                         End Select
                     Catch e As Exception

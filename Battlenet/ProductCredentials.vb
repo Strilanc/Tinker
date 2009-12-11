@@ -116,7 +116,7 @@
         End Function
 #End Region
 
-        '''<summary>Extracts the product credentials from a wc3 cd key.</summary>
+        '''<summary>Generates product credentials using a wc3 cd key.</summary>
         <Extension()> <Pure()>
         Public Function ToWC3CDKeyCredentials(ByVal key As String,
                                               ByVal clientSalt As IEnumerable(Of Byte),

@@ -120,19 +120,14 @@ End Class
 Public Class NetIPEndPointJar
     Inherits Jar(Of Net.IPEndPoint)
 
-    Private ReadOnly _dataJar As TupleJar
-
-    <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(_dataJar IsNot Nothing)
-    End Sub
-
-    Public Sub New(ByVal name As InvariantString)
-        MyBase.New(name)
-        Me._dataJar = New TupleJar(name,
+    Private Shared ReadOnly DataJar As TupleJar = New TupleJar("NetIPEndPoint",
                 New UInt16Jar("protocol").Weaken,
                 New UInt16Jar("port", ByteOrder:=ByteOrder.BigEndian).Weaken,
                 New NetIPAddressJar("ip").Weaken,
                 New ArrayJar("unknown", 8).Weaken)
+
+    Public Sub New(ByVal name As InvariantString)
+        MyBase.New(name)
     End Sub
 
     Public Overrides Function Pack(Of TValue As Net.IPEndPoint)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
@@ -141,14 +136,14 @@ Public Class NetIPEndPointJar
                 {"ip", value.Address},
                 {"port", value.Port},
                 {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}}}
-        Dim pickle = _dataJar.Pack(vals)
-        Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
+        Dim pickle = DataJar.Pack(vals)
+        Return New Pickle(Of TValue)(Name, value, pickle.Data)
     End Function
 
     Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As Pickling.IPickle(Of Net.IPEndPoint)
-        Dim pickle = _dataJar.Parse(data)
+        Dim pickle = DataJar.Parse(data)
         Dim vals = pickle.Value
         Dim value = New Net.IPEndPoint(CType(vals("ip"), Net.IPAddress).AssumeNotNull, CUShort(vals("port")))
-        Return New Pickle(Of Net.IPEndPoint)(value, pickle.Data, pickle.Description)
+        Return New Pickle(Of Net.IPEndPoint)(Name, value, pickle.Data)
     End Function
 End Class

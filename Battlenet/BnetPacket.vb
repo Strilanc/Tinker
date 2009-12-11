@@ -286,8 +286,8 @@ Namespace Bnet
                     New NetIPEndPointJar("host address"),
                     New EnumUInt32Jar(Of GameStates)("game state").Weaken,
                     New UInt32Jar("elapsed seconds").Weaken,
-                    New StringJar("game name", True),
-                    New StringJar("game password", True),
+                    New StringJar("game name"),
+                    New StringJar("game password"),
                     New TextHexValueJar("num free slots", numdigits:=1).Weaken,
                     New TextHexValueJar("game id", numdigits:=8).Weaken,
                     New WC3.GameStatsJar("game statstring").Weaken)
@@ -338,8 +338,8 @@ Namespace Bnet
         Public Class ServerPackets
             Public Shared ReadOnly AuthenticationBegin As New DefJar(PacketId.AuthenticationBegin,
                     New EnumUInt32Jar(Of AuthenticationBeginLogOnType)("logon type").Weaken,
-                    New UInt32Jar("server cd key salt").Weaken,
-                    New ArrayJar("udp value", 4).Weaken,
+                    New UInt32Jar("server cd key salt", showHex:=True).Weaken,
+                    New UInt32Jar("udp value", showHex:=True).Weaken,
                     New FileTimeJar("mpq filetime").Weaken,
                     New StringJar("revision check seed").Weaken,
                     New StringJar("revision check challenge").Weaken,
@@ -349,22 +349,22 @@ Namespace Bnet
                     New StringJar("info").Weaken)
             Public Shared ReadOnly AccountLogOnBegin As New DefJar(PacketId.AccountLogOnBegin,
                     New EnumUInt32Jar(Of AccountLogOnBeginResult)("result").Weaken,
-                    New ArrayJar("account password salt", 32).Weaken,
-                    New ArrayJar("server public key", 32).Weaken)
+                    New ArrayJar("account password salt", expectedSize:=32).Weaken,
+                    New ArrayJar("server public key", expectedSize:=32).Weaken)
             Public Shared ReadOnly AccountLogOnFinish As New DefJar(PacketId.AccountLogOnFinish,
                     New EnumUInt32Jar(Of AccountLogOnFinishResult)("result").Weaken,
-                    New ArrayJar("server password proof", 20).Weaken,
+                    New ArrayJar("server password proof", expectedSize:=20).Weaken,
                     New StringJar("custom error info").Weaken)
             Public Shared ReadOnly RequiredWork As New DefJar(PacketId.RequiredWork,
                     New StringJar("filename").Weaken)
 
             Public Shared ReadOnly ChatEvent As New DefJar(PacketId.ChatEvent,
                     New EnumUInt32Jar(Of ChatEventId)("event id").Weaken,
-                    New ArrayJar("flags", 4).Weaken,
+                    New ArrayJar("flags", expectedSize:=4).Weaken,
                     New UInt32Jar("ping").Weaken,
                     New NetIPAddressJar("ip").Weaken,
-                    New ArrayJar("acc#", 4).Weaken,
-                    New ArrayJar("authority", 4).Weaken,
+                    New UInt32Jar("acc#", showhex:=True).Weaken,
+                    New UInt32Jar("authority", showhex:=True).Weaken,
                     New StringJar("username").Weaken,
                     New StringJar("text").Weaken)
             Public Shared ReadOnly MessageBox As New DefJar(PacketId.MessageBox,
@@ -375,19 +375,19 @@ Namespace Bnet
                     New ByteJar("entry number").Weaken,
                     New ByteJar("location id").Weaken,
                     New ByteJar("status").Weaken,
-                    New StringJar("product id", False, True, 4).Weaken,
+                    New DwordStringJar("product id").Weaken,
                     New StringJar("location").Weaken)
             Public Shared ReadOnly QueryGamesList As New QueryGamesListResponseJar()
 
             Public Shared ReadOnly EnterChat As New DefJar(PacketId.EnterChat,
                     New StringJar("chat username").Weaken,
-                    New StringJar("statstring", , True).Weaken,
+                    New StringJar("statstring", reversed:=True).Weaken,
                     New StringJar("account username").Weaken)
             Public Shared ReadOnly CreateGame3 As New DefJar(PacketId.CreateGame3,
                     New UInt32Jar("result").Weaken)
 
             Public Shared ReadOnly Null As New DefJar(PacketId.Null)
-            Public Shared ReadOnly Ping As New UInt32Jar("salt")
+            Public Shared ReadOnly Ping As New UInt32Jar("salt", showHex:=True)
             Public Shared ReadOnly Warden As New DefJar(PacketId.Warden,
                     New ArrayJar("encrypted data", takeRest:=True).Weaken)
 
@@ -401,14 +401,14 @@ Namespace Bnet
                     New StringJar("filename").Weaken)
             Public Shared ReadOnly ClanInfo As New DefJar(PacketId.ClanInfo,
                     New ByteJar("unknown").Weaken,
-                    New StringJar("clan tag", nullTerminated:=True, reversed:=True, expectedSize:=4).Weaken,
-                    New EnumByteJar(Of ClanRank)("rank").weaken)
+                    New DwordStringJar("clan tag").Weaken,
+                    New EnumByteJar(Of ClanRank)("rank").Weaken)
         End Class
         Public Class ClientPackets
             Public Shared ReadOnly AuthenticationBegin As New DefJar(PacketId.AuthenticationBegin,
                     New UInt32Jar("protocol").Weaken,
-                    New StringJar("platform", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
-                    New StringJar("product", nullTerminated:=False, reversed:=True, expectedsize:=4).Weaken,
+                    New DwordStringJar("platform").Weaken,
+                    New DwordStringJar("product").Weaken,
                     New UInt32Jar("product major version").Weaken,
                     New StringJar("product language", nullTerminated:=False, expectedSize:=4).Weaken,
                     New NetIPAddressJar("internal ip").Weaken,
@@ -418,9 +418,9 @@ Namespace Bnet
                     New StringJar("country abrev").Weaken,
                     New StringJar("country name").Weaken)
             Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.AuthenticationFinish,
-                    New UInt32Jar("client cd key salt").Weaken,
+                    New UInt32Jar("client cd key salt", showHex:=True).Weaken,
                     New ArrayJar("exe version", expectedSize:=4).Weaken,
-                    New UInt32Jar("revision check response").Weaken,
+                    New UInt32Jar("revision check response", showHex:=True).Weaken,
                     New UInt32Jar("# cd keys").Weaken,
                     New ValueJar("spawn [unused]", byteCount:=4, info:="0=false, 1=true").Weaken,
                     New ProductCredentialsJar("ROC cd key").Weaken,
@@ -467,7 +467,7 @@ Namespace Bnet
 
             Public Shared ReadOnly Null As New DefJar(PacketId.Null)
             Public Shared ReadOnly Ping As New DefJar(PacketId.Ping,
-                    New UInt32Jar("salt").Weaken)
+                    New UInt32Jar("salt", showhex:=True).Weaken)
             Public Shared ReadOnly Warden As New DefJar(PacketId.Warden,
                     New ArrayJar("encrypted data", takeRest:=True).Weaken)
 
@@ -627,6 +627,26 @@ Namespace Bnet
 #End Region
 
 #Region "Jars"
+        Public NotInheritable Class DwordStringJar
+            Inherits Jar(Of String)
+            Public Sub New(ByVal name As InvariantString)
+                MyBase.new(name)
+            End Sub
+
+            Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
+                If value.Length > 4 Then Throw New ArgumentOutOfRangeException("value", "Value must be at most 4 characters.")
+                Dim data = value.ToAscBytes().Reverse.PaddedTo(minimumLength:=4)
+                Return New Pickling.Pickle(Of TValue)(Me.Name, value, data.ToView)
+            End Function
+
+            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of String)
+                If data.Length < 4 Then Throw New PicklingException("Not enough data")
+                Dim datum = data.SubView(4)
+                Dim value As String = datum.ParseChrString(nullTerminated:=True).Reverse.ToArray
+                Return New Pickling.Pickle(Of String)(Me.Name, value, datum)
+            End Function
+        End Class
+
         Public NotInheritable Class TextHexValueJar
             Inherits Jar(Of ULong)
             Private ReadOnly numDigits As Integer
@@ -638,7 +658,7 @@ Namespace Bnet
 
             Public Sub New(ByVal name As InvariantString,
                            ByVal numDigits As Integer,
-                           Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
+                           Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian)
                 MyBase.New(name)
                 Contract.Requires(numDigits > 0)
                 Contract.Requires(numDigits <= 16)
