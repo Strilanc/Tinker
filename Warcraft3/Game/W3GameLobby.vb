@@ -8,8 +8,6 @@
         Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds)
         Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds)
 
-        Public Event PlayerEntered(ByVal sender As Game, ByVal player As Player)
-
         Private Sub LobbyNew()
             Contract.Ensures(DownloadScheduler IsNot Nothing)
 
@@ -47,7 +45,7 @@
             Select Case settings.GameDescription.GameStats.observers
                 Case GameObserverOption.FullObservers, GameObserverOption.Referees
                     For i = Map.NumPlayerSlots To 12 - 1
-                        Dim slot As Slot = New Slot(Me, CByte(i))
+                        Dim slot = New Slot(Me, CByte(i))
                         slot.color = CType(slot.ObserverTeamIndex, Slot.PlayerColor)
                         slot.Team = slot.ObserverTeamIndex
                         slot.race = slot.Races.Random
@@ -87,10 +85,6 @@
             End If
         End Sub
 
-        Private Sub LobbyStop()
-            downloadTimer.Stop()
-        End Sub
-
         Public ReadOnly Property DownloadScheduler() As TransferScheduler(Of Byte)
             Get
                 Contract.Ensures(Contract.Result(Of TransferScheduler(Of Byte))() IsNot Nothing)
@@ -102,13 +96,10 @@
         '''<summary>Autostarts the countdown if autostart is enabled and the game stays full for awhile.</summary>
         Private Function TryBeginAutoStart() As Boolean
             'Sanity check
-            If Not settings.isAutoStarted Then
-                Return False
-            ElseIf CountFreeSlots() > 0 Then
-                Return False
-            ElseIf state >= GameState.PreCounting Then
-                Return False
-            ElseIf (From player In _players Where Not player.isFake And player.GetDownloadPercent <> 100).Any Then
+            If Not settings.IsAutoStarted Then Return False
+            If CountFreeSlots() > 0 Then Return False
+            If state >= GameState.PreCounting Then Return False
+            If (From player In _players Where Not player.isFake And player.GetDownloadPercent <> 100).Any Then
                 Return False
             End If
             ChangeState(GameState.PreCounting)
@@ -119,84 +110,48 @@
                     If state <> GameState.PreCounting Then Return
                     If Not settings.IsAutoStarted OrElse CountFreeSlots() > 0 Then
                         ChangeState(GameState.AcceptingPlayers)
-                        Return
+                    Else
+                        TryStartCountdown()
                     End If
-
-                    'Inform players autostart has begun
-                    Logger.Log("Preparing to launch", LogMessageType.Positive)
-                    BroadcastMessage("Game is Full. Waiting 5 seconds for stability.")
-
-                    'Give jittery players a few seconds to leave
-                    Call 5.Seconds.AsyncWait().QueueCallWhenReady(inQueue,
-                        Sub()
-                            If state <> GameState.PreCounting Then Return
-                            If Not settings.IsAutoStarted OrElse CountFreeSlots() > 0 Then
-                                ChangeState(GameState.AcceptingPlayers)
-                                Return
-                            End If
-
-                            TryStartCountdown()
-                        End Sub
-                    )
-                        End Sub
+                End Sub
             )
             Return True
         End Function
 
         '''<summary>Starts the countdown to launch.</summary>
         Private Function TryStartCountdown() As Boolean
-            If state = GameState.CountingDown Then
-                Return False
-            ElseIf state > GameState.CountingDown Then
-                Return False
-            ElseIf (From p In _players Where Not p.isFake AndAlso p.GetDownloadPercent <> 100).Any Then
+            If state >= GameState.CountingDown Then Return False
+            If (From p In _players Where Not p.isFake AndAlso p.GetDownloadPercent <> 100).Any Then
                 Return False
             End If
 
             ChangeState(GameState.CountingDown)
             flagHasPlayerLeft = False
 
-            Logger.Log("Starting Countdown", LogMessageType.Positive)
-            Call 1.Seconds.AsyncWait().QueueCallWhenReady(inQueue, Sub() _TryContinueCountdown(5))
+            'Perform countdown
+            Dim continueCountdown As Action(Of Integer)
+            continueCountdown = Sub(ticksLeft)
+                                    If state <> GameState.CountingDown Then Return
+
+                                    If flagHasPlayerLeft Then 'abort countdown
+                                        BroadcastMessage("Countdown Aborted", messageType:=LogMessageType.Negative)
+                                        TryRestoreFakeHost()
+                                        ChangeState(GameState.AcceptingPlayers)
+                                        ChangedLobbyState()
+                                    ElseIf ticksLeft > 0 Then 'continue ticking
+                                        BroadcastMessage("Starting in {0}...".Frmt(ticksLeft), messageType:=LogMessageType.Positive)
+                                        Call 1.Seconds.AsyncWait().QueueCallWhenReady(inQueue, Sub() continueCountdown(ticksLeft - 1))
+                                    Else 'start
+                                        StartLoading()
+                                    End If
+                                End Sub
+            Call 1.Seconds.AsyncWait().QueueCallWhenReady(inQueue, Sub() continueCountdown(5))
+
             Return True
         End Function
-        Private Sub _TryContinueCountdown(ByVal ticksLeft As Integer)
-            If state <> GameState.CountingDown Then
-                Return
-            End If
-
-            'Abort if a player left
-            If flagHasPlayerLeft Then
-                Logger.Log("Countdown Aborted", LogMessageType.Negative)
-                TryRestoreFakeHost()
-                BroadcastMessage("===============================================")
-                BroadcastMessage("A player left. Launch is held.")
-                BroadcastMessage("Waiting for more players...")
-                BroadcastMessage("Use {0}leave if you need to leave.".Frmt(My.Settings.commandPrefix))
-                BroadcastMessage("===============================================")
-                ChangeState(GameState.AcceptingPlayers)
-                flagHasPlayerLeft = False
-                ChangedLobbyState()
-                Return
-            End If
-
-            If ticksLeft > 0 Then
-                'Next tick
-                Logger.Log("Game starting in {0}".Frmt(ticksLeft), LogMessageType.Positive)
-                For Each player In _players
-                    Contract.Assume(player IsNot Nothing)
-                    SendMessageTo("Starting in {0}...".Frmt(ticksLeft), player, display:=False)
-                Next player
-
-                Call 1.Seconds.AsyncWait().QueueCallWhenReady(inQueue, Sub() _TryContinueCountdown(ticksLeft - 1))
-                Return
-            End If
-
-            StartLoading()
-        End Sub
-        Public Function QueueStartCountdown() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Function() TryStartCountdown())
+        Public Function QueueStartCountdown() As IFuture(Of Boolean)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Boolean))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() TryStartCountdown())
         End Function
 
         '''<summary>Launches the game, sending players to the loading screen.</summary>
@@ -222,7 +177,7 @@
             SendLobbyState()
 
             ChangeState(GameState.Loading)
-            Me.LobbyStop()
+            downloadTimer.Stop()
             LoadScreenStart()
         End Sub
 #End Region
@@ -278,7 +233,6 @@
             Next player
 
             'Inform bot
-            ThrowPlayerEntered(newPlayer)
             Logger.Log("{0} has been placed in the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Update state
@@ -286,16 +240,13 @@
             Return newPlayer
         End Function
         Private Function TryRestoreFakeHost() As Player
-            If fakeHostPlayer IsNot Nothing Then
-                Return Nothing
-            ElseIf state > GameState.AcceptingPlayers Then
-                Return Nothing
-            End If
+            If fakeHostPlayer IsNot Nothing Then  Return Nothing
+            If state > GameState.AcceptingPlayers Then  Return Nothing
 
-            Dim pname = My.Settings.ingame_name
-            Contract.Assume(pname IsNot Nothing)
+            Dim name = My.Settings.ingame_name
+            Contract.Assume(name IsNot Nothing)
             Try
-                fakeHostPlayer = AddFakePlayer(pname)
+                fakeHostPlayer = AddFakePlayer(name)
                 Return fakeHostPlayer
             Catch ex As InvalidOperationException
                 Return Nothing
@@ -316,8 +267,8 @@
             Dim bestSlot As Slot = Nothing
             Dim bestMatch = SlotContents.WantPlayerPriority.Filled
             slots.MaxPair(Function(slot) slot.Contents.WantPlayer(connectingPlayer.Name),
-                               bestSlot,
-                               bestMatch)
+                          outElement:=bestSlot,
+                          outImage:=bestMatch)
             If bestMatch < SlotContents.WantPlayerPriority.Open Then
                 Throw New InvalidOperationException("No slot available for player.")
             End If
@@ -371,7 +322,6 @@
             End If
 
             'Inform bot
-            ThrowPlayerEntered(newPlayer)
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.name), LogMessageType.Positive)
 
             'Update state
@@ -386,9 +336,6 @@
                 Logger.Log("Greeted {0}".Frmt(newPlayer.Name), LogMessageType.Positive)
                 SendMessageTo(message:=settings.Greeting, player:=newPlayer, display:=False)
             End If
-            If settings.IsAutoStarted Then
-                SendMessageTo("This is an autostarted game. {0}help for a list of commands.".Frmt(My.Settings.commandPrefix), newPlayer, display:=False)
-            End If
 
             AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() QueueDropLagger()
             AddHandler newPlayer.ReceivedGameAction, AddressOf QueueReceiveGameAction
@@ -396,13 +343,11 @@
             AddHandler newPlayer.Disconnected, AddressOf QueueRemovePlayer
             AddHandler newPlayer.ReceivedReady, AddressOf QueueReceiveReady
             AddHandler newPlayer.SuperficialStateUpdated, Sub() QueueThrowUpdated()
-            AddHandler newPlayer.StateUpdated, Sub() QueueUpdatedGameState()
+            AddHandler newPlayer.StateUpdated, Sub() inQueue.QueueAction(AddressOf ChangedLobbyState)
             AddHandler newPlayer.ReceivedNonGameAction, AddressOf QueueReceiveNonGameAction
-            AddHandler newPlayer.WantMapSender, Sub(sender)
-                                                    QueueGetFakeHostPlayer.CallOnValueSuccess(
+            AddHandler newPlayer.WantMapSender, Sub(sender) QueueGetFakeHostPlayer.CallOnValueSuccess(
                                                         Sub(value) sender.GiveMapSender(If(value Is Nothing, CByte(0), value.Index))
                                                     )
-                                                        End Sub
 
             Return newPlayer
         End Function
@@ -414,12 +359,6 @@
 #End Region
 
 #Region "Events"
-        Private Sub ThrowPlayerEntered(ByVal new_player As Player)
-            outQueue.QueueAction(Sub()
-                                     RaiseEvent PlayerEntered(Me, new_player)
-                                 End Sub)
-        End Sub
-
         Private Sub OnDownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndpoints),
                                                ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndpoints))
             inQueue.QueueAction(
@@ -433,11 +372,11 @@
 
                         'Apply
                         If e.source = LocalTransferClientKey Then
-                            Logger.Log("Initiating map upload to {0}.".Frmt(dst.name), LogMessageType.Positive)
+                            Logger.Log("Initiating map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
                             dst.IsGettingMapFromBot = True
                             dst.QueueBufferMap()
                         ElseIf src IsNot Nothing Then
-                            Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageType.Positive)
+                            Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
                             src.QueueSendPacket(Packet.MakeSetUploadTarget(dst.Index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
                             dst.QueueSendPacket(Packet.MakeSetDownloadSource(src.Index))
                         End If
@@ -452,10 +391,10 @@
 
                         'Apply
                         If e.source = LocalTransferClientKey Then
-                            Logger.Log("Stopping map upload to {0}.".Frmt(dst.name), LogMessageType.Positive)
+                            Logger.Log("Stopping map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
                             dst.IsGettingMapFromBot = False
                         ElseIf src IsNot Nothing Then
-                            Logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.name, dst.name), LogMessageType.Positive)
+                            Logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
                             src.QueueSendPacket(Packet.MakeOtherPlayerLeft(dst, PlayerLeaveType.Disconnect))
                             src.QueueSendPacket(Packet.MakeOtherPlayerJoined(dst))
                             dst.QueueSendPacket(Packet.MakeOtherPlayerLeft(src, PlayerLeaveType.Disconnect))
@@ -496,17 +435,12 @@
             Dim time As ModInt32 = Environment.TickCount()
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
-                Dim pk = Packet.MakeLobbyState(player, Map, slots, time, settings.isAdminGame)
-                player.QueueSendPacket(pk)
+                player.QueueSendPacket(Packet.MakeLobbyState(player, Map, slots, time, settings.IsAdminGame))
             Next player
             TryBeginAutoStart()
         End Sub
-        Public Function QueueUpdatedGameState() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(AddressOf ChangedLobbyState)
-        End Function
 
-        ''' <summary>Opens slots, closes slots and moves players around to try to match the desired team sizes.</summary>
+        '''<summary>Opens slots, closes slots and moves players around to try to match the desired team sizes.</summary>
         Private Sub TrySetTeamSizes(ByVal desiredTeamSizes As IList(Of Integer))
             Contract.Requires(desiredTeamSizes IsNot Nothing)
             If state > GameState.AcceptingPlayers Then
@@ -571,11 +505,7 @@
                 Throw New InvalidOperationException("Can't modify slots during launch.")
             End If
 
-            Dim slot = TryFindMatchingSlot(slotQuery)
-            If slot Is Nothing Then
-                Throw New InvalidOperationException("No slot matching {0}".Frmt(slotQuery))
-            End If
-
+            Dim slot = FindMatchingSlot(slotQuery)
             If avoidPlayers AndAlso slot.Contents.ContentType = SlotContentType.Player Then
                 Throw New InvalidOperationException("Slot '{0}' contains a player.".Frmt(slotQuery))
             End If
@@ -586,78 +516,72 @@
 #End Region
 #Region "Slot Contents"
         '''<summary>Opens the slot with the given index, unless the slot contains a player.</summary>
-        Private Sub OpenSlot(ByVal slotid As InvariantString)
-            ModifySlotContents(slotid,
+        Private Sub OpenSlot(ByVal slotQuery As InvariantString)
+            ModifySlotContents(slotQuery,
                                Sub(slot) slot.Contents = New SlotContentsOpen(slot),
                                avoidPlayers:=True)
         End Sub
-        Public Function QueueOpenSlot(ByVal query As String) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueOpenSlot(ByVal slotQuery As InvariantString) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() OpenSlot(query))
+            Return inQueue.QueueAction(Sub() OpenSlot(slotQuery))
         End Function
 
         '''<summary>Places a computer with the given difficulty in the slot with the given index, unless the slot contains a player.</summary>
-        Private Sub ComputerizeSlot(ByVal slotid As InvariantString, ByVal cpu As Slot.ComputerLevel)
-            ModifySlotContents(slotid,
+        Private Sub ComputerizeSlot(ByVal slotQuery As InvariantString, ByVal cpu As Slot.ComputerLevel)
+            ModifySlotContents(slotQuery,
                                Sub(slot) slot.Contents = New SlotContentsComputer(slot, cpu),
                                avoidPlayers:=True)
         End Sub
-        Public Function QueueSetSlotCpu(ByVal query As String, ByVal newCpuLevel As Slot.ComputerLevel) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueSetSlotCpu(ByVal slotQuery As InvariantString, ByVal newCpuLevel As Slot.ComputerLevel) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() ComputerizeSlot(query, newCpuLevel))
+            Return inQueue.QueueAction(Sub() ComputerizeSlot(slotQuery, newCpuLevel))
         End Function
 
         '''<summary>Closes the slot with the given index, unless the slot contains a player.</summary>
-        Private Sub CloseSlot(ByVal slotid As InvariantString)
-            ModifySlotContents(slotid,
+        Private Sub CloseSlot(ByVal slotQuery As InvariantString)
+            ModifySlotContents(slotQuery,
                                Sub(slot) slot.Contents = New SlotContentsClosed(slot),
                                avoidPlayers:=True)
         End Sub
-        Public Function QueueCloseSlot(ByVal query As String) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueCloseSlot(ByVal slotQuery As InvariantString) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() CloseSlot(query))
+            Return inQueue.QueueAction(Sub() CloseSlot(slotQuery))
         End Function
 
         '''<summary>Reserves a slot for a player.</summary>
-        Private Function ReserveSlot(ByVal username As InvariantString,
-                                     Optional ByVal slotid As InvariantString? = Nothing) As Player
+        Private Function ReserveSlot(ByVal userName As InvariantString,
+                                     Optional ByVal slotQuery As InvariantString? = Nothing) As Player
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
             If state >= GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't reserve slots after launch.")
             End If
-            Dim slot = If(slotid Is Nothing,
-                          (From s In slots Where s.Contents.WantPlayer(Nothing) = SlotContents.WantPlayerPriority.Open).FirstOrDefault,
-                          TryFindMatchingSlot(slotid.Value))
-            If slot Is Nothing Then Throw New InvalidOperationException("No matching slot.".Frmt(slotid))
-            If slot.Contents.ContentType = SlotContentType.Player Then
-                Throw New InvalidOperationException("Slot '{0}' can't be reserved because it already contains a player.".Frmt(slotid))
+            Dim slot As Slot
+            If slotQuery Is Nothing Then
+                slot = (From s In slots Where s.Contents.WantPlayer(Nothing) = SlotContents.WantPlayerPriority.Open).FirstOrDefault
+                If slot Is Nothing Then Throw New InvalidOperationException("No available slot.")
             Else
-                Return AddFakePlayer(username, slot)
+                slot = FindMatchingSlot(slotQuery.Value)
+            End If
+            If slot.Contents.ContentType = SlotContentType.Player Then
+                Throw New InvalidOperationException("Slot '{0}' can't be reserved because it already contains a player.".Frmt(slotQuery))
+            Else
+                Return AddFakePlayer(userName, slot)
             End If
         End Function
-        Public Function QueueReserveSlot(ByVal userName As String,
-                                         Optional ByVal query As String = Nothing) As IFuture
-            Contract.Requires(userName IsNot Nothing)
+        Public Function QueueReserveSlot(ByVal userName As InvariantString,
+                                         Optional ByVal slotQuery As InvariantString? = Nothing) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() ReserveSlot(userName, query))
+            Return inQueue.QueueAction(Sub() ReserveSlot(userName, slotQuery))
         End Function
 
-        Private Sub SwapSlotContents(ByVal query1 As InvariantString, ByVal query2 As InvariantString)
+        Private Sub SwapSlotContents(ByVal slotQuery1 As InvariantString,
+                                     ByVal slotQuery2 As InvariantString)
             If state > GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't swap slots after launch.")
             End If
-            Dim slot1 = TryFindMatchingSlot(query1)
-            Dim slot2 = TryFindMatchingSlot(query2)
-            If slot1 Is Nothing Then
-                Throw New InvalidOperationException("No slot matching '{0}'.".Frmt(query1))
-            ElseIf slot2 Is Nothing Then
-                Throw New InvalidOperationException("No slot matching '{0}'.".Frmt(query2))
-            ElseIf slot1 Is slot2 Then
-                Throw New InvalidOperationException("Slot {0} is slot '{1}'.".Frmt(query1, query2))
-            End If
+            Dim slot1 = FindMatchingSlot(slotQuery1)
+            Dim slot2 = FindMatchingSlot(slotQuery2)
+            If slot1 Is slot2 Then Throw New InvalidOperationException("Slot {0} is slot '{1}'.".Frmt(slotQuery1, slotQuery2))
             SwapSlotContents(slot1, slot2)
             ChangedLobbyState()
         End Sub
@@ -669,68 +593,60 @@
             slot2.Contents = t
             ChangedLobbyState()
         End Sub
-        Public Function QueueSwapSlotContents(ByVal query1 As String, ByVal query2 As String) As IFuture
-            Contract.Requires(query1 IsNot Nothing)
-            Contract.Requires(query2 IsNot Nothing)
+        Public Function QueueSwapSlotContents(ByVal slotQuery1 As InvariantString,
+                                              ByVal slotQuery2 As InvariantString) As IFuture
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SwapSlotContents(query1, query2))
+            Return inQueue.QueueAction(Sub() SwapSlotContents(slotQuery1, slotQuery2))
         End Function
 #End Region
 #Region "Slot States"
-        Private Sub SetSlotColor(ByVal slotid As InvariantString, ByVal color As Slot.PlayerColor)
+        Private Sub SetSlotColor(ByVal slotQuery As InvariantString, ByVal color As Slot.PlayerColor)
             If state > GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't change slot settings after launch.")
             End If
 
-            Dim foundSlot = TryFindMatchingSlot(slotid)
-            If foundSlot Is Nothing Then Throw New InvalidOperationException("No slot {0}".Frmt(slotid))
-
+            Dim slot = FindMatchingSlot(slotQuery)
             Dim swapColorSlot = (From x In slots Where x.color = color).FirstOrDefault
-            If swapColorSlot IsNot Nothing Then swapColorSlot.color = foundSlot.color
-            foundSlot.color = color
+            If swapColorSlot IsNot Nothing Then swapColorSlot.color = slot.color
+            slot.color = color
 
             ChangedLobbyState()
         End Sub
-        Public Function QueueSetSlotColor(ByVal query As String, ByVal newColor As Slot.PlayerColor) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueSetSlotColor(ByVal slotQuery As InvariantString, ByVal newColor As Slot.PlayerColor) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotColor(query, newColor))
+            Return inQueue.QueueAction(Sub() SetSlotColor(slotQuery, newColor))
         End Function
 
-        Private Sub SetSlotRace(ByVal slotid As InvariantString, ByVal race As Slot.Races)
-            ModifySlotContents(slotid, Sub(slot) slot.race = race)
+        Private Sub SetSlotRace(ByVal slotQuery As InvariantString, ByVal race As Slot.Races)
+            ModifySlotContents(slotQuery, Sub(slot) slot.race = race)
         End Sub
-        Public Function QueueSetSlotRace(ByVal query As String, ByVal newRace As Slot.Races) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueSetSlotRace(ByVal slotQuery As InvariantString, ByVal newRace As Slot.Races) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotRace(query, newRace))
+            Return inQueue.QueueAction(Sub() SetSlotRace(slotQuery, newRace))
         End Function
 
-        Private Sub SetSlotTeam(ByVal slotid As InvariantString, ByVal team As Byte)
-            ModifySlotContents(slotid, Sub(slot) slot.Team = team)
+        Private Sub SetSlotTeam(ByVal slotQuery As InvariantString, ByVal team As Byte)
+            ModifySlotContents(slotQuery, Sub(slot) slot.Team = team)
         End Sub
-        Public Function QueueSetSlotTeam(ByVal query As String, ByVal newTeam As Byte) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueSetSlotTeam(ByVal slotQuery As InvariantString, ByVal newTeam As Byte) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotTeam(query, newTeam))
+            Return inQueue.QueueAction(Sub() SetSlotTeam(slotQuery, newTeam))
         End Function
 
-        Private Sub SetSlotHandicap(ByVal slotid As InvariantString, ByVal handicap As Byte)
-            ModifySlotContents(slotid, Sub(slot) slot.handicap = handicap)
+        Private Sub SetSlotHandicap(ByVal slotQuery As InvariantString, ByVal handicap As Byte)
+            ModifySlotContents(slotQuery, Sub(slot) slot.handicap = handicap)
         End Sub
-        Public Function QueueSetSlotHandicap(ByVal query As String, ByVal newHandicap As Byte) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueSetSlotHandicap(ByVal slotQuery As InvariantString, ByVal newHandicap As Byte) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotHandicap(query, newHandicap))
+            Return inQueue.QueueAction(Sub() SetSlotHandicap(slotQuery, newHandicap))
         End Function
 
-        Private Sub SetSlotLocked(ByVal slotid As InvariantString, ByVal locked As Slot.Lock)
-            ModifySlotContents(slotid, Sub(slot) slot.locked = locked)
+        Private Sub SetSlotLocked(ByVal slotQuery As InvariantString, ByVal locked As Slot.Lock)
+            ModifySlotContents(slotQuery, Sub(slot) slot.locked = locked)
         End Sub
-        Public Function QueueSetSlotLocked(ByVal query As String, ByVal newLockState As Slot.Lock) As IFuture
-            Contract.Requires(query IsNot Nothing)
+        Public Function QueueSetSlotLocked(ByVal slotQuery As InvariantString, ByVal newLockState As Slot.Lock) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SetSlotLocked(query, newLockState))
+            Return inQueue.QueueAction(Sub() SetSlotLocked(slotQuery, newLockState))
         End Function
 
         Private Sub SetAllSlotsLocked(ByVal locked As Slot.Lock)
@@ -755,7 +671,7 @@
 
             'Validate
             If slot Is Nothing Then Return
-            If slot.locked = Slot.Lock.Frozen Then Return '[no changes allowed]
+            If slot.locked = slot.Lock.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If state >= GameState.Loading Then Return '[too late]
             If Not newColor.EnumValueIsDefined Then Return '[not a valid color]
@@ -764,7 +680,7 @@
             For Each otherSlot In slots.ToList()
                 Contract.Assume(otherSlot IsNot Nothing)
                 If otherSlot.color = newColor Then
-                    If Not Map.isMelee Then Return
+                    If Not Map.IsMelee Then Return
                     If Not otherSlot.Contents.ContentType = SlotContentType.Empty Then Return
                     otherSlot.color = slot.color
                     Exit For
@@ -781,10 +697,10 @@
 
             'Validate
             If slot Is Nothing Then Return
-            If slot.locked = Slot.Lock.Frozen Then Return '[no changes allowed]
+            If slot.locked = slot.Lock.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If state >= GameState.Loading Then Return '[too late]
-            If Not newRace.EnumValueIsDefined OrElse newRace = Slot.Races.Unlocked Then Return '[not a valid race]
+            If Not newRace.EnumValueIsDefined OrElse newRace = slot.Races.Unlocked Then Return '[not a valid race]
 
             'Perform
             slot.race = newRace
@@ -796,7 +712,7 @@
 
             'Validate
             If slot Is Nothing Then Return
-            If slot.locked = Slot.Lock.Frozen Then Return '[no changes allowed]
+            If slot.locked = slot.Lock.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If state >= GameState.CountingDown Then Return '[too late]
 
@@ -816,23 +732,23 @@
 
             'Validate
             If slot Is Nothing Then Return
-            If slot.locked <> Slot.Lock.Unlocked Then Return '[no teams changes allowed]
-            If newTeam > Slot.ObserverTeamIndex Then Return '[invalid value]
+            If slot.locked <> slot.Lock.Unlocked Then Return '[no teams changes allowed]
+            If newTeam > slot.ObserverTeamIndex Then Return '[invalid value]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If state >= GameState.Loading Then Return '[too late]
-            If newTeam = Slot.ObserverTeamIndex Then
+            If newTeam = slot.ObserverTeamIndex Then
                 Select Case settings.GameDescription.GameStats.observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         '[fine; continue]
                     Case Else
                         Return '[obs not enabled; invalid value]
                 End Select
-            ElseIf Map.isMelee And newTeam >= Map.NumPlayerSlots Then
+            ElseIf Map.IsMelee And newTeam >= Map.NumPlayerSlots Then
                 Return '[invalid team]
             End If
 
             'Perform
-            If Map.isMelee Then
+            If Map.IsMelee Then
                 'set slot to target team
                 slot.Team = newTeam
             Else

@@ -206,12 +206,14 @@ Namespace WC3
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
-        Private Function TryFindMatchingSlot(ByVal query As InvariantString) As Slot
+        Private Function FindMatchingSlot(ByVal query As InvariantString) As Slot
+            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Dim bestSlot As Slot = Nothing
             Dim bestMatch = Slot.Match.None
             slots.MaxPair(Function(slot) slot.Matches(query), bestSlot, bestMatch)
-
-            Return If(bestMatch = Slot.Match.None, Nothing, bestSlot)
+            If bestMatch = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
+            Contract.Assume(bestSlot IsNot Nothing)
+            Return bestSlot
         End Function
 
         '''<summary>Returns the slot containing the given player.</summary>
@@ -237,12 +239,13 @@ Namespace WC3
 
         '''<summary>Sends text to all players. Uses spoof chat if necessary.</summary>
         Private Sub BroadcastMessage(ByVal message As String,
-                                     Optional ByVal playerToAvoid As Player = Nothing)
+                                     Optional ByVal playerToAvoid As Player = Nothing,
+                                     Optional ByVal messageType As LogMessageType = LogMessageType.Typical)
             Contract.Requires(message IsNot Nothing)
             For Each player In (From _player In _players Where _player IsNot playerToAvoid)
                 SendMessageTo(message, player.AssumeNotNull, display:=False)
             Next player
-            Logger.Log("{0}: {1}".Frmt(Application.ProductName, message), LogMessageType.Typical)
+            Logger.Log("{0}: {1}".Frmt(Application.ProductName, message), messageType)
         End Sub
         Public Function QueueBroadcastMessage(ByVal message As String) As IFuture
             Contract.Requires(message IsNot Nothing)
@@ -469,8 +472,7 @@ Namespace WC3
 
         '''<summary>Boots players in the slot with the given index.</summary>
         Private Sub Boot(ByVal slotQuery As InvariantString)
-            Dim slot = TryFindMatchingSlot(slotQuery)
-            If slot Is Nothing Then Throw New InvalidOperationException("No slot {0}".Frmt(slotQuery))
+            Dim slot = FindMatchingSlot(slotQuery)
             If Not slot.Contents.EnumPlayers.Any Then
                 Throw New InvalidOperationException("There is no player to boot in slot '{0}'.".Frmt(slotQuery))
             End If
