@@ -395,7 +395,7 @@ Namespace Commands
                                       End If
 
                                       'Elevate player
-                                      Return game.QueueTryElevatePlayer(username)
+                                      Return game.QueueElevatePlayer(username)
                                   End Function
                               )
                                   End Function

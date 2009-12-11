@@ -3,10 +3,10 @@
         Public Const LocalTransferClientKey As Byte = 255
 
         Private _downloadScheduler As TransferScheduler(Of Byte)
-        Private ReadOnly downloadTimer As New Timers.Timer(1000.Milliseconds.TotalSeconds)
+        Private ReadOnly downloadTimer As New Timers.Timer(interval:=250)
         Private ReadOnly freeIndexes As New List(Of Byte)
-        Private ReadOnly slotStateUpdateThrottle As New Throttle(250.MilliSeconds)
-        Private ReadOnly updateEventThrottle As New Throttle(100.MilliSeconds)
+        Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds)
+        Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds)
 
         Public Event PlayerEntered(ByVal sender As Game, ByVal player As Player)
 
@@ -87,8 +87,6 @@
             End If
         End Sub
 
-        Private Sub LobbyStart()
-        End Sub
         Private Sub LobbyStop()
             downloadTimer.Stop()
         End Sub

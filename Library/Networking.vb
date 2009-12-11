@@ -17,10 +17,12 @@ Public Module NetworkingCommon
             Sub()
                 Using webClient = New WebClient()
                     Dim externalIp = New UTF8Encoding().GetString(webClient.DownloadData("http://whatismyip.com/automation/n09230945.asp"))
-                    If externalIp.Length < 7 OrElse externalIp.Length > 15 Then  Return  'not correct length for style (#.#.#.# to ###.###.###.###)
+                    If externalIp.Length < "#.#.#.#".Length Then Return
+                    If externalIp.Length > "###.###.###.###".Length Then Return
                     Dim words = externalIp.Split("."c)
-                    If words.Length <> 4 OrElse (From word In words Where Not Byte.TryParse(word, 0)).Any Then  Return
-                    cachedExternalIP = (From word In words Select  Byte.Parse(word, CultureInfo.InvariantCulture)).ToArray()
+                    If words.Length <> 4 Then Return
+                    If (From word In words Where Not Byte.TryParse(word, 0)).Any Then Return
+                    cachedExternalIP = (From word In words Select Byte.Parse(word, CultureInfo.InvariantCulture)).ToArray()
                 End Using
             End Sub
         )
@@ -33,8 +35,10 @@ Public Module NetworkingCommon
                     Where nic.Supports(NetworkInterfaceComponent.IPv4)
                     Select a = (From address In nic.GetIPProperties.UnicastAddresses
                                 Where address.Address.AddressFamily = Net.Sockets.AddressFamily.InterNetwork
-                                Where address.Address.ToString <> "127.0.0.1").FirstOrDefault()
-                    Where a IsNot Nothing).FirstOrDefault()
+                                Where Not address.Address.GetAddressBytes.HasSameItemsAs({127, 0, 0, 1})
+                                ).FirstOrDefault()
+                    Where a IsNot Nothing
+                    ).FirstOrDefault()
         If addr IsNot Nothing Then
             Return addr.Address
         Else

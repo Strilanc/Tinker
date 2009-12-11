@@ -1,6 +1,6 @@
 ﻿Namespace WC3
     '''<summary>Game actions which can be performed by players.</summary>
-    '''<original-source>http://www.wc3c.net/tools/specs/W3GActions.txt</original-source>
+    '''<original-source> http://www.wc3c.net/tools/specs/W3GActions.txt </original-source>
     Public Enum W3GameActionId As Byte
         PauseGame = &H1
         ResumeGame = &H2
@@ -126,17 +126,18 @@
         Private ReadOnly _payload As IPickle(Of Object)
         Private Shared ReadOnly packetJar As PrefixSwitchJar(Of W3GameActionId) = MakeJar()
 
+        Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of W3GameActionId)))
+            Contract.Requires(payload IsNot Nothing)
+            Me._payload = payload.Value.payload
+            Me.id = payload.Value.index
+        End Sub
+
         Public ReadOnly Property Payload As IPickle(Of Object)
             Get
                 Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
                 Return _payload
             End Get
         End Property
-        Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of W3GameActionId)))
-            Contract.Requires(payload IsNot Nothing)
-            Me._payload = payload.Value.payload
-            Me.id = payload.Value.index
-        End Sub
 
         Public Shared Function FromData(ByVal data As ViewableList(Of Byte)) As GameAction
             Contract.Requires(data IsNot Nothing)
@@ -156,7 +157,6 @@
             Contract.Requires(subJars IsNot Nothing)
             jar.AddPackerParser(id, New TupleJar(id.ToString, subJars).Weaken)
         End Sub
-
         Private Shared Function MakeJar() As PrefixSwitchJar(Of W3GameActionId)
             Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of W3GameActionId))() IsNot Nothing)
             Dim jar = New PrefixSwitchJar(Of W3GameActionId)("W3GameAction")
@@ -428,37 +428,50 @@
         End Enum
 #End Region
 
-#Region "Jars"
-        Private Class ObjectIdJar
-            Inherits Jar(Of IdPair)
+        Public Structure ObjectId
+            Public ReadOnly AllocatedId As UInteger
+            Public ReadOnly CounterId As UInteger
+            Public Sub New(ByVal allocatedId As UInteger, ByVal counterId As UInteger)
+                Me.AllocatedId = allocatedId
+                Me.CounterId = counterId
+            End Sub
+        End Structure
 
-            Public Structure IdPair
-                Public ReadOnly AllocatedId As UInteger
-                Public ReadOnly CounterId As UInteger
-                Public Sub New(ByVal allocatedId As UInteger, ByVal counterId As UInteger)
-                    Me.AllocatedId = allocatedId
-                    Me.CounterId = counterId
-                End Sub
-            End Structure
+        <Pure()>
+        Public Shared Function TypeIdString(ByVal value As UInt32) As String
+            Dim bytes = value.Bytes()
+            If (From b In bytes Where b < 32 Or b >= 128).None Then
+                'Ascii identifier (eg. 'hfoo' for human footman)
+                Return bytes.Reverse.ParseChrString(nullTerminated:=False)
+            Else
+                'Not ascii values, better just output hex
+                Return bytes.ToHexString
+            End If
+        End Function
+
+#Region "Jars"
+        Private NotInheritable Class ObjectIdJar
+            Inherits Jar(Of ObjectId)
 
             Public Sub New(ByVal name As InvariantString)
                 MyBase.New(name)
             End Sub
 
-            Public NotOverridable Overrides Function Pack(Of R As IdPair)(ByVal value As R) As IPickle(Of R)
-                Dim valued As IdPair = value
-                Dim data = Concat(valued.AllocatedId.Bytes(), valued.CounterId.Bytes()).ToView
+            Public Overrides Function Pack(Of R As ObjectId)(ByVal value As R) As IPickle(Of R)
+                Dim valued As ObjectId = value
+                Dim data = Concat(valued.AllocatedId.Bytes, valued.CounterId.Bytes).ToView
                 Return New Pickle(Of R)(Me.Name, value, data, Function() ValueToString(valued))
             End Function
 
-            Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of IdPair)
-                data = data.SubView(0, 8)
-                Dim value = New IdPair(data.SubView(0, 4).ToUInt32(),
-                                       data.SubView(4, 4).ToUInt32())
-                Return New Pickle(Of IdPair)(Me.Name, value, data, Function() ValueToString(value))
+            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ObjectId)
+                If data.Length < 8 Then Throw New PicklingException("Not enough data.")
+                Dim datum = data.SubView(0, 8)
+                Dim value = New ObjectId(datum.SubView(0, 4).ToUInt32,
+                                         datum.SubView(4, 4).ToUInt32)
+                Return New Pickle(Of ObjectId)(Me.Name, value, datum, Function() ValueToString(value))
             End Function
 
-            Protected Overridable Function ValueToString(ByVal value As IdPair) As String
+            Private Function ValueToString(ByVal value As ObjectId) As String
                 If value.AllocatedId = UInt32.MaxValue AndAlso value.CounterId = UInt32.MaxValue Then Return "[none]"
                 If value.AllocatedId = value.CounterId Then Return "preplaced id = {0}".Frmt(value.AllocatedId)
                 Return "allocated id = {0}, counter id = {1}".Frmt(value.AllocatedId, value.CounterId)
@@ -473,8 +486,11 @@
             End Sub
 
             Protected Overrides Function ValueToString(ByVal value As OrderId) As String
-                If value >= &HD0000 AndAlso value < &HE0000 Then Return MyBase.ValueToString(value)
-                Return ObjectTypeJar.IdString(value)
+                If value >= &HD0000 AndAlso value < &HE0000 Then
+                    Return MyBase.ValueToString(value)
+                Else
+                    Return TypeIdString(value)
+                End If
             End Function
         End Class
 
@@ -485,19 +501,8 @@
                 MyBase.New(name)
             End Sub
 
-            Public Shared Function IdString(ByVal value As UInteger) As String
-                Dim bytes = value.Bytes()
-                If (From b In bytes Where b < 32 Or b >= 128).None Then
-                    'Ascii identifier (eg. 'hfoo' for human footman)
-                    Return bytes.Reverse.ParseChrString(nullTerminated:=False)
-                Else
-                    'Not ascii values, better just output hex
-                    Return bytes.ToHexString
-                End If
-            End Function
-
             Protected Overrides Function ValueToString(ByVal value As UInteger) As String
-                Return IdString(value)
+                Return TypeIdString(value)
             End Function
         End Class
 #End Region

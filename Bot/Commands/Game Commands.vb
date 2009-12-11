@@ -220,7 +220,7 @@ Namespace Commands.Specializations
             template:="Name/Color",
             Description:="Kicks a player from the game.",
             func:=Function(target, user, argument)
-                      Return target.QueueBootSlot(argument.rawvalue(0)).EvalOnSuccess(Function() "Booted")
+                      Return target.QueueBoot(argument.rawvalue(0)).EvalOnSuccess(Function() "Booted")
                   End Function)
 
         Private Shared ReadOnly [Get] As New DelegatedTemplatedCommand(Of WC3.Game)(
@@ -319,11 +319,8 @@ Namespace Commands.Specializations
             Description:="Gives access to admin or host commands.",
             func:=Function(target, user, argument)
                       If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
-                      Return target.QueueTryElevatePlayer(user.Name, argument.RawValue(0)).EvalOnSuccess(Function() "Elevated")
+                      Return target.QueueElevatePlayer(user.Name, argument.RawValue(0)).EvalOnSuccess(Function() "Elevated")
                   End Function)
-    End Class
-    Public NotInheritable Class InstanceGuestLoadCommands
-        Inherits InstanceBaseCommands
     End Class
     Public NotInheritable Class InstanceGuestPlayCommands
         Inherits InstanceBaseCommands
