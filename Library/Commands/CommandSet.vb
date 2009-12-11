@@ -12,8 +12,8 @@
             Contract.Invariant(_help IsNot Nothing)
         End Sub
 
-        Public Sub New(Optional ByVal name As String = Nothing)
-            MyBase.New(name:=If(name, "CommandSet"),
+        Public Sub New(Optional ByVal name As InvariantString? = Nothing)
+            MyBase.New(name:=If(name Is Nothing, New InvariantString("CommandSet"), name.Value),
                        headType:="SubCommand",
                        Description:="Picks a sub-command using the first word in the argument and inokves it with the remaining argument.")
             AddCommand(Me._help)

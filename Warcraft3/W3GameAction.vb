@@ -441,9 +441,8 @@
                 End Sub
             End Structure
 
-            Public Sub New(ByVal name As String)
+            Public Sub New(ByVal name As InvariantString)
                 MyBase.New(name)
-                Contract.Requires(name IsNot Nothing)
             End Sub
 
             Public NotOverridable Overrides Function Pack(Of R As IdPair)(ByVal value As R) As IPickle(Of R)
@@ -469,9 +468,8 @@
         Private NotInheritable Class OrderTypeJar
             Inherits EnumUInt32Jar(Of OrderId)
 
-            Public Sub New(ByVal name As String)
+            Public Sub New(ByVal name As InvariantString)
                 MyBase.New(name)
-                Contract.Requires(name IsNot Nothing)
             End Sub
 
             Protected Overrides Function ValueToString(ByVal value As OrderId) As String
@@ -483,9 +481,8 @@
         Private NotInheritable Class ObjectTypeJar
             Inherits UInt32Jar
 
-            Public Sub New(ByVal name As String)
+            Public Sub New(ByVal name As InvariantString)
                 MyBase.New(name)
-                Contract.Requires(name IsNot Nothing)
             End Sub
 
             Public Shared Function IdString(ByVal value As UInteger) As String
@@ -508,7 +505,7 @@
 
     Public NotInheritable Class W3GameActionJar
         Inherits Jar(Of GameAction)
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
         End Sub
 

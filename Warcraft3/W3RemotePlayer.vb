@@ -110,7 +110,7 @@ Namespace WC3
             Contract.Invariant(_index <= 12)
         End Sub
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal index As Byte,
                        ByVal listenPort As UShort,
                        ByVal ip As Net.IPAddress, ByVal peerKey As UInteger)

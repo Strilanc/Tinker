@@ -4,27 +4,39 @@
         Warcraft3TFT = 18
     End Enum
 
+    ''' <summary>
+    ''' Credentials used for authenticating ownership of a product.
+    ''' </summary>
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class ProductCredentials
-        Public Delegate Function Authenticator(ByVal clientSalt As IEnumerable(Of Byte), ByVal serverChallenge As IEnumerable(Of Byte)) As IList(Of Byte)
-
+        Private ReadOnly _length As UInt32
         Private ReadOnly _product As ProductType
         Private ReadOnly _publicKey As UInteger
-        Private ReadOnly _authenticator As Authenticator
+        Private ReadOnly _proof As Byte()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_authenticator IsNot Nothing)
+            Contract.Invariant(_proof IsNot Nothing)
+            Contract.Invariant(_proof.Length = 20)
         End Sub
 
-        Public Sub New(ByVal product As ProductType,
+        Public Sub New(ByVal length As UInt32,
+                       ByVal product As ProductType,
                        ByVal publicKey As UInteger,
-                       ByVal authenticator As Authenticator)
-            Contract.Requires(authenticator IsNot Nothing)
+                       ByVal proof As IEnumerable(Of Byte))
+            Contract.Requires(proof IsNot Nothing)
+            Contract.Requires(proof.Count = 20)
             Me._product = product
             Me._publicKey = publicKey
-            Me._authenticator = authenticator
+            Me._length = length
+            Me._proof = proof.ToArray
         End Sub
 
+        '''<summary>Determines the length of the credentials' representation (eg. the number of characters in a cd key).</summary>
+        Public ReadOnly Property Length As UInt32
+            Get
+                Return _length
+            End Get
+        End Property
         '''<summary>Determines the product the credentials apply to.</summary>
         Public ReadOnly Property Product As ProductType
             Get
@@ -37,16 +49,12 @@
                 Return _publicKey
             End Get
         End Property
-        '''<summary>Determines a response to a challenge in order to authenticate the credentials.</summary>
-        Public ReadOnly Property AuthenticationProof(ByVal clientSalt As IEnumerable(Of Byte),
-                                                                 ByVal serverChallenge As IEnumerable(Of Byte)) As IList(Of Byte)
+        '''<summary>A stored response to an authentication challenge.</summary>
+        Public ReadOnly Property AuthenticationProof() As IList(Of Byte)
             Get
-                Contract.Requires(clientSalt IsNot Nothing)
-                Contract.Requires(serverChallenge IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
-                Dim result = _authenticator(clientSalt, serverChallenge)
-                If result Is Nothing Then Throw New InvalidStateException("Invalid authenticator specified.")
-                Return result
+                Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 20)
+                Return _proof.ToArray
             End Get
         End Property
 
@@ -110,8 +118,12 @@
 
         '''<summary>Extracts the product credentials from a wc3 cd key.</summary>
         <Extension()> <Pure()>
-        Public Function ToWC3CDKeyCredentials(ByVal key As String) As ProductCredentials
+        Public Function ToWC3CDKeyCredentials(ByVal key As String,
+                                              ByVal clientSalt As IEnumerable(Of Byte),
+                                              ByVal serverChallenge As IEnumerable(Of Byte)) As ProductCredentials
             Contract.Requires(key IsNot Nothing)
+            Contract.Requires(clientSalt IsNot Nothing)
+            Contract.Requires(serverChallenge IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ProductCredentials)() IsNot Nothing)
 
             'Map cd key characters into digits of a base 25 number
@@ -162,14 +174,8 @@
             Return New ProductCredentials(
                     product:=product,
                     publicKey:=publicKey,
-                    authenticator:=Function(clientSalt, serverChallenge)
-                                       Return {clientSalt,
-                                               serverChallenge,
-                                               CUInt(product).Bytes,
-                                               publicKey.Bytes,
-                                               privateKey
-                                              }.Fold.SHA1
-                                   End Function)
+                    length:=NumDigitsBase25,
+                    proof:={clientSalt, serverChallenge, CUInt(product).Bytes, publicKey.Bytes, privateKey}.Fold.SHA1)
         End Function
     End Module
 End Namespace

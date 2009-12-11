@@ -230,9 +230,8 @@
 #End Region
 
 #Region "Players"
-        Private Sub SetPlayerVoteToStart(ByVal name As String, ByVal val As Boolean)
-            Contract.Requires(name IsNot Nothing)
-            If Not settings.isAutoStarted Then Throw New InvalidOperationException("Game is not set to start automatically.")
+        Private Sub SetPlayerVoteToStart(ByVal name As InvariantString, ByVal val As Boolean)
+            If Not settings.IsAutoStarted Then Throw New InvalidOperationException("Game is not set to start automatically.")
             Dim p = TryFindPlayer(name)
             If p Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
             p.hasVotedToStart = val
@@ -244,16 +243,14 @@
                 TryStartCountdown()
             End If
         End Sub
-        Public Function QueueSetPlayerVoteToStart(ByVal name As String,
+        Public Function QueueSetPlayerVoteToStart(ByVal name As InvariantString,
                                                   ByVal wantsToStart As Boolean) As IFuture
-            Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
         End Function
 
-        Private Function AddFakePlayer(ByVal name As String,
+        Private Function AddFakePlayer(ByVal name As InvariantString,
                                        Optional ByVal newSlot As Slot = Nothing) As Player
-            Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             If state > GameState.AcceptingPlayers Then

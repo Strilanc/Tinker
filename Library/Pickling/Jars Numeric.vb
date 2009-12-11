@@ -2,7 +2,7 @@
     Public Class FloatSingleJar
         Inherits Jar(Of Single)
 
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
         End Sub
 
@@ -32,10 +32,9 @@
         Inherits Jar(Of UInt64)
         Private ReadOnly byteOrder As ByteOrder
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Me.byteOrder = byteOrder
         End Sub
 
@@ -60,10 +59,9 @@
         Inherits Jar(Of UInt32)
         Private ReadOnly byteOrder As ByteOrder
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Me.byteOrder = byteOrder
         End Sub
 
@@ -88,10 +86,9 @@
         Inherits Jar(Of UInt16)
         Private ReadOnly byteOrder As ByteOrder
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Me.byteOrder = byteOrder
         End Sub
 
@@ -114,9 +111,8 @@
     Public Class ByteJar
         Inherits Jar(Of Byte)
 
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As Byte)(ByVal value As TValue) As IPickle(Of TValue)
@@ -146,12 +142,11 @@
             Contract.Invariant(byteCount <= 8)
         End Sub
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal byteCount As Integer,
                        Optional ByVal info As String = "No Info",
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(info IsNot Nothing)
             Contract.Requires(byteCount > 0)
             Contract.Requires(byteCount <= 8)

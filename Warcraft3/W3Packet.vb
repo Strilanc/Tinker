@@ -882,7 +882,7 @@ Namespace WC3
 #End Region
 
 #Region "Packing: Client Packets"
-        Public Shared Function MakeKnock(ByVal name As String,
+        Public Shared Function MakeKnock(ByVal name As InvariantString,
                                          ByVal listenPort As UShort,
                                          ByVal sendingPort As UShort,
                                          Optional ByVal gameId As UInt32 = 0,
@@ -961,7 +961,7 @@ Namespace WC3
     Public NotInheritable Class SlotJar
         Inherits TupleJar
 
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.New(name,
                     New ByteJar("player index").Weaken,
                     New ByteJar("dl percent").Weaken,

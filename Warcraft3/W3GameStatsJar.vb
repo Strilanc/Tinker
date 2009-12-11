@@ -36,9 +36,8 @@
                     New StringJar("unknown2").Weaken,
                     New ArrayJar("sha1 checksum", expectedSize:=20).Weaken)
 
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
         End Sub
 
         Public Overrides Function Pack(Of TValue As GameStats)(ByVal value As TValue) As IPickle(Of TValue)

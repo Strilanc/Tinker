@@ -5,26 +5,24 @@
     <ContractClass(GetType(Command(Of ).ContractClass))>
     Public MustInherit Class Command(Of TTarget)
         Private ReadOnly _name As InvariantString
-        Private ReadOnly _format As String
+        Private ReadOnly _format As InvariantString
         Private ReadOnly _description As String
         Private ReadOnly _permissions As Dictionary(Of InvariantString, UInteger)
         Private ReadOnly _extraHelp As Dictionary(Of InvariantString, String)
         Private ReadOnly _hasPrivateArguments As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_format IsNot Nothing)
             Contract.Invariant(_description IsNot Nothing)
             Contract.Invariant(_permissions IsNot Nothing)
             Contract.Invariant(_extraHelp IsNot Nothing)
         End Sub
 
         Protected Sub New(ByVal name As InvariantString,
-                          ByVal format As String,
+                          ByVal format As InvariantString,
                           ByVal description As String,
                           Optional ByVal permissions As String = Nothing,
                           Optional ByVal extraHelp As String = Nothing,
                           Optional ByVal hasPrivateArguments As Boolean = False)
-            Contract.Requires(format IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
             If name.Value.Contains(" "c) Then Throw New ArgumentException("Command names can't contain spaces.")
 
@@ -53,9 +51,8 @@
                 Return _description
             End Get
         End Property
-        Public ReadOnly Property Format As String
+        Public ReadOnly Property Format As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _format
             End Get
         End Property

@@ -6,12 +6,11 @@ Namespace Pickling.Jars
         Private ReadOnly sizePrefixSize As Integer
         Private ReadOnly takeRest As Boolean
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        Optional ByVal expectedSize As Integer = 0,
                        Optional ByVal sizePrefixSize As Integer = 0,
                        Optional ByVal takeRest As Boolean = False)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             If expectedSize < 0 Then Throw New ArgumentOutOfRangeException("expectedSize")
             If takeRest Then
                 If expectedSize <> 0 Or sizePrefixSize > 0 Then
@@ -100,14 +99,13 @@ Namespace Pickling.Jars
         Private ReadOnly expectedSize As Integer
         Private ReadOnly reversed As Boolean
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        Optional ByVal nullTerminated As Boolean = True,
                        Optional ByVal reversed As Boolean = False,
                        Optional ByVal expectedSize As Integer = 0,
                        Optional ByVal maximumContentSize As Integer = 0,
                        Optional ByVal info As String = "No Info")
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(info IsNot Nothing)
             Contract.Requires(maximumContentSize >= 0)
             If expectedSize < 0 Then Throw New ArgumentOutOfRangeException("expectedSize")
@@ -210,14 +208,12 @@ Namespace Pickling.Jars
             Contract.Invariant(subJars IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Me.subJars = New IPackJar(Of Object)() {}
         End Sub
-        Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IPackJar(Of Object))
+        Public Sub New(ByVal name As InvariantString, ByVal ParamArray subJars() As IPackJar(Of Object))
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJars IsNot Nothing)
             Me.subJars = subJars
         End Sub
@@ -249,9 +245,8 @@ Namespace Pickling.Jars
             Contract.Invariant(subJars IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IParseJar(Of Object))
+        Public Sub New(ByVal name As InvariantString, ByVal ParamArray subJars() As IParseJar(Of Object))
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJars IsNot Nothing)
             Me.subJars = subJars
         End Sub
@@ -296,9 +291,8 @@ Namespace Pickling.Jars
             Contract.Invariant(subJars IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String, ByVal ParamArray subJars() As IJar(Of Object))
+        Public Sub New(ByVal name As InvariantString, ByVal ParamArray subJars() As IJar(Of Object))
             MyBase.New(New TuplePackJar(name, subJars), New TupleParseJar(name, subJars))
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJars IsNot Nothing)
             Me.subJars = subJars
         End Sub
@@ -355,11 +349,10 @@ Namespace Pickling.Jars
             Contract.Invariant(subJar IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal subJar As IParseJar(Of T),
                        Optional ByVal numSizePrefixBytes As Integer = 1)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJar IsNot Nothing)
             Contract.Requires(numSizePrefixBytes > 0)
             Contract.Requires(numSizePrefixBytes <= 8)
@@ -401,11 +394,10 @@ Namespace Pickling.Jars
             Contract.Invariant(subJar IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal subJar As IPackJar(Of T),
                        Optional ByVal prefixSize As Integer = 1)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
             Me.subJar = subJar
@@ -421,11 +413,10 @@ Namespace Pickling.Jars
     End Class
     Public NotInheritable Class ListJar(Of T)
         Inherits FusionJar(Of List(Of T))
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal subJar As IJar(Of T),
                        Optional ByVal prefixSize As Integer = 1)
             MyBase.New(New ListPackJar(Of T)(name, subJar, prefixSize), New ListParseJar(Of T)(name, subJar, prefixSize))
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
             Contract.Requires(prefixSize <= 8)
@@ -436,10 +427,9 @@ Namespace Pickling.Jars
         Inherits ParseJar(Of List(Of T))
         Private ReadOnly subJar As IParseJar(Of T)
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal subJar As IParseJar(Of T))
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJar IsNot Nothing)
             Me.subJar = subJar
         End Sub
@@ -470,10 +460,9 @@ Namespace Pickling.Jars
         Inherits PackJar(Of List(Of T))
         Private ReadOnly subJar As IPackJar(Of T)
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal subJar As IPackJar(Of T))
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJar IsNot Nothing)
             Me.subJar = subJar
         End Sub
@@ -486,10 +475,9 @@ Namespace Pickling.Jars
     End Class
     Public NotInheritable Class RepeatingJar(Of T)
         Inherits FusionJar(Of List(Of T))
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal subJar As IJar(Of T))
             MyBase.New(New RepeatingPackJar(Of T)(name, subJar), New RepeatingParseJar(Of T)(name, subJar))
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(subJar IsNot Nothing)
         End Sub
     End Class
@@ -508,11 +496,10 @@ Namespace Pickling.Jars
             Contract.Invariant(dataIndexExtractor IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal valueIndexExtractor As Func(Of T, Byte),
                        ByVal dataIndexExtractor As Func(Of ViewableList(Of Byte), Byte))
             MyBase.new(name)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(valueIndexExtractor IsNot Nothing)
             Contract.Requires(dataIndexExtractor IsNot Nothing)
             Me.valueIndexExtractor = valueIndexExtractor
@@ -567,7 +554,7 @@ Namespace Pickling.Jars
             Contract.Invariant(parsers IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.new(name)
         End Sub
 
@@ -666,9 +653,8 @@ Namespace Pickling.Jars
     End Class
     Public NotInheritable Class EmptyJar
         Inherits Jar(Of Object)
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
         End Sub
         Public Overrides Function Pack(Of TValue As Object)(ByVal value As TValue) As IPickle(Of TValue)
             Return New Pickle(Of TValue)(Me.Name, Nothing, New Byte() {}.ToView(), Function() "[Field Skipped]")

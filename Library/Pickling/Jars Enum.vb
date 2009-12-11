@@ -3,9 +3,8 @@
         Inherits Jar(Of T)
         Private ReadOnly isFlagEnum As Boolean
 
-        Public Sub New(ByVal name As String)
+        Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Me.isFlagEnum = GetType(T).GetCustomAttributes(GetType(FlagsAttribute), inherit:=False).Any
         End Sub
 
@@ -30,10 +29,9 @@
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly isFlagEnum As Boolean
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Me.byteOrder = byteOrder
             Me.isFlagEnum = GetType(T).GetCustomAttributes(GetType(FlagsAttribute), inherit:=False).Any
         End Sub
@@ -59,10 +57,9 @@
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly isFlagEnum As Boolean
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
             MyBase.New(name)
-            Contract.Requires(name IsNot Nothing)
             Me.byteOrder = byteOrder
             Me.isFlagEnum = GetType(T).GetCustomAttributes(GetType(FlagsAttribute), inherit:=False).Any
         End Sub

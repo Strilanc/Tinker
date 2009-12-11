@@ -233,7 +233,7 @@ Namespace WC3
             Return inQueue.QueueAction(AddressOf ClearGames)
         End Function
 
-        Public Shared Function CreateLanAdmin(ByVal name As String,
+        Public Shared Function CreateLanAdmin(ByVal name As InvariantString,
                                               ByVal password As String,
                                               Optional ByVal remoteHost As String = "localhost",
                                               Optional ByVal listenPort As UShort = 0) As WC3.LanAdvertiser

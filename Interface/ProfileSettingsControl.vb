@@ -65,7 +65,7 @@
             Return
         End If
         Try
-            Dim key = Bnet.ToWC3CDKeyCredentials(txtRocKey.Text)
+            Dim key = Bnet.ToWC3CDKeyCredentials(txtRocKey.Text, {}, {})
             If key.Product <> Bnet.ProductType.Warcraft3ROC Then
                 lblROCKeyError.Text = "Not a ROC Key"
             End If
@@ -84,7 +84,7 @@
             Return
         End If
         Try
-            Dim key = Bnet.ToWC3CDKeyCredentials(txtTftKey.Text)
+            Dim key = Bnet.ToWC3CDKeyCredentials(txtTftKey.Text, {}, {})
             If key.Product <> Bnet.ProductType.Warcraft3TFT Then
                 lblTFTKeyError.Text = "Not a TFT Key"
             End If

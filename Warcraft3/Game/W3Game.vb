@@ -515,9 +515,8 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CommandProcessText(bot, player, argument)).Defuturized
         End Function
-        Public Function QueueTryElevatePlayer(ByVal name As String,
+        Public Function QueueTryElevatePlayer(ByVal name As InvariantString,
                                               Optional ByVal password As String = Nothing) As IFuture
-            Contract.Requires(name IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() ElevatePlayer(name, password))
         End Function

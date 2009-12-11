@@ -10,16 +10,14 @@
             Contract.Invariant(processFunction IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
-                       ByVal format As String,
+        Public Sub New(ByVal name As InvariantString,
+                       ByVal format As InvariantString,
                        ByVal description As String,
                        ByVal func As Func(Of T, BotUser, String, IFuture(Of String)),
                        Optional ByVal permissions As String = Nothing,
                        Optional ByVal extraHelp As String = Nothing,
                        Optional ByVal hasPrivateArguments As Boolean = False)
             MyBase.New(name, format, description, permissions, extraHelp, hasPrivateArguments)
-            Contract.Requires(name IsNot Nothing)
-            Contract.Requires(format IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
             Contract.Requires(func IsNot Nothing)
             Me.processFunction = func
@@ -43,7 +41,7 @@
             Contract.Invariant(processFunction IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal headType As String,
                        ByVal description As String,
                        ByVal func As Func(Of T, BotUser, String, String, IFuture(Of String)),
@@ -51,7 +49,6 @@
                        Optional ByVal extraHelp As String = Nothing,
                        Optional ByVal hasPrivateArguments As Boolean = False)
             MyBase.New(name, headType, description, permissions, extraHelp, hasPrivateArguments)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(headType IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
             Contract.Requires(func IsNot Nothing)
@@ -76,16 +73,14 @@
             Contract.Invariant(processFunction IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As String,
-                       ByVal template As String,
+        Public Sub New(ByVal name As InvariantString,
+                       ByVal template As InvariantString,
                        ByVal description As String,
                        ByVal func As Func(Of T, BotUser, CommandArgument, IFuture(Of String)),
                        Optional ByVal permissions As String = Nothing,
                        Optional ByVal extraHelp As String = Nothing,
                        Optional ByVal hasPrivateArguments As Boolean = False)
             MyBase.New(name, template, description, permissions, extraHelp, hasPrivateArguments)
-            Contract.Requires(name IsNot Nothing)
-            Contract.Requires(template IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
             Contract.Requires(func IsNot Nothing)
             Me.processFunction = func

@@ -17,9 +17,8 @@ Namespace Commands
         ''' <summary>
         ''' Constructs a command template using a format string.
         ''' </summary>
-        Public Sub New(ByVal format As String)
+        Public Sub New(ByVal format As InvariantString)
             Me.New(New CommandArgument(format))
-            Contract.Requires(format IsNot Nothing)
         End Sub
         ''' <summary>
         ''' Constructs a command template using a representative command argument.

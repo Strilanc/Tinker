@@ -24,20 +24,18 @@
             Me._description = description
         End Sub
 
-        Public Sub New(ByVal jarName As String,
+        Public Sub New(ByVal jarName As InvariantString,
                        ByVal value As T,
                        ByVal data As ViewableList(Of Byte))
             Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, value)))
-            Contract.Requires(jarName IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
         End Sub
-        Public Sub New(ByVal jarName As String,
+        Public Sub New(ByVal jarName As InvariantString,
                        ByVal value As T,
                        ByVal data As ViewableList(Of Byte),
                        ByVal valueDescription As Func(Of String))
             Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, valueDescription())))
-            Contract.Requires(jarName IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(valueDescription IsNot Nothing)
@@ -80,12 +78,11 @@
             Contract.Invariant(_name IsNot Nothing)
         End Sub
 
-        Protected Sub New(ByVal name As String)
-            Contract.Requires(name IsNot Nothing)
+        Protected Sub New(ByVal name As InvariantString)
             Me._name = name
         End Sub
 
-        Public ReadOnly Property Name As String Implements IJarInfo.Name
+        Public ReadOnly Property Name As InvariantString Implements IJarInfo.Name
             Get
                 Return _name
             End Get
@@ -95,17 +92,13 @@
     End Class
     Public MustInherit Class ParseJar(Of T)
         Implements IParseJar(Of T)
-        Private ReadOnly _name As String
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_name IsNot Nothing)
-        End Sub
+        Private ReadOnly _name As InvariantString
 
-        Protected Sub New(ByVal name As String)
-            Contract.Requires(name IsNot Nothing)
+        Protected Sub New(ByVal name As InvariantString)
             Me._name = name
         End Sub
 
-        Public ReadOnly Property Name As String Implements IJarInfo.Name
+        Public ReadOnly Property Name As InvariantString Implements IJarInfo.Name
             Get
                 Return _name
             End Get
@@ -115,17 +108,13 @@
     End Class
     Public MustInherit Class Jar(Of T)
         Implements IJar(Of T)
-        Private ReadOnly _name As String
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_name IsNot Nothing)
-        End Sub
+        Private ReadOnly _name As InvariantString
 
-        Protected Sub New(ByVal name As String)
-            Contract.Requires(name IsNot Nothing)
+        Protected Sub New(ByVal name As InvariantString)
             Me._name = name
         End Sub
 
-        Public ReadOnly Property Name As String Implements IJarInfo.Name
+        Public ReadOnly Property Name As InvariantString Implements IJarInfo.Name
             Get
                 Return _name
             End Get

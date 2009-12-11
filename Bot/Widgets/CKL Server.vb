@@ -1,19 +1,19 @@
 ﻿Imports System.Net.Sockets
+Imports Tinker.Bnet
 
 Namespace CKL
     '''<summary>Provides answers to bnet cd key authentication challenges, allowing clients to login to bnet once with the server's keys.</summary>
-    Public Class CKLServer
+    Public NotInheritable Class CKLServer
+        Private Shared ReadOnly jar As New Bnet.Packet.ProductCredentialsJar("ckl")
         Public Const PacketPrefixValue As Byte = 1
 
         Public ReadOnly name As InvariantString
-        Protected WithEvents Accepter As New ConnectionAccepter()
-        Protected ReadOnly logger As New Logger()
-        Protected ReadOnly keys As New List(Of CKLKey)
-        Protected ReadOnly ref As ICallQueue = New TaskedCallQueue
+        Private WithEvents Accepter As New ConnectionAccepter()
+        Private ReadOnly logger As New Logger()
+        Private ReadOnly keys As New AsyncViewableCollection(Of CKLKeyEntry)
+        Private ReadOnly ref As ICallQueue = New TaskedCallQueue
         Private keyIndex As Integer
         Private ReadOnly portHandle As PortPool.PortHandle
-        Public Event KeyAdded(ByVal sender As CKLServer, ByVal key As CKLKey)
-        Public Event KeyRemoved(ByVal sender As CKLServer, ByVal key As CKLKey)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(Accepter IsNot Nothing)
@@ -44,9 +44,10 @@ Namespace CKL
                     If (From k In keys Where k.Name = keyName).Any Then
                         Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(keyName))
                     End If
-                    Dim key = New CKLKey(keyName, cdKeyROC, cdKeyTFT)
+                    If cdKeyROC.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Not a ROC cd key.", "cdKeyROC")
+                    If cdKeyTFT.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("Not a TFT cd key.", "cdKeyTFT")
+                    Dim key = New CKLKeyEntry(keyName, cdKeyROC, cdKeyTFT)
                     keys.Add(key)
-                    RaiseEvent KeyAdded(Me, key)
                 End Sub
             )
         End Function
@@ -57,7 +58,6 @@ Namespace CKL
                     Dim key = (From k In keys Where k.Name = keyName).FirstOrDefault
                     If key Is Nothing Then Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(keyName))
                     keys.Remove(key)
-                    RaiseEvent KeyRemoved(Me, key)
                 End Sub
             )
         End Function
@@ -95,8 +95,11 @@ Namespace CKL
                                         errorMessage = "Invalid length. Require client token [4] + server token [4]."
                                     Else
                                         If keyIndex >= keys.Count Then keyIndex = 0
-                                        responseData = keys(keyIndex).Pack(clientToken:=data.SubView(0, 4).ToUInt32,
-                                                                           serverToken:=data.SubView(4, 4).ToUInt32).ToArray
+                                        Dim credentials = keys(keyIndex).GenerateCredentials(clientToken:=data.SubView(0, 4).ToUInt32,
+                                                                                             serverToken:=data.SubView(4, 4).ToUInt32)
+                                        responseData = {jar.Pack(credentials.AuthenticationROC).Data,
+                                                        jar.Pack(credentials.AuthenticationTFT).Data
+                                                       }.Fold.ToArray
                                         logger.Log("Provided key '{0}' to {1}".Frmt(keys(keyIndex).Name, socket.Name), LogMessageType.Positive)
                                         keyIndex += 1
                                     End If
@@ -117,7 +120,7 @@ Namespace CKL
             )
         End Sub
 
-        Public Overridable Sub [Stop]()
+        Public Sub [Stop]()
             Accepter.CloseAllPorts()
             If portHandle IsNot Nothing Then portHandle.Dispose()
         End Sub

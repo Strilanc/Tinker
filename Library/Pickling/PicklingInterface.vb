@@ -59,20 +59,8 @@
         End Property
     End Class
 
-    <ContractClass(GetType(IJarInfo.ContractClass))>
     Public Interface IJarInfo
-        ReadOnly Property Name As String
-
-        <ContractClassFor(GetType(IJarInfo))>
-        Class ContractClass
-            Implements IJarInfo
-            Public ReadOnly Property Name As String Implements IJarInfo.Name
-                Get
-                    Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                    Throw New NotSupportedException()
-                End Get
-            End Property
-        End Class
+        ReadOnly Property Name As InvariantString
     End Interface
 
     <ContractClass(GetType(ContractClassIPackJar(Of )))>
@@ -83,7 +71,7 @@
     <ContractClassFor(GetType(IPackJar(Of )))>
     Public NotInheritable Class ContractClassIPackJar(Of T)
         Implements IPackJar(Of T)
-        Public ReadOnly Property Name As String Implements IJarInfo.Name
+        Public ReadOnly Property Name As InvariantString Implements IJarInfo.Name
             Get
                 Throw New NotSupportedException()
             End Get
@@ -103,7 +91,7 @@
     <ContractClassFor(GetType(IParseJar(Of )))>
     Public NotInheritable Class ContractClassIParseJar(Of T)
         Implements IParseJar(Of T)
-        Public ReadOnly Property Name As String Implements IJarInfo.Name
+        Public ReadOnly Property Name As InvariantString Implements IJarInfo.Name
             Get
                 Throw New NotSupportedException()
             End Get

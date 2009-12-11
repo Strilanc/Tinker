@@ -617,19 +617,22 @@ Namespace Bnet
             End Using
 
             'Pack or borrow CD Keys
-            Dim futureKeys As IFuture(Of CKL.CKLEncodedKey)
+            Dim futureKeys As IFuture(Of CKL.WC3CredentialPair)
             If profile.CKLServerAddress Like "*:#*" Then
                 Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
                 Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1), CultureInfo.InvariantCulture)
-                futureKeys = CKL.CKLClient.AsyncBorrowKeys(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
+                futureKeys = CKL.CKLClient.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
                 futureKeys.CallOnSuccess(
                     Sub() logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
                 ).Catch(
                     Sub(exception) Disconnect(expected:=False, reason:="Error borrowing keys: {0}".Frmt(exception.Message))
                 )
             Else
-                futureKeys = New CKL.CKLEncodedKey(cdKeyROC:=Packet.CDKeyJar.PackCDKey(profile.cdKeyROC, clientCdKeySalt, serverCdKeySalt),
-                                                   cdkeytft:=Packet.CDKeyJar.PackCDKey(profile.cdKeyTFT, clientCdKeySalt, serverCdKeySalt)).Futurized
+                Dim roc = profile.cdKeyROC.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
+                Dim tft = profile.cdKeyTFT.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
+                If roc.Product <> ProductType.Warcraft3ROC Then Throw New IO.InvalidDataException("Invalid ROC cd key.")
+                If tft.Product <> ProductType.Warcraft3TFT Then Throw New IO.InvalidDataException("Invalid TFT cd key.")
+                futureKeys = New CKL.WC3CredentialPair(roc, tft).Futurized
             End If
 
             'Respond and begin BNLS connection
@@ -646,9 +649,8 @@ Namespace Bnet
                                     serverCDKeySalt:=serverCdKeySalt,
                                     cdKeyOwner:=My.Settings.cdKeyOwner,
                                     exeInformation:="war3.exe {0} {1}".Frmt(GetWC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss"), GetWC3FileSize),
-                                    packedROCKey:=keys.CDKeyROC,
-                                    packedTFTKey:=keys.CDKeyTFT))
-                    BeginConnectBnlsServer(seed:=CType(keys.CDKeyROC("hash"), Byte()).SubArray(0, 4).ToUInt32)
+                                    productAuthentication:=keys))
+                    BeginConnectBnlsServer(seed:=keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32)
                 End Sub
             ).Catch(
                 Sub(exception)

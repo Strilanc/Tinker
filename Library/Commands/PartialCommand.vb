@@ -6,7 +6,7 @@
     Public MustInherit Class PartialCommand(Of TTarget)
         Inherits Command(Of TTarget)
 
-        Protected Sub New(ByVal name As String,
+        Protected Sub New(ByVal name As InvariantString,
                           ByVal headType As String,
                           ByVal description As String,
                           Optional ByVal permissions As String = Nothing,
@@ -15,10 +15,9 @@
             MyBase.New(name:=name,
                        Format:="{0} ...".Frmt(headType),
                        description:=description,
-                       Permissions:=Permissions,
+                       permissions:=permissions,
                        extraHelp:=extraHelp,
                        hasPrivateArguments:=hasPrivateArguments)
-            Contract.Requires(name IsNot Nothing)
             Contract.Requires(headType IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
         End Sub

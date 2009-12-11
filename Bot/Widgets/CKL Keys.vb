@@ -1,4 +1,5 @@
 ﻿Imports Tinker.Commands
+Imports Tinker.Bnet
 
 Namespace CKL
     Public Enum CKLPacketId As Byte
@@ -6,20 +7,24 @@ Namespace CKL
         Keys = 1
     End Enum
 
-    Public NotInheritable Class CKLKey
-        Private Shared ReadOnly cdKeyJar As New Bnet.Packet.CDKeyJar("cdkey data")
+    Public NotInheritable Class CKLKeyEntry
         Private ReadOnly _name As InvariantString
-        Private ReadOnly _cdKeyROC As InvariantString
-        Private ReadOnly _cdKeyTFT As InvariantString
+        Private ReadOnly _keyROC As String
+        Private ReadOnly _keyTFT As String
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_keyROC IsNot Nothing)
+            Contract.Invariant(_keyTFT IsNot Nothing)
+        End Sub
 
         Public Sub New(ByVal name As InvariantString,
-                       ByVal cdKeyROC As String,
-                       ByVal cdKeyTFT As String)
-            Contract.Requires(cdKeyROC IsNot Nothing)
-            Contract.Requires(cdKeyTFT IsNot Nothing)
+                       ByVal keyROC As String,
+                       ByVal keyTFT As String)
+            Contract.Requires(keyROC IsNot Nothing)
+            Contract.Requires(keyTFT IsNot Nothing)
             Me._name = name
-            Me._cdKeyROC = cdKeyROC
-            Me._cdKeyTFT = cdKeyTFT
+            Me._keyROC = keyROC
+            Me._keyTFT = keyTFT
         End Sub
 
         Public ReadOnly Property Name As InvariantString
@@ -27,32 +32,60 @@ Namespace CKL
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property CDKeyROC As InvariantString
+        Public ReadOnly Property KeyROC As String
             Get
-                Return _cdKeyROC
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _keyROC
             End Get
         End Property
-        Public ReadOnly Property CDKeyTFT As InvariantString
+        Public ReadOnly Property KeyTFT As String
             Get
-                Return _cdKeyTFT
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Return _keyTFT
             End Get
         End Property
 
-        Public Function Pack(ByVal clientToken As UInt32,
-                             ByVal serverToken As UInt32) As ViewableList(Of Byte)
-            Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-            Return Concat(From key In {CDKeyROC, CDKeyTFT}
-                          Select vals = Bnet.Packet.CDKeyJar.PackCDKey(key, clientToken, serverToken)
-                          Select cdKeyJar.Pack(vals).Data.ToArray).ToView
+        <Pure()>
+        Public Function GenerateCredentials(ByVal clientToken As UInt32,
+                                            ByVal serverToken As UInt32) As WC3CredentialPair
+            Contract.Ensures(Contract.Result(Of WC3CredentialPair)() IsNot Nothing)
+            Return New WC3CredentialPair(authenticationROC:=_keyROC.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes),
+                                             authenticationTFT:=_keyTFT.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes))
         End Function
     End Class
-    Public NotInheritable Class CKLEncodedKey
-        Public ReadOnly CDKeyROC As Dictionary(Of InvariantString, Object)
-        Public ReadOnly CDKeyTFT As Dictionary(Of InvariantString, Object)
-        Public Sub New(ByVal cdKeyROC As Dictionary(Of InvariantString, Object),
-                       ByVal cdKeyTFT As Dictionary(Of InvariantString, Object))
-            Me.CDKeyROC = cdKeyROC
-            Me.CDKeyTFT = cdKeyTFT
+
+    Public NotInheritable Class WC3CredentialPair
+        Private ReadOnly _authenticationROC As Bnet.ProductCredentials
+        Private ReadOnly _authenticationTFT As Bnet.ProductCredentials
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_authenticationROC IsNot Nothing)
+            Contract.Invariant(_authenticationTFT IsNot Nothing)
+            Contract.Invariant(_authenticationROC.Product = Bnet.ProductType.Warcraft3ROC)
+            Contract.Invariant(_authenticationTFT.Product = Bnet.ProductType.Warcraft3TFT)
         End Sub
+
+        Public Sub New(ByVal authenticationROC As Bnet.ProductCredentials,
+                       ByVal authenticationTFT As Bnet.ProductCredentials)
+            Contract.Requires(authenticationROC IsNot Nothing)
+            Contract.Requires(authenticationTFT IsNot Nothing)
+            Contract.Requires(authenticationROC.Product = Bnet.ProductType.Warcraft3ROC)
+            Contract.Requires(authenticationTFT.Product = Bnet.ProductType.Warcraft3TFT)
+            Me._authenticationROC = authenticationROC
+            Me._authenticationTFT = authenticationTFT
+        End Sub
+
+        Public ReadOnly Property AuthenticationROC As Bnet.ProductCredentials
+            Get
+                Contract.Ensures(Contract.Result(Of Bnet.ProductCredentials)() IsNot Nothing)
+                Return _authenticationROC
+            End Get
+        End Property
+        Public ReadOnly Property AuthenticationTFT As Bnet.ProductCredentials
+            Get
+                Contract.Ensures(Contract.Result(Of Bnet.ProductCredentials)() IsNot Nothing)
+                Return _authenticationTFT
+            End Get
+        End Property
     End Class
 End Namespace

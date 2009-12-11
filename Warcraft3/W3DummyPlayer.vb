@@ -29,14 +29,14 @@ Namespace WC3
             Contract.Invariant(otherPlayers IsNot Nothing)
         End Sub
 #Region "Life"
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        ByVal poolPort As PortPool.PortHandle,
                        Optional ByVal logger As Logger = Nothing,
                        Optional ByVal mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
             Me.New(name, poolPort.Port, logger, mode)
             Me.poolPort = poolPort
         End Sub
-        Public Sub New(ByVal name As String,
+        Public Sub New(ByVal name As InvariantString,
                        Optional ByVal listenPort As UShort = 0,
                        Optional ByVal logger As Logger = Nothing,
                        Optional ByVal mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)

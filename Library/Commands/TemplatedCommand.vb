@@ -12,15 +12,13 @@
             Contract.Invariant(_template IsNot Nothing)
         End Sub
 
-        Protected Sub New(ByVal name As String,
-                          ByVal template As String,
+        Protected Sub New(ByVal name As InvariantString,
+                          ByVal template As InvariantString,
                           ByVal description As String,
                           Optional ByVal permissions As String = Nothing,
                           Optional ByVal extraHelp As String = Nothing,
                           Optional ByVal hasPrivateArguments As Boolean = False)
             MyBase.New(name, template, description, permissions, extraHelp, hasPrivateArguments)
-            Contract.Requires(name IsNot Nothing)
-            Contract.Requires(template IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
             Me._template = New CommandTemplate(template)
         End Sub

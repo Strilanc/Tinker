@@ -101,9 +101,8 @@ End Module
 Public Class NetIPAddressJar
     Inherits Jar(Of Net.IPAddress)
 
-    Public Sub New(ByVal name As String)
+    Public Sub New(ByVal name As InvariantString)
         MyBase.New(name)
-        Contract.Requires(name IsNot Nothing)
     End Sub
 
     Public Overrides Function Pack(Of TValue As System.Net.IPAddress)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
@@ -127,9 +126,8 @@ Public Class NetIPEndPointJar
         Contract.Invariant(_dataJar IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal name As String)
+    Public Sub New(ByVal name As InvariantString)
         MyBase.New(name)
-        Contract.Requires(name IsNot Nothing)
         Me._dataJar = New TupleJar(name,
                 New UInt16Jar("protocol").Weaken,
                 New UInt16Jar("port", ByteOrder:=ByteOrder.BigEndian).Weaken,

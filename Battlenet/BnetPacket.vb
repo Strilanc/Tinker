@@ -423,8 +423,8 @@ Namespace Bnet
                     New UInt32Jar("revision check response").Weaken,
                     New UInt32Jar("# cd keys").Weaken,
                     New ValueJar("spawn [unused]", byteCount:=4, info:="0=false, 1=true").Weaken,
-                    New CDKeyJar("ROC cd key").Weaken,
-                    New CDKeyJar("TFT cd key").Weaken,
+                    New ProductCredentialsJar("ROC cd key").Weaken,
+                    New ProductCredentialsJar("TFT cd key").Weaken,
                     New StringJar("exe info").Weaken,
                     New StringJar("owner").Weaken)
             Public Shared ReadOnly AccountLogOnBegin As New DefJar(PacketId.AccountLogOnBegin,
@@ -503,13 +503,11 @@ Namespace Bnet
                                                         ByVal serverCDKeySalt As UInt32,
                                                         ByVal cdKeyOwner As String,
                                                         ByVal exeInformation As String,
-                                                        ByVal packedROCKey As Dictionary(Of InvariantString, Object),
-                                                        ByVal packedTFTKey As Dictionary(Of InvariantString, Object)) As Packet
+                                                        ByVal productAuthentication As CKL.WC3CredentialPair) As Packet
             Contract.Requires(version IsNot Nothing)
             Contract.Requires(cdKeyOwner IsNot Nothing)
             Contract.Requires(exeInformation IsNot Nothing)
-            Contract.Requires(packedROCKey IsNot Nothing)
-            Contract.Requires(packedTFTKey IsNot Nothing)
+            Contract.Requires(productAuthentication IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
 
             Return New Packet(ClientPackets.AuthenticationFinish, New Dictionary(Of InvariantString, Object) From {
@@ -518,8 +516,8 @@ Namespace Bnet
                     {"revision check response", revisionCheckResponse},
                     {"# cd keys", 2},
                     {"spawn [unused]", 0},
-                    {"ROC cd key", packedROCKey},
-                    {"TFT cd key", packedTFTKey},
+                    {"ROC cd key", productAuthentication.AuthenticationROC},
+                    {"TFT cd key", productAuthentication.AuthenticationTFT},
                     {"exe info", exeInformation},
                     {"owner", cdKeyOwner}
                 })
@@ -638,11 +636,10 @@ Namespace Bnet
                 Contract.Invariant(numDigits > 0)
             End Sub
 
-            Public Sub New(ByVal name As String,
+            Public Sub New(ByVal name As InvariantString,
                            ByVal numDigits As Integer,
                            Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
                 MyBase.New(name)
-                Contract.Requires(name IsNot Nothing)
                 Contract.Requires(numDigits > 0)
                 Contract.Requires(numDigits <= 16)
                 Me.numDigits = numDigits
@@ -682,7 +679,7 @@ Namespace Bnet
         Public NotInheritable Class FileTimeJar
             Inherits Jar(Of Date)
 
-            Public Sub New(ByVal name As String)
+            Public Sub New(ByVal name As InvariantString)
                 MyBase.New(name)
             End Sub
 
@@ -698,43 +695,46 @@ Namespace Bnet
                 Return New Pickle(Of Date)(Me.Name, value, datum)
             End Function
         End Class
-        Public NotInheritable Class CDKeyJar
-            Inherits Pickling.Jars.TupleJar
 
-            Public Sub New(ByVal name As String)
-                MyBase.New(name,
-                        New UInt32Jar("length").Weaken,
-                        New EnumUInt32Jar(Of ProductType)("product key").Weaken,
-                        New UInt32Jar("public key").Weaken,
-                        New UInt32Jar("unknown").Weaken,
-                        New ArrayJar("proof", 20).Weaken)
-                Contract.Requires(name IsNot Nothing)
+        Public NotInheritable Class ProductCredentialsJar
+            Inherits Jar(Of ProductCredentials)
+
+            Private ReadOnly _dataJar As TupleJar
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(_dataJar IsNot Nothing)
             End Sub
 
-            Public Shared Function PackCDKey(ByVal wc3Key As String,
-                                             ByVal clientToken As UInt32,
-                                             ByVal serverToken As UInt32) As Dictionary(Of InvariantString, Object)
-                Contract.Requires(wc3Key IsNot Nothing)
+            Public Sub New(ByVal name As InvariantString)
+                MyBase.New(name)
+                Me._dataJar = New TupleJar(name,
+                        New UInt32Jar("length").Weaken,
+                        New EnumUInt32Jar(Of ProductType)("product").Weaken,
+                        New UInt32Jar("public key").Weaken,
+                        New UInt32Jar("unknown").Weaken,
+                        New ArrayJar("proof", expectedSize:=20).Weaken)
+            End Sub
 
-                Dim credentials = wc3Key.ToWC3CDKeyCredentials()
-                Return New Dictionary(Of InvariantString, Object) From {
-                        {"length", CUInt(wc3Key.Length)},
-                        {"product key", credentials.Product},
-                        {"public key", credentials.PublicKey},
+            Public Overrides Function Pack(Of TValue As ProductCredentials)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+                Dim vals = New Dictionary(Of InvariantString, Object) From {
+                        {"length", value.Length},
+                        {"product", value.Product},
+                        {"public key", value.PublicKey},
                         {"unknown", 0},
-                        {"proof", credentials.AuthenticationProof(clientToken.Bytes, serverToken.Bytes)}}
+                        {"proof", value.AuthenticationProof}}
+                Dim pickle = _dataJar.Pack(vals)
+                Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
             End Function
 
-            Public Shared Function PackBorrowedCDKey(ByVal data() As Byte) As Dictionary(Of InvariantString, Object)
-                Contract.Requires(data IsNot Nothing)
-                Contract.Requires(data.Length = 36)
-
-                Return New Dictionary(Of InvariantString, Object) From {
-                        {"length", data.SubArray(0, 4).ToUInt32},
-                        {"product key", data.SubArray(4, 4).ToUInt32},
-                        {"public key", data.SubArray(8, 4).ToUInt32},
-                        {"unknown", data.SubArray(12, 4).ToUInt32},
-                        {"proof", data.SubArray(16, 20)}}
+            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of ProductCredentials)
+                Dim pickle = _dataJar.Parse(data)
+                Dim vals = pickle.Value
+                Dim value = New ProductCredentials(
+                        product:=CType(vals("product"), ProductType),
+                        publicKey:=CUInt(vals("public key")),
+                        length:=CUInt(vals("length")),
+                        proof:=CType(vals("proof"), Byte()).AssumeNotNull)
+                Return New Pickle(Of ProductCredentials)(value, pickle.Data, pickle.Description)
             End Function
         End Class
 #End Region

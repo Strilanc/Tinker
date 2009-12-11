@@ -70,7 +70,7 @@ Public Class LoggerControl
     End Sub
 
     Public Sub SetLogger(ByVal logger As Logger,
-                         ByVal name As String,
+                         ByVal name As InvariantString,
                          Optional ByVal dataEventsMode As CallbackMode = CallbackMode.Unspecified,
                          Optional ByVal parsedDataMode As CallbackMode = CallbackMode.Unspecified,
                          Optional ByVal rawDataMode As CallbackMode = CallbackMode.Unspecified)

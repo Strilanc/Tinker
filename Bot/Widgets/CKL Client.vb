@@ -1,14 +1,16 @@
 ﻿Namespace CKL
     '''<summary>Asynchronously connects to a CKLServer and requests a response to a cd key authentication challenge from bnet.</summary>
     Public NotInheritable Class CKLClient
+        Private Shared ReadOnly jar As New Bnet.Packet.ProductCredentialsJar("authentication")
+
         Private Sub New()
         End Sub
-        Public Shared Function AsyncBorrowKeys(ByVal remoteHost As String,
-                                               ByVal remotePort As UShort,
-                                               ByVal clientCDKeySalt As UInt32,
-                                               ByVal serverCDKeySalt As UInt32) As IFuture(Of CKLEncodedKey)
+        Public Shared Function AsyncBorrowCredentials(ByVal remoteHost As String,
+                                                      ByVal remotePort As UShort,
+                                                      ByVal clientCDKeySalt As UInt32,
+                                                      ByVal serverCDKeySalt As UInt32) As IFuture(Of WC3CredentialPair)
             Contract.Requires(remoteHost IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of CKLEncodedKey))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of WC3CredentialPair))() IsNot Nothing)
             Dim requestPacket = Concat({CKLServer.PacketPrefixValue, CKLPacketId.Keys, 0, 0},
                                        clientCDKeySalt.Bytes,
                                        serverCDKeySalt.Bytes)
@@ -31,7 +33,7 @@
 
             'Process response
             Dim futureKeys = futureReadPacket.Select(
-                Function(packetData) As CKLEncodedKey
+                Function(packetData)
                     futureSocket.Value.Disconnect(expected:=True, reason:="Received response")
 
                     'Read header
@@ -48,11 +50,13 @@
                         Case CKLPacketId.[Error]
                             Throw New IO.IOException("CKL server returned an error: {0}.".Frmt(System.Text.UTF8Encoding.UTF8.GetString(body.ToArray)))
                         Case CKLPacketId.Keys
-                            Dim keyLength = body.Length \ 2
-                            Dim rocKeyData = body.SubView(0, keyLength).ToArray
-                            Dim tftKeyData = body.SubView(keyLength, keyLength).ToArray
-                            Return New CKLEncodedKey(Bnet.Packet.CDKeyJar.PackBorrowedCDKey(rocKeyData),
-                                                     Bnet.Packet.CDKeyJar.PackBorrowedCDKey(tftKeyData))
+                            Dim rocAuthentication = jar.Parse(body.SubView(0, body.Length \ 2)).Value
+                            Dim tftAuthentication = jar.Parse(body.SubView(body.Length \ 2)).Value
+                            If rocAuthentication.Product <> Bnet.ProductType.Warcraft3ROC _
+                                        OrElse tftAuthentication.Product <> Bnet.ProductType.Warcraft3TFT Then
+                                Throw New IO.InvalidDataException("CKL server returned invalid credentials.")
+                            End If
+                            Return New WC3CredentialPair(rocAuthentication, tftAuthentication)
                         Case Else
                             Throw New IO.InvalidDataException("Incorrect packet id in data returned from CKL server.")
                     End Select

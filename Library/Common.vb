@@ -415,35 +415,6 @@ Public Module PoorlyCategorizedFunctions
     End Function
 End Module
 
-Public NotInheritable Class KeyPair
-    Private ReadOnly _value1 As ViewableList(Of Byte)
-    Private ReadOnly _value2 As ViewableList(Of Byte)
-    Public ReadOnly Property Value1 As ViewableList(Of Byte)
-        Get
-            Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-            Return _value1
-        End Get
-    End Property
-    Public ReadOnly Property Value2 As ViewableList(Of Byte)
-        Get
-            Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-            Return _value2
-        End Get
-    End Property
-
-    <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(_value1 IsNot Nothing)
-        Contract.Invariant(_value2 IsNot Nothing)
-    End Sub
-
-    Public Sub New(ByVal value1 As ViewableList(Of Byte), ByVal value2 As ViewableList(Of Byte))
-        Contract.Requires(value1 IsNot Nothing)
-        Contract.Requires(value2 IsNot Nothing)
-        Me._value1 = value1
-        Me._value2 = value2
-    End Sub
-End Class
-
 Public NotInheritable Class DelegatedDisposable
     Implements IDisposable
     Private ReadOnly disposer As action
