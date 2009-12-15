@@ -244,7 +244,7 @@ Namespace Bnet
                                         initialSlack:=1000,
                                         costEstimator:=Function(data) 100 + data.Length,
                                         costLimit:=400,
-                                        costRecoveredPerSecond:=48),
+                                        costRecoveredPerMillisecond:=0.048),
                             localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                             remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                             timeout:=60.Seconds,

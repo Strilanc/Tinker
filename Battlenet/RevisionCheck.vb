@@ -185,7 +185,7 @@ Namespace Bnet
                 Using file = New IO.FileStream(folder + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
                     'Apply operations using each dword in stream
                     Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({file, New IO.MemoryStream(tailBuffer)})))
-                    For repeat = 0 To CInt(file.Length).ModCeiling(1024) - 1 Step 4
+                    For repeat = 0 To CInt(file.Length).CeilingMultiple(1024) - 1 Step 4
                         variables("S"c) = br.ReadUInt32()
                         For Each op In operations
                             op.ApplyTo(variables)

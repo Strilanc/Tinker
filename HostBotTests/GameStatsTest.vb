@@ -35,7 +35,7 @@ Public Class GameStatsTest
         Assert.IsTrue(stats.HostName = "Madeitonceagain")
 
         'Cycle back
-        Dim weirdPos = testData.Length.ModFloor(8) 'the last block has undefined bits in the header
+        Dim weirdPos = testData.Length.FloorMultiple(8) 'the last block has undefined bits in the header
         Assert.IsTrue(jar.Pack(stats).Data.Take(weirdPos).HasSameItemsAs(testData.Take(weirdPos)))
         Assert.IsTrue(jar.Pack(stats).Data.Skip(weirdPos + 1).HasSameItemsAs(testData.Skip(weirdPos + 1)))
     End Sub

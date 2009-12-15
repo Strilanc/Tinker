@@ -17,8 +17,8 @@
             Me._downloadScheduler = New TransferScheduler(Of Byte)(typicalRate:=rate,
                                                                    typicalSwitchTime:=3000,
                                                                    filesize:=size)
-            AddHandler DownloadScheduler.Actions, AddressOf OnDownloadSchedulerActions
-            AddHandler downloadTimer.Elapsed, Sub() OnScheduleDownloadsTick()
+            AddHandler DownloadScheduler.Actions, Sub(started, stopped) inQueue.QueueAction(Sub() OnDownloadSchedulerActions(started, stopped))
+            AddHandler downloadTimer.Elapsed, Sub() DownloadScheduler.Update()
 
             InitCreateSlots()
             InitProcessArguments()
@@ -361,52 +361,44 @@
 #Region "Events"
         Private Sub OnDownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndpoints),
                                                ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndpoints))
-            inQueue.QueueAction(
-                Sub()
-                    'Start transfers
-                    For Each e In started
-                        'Find matching players
-                        Dim src = TryFindPlayer(e.source)
-                        Dim dst = TryFindPlayer(e.destination)
-                        If dst Is Nothing Then Continue For
+            'Start transfers
+            For Each e In started
+                'Find matching players
+                Dim src = TryFindPlayer(e.source)
+                Dim dst = TryFindPlayer(e.destination)
+                If dst Is Nothing Then Continue For
 
-                        'Apply
-                        If e.source = LocalTransferClientKey Then
-                            Logger.Log("Initiating map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
-                            dst.IsGettingMapFromBot = True
-                            dst.QueueBufferMap()
-                        ElseIf src IsNot Nothing Then
-                            Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
-                            src.QueueSendPacket(Packet.MakeSetUploadTarget(dst.Index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
-                            dst.QueueSendPacket(Packet.MakeSetDownloadSource(src.Index))
-                        End If
-                    Next e
+                'Apply
+                If e.source = LocalTransferClientKey Then
+                    Logger.Log("Initiating map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
+                    dst.IsGettingMapFromBot = True
+                    dst.QueueBufferMap()
+                ElseIf src IsNot Nothing Then
+                    Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
+                    src.QueueSendPacket(Packet.MakeSetUploadTarget(dst.Index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
+                    dst.QueueSendPacket(Packet.MakeSetDownloadSource(src.Index))
+                End If
+            Next e
 
-                    'Stop transfers
-                    For Each e In stopped
-                        'Find matching players
-                        Dim src = TryFindPlayer(e.source)
-                        Dim dst = TryFindPlayer(e.destination)
-                        If dst Is Nothing Then Continue For
+            'Stop transfers
+            For Each e In stopped
+                'Find matching players
+                Dim src = TryFindPlayer(e.source)
+                Dim dst = TryFindPlayer(e.destination)
+                If dst Is Nothing Then Continue For
 
-                        'Apply
-                        If e.source = LocalTransferClientKey Then
-                            Logger.Log("Stopping map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
-                            dst.IsGettingMapFromBot = False
-                        ElseIf src IsNot Nothing Then
-                            Logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
-                            src.QueueSendPacket(Packet.MakeOtherPlayerLeft(dst, PlayerLeaveType.Disconnect))
-                            src.QueueSendPacket(Packet.MakeOtherPlayerJoined(dst))
-                            dst.QueueSendPacket(Packet.MakeOtherPlayerLeft(src, PlayerLeaveType.Disconnect))
-                            dst.QueueSendPacket(Packet.MakeOtherPlayerJoined(src))
-                        End If
-                    Next e
-                End Sub
-            )
-        End Sub
-
-        Private Sub OnScheduleDownloadsTick()
-            DownloadScheduler.Update()
+                'Apply
+                If e.source = LocalTransferClientKey Then
+                    Logger.Log("Stopping map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
+                    dst.IsGettingMapFromBot = False
+                ElseIf src IsNot Nothing Then
+                    Logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
+                    src.QueueSendPacket(Packet.MakeOtherPlayerLeft(dst, PlayerLeaveType.Disconnect))
+                    src.QueueSendPacket(Packet.MakeOtherPlayerJoined(dst))
+                    dst.QueueSendPacket(Packet.MakeOtherPlayerLeft(src, PlayerLeaveType.Disconnect))
+                    dst.QueueSendPacket(Packet.MakeOtherPlayerJoined(src))
+                End If
+            Next e
         End Sub
 
         Public Sub LobbyCatchRemovedPlayer(ByVal player As Player, ByVal slot As Slot)
