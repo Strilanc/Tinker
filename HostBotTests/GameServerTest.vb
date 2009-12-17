@@ -1,8 +1,8 @@
 ﻿Imports Microsoft.VisualStudio.TestTools.UnitTesting
-Imports System.Collections.Generic
 Imports Tinker
-Imports Strilbrary
-Imports Strilbrary.Numerics
+Imports Strilbrary.Values
+Imports Strilbrary.Threading
+Imports Strilbrary.Collections
 
 <TestClass()>
 Public Class GameServerTest
@@ -19,7 +19,7 @@ Public Class GameServerTest
             relativePath:="Maps\test",
             fileChecksumCRC32:=1,
             filesize:=1,
-            mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray,
+            mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
             mapChecksumXORO:=1,
             slotCount:=2)
     Private Shared ReadOnly TestArgument As New Commands.CommandArgument("")
@@ -72,7 +72,7 @@ Public Class GameServerTest
         Using server = New WC3.GameServer()
             Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             BlockOnFuture(result)
-            Assert.IsTrue(result.State = Threading.FutureState.Succeeded)
+            Assert.IsTrue(result.State = FutureState.Succeeded)
         End Using
     End Sub
 
@@ -82,7 +82,7 @@ Public Class GameServerTest
             server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             BlockOnFuture(result)
-            Assert.IsTrue(result.State = Threading.FutureState.Failed)
+            Assert.IsTrue(result.State = FutureState.Failed)
         End Using
     End Sub
 
@@ -103,8 +103,8 @@ Public Class GameServerTest
             server.QueueAcceptSocket(socket)
             'Try read Greet
             Dim header = testStream.RetrieveWriteData(length:=4)
-            Dim body = testStream.RetrieveWriteData(length:=header.SubArray(2, 2).ToUInt16 - 4)
-            Dim response = WC3.Packet.Jars.Greet.Parse(body.ToView)
+            Dim body = testStream.RetrieveWriteData(length:=header.SubToArray(2, 2).ToUInt16 - 4)
+            Dim response = WC3.Packet.Jars.Greet.Parse(body.AsReadableList)
             'Check not closed
             Assert.IsTrue(Not testStream.RetrieveClosed(timeout:=100))
             'Cleanup

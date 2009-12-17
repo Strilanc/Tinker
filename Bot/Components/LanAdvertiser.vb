@@ -1,6 +1,4 @@
-﻿Imports Tinker.Commands
-Imports System.Net.Sockets
-Imports Tinker.Links
+﻿Imports System.Net.Sockets
 
 Namespace WC3
     Public NotInheritable Class LanAdvertiser
@@ -241,7 +239,7 @@ Namespace WC3
                                   "Maps\AdminGame.w3x",
                                   filesize:=1,
                                   fileChecksumCRC32:=&H12345678UI,
-                                  mapChecksumSHA1:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray(),
+                                  mapChecksumSHA1:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList,
                                   mapChecksumXORO:=&H2357BDUI,
                                   slotCount:=2)
             Contract.Assume(map.Slots(1) IsNot Nothing)

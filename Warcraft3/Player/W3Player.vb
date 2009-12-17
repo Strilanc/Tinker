@@ -166,9 +166,9 @@
                                                                 reason:="Error receiving packet: {0}".Frmt(exception.Message))
             )
         End Sub
-        Private Function ProcessPacket(ByVal packetData As ViewableList(Of Byte)) As ifuture
+        Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)
-            Contract.Requires(packetData.Length >= 4)
+            Contract.Requires(packetData.Count >= 4)
             Dim result = packetHandler.HandlePacket(packetData, "test")
             result.Catch(Sub(exception) QueueDisconnect(expected:=False,
                                                         leaveType:=PlayerLeaveType.Disconnect,

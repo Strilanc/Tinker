@@ -1,6 +1,4 @@
-﻿Imports Tinker.WC3.PacketId
-
-Namespace WC3
+﻿Namespace WC3
     Public NotInheritable Class W3ConnectingPlayer
         Private ReadOnly _name As InvariantString
         Private ReadOnly _peerKey As UInteger

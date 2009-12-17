@@ -84,10 +84,10 @@ Namespace WC3
                                 Case HostMapInfo
                                     If mode = DummyPlayerMode.DownloadMap Then
                                         dl = New MapDownload(CStr(vals("path")),
-                                                               CUInt(vals("size")),
-                                                               CUInt(vals("crc32")),
-                                                               CUInt(vals("xoro checksum")),
-                                                               CType(vals("sha1 checksum"), ViewableList(Of Byte)))
+                                                             CUInt(vals("size")),
+                                                             CUInt(vals("crc32")),
+                                                             CUInt(vals("xoro checksum")),
+                                                             CType(vals("sha1 checksum"), IList(Of Byte)).AsReadableList)
                                         socket.SendPacket(packet.MakeClientMapInfo(packet.DownloadState.NotDownloading, 0))
                                     Else
                                         socket.SendPacket(packet.MakeClientMapInfo(packet.DownloadState.NotDownloading, CUInt(vals("size"))))

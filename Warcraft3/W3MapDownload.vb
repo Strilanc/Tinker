@@ -6,13 +6,13 @@
         Public ReadOnly size As UInteger
         Private ReadOnly fileChecksumCRC32 As UInt32
         Private ReadOnly mapChecksumXORO As UInt32
-        Private ReadOnly mapChecksumSHA1 As ViewableList(Of Byte)
+        Private ReadOnly mapChecksumSHA1 As IReadableList(Of Byte)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(downloadPath IsNot Nothing)
             Contract.Invariant(destinationPath IsNot Nothing)
             Contract.Invariant(mapChecksumSHA1 IsNot Nothing)
-            Contract.Invariant(mapChecksumSHA1.Length = 20)
+            Contract.Invariant(mapChecksumSHA1.Count = 20)
             Contract.Invariant(size > 0)
         End Sub
 
@@ -20,11 +20,11 @@
                        ByVal size As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
                        ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As ViewableList(Of Byte))
+                       ByVal mapChecksumSHA1 As IReadableList(Of Byte))
             Contract.Requires(path IsNot Nothing)
             Contract.Requires(size > 0)
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
-            Contract.Requires(mapChecksumSHA1.Length = 20)
+            Contract.Requires(mapChecksumSHA1.Count = 20)
 
             If Not IO.Directory.Exists(My.Settings.mapPath + "HostBot") Then
                 IO.Directory.CreateDirectory(My.Settings.mapPath + "HostBot")

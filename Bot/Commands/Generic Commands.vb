@@ -1,5 +1,3 @@
-Imports Tinker.Commands
-
 Namespace Commands
     Public NotInheritable Class GenericCommands
         Public NotInheritable Class RecacheIP(Of T)

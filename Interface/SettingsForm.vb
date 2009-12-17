@@ -1,5 +1,3 @@
-Imports System.IO.Path
-
 Public Class SettingsForm
     Private ReadOnly _clientProfiles As List(Of ClientProfile)
     Private ReadOnly _pluginProfiles As List(Of Plugins.PluginProfile)

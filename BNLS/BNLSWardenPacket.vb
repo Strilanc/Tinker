@@ -43,12 +43,12 @@
             Contract.Requires(value IsNot Nothing)
         End Sub
 
-        Public Shared Function FromClientData(ByVal id As BNLSWardenPacketId, ByVal data As ViewableList(Of Byte)) As BNLSWardenPacket
+        Public Shared Function FromClientData(ByVal id As BNLSWardenPacketId, ByVal data As IReadableList(Of Byte)) As BNLSWardenPacket
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BNLSWardenPacket)() IsNot Nothing)
             Return New BNLSWardenPacket(id, clientJar.Parse(id, data))
         End Function
-        Public Shared Function FromServerData(ByVal data As ViewableList(Of Byte)) As BNLSWardenPacket
+        Public Shared Function FromServerData(ByVal data As IReadableList(Of Byte)) As BNLSWardenPacket
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of BNLSWardenPacket)() IsNot Nothing)
             Return New BNLSWardenPacket(serverJar.Parse(data))
@@ -127,11 +127,11 @@
                     {"password", New Byte() {}},
                     {"unspecified", New Byte() {}}})
         End Function
-        Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As Byte()) As BNLSWardenPacket
+        Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As IReadableList(Of Byte)) As BNLSWardenPacket
             Contract.Ensures(Contract.Result(Of BNLSWardenPacket)() IsNot Nothing)
             Return New BNLSWardenPacket(BNLSWardenPacketId.FullServiceHandleWardenPacket, New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
-                    {"raw warden packet data", data},
+                    {"raw warden packet data", data.ToArray},
                     {"unspecified", New Byte() {}}})
         End Function
 #End Region

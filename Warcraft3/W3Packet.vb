@@ -602,7 +602,7 @@ Namespace WC3
 #End Region
 
 #Region "Parsing"
-        Public Shared Function FromData(ByVal id As PacketId, ByVal data As ViewableList(Of Byte)) As Packet
+        Public Shared Function FromData(ByVal id As PacketId, ByVal data As IReadableList(Of Byte)) As Packet
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(id, packetJar.Parse(id, data))
@@ -1002,9 +1002,8 @@ Namespace WC3
                 Return 4
             End Get
         End Property
-        Protected Overrides Function ExtractKey(ByVal header As Strilbrary.ViewableList(Of Byte)) As PacketId
-            Contract.Assume(header.Length >= 4)
-            Contract.Assert(header.Length >= 4)
+        Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
+            Contract.Assume(header.Count >= 4)
             If header(0) <> Packet.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
             Return CType(header(1), PacketId)
         End Function

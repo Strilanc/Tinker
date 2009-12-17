@@ -54,12 +54,12 @@
                 Return New Logger
             End Get
         End Property
-        Public ReadOnly Property Name As Strilbrary.InvariantString Implements IBotComponent.Name
+        Public ReadOnly Property Name As InvariantString Implements IBotComponent.Name
             Get
                 Return _server.name
             End Get
         End Property
-        Public ReadOnly Property Type As Strilbrary.InvariantString Implements IBotComponent.Type
+        Public ReadOnly Property Type As InvariantString Implements IBotComponent.Type
             Get
                 Return WidgetTypeName
             End Get

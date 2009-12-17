@@ -3,7 +3,7 @@
     Public NotInheritable Class Pickle(Of T)
         Implements IPickle(Of T)
 
-        Private ReadOnly _data As ViewableList(Of Byte)
+        Private ReadOnly _data As IReadableList(Of Byte)
         Private ReadOnly _value As T
         Private ReadOnly _description As LazyValue(Of String)
 
@@ -14,7 +14,7 @@
         End Sub
 
         Public Sub New(ByVal value As T,
-                       ByVal data As ViewableList(Of Byte),
+                       ByVal data As IReadableList(Of Byte),
                        ByVal description As LazyValue(Of String))
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
@@ -26,14 +26,14 @@
 
         Public Sub New(ByVal jarName As InvariantString,
                        ByVal value As T,
-                       ByVal data As ViewableList(Of Byte))
+                       ByVal data As IReadableList(Of Byte))
             Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, value)))
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
         End Sub
         Public Sub New(ByVal jarName As InvariantString,
                        ByVal value As T,
-                       ByVal data As ViewableList(Of Byte),
+                       ByVal data As IReadableList(Of Byte),
                        ByVal valueDescription As Func(Of String))
             Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, valueDescription())))
             Contract.Requires(value IsNot Nothing)
@@ -54,7 +54,7 @@
                 Return _description
             End Get
         End Property
-        Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle(Of T).Data
+        Public ReadOnly Property Data As IReadableList(Of Byte) Implements IPickle(Of T).Data
             Get
                 Return _data
             End Get
@@ -104,7 +104,7 @@
             End Get
         End Property
 
-        Public MustOverride Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+        Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
     End Class
     Public MustInherit Class Jar(Of T)
         Implements IJar(Of T)
@@ -121,7 +121,7 @@
         End Property
 
         Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
-        Public MustOverride Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+        Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
     End Class
 
     Public Module PicklingExtensionMethods
@@ -157,7 +157,7 @@
                 Contract.Requires(jar IsNot Nothing)
                 Me.subJar = jar
             End Sub
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Object)
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
                 Dim p = subJar.Parse(data)
                 Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
             End Function
@@ -199,7 +199,7 @@
                 Contract.Requires(jar IsNot Nothing)
                 Me.subJar = jar
             End Sub
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Object)
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
                 Dim p = subjar.Parse(data)
                 Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
             End Function

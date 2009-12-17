@@ -1,8 +1,7 @@
-﻿Imports System.Net.Sockets
-Imports Tinker
-Imports Strilbrary.Numerics
+﻿Imports Tinker
+Imports Strilbrary.Values
 Imports Strilbrary.Threading
-Imports Strilbrary.Enumeration
+Imports Strilbrary.Collections
 
 Friend Class StreamTester
     Implements IDisposable

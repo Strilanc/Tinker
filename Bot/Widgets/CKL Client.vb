@@ -37,7 +37,7 @@
                     futureSocket.Value.Disconnect(expected:=True, reason:="Received response")
 
                     'Read header
-                    Contract.Assume(packetData.Length >= 4)
+                    Contract.Assume(packetData.Count >= 4)
                     Dim flag = packetData(0)
                     Dim id = packetData(1)
                     If flag <> CKLServer.PacketPrefixValue Then
@@ -50,8 +50,8 @@
                         Case CKLPacketId.[Error]
                             Throw New IO.IOException("CKL server returned an error: {0}.".Frmt(System.Text.UTF8Encoding.UTF8.GetString(body.ToArray)))
                         Case CKLPacketId.Keys
-                            Dim rocAuthentication = jar.Parse(body.SubView(0, body.Length \ 2)).Value
-                            Dim tftAuthentication = jar.Parse(body.SubView(body.Length \ 2)).Value
+                            Dim rocAuthentication = jar.Parse(body.SubView(0, body.Count \ 2)).Value
+                            Dim tftAuthentication = jar.Parse(body.SubView(body.Count \ 2)).Value
                             If rocAuthentication.Product <> Bnet.ProductType.Warcraft3ROC _
                                         OrElse tftAuthentication.Product <> Bnet.ProductType.Warcraft3TFT Then
                                 Throw New IO.InvalidDataException("CKL server returned invalid credentials.")

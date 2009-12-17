@@ -1,7 +1,4 @@
-﻿Imports Tinker.Commands
-Imports Tinker.Links
-
-Namespace Commands.Specializations
+﻿Namespace Commands.Specializations
     Public NotInheritable Class LanCommands
         Inherits CommandSet(Of Components.LanAdvertiserManager)
 

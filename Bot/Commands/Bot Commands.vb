@@ -1,5 +1,3 @@
-Imports Tinker.Commands
-
 Namespace Commands
     Public NotInheritable Class BotCommands
         Inherits CommandSet(Of MainBot)
@@ -213,7 +211,7 @@ Namespace Commands
                 MyBase.New(Name:="LoadPlugin",
                 template:="name",
                 Description:="Loads the named plugin.",
-                permissions:="root:5")
+                Permissions:="root:5")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Strilbrary.Threading.IFuture(Of String)
                 Dim futureProfile = From profiles In target.QueueGetPluginProfiles()

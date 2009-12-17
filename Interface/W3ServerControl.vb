@@ -1,4 +1,3 @@
-Imports Tinker.Commands
 Imports Tinker.WC3
 
 Public Class W3ServerControl

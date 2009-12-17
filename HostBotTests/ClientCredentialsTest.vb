@@ -1,9 +1,8 @@
-﻿Imports Strilbrary.Enumeration
+﻿Imports Strilbrary.Collections
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Tinker.Bnet
-Imports Strilbrary
 Imports System.Numerics
-Imports Strilbrary.Numerics
+Imports Strilbrary.Values
 
 <TestClass()>
 Public Class ClientCredentialsTest

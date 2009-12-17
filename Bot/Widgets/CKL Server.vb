@@ -1,5 +1,4 @@
-﻿Imports System.Net.Sockets
-Imports Tinker.Bnet
+﻿Imports Tinker.Bnet
 
 Namespace CKL
     '''<summary>Provides answers to bnet cd key authentication challenges, allowing clients to login to bnet once with the server's keys.</summary>
@@ -91,7 +90,7 @@ Namespace CKL
                                 Case CKLPacketId.Keys
                                     If keys.Count <= 0 Then
                                         errorMessage = "No keys to lend."
-                                    ElseIf data.Length <> 8 Then
+                                    ElseIf data.Count <> 8 Then
                                         errorMessage = "Invalid length. Require client token [4] + server token [4]."
                                     Else
                                         If keyIndex >= keys.Count Then keyIndex = 0

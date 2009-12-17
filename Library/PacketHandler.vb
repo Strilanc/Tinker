@@ -1,10 +1,10 @@
 ﻿<ContractClass(GetType(PacketHandler(Of ).contractclass))>
 Public MustInherit Class PacketHandler(Of TKey)
-    Private ReadOnly handlers As New KeyedEvent(Of TKey, ViewableList(Of Byte))
+    Private ReadOnly handlers As New KeyedEvent(Of TKey, IReadableList(Of Byte))
     Private ReadOnly logger As Logger
 
     Public MustOverride ReadOnly Property HeaderSize As Integer
-    Protected MustOverride Function ExtractKey(ByVal header As ViewableList(Of Byte)) As TKey
+    Protected MustOverride Function ExtractKey(ByVal header As IReadableList(Of Byte)) As TKey
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(handlers IsNot Nothing)
@@ -21,8 +21,8 @@ Public MustInherit Class PacketHandler(Of TKey)
         Contract.Requires(jar IsNot Nothing)
         Call [AddHandler](key, Function(data)
                                    Dim pickle = jar.Parse(data)
-                                   If pickle.Data.Length < data.Length Then Throw New PicklingException("Data left over after parsing.")
-                                   If pickle.Data.Length > data.Length Then Throw New PicklingException("Pickle contains more data than was parsed.")
+                                   If pickle.Data.Count < data.Count Then Throw New PicklingException("Data left over after parsing.")
+                                   If pickle.Data.Count > data.Count Then Throw New PicklingException("Pickle contains more data than was parsed.")
                                    logger.Log(Function() pickle.Description.Value, LogMessageType.DataParsed)
                                    Dim result = New FutureAction()
                                    result.SetSucceeded()
@@ -31,19 +31,18 @@ Public MustInherit Class PacketHandler(Of TKey)
     End Sub
 
     Public Function [AddHandler](ByVal key As TKey,
-                                 ByVal handler As Func(Of ViewableList(Of Byte), IFuture)) As IDisposable
+                                 ByVal handler As Func(Of IReadableList(Of Byte), IFuture)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Return handlers.AddHandler(key, handler)
     End Function
 
-    Public Function HandlePacket(ByVal packetData As ViewableList(Of Byte), ByVal source As String) As IFuture
+    Public Function HandlePacket(ByVal packetData As IReadableList(Of Byte), ByVal source As String) As IFuture
         Contract.Requires(packetData IsNot Nothing)
-        Contract.Requires(packetData.Length >= HeaderSize)
+        Contract.Requires(packetData.Count >= HeaderSize)
         Contract.Requires(source IsNot Nothing)
         Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-        If packetData.Length < HeaderSize Then Throw New InvalidOperationException("Invalid packet header")
 
         Try
             Dim head = packetData.SubView(0, HeaderSize)
@@ -65,9 +64,9 @@ Public MustInherit Class PacketHandler(Of TKey)
     MustInherit Class ContractClass
         Inherits PacketHandler(Of TKey)
 
-        Protected Overrides Function ExtractKey(ByVal header As Strilbrary.ViewableList(Of Byte)) As TKey
+        Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As TKey
             Contract.Requires(header IsNot Nothing)
-            Contract.Requires(header.Length = HeaderSize)
+            Contract.Requires(header.Count = HeaderSize)
             Contract.Ensures(Contract.Result(Of TKey)() IsNot Nothing)
             Throw New NotSupportedException
         End Function

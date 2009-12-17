@@ -1,6 +1,5 @@
 ﻿Imports System.Net.NetworkInformation
 Imports System.Runtime.CompilerServices
-Imports System.IO.Path
 Imports System.Text
 Imports System.Net.Sockets
 Imports System.Net
@@ -111,10 +110,10 @@ Public Class NetIPAddressJar
 
     Public Overrides Function Pack(Of TValue As System.Net.IPAddress)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
         Dim data = value.GetAddressBytes()
-        Return New Pickle(Of TValue)(Name, value, data.ToView)
+        Return New Pickle(Of TValue)(Name, value, data.AsReadableList)
     End Function
-    Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As Pickling.IPickle(Of System.Net.IPAddress)
-        If data.Length < 4 Then Throw New PicklingException("Not enough data.")
+    Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of System.Net.IPAddress)
+        If data.Count < 4 Then Throw New PicklingException("Not enough data.")
         Dim datum = data.SubView(0, 4)
         Dim value = New Net.IPAddress(datum.ToArray)
         Return New Pickle(Of Net.IPAddress)(Name, value, datum)
@@ -144,7 +143,7 @@ Public Class NetIPEndPointJar
         Return New Pickle(Of TValue)(Name, value, pickle.Data)
     End Function
 
-    Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As Pickling.IPickle(Of Net.IPEndPoint)
+    Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of Net.IPEndPoint)
         Dim pickle = DataJar.Parse(data)
         Dim vals = pickle.Value
         Dim value = New Net.IPEndPoint(CType(vals("ip"), Net.IPAddress).AssumeNotNull, CUShort(vals("port")))

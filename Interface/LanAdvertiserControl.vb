@@ -1,5 +1,3 @@
-Imports Tinker.Commands
-
 Public Class LanAdvertiserControl
     Private ReadOnly _manager As Components.LanAdvertiserManager
     Private ReadOnly _lanAdvertiser As WC3.LanAdvertiser

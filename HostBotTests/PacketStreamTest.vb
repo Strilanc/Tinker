@@ -1,10 +1,7 @@
-﻿Imports Strilbrary
+﻿Imports Strilbrary.Collections
 Imports Strilbrary.Streams
 Imports Strilbrary.Threading
-Imports Strilbrary.Enumeration
-Imports Strilbrary.Numerics
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
-Imports System.Collections.Generic
 Imports Tinker
 
 <TestClass()>

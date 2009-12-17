@@ -7,16 +7,16 @@ Namespace WC3
         Private ReadOnly _numPlayerSlots As Integer
         Private ReadOnly _fileSize As UInteger
         Private ReadOnly _fileChecksumCRC32 As UInt32
-        Private ReadOnly _mapChecksumSHA1 As ViewableList(Of Byte)
+        Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Private ReadOnly _mapChecksumXORO As UInt32
         Private ReadOnly _folder As String
         Private ReadOnly _relativePath As String
         Private ReadOnly _fullPath As String
         Public ReadOnly fileAvailable As Boolean
-        Private ReadOnly _slots As New List(Of Slot)
-        Public ReadOnly Property Slots As IList(Of Slot)
+        Private ReadOnly _slots As IReadableList(Of Slot)
+        Public ReadOnly Property Slots As IReadableList(Of Slot)
             Get
-                Contract.Ensures(Contract.Result(Of IList(Of Slot))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
                 Return _slots
             End Get
         End Property
@@ -25,7 +25,7 @@ Namespace WC3
             Contract.Invariant(_playableHeight > 0)
             Contract.Invariant(_fileSize > 0)
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
-            Contract.Invariant(_mapChecksumSHA1.Length = 20)
+            Contract.Invariant(_mapChecksumSHA1.Count = 20)
             Contract.Invariant(_slots IsNot Nothing)
             Contract.Invariant(_folder IsNot Nothing)
             Contract.Invariant(_relativePath IsNot Nothing)
@@ -46,10 +46,10 @@ Namespace WC3
                 Return _fileSize
             End Get
         End Property
-        Public ReadOnly Property MapChecksumSHA1 As ViewableList(Of Byte)
+        Public ReadOnly Property MapChecksumSHA1 As IReadableList(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))().Length = 20)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
                 Return _mapChecksumSHA1
             End Get
         End Property
@@ -159,7 +159,7 @@ Namespace WC3
                 Dim hexData = (From i In Enumerable.Range(1, arg.Length \ 2 - 1)
                                Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
                                ).ToArray
-                Dim packet = WC3.Packet.FromData(PacketId.HostMapInfo, hexData.ToView)
+                Dim packet = WC3.Packet.FromData(PacketId.HostMapInfo, hexData.AsReadableList)
                 Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
 
                 'Extract values
@@ -167,11 +167,11 @@ Namespace WC3
                 Dim size = CUInt(vals("size"))
                 Dim crc32 = CUInt(vals("crc32"))
                 Dim xoro = CUInt(vals("xoro checksum"))
-                Dim sha1 = CType(vals("sha1 checksum"), Byte()).AssumeNotNull
+                Dim sha1 = CType(vals("sha1 checksum"), Byte()).AssumeNotNull.AsReadableList
                 If Not path.StartsWith("Maps\", StringComparison.OrdinalIgnoreCase) Then
                     Throw New IO.InvalidDataException("Invalid map path.")
                 End If
-                Contract.Assume(sha1.Length = 20)
+                Contract.Assume(sha1.Count = 20)
                 Contract.Assume(size > 0)
 
                 Return New Map(My.Settings.mapPath.AssumeNotNull, path, size, crc32, sha1, xoro, slotCount:=3)
@@ -185,22 +185,22 @@ Namespace WC3
                        ByVal relativePath As String,
                        ByVal fileSize As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
-                       ByVal mapChecksumSHA1 As Byte(),
+                       ByVal mapChecksumSHA1 As IReadableList(Of Byte),
                        ByVal mapChecksumXORO As UInt32,
                        ByVal slotCount As Integer)
-            Contract.Requires(Folder IsNot Nothing)
+            Contract.Requires(folder IsNot Nothing)
             Contract.Requires(relativePath IsNot Nothing)
             Contract.Requires(relativePath.StartsWith("Maps\", StringComparison.InvariantCultureIgnoreCase))
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
-            Contract.Requires(mapChecksumSHA1.Length = 20)
+            Contract.Requires(mapChecksumSHA1.Count = 20)
             Contract.Requires(slotCount > 0)
             Contract.Requires(slotCount <= 12)
             Contract.Requires(fileSize > 0)
             Contract.Ensures(Me.Slots.Count = slotCount)
 
-            Me._fullPath = Folder + relativePath.Substring(5)
+            Me._fullPath = folder + relativePath.Substring(5)
             Me._relativePath = relativePath
-            Me._folder = Folder
+            Me._folder = folder
             Me._playableHeight = 256
             Me._playableWidth = 256
             Me._isMelee = True
@@ -208,16 +208,18 @@ Namespace WC3
             Me._numPlayerSlots = slotCount
             Me._fileSize = fileSize
             Me._fileChecksumCRC32 = fileChecksumCRC32
-            Me._mapChecksumSHA1 = mapChecksumSHA1.ToView
+            Me._mapChecksumSHA1 = mapChecksumSHA1
             Me._mapChecksumXORO = mapChecksumXORO
+            Dim slots = New List(Of Slot)
             For slotId = 1 To slotCount
                 Dim slot = New Slot(Nothing, CByte(slotId))
                 slot.color = CType(slotId - 1, Slot.PlayerColor)
                 slot.Contents = New SlotContentsOpen(slot)
-                Slots.Add(slot)
+                slots.Add(slot)
                 Contract.Assume(Slots.Count = slotId)
             Next slotId
-            Contract.Assume(Slots.Count = slotCount)
+            Contract.Assume(slots.Count = slotCount)
+            Me._slots = slots.AsReadableList
         End Sub
         Public Sub New(ByVal folder As String,
                        ByVal relativePath As String,
@@ -232,11 +234,11 @@ Namespace WC3
             End Using
             Dim mapArchive = New MPQ.Archive(FullPath)
             Dim war3PatchArchive = OpenWar3PatchArchive(wc3PatchMPQFolder)
-            Me._mapChecksumSHA1 = ComputeMapSha1Checksum(mapArchive, war3PatchArchive).ToView
+            Me._mapChecksumSHA1 = ComputeMapSha1Checksum(mapArchive, war3PatchArchive).AsReadableList
             Me._mapChecksumXORO = CUInt(ComputeMapXoro(mapArchive, war3PatchArchive))
 
             Dim info = ReadMapInfo(mapArchive)
-            Me._slots = info.slots
+            Me._slots = info.slots.AsReadableList
             Me._isMelee = info.isMelee
             Me._numPlayerSlots = info.slots.Count
             Me._name = info.name

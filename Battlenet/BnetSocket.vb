@@ -1,5 +1,4 @@
 Imports System.Net
-Imports System.Net.Sockets
 
 Public NotInheritable Class BnetSocket
     Private WithEvents _socket As PacketSocket
@@ -92,8 +91,8 @@ Public NotInheritable Class BnetSocket
         End Try
     End Sub
 
-    Public Function FutureReadPacket() As IFuture(Of ViewableList(Of Byte))
-        Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
+    Public Function FutureReadPacket() As IFuture(Of IReadableList(Of Byte))
+        Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of Byte)))() IsNot Nothing)
         Return _socket.AsyncReadPacket()
     End Function
 

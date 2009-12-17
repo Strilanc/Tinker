@@ -35,12 +35,12 @@ Public NotInheritable Class PacketStreamer
         Me.headerBytesBeforeSizeCount = headerBytesBeforeSizeCount
     End Sub
 
-    Public Function AsyncReadPacket() As IFuture(Of ViewableList(Of Byte))
-        Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
+    Public Function AsyncReadPacket() As IFuture(Of IReadableList(Of Byte))
+        Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of Byte)))() IsNot Nothing)
         Dim readSize = 0
         Dim totalSize = 0
         Dim packetData(0 To HeaderSize - 1) As Byte
-        Dim result = New FutureFunction(Of ViewableList(Of Byte))
+        Dim result = New FutureFunction(Of IReadableList(Of Byte))
 
         FutureIterate(Function() subStream.AsyncRead(packetData, readSize, packetData.Length - readSize),
             Function(numBytesRead, readException)
@@ -82,7 +82,7 @@ Public NotInheritable Class PacketStreamer
                 End If
 
                 'Finished reading
-                result.SetSucceeded(packetData.ToView)
+                result.SetSucceeded(packetData.AsReadableList)
                 Return False.Futurized
             End Function
         )
@@ -95,7 +95,7 @@ Public NotInheritable Class PacketStreamer
         If packetData.Length < HeaderSize Then Throw New ArgumentException("Data didn't include header data.")
 
         'Encode size
-        Dim sizeBytes = CULng(packetData.Length).Bytes(size:=headerValueSizeByteCount)
+        Dim sizeBytes = CULng(packetData.Length).Bytes.SubArray(0, headerValueSizeByteCount)
         System.Array.Copy(sourceArray:=sizeBytes,
                           sourceIndex:=0,
                           destinationArray:=packetData,

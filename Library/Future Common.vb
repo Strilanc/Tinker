@@ -1,8 +1,4 @@
-﻿Imports System.Net
-Imports System.Net.Sockets
-Imports System.Threading
-
-Public Module FutureExtensionsEx
+﻿Public Module FutureExtensionsEx
     <Extension()>
     Public Function AsyncRead(ByVal this As IO.Stream,
                               ByVal buffer() As Byte,

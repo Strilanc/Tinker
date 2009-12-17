@@ -10,15 +10,15 @@
 
     <ContractClass(GetType(IPickle.ContractClass))>
     Public Interface IPickle
-        ReadOnly Property Data As ViewableList(Of Byte)
+        ReadOnly Property Data As IReadableList(Of Byte)
         ReadOnly Property Description As LazyValue(Of String)
 
         <ContractClassFor(GetType(IPickle))>
         Class ContractClass
             Implements IPickle
-            Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
+            Public ReadOnly Property Data As IReadableList(Of Byte) Implements IPickle.Data
                 Get
-                    Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get
             End Property
@@ -39,9 +39,9 @@
     <ContractClassFor(GetType(IPickle(Of )))>
     Public NotInheritable Class ContractClassIPickle(Of T)
         Implements IPickle(Of T)
-        Public ReadOnly Property Data As ViewableList(Of Byte) Implements IPickle.Data
+        Public ReadOnly Property Data As IReadableList(Of Byte) Implements IPickle.Data
             Get
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
@@ -86,7 +86,7 @@
     <ContractClass(GetType(ContractClassIParseJar(Of )))>
     Public Interface IParseJar(Of Out T)
         Inherits IJarInfo
-        Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
+        Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
     End Interface
     <ContractClassFor(GetType(IParseJar(Of )))>
     Public NotInheritable Class ContractClassIParseJar(Of T)
@@ -96,7 +96,7 @@
                 Throw New NotSupportedException()
             End Get
         End Property
-        Public Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+        Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Throw New NotSupportedException()

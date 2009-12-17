@@ -1,5 +1,4 @@
-﻿Imports Tinker.Commands
-Imports Tinker.Bnet
+﻿Imports Tinker.Bnet
 
 Namespace CKL
     Public Enum CKLPacketId As Byte
@@ -50,7 +49,7 @@ Namespace CKL
                                             ByVal serverToken As UInt32) As WC3CredentialPair
             Contract.Ensures(Contract.Result(Of WC3CredentialPair)() IsNot Nothing)
             Return New WC3CredentialPair(authenticationROC:=_keyROC.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes),
-                                             authenticationTFT:=_keyTFT.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes))
+                                         authenticationTFT:=_keyTFT.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes))
         End Function
     End Class
 

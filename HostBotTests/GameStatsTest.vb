@@ -1,8 +1,7 @@
-﻿Imports Strilbrary.Enumeration
+﻿Imports Strilbrary.Collections
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Tinker
-Imports Strilbrary
-Imports Strilbrary.Numerics
+Imports Strilbrary.Values
 
 <TestClass()>
 Public Class GameStatsTest
@@ -18,7 +17,7 @@ Public Class GameStatsTest
                                    &H39, &H6F, &H6B, &H59, &HAF, &H17, &HA3, &HCD, &H9B, &H6F, &H0}
         Dim jar = New wc3.GameStatsJar("Test")
 
-        Dim stats = jar.Parse(testData.ToView).Value
+        Dim stats = jar.Parse(testData.AsReadableList).Value
         Assert.IsTrue(Not stats.randomHero)
         Assert.IsTrue(Not stats.randomRace)
         Assert.IsTrue(Not stats.allowFullSharedControl)

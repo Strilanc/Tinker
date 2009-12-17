@@ -1,6 +1,3 @@
-Imports Tinker.Commands
-Imports Tinker.Links
-
 Namespace Commands
     Public NotInheritable Class ClientCommands
         Inherits CommandSet(Of Components.BnetClientManager)

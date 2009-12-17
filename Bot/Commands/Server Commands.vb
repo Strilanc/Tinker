@@ -13,8 +13,6 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
-Imports Tinker.Commands
-
 Namespace Commands.Specializations
     Public NotInheritable Class ServerCommands
         Inherits CommandSet(Of WC3.GameServer)

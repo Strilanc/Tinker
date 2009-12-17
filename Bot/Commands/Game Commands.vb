@@ -1,5 +1,3 @@
-Imports Tinker.Commands
-
 Namespace Commands.Specializations
     Public NotInheritable Class InstancePlayCommands
         Inherits InstanceCommands

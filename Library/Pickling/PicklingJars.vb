@@ -43,7 +43,7 @@ Namespace Pickling.Jars
             Dim data(0 To size - 1) As Byte
             If sizePrefixSize > 0 Then
                 size -= sizePrefixSize
-                Dim ds = CUInt(size).Bytes(size:=sizePrefixSize)
+                Dim ds = CUInt(size).Bytes.SubArray(0, sizePrefixSize)
                 If ds.Length <> sizePrefixSize Then Throw New PicklingException("Unable to fit size into prefix.")
                 For i = 0 To sizePrefixSize - 1
                     data(i) = ds(i)
@@ -53,19 +53,19 @@ Namespace Pickling.Jars
                 data(i + offset) = val(i)
             Next i
 
-            Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() DescribeValue(val))
+            Return New Pickle(Of TValue)(Me.Name, value, data.AsReadableList(), Function() DescribeValue(val))
         End Function
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Byte())
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Byte())
             'Sizes
             Dim inputSize = expectedSize
             Dim outputSize = expectedSize
             Dim pos = 0
             If takeRest Then
-                inputSize = data.Length
-                outputSize = data.Length
+                inputSize = data.Count
+                outputSize = data.Count
             ElseIf sizePrefixSize > 0 Then
                 'Validate
-                If data.Length < sizePrefixSize Then
+                If data.Count < sizePrefixSize Then
                     Throw New PicklingException("Not enough data to parse array. Data ended before size prefix could be read.")
                 End If
                 'Read size prefix
@@ -77,8 +77,8 @@ Namespace Pickling.Jars
                 pos += sizePrefixSize
             End If
             'Validate
-            If inputSize > data.Length Then
-                Throw New PicklingException("Not enough data to parse array. Need {0} more bytes but only have {1}.".Frmt(inputSize, data.Length))
+            If inputSize > data.Count Then
+                Throw New PicklingException("Not enough data to parse array. Need {0} more bytes but only have {1}.".Frmt(inputSize, data.Count))
             End If
 
             'Parse
@@ -131,30 +131,29 @@ Namespace Pickling.Jars
                 i += 1
             End While
 
-            Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() """{0}""".Frmt(value))
+            Return New Pickle(Of TValue)(Me.Name, value, data.AsReadableList(), Function() """{0}""".Frmt(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of String)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
             'Get sizes
             Dim inputSize = expectedSize
             If nullTerminated Then
-                If data.Length > 0 Then
-                    For j = 0 To data.Length - 1
-                        If data(j) = 0 Then
-                            If inputSize <> 0 And inputSize <> j + 1 Then
-                                Throw New PicklingException("String size doesn't match expected size")
-                            End If
-                            inputSize = j + 1
-                            Exit For
-                        End If
-                    Next j
-                Else 'empty strings at the end of data are sometimes simply omitted
+                If data.Count = 0 Then 'empty strings at the end of data are sometimes simply omitted
                     Return New Pickle(Of String)(Me.Name, "", data, Function() """")
                 End If
+                For j = 0 To data.Count - 1
+                    If data(j) = 0 Then
+                        If inputSize <> 0 And inputSize <> j + 1 Then
+                            Throw New PicklingException("String size doesn't match expected size")
+                        End If
+                        inputSize = j + 1
+                        Exit For
+                    End If
+                Next j
             End If
             Dim outputSize = inputSize - If(nullTerminated, 1, 0)
             'Validate
-            If data.Length < inputSize Then Throw New PicklingException("Not enough data")
+            If data.Count < inputSize Then Throw New PicklingException("Not enough data")
             If maximumContentSize <> 0 AndAlso outputSize > maximumContentSize Then Throw New PicklingException("Size exceeds maximum size.")
 
             'Parse string data
@@ -163,7 +162,7 @@ Namespace Pickling.Jars
             While outputSize > 0
                 outputSize -= 1
                 Dim j = If(reversed, outputSize, i)
-                Contract.Assume(i < data.Length)
+                Contract.Assume(i < data.Count)
                 cc(j) = Chr(data(i))
                 i += 1
             End While
@@ -194,7 +193,7 @@ Namespace Pickling.Jars
             Return packer.Pack(value)
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
             Return parser.Parse(data)
         End Function
     End Class
@@ -234,7 +233,7 @@ Namespace Pickling.Jars
                 Contract.Assume(value(subJar.Name) IsNot Nothing)
                 pickles.Add(subJar.Pack(value(subJar.Name)))
             Next subJar
-            Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).AsReadableList(), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
     Public Class TupleParseJar
@@ -260,11 +259,11 @@ Namespace Pickling.Jars
             Return New TupleParseJar(Name, Concat(subJars, {jar.Weaken}))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
             'Parse
             Dim vals = New Dictionary(Of InvariantString, Object)
             Dim pickles = New List(Of IPickle(Of Object))
-            Dim curCount = data.Length
+            Dim curCount = data.Count
             Dim curOffset = 0
             For Each j In subJars
                 Contract.Assume(j IsNot Nothing)
@@ -273,7 +272,7 @@ Namespace Pickling.Jars
                 vals(j.Name) = p.Value
                 pickles.Add(p)
                 'Size
-                Dim n = p.Data.Length
+                Dim n = p.Data.Count
                 curCount -= n
                 curOffset += n
                 If curCount < 0 Then Throw New InvalidStateException("subJar lied about data used.")
@@ -313,14 +312,14 @@ Namespace Pickling.Jars
                 Contract.Assume(value(subjar.Name) IsNot Nothing)
                 pickles.Add(subjar.Pack(value(subjar.Name)))
             Next subjar
-            Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).ToView(), Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).AsReadableList(), Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
             'Parse
             Dim vals = New Dictionary(Of InvariantString, Object)
             Dim pickles = New List(Of IPickle(Of Object))
-            Dim curCount = data.Length
+            Dim curCount = data.Count
             Dim curOffset = 0
             For Each subJar In subJars
                 Contract.Assume(subJar IsNot Nothing)
@@ -329,7 +328,7 @@ Namespace Pickling.Jars
                 vals(subJar.Name) = p.Value
                 pickles.Add(p)
                 'Size
-                Dim n = p.Data.Length
+                Dim n = p.Data.Count
                 curCount -= n
                 curOffset += n
                 If curCount < 0 Then Throw New InvalidStateException("subJar reported incorrect data length")
@@ -360,7 +359,7 @@ Namespace Pickling.Jars
             Me.sizeJar = New ValueJar("size prefix", numSizePrefixBytes)
         End Sub
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of List(Of T))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of List(Of T))
             'Parse
             Dim vals As New List(Of T)
             Dim pickles As New List(Of IPickle(Of Object))
@@ -368,16 +367,16 @@ Namespace Pickling.Jars
             'List Size
             Dim sz = sizeJar.Parse(data)
             Dim numElements = sz.Value
-            curOffset += sz.Data.Length
+            curOffset += sz.Data.Count
             'List Elements
             For repeat = 1UL To numElements
-                Contract.Assume(curOffset <= data.Length)
+                Contract.Assume(curOffset <= data.Count)
                 'Value
-                Dim p = subJar.Parse(data.SubView(curOffset, data.Length - curOffset))
+                Dim p = subJar.Parse(data.SubView(curOffset, data.Count - curOffset))
                 vals.Add(p.Value)
                 pickles.Add(New Pickle(Of Object)(p.Value, p.Data, p.Description))
                 'Size
-                Dim n = p.Data.Length
+                Dim n = p.Data.Count
                 curOffset += n
             Next repeat
 
@@ -407,8 +406,8 @@ Namespace Pickling.Jars
         Public Overrides Function Pack(Of TValue As List(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             Dim pickles = (From e In value Select CType(subJar.Pack(e), IPickle(Of T))).ToList()
-            Dim data = Concat(CUInt(value.Count).Bytes(size:=prefixSize), Concat(From p In pickles Select p.Data.ToArray))
-            Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() Pickle(Of T).MakeListDescription(pickles))
+            Dim data = Concat(CUInt(value.Count).Bytes.SubArray(0, prefixSize), Concat(From p In pickles Select p.Data.ToArray))
+            Return New Pickle(Of TValue)(Me.Name, value, data.AsReadableList(), Function() Pickle(Of T).MakeListDescription(pickles))
         End Function
     End Class
     Public NotInheritable Class ListJar(Of T)
@@ -434,21 +433,21 @@ Namespace Pickling.Jars
             Me.subJar = subJar
         End Sub
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of List(Of T))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of List(Of T))
             'Parse
             Dim vals As New List(Of T)
             Dim pickles As New List(Of IPickle(Of Object))
-            Dim curCount = data.Length
+            Dim curCount = data.Count
             Dim curOffset = 0
             'List Size
             'List Elements
-            While curOffset < data.Length
+            While curOffset < data.Count
                 'Value
                 Dim p = subJar.Parse(data.SubView(curOffset, curCount))
                 vals.Add(p.Value)
                 pickles.Add(New Pickle(Of Object)(p.Value, p.Data, p.Description))
                 'Size
-                Dim n = p.Data.Length
+                Dim n = p.Data.Count
                 curCount -= n
                 curOffset += n
             End While
@@ -470,7 +469,7 @@ Namespace Pickling.Jars
         Public Overrides Function Pack(Of TValue As List(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Dim pickles = (From e In value Select CType(subJar.Pack(e), IPickle(Of T))).ToList()
             Dim data = Concat(From p In pickles Select p.Data.ToArray)
-            Return New Pickle(Of TValue)(Me.Name, value, data.ToView(), Function() Pickle(Of T).MakeListDescription(pickles))
+            Return New Pickle(Of TValue)(Me.Name, value, data.AsReadableList(), Function() Pickle(Of T).MakeListDescription(pickles))
         End Function
     End Class
     Public NotInheritable Class RepeatingJar(Of T)
@@ -487,7 +486,7 @@ Namespace Pickling.Jars
         Private ReadOnly packers(0 To 255) As IPackJar(Of T)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of T)
         Private ReadOnly valueIndexExtractor As Func(Of T, Byte)
-        Private ReadOnly dataIndexExtractor As Func(Of ViewableList(Of Byte), Byte)
+        Private ReadOnly dataIndexExtractor As Func(Of IReadableList(Of Byte), Byte)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(packers IsNot Nothing)
@@ -498,7 +497,7 @@ Namespace Pickling.Jars
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal valueIndexExtractor As Func(Of T, Byte),
-                       ByVal dataIndexExtractor As Func(Of ViewableList(Of Byte), Byte))
+                       ByVal dataIndexExtractor As Func(Of IReadableList(Of Byte), Byte))
             MyBase.new(name)
             Contract.Requires(valueIndexExtractor IsNot Nothing)
             Contract.Requires(dataIndexExtractor IsNot Nothing)
@@ -506,7 +505,7 @@ Namespace Pickling.Jars
             Me.dataIndexExtractor = dataIndexExtractor
         End Sub
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
             Dim index = dataIndexExtractor(data)
             If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to {0}.".Frmt(index))
             Return parsers(index).Parse(data)
@@ -558,17 +557,17 @@ Namespace Pickling.Jars
             MyBase.new(name)
         End Sub
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of PrefixPickle(Of T))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PrefixPickle(Of T))
             Dim index = CByte(data(0))
             Dim vindex = CType(CType(index, Object), T)
             If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to " + vindex.ToString())
             Dim payload = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
-            Return New Pickle(Of PrefixPickle(Of T))(Name, payload, data.SubView(0, payload.payload.Data.Length + 1))
+            Return New Pickle(Of PrefixPickle(Of T))(Name, payload, data.SubView(0, payload.payload.Data.Count + 1))
         End Function
         Public Overrides Function Pack(Of TValue As PrefixPickle(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Dim index = CByte(CType(value.index, Object))
             If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.index.ToString())
-            Return New Pickle(Of TValue)(Name, value, Concat({index}, packers(index).Pack(value.payload.Value).Data.ToArray).ToView)
+            Return New Pickle(Of TValue)(Name, value, Concat({index}, packers(index).Pack(value.payload.Value).Data.ToArray).AsReadableList)
         End Function
 
         Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of Object))
@@ -620,7 +619,7 @@ Namespace Pickling.Jars
             Next pair
         End Sub
 
-        Public Overloads Function Parse(ByVal index As Byte, ByVal data As ViewableList(Of Byte)) As IPickle(Of Object)
+        Public Overloads Function Parse(ByVal index As Byte, ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
             If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to {0}.".Frmt(index))
@@ -657,10 +656,10 @@ Namespace Pickling.Jars
             MyBase.New(name)
         End Sub
         Public Overrides Function Pack(Of TValue As Object)(ByVal value As TValue) As IPickle(Of TValue)
-            Return New Pickle(Of TValue)(Me.Name, Nothing, New Byte() {}.ToView(), Function() "[Field Skipped]")
+            Return New Pickle(Of TValue)(Me.Name, Nothing, New Byte() {}.AsReadableList(), Function() "[Field Skipped]")
         End Function
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of Object)
-            Return New Pickle(Of Object)(Me.Name, Nothing, New Byte() {}.ToView(), Function() "[Field Skipped]")
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
+            Return New Pickle(Of Object)(Me.Name, Nothing, New Byte() {}.AsReadableList(), Function() "[Field Skipped]")
         End Function
     End Class
 End Namespace

@@ -1,5 +1,5 @@
-﻿Imports Strilbrary.Numerics
-Imports Strilbrary.Enumeration
+﻿Imports Strilbrary.Collections
+Imports Strilbrary.Values
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Tinker.Bnet
 

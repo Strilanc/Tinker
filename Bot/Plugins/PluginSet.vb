@@ -1,5 +1,3 @@
-Imports System.Reflection
-
 Namespace Plugins
     Friend Class PluginSet
         Inherits FutureDisposable

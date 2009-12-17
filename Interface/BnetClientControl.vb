@@ -1,5 +1,4 @@
 Imports Tinker.Bnet.Packet
-Imports Tinker.Commands
 
 Public Class BnetClientControl
     Private ReadOnly _manager As Components.BnetClientManager

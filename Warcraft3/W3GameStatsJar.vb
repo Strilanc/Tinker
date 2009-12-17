@@ -99,13 +99,13 @@
                     {"unknown2", ""}
                 })
             Return New Pickling.Pickle(Of TValue)(value:=value,
-                                                  Data:=Concat(EncodeStatStringData(rawPickle.Data).ToArray(), {0}).ToView,
+                                                  Data:=Concat(EncodeStatStringData(rawPickle.Data).ToArray(), {0}).AsReadableList,
                                                   description:=rawPickle.Description)
         End Function
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of GameStats)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of GameStats)
             'StatString is null-terminated
             Dim n As Integer
-            For n = 0 To data.Length - 1
+            For n = 0 To data.Count - 1
                 If data(n) = 0 Then
                     data = data.SubView(0, n + 1)
                     Exit For
@@ -154,7 +154,7 @@
             Dim playableWidth = CInt(vals("playable width"))
             Dim playableHeight = CInt(vals("playable height"))
             Dim xoroChecksum = CUInt(vals("xoro checksum"))
-            Dim sha1Checksum = CType(vals("sha1 checksum"), Byte())
+            Dim sha1Checksum = CType(vals("sha1 checksum"), Byte()).AssumeNotNull.AsReadableList
             Dim relativePath = CStr(vals("relative path")).AssumeNotNull
             Dim hostName = CStr(vals("host name")).AssumeNotNull
 
@@ -176,9 +176,9 @@
             Return New Pickling.Pickle(Of GameStats)(value, data, pickle.Description)
         End Function
 
-        Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As ViewableList(Of Byte)
+        Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
             Dim out As New List(Of Byte)
             For Each block In data.EnumBlocks(7)
                 Contract.Assume(block IsNot Nothing)
@@ -196,12 +196,12 @@
                     out.Add(b Or CByte(&H1))
                 Next b
             Next block
-            Return out.ToView
+            Return out.AsReadableList
         End Function
 
-        Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As ViewableList(Of Byte)
+        Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
             Dim out As New List(Of Byte)
             For Each block In data.EnumBlocks(8)
                 Contract.Assume(block IsNot Nothing)
@@ -213,7 +213,7 @@
                     out.Add(b)
                 Next i
             Next block
-            Return out.ToView()
+            Return out.AsReadableList
         End Function
     End Class
 End Namespace

@@ -1,4 +1,3 @@
-Imports System.Net.Sockets
 Imports Tinker.Links
 
 Namespace WC3
@@ -218,7 +217,7 @@ Namespace WC3
             socket.AsyncReadPacket().CallOnValueSuccess(
                 Sub(data)
                     If Not socketHandled.TryAcquire Then Return
-                    If data.Length < 4 OrElse data(0) <> Packet.PacketPrefixValue OrElse data(1) <> PacketId.Knock Then
+                    If data.Count < 4 OrElse data(0) <> Packet.PacketPrefixValue OrElse data(1) <> PacketId.Knock Then
                         Throw New IO.InvalidDataException("{0} was not a warcraft 3 player connection.".Frmt(socket.Name))
                     End If
 

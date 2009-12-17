@@ -13,9 +13,6 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
-Imports System.Runtime.CompilerServices
-Imports Tinker.Commands
-
 Namespace WC3
     Public Enum GameState
         AcceptingPlayers = 0
@@ -462,7 +459,7 @@ Namespace WC3
         End Function
         Private Function TryFindPlayer(ByVal userName As InvariantString) As Player
             Return (From player In _players
-                    Where player.Name = username
+                    Where player.Name = userName
                     ).FirstOrDefault
         End Function
         Public Function QueueTryFindPlayer(ByVal userName As InvariantString) As IFuture(Of Player)

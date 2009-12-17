@@ -98,15 +98,15 @@
             Return True
         End Function
 
-        Protected MustOverride Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As ViewableList(Of Byte)) As IPickle
+        Protected MustOverride Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
         <ContractClassFor(GetType(W3ConnectionAccepterBase))>
         Public MustInherit Class ContractClass
             Inherits W3ConnectionAccepterBase
 
-            Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As Strilbrary.ViewableList(Of Byte)) As IPickle
+            Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
                 Contract.Requires(socket IsNot Nothing)
                 Contract.Requires(packetData IsNot Nothing)
-                Contract.Requires(packetData.Length >= 4)
+                Contract.Requires(packetData.Count >= 4)
                 Contract.Ensures(Contract.Result(Of IPickle)() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
@@ -122,7 +122,7 @@
             MyBase.New(logger)
         End Sub
 
-        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As Strilbrary.ViewableList(Of Byte)) As IPickle
+        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
             If packetData(1) <> PacketId.Knock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
@@ -152,7 +152,7 @@
             MyBase.New(logger)
         End Sub
 
-        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As Strilbrary.ViewableList(Of Byte)) As IPickle
+        Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
             If packetData(1) <> PacketId.PeerKnock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
             End If

@@ -1,5 +1,4 @@
-﻿Imports System.Net
-Imports System.Net.Sockets
+﻿Imports System.Net.Sockets
 
 Namespace BNLS
     Public Enum BNLSPacketId As Byte
@@ -178,7 +177,7 @@ Namespace BNLS
             Return socket.AsyncReadPacket().Select(
                 Function(packetData)
                     'Check
-                    If packetData.Length < 3 Then
+                    If packetData.Count < 3 Then
                         Throw New IO.InvalidDataException("Packet doesn't have a header.")
                     ElseIf packetData(2) <> BNLSPacketId.Warden Then
                         Throw New IO.InvalidDataException("Not a bnls warden packet.")
@@ -192,10 +191,10 @@ Namespace BNLS
                 End Function)
         End Function
 
-        Public Sub ProcessWardenPacket(ByVal data As ViewableList(Of Byte))
+        Public Sub ProcessWardenPacket(ByVal data As IReadableList(Of Byte))
             Contract.Requires(data IsNot Nothing)
             keepAlive.Reset()
-            WritePacket(socket, logger, BNLSWardenPacket.MakeFullServiceHandleWardenPacket(cookie, data.ToArray))
+            WritePacket(socket, logger, BNLSWardenPacket.MakeFullServiceHandleWardenPacket(cookie, data))
         End Sub
 
         Public Sub Dispose() Implements IDisposable.Dispose

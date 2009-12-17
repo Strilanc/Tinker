@@ -13,10 +13,6 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
-Imports Tinker.Links
-Imports System.Net
-Imports System.Net.Sockets
-
 Namespace Bnet
     Public Enum ClientState
         Disconnected
@@ -273,16 +269,16 @@ Namespace Bnet
             Return result
         End Function
         Private Sub BeginHandlingPackets()
-            AsyncProduceConsumeUntilError(Of ViewableList(Of Byte))(
+            AsyncProduceConsumeUntilError(
                 producer:=AddressOf _socket.FutureReadPacket,
                 consumer:=AddressOf ProcessPacket,
                 errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
                                                              reason:="Error receiving packet: {0}.".Frmt(exception.Message))
             )
         End Sub
-        Private Function ProcessPacket(ByVal packetData As ViewableList(Of Byte)) As ifuture
+        Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)
-            Contract.Requires(packetData.Length >= 4)
+            Contract.Requires(packetData.Count >= 4)
             Dim result = Me._packetHandler.HandlePacket(packetData, _socket.Name)
             result.Catch(Sub(exception) QueueDisconnect(expected:=False,
                                                         reason:="Error handling packet {0}: {1}.".Frmt(CType(packetData(1), PacketId), exception.Message)))
@@ -797,7 +793,7 @@ Namespace Bnet
             If _futureWardenHandler Is Nothing Then Return
             Dim encryptedData = CType(vals("encrypted data"), Byte()).AssumeNotNull
             _futureWardenHandler.CallOnValueSuccess(
-                    Sub(bnlsClient) bnlsClient.ProcessWardenPacket(encryptedData.ToView)
+                    Sub(bnlsClient) bnlsClient.ProcessWardenPacket(encryptedData.AsReadableList)
                 ).SetHandled()
         End Sub
         Private Sub OnWardenSend(ByVal data() As Byte)

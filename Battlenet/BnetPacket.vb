@@ -296,7 +296,7 @@ Namespace Bnet
                 MyBase.new(PacketId.QueryGamesList.ToString)
             End Sub
 
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
                 Dim count = data.SubView(0, 4).ToUInt32
                 Dim games = New List(Of WC3.RemoteGameDescription)(capacity:=CInt(count))
                 Dim pickles = New List(Of IPickle(Of Object))(capacity:=CInt(count + 1))
@@ -312,7 +312,7 @@ Namespace Bnet
                     For repeat = 1UI To count
                         Dim pickle = gameDataJar.Parse(data.SubView(offset))
                         pickles.Add(pickle)
-                        offset += pickle.Data.Length
+                        offset += pickle.Data.Count
                         Dim vals = pickle.Value
                         games.Add(New WC3.RemoteGameDescription(Name:=CStr(vals("game name")).AssumeNotNull,
                                                                 gamestats:=CType(vals("game statstring"), WC3.GameStats).AssumeNotNull,
@@ -636,11 +636,11 @@ Namespace Bnet
             Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
                 If value.Length > 4 Then Throw New ArgumentOutOfRangeException("value", "Value must be at most 4 characters.")
                 Dim data = value.ToAscBytes().Reverse.PaddedTo(minimumLength:=4)
-                Return New Pickling.Pickle(Of TValue)(Me.Name, value, data.ToView)
+                Return New Pickling.Pickle(Of TValue)(Me.Name, value, data.AsReadableList)
             End Function
 
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of String)
-                If data.Length < 4 Then Throw New PicklingException("Not enough data")
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
+                If data.Count < 4 Then Throw New PicklingException("Not enough data")
                 Dim datum = data.SubView(4)
                 Dim value As String = datum.ParseChrString(nullTerminated:=True).Reverse.ToArray
                 Return New Pickling.Pickle(Of String)(Me.Name, value, datum)
@@ -658,7 +658,7 @@ Namespace Bnet
 
             Public Sub New(ByVal name As InvariantString,
                            ByVal numDigits As Integer,
-                           Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian)
+                           Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
                 MyBase.New(name)
                 Contract.Requires(numDigits > 0)
                 Contract.Requires(numDigits <= 16)
@@ -685,11 +685,11 @@ Namespace Bnet
                         Throw byteOrder.MakeImpossibleValueException()
                 End Select
 
-                Return New Pickling.Pickle(Of TValue)(Me.Name, value.AssumeNotNull, New String(digits.ToArray).ToAscBytes().ToView())
+                Return New Pickling.Pickle(Of TValue)(Me.Name, value.AssumeNotNull, New String(digits.ToArray).ToAscBytes().AsReadableList())
             End Function
 
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ULong)
-                If data.Length < numDigits Then Throw New PicklingException("Not enough data")
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ULong)
+                If data.Count < numDigits Then Throw New PicklingException("Not enough data")
                 data = data.SubView(0, numDigits)
                 Dim value = data.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder)
                 Return New Pickling.Pickle(Of ULong)(Me.Name, value, data)
@@ -704,12 +704,12 @@ Namespace Bnet
             End Sub
 
             Public Overrides Function Pack(Of TValue As Date)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
-                Dim datum = CType(value, Date).ToFileTime.BitwiseToUInt64.Bytes().ToView
+                Dim datum = CType(value, Date).ToFileTime.BitwiseToUInt64.Bytes().AsReadableList
                 Return New Pickle(Of TValue)(Me.Name, value, datum)
             End Function
 
-            Public Overrides Function Parse(ByVal data As Strilbrary.ViewableList(Of Byte)) As Pickling.IPickle(Of Date)
-                If data.Length < 8 Then Throw New PicklingException("Not enough data.")
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of Date)
+                If data.Count < 8 Then Throw New PicklingException("Not enough data.")
                 Dim datum = data.SubView(0, 8)
                 Dim value = Date.FromFileTime(datum.ToUInt64.BitwiseToInt64)
                 Return New Pickle(Of Date)(Me.Name, value, datum)
@@ -746,7 +746,7 @@ Namespace Bnet
                 Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
             End Function
 
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of ProductCredentials)
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of ProductCredentials)
                 Dim pickle = _dataJar.Parse(data)
                 Dim vals = pickle.Value
                 Dim value = New ProductCredentials(
@@ -773,7 +773,7 @@ Namespace Bnet
                 Return 4
             End Get
         End Property
-        Protected Overrides Function ExtractKey(ByVal header As Strilbrary.ViewableList(Of Byte)) As PacketId
+        Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
             If header(0) <> Packet.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
             Return CType(header(1), PacketId)
         End Function

@@ -139,7 +139,7 @@
             End Get
         End Property
 
-        Public Shared Function FromData(ByVal data As ViewableList(Of Byte)) As GameAction
+        Public Shared Function FromData(ByVal data As IReadableList(Of Byte)) As GameAction
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
             Return New GameAction(packetJar.Parse(data))
@@ -459,12 +459,12 @@
 
             Public Overrides Function Pack(Of R As ObjectId)(ByVal value As R) As IPickle(Of R)
                 Dim valued As ObjectId = value
-                Dim data = Concat(valued.AllocatedId.Bytes, valued.CounterId.Bytes).ToView
+                Dim data = Concat(valued.AllocatedId.Bytes, valued.CounterId.Bytes).AsReadableList
                 Return New Pickle(Of R)(Me.Name, value, data, Function() ValueToString(valued))
             End Function
 
-            Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of ObjectId)
-                If data.Length < 8 Then Throw New PicklingException("Not enough data.")
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ObjectId)
+                If data.Count < 8 Then Throw New PicklingException("Not enough data.")
                 Dim datum = data.SubView(0, 8)
                 Dim value = New ObjectId(datum.SubView(0, 4).ToUInt32,
                                          datum.SubView(4, 4).ToUInt32)
@@ -515,12 +515,12 @@
         End Sub
 
         Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
-            Return New Pickle(Of TValue)(Name, value, Concat({value.id}, value.Payload.Data.ToArray).ToView)
+            Return New Pickle(Of TValue)(Name, value, Concat({value.id}, value.Payload.Data.ToArray).AsReadableList)
         End Function
 
-        Public Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As Pickling.IPickle(Of GameAction)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of GameAction)
             Dim val = GameAction.FromData(data)
-            Dim n = val.Payload.Data.Length
+            Dim n = val.Payload.Data.Count
             Return New Pickle(Of GameAction)(Name, val, data.SubView(0, n + 1))
         End Function
     End Class

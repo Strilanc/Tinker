@@ -1,5 +1,4 @@
 ﻿Imports System.Net
-Imports System.Net.Sockets
 
 Public NotInheritable Class PacketSocket
     Private _isConnected As Boolean
@@ -122,8 +121,8 @@ Public NotInheritable Class PacketSocket
         Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
 
-    Public Function AsyncReadPacket() As IFuture(Of ViewableList(Of Byte))
-        Contract.Ensures(Contract.Result(Of IFuture(Of ViewableList(Of Byte)))() IsNot Nothing)
+    Public Function AsyncReadPacket() As IFuture(Of IReadableList(Of Byte))
+        Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of Byte)))() IsNot Nothing)
         'Read
         Dim result = packetStreamer.AsyncReadPacket()
         'Handle

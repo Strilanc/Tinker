@@ -9,11 +9,11 @@
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Return New Pickle(Of TValue)(Me.Name, value, {CByte(CType(value, Object))}.ToView(), Function() ValueToString(value))
+            Return New Pickle(Of TValue)(Me.Name, value, {CByte(CType(value, Object))}.AsReadableList(), Function() ValueToString(value))
         End Function
 
-        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
-            If data.Length < 1 Then Throw New PicklingException("Not enough data")
+        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+            If data.Count < 1 Then Throw New PicklingException("Not enough data")
             Dim datum = data.SubView(0, 1)
             Dim value = CType(CType(datum(0), Object), T)
             Return New Pickle(Of T)(Me.Name, value.AssumeNotNull, datum, Function() ValueToString(value))
@@ -37,11 +37,11 @@
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Return New Pickle(Of TValue)(Me.Name, value, CUShort(CType(value, Object)).Bytes(byteOrder).ToView(), Function() ValueToString(value))
+            Return New Pickle(Of TValue)(Me.Name, value, CUShort(CType(value, Object)).Bytes(byteOrder).AsReadableList(), Function() ValueToString(value))
         End Function
 
-        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
-            If data.Length < 2 Then Throw New PicklingException("Not enough data")
+        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+            If data.Count < 2 Then Throw New PicklingException("Not enough data")
             Dim datum = data.SubView(0, 2)
             Dim value = CType(CType(datum.ToUInt16(byteOrder), Object), T)
             Return New Pickle(Of T)(Me.Name, value, datum, Function() ValueToString(value))
@@ -65,11 +65,11 @@
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Return New Pickle(Of TValue)(Me.Name, value, CUInt(CType(value, Object)).Bytes(byteOrder).ToView(), Function() ValueToString(value))
+            Return New Pickle(Of TValue)(Me.Name, value, CUInt(CType(value, Object)).Bytes(byteOrder).AsReadableList(), Function() ValueToString(value))
         End Function
 
-        Public NotOverridable Overrides Function Parse(ByVal data As ViewableList(Of Byte)) As IPickle(Of T)
-            If data.Length < 4 Then Throw New PicklingException("Not enough data")
+        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+            If data.Count < 4 Then Throw New PicklingException("Not enough data")
             Dim datum = data.SubView(0, 4)
             Dim value = CType(CType(datum.ToUInt32(byteOrder), Object), T)
             Contract.Assume(value IsNot Nothing)

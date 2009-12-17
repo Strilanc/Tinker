@@ -1,5 +1,3 @@
-Imports System.Reflection
-
 Namespace Plugins
     <Serializable()>
     Public NotInheritable Class PluginException

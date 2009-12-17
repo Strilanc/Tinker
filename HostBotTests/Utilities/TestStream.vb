@@ -1,5 +1,5 @@
 ﻿Imports System.Collections.Generic
-Imports System.Diagnostics.Contracts
+Imports Strilbrary.Collections
 
 Public Class TestStream
     Inherits IO.Stream

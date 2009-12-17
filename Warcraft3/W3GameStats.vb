@@ -32,13 +32,13 @@
         Public ReadOnly playableWidth As Integer
         Public ReadOnly playableHeight As Integer
         Public ReadOnly mapChecksumXORO As UInt32
-        Private ReadOnly _mapChecksumSHA1 As ViewableList(Of Byte)
+        Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Public ReadOnly relativePath As String
         Private ReadOnly _hostName As String
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
-            Contract.Invariant(_mapChecksumSHA1.Length = 20)
+            Contract.Invariant(_mapChecksumSHA1.Count = 20)
             Contract.Invariant(_hostName IsNot Nothing)
         End Sub
 
@@ -48,10 +48,10 @@
                 Return _hostName
             End Get
         End Property
-        Public ReadOnly Property MapChecksumSHA1 As ViewableList(Of Byte)
+        Public ReadOnly Property MapChecksumSHA1 As IReadableList(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of ViewableList(Of Byte))().Length = 20)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
                 Return _mapChecksumSHA1
             End Get
         End Property
@@ -70,11 +70,11 @@
                        ByVal playableWidth As Integer,
                        ByVal playableHeight As Integer,
                        ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As Byte(),
+                       ByVal mapChecksumSHA1 As IReadableList(Of Byte),
                        ByVal relativePath As String,
                        ByVal hostName As String)
-            Contract.Requires(MapChecksumSHA1 IsNot Nothing)
-            Contract.Requires(MapChecksumSHA1.Length = 20)
+            Contract.Requires(mapChecksumSHA1 IsNot Nothing)
+            Contract.Requires(mapChecksumSHA1.Count = 20)
             Contract.Requires(hostName IsNot Nothing)
 
             Me.randomHero = randomHero
@@ -88,7 +88,7 @@
             Me.playableWidth = playableWidth
             Me.playableHeight = playableHeight
             Me.mapChecksumXORO = mapChecksumXORO
-            Me._mapChecksumSHA1 = MapChecksumSHA1.ToView
+            Me._mapChecksumSHA1 = mapChecksumSHA1
             Me.relativePath = relativePath
             Me._hostName = hostName
         End Sub
