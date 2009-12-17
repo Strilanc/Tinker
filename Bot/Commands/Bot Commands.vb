@@ -25,7 +25,7 @@ Namespace Commands
             Description:="Lists all bot components. Use -type= to filter by component type.",
             Permissions:="root:1",
             func:=Function(target, user, argument)
-                      Dim futureComponents = target.QueueGetAllComponents()
+                      Dim futureComponents = target.Components.QueueGetAllComponents()
                       Dim typeFilter = argument.TryGetOptionalNamedValue("type")
                       If typeFilter Is Nothing Then
                           Return From components In futureComponents
@@ -125,7 +125,7 @@ Namespace Commands
 
                       Dim advertiser = New WC3.LanAdvertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
                       Dim manager = New Components.LanAdvertiserManager(argName, target, advertiser)
-                      Return target.QueueAddComponent(manager).EvalOnSuccess(Function() "Created lan advertiser.")
+                      Return target.Components.QueueAddComponent(manager).EvalOnSuccess(Function() "Created lan advertiser.")
                   End Function)
 
         Public Shared ReadOnly [To] As New DelegatedPartialCommand(Of MainBot)(
@@ -138,7 +138,7 @@ Namespace Commands
                       If args.Length <> 2 Then Throw New ArgumentException("Expected widget type:name.")
                       Dim type As InvariantString = args(0)
                       Dim name As InvariantString = args(1)
-                      Return target.QueueTryFindComponent(type, name).Select(
+                      Return target.Components.QueueTryFindComponent(type, name).Select(
                           Function(component)
                               If component Is Nothing Then Throw New ArgumentException("No {0} named {1}.".Frmt(Type, Name))
                               Return component.InvokeCommand(user, argumentRest)
@@ -157,7 +157,7 @@ Namespace Commands
 
                       Return Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target).Select(
                           Function(manager)
-                              Dim added = target.QueueAddComponent(manager)
+                              Dim added = target.Components.QueueAddComponent(manager)
                               added.Catch(Sub() manager.Dispose())
                               Return added.EvalOnSuccess(Function() "Created Client")
                           End Function).defuturized
@@ -173,7 +173,7 @@ Namespace Commands
                       If args.Length <> 2 Then Throw New ArgumentException("Expected a component argument like: type:name.")
                       Dim type As InvariantString = args(0)
                       Dim name As InvariantString = args(1)
-                      Dim futureComponent = target.QueueFindComponent(type, name)
+                      Dim futureComponent = target.Components.QueueFindComponent(type, name)
                       Return futureComponent.Select(
                           Function(component)
                               component.dispose()
@@ -223,7 +223,7 @@ Namespace Commands
                         If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
                         Dim socket = New Plugins.PluginSocket(profile.name, target, profile.location)
                         Dim manager = New Components.PluginManager(socket)
-                        Dim added = target.QueueAddComponent(manager)
+                        Dim added = target.Components.QueueAddComponent(manager)
                         added.Catch(Sub() manager.Dispose())
                         Return added.EvalOnSuccess(Function() "Loaded plugin. Description: {0}".Frmt(socket.Plugin.Description))
                     End Function).Defuturized
@@ -249,7 +249,7 @@ Namespace Commands
                     Contract.Assume(profileName IsNot Nothing)
                     'Create and connect
                     Dim futureManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
-                    Dim futureAdded = (From manager In futureManager Select target.QueueAddComponent(manager)).Defuturized
+                    Dim futureAdded = (From manager In futureManager Select target.Components.QueueAddComponent(manager)).Defuturized
                     Dim futureClient = futureAdded.EvalOnSuccess(Function() futureManager.Value.Client)
                     Dim futureConnected = (From client In futureClient
                                            Select client.QueueConnectAndLogOn(

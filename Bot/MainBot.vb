@@ -25,7 +25,7 @@ Public NotInheritable Class MainBot
     Private _pluginProfiles As IEnumerable(Of Plugins.PluginProfile) = New List(Of Plugins.PluginProfile)
     Private ReadOnly _portPool As PortPool
     Private ReadOnly _logger As Logger
-    Private ReadOnly _components As New AsyncViewableCollection(Of Components.IBotComponent)
+    Private ReadOnly _components As New Components.ComponentSet()
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(inQueue IsNot Nothing)
@@ -55,6 +55,12 @@ Public NotInheritable Class MainBot
             Return _logger
         End Get
     End Property
+    Public ReadOnly Property Components As Components.ComponentSet
+        Get
+            Contract.Ensures(Contract.Result(Of Components.ComponentSet)() IsNot Nothing)
+            Return _components
+        End Get
+    End Property
 
     Public Function QueueUpdateProfiles(ByVal clientProfiles As IEnumerable(Of ClientProfile), ByVal pluginProfiles As IEnumerable(Of Plugins.PluginProfile)) As IFuture
         Contract.Requires(clientProfiles IsNot Nothing)
@@ -74,148 +80,18 @@ Public NotInheritable Class MainBot
         Return inQueue.QueueFunc(Function() _pluginProfiles.ToList)
     End Function
 
-#Region "Components"
-    Private Sub AddComponent(ByVal component As Components.IBotComponent)
-        Contract.Requires(component IsNot Nothing)
-        If _components.Contains(component) Then
-            Throw New InvalidOperationException("Component already added.")
-        ElseIf TryFindComponent(component.Type, component.Name) IsNot Nothing Then
-            Throw New InvalidOperationException("There is already a {0} named {1}.".Frmt(component.Type, component.Name))
-        End If
-        _components.Add(component)
-        'Automatic cleanup
-        component.FutureDisposed.QueueCallWhenReady(inQueue,
-                Sub() _components.Remove(component))
-    End Sub
-    Public Function QueueAddComponent(ByVal component As Components.IBotComponent) As IFuture
-        Contract.Requires(component IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        Return inQueue.QueueAction(Sub() AddComponent(component))
-    End Function
-
-    <Pure()>
-    Private Function EnumComponents(Of T As Components.IBotComponent)() As IEnumerable(Of T)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-        Return From component In _components
-               Where TypeOf component Is T
-               Select CType(component, T)
-    End Function
-    Public Function QueueGetAllComponents() As IFuture(Of IList(Of Components.IBotComponent))
-        Contract.Ensures(Contract.Result(Of IFuture(Of IList(Of Components.IBotComponent)))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() _components.ToList)
-    End Function
-    Public Function QueueGetAllComponents(Of T As Components.IBotComponent)() As IFuture(Of IList(Of T))
-        Contract.Ensures(Contract.Result(Of IFuture(Of IList(Of T)))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() EnumComponents(Of T)().ToList)
-    End Function
-
-    <Pure()>
-    Private Function TryFindComponent(ByVal type As InvariantString,
-                                       ByVal name As InvariantString) As Components.IBotComponent
-        Return (From c In _components
-                Where c.Type = type _
-                AndAlso c.Name = name).FirstOrDefault
-    End Function
-    Public Function QueueTryFindComponent(ByVal type As InvariantString,
-                                          ByVal name As InvariantString) As IFuture(Of Components.IBotComponent)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Components.IBotComponent))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() TryFindComponent(type, name))
-    End Function
-    <Pure()>
-    Private Function FindComponent(ByVal type As InvariantString,
-                                   ByVal name As InvariantString) As Components.IBotComponent
-        Contract.Ensures(Contract.Result(Of Components.IBotComponent)() IsNot Nothing)
-        Dim result = TryFindComponent(type, name)
-        If result Is Nothing Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(type, name))
-        Return result
-    End Function
-    Public Function QueueFindComponent(ByVal type As InvariantString,
-                                       ByVal name As InvariantString) As IFuture(Of Components.IBotComponent)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Components.IBotComponent))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() FindComponent(type, name))
-    End Function
-    <Pure()>
-    Private Function TryFindComponent(Of T As Components.IBotComponent)(ByVal name As InvariantString) As T
-        Return (From c In Me.EnumComponents(Of T)()
-                Where c.Name = name).FirstOrDefault
-    End Function
-    Public Function QueueTryFindComponent(Of T As Components.IBotComponent)(ByVal name As InvariantString) As IFuture(Of T)
-        Contract.Ensures(Contract.Result(Of IFuture(Of T))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() TryFindComponent(Of T)(name))
-    End Function
-    <Pure()>
-    Private Function FindComponent(Of T As Components.IBotComponent)(ByVal name As InvariantString) As T
-        Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
-        Dim result = TryFindComponent(Of T)(name)
-        If result Is Nothing Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(GetType(T), name))
-        Return result
-    End Function
-    Public Function QueueFindComponent(Of T As Components.IBotComponent)(ByVal name As InvariantString) As IFuture(Of T)
-        Contract.Ensures(Contract.Result(Of IFuture(Of T))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() FindComponent(Of T)(name))
-    End Function
-
-    Private Function GetOrConstructComponent(Of T As Components.IBotComponent)(ByVal factory As Func(Of T)) As T
-        Contract.Requires(factory IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
-        Dim result = CType((From c In _components Where TypeOf c Is T).FirstOrDefault, T)
-        If result Is Nothing Then
-            result = factory()
-            Contract.Assume(result IsNot Nothing)
-            AddComponent(result)
-        End If
-        Return result
-    End Function
-    Public Function QueueGetOrConstructComponent(Of T As Components.IBotComponent)(ByVal factory As Func(Of T)) As IFuture(Of T)
-        Contract.Requires(factory IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of T))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() GetOrConstructComponent(factory))
-    End Function
-
-    Private Function CreateComponentsAsyncView(ByVal adder As Action(Of MainBot, Components.IBotComponent),
-                                               ByVal remover As Action(Of MainBot, Components.IBotComponent)) As IDisposable
-        Contract.Requires(adder IsNot Nothing)
-        Contract.Requires(remover IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-        Return _components.BeginSync(adder:=Sub(sender, item) adder(Me, item),
-                                     remover:=Sub(sender, item) remover(Me, item))
-    End Function
-    Public Function QueueCreateComponentsAsyncView(ByVal adder As Action(Of MainBot, Components.IBotComponent),
-                                                   ByVal remover As Action(Of MainBot, Components.IBotComponent)) As IFuture(Of IDisposable)
-        Contract.Requires(adder IsNot Nothing)
-        Contract.Requires(remover IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() CreateComponentsAsyncView(adder, remover))
-    End Function
-    Public Function QueueCreateComponentsAsyncView(Of T As Components.IBotComponent)(
-                            ByVal adder As Action(Of MainBot, T),
-                            ByVal remover As Action(Of MainBot, T)) As IFuture(Of IDisposable)
-        Contract.Requires(adder IsNot Nothing)
-        Contract.Requires(remover IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
-        Return Me.QueueCreateComponentsAsyncView(
-                adder:=Sub(sender, component) If TypeOf component Is T Then adder(sender, CType(component, T)),
-                remover:=Sub(sender, component) If TypeOf component Is T Then remover(sender, CType(component, T)))
-    End Function
-#End Region
-
     Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
         If finalizing Then Return Nothing
-        Return inQueue.QueueAction(
-            Sub()
-                For Each component In _components
-                    component.Dispose()
-                Next component
-            End Sub)
+        Return inQueue.QueueAction(Sub() _components.Dispose())
     End Function
 End Class
 
-Public Module MainBotExtensions
+Public Module BotExtensions
     <Extension()>
     Public Function QueueGetOrConstructGameServer(ByVal this As MainBot) As IFuture(Of Components.WC3GameServerManager)
         Contract.Requires(this IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture(Of Components.WC3GameServerManager))() IsNot Nothing)
-        Return this.QueueGetOrConstructComponent(Of Components.WC3GameServerManager)(
+        Return this.Components.QueueGetOrConstructComponent(Of Components.WC3GameServerManager)(
             factory:=Function() New Components.WC3GameServerManager("Auto", New WC3.GameServer, this))
     End Function
 End Module

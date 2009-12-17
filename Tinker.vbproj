@@ -170,16 +170,18 @@
   <ItemGroup>
     <Compile Include="Bnet\Bnet Packet.vb" />
     <Compile Include="Bnet\Product Credentials.vb" />
-    <Compile Include="Bnet\Bnet Client Credentials.vb" />
+    <Compile Include="Bnet\Client Credentials.vb" />
     <Compile Include="Bot\Commands\Generic Commands.vb" />
     <Compile Include="Bot\Components\CKLServerManager.vb" />
     <Compile Include="Bot\Components\MainBotManager.vb" />
     <Compile Include="Bot\Components\WC3GameManager.vb" />
     <Compile Include="Bot\Components\PluginManager.vb" />
     <Compile Include="Bot\Components\WC3GameServerManager.vb" />
-    <Compile Include="Bot\Components\IBotComponent.vb" />
+    <Compile Include="Components\Component Extensions.vb" />
+    <Compile Include="Components\IBotComponent.vb" />
     <Compile Include="Bnet\Bnet Client Manager.vb" />
     <Compile Include="Bot\Components\LanAdvertiserManager.vb" />
+    <Compile Include="Components\ComponentSet.vb" />
     <Compile Include="Bot\Plugins\PluginSet.vb" />
     <Compile Include="Bot\Plugins\Plugin Interfaces.vb" />
     <Compile Include="Bot\Plugins\PluginProfile.vb" />

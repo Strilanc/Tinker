@@ -17,7 +17,7 @@ Public Class ComponentsControl
         InitializeComponent()
 
         _botComponentTabs = New ComponentTabSet(tabsBot)
-        _hooks.Add(bot.QueueCreateComponentsAsyncView(
+        _hooks.Add(bot.Components.QueueCreateAsyncView(
                             adder:=Sub(sender, component) inQueue.QueueAction(Sub() OnBotAddedComponent(component)),
                             remover:=Sub(sender, component) inQueue.QueueAction(Sub() OnBotRemovedComponent(component))))
     End Sub

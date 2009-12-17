@@ -44,7 +44,7 @@ Public Class ClientForm
             _bot = New MainBot(portPool)
             Dim botManager = New Components.MainBotManager(_bot)
             Dim componentsControl = New Tinker.ComponentsControl(_bot)
-            _bot.QueueAddComponent(botManager)
+            _bot.Components.QueueAddComponent(botManager)
             componentsControl.Anchor = System.Windows.Forms.AnchorStyles.Top Or
                                        System.Windows.Forms.AnchorStyles.Bottom Or
                                        System.Windows.Forms.AnchorStyles.Left Or
