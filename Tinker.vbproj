@@ -308,7 +308,6 @@
     <Compile Include="Bot\MainBot.vb" />
     <Compile Include="Bnet\Client.vb" />
     <Compile Include="Bnet\RevisionCheck.vb" />
-    <Compile Include="Bnet\Socket.vb" />
     <Compile Include="Interface\W3GameControl.Designer.vb">
       <DependentUpon>W3GameControl.vb</DependentUpon>
     </Compile>

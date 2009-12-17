@@ -33,7 +33,7 @@ Namespace Bnet
 
         Public ReadOnly profile As ClientProfile
         Public ReadOnly logger As Logger
-        Private _socket As Socket
+        Private _socket As PacketSocket
 
         Private ReadOnly outQueue As ICallQueue
         Private ReadOnly inQueue As ICallQueue
@@ -190,7 +190,7 @@ Namespace Bnet
             SendPacket(Bnet.Packet.MakeNetGamePort(Me._reportedListenPort))
         End Sub
 
-        Private Sub OnSocketDisconnected(ByVal sender As Socket, ByVal expected As Boolean, ByVal reason As String)
+        Private Sub OnSocketDisconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String)
             inQueue.QueueAction(Sub() Disconnect(expected, reason))
         End Sub
 
@@ -234,7 +234,7 @@ Namespace Bnet
 
             Dim result = AsyncTcpConnect(remoteHost, port).QueueEvalOnValueSuccess(inQueue,
                 Function(tcpClient)
-                    Me._socket = New Socket(New PacketSocket(
+                    Me._socket = New PacketSocket(
                             stream:=New ThrottledWriteStream(
                                         substream:=tcpClient.GetStream,
                                         initialSlack:=1000,
@@ -245,7 +245,7 @@ Namespace Bnet
                             remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                             timeout:=60.Seconds,
                             logger:=logger,
-                            bufferSize:=PacketSocket.DefaultBufferSize * 10))
+                            bufferSize:=PacketSocket.DefaultBufferSize * 10)
                     AddHandler Me._socket.Disconnected, AddressOf OnSocketDisconnected
                     Me._socket.Name = "BNET"
                     ChangeState(ClientState.Connecting)
@@ -270,7 +270,7 @@ Namespace Bnet
         End Function
         Private Sub BeginHandlingPackets()
             AsyncProduceConsumeUntilError(
-                producer:=AddressOf _socket.FutureReadPacket,
+                producer:=AddressOf _socket.AsyncReadPacket,
                 consumer:=AddressOf ProcessPacket,
                 errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
                                                              reason:="Error receiving packet: {0}.".Frmt(exception.Message))
@@ -584,7 +584,15 @@ Namespace Bnet
 #Region "Networking"
         Private Sub SendPacket(ByVal packet As Bnet.Packet)
             Contract.Requires(packet IsNot Nothing)
-            _socket.SendPacket(packet)
+
+            Try
+                logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
+                logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
+
+                _socket.WritePacket(Concat({Bnet.Packet.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
+            Catch e As Exception
+                Disconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, e))
+            End Try
         End Sub
 #End Region
 
