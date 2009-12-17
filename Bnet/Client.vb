@@ -33,7 +33,7 @@ Namespace Bnet
 
         Public ReadOnly profile As ClientProfile
         Public ReadOnly logger As Logger
-        Private _socket As BnetSocket
+        Private _socket As Socket
 
         Private ReadOnly outQueue As ICallQueue
         Private ReadOnly inQueue As ICallQueue
@@ -190,7 +190,7 @@ Namespace Bnet
             SendPacket(Bnet.Packet.MakeNetGamePort(Me._reportedListenPort))
         End Sub
 
-        Private Sub OnSocketDisconnected(ByVal sender As BnetSocket, ByVal expected As Boolean, ByVal reason As String)
+        Private Sub OnSocketDisconnected(ByVal sender As Socket, ByVal expected As Boolean, ByVal reason As String)
             inQueue.QueueAction(Sub() Disconnect(expected, reason))
         End Sub
 
@@ -234,7 +234,7 @@ Namespace Bnet
 
             Dim result = AsyncTcpConnect(remoteHost, port).QueueEvalOnValueSuccess(inQueue,
                 Function(tcpClient)
-                    Me._socket = New BnetSocket(New PacketSocket(
+                    Me._socket = New Socket(New PacketSocket(
                             stream:=New ThrottledWriteStream(
                                         substream:=tcpClient.GetStream,
                                         initialSlack:=1000,

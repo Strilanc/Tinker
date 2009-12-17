@@ -1,8 +1,8 @@
 Imports System.Net
 
-Public NotInheritable Class BnetSocket
+Public NotInheritable Class Socket
     Private WithEvents _socket As PacketSocket
-    Public Event Disconnected(ByVal sender As BnetSocket, ByVal expected As Boolean, ByVal reason As String)
+    Public Event Disconnected(ByVal sender As Socket, ByVal expected As Boolean, ByVal reason As String)
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(_socket IsNot Nothing)

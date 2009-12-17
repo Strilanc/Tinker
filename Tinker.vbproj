@@ -168,9 +168,9 @@
     <Import Include="Tinker.Pickling.Jars" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Battlenet\BnetPacket.vb" />
-    <Compile Include="Battlenet\ProductCredentials.vb" />
-    <Compile Include="Battlenet\ClientCredentials.vb" />
+    <Compile Include="Bnet\Packet.vb" />
+    <Compile Include="Bnet\ProductCredentials.vb" />
+    <Compile Include="Bnet\ClientCredentials.vb" />
     <Compile Include="Bot\Commands\Generic Commands.vb" />
     <Compile Include="Bot\Components\CKLServerManager.vb" />
     <Compile Include="Bot\Components\MainBotManager.vb" />
@@ -306,9 +306,9 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Bot\MainBot.vb" />
-    <Compile Include="Battlenet\BnetClient.vb" />
-    <Compile Include="Battlenet\RevisionCheck.vb" />
-    <Compile Include="Battlenet\BnetSocket.vb" />
+    <Compile Include="Bnet\Client.vb" />
+    <Compile Include="Bnet\RevisionCheck.vb" />
+    <Compile Include="Bnet\Socket.vb" />
     <Compile Include="Interface\W3GameControl.Designer.vb">
       <DependentUpon>W3GameControl.vb</DependentUpon>
     </Compile>
