@@ -1,5 +1,3 @@
-Imports System.Diagnostics.Contracts
-
 ''HostBot - Warcraft 3 game hosting bot
 ''Copyright (C) 2008 Craig Gidney
 ''

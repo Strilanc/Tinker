@@ -155,7 +155,7 @@ Namespace Commands
                       Dim profileName As InvariantString = If(argument.TryGetOptionalNamedValue("profile"), "default")
                       Dim clientName As InvariantString = argument.RawValue(0)
 
-                      Return Components.BnetClientManager.AsyncCreateFromProfile(clientName, profileName, target).Select(
+                      Return Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target).Select(
                           Function(manager)
                               Dim added = target.QueueAddComponent(manager)
                               added.Catch(Sub() manager.Dispose())
@@ -244,11 +244,11 @@ Namespace Commands
                 If profileNames.Length = 0 Then Throw New ArgumentException("No profiles specified.")
 
                 'Attempt to connect to each listed profile
-                Dim futureManagers = New List(Of IFuture(Of Components.BnetClientManager))(capacity:=profileNames.Count)
+                Dim futureManagers = New List(Of IFuture(Of Bnet.ClientManager))(capacity:=profileNames.Count)
                 For Each profileName In profileNames
                     Contract.Assume(profileName IsNot Nothing)
                     'Create and connect
-                    Dim futureManager = Components.BnetClientManager.AsyncCreateFromProfile(profileName, profileName, target)
+                    Dim futureManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
                     Dim futureAdded = (From manager In futureManager Select target.QueueAddComponent(manager)).Defuturized
                     Dim futureClient = futureAdded.EvalOnSuccess(Function() futureManager.Value.Client)
                     Dim futureConnected = (From client In futureClient

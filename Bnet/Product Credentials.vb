@@ -5,7 +5,7 @@
     End Enum
 
     ''' <summary>
-    ''' Credentials used for authenticating ownership of a product.
+    ''' Precomputed credentials used for answering a challenge to prove ownership of a product.
     ''' </summary>
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class ProductCredentials

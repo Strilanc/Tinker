@@ -1,6 +1,8 @@
-Namespace Commands
+Imports Tinker.Commands
+
+Namespace Bnet
     Public NotInheritable Class ClientCommands
-        Inherits CommandSet(Of Components.BnetClientManager)
+        Inherits CommandSet(Of Bnet.ClientManager)
 
         Public Sub New()
             'AddCommand(AdLink)
@@ -10,8 +12,8 @@ Namespace Commands
             AddCommand(Demote)
             AddCommand(RemoveUser)
             AddCommand(Disconnect)
-            AddCommand(New GenericCommands.FindMaps(Of Components.BnetClientManager))
-            AddCommand(New GenericCommands.DownloadMap(Of Components.BnetClientManager))
+            AddCommand(New GenericCommands.FindMaps(Of Bnet.ClientManager))
+            AddCommand(New GenericCommands.DownloadMap(Of Bnet.ClientManager))
             AddCommand(Promote)
             AddCommand(User)
             AddCommand(Connect)
@@ -31,7 +33,7 @@ Namespace Commands
         Public Overloads Function AddCommand(ByVal command As Command(Of Bnet.Client)) As IDisposable
             Contract.Requires(command IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return AddCommand(New ProjectedCommand(Of Components.BnetClientManager, Bnet.Client)(
+            Return AddCommand(New ProjectedCommand(Of Bnet.ClientManager, Bnet.Client)(
                     command:=command,
                     projection:=Function(manager) manager.Client))
         End Function
@@ -100,7 +102,7 @@ Namespace Commands
         ')
         'End Function)
 
-        Private Shared ReadOnly Bot As New DelegatedCommand(Of Components.BnetClientManager)(
+        Private Shared ReadOnly Bot As New DelegatedCommand(Of Bnet.ClientManager)(
             Name:="Bot",
             Format:="...",
             Description:="Forwards commands to the main bot.",
@@ -239,7 +241,7 @@ Namespace Commands
                                     EvalOnSuccess(Function() "Logged in as {0}".Frmt(argument.RawValue(0)))
                   End Function)
 
-        Private Shared ReadOnly Host As New DelegatedTemplatedCommand(Of Components.BnetClientManager)(
+        Private Shared ReadOnly Host As New DelegatedTemplatedCommand(Of Bnet.ClientManager)(
             Name:="Host",
             template:=Concat({"name=<game name>", "map=<search query>", "-private -p"},
                              WC3.GameSettings.PartialArgumentTemplates,

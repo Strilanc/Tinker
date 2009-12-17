@@ -1,7 +1,7 @@
 Imports Tinker.Bnet.Packet
 
 Public Class BnetClientControl
-    Private ReadOnly _manager As Components.BnetClientManager
+    Private ReadOnly _manager As Bnet.ClientManager
     Private ReadOnly _client As Bnet.Client
     Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
     Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
@@ -11,7 +11,7 @@ Public Class BnetClientControl
         If Me.Parent IsNot Nothing Then inQueue.Start()
     End Sub
 
-    Public Sub New(ByVal manager As Components.BnetClientManager)
+    Public Sub New(ByVal manager As Bnet.ClientManager)
         Contract.Assert(manager IsNot Nothing)
         InitializeComponent()
 

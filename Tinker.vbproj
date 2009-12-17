@@ -168,9 +168,9 @@
     <Import Include="Tinker.Pickling.Jars" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bnet\Packet.vb" />
-    <Compile Include="Bnet\ProductCredentials.vb" />
-    <Compile Include="Bnet\ClientCredentials.vb" />
+    <Compile Include="Bnet\Bnet Packet.vb" />
+    <Compile Include="Bnet\Product Credentials.vb" />
+    <Compile Include="Bnet\Bnet Client Credentials.vb" />
     <Compile Include="Bot\Commands\Generic Commands.vb" />
     <Compile Include="Bot\Components\CKLServerManager.vb" />
     <Compile Include="Bot\Components\MainBotManager.vb" />
@@ -178,7 +178,7 @@
     <Compile Include="Bot\Components\PluginManager.vb" />
     <Compile Include="Bot\Components\WC3GameServerManager.vb" />
     <Compile Include="Bot\Components\IBotComponent.vb" />
-    <Compile Include="Bot\Components\BnetClientManager.vb" />
+    <Compile Include="Bnet\Bnet Client Manager.vb" />
     <Compile Include="Bot\Components\LanAdvertiserManager.vb" />
     <Compile Include="Bot\Plugins\PluginSet.vb" />
     <Compile Include="Bot\Plugins\Plugin Interfaces.vb" />
@@ -203,11 +203,11 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Library\CachedValues.vb" />
-    <Compile Include="Library\Commands\CommandTemplate.vb" />
-    <Compile Include="Library\Commands\Delegated Commands.vb" />
-    <Compile Include="Library\Commands\PartialCommand.vb" />
-    <Compile Include="Library\Commands\ProjectedCommand.vb" />
-    <Compile Include="Library\Commands\TemplatedCommand.vb" />
+    <Compile Include="Commands\CommandTemplate.vb" />
+    <Compile Include="Commands\Delegated Commands.vb" />
+    <Compile Include="Commands\PartialCommand.vb" />
+    <Compile Include="Commands\ProjectedCommand.vb" />
+    <Compile Include="Commands\TemplatedCommand.vb" />
     <Compile Include="Library\AsyncViewableCollection.vb" />
     <Compile Include="Library\PacketSocket.vb" />
     <Compile Include="Library\PacketHandler.vb" />
@@ -237,10 +237,10 @@
     <Compile Include="BNLS\BNLSWardenClient.vb" />
     <Compile Include="BNLS\BNLSWardenPacket.vb" />
     <Compile Include="Bot\Commands\CKL Commands.vb" />
-    <Compile Include="Library\Commands\CommandSet.vb" />
-    <Compile Include="Library\Commands\Command.vb" />
-    <Compile Include="Library\Commands\CommandArgument.vb" />
-    <Compile Include="Library\Commands\HelpCommand.vb" />
+    <Compile Include="Commands\CommandSet.vb" />
+    <Compile Include="Commands\Command.vb" />
+    <Compile Include="Commands\CommandArgument.vb" />
+    <Compile Include="Commands\HelpCommand.vb" />
     <Compile Include="Bot\Commands\Lan Commands.vb" />
     <Compile Include="Bot\Widgets\CKL Client.vb" />
     <Compile Include="Bot\Widgets\CKL Keys.vb" />
@@ -260,7 +260,7 @@
     <Compile Include="Bot\Components\LanAdvertiser.vb" />
     <Compile Include="Warcraft3\TransferScheduler.vb" />
     <Compile Include="Bot\Commands\Bot Commands.vb" />
-    <Compile Include="Bot\Commands\Client Commands.vb" />
+    <Compile Include="Bnet\Bnet Client Commands.vb" />
     <Compile Include="Bot\Commands\Game Commands.vb" />
     <Compile Include="Bot\Commands\Server Commands.vb" />
     <Compile Include="Bot\Links.vb" />
@@ -306,8 +306,8 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Bot\MainBot.vb" />
-    <Compile Include="Bnet\Client.vb" />
-    <Compile Include="Bnet\RevisionCheck.vb" />
+    <Compile Include="Bnet\Bnet Client.vb" />
+    <Compile Include="Bnet\Revision Check.vb" />
     <Compile Include="Interface\W3GameControl.Designer.vb">
       <DependentUpon>W3GameControl.vb</DependentUpon>
     </Compile>

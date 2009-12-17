@@ -1,9 +1,11 @@
-﻿Namespace Components
-    Public Class BnetClientManager
+﻿Imports Tinker.Components
+
+Namespace Bnet
+    Public Class ClientManager
         Inherits FutureDisposable
         Implements IBotComponent
 
-        Private Shared ReadOnly ClientCommands As New Commands.ClientCommands()
+        Private Shared ReadOnly ClientCommands As New Bnet.ClientCommands()
 
         Private ReadOnly _bot As MainBot
         Private ReadOnly _name As InvariantString
@@ -122,7 +124,7 @@
 
         Public Shared Function AsyncCreateFromProfile(ByVal clientName As InvariantString,
                                                       ByVal profileName As InvariantString,
-                                                      ByVal bot As MainBot) As IFuture(Of BnetClientManager)
+                                                      ByVal bot As MainBot) As IFuture(Of ClientManager)
             Contract.Requires(bot IsNot Nothing)
 
             Dim futureProfile = From profiles In bot.QueueGetClientProfiles()
@@ -130,7 +132,7 @@
             Return futureProfile.Select(
                 Function(profile)
                     If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
-                    Return New Components.BnetClientManager(clientName, bot, New Bnet.Client(profile))
+                    Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile))
                 End Function)
         End Function
 
