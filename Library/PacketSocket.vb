@@ -72,7 +72,8 @@ Public NotInheritable Class PacketSocket
         Me._stream = stream
         Me.bufferSize = bufferSize
         If timeout IsNot Nothing Then
-            Me.deadManSwitch = New DeadManSwitch(timeout.Value, initiallyArmed:=True)
+            Me.deadManSwitch = New DeadManSwitch(timeout.Value)
+            Me.deadManSwitch.Arm()
         End If
         Me._logger = If(logger, New Logger)
         Me.packetStreamer = New PacketStreamer(Me._stream, numBytesBeforeSize, numSizeBytes, maxPacketSize:=bufferSize)

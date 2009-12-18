@@ -125,7 +125,7 @@ Namespace Components
         End Function
 
         Private Function CreateAsyncView(ByVal adder As Action(Of ComponentSet, IBotComponent),
-                                                   ByVal remover As Action(Of ComponentSet, IBotComponent)) As IDisposable
+                                         ByVal remover As Action(Of ComponentSet, IBotComponent)) As IDisposable
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
@@ -133,7 +133,7 @@ Namespace Components
                                          remover:=Sub(sender, item) remover(Me, item))
         End Function
         Public Function QueueCreateAsyncView(ByVal adder As Action(Of ComponentSet, IBotComponent),
-                                                       ByVal remover As Action(Of ComponentSet, IBotComponent)) As IFuture(Of IDisposable)
+                                             ByVal remover As Action(Of ComponentSet, IBotComponent)) As IFuture(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)

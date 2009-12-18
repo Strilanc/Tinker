@@ -56,7 +56,7 @@ Namespace Bnet
         Public Event StateChanged(ByVal sender As Client, ByVal oldState As ClientState, ByVal newState As ClientState)
 
         'warden
-        Private _futureWardenHandler As IFuture(Of BNLS.BNLSWardenClient)
+        Private _futureWardenClient As IFuture(Of Warden.Client)
 
         'state
         Private _reportedListenPort As UShort
@@ -284,38 +284,6 @@ Namespace Bnet
                                                         reason:="Error handling packet {0}: {1}.".Frmt(CType(packetData(1), PacketId), exception.Message)))
             Return result
         End Function
-        Private Sub BeginConnectBnlsServer(ByVal seed As ModInt32)
-            'Parse address setting
-            Dim address = My.Settings.bnls
-            If address Is Nothing OrElse address = "" Then
-                logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
-                Return
-            End If
-            Dim hostPortPair = address.Split(":"c)
-            Dim host = hostPortPair(0)
-            Dim port As UShort
-            If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), port) Then
-                logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
-                Return
-            End If
-
-            'Attempt connection
-            logger.Log("Connecting to bnls server at {0}...".Frmt(address), LogMessageType.Positive)
-            Me._futureWardenHandler = BNLS.BNLSWardenClient.AsyncConnectToBNLSServer(host, port, seed, logger).QueueEvalOnValueSuccess(inQueue,
-                Function(bnlsClient)
-                    logger.Log("Connected to bnls server.", LogMessageType.Positive)
-                    AddHandler bnlsClient.Send, AddressOf OnWardenSend
-                    AddHandler bnlsClient.Fail, AddressOf OnWardenFail
-                    Return bnlsClient
-                End Function)
-            Me._futureWardenHandler.Catch(Sub(exception)
-                                              logger.Log("Error connecting to bnls server: {0}".Frmt(exception), LogMessageType.Problem)
-                                          End Sub)
-            'Dispose if connection fails
-            Me._futureConnected.Catch(
-                Sub(exception) Me._futureWardenHandler.QueueCallOnValueSuccess(inQueue,
-                    Sub(bnlsClient) bnlsClient.Dispose()))
-        End Sub
 
         Private Function BeginLogOn(ByVal credentials As ClientCredentials) As IFuture
             Contract.Requires(credentials IsNot Nothing)
@@ -360,15 +328,7 @@ Namespace Bnet
 
             ChangeState(ClientState.Disconnected)
             logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
-            If _futureWardenHandler IsNot Nothing Then
-                _futureWardenHandler.CallOnValueSuccess(
-                    Sub(bnlsClient)
-                        bnlsClient.Dispose()
-                        RemoveHandler bnlsClient.Send, AddressOf OnWardenSend
-                        RemoveHandler bnlsClient.Fail, AddressOf OnWardenFail
-                    End Sub).SetHandled()
-                _futureWardenHandler = Nothing
-            End If
+            EndAnyOldWardenConnection()
 
             'outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, reason))
 
@@ -654,13 +614,71 @@ Namespace Bnet
                                     cdKeyOwner:=My.Settings.cdKeyOwner,
                                     exeInformation:="war3.exe {0} {1}".Frmt(GetWC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss"), GetWC3FileSize),
                                     productAuthentication:=keys))
-                    BeginConnectBnlsServer(seed:=keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32)
+                    EndAnyOldWardenConnection()
+                    BeginWardenConnection(seed:=keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32)
                 End Sub
             ).Catch(
                 Sub(exception)
                     QueueDisconnect(expected:=False, reason:="Error handling authentication begin: {0}".Frmt(exception.Message))
                 End Sub
             )
+        End Sub
+        Private Function BeginWardenConnection(ByVal seed As UInt32) As Boolean
+            Contract.Requires(_futureWardenClient Is Nothing)
+            Contract.Ensures((_futureWardenClient IsNot Nothing) = Contract.Result(Of Boolean)())
+
+            'Parse address setting
+            Dim address = My.Settings.bnls
+            If address Is Nothing OrElse address = "" Then
+                logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
+                Return False
+            End If
+            Dim hostPortPair = address.Split(":"c)
+            Dim host = hostPortPair(0)
+            Dim port As UShort
+            If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), port) Then
+                logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
+                Return False
+            End If
+
+            'Attempt connection
+            logger.Log("Connecting to bnls server at {0}...".Frmt(address), LogMessageType.Positive)
+
+            Dim futureSocket = From tcpClient In AsyncTcpConnect(host, port)
+                               Select New PacketSocket(stream:=tcpClient.GetStream,
+                                                       localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                       remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                       timeout:=5.Minutes,
+                                                       numBytesBeforeSize:=0,
+                                                       numSizeBytes:=2,
+                                                       logger:=logger,
+                                                       Name:="BNLS")
+            _futureWardenClient = From socket In futureSocket
+                                  Select New Warden.Client(socket, seed, seed, logger)
+            _futureWardenClient.CallOnValueSuccess(
+                Sub(wardenClient)
+                    logger.Log("Connected to bnls server.", LogMessageType.Positive)
+                    AddHandler wardenClient.ReceivedWardenData, AddressOf OnWardenSend
+                    AddHandler wardenClient.Failed, AddressOf OnWardenFail
+                    wardenClient.FutureDisposed.CallWhenReady(
+                        Sub()
+                            RemoveHandler wardenClient.ReceivedWardenData, AddressOf OnWardenSend
+                            RemoveHandler wardenClient.Failed, AddressOf OnWardenFail
+                        End Sub)
+                        End Sub
+            ).Catch(
+                Sub(exception)
+                    logger.Log("Error connecting to bnls server: {0}".Frmt(exception), LogMessageType.Problem)
+                End Sub
+            )
+            Return True
+        End Function
+        Private Sub EndAnyOldWardenConnection()
+            Contract.Ensures(_futureWardenClient Is Nothing)
+            If _futureWardenClient IsNot Nothing Then
+                _futureWardenClient.CallOnValueSuccess(Sub(client) client.Dispose()).SetHandled()
+                _futureWardenClient = Nothing
+            End If
         End Sub
 
         Private Sub ReceiveAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
@@ -798,15 +816,15 @@ Namespace Bnet
         Private Sub ReceiveWarden(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            If _futureWardenHandler Is Nothing Then Return
-            Dim encryptedData = CType(vals("encrypted data"), Byte()).AssumeNotNull
-            _futureWardenHandler.CallOnValueSuccess(
-                    Sub(bnlsClient) bnlsClient.ProcessWardenPacket(encryptedData.AsReadableList)
+            If _futureWardenClient Is Nothing Then Return
+            Dim encryptedData = CType(vals("encrypted data"), Byte()).AssumeNotNull.AsReadableList
+            _futureWardenClient.CallOnValueSuccess(
+                    Sub(client) client.QueueSendWardenData(encryptedData)
                 ).SetHandled()
         End Sub
-        Private Sub OnWardenSend(ByVal data() As Byte)
+        Private Sub OnWardenSend(ByVal data As IReadableList(Of Byte))
             Contract.Requires(data IsNot Nothing)
-            inQueue.QueueAction(Sub() SendPacket(Bnet.Packet.MakeWarden(data)))
+            inQueue.QueueAction(Sub() SendPacket(Bnet.Packet.MakeWarden(data.ToArray)))
         End Sub
         Private Sub OnWardenFail(ByVal exception As Exception)
             Contract.Requires(exception IsNot Nothing)

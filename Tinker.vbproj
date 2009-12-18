@@ -171,6 +171,8 @@
     <Compile Include="Bnet\Bnet Packet.vb" />
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />
+    <Compile Include="Warden\Warden Enums.vb" />
+    <Compile Include="Warden\Warden Server Packet.vb" />
     <Compile Include="Bot\Commands\Generic Commands.vb" />
     <Compile Include="Bot\Components\CKLServerManager.vb" />
     <Compile Include="Bot\Components\MainBotManager.vb" />
@@ -236,8 +238,8 @@
     <Compile Include="Warcraft3\W3GameStats.vb" />
     <Compile Include="Warcraft3\W3Slot.vb" />
     <Compile Include="Warcraft3\W3Socket.vb" />
-    <Compile Include="BNLS\BNLSWardenClient.vb" />
-    <Compile Include="BNLS\BNLSWardenPacket.vb" />
+    <Compile Include="Warden\Warden Client.vb" />
+    <Compile Include="Warden\Warden Client Packet.vb" />
     <Compile Include="Bot\Commands\CKL Commands.vb" />
     <Compile Include="Commands\CommandSet.vb" />
     <Compile Include="Commands\Command.vb" />

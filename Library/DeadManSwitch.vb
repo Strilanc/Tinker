@@ -17,11 +17,9 @@ Public NotInheritable Class DeadManSwitch
         Contract.Invariant(inQueue IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal period As TimeSpan,
-                   ByVal initiallyArmed As Boolean)
+    Public Sub New(ByVal period As TimeSpan)
         Contract.Requires(period.Ticks > 0)
         Me._period = period
-        If initiallyArmed Then Arm()
     End Sub
 
     ''' <summary>
