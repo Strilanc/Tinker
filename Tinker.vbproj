@@ -178,15 +178,14 @@
     <Compile Include="Bot\Components\CKLServerManager.vb" />
     <Compile Include="Bot\Components\MainBotManager.vb" />
     <Compile Include="Bot\Components\WC3GameManager.vb" />
-    <Compile Include="Bot\Components\PluginManager.vb" />
+    <Compile Include="Plugins\Plugin Manager.vb" />
     <Compile Include="Bot\Components\WC3GameServerManager.vb" />
     <Compile Include="Components\Component Extensions.vb" />
     <Compile Include="Components\IBotComponent.vb" />
     <Compile Include="Bnet\Bnet Client Manager.vb" />
     <Compile Include="Bot\Components\LanAdvertiserManager.vb" />
     <Compile Include="Components\ComponentSet.vb" />
-    <Compile Include="Bot\Plugins\PluginSet.vb" />
-    <Compile Include="Bot\Plugins\Plugin Interfaces.vb" />
+    <Compile Include="Plugins\Plugin Interfaces.vb" />
     <Compile Include="Bot\Plugin Profile.vb" />
     <Compile Include="Bot\PortPool.vb" />
     <Compile Include="Interface\CommandControl.Designer.vb">
@@ -270,10 +269,10 @@
     <Compile Include="Bot\Commands\Server Commands.vb" />
     <Compile Include="Bot\Links.vb" />
     <Compile Include="Bot\Client Profile.vb" />
-    <Compile Include="Interface\ComponentsControl.Designer.vb">
-      <DependentUpon>ComponentsControl.vb</DependentUpon>
+    <Compile Include="Components\Components Tab Control.Designer.vb">
+      <DependentUpon>Components Tab Control.vb</DependentUpon>
     </Compile>
-    <Compile Include="Interface\ComponentsControl.vb">
+    <Compile Include="Components\Components Tab Control.vb">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Library\Common.vb" />
@@ -288,7 +287,7 @@
     <Compile Include="Library\Pickling\Jars Numeric.vb" />
     <Compile Include="Library\Streams\PacketStream.vb" />
     <Compile Include="Library\Streams\ThrottledWriteStream.vb" />
-    <Compile Include="Bot\Plugins\PluginSocket.vb" />
+    <Compile Include="Plugins\Plugin Socket.vb" />
     <Compile Include="Bot\Widgets\CKL Server.vb" />
     <Compile Include="Warcraft3\W3Packet.vb" />
     <Compile Include="Bot\BotUser.vb" />
@@ -351,12 +350,12 @@
     </Compile>
     <Compile Include="Library\Future Common.vb" />
     <Compile Include="Test\Test.vb" />
-    <Compile Include="Bot\Widgets\ComponentTabSet.vb" />
+    <Compile Include="Components\Components Tab Manager.vb" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Interface\ComponentsControl.resx">
+    <EmbeddedResource Include="Components\Components Tab Control.resx">
       <SubType>Designer</SubType>
-      <DependentUpon>ComponentsControl.vb</DependentUpon>
+      <DependentUpon>Components Tab Control.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\CommandControl.resx">
       <DependentUpon>CommandControl.vb</DependentUpon>
@@ -463,12 +462,12 @@
   <ItemGroup>
     <PublishFile Include="Docs.txt">
       <Visible>False</Visible>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
       <FileType>File</FileType>
     </PublishFile>
   </ItemGroup>

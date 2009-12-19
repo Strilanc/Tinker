@@ -14,6 +14,9 @@
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
 Namespace Components
+    ''' <summary>
+    ''' Stores an asynchronous set of components.
+    ''' </summary>
     Public NotInheritable Class ComponentSet
         Inherits FutureDisposable
 

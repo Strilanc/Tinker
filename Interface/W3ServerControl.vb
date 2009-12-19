@@ -7,7 +7,7 @@ Public Class W3ServerControl
     Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
     Private ReadOnly _games As New Dictionary(Of Game, Components.WC3GameManager)
     Private ReadOnly _gameSets As New List(Of GameSet)
-    Private ReadOnly gameTabs As ComponentTabSet
+    Private ReadOnly gameTabs As Components.TabManager
 
     Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
         If Me.Parent IsNot Nothing Then inQueue.Start()
@@ -26,7 +26,7 @@ Public Class W3ServerControl
 
         Me._manager = manager
         Me._server = manager.Server
-        gameTabs = New ComponentTabSet(Me.tabsServer)
+        gameTabs = New Components.TabManager(Me.tabsServer)
 
         Me.txtInfo.Text = ""
         logServer.SetLogger(_server.Logger, "Server")

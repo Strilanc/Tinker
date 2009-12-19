@@ -22,7 +22,7 @@ Public NotInheritable Class MainBot
     Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
 
     Private ReadOnly _settings As New Bot.Settings()
-    Private ReadOnly _portPool As PortPool
+    Private ReadOnly _portPool As New PortPool()
     Private ReadOnly _logger As Logger
     Private ReadOnly _components As New Components.ComponentSet()
 
@@ -35,10 +35,7 @@ Public NotInheritable Class MainBot
         Contract.Invariant(_components IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal portPool As PortPool,
-                   Optional ByVal logger As Logger = Nothing)
-        Contract.Requires(portPool IsNot Nothing)
-        Me._portPool = portPool
+    Public Sub New(Optional ByVal logger As Logger = Nothing)
         Me._logger = If(logger, New Logger)
     End Sub
 

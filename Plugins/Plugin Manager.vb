@@ -1,11 +1,13 @@
-﻿Namespace Components
+﻿Imports Tinker.Components
+
+Namespace Plugins
     Friend Class PluginManager
         Inherits FutureDisposable
         Implements IBotComponent
 
         Public Shared ReadOnly TypeName As String = "Plugin"
 
-        Private ReadOnly _socket As Plugins.PluginSocket
+        Private ReadOnly _socket As Plugins.Socket
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -13,7 +15,7 @@
             Contract.Invariant(_hooks IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal socket As Plugins.PluginSocket)
+        Public Sub New(ByVal socket As Plugins.Socket)
             Contract.Requires(socket IsNot Nothing)
             Me._socket = socket
         End Sub

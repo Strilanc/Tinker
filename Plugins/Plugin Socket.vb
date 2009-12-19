@@ -1,7 +1,7 @@
 Imports System.Reflection
 
 Namespace Plugins
-    Friend Class PluginSocket
+    Friend Class Socket
         Inherits FutureDisposable
 
         Private ReadOnly _plugin As IPlugin

@@ -16,7 +16,7 @@ Namespace Commands
             AddCommand([Get])
             AddCommand([Set])
             'AddCommand(CreateAdmin)
-            AddCommand(Lan)
+            AddCommand(CreateLan)
         End Sub
 
         Private Shared ReadOnly ListComponents As New DelegatedTemplatedCommand(Of MainBot)(
@@ -114,8 +114,8 @@ Namespace Commands
         'argListenPort)).EvalOnSuccess(Function() "Created Lan Admin.")
         'End Function)
 
-        Private Shared ReadOnly Lan As New DelegatedTemplatedCommand(Of MainBot)(
-            Name:="Lan",
+        Private Shared ReadOnly CreateLan As New DelegatedTemplatedCommand(Of MainBot)(
+            Name:="CreateLan",
             template:="name -receiver=localhost",
             Description:="Creates a lan advertiser.",
             Permissions:="root:5",
@@ -213,8 +213,8 @@ Namespace Commands
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Strilbrary.Threading.IFuture(Of String)
                 Dim profile = (From p In target.Settings.GetCopyOfPluginProfiles() Where p.name = argument.RawValue(0)).FirstOrDefault
                 If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
-                Dim socket = New Plugins.PluginSocket(profile.name, target, profile.location)
-                Dim manager = New Components.PluginManager(socket)
+                Dim socket = New Plugins.Socket(profile.name, target, profile.location)
+                Dim manager = New Plugins.PluginManager(socket)
                 Dim added = target.Components.QueueAddComponent(manager)
                 added.Catch(Sub() manager.Dispose())
                 Return added.EvalOnSuccess(Function() "Loaded plugin. Description: {0}".Frmt(socket.Plugin.Description))
