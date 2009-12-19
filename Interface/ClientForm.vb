@@ -2,8 +2,6 @@ Imports System.Threading
 
 Public Class ClientForm
     Private _bot As MainBot
-    Private ReadOnly _clientProfiles As New Dictionary(Of InvariantString, ClientProfile)
-    Private ReadOnly _pluginProfiles As New Dictionary(Of InvariantString, Plugins.PluginProfile)
     Private ReadOnly _loadedPlugins As New Plugins.PluginSet
 
     Private Shadows Sub OnLoad() Handles Me.Load
@@ -12,26 +10,6 @@ Public Class ClientForm
             Thread.CurrentThread.Name = "UI Thread"
             Me.Text = Application.ProductName
             trayIcon.Text = Application.ProductName
-
-            'Read profile data
-            Dim serializedData = My.Settings.botstore
-            If serializedData IsNot Nothing AndAlso serializedData <> "" Then
-                Try
-                    Using r = New IO.BinaryReader(New IO.MemoryStream(serializedData.ToAscBytes))
-                        LoadProfiles(r)
-                    End Using
-                Catch e As Exception
-                    _pluginProfiles.Clear()
-                    _clientProfiles.Clear()
-                    Dim p = New ClientProfile("Default")
-                    _clientProfiles.Add(p.name, p)
-                    e.RaiseAsUnexpected("Error loading profiles.")
-                End Try
-            Else
-                Dim p = New ClientProfile("Default")
-                p.users.AddUser(New BotUser(BotUserSet.NewUserKey, "games:1"))
-                _clientProfiles.Add(p.name, p)
-            End If
 
             'prep bot
             CacheIPAddresses()
@@ -42,6 +20,19 @@ Public Class ClientForm
 
             'Load bot
             _bot = New MainBot(portPool)
+            Dim serializedData = My.Settings.botstore
+            If serializedData IsNot Nothing AndAlso serializedData <> "" Then
+                Try
+                    Using r = New IO.BinaryReader(New IO.MemoryStream(serializedData.ToAscBytes))
+                        _bot.Settings.ReadFrom(r)
+                    End Using
+                Catch e As Exception
+                    _bot.Settings.UpdateProfiles({New Bot.ClientProfile("Default")}, {})
+                    e.RaiseAsUnexpected("Error loading profiles.")
+                End Try
+            Else
+                _bot.Settings.UpdateProfiles({New Bot.ClientProfile("Default")}, {})
+            End If
             Dim botManager = New Components.MainBotManager(_bot)
             Dim componentsControl = New Tinker.ComponentsControl(_bot)
             _bot.Components.QueueAddComponent(botManager)
@@ -54,7 +45,6 @@ Public Class ClientForm
             componentsControl.Size = New System.Drawing.Size(1005, 400)
             componentsControl.Focus()
             Me.Controls.Add(componentsControl)
-            _bot.QueueUpdateProfiles(_clientProfiles.Values.ToList, _pluginProfiles.Values.ToList)
 
             'show
             Me.Show()
@@ -84,8 +74,9 @@ Public Class ClientForm
         Dim pluginNames = (From name In My.Settings.initial_plugins.Split(";"c) Where name <> "").ToList
         Dim futureLoadedPlugins = New List(Of IFuture(Of Plugins.PluginSocket))()
         For Each pluginName In pluginNames
-            If _pluginProfiles.ContainsKey(Name) Then
-                Dim profile = _pluginProfiles(Name)
+            Dim pluginName_ = pluginName
+            Dim profile = (From p In _bot.Settings.GetCopyOfPluginProfiles Where p.name = pluginName_).FirstOrDefault
+            If profile IsNot Nothing Then
                 futureLoadedPlugins.Add(_loadedPlugins.QueueLoadPlugin(profile.name, profile.location, _bot))
             Else
                 Dim f = New FutureFunction(Of Plugins.PluginSocket)
@@ -128,24 +119,16 @@ Public Class ClientForm
     End Sub
 
     Private Sub ShowSettings() Handles btnSettings.Click
-        Dim cp As IEnumerable(Of ClientProfile) = _clientProfiles.Values
-        Dim pp As IEnumerable(Of Plugins.PluginProfile) = _pluginProfiles.Values
+        Dim cp As IEnumerable(Of Bot.ClientProfile) = _bot.Settings.GetCopyOfClientProfiles
+        Dim pp As IEnumerable(Of Bot.PluginProfile) = _bot.Settings.GetCopyOfPluginProfiles
         If Not SettingsForm.ShowWithProfiles(cp, pp, _bot.PortPool) Then Return
-        _clientProfiles.Clear()
-        _pluginProfiles.Clear()
-        For Each p In cp
-            _clientProfiles(p.name) = p
-        Next p
-        For Each p In pp
-            _pluginProfiles(p.name) = p
-        Next p
+        _bot.Settings.UpdateProfiles(cp, pp)
         Using m = New IO.MemoryStream()
             Using w = New IO.BinaryWriter(m)
-                SaveProfiles(w)
+                _bot.Settings.WriteTo(w)
             End Using
             My.Settings.botstore = m.ToArray().ParseChrString(nullTerminated:=False)
         End Using
-        _bot.QueueUpdateProfiles(_clientProfiles.Values.ToList, _pluginProfiles.Values.ToList)
     End Sub
 
     Private Sub OnMenuClickRestore() Handles mnuRestore.Click, trayIcon.MouseDoubleClick
@@ -162,52 +145,4 @@ Public Class ClientForm
         trayIcon.Visible = True
         Me.Visible = False
     End Sub
-
-#Region "Profile Serialization"
-    Private Const FormatMagic As UInteger = 7352
-    Private Const FormatVersion As UInteger = 0
-    Private Const FormatMinReadCompatibleVersion As UInteger = 0
-    Private Const FormatMinWriteCompatibleVersion As UInteger = 0
-    Private Sub SaveProfiles(ByVal writer As IO.BinaryWriter)
-        'Header
-        writer.Write(FormatMagic)
-        writer.Write(FormatVersion)
-        writer.Write(FormatMinWriteCompatibleVersion)
-
-        'Data
-        writer.Write(CUInt(_clientProfiles.Count))
-        For Each profile In _clientProfiles.Values
-            profile.Save(writer)
-        Next profile
-        writer.Write(CUInt(_pluginProfiles.Count))
-        For Each profile In _pluginProfiles.Values
-            profile.Save(writer)
-        Next profile
-    End Sub
-    Private Sub LoadProfiles(ByVal reader As IO.BinaryReader)
-        'Header
-        Dim writerMagic = reader.ReadUInt32()
-        Dim writerFormatVersion = reader.ReadUInt32()
-        Dim writerMinFormatVersion = reader.ReadUInt32()
-        If writerMagic <> FormatMagic Then
-            Throw New IO.InvalidDataException("Corrupted profile data.")
-        ElseIf writerFormatVersion < FormatMinReadCompatibleVersion Then
-            Throw New IO.InvalidDataException("Profile data is saved in an earlier non-forwards-compatible version.")
-        ElseIf writerMinFormatVersion > FormatVersion Then
-            Throw New IO.InvalidDataException("Profile data is saved in a later non-backwards-compatible format.")
-        End If
-
-        'Data
-        _clientProfiles.Clear()
-        For repeat = 1UI To reader.ReadUInt32()
-            Dim p = New ClientProfile(reader)
-            _clientProfiles.Add(p.name, p)
-        Next repeat
-        _pluginProfiles.Clear()
-        For repeat = 1UI To reader.ReadUInt32()
-            Dim p = New Plugins.PluginProfile(reader)
-            _pluginProfiles.Add(p.name, p)
-        Next repeat
-    End Sub
-#End Region
 End Class

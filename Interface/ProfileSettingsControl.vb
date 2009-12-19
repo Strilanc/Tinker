@@ -1,8 +1,8 @@
 ﻿Public Class ProfileSettingsControl
-    Public lastLoadedProfile As ClientProfile
+    Public lastLoadedProfile As Bot.ClientProfile
     Public Event Delete(ByVal sender As ProfileSettingsControl)
 
-    Public Sub LoadFromProfile(ByVal profile As ClientProfile)
+    Public Sub LoadFromProfile(ByVal profile As Bot.ClientProfile)
         If profile Is Nothing Then Return
 
         txtUsername.Text = profile.userName
@@ -23,7 +23,7 @@
 
         lastLoadedProfile = profile
     End Sub
-    Public Sub SaveToProfile(ByVal profile As ClientProfile)
+    Public Sub SaveToProfile(ByVal profile As Bot.ClientProfile)
         If profile Is Nothing Then Return
 
         profile.userName = txtUsername.Text

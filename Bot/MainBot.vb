@@ -21,8 +21,7 @@ Public NotInheritable Class MainBot
     Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
     Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
 
-    Private _clientProfiles As IEnumerable(Of ClientProfile) = New List(Of ClientProfile)
-    Private _pluginProfiles As IEnumerable(Of Plugins.PluginProfile) = New List(Of Plugins.PluginProfile)
+    Private ReadOnly _settings As New Bot.Settings()
     Private ReadOnly _portPool As PortPool
     Private ReadOnly _logger As Logger
     Private ReadOnly _components As New Components.ComponentSet()
@@ -30,10 +29,10 @@ Public NotInheritable Class MainBot
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(inQueue IsNot Nothing)
         Contract.Invariant(outQueue IsNot Nothing)
+        Contract.Invariant(_settings IsNot Nothing)
         Contract.Invariant(_portPool IsNot Nothing)
+        Contract.Invariant(_logger IsNot Nothing)
         Contract.Invariant(_components IsNot Nothing)
-        Contract.Invariant(_clientProfiles IsNot Nothing)
-        Contract.Invariant(_pluginProfiles IsNot Nothing)
     End Sub
 
     Public Sub New(ByVal portPool As PortPool,
@@ -61,24 +60,12 @@ Public NotInheritable Class MainBot
             Return _components
         End Get
     End Property
-
-    Public Function QueueUpdateProfiles(ByVal clientProfiles As IEnumerable(Of ClientProfile), ByVal pluginProfiles As IEnumerable(Of Plugins.PluginProfile)) As IFuture
-        Contract.Requires(clientProfiles IsNot Nothing)
-        Contract.Requires(pluginProfiles IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        Return inQueue.QueueAction(Sub()
-                                       Me._clientProfiles = clientProfiles.ToList
-                                       Me._pluginProfiles = pluginProfiles.ToList
-                                   End Sub)
-    End Function
-    Public Function QueueGetClientProfiles() As IFuture(Of IList(Of ClientProfile))
-        Contract.Ensures(Contract.Result(Of IFuture(Of IList(Of ClientProfile)))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() _clientProfiles.ToList)
-    End Function
-    Public Function QueueGetPluginProfiles() As IFuture(Of IList(Of Plugins.PluginProfile))
-        Contract.Ensures(Contract.Result(Of IFuture(Of IList(Of Plugins.PluginProfile)))() IsNot Nothing)
-        Return inQueue.QueueFunc(Function() _pluginProfiles.ToList)
-    End Function
+    Public ReadOnly Property Settings As Bot.Settings
+        Get
+            Contract.Ensures(Contract.Result(Of Bot.Settings)() IsNot Nothing)
+            Return _settings
+        End Get
+    End Property
 
     Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
         If finalizing Then Return Nothing

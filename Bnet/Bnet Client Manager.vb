@@ -126,14 +126,11 @@ Namespace Bnet
                                                       ByVal profileName As InvariantString,
                                                       ByVal bot As MainBot) As IFuture(Of ClientManager)
             Contract.Requires(bot IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of ClientManager))() IsNot Nothing)
 
-            Dim futureProfile = From profiles In bot.QueueGetClientProfiles()
-                                Select (From p In profiles Where p.name = profileName).FirstOrDefault
-            Return futureProfile.Select(
-                Function(profile)
-                    If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
-                    Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile))
-                End Function)
+            Dim profile = (From p In bot.Settings.GetCopyOfClientProfiles Where p.name = profileName).FirstOrDefault
+            If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
+            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile)).Futurized
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture

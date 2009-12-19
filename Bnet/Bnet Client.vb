@@ -31,7 +31,7 @@ Namespace Bnet
         Public Shared ReadOnly BnetServerPort As UShort = 6112
         Private Shared ReadOnly RefreshPeriod As TimeSpan = 20.Seconds
 
-        Public ReadOnly profile As ClientProfile
+        Public ReadOnly profile As Bot.ClientProfile
         Public ReadOnly logger As Logger
         Private _socket As PacketSocket
 
@@ -77,7 +77,7 @@ Namespace Bnet
             Contract.Invariant(_advertiseRefreshTimer IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal profile As ClientProfile,
+        Public Sub New(ByVal profile As Bot.ClientProfile,
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(profile IsNot Nothing)
             Me._futureConnected.SetHandled()

@@ -1,11 +1,11 @@
 Public Class SettingsForm
-    Private ReadOnly _clientProfiles As List(Of ClientProfile)
-    Private ReadOnly _pluginProfiles As List(Of Plugins.PluginProfile)
+    Private ReadOnly _clientProfiles As List(Of Bot.ClientProfile)
+    Private ReadOnly _pluginProfiles As List(Of Bot.PluginProfile)
     Private ReadOnly _portPool As PortPool
     Private wantSave As Boolean
 
-    Public Shared Function ShowWithProfiles(ByRef clientProfiles As IEnumerable(Of ClientProfile),
-                                            ByRef pluginProfiles As IEnumerable(Of Plugins.PluginProfile),
+    Public Shared Function ShowWithProfiles(ByRef clientProfiles As IEnumerable(Of Bot.ClientProfile),
+                                            ByRef pluginProfiles As IEnumerable(Of Bot.PluginProfile),
                                             ByVal portPool As PortPool) As Boolean
         Contract.Requires(clientProfiles IsNot Nothing)
         Contract.Requires(pluginProfiles IsNot Nothing)
@@ -20,8 +20,8 @@ Public Class SettingsForm
         End Using
     End Function
 
-    Public Sub New(ByVal clientProfiles As IEnumerable(Of ClientProfile),
-                   ByVal pluginProfiles As IEnumerable(Of Plugins.PluginProfile),
+    Public Sub New(ByVal clientProfiles As IEnumerable(Of Bot.ClientProfile),
+                   ByVal pluginProfiles As IEnumerable(Of Bot.PluginProfile),
                    ByVal portPool As PortPool)
         Contract.Requires(clientProfiles IsNot Nothing)
         Contract.Requires(pluginProfiles IsNot Nothing)
@@ -76,7 +76,7 @@ Public Class SettingsForm
         refText = String.Join(",", out_words.ToArray())
         Return ports
     End Function
-    Private Function GetProfileWithName(ByVal name As InvariantString) As ClientProfile
+    Private Function GetProfileWithName(ByVal name As InvariantString) As Bot.ClientProfile
         For Each profile In _clientProfiles
             If profile.name = name Then Return profile
         Next profile
@@ -98,11 +98,11 @@ Public Class SettingsForm
             Return
         End If
 
-        Dim newProfile = New ClientProfile(name)
+        Dim newProfile = New Bot.ClientProfile(name)
         _clientProfiles.Add(newProfile)
         AddTabForProfile(newProfile)
     End Sub
-    Private Sub AddTabForProfile(ByVal profile As ClientProfile)
+    Private Sub AddTabForProfile(ByVal profile As Bot.ClientProfile)
         Dim tab = New TabPage("Profile:" + profile.name)
         Dim cntrl = New ProfileSettingsControl()
         cntrl.LoadFromProfile(profile)
@@ -143,7 +143,7 @@ Public Class SettingsForm
             Dim arg = If(row.Cells(2).Value, "").ToString
             If name.Trim = "" Then Continue For
             If path.Trim = "" Then Continue For
-            _pluginProfiles.Add(New Plugins.PluginProfile(name, path, arg))
+            _pluginProfiles.Add(New Bot.PluginProfile(name, path, arg))
         Next row
 
         For Each tab As TabPage In tabsSettings.TabPages

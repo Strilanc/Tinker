@@ -171,6 +171,7 @@
     <Compile Include="Bnet\Bnet Packet.vb" />
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />
+    <Compile Include="Bot\Settings.vb" />
     <Compile Include="Warden\Warden Enums.vb" />
     <Compile Include="Warden\Warden Server Packet.vb" />
     <Compile Include="Bot\Commands\Generic Commands.vb" />
@@ -186,7 +187,7 @@
     <Compile Include="Components\ComponentSet.vb" />
     <Compile Include="Bot\Plugins\PluginSet.vb" />
     <Compile Include="Bot\Plugins\Plugin Interfaces.vb" />
-    <Compile Include="Bot\Plugins\PluginProfile.vb" />
+    <Compile Include="Bot\Plugin Profile.vb" />
     <Compile Include="Bot\PortPool.vb" />
     <Compile Include="Interface\CommandControl.Designer.vb">
       <DependentUpon>CommandControl.vb</DependentUpon>
@@ -268,7 +269,7 @@
     <Compile Include="Bot\Commands\Game Commands.vb" />
     <Compile Include="Bot\Commands\Server Commands.vb" />
     <Compile Include="Bot\Links.vb" />
-    <Compile Include="Bot\Profile.vb" />
+    <Compile Include="Bot\Client Profile.vb" />
     <Compile Include="Interface\ComponentsControl.Designer.vb">
       <DependentUpon>ComponentsControl.vb</DependentUpon>
     </Compile>

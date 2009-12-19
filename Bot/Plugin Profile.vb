@@ -1,4 +1,4 @@
-Namespace Plugins
+Namespace Bot
     Public NotInheritable Class PluginProfile
         Public name As InvariantString
         Public location As InvariantString
