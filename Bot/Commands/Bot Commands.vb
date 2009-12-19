@@ -138,13 +138,10 @@ Namespace Commands
                       If args.Length <> 2 Then Throw New ArgumentException("Expected widget type:name.")
                       Dim type As InvariantString = args(0)
                       Dim name As InvariantString = args(1)
-                      Return target.Components.QueueTryFindComponent(type, name).Select(
-                          Function(component)
-                              If component Is Nothing Then Throw New ArgumentException("No {0} named {1}.".Frmt(Type, Name))
-                              Return component.InvokeCommand(user, argumentRest)
-                          End Function
-                      ).Defuturized()
-                          End Function)
+                      Return (From component In target.Components.QueueFindComponent(type, name)
+                              Select component.InvokeCommand(user, argumentRest)
+                             ).Defuturized()
+                  End Function)
 
         Private Shared ReadOnly CreateClient As New DelegatedTemplatedCommand(Of MainBot)(
             Name:="CreateClient",
