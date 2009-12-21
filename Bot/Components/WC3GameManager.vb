@@ -76,6 +76,7 @@
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
             For Each hook In _hooks
+                Contract.Assume(hook IsNot Nothing)
                 hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _game.Dispose()

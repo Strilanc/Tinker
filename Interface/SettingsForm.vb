@@ -4,12 +4,20 @@ Public Class SettingsForm
     Private ReadOnly _portPool As PortPool
     Private wantSave As Boolean
 
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(_clientProfiles IsNot Nothing)
+        Contract.Invariant(_pluginProfiles IsNot Nothing)
+        Contract.Invariant(_portPool IsNot Nothing)
+    End Sub
+
     Public Shared Function ShowWithProfiles(ByRef clientProfiles As IEnumerable(Of Bot.ClientProfile),
                                             ByRef pluginProfiles As IEnumerable(Of Bot.PluginProfile),
                                             ByVal portPool As PortPool) As Boolean
         Contract.Requires(clientProfiles IsNot Nothing)
         Contract.Requires(pluginProfiles IsNot Nothing)
         Contract.Requires(portPool IsNot Nothing)
+        Contract.Ensures(Contract.ValueAtReturn(clientProfiles) IsNot Nothing)
+        Contract.Ensures(Contract.ValueAtReturn(pluginProfiles) IsNot Nothing)
         Using f = New SettingsForm(clientProfiles, pluginProfiles, portPool)
             f.ShowDialog()
             If f.wantSave Then

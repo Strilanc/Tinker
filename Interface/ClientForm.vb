@@ -4,6 +4,7 @@ Public Class ClientForm
     Private _bot As MainBot
 
     Private Shadows Sub OnLoad() Handles Me.Load
+        Contract.Assume(_bot Is Nothing)
         Try
             Thread.CurrentThread.Name = "UI Thread"
             Me.Text = Application.ProductName
@@ -21,7 +22,7 @@ Public Class ClientForm
         End Try
     End Sub
     Private Sub InitBot()
-        Contract.Requires(_bot IsNot Nothing)
+        Contract.Requires(_bot Is Nothing)
         Contract.Ensures(_bot IsNot Nothing)
 
         _bot = New MainBot()

@@ -34,7 +34,7 @@ Public Module NetworkingCommon
                     Where nic.Supports(NetworkInterfaceComponent.IPv4)
                     Select a = (From address In nic.GetIPProperties.UnicastAddresses
                                 Where address.Address.AddressFamily = Net.Sockets.AddressFamily.InterNetwork
-                                Where Not address.Address.GetAddressBytes.HasSameItemsAs({127, 0, 0, 1})
+                                Where Not address.Address.GetAddressBytes.SequenceEqual({127, 0, 0, 1})
                                 ).FirstOrDefault()
                     Where a IsNot Nothing
                     ).FirstOrDefault()
@@ -135,7 +135,7 @@ Public Class NetIPEndPointJar
 
     Public Overrides Function Pack(Of TValue As Net.IPEndPoint)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
         Dim vals = New Dictionary(Of InvariantString, Object) From {
-                {"protocol", If(value.Address.GetAddressBytes.HasSameItemsAs({0, 0, 0, 0}) AndAlso value.Port = 0, 0, 2)},
+                {"protocol", If(value.Address.GetAddressBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0, 2)},
                 {"ip", value.Address},
                 {"port", value.Port},
                 {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}}}

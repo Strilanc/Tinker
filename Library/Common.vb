@@ -373,25 +373,6 @@ Public Module PoorlyCategorizedFunctions
         Return Not reg
     End Function
 
-    <Pure()> <Extension()>
-    Public Function Fold(Of T)(ByVal sequences As IEnumerable(Of IEnumerable(Of T))) As IEnumerable(Of T)
-        Contract.Requires(sequences IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-        Return New Enumerable(Of T)(
-            Function()
-                Dim e = sequences.GetEnumerator
-                Return New Enumerator(Of T)(Function(controller) If(e.MoveNext,
-                                                                    controller.Sequence(e.Current),
-                                                                    controller.Break()))
-            End Function)
-    End Function
-    <Pure()>
-    Public Function Fold(Of T)(ByVal ParamArray sequences() As IEnumerable(Of T)) As IEnumerable(Of T)
-        Contract.Requires(sequences IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-        Return CType(sequences, IEnumerable(Of IEnumerable(Of T))).Fold()
-    End Function
-
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>
     Public Function TeamVersusStringToTeamSizes(ByVal value As String) As IList(Of Integer)
         Contract.Requires(value IsNot Nothing)

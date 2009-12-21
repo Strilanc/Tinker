@@ -111,7 +111,11 @@
         Public Sub New(ByVal name As InvariantString,
                        ByVal index As Byte,
                        ByVal listenPort As UShort,
-                       ByVal ip As Net.IPAddress, ByVal peerKey As UInteger)
+                       ByVal ip As Net.IPAddress,
+                       ByVal peerKey As UInt32)
+            Contract.Requires(index > 0)
+            Contract.Requires(index <= 12)
+            Contract.Requires(ip IsNot Nothing)
             Me.name = name
             Me._index = index
             Me.listenPort = listenPort

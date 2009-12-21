@@ -7,6 +7,7 @@
         ReadOnly Property Logger As Logger
         ReadOnly Property HasControl As Boolean
         ReadOnly Property Control() As Control
+        <Pure()>
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
         Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
 
@@ -40,6 +41,7 @@
                 Throw New NotSupportedException
             End Function
 
+            <Pure()>
             Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
                 Contract.Requires(argument IsNot Nothing)
                 Throw New NotSupportedException

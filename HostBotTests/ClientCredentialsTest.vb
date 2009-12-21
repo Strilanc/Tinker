@@ -13,7 +13,7 @@ Public Class ClientCredentialsTest
 
     <TestMethod()>
     Public Sub PublicKeyTest()
-        Assert.IsTrue(creds.PublicKeyBytes.HasSameItemsAs("4D F4 F3 3F D4 62 9D 9A A2 2A C5 4D 34 11 F5 08 52 18 FC 8D B9 36 36 BC 00 A4 CE 69 FE 92 2C 55".FromHexStringToBytes))
+        Assert.IsTrue(creds.PublicKeyBytes.SequenceEqual("4D F4 F3 3F D4 62 9D 9A A2 2A C5 4D 34 11 F5 08 52 18 FC 8D B9 36 36 BC 00 A4 CE 69 FE 92 2C 55".FromHexStringToBytes))
     End Sub
 
     <TestMethod()>
@@ -24,7 +24,7 @@ Public Class ClientCredentialsTest
         Dim clientProof = creds.ClientPasswordProof(accountSalt, serverPublicKeyBytes)
         Dim serverProof = creds.ServerPasswordProof(accountSalt, serverPublicKeyBytes)
 
-        Assert.IsTrue(clientProof.HasSameItemsAs("65 97 0A 54 70 92 9B 1B 03 B6 92 02 8C B1 EB D3 4F 56 B9 8D".FromHexStringToBytes))
-        Assert.IsTrue(serverProof.HasSameItemsAs("36 23 E0 FB FB 49 E8 01 D9 F0 6D 1E 22 25 89 59 19 6E 55 90".FromHexStringToBytes))
+        Assert.IsTrue(clientProof.SequenceEqual("65 97 0A 54 70 92 9B 1B 03 B6 92 02 8C B1 EB D3 4F 56 B9 8D".FromHexStringToBytes))
+        Assert.IsTrue(serverProof.SequenceEqual("36 23 E0 FB FB 49 E8 01 D9 F0 6D 1E 22 25 89 59 19 6E 55 90".FromHexStringToBytes))
     End Sub
 End Class

@@ -1,6 +1,4 @@
-﻿Imports System.Net.Sockets
-
-Namespace Warden
+﻿Namespace Warden
     Public NotInheritable Class Client
         Inherits FutureDisposable
 

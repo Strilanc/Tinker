@@ -21,6 +21,8 @@ Namespace CKL
                        ByVal keyTFT As String)
             Contract.Requires(keyROC IsNot Nothing)
             Contract.Requires(keyTFT IsNot Nothing)
+            If keyROC.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Not a WC3 ROC key.", "keyROC")
+            If keyTFT.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("Not a WC3 TFT key.", "keyTFT")
             Me._name = name
             Me._keyROC = keyROC
             Me._keyTFT = keyTFT
@@ -48,8 +50,11 @@ Namespace CKL
         Public Function GenerateCredentials(ByVal clientToken As UInt32,
                                             ByVal serverToken As UInt32) As WC3CredentialPair
             Contract.Ensures(Contract.Result(Of WC3CredentialPair)() IsNot Nothing)
-            Return New WC3CredentialPair(authenticationROC:=_keyROC.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes),
-                                         authenticationTFT:=_keyTFT.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes))
+            Dim roc = _keyROC.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes)
+            Dim tft = _keyTFT.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes)
+            Contract.Assume(roc.Product = ProductType.Warcraft3ROC)
+            Contract.Assume(tft.Product = ProductType.Warcraft3TFT)
+            Return New WC3CredentialPair(authenticationROC:=roc, authenticationTFT:=tft)
         End Function
     End Class
 

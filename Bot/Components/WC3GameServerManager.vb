@@ -136,6 +136,7 @@
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
             For Each hook In _hooks
+                Contract.Assume(hook IsNot Nothing)
                 hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _gameServer.Dispose()
@@ -184,6 +185,7 @@
         Private allocId As UInteger
         Private ReadOnly r As New Random()
         Private Function AllocateGameId() As UInt32
+            Contract.Ensures(Contract.Result(Of UInt32)() > 0)
             allocId += 1UI
             If allocId > 1000 Then allocId = 1
             Return allocId * 10000UI + CUInt(r.Next(1000))

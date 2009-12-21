@@ -28,16 +28,19 @@ Namespace Components
         End Sub
 
         Private Sub OnBotAddedComponent(ByVal component As Components.IBotComponent)
+            Contract.Requires(component IsNot Nothing)
             If IsDisposed Then Return
             _botComponentTabs.Add(component)
         End Sub
         Private Sub OnBotRemovedComponent(ByVal component As Components.IBotComponent)
+            Contract.Requires(component IsNot Nothing)
             If IsDisposed Then Return
             _botComponentTabs.Remove(component)
         End Sub
 
         Private Shadows Sub OnDisposed() Handles Me.Disposed
             For Each hook In _hooks
+                Contract.Assume(hook IsNot Nothing)
                 hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
             Next hook
         End Sub

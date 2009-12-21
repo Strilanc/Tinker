@@ -12,7 +12,7 @@ Public Class ProductCredentialsTest
         Assert.IsTrue(key.Product = ProductType.Warcraft3ROC)
         Assert.IsTrue(key.PublicKey = 1208212)
         Assert.IsTrue(key.Length = 26)
-        Assert.IsTrue(key.AuthenticationProof.HasSameItemsAs({196, 113, 19, 179, 113, 10, 105, 13, 102, 167, 215, 44, 208, 16, 1, 235, 117, 98, 60, 242}))
+        Assert.IsTrue(key.AuthenticationProof.SequenceEqual({196, 113, 19, 179, 113, 10, 105, 13, 102, 167, 215, 44, 208, 16, 1, 235, 117, 98, 60, 242}))
     End Sub
     <TestMethod()>
     Public Sub TFTAuthenticationTest()
@@ -20,7 +20,7 @@ Public Class ProductCredentialsTest
         Assert.IsTrue(key.Product = ProductType.Warcraft3TFT)
         Assert.IsTrue(key.PublicKey = 2818526)
         Assert.IsTrue(key.Length = 26)
-        Assert.IsTrue(key.AuthenticationProof.HasSameItemsAs({251, 78, 164, 23, 174, 8, 33, 230, 25, 59, 223, 85, 108, 168, 51, 6, 54, 69, 96, 24}))
+        Assert.IsTrue(key.AuthenticationProof.SequenceEqual({251, 78, 164, 23, 174, 8, 33, 230, 25, 59, 223, 85, 108, 168, 51, 6, 54, 69, 96, 24}))
     End Sub
     <TestMethod()>
     Public Sub AlternateRepresentationTest()

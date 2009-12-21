@@ -1,13 +1,23 @@
 Imports Tinker.WC3
 
 Public Class W3ServerControl
+    Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
     Private ReadOnly _manager As Components.WC3GameServerManager
     Private ReadOnly _server As GameServer
-    Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
     Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
     Private ReadOnly _games As New Dictionary(Of Game, Components.WC3GameManager)
     Private ReadOnly _gameSets As New List(Of GameSet)
     Private ReadOnly gameTabs As Components.TabManager
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(inQueue IsNot Nothing)
+        Contract.Invariant(_manager IsNot Nothing)
+        Contract.Invariant(_server IsNot Nothing)
+        Contract.Invariant(_hooks IsNot Nothing)
+        Contract.Invariant(_games IsNot Nothing)
+        Contract.Invariant(_gameSets IsNot Nothing)
+        Contract.Invariant(gameTabs IsNot Nothing)
+    End Sub
 
     Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
         If Me.Parent IsNot Nothing Then inQueue.Start()
@@ -15,6 +25,7 @@ Public Class W3ServerControl
 
     Private Shadows Sub OnDisposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
         For Each hook In _hooks
+            Contract.Assume(hook IsNot Nothing)
             hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
         Next hook
     End Sub
@@ -78,6 +89,7 @@ Public Class W3ServerControl
     End Sub
 
     Private Sub OnCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comServer.IssuedCommand
+        Contract.Requires(argument IsNot Nothing)
         Tinker.Components.UIInvokeCommand(_manager, argument)
     End Sub
 

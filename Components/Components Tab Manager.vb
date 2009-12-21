@@ -13,6 +13,7 @@
         Public Sub Add(ByVal component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
             Contract.Ensures(Me.Contains(component))
+            If Not component.HasControl Then Return
             If _items.ContainsKey(component) Then Throw New InvalidOperationException("Already have a tab for the given component.")
 
             'create
@@ -28,13 +29,17 @@
             page.Text = "{0}:{1}".Frmt(component.Type, component.Name)
         End Sub
 
+        <Pure()>
         Public Function Contains(ByVal component As Components.IBotComponent) As Boolean
+            Contract.Requires(component IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Boolean)() = _items.ContainsKey(component))
             Return _items.ContainsKey(component)
         End Function
 
         Public Sub Remove(ByVal component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
             Contract.Ensures(Not Me.Contains(component))
+            If Not component.HasControl Then Return
             If _items.ContainsKey(component) Then Throw New InvalidOperationException("Don't have a tab for the given component.")
 
             Dim tabPage = _items(component)
@@ -46,6 +51,7 @@
 
         Public Sub Clear()
             For Each component In _items.Keys
+                Contract.Assume(component IsNot Nothing)
                 Remove(component)
             Next component
         End Sub

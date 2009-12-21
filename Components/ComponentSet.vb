@@ -122,7 +122,7 @@ Namespace Components
         ''' </summary>
         <Pure()>
         Private Function TryFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As T
-            Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Name = name)
+            Contract.Ensures(Contract.Result(Of T)() Is Nothing OrElse Contract.Result(Of T).Name = name)
             Dim result = (From c In Me.EnumComponents(Of T)() Where c.Name = name).FirstOrDefault
             Contract.Assume(result Is Nothing OrElse result.Name = name)
             Return result
@@ -134,7 +134,7 @@ Namespace Components
         <Pure()>
         Private Function FindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As T
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IBotComponent).Name = name)
+            Contract.Ensures(Contract.Result(Of T).Name = name)
             Dim result = TryFindComponent(Of T)(name)
             If result Is Nothing Then Throw New InvalidOperationException("No component of type {0} named {1}.".Frmt(GetType(T), name))
             Return result

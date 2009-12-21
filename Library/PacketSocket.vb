@@ -9,8 +9,8 @@ Public NotInheritable Class PacketSocket
     Private _logger As Logger
     Private _name As String
 
-    Private ReadOnly inQueue As New TaskedCallQueue()
-    Private ReadOnly outQueue As New TaskedCallQueue()
+    Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
+    Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue()
 
     Public Const DefaultBufferSize As Integer = 1460 '[sending more data in a packet causes wc3 clients to disc; happens to be maximum ethernet header size]
     Public ReadOnly bufferSize As Integer
@@ -68,6 +68,7 @@ Public NotInheritable Class PacketSocket
         Contract.Assume(numBytesBeforeSize >= 0)
         Contract.Assume(numSizeBytes > 0)
         Contract.Assume(bufferSize >= numBytesBeforeSize + numSizeBytes)
+        Contract.Assume(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
 
         Me._stream = stream
         Me.bufferSize = bufferSize
@@ -80,8 +81,8 @@ Public NotInheritable Class PacketSocket
         Me._isConnected = True
         Me._remoteEndPoint = remoteEndPoint
         Me._localEndPoint = localEndPoint
-        If remoteEndPoint.Address.GetAddressBytes().HasSameItemsAs(GetCachedIPAddressBytes(external:=False)) OrElse
-                                     remoteEndPoint.Address.GetAddressBytes().HasSameItemsAs({127, 0, 0, 1}) Then
+        If remoteEndPoint.Address.GetAddressBytes().SequenceEqual(GetCachedIPAddressBytes(external:=False)) OrElse
+                                     remoteEndPoint.Address.GetAddressBytes().SequenceEqual({127, 0, 0, 1}) Then
             _remoteEndPoint = New Net.IPEndPoint(New Net.IPAddress(GetCachedIPAddressBytes(external:=True)), remoteEndPoint.Port)
         End If
         Me._name = If(name, Me.RemoteEndPoint.ToString)

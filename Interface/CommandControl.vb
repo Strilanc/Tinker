@@ -1,8 +1,15 @@
 ﻿Public Class CommandControl
-    Private commandHistoryPointer As Integer
-    Private ReadOnly commandHistory As New List(Of String) From {""}
+    Private _historyPointer As Integer
+    Private ReadOnly _history As New List(Of String) From {""}
 
     Public Event IssuedCommand(ByVal sender As CommandControl, ByVal argument As String)
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(_history IsNot Nothing)
+        Contract.Invariant(_history.Count > 0)
+        Contract.Invariant(_historyPointer >= 0)
+        Contract.Invariant(_historyPointer < _history.Count)
+    End Sub
 
     Private Sub txtCommand_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
         Select Case e.KeyCode
@@ -10,21 +17,21 @@
                 If txtCommand.Text = "" Then Return
                 RaiseEvent IssuedCommand(Me, txtCommand.Text)
 
-                commandHistoryPointer = commandHistory.Count
-                commandHistory(commandHistoryPointer - 1) = txtCommand.Text
-                commandHistory.Add("")
+                _historyPointer = _history.Count
+                _history(_historyPointer - 1) = txtCommand.Text
+                _history.Add("")
                 txtCommand.Text = ""
                 e.Handled = True
             Case Keys.Up
-                commandHistory(commandHistoryPointer) = txtCommand.Text
-                commandHistoryPointer = (commandHistoryPointer - 1).Between(0, commandHistory.Count - 1)
-                txtCommand.Text = commandHistory(commandHistoryPointer)
+                _history(_historyPointer) = txtCommand.Text
+                _historyPointer = (_historyPointer - 1).Between(0, _history.Count - 1)
+                txtCommand.Text = _history(_historyPointer)
                 txtCommand.SelectionStart = txtCommand.TextLength
                 e.Handled = True
             Case Keys.Down
-                commandHistory(commandHistoryPointer) = txtCommand.Text
-                commandHistoryPointer = (commandHistoryPointer + 1).Between(0, commandHistory.Count - 1)
-                txtCommand.Text = commandHistory(commandHistoryPointer)
+                _history(_historyPointer) = txtCommand.Text
+                _historyPointer = (_historyPointer + 1).Between(0, _history.Count - 1)
+                txtCommand.Text = _history(_historyPointer)
                 txtCommand.SelectionStart = txtCommand.TextLength
                 e.Handled = True
         End Select

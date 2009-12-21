@@ -218,7 +218,6 @@ Namespace WC3
                 slots.Add(slot)
                 Contract.Assume(Slots.Count = slotId)
             Next slotId
-            Contract.Assume(slots.Count = slotCount)
             Me._slots = slots.AsReadableList
         End Sub
         Public Sub New(ByVal folder As String,
@@ -534,6 +533,8 @@ Namespace WC3
 
                 Dim playableWidth = br.ReadInt32() 'map playable area width
                 Dim playableHeight = br.ReadInt32() 'map playable area height
+                If playableWidth <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable width.")
+                If playableHeight <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable height.")
                 Dim options = CType(br.ReadInt32(), MapOptions) 'flags
 
                 br.ReadByte() 'map main ground type

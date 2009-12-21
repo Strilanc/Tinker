@@ -21,6 +21,8 @@ Namespace WC3
         Public Event RemovedGame(ByVal sender As LanAdvertiser, ByVal game As LanGame)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(inQueue IsNot Nothing)
+            Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_games IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)

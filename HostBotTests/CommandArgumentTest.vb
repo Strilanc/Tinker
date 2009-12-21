@@ -102,14 +102,14 @@ Public Class CommandArgumentTest
 
     <TestMethod()>
     Public Sub TokenizeTest()
-        Assert.IsTrue(CommandArgument.Tokenize("a b").HasSameItemsAs({"a", "b"}))
-        Assert.IsTrue(CommandArgument.Tokenize("<a b>").HasSameItemsAs({"a b"}))
-        Assert.IsTrue(CommandArgument.Tokenize("(a b)").HasSameItemsAs({"a b"}))
-        Assert.IsTrue(CommandArgument.Tokenize("[a b]").HasSameItemsAs({"a b"}))
-        Assert.IsTrue(CommandArgument.Tokenize("{a b}").HasSameItemsAs({"a b"}))
-        Assert.IsTrue(CommandArgument.Tokenize("[{a b}]").HasSameItemsAs({"{a b}"}))
-        Assert.IsTrue(CommandArgument.Tokenize("t=[{a b}]").HasSameItemsAs({"t={a b}"}))
-        Assert.IsTrue(CommandArgument.Tokenize("t=a b").HasSameItemsAs({"t=a", "b"}))
-        Assert.IsTrue(CommandArgument.Tokenize("a <b c> d={e f}").HasSameItemsAs({"a", "b c", "d=e f"}))
+        Assert.IsTrue(CommandArgument.Tokenize("a b").SequenceEqual({"a", "b"}))
+        Assert.IsTrue(CommandArgument.Tokenize("<a b>").SequenceEqual({"a b"}))
+        Assert.IsTrue(CommandArgument.Tokenize("(a b)").SequenceEqual({"a b"}))
+        Assert.IsTrue(CommandArgument.Tokenize("[a b]").SequenceEqual({"a b"}))
+        Assert.IsTrue(CommandArgument.Tokenize("{a b}").SequenceEqual({"a b"}))
+        Assert.IsTrue(CommandArgument.Tokenize("[{a b}]").SequenceEqual({"{a b}"}))
+        Assert.IsTrue(CommandArgument.Tokenize("t=[{a b}]").SequenceEqual({"t={a b}"}))
+        Assert.IsTrue(CommandArgument.Tokenize("t=a b").SequenceEqual({"t=a", "b"}))
+        Assert.IsTrue(CommandArgument.Tokenize("a <b c> d={e f}").SequenceEqual({"a", "b c", "d=e f"}))
     End Sub
 End Class

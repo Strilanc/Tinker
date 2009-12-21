@@ -166,7 +166,7 @@ Namespace Bnet
             Contract.Requires(challengeString IsNot Nothing)
 
             'Parse
-            Dim lines = CType(challengeString.Split(" "c), IEnumerable(Of String)).GetEnumerator()
+            Dim lines = challengeString.Split(" "c).AsEnumerable.GetEnumerator()
             Dim variables = ReadVariablesFrom(lines)
             Dim operations = ReadOperationsFrom(lines, variables)
             If lines.MoveNext Then Throw New ArgumentException("More revision check instructions than expected.")

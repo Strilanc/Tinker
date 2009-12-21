@@ -81,6 +81,9 @@
         End Function
 
         Public Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+            Contract.Requires(target IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Dim result = New FutureFunction(Of IFuture(Of String))
             If IsUserAllowed(user) Then
                 result.SetByEvaluating(Function() PerformInvoke(target, user, argument))

@@ -1,3 +1,4 @@
+<ContractVerification(False)>
 Public Class LoggerControl
     Private callbackModeMap As New Dictionary(Of LogMessageType, CallbackMode)
     Private callbackColorMap As New Dictionary(Of LogMessageType, Color)
@@ -11,25 +12,72 @@ Public Class LoggerControl
     Private filestream As IO.Stream
     Private isLoggingUnexpectedExceptions As Boolean
 
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(callbackModeMap IsNot Nothing)
+        Contract.Invariant(callbackColorMap IsNot Nothing)
+        Contract.Invariant(uiRef IsNot Nothing)
+        Contract.Invariant(lastQueuedMessage IsNot Nothing)
+        Contract.Invariant(lastQueuedMessage.NextMessage Is Nothing)
+        Contract.Invariant((_logger Is Nothing) = (_logFilename Is Nothing))
+        Contract.Invariant((nextQueuedMessage IsNot Nothing) = (numQueuedMessages > 0))
+    End Sub
+
     Private Sub LoggerControl_HandleCreated(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.HandleCreated
         uiRef.Start()
     End Sub
 
     Private NotInheritable Class QueuedMessage
-        Public ReadOnly message As String
-        Public ReadOnly color As Color
-        Public ReadOnly replacement As QueuedMessage
-        Public nextMessage As QueuedMessage
-        Public insertPosition As Integer
-        Public Sub New(ByVal message As String, ByVal color As Color)
-            Me.message = message
-            Me.color = color
+        Private ReadOnly _message As String
+        Private ReadOnly _color As Color
+        Private ReadOnly _replacement As QueuedMessage
+        Private _nextMessage As QueuedMessage
+        Public Property InsertPosition As Integer
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_message IsNot Nothing)
         End Sub
-        Public Sub New(ByVal message As String, ByVal color As Color, ByVal replacement As QueuedMessage)
-            Me.message = message
-            Me.color = color
-            Me.replacement = replacement
+
+        Public Sub New(ByVal message As String, ByVal color As Color, Optional ByVal replacement As QueuedMessage = Nothing)
+            Contract.Requires(message IsNot Nothing)
+            Contract.Ensures(Me.Message = message)
+            Contract.Ensures(Me.Color = color)
+            Contract.Ensures(Me.Replacement Is replacement)
+            Contract.Ensures(Me.NextMessage Is Nothing)
+            Me._message = message
+            Me._color = color
+            Me._replacement = replacement
         End Sub
+
+        Public ReadOnly Property Message As String
+            Get
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of String)() = _message)
+                Return _message
+            End Get
+        End Property
+        Public ReadOnly Property Color As Color
+            Get
+                Contract.Ensures(Contract.Result(Of Color)() = _color)
+                Return _color
+            End Get
+        End Property
+        Public ReadOnly Property Replacement As QueuedMessage
+            Get
+                Contract.Ensures(Contract.Result(Of QueuedMessage)() Is _replacement)
+                Return _replacement
+            End Get
+        End Property
+        Public Property NextMessage As QueuedMessage
+            Get
+                Contract.Ensures(Contract.Result(Of QueuedMessage)() Is _nextMessage)
+                Return _nextMessage
+            End Get
+            Set(ByVal value As QueuedMessage)
+                Contract.Requires(value IsNot Nothing)
+                Contract.Requires(NextMessage Is Nothing)
+                _nextMessage = value
+            End Set
+        End Property
     End Class
     Public Enum CallbackMode As Byte
         Unspecified = 0
@@ -140,24 +188,27 @@ Public Class LoggerControl
     Public Sub LogMessage(ByVal message As LazyValue(Of String),
                           ByVal color As Color,
                           Optional ByVal fileOnly As Boolean = False)
+        Contract.Requires(message IsNot Nothing)
         LogMessage(message.Value, color, fileOnly)
     End Sub
     Public Sub LogMessage(ByVal message As String,
                           ByVal color As Color,
                           Optional ByVal fileOnly As Boolean = False)
+        Contract.Requires(message IsNot Nothing)
         LogMessage(New QueuedMessage(message, color), fileOnly)
     End Sub
     Private Sub LogMessage(ByVal message As QueuedMessage,
                            Optional ByVal fileOnly As Boolean = False)
+        Contract.Requires(message IsNot Nothing)
         SyncLock lock
             If Not fileOnly Then
-                lastQueuedMessage.nextMessage = message
+                lastQueuedMessage.NextMessage = message
                 lastQueuedMessage = message
                 nextQueuedMessage = If(nextQueuedMessage, message)
                 numQueuedMessages += 1
             End If
             If filestream IsNot Nothing Then
-                Dim data = (("[{0}]: {1}{2}").Frmt(DateTime.Now().ToString("dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture), message.message, Environment.NewLine)).ToAscBytes
+                Dim data = (("[{0}]: {1}{2}").Frmt(DateTime.Now().ToString("dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture), message.Message, Environment.NewLine)).ToAscBytes
                 filestream.Write(data, 0, data.Length)
             End If
         End SyncLock
@@ -184,7 +235,7 @@ Public Class LoggerControl
                 If nextQueuedMessage Is Nothing Then Return
                 Do
                     bq.Enqueue(nextQueuedMessage)
-                    nextQueuedMessage = nextQueuedMessage.nextMessage
+                    nextQueuedMessage = nextQueuedMessage.NextMessage
                     numQueuedMessages -= 1
                 Loop While nextQueuedMessage IsNot Nothing
             End SyncLock
@@ -194,36 +245,36 @@ Public Class LoggerControl
                 'Get message
                 Dim n = txtLog.Text.Length
                 Dim em = bq.Dequeue()
-                Dim msg = em.message + Environment.NewLine
-                em.insertPosition = n
+                Dim msg = em.Message + Environment.NewLine
+                em.InsertPosition = n
 
                 'Combine messages if possible [operations on txtLog are very expensive because they cause redraws, this minimizes that]
-                If em.replacement Is Nothing Then
-                    While bq.Count > 0 AndAlso bq.Peek().color = em.color AndAlso bq.Peek.replacement Is Nothing
-                        n += em.message.Length + Environment.NewLine.Length
-                        em.insertPosition = n
+                If em.Replacement Is Nothing Then
+                    While bq.Count > 0 AndAlso bq.Peek().Color = em.Color AndAlso bq.Peek.Replacement Is Nothing
+                        n += em.Message.Length + Environment.NewLine.Length
+                        em.InsertPosition = n
                         em = bq.Dequeue()
-                        msg += em.message + Environment.NewLine
+                        msg += em.Message + Environment.NewLine
                     End While
                 End If
 
                 'Log message
-                If em.replacement IsNot Nothing Then
-                    Dim dn = em.message.Length - em.replacement.message.Length
-                    Dim f = em.replacement.nextMessage
+                If em.Replacement IsNot Nothing Then
+                    Dim dn = em.Message.Length - em.Replacement.Message.Length
+                    Dim f = em.Replacement.NextMessage
                     While f IsNot Nothing
-                        f.insertPosition += dn
-                        f = f.nextMessage
+                        f.InsertPosition += dn
+                        f = f.NextMessage
                     End While
-                    em.insertPosition = em.replacement.insertPosition
-                    txtLog.Select(em.replacement.insertPosition, em.replacement.message.Length)
-                    txtLog.SelectionColor = em.color
-                    txtLog.SelectedText = em.message
+                    em.InsertPosition = em.Replacement.InsertPosition
+                    txtLog.Select(em.Replacement.InsertPosition, em.Replacement.Message.Length)
+                    txtLog.SelectionColor = em.Color
+                    txtLog.SelectedText = em.Message
                 Else
                     Dim prevLength = txtLog.TextLength
                     txtLog.AppendText(msg)
                     txtLog.Select(prevLength, txtLog.TextLength - prevLength)
-                    txtLog.SelectionColor() = em.color
+                    txtLog.SelectionColor() = em.Color
                 End If
             End While
 
@@ -232,14 +283,16 @@ Public Class LoggerControl
             e.RaiseAsUnexpected("Exception rose post LoggerControl.emptyQueue")
         End Try
     End Sub
-    Private Sub LogFutureMessage(ByVal placeholder As String,
-                                 ByVal futureMessage As IFuture(Of String))
+    Private Sub LogFutureMessage(ByVal placeholder As String, ByVal futureMessage As IFuture(Of String))
+        Contract.Requires(placeholder IsNot Nothing)
+        Contract.Requires(futureMessage IsNot Nothing)
+
         Dim m = New QueuedMessage(placeholder, Color.DarkGoldenrod)
         LogMessage(m)
         futureMessage.CallWhenValueReady(
             Sub(message, messageException)
                 SyncLock lock
-                    If messageException IsNot Nothing Then  message = messageException.ToString
+                    If messageException IsNot Nothing Then message = messageException.ToString
                     Dim color = callbackColorMap(If(messageException Is Nothing AndAlso Not message Like "Failed: *",
                                                     LogMessageType.Positive,
                                                     LogMessageType.Problem))

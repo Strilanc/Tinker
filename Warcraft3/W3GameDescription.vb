@@ -241,6 +241,7 @@
             Contract.Requires(usedSlotCount <= totalSlotCount)
             Contract.Requires(gameStats IsNot Nothing)
             Contract.Requires(location IsNot Nothing)
+            Contract.Requires(location.Address IsNot Nothing)
             Me._address = location.Address
         End Sub
 

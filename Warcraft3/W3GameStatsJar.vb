@@ -178,7 +178,7 @@
 
         Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
             Dim out As New List(Of Byte)
             For Each block In data.EnumBlocks(7)
                 Contract.Assume(block IsNot Nothing)
@@ -201,7 +201,7 @@
 
         Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
             Dim out As New List(Of Byte)
             For Each block In data.EnumBlocks(8)
                 Contract.Assume(block IsNot Nothing)

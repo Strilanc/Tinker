@@ -781,7 +781,7 @@ Namespace Bnet
             'validate
             Dim serverProof = CType(vals("server password proof"), Byte()).AssumeNotNull
             If Me.expectedServerPasswordProof Is Nothing Then Throw New InvalidStateException("Received AccountLogOnFinish before server password proof computed.")
-            If Not Me.expectedServerPasswordProof.HasSameItemsAs(serverProof) Then
+            If Not Me.expectedServerPasswordProof.SequenceEqual(serverProof) Then
                 _futureLoggedIn.TrySetFailed(New IO.InvalidDataException("Failed to logon: Server didn't give correct password proof"))
                 Throw New IO.InvalidDataException("Server didn't give correct password proof.")
             End If

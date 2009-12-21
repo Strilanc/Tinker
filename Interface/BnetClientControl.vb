@@ -1,11 +1,19 @@
 Imports Tinker.Bnet.Packet
 
+<ContractVerification(False)>
 Public Class BnetClientControl
+    Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
     Private ReadOnly _manager As Bnet.ClientManager
     Private ReadOnly _client As Bnet.Client
     Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
-    Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
     Private numPrimaryStates As Integer
+
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(inQueue IsNot Nothing)
+        Contract.Invariant(_manager IsNot Nothing)
+        Contract.Invariant(_client IsNot Nothing)
+        Contract.Invariant(_hooks IsNot Nothing)
+    End Sub
 
     Private Shadows Sub OnParentChanged() Handles Me.ParentChanged
         If Me.Parent IsNot Nothing Then inQueue.Start()
@@ -153,6 +161,7 @@ Public Class BnetClientControl
     End Sub
 
     Private Sub comClient_IssuedCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comClient.IssuedCommand
+        Contract.Requires(argument IsNot Nothing)
         Tinker.Components.UIInvokeCommand(_manager, argument)
     End Sub
 End Class

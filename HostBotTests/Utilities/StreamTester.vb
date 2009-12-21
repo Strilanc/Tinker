@@ -47,7 +47,7 @@ Friend Class StreamTester
                             ElseIf value < data.Length Then
                                 result.SetFailed(New IO.InvalidDataException("Data ended before expected."))
                             Else
-                                If expectedData.HasSameItemsAs(data) Then
+                                If expectedData.SequenceEqual(data) Then
                                     ThreadPooledAction(Sub() RunContinue(result))
                                 Else
                                     result.SetFailed(New IO.IOException("Incorrect data."))
