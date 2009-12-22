@@ -1,4 +1,5 @@
-﻿Public Class CommandControl
+﻿<ContractVerification(False)>
+Public Class CommandControl
     Private _historyPointer As Integer
     Private ReadOnly _history As New List(Of String) From {""}
 

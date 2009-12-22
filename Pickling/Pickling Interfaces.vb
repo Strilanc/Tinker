@@ -1,13 +1,5 @@
 ﻿Namespace Pickling
-    <Serializable()>
-    Public NotInheritable Class PicklingException
-        Inherits Exception
-        Public Sub New(Optional ByVal message As String = Nothing,
-                       Optional ByVal innerException As Exception = Nothing)
-            MyBase.New(message, innerException)
-        End Sub
-    End Class
-
+    '''<summary>Stores the serialization of a value, as well as a description of the value.</summary>
     <ContractClass(GetType(IPickle.ContractClass))>
     Public Interface IPickle
         ReadOnly Property Data As IReadableList(Of Byte)
@@ -31,6 +23,7 @@
         End Class
     End Interface
 
+    '''<summary>Stores the serialization of a value, as well as a description of the value and the value itself.</summary>
     <ContractClass(GetType(ContractClassIPickle(Of )))>
     Public Interface IPickle(Of Out T)
         Inherits IPickle
@@ -41,13 +34,11 @@
         Implements IPickle(Of T)
         Public ReadOnly Property Data As IReadableList(Of Byte) Implements IPickle.Data
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
         Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle.Description
             Get
-                Contract.Ensures(Contract.Result(Of LazyValue(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Get
         End Property
@@ -59,10 +50,12 @@
         End Property
     End Class
 
+    ''' <summary>Provides access to information common to all pickling jar types.</summary>
     Public Interface IJarInfo
         ReadOnly Property Name As InvariantString
     End Interface
 
+    '''<summary>Packs values to create pickles.</summary>
     <ContractClass(GetType(ContractClassIPackJar(Of )))>
     Public Interface IPackJar(Of In T)
         Inherits IJarInfo
@@ -83,6 +76,7 @@
         End Function
     End Class
 
+    '''<summary>Parses data to create pickles.</summary>
     <ContractClass(GetType(ContractClassIParseJar(Of )))>
     Public Interface IParseJar(Of Out T)
         Inherits IJarInfo
@@ -103,6 +97,7 @@
         End Function
     End Class
 
+    '''<summary>Packs values or parses data to create pickles.</summary>
     Public Interface IJar(Of T)
         Inherits IJarInfo
         Inherits IPackJar(Of T)

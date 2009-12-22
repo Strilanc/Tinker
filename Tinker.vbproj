@@ -64,7 +64,7 @@
     </CodeContractsCustomRewriterClass>
     <CodeContractsRuntimeCheckingLevel>Pre and Post</CodeContractsRuntimeCheckingLevel>
     <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
-    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>
     <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
     <CodeContractsNonNullObligations>False</CodeContractsNonNullObligations>
     <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
@@ -172,6 +172,14 @@
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />
     <Compile Include="Bot\Settings.vb" />
+    <Compile Include="Pickling\ArrayJar.vb" />
+    <Compile Include="Pickling\PrefixSwitchJar.vb" />
+    <Compile Include="Pickling\InteriorSwitchJar.vb" />
+    <Compile Include="Pickling\RepeatingJar.vb" />
+    <Compile Include="Pickling\ListJar.vb" />
+    <Compile Include="Pickling\TupleJar.vb" />
+    <Compile Include="Pickling\StringJar.vb" />
+    <Compile Include="Pickling\Pickling Extensions.vb" />
     <Compile Include="Warden\Warden Enums.vb" />
     <Compile Include="Warden\Warden Server Packet.vb" />
     <Compile Include="Bot\Commands\Generic Commands.vb" />
@@ -280,11 +288,11 @@
     <Compile Include="Library\DeadManSwitch.vb" />
     <Compile Include="Library\Logging.vb" />
     <Compile Include="Library\Networking.vb" />
-    <Compile Include="Library\Pickling\Jars Enum.vb" />
-    <Compile Include="Library\Pickling\PicklingBase.vb" />
-    <Compile Include="Library\Pickling\PicklingInterface.vb" />
-    <Compile Include="Library\Pickling\PicklingJars.vb" />
-    <Compile Include="Library\Pickling\Jars Numeric.vb" />
+    <Compile Include="Pickling\Enum Jars.vb" />
+    <Compile Include="Pickling\Pickling Base.vb" />
+    <Compile Include="Pickling\Pickling Interfaces.vb" />
+    <Compile Include="Pickling\ManualSwitchJar.vb" />
+    <Compile Include="Pickling\Numeric Jars.vb" />
     <Compile Include="Library\Streams\PacketStream.vb" />
     <Compile Include="Library\Streams\ThrottledWriteStream.vb" />
     <Compile Include="Plugins\Plugin Socket.vb" />

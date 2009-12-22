@@ -48,7 +48,8 @@ Public NotInheritable Class ThrottledWriteStream
                                 PerformWrites(isWaitCallback:=False)
                             End Sub)
     End Sub
-    Private Sub PerformWrites(ByVal isWaitCallback As Boolean)
+    <ContractVerification(False)>
+    Private Sub PerformWrites(ByVal isWaitCallback As Boolean) 'verification disabled due to incorrect stream contracts in BCL
         If _throttled AndAlso Not isWaitCallback Then Return
         _throttled = False
 

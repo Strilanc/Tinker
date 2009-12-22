@@ -81,9 +81,11 @@ Public NotInheritable Class PacketSocket
         Me._isConnected = True
         Me._remoteEndPoint = remoteEndPoint
         Me._localEndPoint = localEndPoint
+        Contract.Assume(remoteEndPoint.Address.GetAddressBytes IsNot Nothing)
         If remoteEndPoint.Address.GetAddressBytes().SequenceEqual(GetCachedIPAddressBytes(external:=False)) OrElse
                                      remoteEndPoint.Address.GetAddressBytes().SequenceEqual({127, 0, 0, 1}) Then
             _remoteEndPoint = New Net.IPEndPoint(New Net.IPAddress(GetCachedIPAddressBytes(external:=True)), remoteEndPoint.Port)
+            Contract.Assume(_remoteEndPoint.Address IsNot Nothing)
         End If
         Me._name = If(name, Me.RemoteEndPoint.ToString)
     End Sub
@@ -146,7 +148,8 @@ Public NotInheritable Class PacketSocket
         Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)
     End Sub
 
-    Public Sub WriteRawData(ByVal data() As Byte)
+    <ContractVerification(False)>
+    Public Sub WriteRawData(ByVal data() As Byte) 'verification disabled due to incorrect stream contracts in BCL
         Contract.Requires(data IsNot Nothing)
         _stream.Write(data, 0, data.Length)
         Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)

@@ -17,6 +17,7 @@ Namespace WC3
         Public ReadOnly Property Slots As IReadableList(Of Slot)
             Get
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() Is _slots)
                 Return _slots
             End Get
         End Property
@@ -204,7 +205,7 @@ Namespace WC3
             Me._playableHeight = 256
             Me._playableWidth = 256
             Me._isMelee = True
-            Me._name = relativePath.Split("\"c).Last
+            Me._name = relativePath.Split("\"c).Last.AssumeNotNull
             Me._numPlayerSlots = slotCount
             Me._fileSize = fileSize
             Me._fileChecksumCRC32 = fileChecksumCRC32
@@ -247,8 +248,9 @@ Namespace WC3
 #End Region
 
 #Region "Read"
+        <ContractVerification(False)>
         Public Function ReadChunk(ByVal pos As Integer,
-                                  Optional ByVal maxLength As Integer = 1442) As Byte()
+                                  Optional ByVal maxLength As Integer = 1442) As Byte() 'verification disabled due to incorrect stream contracts in BCL
             Contract.Requires(pos >= 0)
             Contract.Requires(maxLength >= 0)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
@@ -591,18 +593,18 @@ Namespace WC3
                     'type
                     Select Case br.ReadInt32() '0=?, 1=available, 2=cpu, 3=unused
                         Case 1 : slot.Contents = New SlotContentsOpen(slot)
-                        Case 2 : slot.Contents = New SlotContentsComputer(slot, Slot.ComputerLevel.Normal)
+                        Case 2 : slot.Contents = New SlotContentsComputer(slot, slot.ComputerLevel.Normal)
                         Case 3 : slot = Nothing
                         Case Else
                             Throw New IO.InvalidDataException("Unrecognized map slot type.")
                     End Select
                     'race
-                    Dim race = Slot.Races.Random
+                    Dim race = slot.Races.Random
                     Select Case br.ReadInt32()
-                        Case 1 : race = Slot.Races.Human
-                        Case 2 : race = Slot.Races.Orc
-                        Case 3 : race = Slot.Races.Undead
-                        Case 4 : race = Slot.Races.NightElf
+                        Case 1 : race = slot.Races.Human
+                        Case 2 : race = slot.Races.Orc
+                        Case 3 : race = slot.Races.Undead
+                        Case 4 : race = slot.Races.NightElf
                         Case Else
                             Throw New IO.InvalidDataException("Unrecognized map slot race.")
                     End Select

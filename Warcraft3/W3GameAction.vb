@@ -182,33 +182,33 @@
                         New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                         New OrderTypeJar("order").Weaken,
                         New ObjectIdJar("unknown").Weaken,
-                        New FloatSingleJar("target x").Weaken,
-                        New FloatSingleJar("target y").Weaken)
+                        New Float32Jar("target x").Weaken,
+                        New Float32Jar("target y").Weaken)
             reg(jar, W3GameActionId.ObjectOrder,
                         New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                         New OrderTypeJar("order").Weaken,
                         New ObjectIdJar("unknown").Weaken,
-                        New FloatSingleJar("x").Weaken,
-                        New FloatSingleJar("y").Weaken,
+                        New Float32Jar("x").Weaken,
+                        New Float32Jar("y").Weaken,
                         New ObjectIdJar("target").Weaken)
             reg(jar, W3GameActionId.DropOrGiveItem,
                         New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                         New OrderTypeJar("order").Weaken,
                         New ObjectIdJar("unknown").Weaken,
-                        New FloatSingleJar("x").Weaken,
-                        New FloatSingleJar("y").Weaken,
+                        New Float32Jar("x").Weaken,
+                        New Float32Jar("y").Weaken,
                         New ObjectIdJar("receiver").Weaken,
                         New ObjectIdJar("item").Weaken)
             reg(jar, W3GameActionId.FogObjectOrder,
                         New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                         New OrderTypeJar("order").Weaken,
                         New ObjectIdJar("unknown").Weaken,
-                        New FloatSingleJar("fog target x").Weaken,
-                        New FloatSingleJar("fog target y").Weaken,
+                        New Float32Jar("fog target x").Weaken,
+                        New Float32Jar("fog target y").Weaken,
                         New ObjectTypeJar("fog target type").Weaken,
                         New ArrayJar("unknown2", expectedSize:=9).Weaken,
-                        New FloatSingleJar("actual target x").Weaken,
-                        New FloatSingleJar("actual target y").Weaken)
+                        New Float32Jar("actual target x").Weaken,
+                        New Float32Jar("actual target y").Weaken)
 
             'Other orders
             reg(jar, W3GameActionId.EnterChooseHeroSkillSubmenu)
@@ -220,8 +220,8 @@
                         New ByteJar("slot number").Weaken,
                         New ObjectTypeJar("type").Weaken)
             reg(jar, W3GameActionId.MinimapPing,
-                        New FloatSingleJar("x").Weaken,
-                        New FloatSingleJar("y").Weaken,
+                        New Float32Jar("x").Weaken,
+                        New Float32Jar("y").Weaken,
                         New ArrayJar("unknown", expectedSize:=4).Weaken)
 
             'Alliance
@@ -269,7 +269,7 @@
             reg(jar, W3GameActionId.CheatSpeedConstruction)
             reg(jar, W3GameActionId.CheatUnlimitedMana)
             reg(jar, W3GameActionId.CheatSetTimeOfDay,
-                        New FloatSingleJar("time").Weaken)
+                        New Float32Jar("time").Weaken)
             reg(jar, W3GameActionId.CheatGold,
                         New ByteJar("unknown").Weaken,
                         New UInt32Jar("amount").Weaken)
@@ -318,7 +318,7 @@
                         New StringJar("filename").Weaken,
                         New StringJar("mission key").Weaken,
                         New StringJar("key").Weaken,
-                        New FloatSingleJar("value").Weaken)
+                        New Float32Jar("value").Weaken)
             reg(jar, W3GameActionId.GameCacheSyncUnit,
                         New StringJar("filename").Weaken,
                         New StringJar("mission key").Weaken,
@@ -451,7 +451,7 @@
 
 #Region "Jars"
         Private NotInheritable Class ObjectIdJar
-            Inherits Jar(Of ObjectId)
+            Inherits BaseJar(Of ObjectId)
 
             Public Sub New(ByVal name As InvariantString)
                 MyBase.New(name)
@@ -509,7 +509,7 @@
     End Class
 
     Public NotInheritable Class W3GameActionJar
-        Inherits Jar(Of GameAction)
+        Inherits BaseJar(Of GameAction)
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
         End Sub

@@ -276,16 +276,16 @@ Namespace Bnet
             End Property
         End Class
         Public Class QueryGamesListResponseJar
-            Inherits ParseJar(Of QueryGamesListResponse)
+            Inherits BaseParseJar(Of QueryGamesListResponse)
 
-            Private Shared ReadOnly gameDataJar As New TupleParseJar("game",
+            Private Shared ReadOnly gameDataJar As New TupleJar("game",
                     New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
                     New UInt32Jar("language id").Weaken,
-                    New NetIPEndPointJar("host address"),
+                    New NetIPEndPointJar("host address").Weaken,
                     New EnumUInt32Jar(Of GameStates)("game state").Weaken,
                     New UInt32Jar("elapsed seconds").Weaken,
-                    New StringJar("game name"),
-                    New StringJar("game password"),
+                    New StringJar("game name").Weaken,
+                    New StringJar("game password").Weaken,
                     New TextHexValueJar("num free slots", numdigits:=1).Weaken,
                     New TextHexValueJar("game id", numdigits:=8).Weaken,
                     New WC3.GameStatsJar("game statstring").Weaken)
@@ -626,7 +626,7 @@ Namespace Bnet
 
 #Region "Jars"
         Public NotInheritable Class DwordStringJar
-            Inherits Jar(Of String)
+            Inherits BaseJar(Of String)
             Public Sub New(ByVal name As InvariantString)
                 MyBase.new(name)
             End Sub
@@ -646,7 +646,7 @@ Namespace Bnet
         End Class
 
         Public NotInheritable Class TextHexValueJar
-            Inherits Jar(Of ULong)
+            Inherits BaseJar(Of ULong)
             Private ReadOnly numDigits As Integer
             Private ReadOnly byteOrder As ByteOrder
 
@@ -695,7 +695,7 @@ Namespace Bnet
         End Class
 
         Public NotInheritable Class FileTimeJar
-            Inherits Jar(Of Date)
+            Inherits BaseJar(Of Date)
 
             Public Sub New(ByVal name As InvariantString)
                 MyBase.New(name)
@@ -715,7 +715,7 @@ Namespace Bnet
         End Class
 
         Public NotInheritable Class ProductCredentialsJar
-            Inherits Jar(Of ProductCredentials)
+            Inherits BaseJar(Of ProductCredentials)
 
             Private ReadOnly _dataJar As TupleJar
 
@@ -747,11 +747,13 @@ Namespace Bnet
             Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of ProductCredentials)
                 Dim pickle = _dataJar.Parse(data)
                 Dim vals = pickle.Value
+                Dim proof = CType(vals("proof"), Byte()).AssumeNotNull
+                Contract.Assume(proof.Length = 20)
                 Dim value = New ProductCredentials(
                         product:=CType(vals("product"), ProductType),
                         publicKey:=CUInt(vals("public key")),
                         length:=CUInt(vals("length")),
-                        proof:=CType(vals("proof"), Byte()).AssumeNotNull)
+                        proof:=proof)
                 Return New Pickle(Of ProductCredentials)(value, pickle.Data, pickle.Description)
             End Function
         End Class
@@ -771,6 +773,8 @@ Namespace Bnet
                 Return 4
             End Get
         End Property
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
             If header(0) <> Packet.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
             Return CType(header(1), PacketId)

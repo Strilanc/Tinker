@@ -110,7 +110,7 @@
         End Property
         Public ReadOnly Property TotalSlotCount() As Integer
             Get
-                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                Contract.Ensures(Contract.Result(Of Integer)() > 0)
                 Contract.Ensures(Contract.Result(Of Integer)() <= 12)
                 Return _totalSlotCount
             End Get

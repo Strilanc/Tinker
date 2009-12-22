@@ -32,7 +32,9 @@
         Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Byte())().Length = 4)
         If Not _cached Then CacheExeInformation()
-        Return (From e In _exeVersion.Reverse Select CByte(e And &HFF)).ToArray
+        Dim result = (From e In _exeVersion.Reverse Select CByte(e And &HFF)).ToArray
+        Contract.Assume(result.Length = 4)
+        Return result
     End Function
     Public Function WC3Path() As String
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)

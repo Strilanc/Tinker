@@ -83,8 +83,9 @@ Namespace Components
         ''' Returns null if there is no such component.
         ''' </summary>
         <Pure()>
+        <ContractVerification(False)>
         Private Function TryFindComponent(ByVal type As InvariantString,
-                                          ByVal name As InvariantString) As IBotComponent
+                                          ByVal name As InvariantString) As IBotComponent 'verification disabled due to stupid verifier
             Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Name = name)
             Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Type = type)
             Dim result = (From c In _components Where c.Type = type AndAlso c.Name = name).FirstOrDefault

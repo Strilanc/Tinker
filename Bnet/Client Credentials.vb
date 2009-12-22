@@ -21,7 +21,8 @@ Namespace Bnet
     ''' Stores bnet login credentials for identification and authentication.
     ''' </summary>
     <DebuggerDisplay("{UserName}")>
-    Public Class ClientCredentials
+    <ContractVerification(False)>
+    Public Class ClientCredentials 'verification disabled due to stupid verifier
         Private Shared ReadOnly G As BigInteger = 47
         Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719",
                                                                    CultureInfo.InvariantCulture)
@@ -103,8 +104,8 @@ Namespace Bnet
             End Get
         End Property
 
-        ''' <summary>Generates a new private crypto key.</summary>
-        ''' <remarks>I'm not a cryptographer but this is probably safe enough, given the application.</remarks>
+        '''<summary>Generates a new private crypto key.</summary>
+        '''<remarks>I'm not a cryptographer but this is probably safe enough, given the application.</remarks>
         Private Shared Function GeneratePrivateKey(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As BigInteger
             Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
             Contract.Assume(N >= 0)
@@ -120,7 +121,7 @@ Namespace Bnet
             Contract.Assume(key >= 0)
             Return key
         End Function
-        ''' <summary>Derives a fixed salt value from the shared crypto constants.</summary>
+        '''<summary>Derives a fixed salt value from the shared crypto constants.</summary>
         Private Shared ReadOnly Property FixedSalt() As Byte()
             Get
                 Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
@@ -136,17 +137,14 @@ Namespace Bnet
             End Get
         End Property
 
-        ''' <summary>Determines credentials for the same client, but with a new key pair.</summary>
-        ''' 
+        '''<summary>Determines credentials for the same client, but with a new key pair.</summary>
         Public Function Regenerate(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As ClientCredentials
             Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
             Return New ClientCredentials(Me.UserName, Me._password, rng)
         End Function
 
-        ''' <summary>
-        ''' Determines the shared secret value, which can be computed by both the client and server, using the client-side data.
-        ''' </summary>
+        '''<summary>Determines the shared secret value, which can be computed by both the client and server, using the client-side data.</summary>
         Private ReadOnly Property SharedSecret(ByVal accountSalt As IList(Of Byte),
                                                ByVal serverPublicKeyBytes As IList(Of Byte)) As Byte()
             Get
@@ -167,8 +165,8 @@ Namespace Bnet
 
                 'Hash odd and even bytes of the shared value
                 Dim sharedValueBytes = sharedValue.ToUnsignedByteArray.PaddedTo(32)
-                Dim sharedHashEven = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2) ).SHA1
-                Dim sharedHashOdd = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2 + 1) ).SHA1
+                Dim sharedHashEven = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2)).SHA1
+                Dim sharedHashOdd = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2 + 1)).SHA1
 
                 'Interleave odd and even hashes
                 Dim result = (From i In Enumerable.Range(0, 40) Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))).ToArray
@@ -176,9 +174,7 @@ Namespace Bnet
                 Return result
             End Get
         End Property
-        ''' <summary>
-        ''' Determines a proof for the server that the client knows the password.
-        ''' </summary>
+        '''<summary>Determines a proof for the server that the client knows the password.</summary>
         Public ReadOnly Property ClientPasswordProof(ByVal accountSalt As IList(Of Byte),
                                                      ByVal serverPublicKeyBytes As IList(Of Byte)) As IList(Of Byte)
             Get
@@ -195,9 +191,7 @@ Namespace Bnet
                               SharedSecret(accountSalt, serverPublicKeyBytes)).SHA1
             End Get
         End Property
-        ''' <summary>
-        ''' Determines the expected proof, from the server, that it knew the shared secret.
-        ''' </summary>
+        '''<summary>Determines the expected proof, from the server, that it knew the shared secret.</summary>
         Public ReadOnly Property ServerPasswordProof(ByVal accountSalt As IList(Of Byte),
                                                      ByVal serverPublicKeyBytes As IList(Of Byte)) As IList(Of Byte)
             Get

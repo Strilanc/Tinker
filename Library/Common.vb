@@ -24,7 +24,8 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()>
-    Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IList(Of String)
+    <ContractVerification(False)>
+    Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IList(Of String) 'verification disabled due to stupid verifier
         Contract.Requires(body IsNot Nothing)
         Contract.Requires(maxLineLength > 0)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
@@ -32,53 +33,59 @@ Public Module PoorlyCategorizedFunctions
         'Contract.Ensures(Contract.ForAll(Contract.Result(Of IList(Of String)), Function(item) item IsNot Nothing))
         'Contract.Ensures(Contract.ForAll(Contract.Result(Of IList(Of String)), Function(item) item.Length <= maxLineLength))
 
+        'Recurse on actual lines, if there are multiple
+        If body.Contains(Environment.NewLine) Then
+            Return (From line In Microsoft.VisualBasic.Split(body, Delimiter:=Environment.NewLine)
+                    Select SplitText(line, maxLineLength)
+                   ).Fold.ToList
+        End If
+
+        'Separate body into lines, respecting the maximum line length and trying to divide along word boundaries
         Dim result = New List(Of String)()
-        For Each line In Microsoft.VisualBasic.Split(body, Delimiter:=Environment.NewLine)
-            Contract.Assume(line IsNot Nothing)
-            If line.Length <= maxLineLength Then
-                result.Add(line)
-                Continue For
-            End If
+        Dim ws = 0 'word start
+        Dim ls = 0 'line start
+        For we = 0 To body.Length 'iterate for word endings
+            Contract.Assert(ls <= ws)
+            Contract.Assert(ws <= ls + maxLineLength + 1)
+            Contract.Assert(ws <= we)
+            If we < body.Length AndAlso body(we) <> " "c Then Continue For 'not a word ending position
 
-            Dim ws = 0 'word start
-            Dim ls = 0 'line start
-            For i = 0 To line.Length
-                Contract.Assert(ls <= ws)
-                Contract.Assert(ws <= ls + maxLineLength + 1)
-                Contract.Assert(ws <= i)
-                If i < line.Length AndAlso line(i) <> " "c Then Continue For
-
-                If i - ws > maxLineLength Then 'word will not fit on a single line
-                    'Shove as much word as possible at end of current line
-                    If line(ls + maxLineLength - 1) = " "c Then
-                        result.Add(line.Substring(ls, maxLineLength - 1))
-                    ElseIf line.Length > ls + maxLineLength AndAlso line(ls + maxLineLength) = " "c Then
-                        result.Add(line.Substring(ls, maxLineLength))
-                        ls += 1
-                    Else
-                        result.Add(line.Substring(ls, maxLineLength))
-                    End If
+            If ws + maxLineLength < we Then 'word will not fit on a single line
+                'Output current line, shoving as much of the word at the end of the line as possible
+                If body(ls + maxLineLength - 1) = " "c Then
+                    'There is a word boundary at the end of the current line, don't include it
+                    result.Add(body.Substring(ls, maxLineLength - 1))
                     ls += maxLineLength
-                    'Divide remainder of word into lines
-                    While i - ls > maxLineLength
-                        result.Add(line.Substring(ls, maxLineLength))
-                        ls += maxLineLength
-                    End While
-                    ws = ls
-                ElseIf i - ls > maxLineLength Then 'word will not fit on current line
-                    Contract.Assert(ls < ws)
-                    result.Add(line.Substring(ls, ws - ls - 1))
-                    ls = ws
+                Else
+                    result.Add(body.Substring(ls, maxLineLength))
+                    ls += maxLineLength
+                    'If there is a word boundary at the start of the new line, skip it
+                    If ls < body.Length AndAlso body(ls) = " "c Then ls += 1
                 End If
 
-                ws = i + 1
-            Next i
+                'Output lines until the word fits on a line, starting a new line with the remainder of the word
+                While ls + maxLineLength < we
+                    result.Add(body.Substring(ls, maxLineLength))
+                    ls += maxLineLength
+                End While
+                ws = ls
 
-            Contract.Assert(ls = 0 OrElse result.Count > 0)
-            If ls <= line.Length Then
-                result.Add(line.Substring(ls))
+            ElseIf ls + maxLineLength < we Then 'word will not fit on current line
+                'Output current line, starting a new line with the current word
+                Contract.Assert(ls < ws)
+                result.Add(body.Substring(ls, ws - ls - 1))
+                ls = ws
             End If
-        Next line
+
+            'Start new word
+            ws = we + 1
+        Next we
+
+        'Output last line
+        Contract.Assert(ls = 0 OrElse result.Count > 0)
+        If result.Count = 0 OrElse ls <= body.Length Then
+            result.Add(body.Substring(ls))
+        End If
         Return result
     End Function
 
@@ -99,7 +106,10 @@ Public Module PoorlyCategorizedFunctions
             Contract.Assume(pair IsNot Nothing)
             Dim p = pair.IndexOf(valueDivider, StringComparison.OrdinalIgnoreCase)
             If p = -1 Then Throw New ArgumentException("'{0}' didn't include a value divider ('{1}').".Frmt(pair, valueDivider))
+            Contract.Assume(p >= 0)
+            Contract.Assume(p <= pair.Length)
             Dim key = pair.Substring(0, p)
+            Contract.Assume(p + valueDivider.Length <= pair.Length)
             Dim value = pair.Substring(p + valueDivider.Length)
             result(key) = parser(value)
         Next pair
@@ -220,6 +230,7 @@ Public Module PoorlyCategorizedFunctions
         For i = 0 To this.Count - 1
             result(i) = this(i)
         Next i
+        Contract.Assume(result.Length = Math.Max(this.Count, minimumLength))
         Return result
     End Function
 
@@ -289,8 +300,9 @@ Public Module PoorlyCategorizedFunctions
         Return reader.ReadNullTerminatedData.ParseChrString(nullTerminated:=False)
     End Function
     <Extension()>
+    <ContractVerification(False)>
     Public Function ReadNullTerminatedString(ByVal reader As BinaryReader,
-                                             ByVal maxLength As Integer) As String
+                                             ByVal maxLength As Integer) As String 'verification disabled due to stupdid verifier
         Contract.Requires(reader IsNot Nothing)
         Contract.Requires(maxLength >= 0)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -298,6 +310,7 @@ Public Module PoorlyCategorizedFunctions
 
         Dim data = New List(Of Byte)(capacity:=maxLength)
         Do
+            Contract.Assert(data.Count <= maxLength)
             Dim b = reader.ReadByte()
             If b = 0 Then
                 Return data.ParseChrString(nullTerminated:=False)

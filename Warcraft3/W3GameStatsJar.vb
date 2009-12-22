@@ -1,6 +1,6 @@
 ﻿Namespace WC3
     Public NotInheritable Class GameStatsJar
-        Inherits Jar(Of GameStats)
+        Inherits BaseJar(Of GameStats)
 
         <Flags()>
         Private Enum GameSettings As UInteger

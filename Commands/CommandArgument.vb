@@ -69,7 +69,9 @@ Namespace Commands
         ''' <summary>
         ''' Splits text into tokens separated by spaces and fused by brackets.
         ''' </summary>
-        Public Shared Function Tokenize(ByVal text As String) As IEnumerable(Of String)
+        <Pure()>
+        <ContractVerification(False)>
+        Public Shared Function Tokenize(ByVal text As String) As IEnumerable(Of String) 'verification disabled due to stupid verifier
             Contract.Requires(text IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)
 
@@ -196,7 +198,9 @@ Namespace Commands
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 If Not _named.ContainsKey(name) Then Throw New InvalidOperationException("No such named argument.")
-                Return _named(name)
+                Dim result = _named(name)
+                Contract.Assume(result IsNot Nothing)
+                Return result
             End Get
         End Property
         ''' <summary>Determines if the argument contains the given optional switch.</summary>

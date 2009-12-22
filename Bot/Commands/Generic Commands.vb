@@ -39,6 +39,8 @@ Namespace Commands
                     End Function
                 )
             End Function
+            'verification disabled due to stupid verifier
+            <ContractVerification(False)>
             Private Shared Function DownloadEpicWar(ByVal id As String) As String
                 Dim path As String = Nothing
                 Dim dlPath As String = Nothing
@@ -50,16 +52,22 @@ Namespace Commands
                     'Find download link
                     Dim i = httpFile.IndexOf("alt=""Download""", StringComparison.OrdinalIgnoreCase)
                     i = httpFile.IndexOf("a href=""", i, StringComparison.OrdinalIgnoreCase)
+                    If i = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     i += "a href=""".Length
                     Dim j = httpFile.IndexOf(">", i, StringComparison.OrdinalIgnoreCase)
+                    If j = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     Dim link = "http://epicwar.com{0}".Frmt(httpFile.Substring(i, j - i))
+                    Contract.Assume(link.Length > 0)
 
                     'Find filename
                     i = httpFile.IndexOf("Download ", i, StringComparison.OrdinalIgnoreCase) + "Download ".Length
+                    If i = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     j = httpFile.IndexOf("<", i, StringComparison.OrdinalIgnoreCase)
+                    If j = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     Dim filename = httpFile.Substring(i, j - i)
                     path = My.Settings.mapPath + filename
                     dlPath = "{0}.dl".Frmt(path)
+                    Contract.Assume(dlPath.Length > 0)
 
                     'Check for existing files
                     If IO.File.Exists(dlPath) Then

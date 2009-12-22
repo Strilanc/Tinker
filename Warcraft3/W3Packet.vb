@@ -445,10 +445,10 @@ Namespace WC3
 
 #Region "Factory Methods"
             Private Shared Function MakeNonGameActionJar() As IJar(Of Dictionary(Of InvariantString, Object))
-                Dim commandJar = New InteriorSwitchJar(Of Dictionary(Of InvariantString, Object))(
+                Dim commandJar = New InteriorSwitchJar(Of Packet.NonGameAction, Dictionary(Of InvariantString, Object))(
                         PacketId.NonGameAction.ToString,
-                        Function(val) CByte(val("command type")),
-                        Function(data) data(data(0) + 2))
+                        Function(val) CType(val("command type"), Packet.NonGameAction),
+                        Function(data) CType(data(data(0) + 2), Packet.NonGameAction))
                 commandJar.AddPackerParser(Packet.NonGameAction.GameChat, New TupleJar(PacketId.NonGameAction.ToString,
                         New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
                         New ByteJar("sending player").Weaken,
@@ -486,7 +486,6 @@ Namespace WC3
         End Class
 
 #Region "Definition"
-
         Private Shared Function MakeW3PacketJar() As ManualSwitchJar
             Dim jar = New ManualSwitchJar
 
@@ -495,10 +494,10 @@ Namespace WC3
             reg(jar, Jars.Pong)
 
             'Chat
-            Dim chatJar = New InteriorSwitchJar(Of Dictionary(Of InvariantString, Object))(
+            Dim chatJar = New InteriorSwitchJar(Of ChatType, Dictionary(Of InvariantString, Object))(
                         PacketId.Text.ToString,
-                        Function(val) CByte(val("type")),
-                        Function(data) data(data(0) + 2))
+                        Function(val) CType(val("type"), ChatType),
+                        Function(data) CType(data(data(0) + 2), ChatType))
             chatJar.AddPackerParser(ChatType.Game, New TupleJar(PacketId.Text.ToString,
                     New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
                     New ByteJar("sending player index").Weaken,
@@ -513,10 +512,10 @@ Namespace WC3
             jar.AddPackerParser(PacketId.Text, chatJar.Weaken)
 
             'NonGameAction commands
-            Dim commandJar = New InteriorSwitchJar(Of Dictionary(Of InvariantString, Object))(
+            Dim commandJar = New InteriorSwitchJar(Of NonGameAction, Dictionary(Of InvariantString, Object))(
                         PacketId.NonGameAction.ToString,
-                        Function(val) CByte(val("command type")),
-                        Function(data) data(data(0) + 2))
+                        Function(val) CType(val("command type"), NonGameAction),
+                        Function(data) CType(data(data(0) + 2), NonGameAction))
             commandJar.AddPackerParser(NonGameAction.GameChat, New TupleJar(PacketId.NonGameAction.ToString,
                     New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
@@ -899,7 +898,7 @@ Namespace WC3
                     {"unknown value", 0},
                     {"listen port", listenPort},
                     {"peer key", peerKey},
-                    {"name", name},
+                    {"name", name.ToString},
                     {"unknown data", New Byte() {0}},
                     {"internal address", New Net.IPEndPoint(internalAddress, sendingPort)}})
         End Function

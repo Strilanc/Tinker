@@ -102,7 +102,7 @@ Public Module NetworkingCommon
 End Module
 
 Public Class NetIPAddressJar
-    Inherits Jar(Of Net.IPAddress)
+    Inherits BaseJar(Of Net.IPAddress)
 
     Public Sub New(ByVal name As InvariantString)
         MyBase.New(name)
@@ -121,7 +121,7 @@ Public Class NetIPAddressJar
 End Class
 
 Public Class NetIPEndPointJar
-    Inherits Jar(Of Net.IPEndPoint)
+    Inherits BaseJar(Of Net.IPEndPoint)
 
     Private Shared ReadOnly DataJar As TupleJar = New TupleJar("NetIPEndPoint",
                 New UInt16Jar("protocol").Weaken,

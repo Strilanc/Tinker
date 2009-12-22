@@ -90,7 +90,8 @@ Public NotInheritable Class PacketStreamer
         Return result
     End Function
 
-    Public Sub WritePacket(ByVal packetData As Byte())
+    <ContractVerification(False)>
+    Public Sub WritePacket(ByVal packetData As Byte()) 'verification disabled due to incorrect stream contracts in BCL
         Contract.Requires(packetData IsNot Nothing)
         If packetData.Length < HeaderSize Then Throw New ArgumentException("Data didn't include header data.")
 
