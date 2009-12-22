@@ -53,13 +53,13 @@
         'verification disabled due to incorrect BCL stream contracts
         <ContractVerification(False)>
         Public Function ReceiveChunk(ByVal pos As Integer,
-                                     ByVal data() As Byte) As Boolean
+                                     ByVal data As IReadableList(Of Byte)) As Boolean
             Contract.Requires(pos >= 0)
             Contract.Requires(data IsNot Nothing)
             If file Is Nothing Then Throw New InvalidOperationException("File is closed.")
             If pos <> file.Position Then Return False
-            If file.Position + data.Length > size Then Throw New IO.InvalidDataException("Data runs past end of file.")
-            file.Write(data, 0, data.Length)
+            If file.Position + data.Count > size Then Throw New IO.InvalidDataException("Data runs past end of file.")
+            file.Write(data.ToArray, 0, data.Count)
 
             If file.Position = size Then
                 'Finished Download

@@ -66,9 +66,8 @@
         End Sub
         Private Sub ReceiveTock(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
             If tickQueue.Count <= 0 Then
-                logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(name), LogMessageType.Problem)
+                logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(Name), LogMessageType.Problem)
                 Disconnect(True, PlayerLeaveType.Disconnect, "overticked")
                 Return
             End If

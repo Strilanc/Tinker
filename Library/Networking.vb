@@ -130,7 +130,7 @@ Public Class NetIPEndPointJar
                 New UInt16Jar("protocol").Weaken,
                 New UInt16Jar("port", ByteOrder:=ByteOrder.BigEndian).Weaken,
                 New NetIPAddressJar("ip").Weaken,
-                New ArrayJar("unknown", 8).Weaken)
+                New RawDataJar("unknown", Size:=8).Weaken)
 
     Public Sub New(ByVal name As InvariantString)
         MyBase.New(name)
@@ -145,7 +145,7 @@ Public Class NetIPEndPointJar
                 {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0, 2)},
                 {"ip", value.Address},
                 {"port", value.Port},
-                {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}}}
+                {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsReadableList}}
         Dim pickle = DataJar.Pack(vals)
         Return New Pickle(Of TValue)(Name, value, pickle.Data)
     End Function

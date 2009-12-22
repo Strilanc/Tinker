@@ -34,7 +34,7 @@
                     New StringJar("relative path").Weaken,
                     New StringJar("host name").Weaken,
                     New StringJar("unknown2").Weaken,
-                    New ArrayJar("sha1 checksum", expectedSize:=20).Weaken)
+                    New RawDataJar("sha1 checksum", Size:=20).Weaken)
 
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
@@ -92,7 +92,7 @@
                     {"playable height", value.playableHeight},
                     {"settings", settings},
                     {"xoro checksum", value.mapChecksumXORO},
-                    {"sha1 checksum", value.MapChecksumSHA1.ToArray},
+                    {"sha1 checksum", value.MapChecksumSHA1},
                     {"relative path", value.relativePath},
                     {"host name", value.HostName},
                     {"unknown1", 0},

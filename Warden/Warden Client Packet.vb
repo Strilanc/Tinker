@@ -33,14 +33,14 @@
             Public Shared ReadOnly FullServerConnect As New TupleJar(WardenPacketId.FullServiceConnect.ToString,
                     New UInt32Jar("cookie").Weaken,
                     New EnumUInt32Jar(Of ClientType)("client type").Weaken,
-                    New ArrayJar("seed", sizePrefixSize:=2).Weaken,
+                    New SizePrefixedDataJar("seed", prefixsize:=2).Weaken,
                     New StringJar("username").Weaken,
-                    New ArrayJar("password", sizeprefixsize:=2).Weaken,
-                    New ArrayJar("unspecified", takeRest:=True).Weaken)
+                    New SizePrefixedDataJar("password", prefixsize:=2).Weaken,
+                    New RemainingDataJar("unspecified").Weaken)
             Public Shared ReadOnly FullServiceHandleWardenPacket As New TupleJar(WardenPacketId.FullServiceHandleWardenPacket.ToString,
                     New UInt32Jar("cookie").Weaken,
-                    New ArrayJar("raw warden packet data", sizePrefixSize:=2).Weaken,
-                    New ArrayJar("unspecified", takeRest:=True).Weaken)
+                    New SizePrefixedDataJar("raw warden packet data", prefixsize:=2).Weaken,
+                    New RemainingDataJar("unspecified").Weaken)
         End Class
 
         Public Shared Function MakeFullServiceConnect(ByVal cookie As UInteger, ByVal seed As UInteger) As ClientPacket
@@ -48,17 +48,17 @@
             Return New ClientPacket(WardenPacketId.FullServiceConnect, ClientPackets.FullServerConnect.Pack(New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
                     {"client type", ClientType.Warcraft3TFT},
-                    {"seed", seed.Bytes()},
+                    {"seed", seed.Bytes.AsReadableList},
                     {"username", ""},
-                    {"password", New Byte() {}},
-                    {"unspecified", New Byte() {}}}))
+                    {"password", New Byte() {}.AsReadableList},
+                    {"unspecified", New Byte() {}.AsReadableList}}))
         End Function
         Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As IReadableList(Of Byte)) As ClientPacket
             Contract.Ensures(Contract.Result(Of ClientPacket)() IsNot Nothing)
             Return New ClientPacket(WardenPacketId.FullServiceHandleWardenPacket, ClientPackets.FullServiceHandleWardenPacket.Pack(New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
-                    {"raw warden packet data", data.ToArray},
-                    {"unspecified", New Byte() {}}}))
+                    {"raw warden packet data", data},
+                    {"unspecified", New Byte() {}.AsReadableList}}))
         End Function
     End Class
 End Namespace

@@ -302,10 +302,10 @@ Namespace WC3
                     New UInt16Jar("listen port").Weaken,
                     New UInt32Jar("peer key", showhex:=True).Weaken,
                     New StringJar("name", maximumContentSize:=15).Weaken,
-                    New ArrayJar("unknown data", sizePrefixSize:=1).Weaken,
+                    New SizePrefixedDataJar("unknown data", prefixSize:=1).Weaken,
                     New NetIPEndPointJar("internal address").Weaken)
             Public Shared ReadOnly Greet As New DefParser(PacketId.Greet,
-                    New ArrayJar("slot data", sizePrefixSize:=2).Weaken,
+                    New SizePrefixedDataJar("slot data", prefixSize:=2).Weaken,
                     New ByteJar("player index").Weaken,
                     New NetIPEndPointJar("external address").Weaken)
             Public Shared ReadOnly HostMapInfo As New DefParser(PacketId.HostMapInfo,
@@ -314,14 +314,14 @@ Namespace WC3
                     New UInt32Jar("size").Weaken,
                     New UInt32Jar("crc32", showhex:=True).Weaken,
                     New UInt32Jar("xoro checksum", showhex:=True).Weaken,
-                    New ArrayJar("sha1 checksum", 20).Weaken)
+                    New RawDataJar("sha1 checksum", Size:=20).Weaken)
             Public Shared ReadOnly RejectEntry As New DefParser(PacketId.RejectEntry,
                     New EnumUInt32Jar(Of RejectReason)("reason").Weaken)
             Public Shared ReadOnly OtherPlayerJoined As New DefParser(PacketId.OtherPlayerJoined,
                     New UInt32Jar("peer key", showhex:=True).Weaken,
                     New ByteJar("index").Weaken,
                     New StringJar("name", maximumContentSize:=15).Weaken,
-                    New ArrayJar("unknown data", sizePrefixSize:=1).Weaken,
+                    New SizePrefixedDataJar("unknown data", prefixSize:=1).Weaken,
                     New NetIPEndPointJar("external address").Weaken,
                     New NetIPEndPointJar("internal address").Weaken)
 #End Region
@@ -355,11 +355,11 @@ Namespace WC3
             Public Shared ReadOnly RequestDropLaggers As New DefParser(PacketId.RequestDropLaggers)
             Public Shared ReadOnly Tick As New DefParser(PacketId.Tick,
                     New UInt16Jar("time span").Weaken,
-                    New ArrayJar("subpacket", takerest:=True).Weaken)
+                    New RemainingDataJar("subpacket").Weaken)
             Public Shared ReadOnly Tock As New DefParser(PacketId.Tock,
-                    New ArrayJar("game state checksum", 5).Weaken)
+                    New RawDataJar("game state checksum", Size:=5).Weaken)
             Public Shared ReadOnly GameAction As New DefParser(PacketId.GameAction,
-                    New ArrayJar("crc32", expectedSize:=4).Weaken,
+                    New RawDataJar("crc32", Size:=4).Weaken,
                     New RepeatingJar(Of GameAction)("actions", New W3GameActionJar("action")).Weaken)
             Public Shared ReadOnly NewHost As New DefParser(PacketId.NewHost,
                     New ByteJar("player index").Weaken)
@@ -431,7 +431,7 @@ Namespace WC3
                     New UInt32Jar("unknown").Weaken,
                     New UInt32Jar("file position").Weaken,
                     New UInt32Jar("crc32", showhex:=True).Weaken,
-                    New ArrayJar("file data", takerest:=True).Weaken)
+                    New RemainingDataJar("file data").Weaken)
             Public Shared ReadOnly MapFileDataReceived As New DefParser(PacketId.MapFileDataReceived,
                     New ByteJar("sender index").Weaken,
                     New ByteJar("receiver index").Weaken,
@@ -450,33 +450,33 @@ Namespace WC3
                         Function(val) CType(val("command type"), Packet.NonGameAction),
                         Function(data) CType(data(data(0) + 2), Packet.NonGameAction))
                 commandJar.AddPackerParser(Packet.NonGameAction.GameChat, New TupleJar(PacketId.NonGameAction.ToString,
-                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
                         New ByteJar("sending player").Weaken,
                         New EnumByteJar(Of NonGameAction)("command type").Weaken,
                         New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
                         New StringJar("message").Weaken))
                 commandJar.AddPackerParser(Packet.NonGameAction.LobbyChat, New TupleJar(PacketId.NonGameAction.ToString,
-                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
                         New ByteJar("sending player").Weaken,
                         New EnumByteJar(Of NonGameAction)("command type").Weaken,
                         New StringJar("message").Weaken))
                 commandJar.AddPackerParser(Packet.NonGameAction.SetTeam, New TupleJar(PacketId.NonGameAction.ToString,
-                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
                         New ByteJar("sending player").Weaken,
                         New EnumByteJar(Of NonGameAction)("command type").Weaken,
                         New ByteJar("new value").Weaken))
                 commandJar.AddPackerParser(Packet.NonGameAction.SetHandicap, New TupleJar(PacketId.NonGameAction.ToString,
-                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
                         New ByteJar("sending player").Weaken,
                         New EnumByteJar(Of NonGameAction)("command type").Weaken,
                         New ByteJar("new value").Weaken))
                 commandJar.AddPackerParser(Packet.NonGameAction.SetRace, New TupleJar(PacketId.NonGameAction.ToString,
-                        New ArrayJar("receiving player indexes", , 1).Weaken,
+                        New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
                         New ByteJar("sending player").Weaken,
                         New EnumByteJar(Of NonGameAction)("command type").Weaken,
                         New EnumByteJar(Of Slot.Races)("new value").Weaken))
                 commandJar.AddPackerParser(Packet.NonGameAction.SetColor, New TupleJar(PacketId.NonGameAction.ToString,
-                        New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
+                        New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
                         New ByteJar("sending player").Weaken,
                         New EnumByteJar(Of NonGameAction)("command type").Weaken,
                         New EnumByteJar(Of Slot.PlayerColor)("new value").Weaken))
@@ -510,44 +510,7 @@ Namespace WC3
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New StringJar("message").Weaken))
             jar.AddPackerParser(PacketId.Text, chatJar.Weaken)
-
-            'NonGameAction commands
-            Dim commandJar = New InteriorSwitchJar(Of NonGameAction, Dictionary(Of InvariantString, Object))(
-                        PacketId.NonGameAction.ToString,
-                        Function(val) CType(val("command type"), NonGameAction),
-                        Function(data) CType(data(data(0) + 2), NonGameAction))
-            commandJar.AddPackerParser(NonGameAction.GameChat, New TupleJar(PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
-                    New StringJar("message").Weaken))
-            commandJar.AddPackerParser(NonGameAction.LobbyChat, New TupleJar(PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New StringJar("message").Weaken))
-            commandJar.AddPackerParser(NonGameAction.SetTeam, New TupleJar(PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New ByteJar("new value").Weaken))
-            commandJar.AddPackerParser(NonGameAction.SetHandicap, New TupleJar(PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New ByteJar("new value").Weaken))
-            commandJar.AddPackerParser(NonGameAction.SetRace, New TupleJar(PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", , 1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumByteJar(Of Slot.Races)("new value").Weaken))
-            commandJar.AddPackerParser(NonGameAction.SetColor, New TupleJar(PacketId.NonGameAction.ToString,
-                    New ArrayJar("receiving player indexes", sizePrefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumByteJar(Of Slot.PlayerColor)("new value").Weaken))
-            jar.AddPackerParser(PacketId.NonGameAction, commandJar.Weaken)
+            jar.AddPackerParser(PacketId.NonGameAction, Jars.NonGameAction.Weaken)
 
             'Player Exit
             reg(jar, Jars.Leaving)
@@ -662,7 +625,7 @@ Namespace WC3
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(PacketId.Greet, New Dictionary(Of InvariantString, Object) From {
-                    {"slot data", New Byte() {}},
+                    {"slot data", New Byte() {}.AsReadableList},
                     {"player index", assignedIndex},
                     {"external address", player.GetRemoteEndPoint()}})
         End Function
@@ -682,7 +645,7 @@ Namespace WC3
                     {"size", map.FileSize},
                     {"crc32", map.FileChecksumCRC32},
                     {"xoro checksum", map.MapChecksumXORO},
-                    {"sha1 checksum", map.MapChecksumSHA1.ToArray}})
+                    {"sha1 checksum", map.MapChecksumSHA1}})
         End Function
         <Pure()>
         Public Shared Function MakeOtherPlayerJoined(ByVal stranger As Player,
@@ -694,7 +657,7 @@ Namespace WC3
                     {"peer key", stranger.peerKey},
                     {"index", If(overrideIndex <> 0, overrideIndex, stranger.Index)},
                     {"name", stranger.Name.ToString},
-                    {"unknown data", New Byte() {0}},
+                    {"unknown data", New Byte() {0}.AsReadableList},
                     {"external address", address},
                     {"internal address", address}})
         End Function
@@ -755,7 +718,7 @@ Namespace WC3
         End Function
         <Pure()>
         Public Shared Function MakeTick(Optional ByVal delta As UShort = 250,
-                                        Optional ByVal tickData() As Byte = Nothing) As Packet
+                                        Optional ByVal tickData As Byte() = Nothing) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             tickData = If(tickData, {})
             If tickData.Length > 0 Then
@@ -763,7 +726,7 @@ Namespace WC3
             End If
 
             Return New Packet(PacketId.Tick, New Dictionary(Of InvariantString, Object) From {
-                    {"subpacket", tickData},
+                    {"subpacket", tickData.AsReadableList},
                     {"time span", delta}})
         End Function
 #End Region
@@ -785,7 +748,7 @@ Namespace WC3
             refSizeDataSent = 0
             If senderIndex = 0 Then senderIndex = If(receiverIndex = 1, CByte(2), CByte(1))
 
-            refSizeDataSent = filedata.Length
+            refSizeDataSent = filedata.Count
             Return New Packet(PacketId.MapFileData, New Dictionary(Of InvariantString, Object) From {
                     {"receiving player index", receiverIndex},
                     {"sending player index", senderIndex},
@@ -899,7 +862,7 @@ Namespace WC3
                     {"listen port", listenPort},
                     {"peer key", peerKey},
                     {"name", name.ToString},
-                    {"unknown data", New Byte() {0}},
+                    {"unknown data", New Byte() {0}.AsReadableList},
                     {"internal address", New Net.IPEndPoint(internalAddress, sendingPort)}})
         End Function
         Public Shared Function MakeReady() As Packet
@@ -911,10 +874,10 @@ Namespace WC3
             Return New Packet(PacketId.Pong, New Dictionary(Of InvariantString, Object) From {
                     {"salt", salt}})
         End Function
-        Public Shared Function MakeTock(Optional ByVal checksum As Byte() = Nothing) As Packet
+        Public Shared Function MakeTock(Optional ByVal checksum As IReadableList(Of Byte) = Nothing) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            If checksum Is Nothing Then checksum = New Byte() {0, 0, 0, 0, 0}
-            If checksum.Length <> 5 Then Throw New ArgumentException("Checksum length must be 5.")
+            If checksum Is Nothing Then checksum = New Byte() {0, 0, 0, 0, 0}.AsReadableList
+            If checksum.Count <> 5 Then Throw New ArgumentException("Checksum length must be 5.")
             Return New Packet(PacketId.Tock, New Dictionary(Of InvariantString, Object) From {
                     {"game state checksum", checksum}})
         End Function

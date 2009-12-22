@@ -28,12 +28,12 @@
         If Not _cached Then CacheExeInformation()
         Return CByte(_exeVersion(1) And &HFF)
     End Function
-    Public Function GetWC3ExeVersion() As Byte()
-        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Byte())().Length = 4)
+    Public Function GetWC3ExeVersion() As IReadableList(Of Byte)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 4)
         If Not _cached Then CacheExeInformation()
-        Dim result = (From e In _exeVersion.Reverse Select CByte(e And &HFF)).ToArray
-        Contract.Assume(result.Length = 4)
+        Dim result = (From e In _exeVersion.Reverse Select CByte(e And &HFF)).ToArray.AsReadableList
+        Contract.Assume(result.Count = 4)
         Return result
     End Function
     Public Function WC3Path() As String

@@ -94,11 +94,11 @@ Namespace Bnet
             End Get
         End Property
         '''<summary>Determines the 32 byte representation of the public key used for authentication.</summary>
-        Public ReadOnly Property PublicKeyBytes As IList(Of Byte)
+        Public ReadOnly Property PublicKeyBytes As IReadableList(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 32)
-                Dim result = _publicKey.ToUnsignedByteArray.PaddedTo(minimumLength:=32)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 32)
+                Dim result = _publicKey.ToUnsignedByteArray.PaddedTo(minimumLength:=32).AsReadableList
                 Contract.Assume(result.Count = 32)
                 Return result
             End Get
@@ -145,13 +145,13 @@ Namespace Bnet
         End Function
 
         '''<summary>Determines the shared secret value, which can be computed by both the client and server, using the client-side data.</summary>
-        Private ReadOnly Property SharedSecret(ByVal accountSalt As IList(Of Byte),
-                                               ByVal serverPublicKeyBytes As IList(Of Byte)) As Byte()
+        Private ReadOnly Property SharedSecret(ByVal accountSalt As IEnumerable(Of Byte),
+                                               ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Byte())().Length = 40)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 40)
 
                 Dim userIdAuthData = "{0}:{1}".Frmt(Me._userName.ToUpperInvariant, Me._password.ToUpperInvariant).ToAscBytes
                 Dim passwordKey = Concat(accountSalt.ToArray, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
@@ -169,40 +169,44 @@ Namespace Bnet
                 Dim sharedHashOdd = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2 + 1)).SHA1
 
                 'Interleave odd and even hashes
-                Dim result = (From i In Enumerable.Range(0, 40) Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))).ToArray
-                Contract.Assume(result.Length = 40)
+                Dim result = (From i In Enumerable.Range(0, 40)
+                              Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))
+                             ).ToArray.AsReadableList
+                Contract.Assume(result.Count = 40)
                 Return result
             End Get
         End Property
         '''<summary>Determines a proof for the server that the client knows the password.</summary>
-        Public ReadOnly Property ClientPasswordProof(ByVal accountSalt As IList(Of Byte),
-                                                     ByVal serverPublicKeyBytes As IList(Of Byte)) As IList(Of Byte)
+        Public ReadOnly Property ClientPasswordProof(ByVal accountSalt As IEnumerable(Of Byte),
+                                                     ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 20)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
 
-                Return Concat(FixedSalt,
-                              UserName.ToUpperInvariant.ToAscBytes.SHA1,
-                              accountSalt.ToArray,
-                              Me.PublicKeyBytes.ToArray,
-                              serverPublicKeyBytes.ToArray,
-                              SharedSecret(accountSalt, serverPublicKeyBytes)).SHA1
+                Return {FixedSalt,
+                        UserName.ToUpperInvariant.ToAscBytes.SHA1,
+                        accountSalt,
+                        Me.PublicKeyBytes,
+                        serverPublicKeyBytes,
+                        SharedSecret(accountSalt, serverPublicKeyBytes)
+                       }.Fold.SHA1.AsReadableList
             End Get
         End Property
         '''<summary>Determines the expected proof, from the server, that it knew the shared secret.</summary>
-        Public ReadOnly Property ServerPasswordProof(ByVal accountSalt As IList(Of Byte),
-                                                     ByVal serverPublicKeyBytes As IList(Of Byte)) As IList(Of Byte)
+        Public ReadOnly Property ServerPasswordProof(ByVal accountSalt As IEnumerable(Of Byte),
+                                                     ByVal serverPublicKeyBytes As IEnumerable(Of Byte)) As IReadableList(Of Byte)
             Get
                 Contract.Requires(serverPublicKeyBytes IsNot Nothing)
                 Contract.Requires(accountSalt IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 20)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
 
-                Return Concat(Me.PublicKeyBytes.ToArray,
-                              ClientPasswordProof(accountSalt, serverPublicKeyBytes).ToArray,
-                              SharedSecret(accountSalt, serverPublicKeyBytes)).SHA1
+                Return {Me.PublicKeyBytes,
+                        ClientPasswordProof(accountSalt, serverPublicKeyBytes),
+                        SharedSecret(accountSalt, serverPublicKeyBytes)
+                       }.Fold.SHA1.AsReadableList
             End Get
         End Property
     End Class

@@ -146,7 +146,7 @@ Namespace WC3
         Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of InvariantString, Object)) As Boolean
             If dl Is Nothing OrElse dl.file Is Nothing Then Throw New InvalidOperationException()
             Dim position = CInt(CUInt(vals("file position")))
-            Dim fileData = CType(vals("file data"), Byte())
+            Dim fileData = CType(vals("file data"), IReadableList(Of Byte))
             Contract.Assume(position > 0)
             Contract.Assume(fileData IsNot Nothing)
 

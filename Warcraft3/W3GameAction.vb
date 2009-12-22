@@ -206,7 +206,7 @@
                         New Float32Jar("fog target x").Weaken,
                         New Float32Jar("fog target y").Weaken,
                         New ObjectTypeJar("fog target type").Weaken,
-                        New ArrayJar("unknown2", expectedSize:=9).Weaken,
+                        New RawDataJar("unknown2", Size:=9).Weaken,
                         New Float32Jar("actual target x").Weaken,
                         New Float32Jar("actual target y").Weaken)
 
@@ -222,7 +222,7 @@
             reg(jar, W3GameActionId.MinimapPing,
                         New Float32Jar("x").Weaken,
                         New Float32Jar("y").Weaken,
-                        New ArrayJar("unknown", expectedSize:=4).Weaken)
+                        New RawDataJar("unknown", Size:=4).Weaken)
 
             'Alliance
             reg(jar, W3GameActionId.ChangeAllyOptions,
@@ -324,7 +324,7 @@
                         New StringJar("mission key").Weaken,
                         New StringJar("key").Weaken,
                         New ObjectTypeJar("unit type").Weaken,
-                        New ArrayJar("unknown data", expectedSize:=86).Weaken)
+                        New RawDataJar("unknown data", Size:=86).Weaken)
             reg(jar, W3GameActionId.GameCacheSyncString,
                         New StringJar("filename").Weaken,
                         New StringJar("mission key").Weaken,

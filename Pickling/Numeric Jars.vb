@@ -140,43 +140,6 @@
         End Function
     End Class
 
-    '''<summary>Pickles fixed-size unsigned integers.</summary>
-    Public NotInheritable Class ValueJar
-        Inherits BaseJar(Of ULong)
-        Private ReadOnly byteCount As Integer
-        Private ReadOnly byteOrder As ByteOrder
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(byteCount >= 0)
-            Contract.Invariant(byteCount <= 8)
-        End Sub
-
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal byteCount As Integer,
-                       Optional ByVal info As String = "No Info",
-                       Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
-            MyBase.New(name)
-            Contract.Requires(info IsNot Nothing)
-            Contract.Requires(byteCount > 0)
-            Contract.Requires(byteCount <= 8)
-            Me.byteCount = byteCount
-            Me.byteOrder = byteOrder
-        End Sub
-
-        Public Overrides Function Pack(Of TValue As ULong)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(CType(value, Object) IsNot Nothing)
-            Dim data = value.Bytes.SubArray(0, byteCount).AsReadableList
-            Return New Pickle(Of TValue)(Me.Name, value, data)
-        End Function
-
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ULong)
-            If data.Count < byteCount Then Throw New PicklingException("Not enough data")
-            Dim datum = data.SubView(0, byteCount)
-            Dim value = datum.ToUInt64(byteOrder)
-            Return New Pickle(Of ULong)(Me.Name, value, datum)
-        End Function
-    End Class
-
     '''<summary>Pickles 32-bit floating point values (singles).</summary>
     Public Class Float32Jar
         Inherits BaseJar(Of Single)

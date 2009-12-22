@@ -47,7 +47,7 @@ Namespace Bnet
 
         'connection
         Private _userCredentials As ClientCredentials
-        Private expectedServerPasswordProof As IList(Of Byte)
+        Private expectedServerPasswordProof As IReadableList(Of Byte)
         Private allowRetryConnect As Boolean
         Private _futureConnected As New FutureAction
         Private _futureLoggedIn As New FutureAction
@@ -750,8 +750,8 @@ Namespace Bnet
                 Throw New Exception(errmsg)
             End If
 
-            Dim accountPasswordSalt = CType(vals("account password salt"), Byte()).AssumeNotNull
-            Dim serverPublicKey = CType(vals("server public key"), Byte()).AssumeNotNull
+            Dim accountPasswordSalt = CType(vals("account password salt"), IReadableList(Of Byte)).AssumeNotNull
+            Dim serverPublicKey = CType(vals("server public key"), IReadableList(Of Byte)).AssumeNotNull
 
             If Me._userCredentials Is Nothing Then Throw New InvalidStateException("Received AccountLogOnBegin before credentials specified.")
             Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
@@ -787,7 +787,7 @@ Namespace Bnet
             End If
 
             'validate
-            Dim serverProof = CType(vals("server password proof"), Byte()).AssumeNotNull
+            Dim serverProof = CType(vals("server password proof"), IReadableList(Of Byte)).AssumeNotNull
             If Me.expectedServerPasswordProof Is Nothing Then Throw New InvalidStateException("Received AccountLogOnFinish before server password proof computed.")
             If Not Me.expectedServerPasswordProof.SequenceEqual(serverProof) Then
                 _futureLoggedIn.TrySetFailed(New IO.InvalidDataException("Failed to logon: Server didn't give correct password proof"))
@@ -825,14 +825,14 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             If _futureWardenClient Is Nothing Then Return
-            Dim encryptedData = CType(vals("encrypted data"), Byte()).AssumeNotNull.AsReadableList
+            Dim encryptedData = CType(vals("encrypted data"), IReadableList(Of Byte)).AssumeNotNull
             _futureWardenClient.CallOnValueSuccess(
                     Sub(client) client.QueueSendWardenData(encryptedData)
                 ).SetHandled()
         End Sub
         Private Sub OnWardenSend(ByVal data As IReadableList(Of Byte))
             Contract.Requires(data IsNot Nothing)
-            inQueue.QueueAction(Sub() SendPacket(Bnet.Packet.MakeWarden(data.ToArray)))
+            inQueue.QueueAction(Sub() SendPacket(Bnet.Packet.MakeWarden(data)))
         End Sub
         Private Sub OnWardenFail(ByVal exception As Exception)
             Contract.Requires(exception IsNot Nothing)

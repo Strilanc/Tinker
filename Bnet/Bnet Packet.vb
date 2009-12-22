@@ -341,24 +341,24 @@ Namespace Bnet
                     New FileTimeJar("mpq filetime").Weaken,
                     New StringJar("revision check seed").Weaken,
                     New StringJar("revision check challenge").Weaken,
-                    New ArrayJar("server signature", 128).Weaken)
+                    New RawDataJar("server signature", Size:=128).Weaken)
             Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.AuthenticationFinish,
                     New EnumUInt32Jar(Of AuthenticationFinishResult)("result").Weaken,
                     New StringJar("info").Weaken)
             Public Shared ReadOnly AccountLogOnBegin As New DefJar(PacketId.AccountLogOnBegin,
                     New EnumUInt32Jar(Of AccountLogOnBeginResult)("result").Weaken,
-                    New ArrayJar("account password salt", expectedSize:=32).Weaken,
-                    New ArrayJar("server public key", expectedSize:=32).Weaken)
+                    New RawDataJar("account password salt", Size:=32).Weaken,
+                    New RawDataJar("server public key", Size:=32).Weaken)
             Public Shared ReadOnly AccountLogOnFinish As New DefJar(PacketId.AccountLogOnFinish,
                     New EnumUInt32Jar(Of AccountLogOnFinishResult)("result").Weaken,
-                    New ArrayJar("server password proof", expectedSize:=20).Weaken,
+                    New RawDataJar("server password proof", Size:=20).Weaken,
                     New StringJar("custom error info").Weaken)
             Public Shared ReadOnly RequiredWork As New DefJar(PacketId.RequiredWork,
                     New StringJar("filename").Weaken)
 
             Public Shared ReadOnly ChatEvent As New DefJar(PacketId.ChatEvent,
                     New EnumUInt32Jar(Of ChatEventId)("event id").Weaken,
-                    New ArrayJar("flags", expectedSize:=4).Weaken,
+                    New UInt32Jar("flags", showhex:=True).Weaken,
                     New UInt32Jar("ping").Weaken,
                     New NetIPAddressJar("ip").Weaken,
                     New UInt32Jar("acc#", showhex:=True).Weaken,
@@ -387,7 +387,7 @@ Namespace Bnet
             Public Shared ReadOnly Null As New DefJar(PacketId.Null)
             Public Shared ReadOnly Ping As New UInt32Jar("salt", showHex:=True)
             Public Shared ReadOnly Warden As New DefJar(PacketId.Warden,
-                    New ArrayJar("encrypted data", takeRest:=True).Weaken)
+                    New RemainingDataJar("encrypted data").Weaken)
 
             Public Shared ReadOnly GetFileTime As New DefJar(PacketId.GetFileTime,
                     New UInt32Jar("request id").Weaken,
@@ -417,19 +417,19 @@ Namespace Bnet
                     New StringJar("country name").Weaken)
             Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.AuthenticationFinish,
                     New UInt32Jar("client cd key salt", showHex:=True).Weaken,
-                    New ArrayJar("exe version", expectedSize:=4).Weaken,
+                    New RawDataJar("exe version", Size:=4).Weaken,
                     New UInt32Jar("revision check response", showHex:=True).Weaken,
                     New UInt32Jar("# cd keys").Weaken,
-                    New ValueJar("spawn [unused]", byteCount:=4, info:="0=false, 1=true").Weaken,
+                    New UInt32Jar("is spawn").Weaken,
                     New ProductCredentialsJar("ROC cd key").Weaken,
                     New ProductCredentialsJar("TFT cd key").Weaken,
                     New StringJar("exe info").Weaken,
                     New StringJar("owner").Weaken)
             Public Shared ReadOnly AccountLogOnBegin As New DefJar(PacketId.AccountLogOnBegin,
-                    New ArrayJar("client public key", 32).Weaken,
+                    New RawDataJar("client public key", Size:=32).Weaken,
                     New StringJar("username").Weaken)
             Public Shared ReadOnly AccountLogOnFinish As New DefJar(PacketId.AccountLogOnFinish,
-                    New ArrayJar("client password proof", 20).Weaken)
+                    New RawDataJar("client password proof", Size:=20).Weaken)
 
             Public Shared ReadOnly ChatCommand As New DefJar(PacketId.ChatCommand,
                     New StringJar("text").Weaken)
@@ -450,7 +450,7 @@ Namespace Bnet
                     New UInt32Jar("seconds since creation").Weaken,
                     New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
                     New UInt32Jar("unknown1=1023").Weaken,
-                    New ValueJar("ladder", 4, "0=false, 1=true)").Weaken,
+                    New UInt32Jar("use ladder").Weaken,
                     New StringJar("name").Weaken,
                     New StringJar("password").Weaken,
                     New TextHexValueJar("num free slots", numdigits:=1).Weaken,
@@ -467,7 +467,7 @@ Namespace Bnet
             Public Shared ReadOnly Ping As New DefJar(PacketId.Ping,
                     New UInt32Jar("salt", showhex:=True).Weaken)
             Public Shared ReadOnly Warden As New DefJar(PacketId.Warden,
-                    New ArrayJar("encrypted data", takeRest:=True).Weaken)
+                    New RemainingDataJar("encrypted data").Weaken)
 
             Public Shared ReadOnly GetFileTime As New DefJar(PacketId.GetFileTime,
                     New UInt32Jar("request id").Weaken,
@@ -495,7 +495,7 @@ Namespace Bnet
                 })
         End Function
         <Pure()>
-        Public Shared Function MakeAuthenticationFinish(ByVal version As Byte(),
+        Public Shared Function MakeAuthenticationFinish(ByVal version As IReadableList(Of Byte),
                                                         ByVal revisionCheckResponse As UInt32,
                                                         ByVal clientCDKeySalt As UInt32,
                                                         ByVal serverCDKeySalt As UInt32,
@@ -513,7 +513,7 @@ Namespace Bnet
                     {"exe version", version},
                     {"revision check response", revisionCheckResponse},
                     {"# cd keys", 2},
-                    {"spawn [unused]", 0},
+                    {"is spawn", 0},
                     {"ROC cd key", productAuthentication.AuthenticationROC},
                     {"TFT cd key", productAuthentication.AuthenticationTFT},
                     {"exe info", exeInformation},
@@ -524,15 +524,15 @@ Namespace Bnet
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(ClientPackets.AccountLogOnBegin, New Dictionary(Of InvariantString, Object) From {
-                    {"client public key", credentials.PublicKeyBytes.ToArray},
+                    {"client public key", credentials.PublicKeyBytes},
                     {"username", credentials.UserName}
                 })
         End Function
-        Public Shared Function MakeAccountLogOnFinish(ByVal clientPasswordProof As IList(Of Byte)) As Packet
+        Public Shared Function MakeAccountLogOnFinish(ByVal clientPasswordProof As IReadableList(Of Byte)) As Packet
             Contract.Requires(clientPasswordProof IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(ClientPackets.AccountLogOnFinish, New Dictionary(Of InvariantString, Object) From {
-                    {"client password proof", clientPasswordProof.ToArray}
+                    {"client password proof", clientPasswordProof}
                 })
         End Function
         Public Shared Function MakeEnterChat() As Packet
@@ -584,7 +584,7 @@ Namespace Bnet
                     {"seconds since creation", game.AgeSeconds},
                     {"game type", game.GameType},
                     {"unknown1=1023", 1023},
-                    {"ladder", 0},
+                    {"is ladder", 0},
                     {"name", game.Name.ToString},
                     {"password", ""},
                     {"num free slots", game.TotalSlotCount - game.UsedSlotCount},
@@ -615,7 +615,7 @@ Namespace Bnet
             Return New Packet(ClientPackets.Ping, New Dictionary(Of InvariantString, Object) From {
                     {"salt", salt}})
         End Function
-        Public Shared Function MakeWarden(ByVal encryptedData As Byte()) As Packet
+        Public Shared Function MakeWarden(ByVal encryptedData As IReadableList(Of Byte)) As Packet
             Contract.Requires(encryptedData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
 
@@ -734,7 +734,7 @@ Namespace Bnet
                         New EnumUInt32Jar(Of ProductType)("product").Weaken,
                         New UInt32Jar("public key").Weaken,
                         New UInt32Jar("unknown").Weaken,
-                        New ArrayJar("proof", expectedSize:=20).Weaken)
+                        New RawDataJar("proof", Size:=20).Weaken)
             End Sub
 
             'verification disabled due to stupid verifier
@@ -753,8 +753,8 @@ Namespace Bnet
             Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of ProductCredentials)
                 Dim pickle = _dataJar.Parse(data)
                 Dim vals = pickle.Value
-                Dim proof = CType(vals("proof"), Byte()).AssumeNotNull
-                Contract.Assume(proof.Length = 20)
+                Dim proof = CType(vals("proof"), IReadableList(Of Byte)).AssumeNotNull
+                Contract.Assume(proof.Count = 20)
                 Dim value = New ProductCredentials(
                         product:=CType(vals("product"), ProductType),
                         publicKey:=CUInt(vals("public key")),

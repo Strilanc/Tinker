@@ -235,7 +235,7 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function ToUnsignedBigInteger(ByVal digits As IList(Of Byte)) As BigInteger
+    Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte)) As BigInteger
         Contract.Requires(digits IsNot Nothing)
         Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
         Return digits.ToArray.ToUnsignedBigInteger

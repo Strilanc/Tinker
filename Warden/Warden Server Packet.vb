@@ -5,8 +5,8 @@
                     New EnumByteJar(Of WardenPacketId)("type").Weaken,
                     New UInt32Jar("cookie").Weaken,
                     New ByteJar("result").Weaken,
-                    New ArrayJar("data", sizePrefixSize:=2).Weaken,
-                    New ArrayJar("unspecified", takeRest:=True).Weaken)
+                    New SizePrefixedDataJar("data", prefixSize:=2).Weaken,
+                    New RemainingDataJar("unspecified").Weaken)
 
         Private ReadOnly _id As WardenPacketId
         Private ReadOnly _cookie As UInt32
@@ -38,8 +38,8 @@
             Return New ServerPacket(Id:=CType(vals("type"), WardenPacketId),
                                     Cookie:=CUInt(vals("cookie")),
                                     Result:=CByte(vals("result")),
-                                    ResponseData:=CType(vals("response data"), Byte()).AsReadableList,
-                                    UnspecifiedData:=CType(vals("unspecified"), Byte()).AsReadableList)
+                                    ResponseData:=CType(vals("data"), IReadableList(Of Byte)),
+                                    UnspecifiedData:=CType(vals("unspecified"), IReadableList(Of Byte)))
         End Function
 
         Public ReadOnly Property Id As WardenPacketId

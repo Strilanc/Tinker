@@ -250,10 +250,11 @@ Namespace WC3
 #Region "Read"
         <ContractVerification(False)>
         Public Function ReadChunk(ByVal pos As Integer,
-                                  Optional ByVal maxLength As Integer = 1442) As Byte() 'verification disabled due to incorrect stream contracts in BCL
+                                  Optional ByVal maxLength As Integer = 1442) As IReadableList(Of Byte)
+            'verification disabled due to incorrect stream contracts in BCL
             Contract.Requires(pos >= 0)
             Contract.Requires(maxLength >= 0)
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
             If Not fileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
 
@@ -262,7 +263,7 @@ Namespace WC3
                 f.Seek(pos, IO.SeekOrigin.Begin)
                 Dim n = f.Read(buffer, 0, maxLength)
                 If n < buffer.Length Then ReDim Preserve buffer(0 To n - 1)
-                Return buffer
+                Return buffer.AsReadableList
             End Using
         End Function
 

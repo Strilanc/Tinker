@@ -284,7 +284,7 @@ Namespace WC3
                                 ByVal text As String,
                                 ByVal type As Packet.ChatType,
                                 ByVal receiverType As Packet.ChatReceiverType,
-                                ByVal requestedReceiverIndexes As IList(Of Byte))
+                                ByVal requestedReceiverIndexes As IReadableList(Of Byte))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(requestedReceiverIndexes IsNot Nothing)
@@ -326,7 +326,7 @@ Namespace WC3
                     If chatType = Packet.ChatType.Game Then
                         receiverType = CType(vals("receiver type"), Packet.ChatReceiverType)
                     End If
-                    Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IList(Of Byte)).AssumeNotNull
+                    Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IReadableList(Of Byte)).AssumeNotNull
 
                     ReceiveChat(sender,
                                 message,

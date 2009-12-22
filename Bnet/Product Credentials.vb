@@ -12,23 +12,23 @@
         Private ReadOnly _length As UInt32
         Private ReadOnly _product As ProductType
         Private ReadOnly _publicKey As UInteger
-        Private ReadOnly _proof As Byte()
+        Private ReadOnly _proof As IReadableList(Of Byte)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_proof IsNot Nothing)
-            Contract.Invariant(_proof.Length = 20)
+            Contract.Invariant(_proof.Count = 20)
         End Sub
 
         Public Sub New(ByVal length As UInt32,
                        ByVal product As ProductType,
                        ByVal publicKey As UInteger,
-                       ByVal proof As IList(Of Byte))
+                       ByVal proof As IReadableList(Of Byte))
             Contract.Requires(proof IsNot Nothing)
             Contract.Requires(proof.Count = 20)
             Me._product = product
             Me._publicKey = publicKey
             Me._length = length
-            Me._proof = proof.ToArray
+            Me._proof = proof
         End Sub
 
         '''<summary>Determines the length of the credentials' representation (eg. the number of characters in a cd key).</summary>
@@ -50,11 +50,11 @@
             End Get
         End Property
         '''<summary>A stored response to an authentication challenge.</summary>
-        Public ReadOnly Property AuthenticationProof() As IList(Of Byte)
+        Public ReadOnly Property AuthenticationProof() As IReadableList(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IList(Of Byte))().Count = 20)
-                Return _proof.ToArray
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+                Return _proof
             End Get
         End Property
 
@@ -170,12 +170,18 @@
             Dim privateKey = {digits(8), digits(9),
                               digits(4), digits(5), digits(6), digits(7),
                               digits(0), digits(1), digits(2), digits(3)}
+            Dim proof = {clientSalt,
+                         serverChallenge,
+                         CUInt(product).Bytes,
+                         publicKey.Bytes,
+                         privateKey
+                        }.Fold.SHA1.AsReadableList()
 
             Return New ProductCredentials(
                     product:=product,
                     publicKey:=publicKey,
                     length:=NumDigitsBase25,
-                    proof:={clientSalt, serverChallenge, CUInt(product).Bytes, publicKey.Bytes, privateKey}.Fold.SHA1)
+                    proof:=proof)
         End Function
     End Module
 End Namespace

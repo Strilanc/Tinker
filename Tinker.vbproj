@@ -172,9 +172,11 @@
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />
     <Compile Include="Bot\Settings.vb" />
-    <Compile Include="Pickling\ArrayJar.vb" />
+    <Compile Include="Pickling\SizePrefixedDataJar.vb" />
+    <Compile Include="Pickling\RemainingDataJar.vb" />
     <Compile Include="Pickling\PrefixSwitchJar.vb" />
     <Compile Include="Pickling\InteriorSwitchJar.vb" />
+    <Compile Include="Pickling\RawDataJar.vb" />
     <Compile Include="Pickling\RepeatingJar.vb" />
     <Compile Include="Pickling\ListJar.vb" />
     <Compile Include="Pickling\TupleJar.vb" />
