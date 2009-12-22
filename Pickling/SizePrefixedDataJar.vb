@@ -17,6 +17,8 @@ Namespace Pickling.Jars
             Me._prefixSize = prefixSize
         End Sub
 
+        'verification disabled due to inherited preconditions being lost
+        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As IReadableList(Of Byte))(ByVal value As TValue) As IPickle(Of TValue)
             Dim prefix = CUInt(value.Count).Bytes().SubArray(0, _prefixSize).AsReadableList
             If prefix.ToUInt32 <> value.Count Then Throw New PicklingException("Data size won't fit in {0}-byte prefix.".Frmt(_prefixSize))

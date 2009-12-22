@@ -40,7 +40,6 @@ Namespace Pickling.Jars
             curOffset += _prefixSize
             'List Elements
             For repeat = 1UL To numElements
-                Contract.Assume(curOffset <= data.Count)
                 'Value
                 Dim p = _subJar.Parse(data.SubView(curOffset, data.Count - curOffset))
                 vals.Add(p.Value)
@@ -48,6 +47,7 @@ Namespace Pickling.Jars
                 'Size
                 Dim n = p.Data.Count
                 curOffset += n
+                If curOffset > data.Count Then Throw New InvalidStateException("Subjar '{0}' reported taking more data than was available.".Frmt(_subJar.Name))
             Next repeat
 
             Return New Pickle(Of IList(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))

@@ -2,7 +2,8 @@
 ''' A collection which supports asynchronously syncing its items with others.
 ''' </summary>
 ''' <remarks>This class is not thread safe (its methods may not be called concurrently).</remarks>
-Public Class AsyncViewableCollection(Of T)
+<ContractVerification(False)>
+Public Class AsyncViewableCollection(Of T) 'verification disabled due to stupid verifier
     Implements ICollection(Of T)
 
     Private ReadOnly outQueue As ICallQueue

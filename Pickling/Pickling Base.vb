@@ -87,6 +87,8 @@
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
+            Contract.Ensures(Me.Description Is description)
+            Contract.Ensures(Me.Data Is data)
             Me._data = data
             Me._value = value
             Me._description = description
@@ -98,6 +100,7 @@
             Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, value)))
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Me.Data Is data)
         End Sub
         Public Sub New(ByVal jarName As InvariantString,
                        ByVal value As T,
@@ -107,6 +110,7 @@
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(valueDescription IsNot Nothing)
+            Contract.Ensures(Me.Data Is data)
         End Sub
 
         Public Shared Function MakeListDescription(ByVal pickles As IEnumerable(Of IPickle(Of T))) As String
@@ -119,11 +123,13 @@
 
         Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle(Of T).Description
             Get
+                Contract.Ensures(Contract.Result(Of LazyValue(Of String))() Is _description)
                 Return _description
             End Get
         End Property
         Public ReadOnly Property Data As IReadableList(Of Byte) Implements IPickle(Of T).Data
             Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() Is _data)
                 Return _data
             End Get
         End Property

@@ -93,6 +93,7 @@
         Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of IPickle(Of T))().Data.Count <= data.Count) 'disabled because of stupid verifier
             Throw New NotSupportedException()
         End Function
     End Class

@@ -48,7 +48,8 @@ Namespace Pickling.Jars
                 If curCount < 0 Then Throw New InvalidStateException("subJar lied about data used.")
             Next j
 
-            Return New Pickle(Of Dictionary(Of InvariantString, Object))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
+            Dim datum = data.SubView(0, curOffset)
+            Return New Pickle(Of Dictionary(Of InvariantString, Object))(Me.Name, vals, datum, Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
     End Class
 End Namespace

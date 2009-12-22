@@ -14,6 +14,8 @@ Namespace Pickling.Jars
             Me._size = size
         End Sub
 
+        'verification disabled due to inherited preconditions being lost
+        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As IReadableList(Of Byte))(ByVal value As TValue) As IPickle(Of TValue)
             If value.Count <> _size Then Throw New PicklingException("Byte array is not of the correct length.")
             Dim data = value
