@@ -631,6 +631,8 @@ Namespace Bnet
                 MyBase.new(name)
             End Sub
 
+            'verification disabled due to stupid verifier
+            <ContractVerification(False)>
             Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
                 If value.Length > 4 Then Throw New ArgumentOutOfRangeException("value", "Value must be at most 4 characters.")
                 Dim data = value.ToAscBytes().Reverse.PaddedTo(minimumLength:=4)
@@ -701,6 +703,8 @@ Namespace Bnet
                 MyBase.New(name)
             End Sub
 
+            'verification disabled due to stupid verifier
+            <ContractVerification(False)>
             Public Overrides Function Pack(Of TValue As Date)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
                 Dim datum = CType(value, Date).ToFileTime.BitwiseToUInt64.Bytes().AsReadableList
                 Return New Pickle(Of TValue)(Me.Name, value, datum)
@@ -733,6 +737,8 @@ Namespace Bnet
                         New ArrayJar("proof", expectedSize:=20).Weaken)
             End Sub
 
+            'verification disabled due to stupid verifier
+            <ContractVerification(False)>
             Public Overrides Function Pack(Of TValue As ProductCredentials)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
                 Dim vals = New Dictionary(Of InvariantString, Object) From {
                         {"length", value.Length},

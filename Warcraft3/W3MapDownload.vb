@@ -50,6 +50,8 @@
             Me.file = New IO.FileStream(Me.downloadPath, IO.FileMode.OpenOrCreate, IO.FileAccess.Write, IO.FileShare.None)
         End Sub
 
+        'verification disabled due to incorrect BCL stream contracts
+        <ContractVerification(False)>
         Public Function ReceiveChunk(ByVal pos As Integer,
                                      ByVal data() As Byte) As Boolean
             Contract.Requires(pos >= 0)

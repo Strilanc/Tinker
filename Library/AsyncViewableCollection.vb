@@ -49,6 +49,7 @@ Public Class AsyncViewableCollection(Of T)
     End Sub
     Public ReadOnly Property Count As Integer Implements ICollection(Of T).Count
         Get
+            Contract.Ensures(Contract.Result(Of Integer)() = _items.Count)
             Return _items.Count
         End Get
     End Property

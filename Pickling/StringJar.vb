@@ -42,6 +42,8 @@ Namespace Pickling.Jars
             Return New Pickle(Of TValue)(Me.Name, value, data.AsReadableList(), Function() """{0}""".Frmt(value))
         End Function
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
             'Get sizes
             Dim inputSize = expectedSize

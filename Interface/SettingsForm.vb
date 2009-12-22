@@ -1,3 +1,4 @@
+<ContractVerification(False)>
 Public Class SettingsForm
     Private ReadOnly _clientProfiles As List(Of Bot.ClientProfile)
     Private ReadOnly _pluginProfiles As List(Of Bot.PluginProfile)
@@ -21,8 +22,8 @@ Public Class SettingsForm
         Using f = New SettingsForm(clientProfiles, pluginProfiles, portPool)
             f.ShowDialog()
             If f.wantSave Then
-                clientProfiles = f._clientProfiles.ToList
-                pluginProfiles = f._pluginProfiles.ToList
+                clientProfiles = f._clientProfiles.AssumeNotNull.ToList
+                pluginProfiles = f._pluginProfiles.AssumeNotNull.ToList
             End If
             Return f.wantSave
         End Using
@@ -60,6 +61,10 @@ Public Class SettingsForm
     End Sub
 
     Public Shared Function ParsePortList(ByVal text As String, ByRef refText As String) As IEnumerable(Of UShort)
+        Contract.Requires(text IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of UShort))() IsNot Nothing)
+        Contract.Ensures(Contract.ValueAtReturn(refText) IsNot Nothing)
+
         Dim ports As New List(Of UShort)
         Dim out_words As New List(Of String)
         For Each word In text.Replace(" "c, "").Split(","c)

@@ -166,6 +166,9 @@
                                                                 reason:="Error receiving packet: {0}".Frmt(exception.Message))
             )
         End Sub
+
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)
             Contract.Requires(packetData.Count >= 4)

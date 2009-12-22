@@ -1001,6 +1001,9 @@ Namespace WC3
                 Return 4
             End Get
         End Property
+
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
             Contract.Assume(header.Count >= 4)
             If header(0) <> Packet.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")

@@ -22,7 +22,7 @@
         Public Sub New(ByVal length As UInt32,
                        ByVal product As ProductType,
                        ByVal publicKey As UInteger,
-                       ByVal proof As IEnumerable(Of Byte))
+                       ByVal proof As IList(Of Byte))
             Contract.Requires(proof IsNot Nothing)
             Contract.Requires(proof.Count = 20)
             Me._product = product

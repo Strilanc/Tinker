@@ -163,7 +163,6 @@ Namespace WC3
                                         ByVal player As Player,
                                         ByVal argument As String) As IFuture(Of String)
             Contract.Requires(bot IsNot Nothing)
-            Contract.Requires(player IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CommandProcessText(bot, player, argument)).Defuturized

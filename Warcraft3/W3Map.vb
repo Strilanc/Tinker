@@ -191,7 +191,7 @@ Namespace WC3
                        ByVal slotCount As Integer)
             Contract.Requires(folder IsNot Nothing)
             Contract.Requires(relativePath IsNot Nothing)
-            Contract.Requires(relativePath.StartsWith("Maps\", StringComparison.InvariantCultureIgnoreCase))
+            Contract.Requires(relativePath.StartsWith("Maps\", StringComparison.OrdinalIgnoreCase))
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
             Contract.Requires(slotCount > 0)
@@ -217,9 +217,9 @@ Namespace WC3
                 slot.color = CType(slotId - 1, Slot.PlayerColor)
                 slot.Contents = New SlotContentsOpen(slot)
                 slots.Add(slot)
-                Contract.Assume(Slots.Count = slotId)
             Next slotId
             Me._slots = slots.AsReadableList
+            Contract.Assume(Me.Slots.Count = slotCount)
         End Sub
         Public Sub New(ByVal folder As String,
                        ByVal relativePath As String,
@@ -623,6 +623,7 @@ Namespace WC3
                     End If
                     Contract.Assert(slots.Count <= numSlotsInFile)
                 Next repeat
+                If slots.Count <= 0 Then Throw New IO.InvalidDataException("Map contains no player slots.")
                 Contract.Assert(slots.Count <= 12)
 
                 'Forces

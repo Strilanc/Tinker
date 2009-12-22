@@ -188,7 +188,9 @@
             Contract.Ensures(Contract.Result(Of UInt32)() > 0)
             allocId += 1UI
             If allocId > 1000 Then allocId = 1
-            Return allocId * 10000UI + CUInt(r.Next(1000))
+            Dim result = allocId * 10000UI + CUInt(r.Next(1000))
+            Contract.Assume(result > 0)
+            Return result
         End Function
         Private Function AsyncAddGameFromArguments(ByVal argument As Commands.CommandArgument,
                                                    ByVal user As BotUser) As IFuture(Of WC3.GameSet)
@@ -197,7 +199,9 @@
 
             Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
 
-            Dim gameStats = New WC3.GameStats(map, If(user Is Nothing, Application.ProductName, user.Name.Value), argument)
+            Dim hostName = If(user Is Nothing, Application.ProductName, user.Name.Value)
+            Contract.Assume(hostName IsNot Nothing)
+            Dim gameStats = New WC3.GameStats(map, hostname, argument)
 
             Dim totalSlotCount = map.NumPlayerSlots
             Select Case gameStats.observers

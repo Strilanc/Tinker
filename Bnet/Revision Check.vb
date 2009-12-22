@@ -137,7 +137,9 @@ Namespace Bnet
 
         '''<summary>Selects a seed based on the index string.</summary>
         <Pure()>
+        <ContractVerification(False)>
         Private Function ExtractIndexStringHashSeed(ByVal indexString As String) As UInteger
+            'verification disabled due to stupid verifier
             Contract.Requires(indexString IsNot Nothing)
 
             Dim invIndexString As InvariantString = indexString

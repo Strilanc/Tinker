@@ -50,6 +50,7 @@ Public Class ClientForm
     End Sub
     Private Sub InitMainControl()
         Contract.Requires(_bot IsNot Nothing)
+        Contract.Ensures(_bot Is Contract.OldValue(_bot))
 
         Dim componentsControl = New Tinker.Components.TabControl(_bot)
         componentsControl.Dock = DockStyle.Top
@@ -130,7 +131,9 @@ Public Class ClientForm
             Using w = New IO.BinaryWriter(m)
                 _bot.Settings.WriteTo(w)
             End Using
-            My.Settings.botstore = m.ToArray().ParseChrString(nullTerminated:=False)
+            Dim data = m.ToArray
+            Contract.Assume(data IsNot Nothing)
+            My.Settings.botstore = data.ParseChrString(nullTerminated:=False)
         End Using
     End Sub
 

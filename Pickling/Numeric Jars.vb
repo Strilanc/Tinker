@@ -10,6 +10,8 @@
             Me._showHex = showHex
         End Sub
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public NotOverridable Overrides Function Pack(Of TValue As Byte)(ByVal value As TValue) As IPickle(Of TValue)
             Return New Pickle(Of TValue)(Me.Name, value, {CByte(value)}.AsReadableList(), Function() ValueToString(value))
         End Function
@@ -44,6 +46,8 @@
             Me.byteOrder = byteOrder
         End Sub
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public NotOverridable Overrides Function Pack(Of TValue As UInt16)(ByVal value As TValue) As IPickle(Of TValue)
             Return New Pickle(Of TValue)(Me.Name, value, value.Bytes(byteOrder).AsReadableList(), Function() ValueToString(value))
         End Function
@@ -113,6 +117,8 @@
             Me.byteOrder = byteOrder
         End Sub
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public NotOverridable Overrides Function Pack(Of TValue As UInt64)(ByVal value As TValue) As IPickle(Of TValue)
             Dim datum = value.Bytes(byteOrder).AsReadableList
             Return New Pickle(Of TValue)(Me.Name, value, datum, Function() ValueToString(value))

@@ -7,6 +7,7 @@ Namespace Pickling.Jars
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_prefixSize > 0)
+            Contract.Invariant(_prefixSize <= 8)
             Contract.Invariant(_subJar IsNot Nothing)
         End Sub
 
@@ -16,6 +17,7 @@ Namespace Pickling.Jars
             MyBase.New(name)
             Contract.Requires(subJar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
+            If prefixSize > 8 Then Throw New ArgumentOutOfRangeException("prefixSize", "prefixSize must be less than or equal to 8.")
             Me._subJar = subJar
             Me._prefixSize = prefixSize
         End Sub
@@ -23,7 +25,7 @@ Namespace Pickling.Jars
         Public Overrides Function Pack(Of TValue As IList(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             Dim pickles = (From e In value Select CType(_subJar.Pack(e), IPickle(Of T))).ToList()
-            Dim data = Concat(CUInt(value.Count).Bytes.SubArray(0, _prefixSize), Concat(From p In pickles Select p.Data.ToArray))
+            Dim data = Concat(CULng(value.Count).Bytes.SubArray(0, _prefixSize), Concat(From p In pickles Select p.Data.ToArray))
             Return New Pickle(Of TValue)(Me.Name, value, data.AsReadableList(), Function() Pickle(Of T).MakeListDescription(pickles))
         End Function
 

@@ -102,6 +102,8 @@
                                                   Data:=Concat(EncodeStatStringData(rawPickle.Data).ToArray(), {0}).AsReadableList,
                                                   description:=rawPickle.Description)
         End Function
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of GameStats)
             'StatString is null-terminated
             Dim n As Integer
@@ -157,22 +159,23 @@
             Dim sha1Checksum = CType(vals("sha1 checksum"), Byte()).AssumeNotNull.AsReadableList
             Dim relativePath = CStr(vals("relative path")).AssumeNotNull
             Dim hostName = CStr(vals("host name")).AssumeNotNull
+            Contract.Assume(sha1Checksum.Count = 20)
 
             'Finish
             Dim value = New GameStats(randomHero,
-                                        randomRace,
-                                        allowFullSharedControl,
-                                        lockTeams,
-                                        teamsTogether,
-                                        observers,
-                                        visibility,
-                                        speed,
-                                        playableWidth,
-                                        playableHeight,
-                                        xoroChecksum,
-                                        sha1Checksum,
-                                        relativePath,
-                                        hostName)
+                                      randomRace,
+                                      allowFullSharedControl,
+                                      lockTeams,
+                                      teamsTogether,
+                                      observers,
+                                      visibility,
+                                      speed,
+                                      playableWidth,
+                                      playableHeight,
+                                      xoroChecksum,
+                                      sha1Checksum,
+                                      relativePath,
+                                      hostName)
             Return New Pickling.Pickle(Of GameStats)(value, data, pickle.Description)
         End Function
 

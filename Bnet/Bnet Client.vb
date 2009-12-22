@@ -32,7 +32,7 @@ Namespace Bnet
         Private Shared ReadOnly RefreshPeriod As TimeSpan = 20.Seconds
 
         Public ReadOnly profile As Bot.ClientProfile
-        Public ReadOnly logger As Logger
+        Private ReadOnly _logger As Logger
         Private _socket As PacketSocket
 
         Private ReadOnly outQueue As ICallQueue
@@ -69,7 +69,7 @@ Namespace Bnet
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(profile IsNot Nothing)
-            Contract.Invariant(logger IsNot Nothing)
+            Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_futureLoggedIn IsNot Nothing)
             Contract.Invariant(_futureConnected IsNot Nothing)
             Contract.Invariant(_futureAdvertisedGame IsNot Nothing)
@@ -86,13 +86,13 @@ Namespace Bnet
 
             'Pass values
             Me.profile = profile
-            Me.logger = If(logger, New Logger)
+            Me._logger = If(logger, New Logger)
             Me.outQueue = New TaskedCallQueue
             Me.inQueue = New TaskedCallQueue
             AddHandler _advertiseRefreshTimer.Elapsed, Sub() OnRefreshTimerTick()
 
             'Start packet machinery
-            Me._packetHandler = New BnetPacketHandler(Me.logger)
+            Me._packetHandler = New BnetPacketHandler(Me._logger)
 
             AddQueuedPacketHandler(Packet.ServerPackets.AuthenticationBegin, AddressOf ReceiveAuthenticationBegin)
             AddQueuedPacketHandler(Packet.ServerPackets.AuthenticationFinish, AddressOf ReceiveAuthenticationFinish)
@@ -110,6 +110,12 @@ Namespace Bnet
             AddQueuedPacketHandler(Packet.ServerPackets.FriendsUpdate, AddressOf IgnorePacket)
         End Sub
 
+        Public ReadOnly Property Logger As Logger
+            Get
+                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
+                Return _logger
+            End Get
+        End Property
         Public ReadOnly Property UserName() As InvariantString
             Get
                 Return Me._userCredentials.UserName
@@ -276,6 +282,8 @@ Namespace Bnet
                                                              reason:="Error receiving packet: {0}.".Frmt(exception.Message))
             )
         End Sub
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)
             Contract.Requires(packetData.Count >= 4)
@@ -584,7 +592,7 @@ Namespace Bnet
             Dim futureKeys As IFuture(Of CKL.WC3CredentialPair)
             If profile.CKLServerAddress Like "*:#*" Then
                 Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
-                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1), CultureInfo.InvariantCulture)
+                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
                 futureKeys = CKL.CKLClient.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
                 futureKeys.CallOnSuccess(
                     Sub() logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)

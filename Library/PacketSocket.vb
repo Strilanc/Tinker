@@ -81,9 +81,10 @@ Public NotInheritable Class PacketSocket
         Me._isConnected = True
         Me._remoteEndPoint = remoteEndPoint
         Me._localEndPoint = localEndPoint
-        Contract.Assume(remoteEndPoint.Address.GetAddressBytes IsNot Nothing)
-        If remoteEndPoint.Address.GetAddressBytes().SequenceEqual(GetCachedIPAddressBytes(external:=False)) OrElse
-                                     remoteEndPoint.Address.GetAddressBytes().SequenceEqual({127, 0, 0, 1}) Then
+
+        Dim addrBytes = remoteEndPoint.Address.GetAddressBytes
+        Contract.Assume(addrBytes IsNot Nothing)
+        If addrBytes.SequenceEqual(GetCachedIPAddressBytes(external:=False)) OrElse addrBytes.SequenceEqual({127, 0, 0, 1}) Then
             _remoteEndPoint = New Net.IPEndPoint(New Net.IPAddress(GetCachedIPAddressBytes(external:=True)), remoteEndPoint.Port)
             Contract.Assume(_remoteEndPoint.Address IsNot Nothing)
         End If

@@ -26,14 +26,14 @@
     Public Sub SaveToProfile(ByVal profile As Bot.ClientProfile)
         If profile Is Nothing Then Return
 
-        profile.userName = txtUsername.Text
-        profile.password = txtPassword.Text
-        profile.cdKeyTFT = txtTftKey.Text
-        profile.cdKeyROC = txtRocKey.Text
-        profile.server = cboGateway.Text
-        profile.initialChannel = txtInitialChannel.Text
-        profile.CKLServerAddress = txtCKLServer.Text
-        profile.LanHost = cboLanHost.Text
+        profile.userName = txtUsername.Text.AssumeNotNull
+        profile.password = txtPassword.Text.AssumeNotNull
+        profile.cdKeyTFT = txtTftKey.Text.AssumeNotNull
+        profile.cdKeyROC = txtRocKey.Text.AssumeNotNull
+        profile.server = cboGateway.Text.AssumeNotNull
+        profile.initialChannel = txtInitialChannel.Text.AssumeNotNull
+        profile.CKLServerAddress = txtCKLServer.Text.AssumeNotNull
+        profile.LanHost = cboLanHost.Text.AssumeNotNull
 
         Dim currentUsers = New List(Of InvariantString)
         For i = 0 To gridUsers.RowCount - 1

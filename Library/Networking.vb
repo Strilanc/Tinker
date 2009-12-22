@@ -108,8 +108,11 @@ Public Class NetIPAddressJar
         MyBase.New(name)
     End Sub
 
+    'verification disabled due to stupid verifier
+    <ContractVerification(False)>
     Public Overrides Function Pack(Of TValue As System.Net.IPAddress)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
         Dim data = value.GetAddressBytes()
+        Contract.Assume(data IsNot Nothing)
         Return New Pickle(Of TValue)(Name, value, data.AsReadableList)
     End Function
     Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of System.Net.IPAddress)
@@ -133,9 +136,13 @@ Public Class NetIPEndPointJar
         MyBase.New(name)
     End Sub
 
+    'verification disabled due to stupid verifier
+    <ContractVerification(False)>
     Public Overrides Function Pack(Of TValue As Net.IPEndPoint)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+        Dim addrBytes = value.Address.GetAddressBytes
+        Contract.Assume(addrBytes IsNot Nothing)
         Dim vals = New Dictionary(Of InvariantString, Object) From {
-                {"protocol", If(value.Address.GetAddressBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0, 2)},
+                {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0, 2)},
                 {"ip", value.Address},
                 {"port", value.Port},
                 {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}}}

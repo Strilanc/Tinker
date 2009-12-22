@@ -11,6 +11,8 @@ Namespace Pickling.Jars
             Me._subJar = subJar
         End Sub
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As IList(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Dim pickles = (From e In value Select CType(_subJar.Pack(e), IPickle(Of T))).ToList()
             Dim data = Concat(From p In pickles Select p.Data.ToArray)

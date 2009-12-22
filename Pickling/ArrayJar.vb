@@ -29,6 +29,8 @@ Namespace Pickling.Jars
             Return "[{0}]".Frmt(value.ToHexString)
         End Function
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As Byte())(ByVal value As TValue) As IPickle(Of TValue)
             Dim val = CType(value, Byte()).AssumeNotNull
             Dim offset = 0
@@ -82,6 +84,7 @@ Namespace Pickling.Jars
             End If
 
             'Parse
+            Contract.Assume(outputSize + pos <= data.Count)
             Dim val(0 To outputSize - 1) As Byte
             For i = 0 To outputSize - 1
                 val(i) = data(pos + i)
