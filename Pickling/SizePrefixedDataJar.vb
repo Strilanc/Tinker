@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     '''<summary>Pickles lists of bytes prefixed by the size of the list.</summary>
     Public Class SizePrefixedDataJar
         Inherits BaseJar(Of IReadableList(Of Byte))
@@ -35,7 +35,7 @@ Namespace Pickling.Jars
             If data.Count < _prefixSize + size Then Throw New PicklingException("Not enough data.")
             Dim datum = data.SubView(0, _prefixSize + size)
             Dim value = datum.SubView(_prefixSize)
-            Return New Pickle(Of IReadableList(Of Byte))(Me.Name, value, data, Function() "[{0}]".Frmt(value.ToHexString))
+            Return New Pickle(Of IReadableList(Of Byte))(Me.Name, value, datum, Function() "[{0}]".Frmt(value.ToHexString))
         End Function
     End Class
 End Namespace

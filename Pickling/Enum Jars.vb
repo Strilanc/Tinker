@@ -1,4 +1,4 @@
-﻿Namespace Pickling.Jars
+﻿Namespace Pickling
     '''<summary>Pickles byte enumeration types.</summary>
     Public Class EnumByteJar(Of T)
         Inherits BaseJar(Of T)

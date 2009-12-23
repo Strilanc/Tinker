@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     Public NotInheritable Class InteriorSwitchJar(Of K, T)
         Inherits BaseJar(Of T)
         Private ReadOnly _packers As New Dictionary(Of K, IPackJar(Of T))
@@ -55,4 +55,4 @@ Namespace Pickling.Jars
             _packers.Add(key, packer)
         End Sub
     End Class
- End Namespace
+End Namespace

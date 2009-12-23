@@ -228,7 +228,7 @@ Public Class TransferSchedulerTest
         Dim f = ts.SetNotTransfering(1, completed:=True)
         Dim fs0 = ts.GetClientState(0)
         Dim fs1 = ts.GetClientState(1)
-        BlockOnFuture(f)
+        BlockOnFuture({f, fs0, fs1}.Defuturized)
         Assert.IsTrue(f.State = FutureState.Succeeded)
         Assert.IsTrue(fs0.State = FutureState.Succeeded)
         Assert.IsTrue(fs1.State = FutureState.Succeeded)

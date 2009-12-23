@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     '''<summary>Pickles lists of values, where the serialized form is prefixed by the number of items.</summary>
     Public NotInheritable Class ListJar(Of T)
         Inherits BaseJar(Of IList(Of T))

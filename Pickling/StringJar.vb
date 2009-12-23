@@ -1,15 +1,13 @@
-Namespace Pickling.Jars
+Namespace Pickling
     '''<summary>Pickles strings [can be null-terminated or fixed-size, and reversed]</summary>
     Public Class StringJar
         Inherits BaseJar(Of String)
         Private ReadOnly nullTerminated As Boolean
         Private ReadOnly maximumContentSize As Integer
         Private ReadOnly expectedSize As Integer
-        Private ReadOnly reversed As Boolean
 
         Public Sub New(ByVal name As InvariantString,
                        Optional ByVal nullTerminated As Boolean = True,
-                       Optional ByVal reversed As Boolean = False,
                        Optional ByVal expectedSize As Integer = 0,
                        Optional ByVal maximumContentSize As Integer = 0,
                        Optional ByVal info As String = "No Info")
@@ -21,7 +19,6 @@ Namespace Pickling.Jars
             Me.nullTerminated = nullTerminated
             Me.expectedSize = expectedSize
             Me.maximumContentSize = maximumContentSize
-            Me.reversed = reversed
         End Sub
 
         Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
@@ -35,7 +32,7 @@ Namespace Pickling.Jars
             Dim i = 0
             While size > 0
                 size -= 1
-                data(If(reversed, size, i)) = CByte(Asc(value(i)))
+                data(i) = CByte(Asc(value(i)))
                 i += 1
             End While
 
@@ -71,9 +68,8 @@ Namespace Pickling.Jars
             Dim i = 0
             While outputSize > 0
                 outputSize -= 1
-                Dim j = If(reversed, outputSize, i)
                 Contract.Assume(i < data.Count)
-                cc(j) = Chr(data(i))
+                cc(i) = Chr(data(i))
                 i += 1
             End While
 

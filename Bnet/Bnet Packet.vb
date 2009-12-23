@@ -379,7 +379,7 @@ Namespace Bnet
 
             Public Shared ReadOnly EnterChat As New DefJar(PacketId.EnterChat,
                     New StringJar("chat username").Weaken,
-                    New StringJar("statstring", reversed:=True).Weaken,
+                    New StringJar("statstring").Weaken,
                     New StringJar("account username").Weaken)
             Public Shared ReadOnly CreateGame3 As New DefJar(PacketId.CreateGame3,
                     New UInt32Jar("result").Weaken)

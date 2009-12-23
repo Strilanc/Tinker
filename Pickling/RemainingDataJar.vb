@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     '''<summary>Pickles the remaining bytes in data.</summary>
     Public Class RemainingDataJar
         Inherits BaseJar(Of IReadableList(Of Byte))

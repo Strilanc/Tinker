@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     '''<summary>Pickles tuples of values as dictionaries keyed by jar name.</summary>
     Public Class TupleJar
         Inherits BaseJar(Of Dictionary(Of InvariantString, Object))

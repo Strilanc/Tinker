@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     '''<summary>Pickles lists of values, where the serialized form simply continues until there are no more items.</summary>
     Public NotInheritable Class RepeatingJar(Of T)
         Inherits BaseJar(Of IList(Of T))

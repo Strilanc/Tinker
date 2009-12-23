@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     Public NotInheritable Class ManualSwitchJar
         Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
         Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)

@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     Public NotInheritable Class PrefixPickle(Of T)
         Public ReadOnly index As T
         Public ReadOnly payload As IPickle(Of Object)

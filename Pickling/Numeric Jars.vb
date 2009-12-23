@@ -1,4 +1,4 @@
-﻿Namespace Pickling.Jars
+﻿Namespace Pickling
     '''<summary>Pickles 8-bit unsigned integers.</summary>
     Public Class ByteJar
         Inherits BaseJar(Of Byte)
@@ -157,6 +157,7 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Single)
+            If data.Count < 4 Then Throw New PicklingException("Not enough data.")
             data = data.SubView(0, 4)
             Dim value As Single
             Using br = New IO.BinaryReader(New IO.MemoryStream(data.ToArray()))
@@ -187,7 +188,8 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Double)
-            data = data.SubView(0, 4)
+            If data.Count < 8 Then Throw New PicklingException("Not enough data.")
+            data = data.SubView(0, 8)
             Dim value As Double
             Using br = New IO.BinaryReader(New IO.MemoryStream(data.ToArray()))
                 value = br.ReadDouble()

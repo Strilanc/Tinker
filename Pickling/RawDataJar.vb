@@ -1,4 +1,4 @@
-Namespace Pickling.Jars
+Namespace Pickling
     '''<summary>Pickles fixed-size lists of bytes.</summary>
     Public Class RawDataJar
         Inherits BaseJar(Of IReadableList(Of Byte))

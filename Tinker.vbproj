@@ -165,7 +165,6 @@
     <Import Include="System.Runtime.CompilerServices" />
     <Import Include="System.Windows.Forms" />
     <Import Include="Tinker.Pickling" />
-    <Import Include="Tinker.Pickling.Jars" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bnet\Bnet Packet.vb" />
