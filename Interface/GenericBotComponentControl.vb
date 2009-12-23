@@ -1,4 +1,5 @@
-﻿Public Class GenericBotComponentControl
+﻿<ContractVerification(False)>
+Public Class GenericBotComponentControl
     Private ReadOnly _component As Components.IBotComponent
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()

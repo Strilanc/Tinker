@@ -14,11 +14,16 @@
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
 Namespace Bnet
-    Public Enum ClientState
+    Public Enum ClientState As Integer
         Disconnected
-        Connecting
+        InitiatingConnection
+        WaitingForProgramAuthenticationBegin
+        EnterCDKeys
+        WaitingForProgramAuthenticationFinish
         EnterUserCredentials
-        AuthenticatingUser
+        WaitingForUserAuthenticationBegin
+        WaitingForUserAuthenticationFinish
+        WaitingForEnterChat
         Channel
         CreatingGame
         AdvertisingGame
@@ -31,50 +36,49 @@ Namespace Bnet
         Public Shared ReadOnly BnetServerPort As UShort = 6112
         Private Shared ReadOnly RefreshPeriod As TimeSpan = 20.Seconds
 
-        Public ReadOnly profile As Bot.ClientProfile
-        Private ReadOnly _logger As Logger
-        Private _socket As PacketSocket
-
         Private ReadOnly outQueue As ICallQueue
         Private ReadOnly inQueue As ICallQueue
+
+        Private ReadOnly _profile As Bot.ClientProfile
+        Private ReadOnly _logger As Logger
         Private ReadOnly _packetHandler As BnetPacketHandler
+        Private _socket As PacketSocket
+        Private _wardenClient As Warden.Client
 
         'game
         Private _advertisedGameDescription As WC3.LocalGameDescription
         Private _advertisedPrivate As Boolean
         Private ReadOnly _advertiseRefreshTimer As New Timers.Timer(RefreshPeriod.TotalMilliseconds)
         Private _futureAdvertisedGame As New FutureAction
+        Private _reportedListenPort As UShort
 
         'connection
+        Private _bnetRemoteHostName As String
         Private _userCredentials As ClientCredentials
-        Private expectedServerPasswordProof As IReadableList(Of Byte)
-        Private allowRetryConnect As Boolean
+        Private _expectedServerPasswordProof As IReadableList(Of Byte)
+        Private _allowRetryConnect As Boolean
         Private _futureConnected As New FutureAction
         Private _futureLoggedIn As New FutureAction
 
-        'events
         Public Event StateChanged(ByVal sender As Client, ByVal oldState As ClientState, ByVal newState As ClientState)
 
-        'warden
-        Private _futureWardenClient As IFuture(Of Warden.Client)
-
-        'state
-        Private _reportedListenPort As UShort
-        Private lastChannel As String = ""
-        Private hostname As String
-        Private state As ClientState
+        Private _lastChannel As InvariantString
+        Private _state As ClientState
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_packetHandler IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
-            Contract.Invariant(profile IsNot Nothing)
+            Contract.Invariant(_profile IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_futureLoggedIn IsNot Nothing)
             Contract.Invariant(_futureConnected IsNot Nothing)
             Contract.Invariant(_futureAdvertisedGame IsNot Nothing)
-            'Contract.Invariant(userLinkMap IsNot Nothing)
             Contract.Invariant(_advertiseRefreshTimer IsNot Nothing)
+            Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.InitiatingConnection))
+            Contract.Invariant((_wardenClient IsNot Nothing) = (_state > ClientState.WaitingForProgramAuthenticationBegin))
+            Contract.Invariant((_state <= ClientState.EnterUserCredentials) OrElse (_userCredentials IsNot Nothing))
+            Contract.Invariant((_advertisedGameDescription IsNot Nothing) = (_state >= ClientState.CreatingGame))
         End Sub
 
         Public Sub New(ByVal profile As Bot.ClientProfile,
@@ -85,7 +89,7 @@ Namespace Bnet
             Me._futureAdvertisedGame.SetHandled()
 
             'Pass values
-            Me.profile = profile
+            Me._profile = profile
             Me._logger = If(logger, New Logger)
             Me.outQueue = New TaskedCallQueue
             Me.inQueue = New TaskedCallQueue
@@ -94,10 +98,10 @@ Namespace Bnet
             'Start packet machinery
             Me._packetHandler = New BnetPacketHandler(Me._logger)
 
-            AddQueuedPacketHandler(Packet.ServerPackets.AuthenticationBegin, AddressOf ReceiveAuthenticationBegin)
-            AddQueuedPacketHandler(Packet.ServerPackets.AuthenticationFinish, AddressOf ReceiveAuthenticationFinish)
-            AddQueuedPacketHandler(Packet.ServerPackets.AccountLogOnBegin, AddressOf ReceiveAccountLogonBegin)
-            AddQueuedPacketHandler(Packet.ServerPackets.AccountLogOnFinish, AddressOf ReceiveAccountLogonFinish)
+            AddQueuedPacketHandler(Packet.ServerPackets.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
+            AddQueuedPacketHandler(Packet.ServerPackets.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
+            AddQueuedPacketHandler(Packet.ServerPackets.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
+            AddQueuedPacketHandler(Packet.ServerPackets.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
             AddQueuedPacketHandler(Packet.ServerPackets.ChatEvent, AddressOf ReceiveChatEvent)
             AddQueuedPacketHandler(Packet.ServerPackets.EnterChat, AddressOf ReceiveEnterChat)
             AddQueuedPacketHandler(Packet.ServerPackets.MessageBox, AddressOf ReceiveMessageBox)
@@ -110,6 +114,12 @@ Namespace Bnet
             AddQueuedPacketHandler(Packet.ServerPackets.FriendsUpdate, AddressOf IgnorePacket)
         End Sub
 
+        Public ReadOnly Property Profile As Bot.ClientProfile
+            Get
+                Contract.Ensures(Contract.Result(Of Bot.ClientProfile)() IsNot Nothing)
+                Return _profile
+            End Get
+        End Property
         Public ReadOnly Property Logger As Logger
             Get
                 Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
@@ -118,9 +128,24 @@ Namespace Bnet
         End Property
         Public ReadOnly Property UserName() As InvariantString
             Get
+                If _userCredentials Is Nothing Then Throw New InvalidOperationException("No credentials to get username from.")
                 Return Me._userCredentials.UserName
             End Get
         End Property
+        Public ReadOnly Property AdvertisedGameDescription As WC3.LocalGameDescription
+            Get
+                Return Me._advertisedGameDescription
+            End Get
+        End Property
+        Public ReadOnly Property AdvertisedPrivate As Boolean
+            Get
+                Return Me._advertisedPrivate
+            End Get
+        End Property
+        Public Function QueueGetState() As IFuture(Of ClientState)
+            Contract.Ensures(Contract.Result(Of IFuture(Of ClientState))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() _state)
+        End Function
 
         Private Function AddQueuedPacketHandler(ByVal jar As Packet.DefJar,
                                                 ByVal handler As Action(Of IPickle(Of Dictionary(Of InvariantString, Object)))) As IDisposable
@@ -148,24 +173,23 @@ Namespace Bnet
         End Function
 
         Private Sub SendText(ByVal text As String)
+            Contract.Requires(_state >= ClientState.Channel)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(text.Length > 0)
             Dim isBnetCommand = text.StartsWith("/", StringComparison.Ordinal)
 
-            Select Case state
+            Select Case _state
                 Case ClientState.Channel
                     'fine
                 Case ClientState.CreatingGame, ClientState.AdvertisingGame
                     If Not isBnetCommand Then
-                        Throw New InvalidOperationException("Can only send commands when in games.")
+                        Throw New InvalidOperationException("Can't send normal messages when in a game (can still send commands).")
                     End If
-                Case Else
-                    Throw New InvalidOperationException("Can't send text unless you're logged in.")
             End Select
 
-            Dim lines = SplitText(text, maxLineLength:=Bnet.Packet.MaxChatCommandTextLength)
+            Dim lines = SplitText(text, maxLineLength:=Packet.MaxChatCommandTextLength)
             If isBnetCommand AndAlso lines.Count > 1 Then
-                Throw New InvalidOperationException("Can't send commands with text larger than the maximum chat text length, or with multiple lines.")
+                Throw New InvalidOperationException("Can't send multi-line commands or commands larger than {0} characters.".Frmt(Packet.MaxChatCommandTextLength))
             End If
             For Each line In lines
                 Contract.Assume(line IsNot Nothing)
@@ -173,22 +197,38 @@ Namespace Bnet
                 SendPacket(Bnet.Packet.MakeChatCommand(line))
             Next line
         End Sub
+        Public Function QueueSendText(ByVal text As String) As IFuture
+            Contract.Requires(text IsNot Nothing)
+            Contract.Requires(text.Length > 0)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SendText(text))
+        End Function
 
         Private Sub SendWhisper(ByVal username As String, ByVal text As String)
             Contract.Requires(username IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(username.Length > 0)
             Contract.Requires(text.Length > 0)
+            Contract.Requires(_state >= ClientState.Channel)
+
             Dim prefix = "/w {0} ".Frmt(username)
             Contract.Assume(prefix.Length >= 5)
             If prefix.Length >= Bnet.Packet.MaxChatCommandTextLength \ 2 Then
                 Throw New ArgumentOutOfRangeException("username", "Username is too long.")
             End If
+
             For Each line In SplitText(text, maxLineLength:=Bnet.Packet.MaxChatCommandTextLength - prefix.Length)
                 Contract.Assume(line IsNot Nothing)
-                SendText(prefix + line)
+                SendPacket(Bnet.Packet.MakeChatCommand(prefix + line))
             Next line
         End Sub
+        Public Function QueueSendWhisper(ByVal userName As String, ByVal text As String) As IFuture
+            Contract.Requires(userName IsNot Nothing)
+            Contract.Requires(userName.Length > 0)
+            Contract.Requires(text IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SendWhisper(userName, text))
+        End Function
 
         Private Sub SetReportedListenPort(ByVal port As UShort)
             If port = Me._reportedListenPort Then Return
@@ -210,20 +250,22 @@ Namespace Bnet
             Return QueueDisconnect(expected:=True, reason:="Disposed")
         End Function
         Private Sub ChangeState(ByVal newState As ClientState)
-            Dim oldState = state
-            state = newState
+            Contract.Ensures(Me._state = newState)
+            Dim oldState = _state
+            _state = newState
             outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
         Private Function AsyncConnect(ByVal remoteHost As String) As IFuture
             Contract.Requires(remoteHost IsNot Nothing)
-            If Me.state >= ClientState.Channel Then Throw New InvalidOperationException("Already connected.")
+            If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
+            ChangeState(ClientState.InitiatingConnection)
 
             Dim port = BnetServerPort
             Try
                 If Me._socket IsNot Nothing Then
                     Throw New InvalidOperationException("Client is already connected.")
                 End If
-                hostname = remoteHost
+                _bnetRemoteHostName = remoteHost
 
                 'Establish connection
                 logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
@@ -250,11 +292,11 @@ Namespace Bnet
                             localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                             remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                             timeout:=60.Seconds,
-                            logger:=logger,
+                            Logger:=Logger,
                             bufferSize:=PacketSocket.DefaultBufferSize * 10)
                     AddHandler Me._socket.Disconnected, AddressOf OnSocketDisconnected
                     Me._socket.Name = "BNET"
-                    ChangeState(ClientState.Connecting)
+                    ChangeState(ClientState.WaitingForProgramAuthenticationBegin)
 
                     'Reset the class future for the connection outcome
                     Me._futureConnected.TrySetFailed(New InvalidStateException("Another connection was initiated."))
@@ -274,7 +316,14 @@ Namespace Bnet
                          End Sub)
             Return result
         End Function
+        Public Function QueueConnect(ByVal remoteHost As String) As IFuture
+            Contract.Requires(remoteHost IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() AsyncConnect(remoteHost)).Defuturized
+        End Function
+
         Private Sub BeginHandlingPackets()
+            Contract.Requires(Me._state > ClientState.InitiatingConnection)
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf _socket.AsyncReadPacket,
                 consumer:=AddressOf ProcessPacket,
@@ -296,7 +345,7 @@ Namespace Bnet
         Private Function BeginLogOn(ByVal credentials As ClientCredentials) As IFuture
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            If state <> ClientState.EnterUserCredentials Then
+            If _state <> ClientState.EnterUserCredentials Then
                 Throw New InvalidOperationException("Incorrect state for login.")
             End If
 
@@ -305,10 +354,15 @@ Namespace Bnet
             Me._futureLoggedIn.SetHandled()
 
             Me._userCredentials = credentials
-            ChangeState(ClientState.AuthenticatingUser)
+            ChangeState(ClientState.WaitingForUserAuthenticationBegin)
             SendPacket(Bnet.Packet.MakeAccountLogOnBegin(credentials))
             logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
             Return _futureLoggedIn
+        End Function
+        Public Function QueueLogOn(ByVal credentials As ClientCredentials) As IFuture
+            Contract.Requires(credentials IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() BeginLogOn(credentials)).Defuturized
         End Function
 
         Public Function QueueConnectAndLogOn(ByVal remoteHost As String,
@@ -325,7 +379,7 @@ Namespace Bnet
                 _socket.Disconnect(expected, reason)
                 RemoveHandler _socket.Disconnected, AddressOf OnSocketDisconnected
                 _socket = Nothing
-            ElseIf state = ClientState.Disconnected Then
+            ElseIf _state = ClientState.Disconnected Then
                 Return
             End If
 
@@ -336,20 +390,28 @@ Namespace Bnet
 
             ChangeState(ClientState.Disconnected)
             logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
-            EndAnyOldWardenConnection()
+            If _wardenClient IsNot Nothing Then
+                _wardenClient.Dispose()
+                _wardenClient = Nothing
+            End If
 
             'outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, reason))
 
-            If Not expected AndAlso allowRetryConnect Then
-                allowRetryConnect = False
+            If Not expected AndAlso _allowRetryConnect Then
+                _allowRetryConnect = False
                 Call 5.Seconds.AsyncWait.CallWhenReady(
                     Sub()
                         logger.Log("Attempting to reconnect...", LogMessageType.Positive)
-                        QueueConnectAndLogOn(hostname, Me._userCredentials.Regenerate())
+                        QueueConnectAndLogOn(_bnetRemoteHostName, Me._userCredentials.Regenerate())
                     End Sub
                 )
             End If
         End Sub
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As IFuture
+            Contract.Requires(reason IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() Disconnect(expected, reason))
+        End Function
 
         Private Sub EnterChannel(ByVal channel As String)
             _futureAdvertisedGame.TrySetFailed(New InvalidOperationException("Re-entered channel before game was created."))
@@ -362,8 +424,8 @@ Namespace Bnet
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
 
-            Select Case state
-                Case ClientState.Disconnected, ClientState.Connecting, ClientState.EnterUserCredentials, ClientState.AuthenticatingUser
+            Select Case _state
+                Case ClientState.Disconnected To ClientState.WaitingForEnterChat
                     Throw New InvalidOperationException("Can't advertise a game until connected.")
                 Case ClientState.CreatingGame
                     Throw New InvalidOperationException("Already creating a game.")
@@ -400,13 +462,13 @@ Namespace Bnet
                     'End If
                     Return _futureAdvertisedGame
                 Case Else
-                    Throw state.MakeImpossibleValueException
+                    Throw _state.MakeImpossibleValueException
             End Select
         End Function
         Private Sub AdvertiseGame(Optional ByVal useFull As Boolean = False,
                                   Optional ByVal refreshing As Boolean = False)
             If refreshing Then
-                If state <> ClientState.AdvertisingGame Then
+                If _state <> ClientState.AdvertisingGame Then
                     Throw New InvalidOperationException("Must have already created game before refreshing")
                 End If
                 ChangeState(ClientState.AdvertisingGame) '[throws event]
@@ -450,15 +512,21 @@ Namespace Bnet
                     baseAgeMilliSeconds:=_advertisedGameDescription.AgeMilliseconds)
             SendPacket(Bnet.Packet.MakeCreateGame3(_advertisedGameDescription))
         End Sub
+        Public Function QueueStartAdvertisingGame(ByVal gameDescription As WC3.LocalGameDescription,
+                                          ByVal [private] As Boolean) As IFuture
+            Contract.Requires(gameDescription IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() BeginAdvertiseGame(gameDescription, [private])).Defuturized
+        End Function
 
         Private Sub StopAdvertisingGame(ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
 
-            Select Case state
+            Select Case _state
                 Case ClientState.CreatingGame, ClientState.AdvertisingGame
                     SendPacket(Bnet.Packet.MakeCloseGame3())
                     _advertiseRefreshTimer.Stop()
-                    EnterChannel(lastChannel)
+                    EnterChannel(_lastChannel)
                     _advertisedGameDescription = Nothing
                     _futureAdvertisedGame.TrySetFailed(New OperationFailedException("Advertising cancelled."))
                     'outQueue.QueueAction(Sub() RaiseEvent RemovedGame(Me, _advertisedGameDescription, reason))
@@ -467,6 +535,11 @@ Namespace Bnet
                     Throw New InvalidOperationException("Wasn't advertising any games.")
             End Select
         End Sub
+        Public Function QueueStopAdvertisingGame(ByVal reason As String) As IFuture
+            Contract.Requires(reason IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() StopAdvertisingGame(reason))
+        End Function
 #End Region
 
         '#Region "Link"
@@ -549,29 +622,36 @@ Namespace Bnet
         'End Sub
         '#End Region
 
-#Region "Networking"
+#Region "Networking (Send)"
         Private Sub SendPacket(ByVal packet As Bnet.Packet)
+            Contract.Requires(Me._state > ClientState.InitiatingConnection)
             Contract.Requires(packet IsNot Nothing)
 
             Try
-                logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
-                logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
+                Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
+                Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
                 _socket.WritePacket(Concat({Bnet.Packet.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
             Catch e As Exception
                 Disconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, e))
             End Try
         End Sub
+        Public Function QueueSendPacket(ByVal packet As Bnet.Packet) As IFuture
+            Contract.Requires(packet IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SendPacket(packet))
+        End Function
 #End Region
 
 #Region "Networking (Connect)"
-        Private Sub ReceiveAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Const LOGON_TYPE_WC3 As UInteger = 2
-            If state <> ClientState.Connecting Then
+            If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
                 Throw New IO.InvalidDataException("Invalid state for receiving AUTHENTICATION_BEGIN")
             End If
+            ChangeState(ClientState.EnterCDKeys)
 
             'Check
             If CType(vals("logon type"), UInteger) <> LOGON_TYPE_WC3 Then
@@ -610,6 +690,7 @@ Namespace Bnet
             'Respond and begin BNLS connection
             futureKeys.CallOnValueSuccess(
                 Sub(keys)
+                    If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
                     Dim revisionCheckResponse = GenerateRevisionCheck(
                                     folder:=My.Settings.war3path,
                                     seedString:=CStr(vals("revision check seed")),
@@ -622,8 +703,26 @@ Namespace Bnet
                                     cdKeyOwner:=My.Settings.cdKeyOwner,
                                     exeInformation:="war3.exe {0} {1}".Frmt(GetWC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss"), GetWC3FileSize),
                                     productAuthentication:=keys))
-                    EndAnyOldWardenConnection()
-                    BeginWardenConnection(seed:=keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32)
+
+                    ChangeState(ClientState.WaitingForProgramAuthenticationFinish)
+
+                    'Parse address setting
+                    Dim remoteHost = ""
+                    Dim remotePort = 0US
+                    Dim address = My.Settings.bnls
+                    If address Is Nothing OrElse address = "" Then
+                        Logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
+                    Else
+                        Dim hostPortPair = address.Split(":"c)
+                        remoteHost = hostPortPair(0)
+                        If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), remotePort) Then
+                            Logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
+                        End If
+                    End If
+
+                    'Attempt connection
+                    Dim seed = keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32
+                    _wardenClient = New Warden.Client(remoteHost:=remoteHost, remotePort:=remotePort, seed:=seed, cookie:=seed, Logger:=Logger)
                 End Sub
             ).Catch(
                 Sub(exception)
@@ -631,93 +730,36 @@ Namespace Bnet
                 End Sub
             )
         End Sub
-        Private Function BeginWardenConnection(ByVal seed As UInt32) As Boolean
-            Contract.Requires(_futureWardenClient Is Nothing)
-            Contract.Ensures((_futureWardenClient IsNot Nothing) = Contract.Result(Of Boolean)())
 
-            'Parse address setting
-            Dim address = My.Settings.bnls
-            If address Is Nothing OrElse address = "" Then
-                logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
-                Return False
-            End If
-            Dim hostPortPair = address.Split(":"c)
-            Dim host = hostPortPair(0)
-            Dim port As UShort
-            If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), port) Then
-                logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
-                Return False
-            End If
-
-            'Attempt connection
-            logger.Log("Connecting to bnls server at {0}...".Frmt(address), LogMessageType.Positive)
-
-            Dim futureSocket = From tcpClient In AsyncTcpConnect(host, port)
-                               Select New PacketSocket(stream:=tcpClient.GetStream,
-                                                       localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                                       remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                                                       timeout:=5.Minutes,
-                                                       numBytesBeforeSize:=0,
-                                                       numSizeBytes:=2,
-                                                       logger:=logger,
-                                                       Name:="BNLS")
-            _futureWardenClient = From socket In futureSocket
-                                  Select New Warden.Client(socket, seed, seed, logger)
-            _futureWardenClient.CallOnValueSuccess(
-                Sub(wardenClient)
-                    logger.Log("Connected to bnls server.", LogMessageType.Positive)
-                    AddHandler wardenClient.ReceivedWardenData, AddressOf OnWardenSend
-                    AddHandler wardenClient.Failed, AddressOf OnWardenFail
-                    wardenClient.FutureDisposed.CallWhenReady(
-                        Sub()
-                            RemoveHandler wardenClient.ReceivedWardenData, AddressOf OnWardenSend
-                            RemoveHandler wardenClient.Failed, AddressOf OnWardenFail
-                        End Sub)
-                        End Sub
-            ).Catch(
-                Sub(exception)
-                    logger.Log("Error connecting to bnls server: {0}".Frmt(exception), LogMessageType.Problem)
-                End Sub
-            )
-            Return True
-        End Function
-        Private Sub EndAnyOldWardenConnection()
-            Contract.Ensures(_futureWardenClient Is Nothing)
-            If _futureWardenClient IsNot Nothing Then
-                _futureWardenClient.CallOnValueSuccess(Sub(client) client.Dispose()).SetHandled()
-                _futureWardenClient = Nothing
-            End If
-        End Sub
-
-        Private Sub ReceiveAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveProgramAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            If state <> ClientState.Connecting Then
+            If _state <> ClientState.WaitingForProgramAuthenticationFinish Then
                 Throw New IO.InvalidDataException("Invalid state for receiving AUTHENTICATION_FINISHED")
             End If
 
-            Dim result = CType(CUInt(vals("result")), Bnet.Packet.AuthenticationFinishResult)
+            Dim result = CType(CUInt(vals("result")), Bnet.Packet.ProgramAuthenticationFinishResult)
             Dim errmsg As String
             Select Case result
-                Case Bnet.Packet.AuthenticationFinishResult.Passed
+                Case Bnet.Packet.ProgramAuthenticationFinishResult.Passed
                     ChangeState(ClientState.EnterUserCredentials)
                     _futureConnected.TrySetSucceeded()
-                    allowRetryConnect = True
+                    _allowRetryConnect = True
                     Return
 
-                Case Bnet.Packet.AuthenticationFinishResult.OldVersion
+                Case Bnet.Packet.ProgramAuthenticationFinishResult.OldVersion
                     errmsg = "Out of date version"
-                Case Bnet.Packet.AuthenticationFinishResult.InvalidVersion
+                Case Bnet.Packet.ProgramAuthenticationFinishResult.InvalidVersion
                     errmsg = "Invalid version"
-                Case Bnet.Packet.AuthenticationFinishResult.FutureVersion
+                Case Bnet.Packet.ProgramAuthenticationFinishResult.FutureVersion
                     errmsg = "Future version (need to downgrade apparently)"
-                Case Bnet.Packet.AuthenticationFinishResult.InvalidCDKey
+                Case Bnet.Packet.ProgramAuthenticationFinishResult.InvalidCDKey
                     errmsg = "Invalid CD key"
-                Case Bnet.Packet.AuthenticationFinishResult.UsedCDKey
+                Case Bnet.Packet.ProgramAuthenticationFinishResult.UsedCDKey
                     errmsg = "CD key in use by:"
-                Case Bnet.Packet.AuthenticationFinishResult.BannedCDKey
+                Case Bnet.Packet.ProgramAuthenticationFinishResult.BannedCDKey
                     errmsg = "CD key banned!"
-                Case Bnet.Packet.AuthenticationFinishResult.WrongProduct
+                Case Bnet.Packet.ProgramAuthenticationFinishResult.WrongProduct
                     errmsg = "Wrong product."
                 Case Else
                     errmsg = "Unknown authentication failure id: {0}.".Frmt(result)
@@ -727,21 +769,21 @@ Namespace Bnet
             Throw New Exception(errmsg)
         End Sub
 
-        Private Sub ReceiveAccountLogonBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveUserAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
 
-            If state <> ClientState.AuthenticatingUser Then
+            If _state <> ClientState.WaitingForUserAuthenticationBegin Then
                 Throw New Exception("Invalid state for receiving ACCOUNT_LOGON_BEGIN")
             End If
 
-            Dim result = CType(vals("result"), Bnet.Packet.AccountLogOnBeginResult)
-            If result <> Bnet.Packet.AccountLogOnBeginResult.Passed Then
+            Dim result = CType(vals("result"), Bnet.Packet.UserAuthenticationBeginResult)
+            If result <> Bnet.Packet.UserAuthenticationBeginResult.Passed Then
                 Dim errmsg As String
                 Select Case result
-                    Case Bnet.Packet.AccountLogOnBeginResult.BadUserName
+                    Case Bnet.Packet.UserAuthenticationBeginResult.BadUserName
                         errmsg = "Username doesn't exist."
-                    Case Bnet.Packet.AccountLogOnBeginResult.UpgradeAccount
+                    Case Bnet.Packet.UserAuthenticationBeginResult.UpgradeAccount
                         errmsg = "Account requires upgrade."
                     Case Else
                         errmsg = "Unrecognized login problem: " + result.ToString()
@@ -757,27 +799,27 @@ Namespace Bnet
             Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
             Dim serverProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
 
-            Me.expectedServerPasswordProof = serverProof
+            Me._expectedServerPasswordProof = serverProof
             SendPacket(Bnet.Packet.MakeAccountLogOnFinish(clientProof))
         End Sub
 
-        Private Sub ReceiveAccountLogonFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveUserAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            If state <> ClientState.AuthenticatingUser Then
+            If _state <> ClientState.WaitingForUserAuthenticationFinish Then
                 Throw New Exception("Invalid state for receiving ACCOUNT_LOGON_FINISH")
             End If
 
-            Dim result = CType(vals("result"), Bnet.Packet.AccountLogOnFinishResult)
+            Dim result = CType(vals("result"), Bnet.Packet.UserAuthenticationFinishResult)
 
-            If result <> Bnet.Packet.AccountLogOnFinishResult.Passed Then
+            If result <> Bnet.Packet.UserAuthenticationFinishResult.Passed Then
                 Dim errmsg As String
                 Select Case result
-                    Case Bnet.Packet.AccountLogOnFinishResult.IncorrectPassword
+                    Case Bnet.Packet.UserAuthenticationFinishResult.IncorrectPassword
                         errmsg = "Incorrect password."
-                    Case Bnet.Packet.AccountLogOnFinishResult.NeedEmail
+                    Case Bnet.Packet.UserAuthenticationFinishResult.NeedEmail
                         errmsg = "No email address associated with account"
-                    Case Bnet.Packet.AccountLogOnFinishResult.CustomError
+                    Case Bnet.Packet.UserAuthenticationFinishResult.CustomError
                         errmsg = "Logon error: " + CType(vals("custom error info"), String)
                     Case Else
                         errmsg = "Unrecognized logon error: " + result.ToString()
@@ -788,8 +830,8 @@ Namespace Bnet
 
             'validate
             Dim serverProof = CType(vals("server password proof"), IReadableList(Of Byte)).AssumeNotNull
-            If Me.expectedServerPasswordProof Is Nothing Then Throw New InvalidStateException("Received AccountLogOnFinish before server password proof computed.")
-            If Not Me.expectedServerPasswordProof.SequenceEqual(serverProof) Then
+            If Me._expectedServerPasswordProof Is Nothing Then Throw New InvalidStateException("Received AccountLogOnFinish before server password proof computed.")
+            If Not Me._expectedServerPasswordProof.SequenceEqual(serverProof) Then
                 _futureLoggedIn.TrySetFailed(New IO.InvalidDataException("Failed to logon: Server didn't give correct password proof"))
                 Throw New IO.InvalidDataException("Server didn't give correct password proof.")
             End If
@@ -805,7 +847,8 @@ Namespace Bnet
             'End Try
             'End If
             'log
-            logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
+            ChangeState(ClientState.WaitingForEnterChat)
+            Logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
             _futureLoggedIn.TrySetSucceeded()
             'respond
             SetReportedListenPort(6112)
@@ -816,19 +859,16 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             logger.Log("Entered chat", LogMessageType.Typical)
-            EnterChannel(profile.initialChannel)
+            EnterChannel(Profile.initialChannel)
         End Sub
 #End Region
 
 #Region "Networking (Warden)"
-        Private Sub ReceiveWarden(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
-            If _futureWardenClient Is Nothing Then Return
-            Dim encryptedData = CType(vals("encrypted data"), IReadableList(Of Byte)).AssumeNotNull
-            _futureWardenClient.CallOnValueSuccess(
-                    Sub(client) client.QueueSendWardenData(encryptedData)
-                ).SetHandled()
+        Private Sub ReceiveWarden(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            Contract.Requires(pickle IsNot Nothing)
+            If _state < ClientState.WaitingForEnterChat Then Throw New IO.InvalidDataException("Warden packet in unexpected place.")
+            Dim encryptedData = CType(pickle.Value("encrypted data"), IReadableList(Of Byte)).AssumeNotNull
+            _wardenClient.QueueSendWardenData(encryptedData)
         End Sub
         Private Sub OnWardenSend(ByVal data As IReadableList(Of Byte))
             Contract.Requires(data IsNot Nothing)
@@ -847,7 +887,7 @@ Namespace Bnet
             Dim succeeded = CUInt(vals("result")) = 0
 
             If succeeded Then
-                If state = ClientState.CreatingGame Then
+                If _state = ClientState.CreatingGame Then
                     logger.Log("Finished creating game.", LogMessageType.Positive)
                     ChangeState(ClientState.AdvertisingGame)
                     If Not _advertisedPrivate Then _advertiseRefreshTimer.Start()
@@ -858,7 +898,7 @@ Namespace Bnet
             Else
                 _futureAdvertisedGame.TrySetFailed(New OperationFailedException("BNET didn't allow game creation. Most likely cause is game name in use."))
                 _advertiseRefreshTimer.Stop()
-                EnterChannel(lastChannel)
+                EnterChannel(_lastChannel)
                 'RaiseEvent RemovedGame(Me, _advertisedGameDescription, "Failed to advertise the game. Most likely cause is game name in use.")
             End If
         End Sub
@@ -873,7 +913,7 @@ Namespace Bnet
             Dim vals = value.Value
             Dim eventId = CType(vals("event id"), Bnet.Packet.ChatEventId)
             Dim text = CStr(vals("text"))
-            If eventId = Bnet.Packet.ChatEventId.Channel Then lastChannel = text
+            If eventId = Bnet.Packet.ChatEventId.Channel Then _lastChannel = text
         End Sub
 
         Private Sub ReceivePing(ByVal value As IPickle(Of UInt32))
@@ -889,52 +929,6 @@ Namespace Bnet
         End Sub
 #End Region
 
-#Region "Remote"
-        Public Function QueueSendText(ByVal text As String) As IFuture
-            Contract.Requires(text IsNot Nothing)
-            Contract.Requires(text.Length > 0)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SendText(text))
-        End Function
-        Public Function QueueSendWhisper(ByVal userName As String,
-                                         ByVal text As String) As IFuture
-            Contract.Requires(userName IsNot Nothing)
-            Contract.Requires(userName.Length > 0)
-            Contract.Requires(text IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SendWhisper(userName, text))
-        End Function
-        Public Function QueueSendPacket(ByVal packet As Bnet.Packet) As IFuture
-            Contract.Requires(packet IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SendPacket(packet))
-        End Function
-        Public Function QueueStopAdvertisingGame(ByVal reason As String) As IFuture
-            Contract.Requires(reason IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() StopAdvertisingGame(reason))
-        End Function
-        Public Function QueueStartAdvertisingGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                                  ByVal [private] As Boolean) As IFuture
-            Contract.Requires(gameDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() BeginAdvertiseGame(gameDescription, [private])).Defuturized
-        End Function
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As IFuture
-            Contract.Requires(reason IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() Disconnect(expected, reason))
-        End Function
-        Public Function QueueConnect(ByVal remoteHost As String) As IFuture
-            Contract.Requires(remoteHost IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncConnect(remoteHost)).Defuturized
-        End Function
-        Public Function QueueLogOn(ByVal credentials As ClientCredentials) As IFuture
-            Contract.Requires(credentials IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() BeginLogOn(credentials)).Defuturized
-        End Function
         Public Function QueueGetUserServer(ByVal user As BotUser) As IFuture(Of WC3.GameServer)
             Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameServer))() IsNot Nothing)
             'Return inQueue.QueueFunc(Function() GetUserServer(user))
@@ -945,21 +939,5 @@ Namespace Bnet
             'Return inQueue.QueueAction(Sub() SetUserServer(user, server))
             Throw New NotImplementedException
         End Function
-        Public Function QueueGetState() As IFuture(Of ClientState)
-            Contract.Ensures(Contract.Result(Of IFuture(Of ClientState))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() state)
-        End Function
-#End Region
-
-        Public ReadOnly Property AdvertisedGameDescription As WC3.LocalGameDescription
-            Get
-                Return Me._advertisedGameDescription
-            End Get
-        End Property
-        Public ReadOnly Property AdvertisedPrivate As Boolean
-            Get
-                Return Me._advertisedPrivate
-            End Get
-        End Property
     End Class
 End Namespace

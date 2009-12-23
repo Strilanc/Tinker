@@ -1,3 +1,4 @@
+<ContractVerification(False)>
 Public Class W3GameControl
     Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
     Private ReadOnly _manager As Components.WC3GameManager

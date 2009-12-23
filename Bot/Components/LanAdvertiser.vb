@@ -156,6 +156,7 @@ Namespace WC3
         Private Function RemoveGame(ByVal id As UInt32) As Boolean
             If Not _games.ContainsKey(id) Then Return False
             Dim game = _games(id)
+            Contract.Assume(game IsNot Nothing)
 
             'Advertise game closed
             Dim pk = Packet.MakeLanDestroyGame(game.GameDescription.GameId)
@@ -176,16 +177,19 @@ Namespace WC3
 
         Private Sub RefreshAll() Handles refreshTimer.Elapsed
             For Each game In _games.Values
+                Contract.Assume(game IsNot Nothing)
                 RefreshGame(game)
             Next game
         End Sub
         Private Sub RefreshGame(ByVal game As LanGame)
+            Contract.Requires(game IsNot Nothing)
             Dim pk = Packet.MakeLanDescribeGame(GetWC3MajorVersion, game.GameDescription)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host
         End Sub
         Private Sub SendPacket(ByVal pk As Packet, ByVal targetHost As String, ByVal targetPort As UShort)
+            Contract.Requires(pk IsNot Nothing)
             Try
                 'pack
                 Dim data = pk.Payload.Data.ToArray()
@@ -237,17 +241,21 @@ Namespace WC3
                                               ByVal password As String,
                                               Optional ByVal remoteHost As String = "localhost",
                                               Optional ByVal listenPort As UShort = 0) As WC3.LanAdvertiser
+            Dim sha1Checksum = (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList
+            Contract.Assume(sha1Checksum.Count = 20)
             Dim map = New WC3.Map("Maps\",
                                   "Maps\AdminGame.w3x",
                                   filesize:=1,
                                   fileChecksumCRC32:=&H12345678UI,
-                                  mapChecksumSHA1:=(From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList,
+                                  mapChecksumSHA1:=sha1Checksum,
                                   mapChecksumXORO:=&H2357BDUI,
                                   slotCount:=2)
             Contract.Assume(map.Slots(1) IsNot Nothing)
             map.Slots(1).Contents = New WC3.SlotContentsComputer(map.Slots(1), WC3.Slot.ComputerLevel.Normal)
+            Dim hostName = Application.ProductName
+            Contract.Assume(hostName IsNot Nothing)
             Dim header = New WC3.LocalGameDescription("Admin Game",
-                                          New WC3.GameStats(map, Application.ProductName, New Commands.CommandArgument("")),
+                                          New WC3.GameStats(map, hostName, New Commands.CommandArgument("")),
                                           gameid:=1,
                                           entryKey:=0,
                                           totalSlotCount:=map.NumPlayerSlots,

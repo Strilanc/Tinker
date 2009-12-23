@@ -77,7 +77,7 @@
             totalTockTime += record.length
             Contract.Assume(totalTockTime >= 0)
 
-            'Dim checksum = CType(vals("game state checksum"), Byte())
+            'Dim checksum = CType(vals("game state checksum"), IReadableList(Of Byte))
             'If synced Then
             '    If Not record.provide_value(checksum) Then
             '        synced = False

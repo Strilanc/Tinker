@@ -1,7 +1,7 @@
 Namespace Bot
     Public NotInheritable Class ClientProfile
         Public name As InvariantString
-        Public users As New BotUserSet()
+        Private _users As New BotUserSet()
         Public cdKeyROC As String = ""
         Public cdKeyTFT As String = ""
         Public userName As String = ""
@@ -13,7 +13,7 @@ Namespace Bot
         Private Const version As UInt16 = 1
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(users IsNot Nothing)
+            Contract.Invariant(_users IsNot Nothing)
             Contract.Invariant(cdKeyROC IsNot Nothing)
             Contract.Invariant(cdKeyTFT IsNot Nothing)
             Contract.Invariant(userName IsNot Nothing)
@@ -32,6 +32,16 @@ Namespace Bot
             Load(reader)
         End Sub
 
+        Public Property Users As BotUserSet
+            Get
+                Contract.Ensures(Contract.Result(Of BotUserSet)() IsNot Nothing)
+                Return Me._users
+            End Get
+            Set(ByVal value As BotUserSet)
+                Contract.Requires(value IsNot Nothing)
+                Me._users = value
+            End Set
+        End Property
         Public Property LanHost As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)

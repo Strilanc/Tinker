@@ -69,6 +69,7 @@
                         'basic command help
                         Dim command As Command(Of T) = Nothing
                         If _commandMap.TryGetValue(key:=argument, value:=command) Then
+                            Contract.Assume(command IsNot Nothing)
                             Return "{0} [{1} {2}] {{{3}}}".Frmt(command.Description,
                                                                 command.Name,
                                                                 command.Format,
@@ -80,12 +81,14 @@
                         Dim rest = argument.Substring(p + 1)
                         Dim command As Command(Of T) = Nothing
                         If _commandMap.TryGetValue(key:=firstWord, value:=command) Then
+                            Contract.Assume(command IsNot Nothing)
                             Dim result As String = Nothing
                             If rest = "*" Then 'list subtopics
                                 Return (From key In command.HelpTopics.Keys
                                         Order By key
                                         ).StringJoin(" ").Futurized
                             ElseIf command.HelpTopics.TryGetValue(key:=rest, value:=result) Then
+                                Contract.Assume(result IsNot Nothing)
                                 Return result.Futurized
                             End If
                         End If

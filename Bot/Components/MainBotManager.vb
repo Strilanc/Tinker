@@ -18,7 +18,7 @@
             Me._bot = bot
             Dim control = New GenericBotComponentControl(Me)
             Me._control = control
-            control.logControl.SetLogUnexpected(True)
+            control.logControl.AssumeNotNull.SetLogUnexpected(True)
         End Sub
 
         Public ReadOnly Property Bot As MainBot

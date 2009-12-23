@@ -87,7 +87,7 @@ Namespace Bnet
             Contract.Requires(vals IsNot Nothing)
 
             Dim id = CType(vals("event id"), Bnet.Packet.ChatEventId)
-            Dim user = _client.profile.users(CStr(vals("username")))
+            Dim user = _client.Profile.users(CStr(vals("username")))
             Dim text = CStr(vals("text"))
 
             'Check
@@ -95,7 +95,7 @@ Namespace Bnet
                 Return 'user not allowed
             ElseIf id <> Bnet.Packet.ChatEventId.Talk And id <> Bnet.Packet.ChatEventId.Whisper Then
                 Return 'not a message
-            ElseIf text.Substring(0, My.Settings.commandPrefix.Length) <> My.Settings.commandPrefix AndAlso text <> MainBot.TriggerCommandText Then
+            ElseIf text.Substring(0, My.Settings.commandPrefix.AssumeNotNull.Length) <> My.Settings.commandPrefix AndAlso text <> MainBot.TriggerCommandText Then
                 Return 'not a command
             End If
 
@@ -106,7 +106,7 @@ Namespace Bnet
             End If
 
             'Normal commands
-            Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
+            Dim commandText = text.Substring(My.Settings.commandPrefix.AssumeNotNull.Length)
             Dim commandResult = Me.InvokeCommand(user, commandText)
             commandResult.CallOnValueSuccess(
                 Sub(message) _client.QueueSendWhisper(user.Name, If(message, "Command Succeeded"))

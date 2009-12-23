@@ -86,13 +86,13 @@ Namespace Bnet
         RequiredWork = &H4C
         Tournament = &H4E
         '''<summary>Introductions, server authentication, and server challenge to client.</summary>
-        AuthenticationBegin = &H50
+        ProgramAuthenticationBegin = &H50
         '''<summary>The client authenticates itself against the server's challenge</summary>
-        AuthenticationFinish = &H51
+        ProgramAuthenticationFinish = &H51
         AccountCreate = &H52
-        AccountLogOnBegin = &H53
+        UserAuthenticationBegin = &H53
         '''<summary>Exchange of password proofs</summary>
-        AccountLogOnFinish = &H54
+        UserAuthenticationFinish = &H54
         AccountChange = &H55
         AccountChangeProof = &H56
         AccountUpgrade = &H57
@@ -169,21 +169,21 @@ Namespace Bnet
         End Sub
 
 #Region "Enums"
-        Public Enum AuthenticationBeginLogOnType As Byte
+        Public Enum ProgramAuthenticationBeginLogOnType As Byte
             Warcraft3 = 2
         End Enum
-        Public Enum AccountLogOnFinishResult As UInteger
+        Public Enum UserAuthenticationFinishResult As UInteger
             Passed = 0
             IncorrectPassword = 2
             NeedEmail = 14
             CustomError = 15
         End Enum
-        Public Enum AccountLogOnBeginResult As UInteger
+        Public Enum UserAuthenticationBeginResult As UInteger
             Passed = 0
             BadUserName = 1
             UpgradeAccount = 5
         End Enum
-        Public Enum AuthenticationFinishResult As UInteger
+        Public Enum ProgramAuthenticationFinishResult As UInteger
             Passed = 0
             OldVersion = &H101
             InvalidVersion = &H102
@@ -334,23 +334,23 @@ Namespace Bnet
         End Class
 
         Public Class ServerPackets
-            Public Shared ReadOnly AuthenticationBegin As New DefJar(PacketId.AuthenticationBegin,
-                    New EnumUInt32Jar(Of AuthenticationBeginLogOnType)("logon type").Weaken,
+            Public Shared ReadOnly ProgramAuthenticationBegin As New DefJar(PacketId.ProgramAuthenticationBegin,
+                    New EnumUInt32Jar(Of ProgramAuthenticationBeginLogOnType)("logon type").Weaken,
                     New UInt32Jar("server cd key salt", showHex:=True).Weaken,
                     New UInt32Jar("udp value", showHex:=True).Weaken,
                     New FileTimeJar("mpq filetime").Weaken,
                     New StringJar("revision check seed").Weaken,
                     New StringJar("revision check challenge").Weaken,
                     New RawDataJar("server signature", Size:=128).Weaken)
-            Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.AuthenticationFinish,
-                    New EnumUInt32Jar(Of AuthenticationFinishResult)("result").Weaken,
+            Public Shared ReadOnly ProgramAuthenticationFinish As New DefJar(PacketId.ProgramAuthenticationFinish,
+                    New EnumUInt32Jar(Of ProgramAuthenticationFinishResult)("result").Weaken,
                     New StringJar("info").Weaken)
-            Public Shared ReadOnly AccountLogOnBegin As New DefJar(PacketId.AccountLogOnBegin,
-                    New EnumUInt32Jar(Of AccountLogOnBeginResult)("result").Weaken,
+            Public Shared ReadOnly UserAuthenticationBegin As New DefJar(PacketId.UserAuthenticationBegin,
+                    New EnumUInt32Jar(Of UserAuthenticationBeginResult)("result").Weaken,
                     New RawDataJar("account password salt", Size:=32).Weaken,
                     New RawDataJar("server public key", Size:=32).Weaken)
-            Public Shared ReadOnly AccountLogOnFinish As New DefJar(PacketId.AccountLogOnFinish,
-                    New EnumUInt32Jar(Of AccountLogOnFinishResult)("result").Weaken,
+            Public Shared ReadOnly UserAuthenticationFinish As New DefJar(PacketId.UserAuthenticationFinish,
+                    New EnumUInt32Jar(Of UserAuthenticationFinishResult)("result").Weaken,
                     New RawDataJar("server password proof", Size:=20).Weaken,
                     New StringJar("custom error info").Weaken)
             Public Shared ReadOnly RequiredWork As New DefJar(PacketId.RequiredWork,
@@ -403,7 +403,7 @@ Namespace Bnet
                     New EnumByteJar(Of ClanRank)("rank").Weaken)
         End Class
         Public Class ClientPackets
-            Public Shared ReadOnly AuthenticationBegin As New DefJar(PacketId.AuthenticationBegin,
+            Public Shared ReadOnly AuthenticationBegin As New DefJar(PacketId.ProgramAuthenticationBegin,
                     New UInt32Jar("protocol").Weaken,
                     New DwordStringJar("platform").Weaken,
                     New DwordStringJar("product").Weaken,
@@ -415,7 +415,7 @@ Namespace Bnet
                     New EnumUInt32Jar(Of MPQ.LanguageId)("language id").Weaken,
                     New StringJar("country abrev").Weaken,
                     New StringJar("country name").Weaken)
-            Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.AuthenticationFinish,
+            Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.ProgramAuthenticationFinish,
                     New UInt32Jar("client cd key salt", showHex:=True).Weaken,
                     New RawDataJar("exe version", Size:=4).Weaken,
                     New UInt32Jar("revision check response", showHex:=True).Weaken,
@@ -425,10 +425,10 @@ Namespace Bnet
                     New ProductCredentialsJar("TFT cd key").Weaken,
                     New StringJar("exe info").Weaken,
                     New StringJar("owner").Weaken)
-            Public Shared ReadOnly AccountLogOnBegin As New DefJar(PacketId.AccountLogOnBegin,
+            Public Shared ReadOnly AccountLogOnBegin As New DefJar(PacketId.UserAuthenticationBegin,
                     New RawDataJar("client public key", Size:=32).Weaken,
                     New StringJar("username").Weaken)
-            Public Shared ReadOnly AccountLogOnFinish As New DefJar(PacketId.AccountLogOnFinish,
+            Public Shared ReadOnly AccountLogOnFinish As New DefJar(PacketId.UserAuthenticationFinish,
                     New RawDataJar("client password proof", Size:=20).Weaken)
 
             Public Shared ReadOnly ChatCommand As New DefJar(PacketId.ChatCommand,
@@ -670,7 +670,7 @@ Namespace Bnet
                 Dim u = CULng(value)
                 Dim digits As IList(Of Char) = New List(Of Char)
                 For i = 0 To numDigits - 1
-                    Dim val = Hex(u And CULng(&HF)).ToLowerInvariant
+                    Dim val = (u And &HFUL).ToString("x", CultureInfo.InvariantCulture)
                     Contract.Assume(val.Length = 1)
                     digits.Add(val(0))
                     u >>= 4

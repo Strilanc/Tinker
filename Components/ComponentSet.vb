@@ -163,7 +163,7 @@ Namespace Components
         Private Function GetOrConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As T
             Contract.Requires(factory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
-            Dim result = CType((From c In _components Where TypeOf c Is T).FirstOrDefault, T)
+            Dim result = EnumComponents(Of T)().FirstOrDefault
             If result Is Nothing Then
                 result = factory()
                 Contract.Assume(result IsNot Nothing)

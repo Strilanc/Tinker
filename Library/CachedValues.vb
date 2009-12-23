@@ -10,6 +10,7 @@
         Dim path = WC3Path() + "war3.exe"
         Dim versionInfo = FileVersionInfo.GetVersionInfo(path)
         Dim fileInfo = New IO.FileInfo(path)
+        Contract.Assume(versionInfo IsNot Nothing)
         _exeVersion = {versionInfo.ProductMajorPart, versionInfo.ProductMinorPart, versionInfo.ProductBuildPart, versionInfo.ProductPrivatePart}
         _exeLastModifiedTime = fileInfo.LastWriteTime
         _exeSize = CUInt(fileInfo.Length)

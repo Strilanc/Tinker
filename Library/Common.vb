@@ -323,7 +323,7 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     '''<summary>Determines the SHA-1 hash of a sequence of bytes.</summary>
-    <Extension()>
+    <Extension()> <Pure()>
     Public Function SHA1(ByVal data As IEnumerable(Of Byte)) As Byte()
         Contract.Requires(data IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)

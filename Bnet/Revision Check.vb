@@ -55,14 +55,20 @@ Namespace Bnet
             Private ReadOnly destVar As Char
             Private ReadOnly operation As Func(Of ModInt32, ModInt32, ModInt32)
 
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(operation IsNot Nothing)
+            End Sub
+
             Public Sub New(ByVal leftVar As Char, ByVal rightVar As Char, ByVal destVar As Char, ByVal [operator] As Char)
                 Me.leftVar = leftVar
                 Me.rightVar = rightVar
                 Me.destVar = destVar
                 Me.operation = Operations([operator])
+                Contract.Assume(operation IsNot Nothing)
             End Sub
 
             Public Sub ApplyTo(ByVal vars As Dictionary(Of Char, ModInt32))
+                Contract.Requires(vars IsNot Nothing)
                 vars(destVar) = operation(vars(leftVar), vars(rightVar))
             End Sub
         End Structure

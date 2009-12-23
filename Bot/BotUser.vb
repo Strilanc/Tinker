@@ -224,16 +224,24 @@ Public NotInheritable Class BotUserSet
     Public Shared ReadOnly UnknownUserKey As InvariantString = "*unknown"
     Public Shared ReadOnly NewUserKey As InvariantString = "*new"
 
-    Public Function Users() As IEnumerable(Of BotUser)
-        Return _userMap.Values()
-    End Function
+    <ContractInvariantMethod()> Private Sub ObjectInvariant()
+        Contract.Invariant(_userMap IsNot Nothing)
+        Contract.Invariant(tempUserMap IsNot Nothing)
+    End Sub
+
+    Public ReadOnly Property Users() As IEnumerable(Of BotUser)
+        Get
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of BotUser))() IsNot Nothing)
+            Return _userMap.Values()
+        End Get
+    End Property
 
     Public Function CreateNewUser(ByVal name As InvariantString) As BotUser
         Contract.Ensures(Contract.Result(Of BotUser)() IsNot Nothing)
         If _userMap.ContainsKey(name) Then
             Throw New InvalidOperationException("User already exists")
         ElseIf _userMap.ContainsKey(NewUserKey) Then
-            Dim user = _userMap(NewUserKey).Clone(name)
+            Dim user = _userMap(NewUserKey).AssumeNotNull.Clone(name)
             AddUser(user)
             Return user
         Else
@@ -254,7 +262,7 @@ Public NotInheritable Class BotUserSet
             ElseIf tempUserMap.ContainsKey(name) Then
                 Return tempUserMap(name)
             ElseIf _userMap.ContainsKey(UnknownUserKey) Then
-                tempUserMap(name) = _userMap(UnknownUserKey).Clone(name)
+                tempUserMap(name) = _userMap(UnknownUserKey).AssumeNotNull.Clone(name)
                 Return tempUserMap(name)
             Else
                 Return Nothing
@@ -262,6 +270,7 @@ Public NotInheritable Class BotUserSet
         End Get
     End Property
 
+    <Pure()>
     Public Function ContainsUser(ByVal name As InvariantString) As Boolean
         Return _userMap.ContainsKey(name)
     End Function
@@ -289,8 +298,9 @@ Public NotInheritable Class BotUserSet
     End Sub
     Public Sub UpdateUser(ByVal user As BotUser)
         Contract.Requires(user IsNot Nothing)
-        If ContainsUser(user.name) Then
-            Dim oldUser = Me(user.name)
+        If ContainsUser(user.Name) Then
+            Dim oldUser = Me(user.Name)
+            Contract.Assume(oldUser IsNot Nothing)
             oldUser.UpdatePermissions(user.PackPermissions)
             oldUser.UpdateSettings(user.PackSettings)
         Else
@@ -300,7 +310,7 @@ Public NotInheritable Class BotUserSet
 
     Public Sub AddUser(ByVal user As BotUser)
         Contract.Requires(user IsNot Nothing)
-        If ContainsUser(user.name) Then Throw New InvalidOperationException("That user already exists")
+        If ContainsUser(user.Name) Then Throw New InvalidOperationException("That user already exists")
         _userMap(user.Name) = user
     End Sub
 
@@ -314,11 +324,14 @@ Public NotInheritable Class BotUserSet
         Contract.Requires(bw IsNot Nothing)
         bw.Write(CUShort(_userMap.Keys.Count))
         For Each e In _userMap.Values
+            Contract.Assume(e IsNot Nothing)
             e.Save(bw)
         Next e
     End Sub
 
+    <Pure()>
     Public Function Clone() As BotUserSet
+        Contract.Ensures(Contract.Result(Of BotUserSet)() IsNot Nothing)
         Dim newUserSet As New BotUserSet
         For Each user As BotUser In _userMap.Values
             Contract.Assume(user IsNot Nothing)

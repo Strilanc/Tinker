@@ -26,12 +26,12 @@ Namespace Pickling.Jars
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
             Dim key = _dataKeyExtractor(data)
             If Not _parsers.ContainsKey(key) Then Throw New PicklingException("No parser registered to {0}.".Frmt(key))
-            Return _parsers(key).Parse(data)
+            Return _parsers(key).AssumeNotNull.Parse(data)
         End Function
         Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
             Dim key = _valueKeyExtractor(value)
             If Not _packers.ContainsKey(key) Then Throw New PicklingException("No packer registered to {0}.".Frmt(key))
-            Return _packers(key).Pack(value)
+            Return _packers(key).AssumeNotNull.Pack(value)
         End Function
 
         Public Sub AddPackerParser(ByVal key As K, ByVal jar As IJar(Of T))

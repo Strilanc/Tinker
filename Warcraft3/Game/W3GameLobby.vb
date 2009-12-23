@@ -361,8 +361,12 @@
 #Region "Events"
         Private Sub OnDownloadSchedulerActions(ByVal started As List(Of TransferScheduler(Of Byte).TransferEndpoints),
                                                ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndpoints))
+            Contract.Requires(started IsNot Nothing)
+            Contract.Requires(stopped IsNot Nothing)
+
             'Start transfers
             For Each e In started
+                Contract.Assume(e IsNot Nothing)
                 'Find matching players
                 Dim src = TryFindPlayer(e.source)
                 Dim dst = TryFindPlayer(e.destination)
@@ -382,6 +386,7 @@
 
             'Stop transfers
             For Each e In stopped
+                Contract.Assume(e IsNot Nothing)
                 'Find matching players
                 Dim src = TryFindPlayer(e.source)
                 Dim dst = TryFindPlayer(e.destination)

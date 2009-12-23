@@ -168,7 +168,7 @@ Namespace WC3
                 Dim size = CUInt(vals("size"))
                 Dim crc32 = CUInt(vals("crc32"))
                 Dim xoro = CUInt(vals("xoro checksum"))
-                Dim sha1 = CType(vals("sha1 checksum"), Byte()).AssumeNotNull.AsReadableList
+                Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
                 If Not path.StartsWith("Maps\", StringComparison.OrdinalIgnoreCase) Then
                     Throw New IO.InvalidDataException("Invalid map path.")
                 End If
@@ -622,7 +622,7 @@ Namespace WC3
                         slot.race = race
                         slotColorMap(slot.color) = slot
                     End If
-                    Contract.Assert(slots.Count <= numSlotsInFile)
+                    Contract.Assume(slots.Count <= numSlotsInFile)
                 Next repeat
                 If slots.Count <= 0 Then Throw New IO.InvalidDataException("Map contains no player slots.")
                 Contract.Assert(slots.Count <= 12)

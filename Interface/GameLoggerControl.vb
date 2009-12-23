@@ -1,4 +1,5 @@
-﻿Public Class GameLoggerControl
+﻿<ContractVerification(False)>
+Public Class GameLoggerControl
     Private WithEvents game As WC3.Game
     Private actionMode As CallbackMode = CallbackMode.Off
     Public Sub SetGame(ByVal game As WC3.Game)

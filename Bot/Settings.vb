@@ -50,10 +50,12 @@ Namespace Bot
                 'Data
                 writer.Write(CUInt(_clientProfiles.Count))
                 For Each profile In _clientProfiles
+                    Contract.Assume(profile IsNot Nothing)
                     profile.Save(writer)
                 Next profile
                 writer.Write(CUInt(_pluginProfiles.Count))
                 For Each profile In _pluginProfiles
+                    Contract.Assume(profile IsNot Nothing)
                     profile.Save(writer)
                 Next profile
             End SyncLock

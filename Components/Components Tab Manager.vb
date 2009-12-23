@@ -6,7 +6,13 @@
         Private ReadOnly _tabControl As Windows.Forms.TabControl
         Private ReadOnly _items As New Dictionary(Of Components.IBotComponent, TabPage)
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_tabControl IsNot Nothing)
+            Contract.Invariant(_items IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal tabControl As Windows.Forms.TabControl)
+            Contract.Requires(tabControl IsNot Nothing)
             Me._tabControl = tabControl
         End Sub
 
@@ -27,6 +33,7 @@
             End If
 
             _items.Add(component, page)
+            Contract.Assume(Me.Contains(component))
         End Sub
 
         <Pure()>
@@ -43,12 +50,14 @@
 
             If component.HasControl Then
                 Dim page = _items(component)
+                Contract.Assume(page IsNot Nothing)
                 page.Controls.Remove(component.Control)
                 _tabControl.TabPages.Remove(page)
                 page.Dispose()
             End If
 
             _items.Remove(component)
+            Contract.Assume(Not Me.Contains(component))
         End Sub
 
         Public Sub Clear()

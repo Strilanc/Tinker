@@ -22,7 +22,7 @@ Namespace Plugins
                 Contract.Assume(asm IsNot Nothing)
                 Dim classType = asm.GetType("TinkerPluginFactory")
                 If classType Is Nothing Then Throw New OperationFailedException("The target assembly doesn't contain a TinkerPluginFactory.")
-                Me._plugin = CType(Activator.CreateInstance(classType), IPluginFactory).CreatePlugin(bot)
+                Me._plugin = CType(Activator.CreateInstance(classType), IPluginFactory).AssumeNotNull.CreatePlugin(bot)
             Catch e As Exception
                 Throw New PluginException("Error loading plugin assembly from '{0}': {1}.".Frmt(assemblyPath, e), e)
             End Try

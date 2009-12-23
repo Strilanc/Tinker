@@ -154,10 +154,14 @@
             Dim dataLength = 0
             Dim dataList = New List(Of Byte())(gameDataQueue.Count)
             Dim outgoingData = New List(Of GameTickDatum)(gameDataQueue.Count)
-            While gameDataQueue.Count > 0 _
-                  AndAlso dataLength + gameDataQueue.Peek().Data.Length < PacketSocket.DefaultBufferSize - 20 '[20 includes headers and a small safety margin]
-                Dim e = gameDataQueue.Dequeue()
+            While gameDataQueue.Count > 0
+                Dim e = gameDataQueue.Peek()
                 Contract.Assume(e IsNot Nothing)
+                If dataLength + e.Data.Length < PacketSocket.DefaultBufferSize - 20 Then '[20 includes headers and a small safety margin]
+                    Exit While
+                End If
+
+                gameDataQueue.Dequeue()
                 outgoingData.Add(e)
 
                 'append client data to broadcast game data

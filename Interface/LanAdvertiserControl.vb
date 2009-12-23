@@ -1,3 +1,4 @@
+<ContractVerification(False)>
 Public Class LanAdvertiserControl
     Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
     Private ReadOnly _manager As Components.LanAdvertiserManager

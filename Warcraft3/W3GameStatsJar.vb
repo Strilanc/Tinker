@@ -156,7 +156,7 @@
             Dim playableWidth = CInt(vals("playable width"))
             Dim playableHeight = CInt(vals("playable height"))
             Dim xoroChecksum = CUInt(vals("xoro checksum"))
-            Dim sha1Checksum = CType(vals("sha1 checksum"), Byte()).AssumeNotNull.AsReadableList
+            Dim sha1Checksum = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
             Dim relativePath = CStr(vals("relative path")).AssumeNotNull
             Dim hostName = CStr(vals("host name")).AssumeNotNull
             Contract.Assume(sha1Checksum.Count = 20)

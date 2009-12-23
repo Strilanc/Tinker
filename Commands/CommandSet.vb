@@ -26,6 +26,7 @@
             Dim rest = argument.Substring(Math.Min(i + 1, argument.Length))
             Dim command As Command(Of T) = Nothing
             If Not _commandMap.TryGetValue(head, command) Then Return False
+            Contract.Assume(command IsNot Nothing)
             Return command.IsArgumentPrivate(rest)
         End Function
 

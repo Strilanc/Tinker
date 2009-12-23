@@ -2,123 +2,73 @@
     Public NotInheritable Class Client
         Inherits FutureDisposable
 
-        Public Event ReceivedWardenData(ByVal wardenData As IReadableList(Of Byte))
-        Public Event Failed(ByVal e As Exception)
+        Public Event ReceivedWardenData(ByVal sender As Warden.Client, ByVal wardenData As IReadableList(Of Byte))
+        Public Event Failed(ByVal sender As Warden.Client, ByVal e As Exception)
         Public Event Disconnected(ByVal sender As Warden.Client, ByVal expected As Boolean, ByVal reason As String)
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly _socket As PacketSocket
-        Private ReadOnly _logger As Logger
-        Private ReadOnly _cookie As UInt32
-        Private ReadOnly _seed As UInt32
-        Private ReadOnly _keepAlive As New DeadManSwitch(period:=30.Seconds)
-        Private _connected As Boolean
+        Private ReadOnly _socket As IFuture(Of Warden.Socket)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(inQueue IsNot Nothing)
-            Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
-            Contract.Invariant(_logger IsNot Nothing)
-            Contract.Invariant(_keepAlive IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal socket As PacketSocket,
+        Public Sub New(ByVal remoteHost As String,
+                       ByVal remotePort As UInt16,
                        ByVal seed As UInt32,
                        ByVal cookie As UInt32,
                        Optional ByVal logger As Logger = Nothing)
-            Contract.Assume(socket IsNot Nothing)
-            Me._logger = If(logger, New Logger())
-            Me._socket = socket
-            Me._cookie = cookie
-            Me._seed = seed
+            Contract.Assume(remoteHost IsNot Nothing)
+            logger = If(logger, New Logger)
 
-            AddHandler _socket.Disconnected, Sub(sender, expected, reason) outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
-            AddHandler _keepAlive.Triggered, Sub()
-                                                 _keepAlive.Arm()
-                                                 _socket.WritePacket({0, 0, BNLSPacketId.Null})
-                                             End Sub
+            logger.Log("Connecting to bnls server at {0}:{1}...".Frmt(remoteHost, remotePort), LogMessageType.Positive)
 
-            Start()
-        End Sub
+            Dim futureSocket = From tcpClient In AsyncTcpConnect(remoteHost, remotePort)
+                               Select New PacketSocket(stream:=tcpClient.GetStream,
+                                                       localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                       remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                       timeout:=5.Minutes,
+                                                       numBytesBeforeSize:=0,
+                                                       numSizeBytes:=2,
+                                                       logger:=logger,
+                                                       Name:="BNLS")
+            _socket = From socket In futureSocket
+                      Select New Warden.Socket(socket, seed, seed, logger)
 
-        Private Sub Start()
-            Me._keepAlive.Arm()
-            WritePacket(ClientPacket.MakeFullServiceConnect(_cookie, _seed))
-            BeginReading()
-        End Sub
+            Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler = Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
+            Dim failForward As Warden.Socket.FailedEventHandler = Sub(sender, e) RaiseEvent Failed(Me, e)
+            Dim disconnectForward As Warden.Socket.DisconnectedEventHandler = Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
+            _socket.CallOnValueSuccess(
+                Sub(wardenClient)
+                    logger.Log("Connected to bnls server.", LogMessageType.Positive)
 
-        '''<summary>Asynchronously reads packets until an exception occurs, raising events to the outside.</summary>
-        Private Sub BeginReading()
-            AsyncProduceConsumeUntilError(
-                producer:=AddressOf AsyncReadPacket,
-                consumer:=Function(packet) inQueue.QueueAction(Sub() OnReceivePacket(packet)),
-                errorHandler:=Sub(exception) outQueue.QueueAction(Sub() RaiseEvent Failed(exception))
+                    AddHandler wardenClient.ReceivedWardenData, receiveForward
+                    AddHandler wardenClient.Failed, failForward
+                    AddHandler wardenClient.Disconnected, disconnectForward
+                    wardenClient.FutureDisposed.CallWhenReady(
+                        Sub()
+                            RemoveHandler wardenClient.ReceivedWardenData, receiveForward
+                            RemoveHandler wardenClient.Failed, failForward
+                            RemoveHandler wardenClient.Disconnected, disconnectForward
+                        End Sub)
+                        End Sub
+            ).Catch(
+                Sub(exception)
+                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, exception), LogMessageType.Problem)
+                End Sub
             )
         End Sub
-        Private Function AsyncReadPacket() As IFuture(Of ServerPacket)
-            Return _socket.AsyncReadPacket().Select(
-                Function(packetData)
-                    'Check
-                    If packetData.Count < 3 Then
-                        Throw New IO.InvalidDataException("Packet doesn't have a header.")
-                    ElseIf packetData(2) <> BNLSPacketId.Warden Then
-                        Throw New IO.InvalidDataException("Not a bnls warden packet.")
-                    End If
 
-                    'Parse, log, return
-                    Dim pk = ServerPacket.FromData(packetData.SubView(3))
-                    _logger.Log(Function() "Received {0} from {1}".Frmt(pk.Id, _socket.Name), LogMessageType.DataEvent)
-                    _logger.Log(pk.ToString, LogMessageType.DataParsed)
-                    Return pk
-                End Function)
-        End Function
-        Private Sub OnReceivePacket(ByVal packet As ServerPacket)
-            Contract.Requires(packet IsNot Nothing)
-
-            If packet.Cookie <> _cookie Then
-                Throw New IO.InvalidDataException("Incorrect cookie from BNLS server.")
-            ElseIf packet.Result <> 0 Then
-                Throw New IO.IOException("BNLS server indicated there was a failure.")
-            End If
-
-            Select Case packet.Id
-                Case WardenPacketId.FullServiceConnect
-                    If _connected Then Throw New IO.InvalidDataException("Unexpected {0} from {1}.".Frmt(packet.Id, _socket.Name))
-                    _connected = True
-                Case WardenPacketId.FullServiceHandleWardenPacket
-                    If Not _connected Then Throw New IO.InvalidDataException("Unexpected {0} from {1}.".Frmt(packet.Id, _socket.Name))
-                    outQueue.QueueAction(Sub() RaiseEvent ReceivedWardenData(packet.ResponseData))
-                Case Else
-                    Throw New IO.InvalidDataException("Unrecognized packet type received from {0}: {1}.".Frmt(_socket.Name, packet.Id))
-            End Select
-        End Sub
-
-        Private Sub WritePacket(ByVal packet As ClientPacket)
-            Contract.Requires(packet IsNot Nothing)
-
-            Try
-                _logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
-                _logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
-                _socket.WritePacket(Concat(Of Byte)({0, 0, BNLSPacketId.Warden, packet.Id}, packet.Payload.Data.ToArray))
-                _keepAlive.Reset()
-
-            Catch e As Exception
-                _socket.Disconnect(expected:=False, reason:="Error sending {0} for {1}: {2}".Frmt(packet.Id, _socket.Name, e))
-                Throw
-            End Try
-        End Sub
-        Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As ifuture
+        Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As IFuture
             Contract.Requires(wardenData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() WritePacket(ClientPacket.MakeFullServiceHandleWardenPacket(_cookie, wardenData)))
+            Return _socket.Select(Function(wardenClient) wardenClient.QueueSendWardenData(wardenData))
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
             If finalizing Then Return Nothing
-            Return inQueue.QueueAction(Sub()
-                                           _socket.Disconnect(expected:=True, reason:="Disposed")
-                                       End Sub)
+            Dim result = _socket.CallOnValueSuccess(Sub(wardenClient) wardenClient.Dispose())
+            result.SetHandled()
+            Return result
         End Function
     End Class
 End Namespace

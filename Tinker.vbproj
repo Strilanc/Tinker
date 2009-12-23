@@ -182,6 +182,7 @@
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\StringJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
+    <Compile Include="Warden\Warden Client.vb" />
     <Compile Include="Warden\Warden Enums.vb" />
     <Compile Include="Warden\Warden Server Packet.vb" />
     <Compile Include="Bot\Commands\Generic Commands.vb" />
@@ -248,7 +249,7 @@
     <Compile Include="Warcraft3\W3GameStats.vb" />
     <Compile Include="Warcraft3\W3Slot.vb" />
     <Compile Include="Warcraft3\W3Socket.vb" />
-    <Compile Include="Warden\Warden Client.vb" />
+    <Compile Include="Warden\Warden Socket.vb" />
     <Compile Include="Warden\Warden Client Packet.vb" />
     <Compile Include="Bot\Commands\CKL Commands.vb" />
     <Compile Include="Commands\CommandSet.vb" />

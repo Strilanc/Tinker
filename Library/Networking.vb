@@ -28,6 +28,8 @@ Public Module NetworkingCommon
     End Sub
 
     Private Function GetInternalIPAddress() As Net.IPAddress
+        Contract.Ensures(Contract.Result(Of Net.IPAddress)() IsNot Nothing)
+
         Dim interfaces = NetworkInterface.GetAllNetworkInterfaces
         Contract.Assume(interfaces IsNot Nothing)
         Dim addr = (From nic In interfaces
@@ -39,7 +41,7 @@ Public Module NetworkingCommon
                     Where a IsNot Nothing
                     ).FirstOrDefault()
         If addr IsNot Nothing Then
-            Return addr.Address
+            Return addr.Address.AssumeNotNull
         Else
             Return Net.IPAddress.Loopback
         End If

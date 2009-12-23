@@ -65,6 +65,7 @@ Namespace CKL
                                          ByVal acceptedClient As Net.Sockets.TcpClient) Handles Accepter.AcceptedConnection
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(acceptedClient IsNot Nothing)
+            Contract.Assume(acceptedClient.Client IsNot Nothing)
             Dim socket = New PacketSocket(stream:=acceptedClient.GetStream,
                                           localendpoint:=CType(acceptedClient.Client.LocalEndPoint, Net.IPEndPoint),
                                           remoteendpoint:=CType(acceptedClient.Client.RemoteEndPoint, Net.IPEndPoint),
