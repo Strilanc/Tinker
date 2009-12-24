@@ -1,4 +1,5 @@
 ﻿Imports Tinker.Components
+Imports Tinker.Bot
 
 Namespace Lan
     Public Class AdvertiserManager
@@ -7,6 +8,7 @@ Namespace Lan
 
         Public Shared ReadOnly LanCommands As New Lan.AdvertiserCommands()
 
+        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly _name As InvariantString
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _advertiser As Lan.Advertiser
@@ -14,6 +16,7 @@ Namespace Lan
         Private ReadOnly _control As Control
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_advertiser IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_bot IsNot Nothing)
@@ -87,7 +90,25 @@ Namespace Lan
             Next hook
             _advertiser.Dispose()
             _control.Dispose()
+            QueueSetAutomatic(False)
             Return Nothing
+        End Function
+
+        Private _autoHook As IFuture(Of IDisposable)
+        Private Sub SetAutomatic(ByVal slaved As Boolean)
+            If slaved = (_autoHook IsNot Nothing) Then Return
+            If slaved Then
+                _autoHook = _bot.QueueCreateGameSetsAsyncView(
+                        adder:=Sub(sender, server, gameSet) _advertiser.QueueAddGame(gameSet.GameSettings.GameDescription).SetHandled(),
+                        remover:=Sub(sender, server, gameSet) _advertiser.QueueRemoveGame(gameSet.GameSettings.GameDescription.GameId).SetHandled())
+            Else
+                _autoHook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                _autoHook = Nothing
+            End If
+        End Sub
+        Public Function QueueSetAutomatic(ByVal slaved As Boolean) As IFuture
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetAutomatic(slaved))
         End Function
     End Class
 End Namespace

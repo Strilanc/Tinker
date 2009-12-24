@@ -17,24 +17,28 @@ Imports Tinker.Commands
 
 Namespace WC3
     Public NotInheritable Class ServerCommands
-        Inherits CommandSet(Of WC3.GameServer)
+        Inherits CommandSet(Of WC3.GameServerManager)
 
         Public Sub New()
             'AddCommand(OpenInstance)
             'AddCommand(StartListening)
             'AddCommand(StopListening)
             ' AddCommand(CloseInstance)
-            'AddCommand(Bot)
+            AddCommand(Add)
         End Sub
 
-        'Private Shared ReadOnly Bot As New DelegatedCommand(Of WC3.GameServer)(
-        'Name:="Bot",
-        'Format:="...",
-        'Description:="Forwards commands to the main bot.",
-        'Permissions:="root:1",
-        'func:=Function(client, user, argument)
-        'Return client.Parent.BotCommands.invoke(client.Parent, user, argument)
-        'End Function)
+        Private Shared ReadOnly Add As New DelegatedTemplatedCommand(Of WC3.GameServerManager)(
+            Name:="Add",
+            template:=Concat({"name=<game name>", "map=<search query>"},
+                         WC3.GameSettings.PartialArgumentTemplates,
+                         WC3.GameStats.PartialArgumentTemplates).StringJoin(" "),
+            Description:="Adds a game set to the server.",
+            extraHelp:=Concat(New String() {},
+                          WC3.GameSettings.PartialArgumentHelp,
+                          WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine),
+            func:=Function(target, user, argument)
+                      Return target.QueueAddGameFromArguments(argument, user).select(Function() "Game added.")
+                  End Function)
 
         'Private ReadOnly StartListening As New DelegatedTemplatedCommand(Of WC3.GameServer)(
         'Name:="Listen",

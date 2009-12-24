@@ -118,8 +118,8 @@ Namespace Bot
 
         Private Shared ReadOnly CreateLan As New DelegatedTemplatedCommand(Of MainBot)(
             Name:="CreateLan",
-            template:="name -receiver=localhost",
-            Description:="Creates a lan advertiser.",
+            template:="name -receiver=localhost -auto",
+            Description:="Creates a lan advertiser. -Auto causes the advertiser to automatically advertise any games hosted by the bot.",
             Permissions:="root:5",
             func:=Function(target, user, argument)
                       Dim argName = argument.RawValue(0)
@@ -127,6 +127,7 @@ Namespace Bot
 
                       Dim advertiser = New Lan.Advertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
                       Dim manager = New Lan.AdvertiserManager(argName, target, advertiser)
+                      If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
                       Return target.Components.QueueAddComponent(manager).EvalOnSuccess(Function() "Created lan advertiser.")
                   End Function)
 

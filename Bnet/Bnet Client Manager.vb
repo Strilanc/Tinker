@@ -1,7 +1,7 @@
 ﻿Imports Tinker.Components
 
 Namespace Bnet
-    Public Class ClientManager
+    Public NotInheritable Class ClientManager
         Inherits FutureDisposable
         Implements IBotComponent
 
@@ -61,7 +61,7 @@ Namespace Bnet
         End Property
         Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger
             Get
-                Return _client.logger
+                Return _client.Logger
             End Get
         End Property
         Public ReadOnly Property HasControl As Boolean Implements IBotComponent.HasControl
@@ -87,7 +87,7 @@ Namespace Bnet
             Contract.Requires(vals IsNot Nothing)
 
             Dim id = CType(vals("event id"), Bnet.Packet.ChatEventId)
-            Dim user = _client.Profile.users(CStr(vals("username")))
+            Dim user = _client.Profile.Users(CStr(vals("username")))
             Dim text = CStr(vals("text"))
 
             'Check

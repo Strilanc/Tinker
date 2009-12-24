@@ -9,6 +9,7 @@ Namespace Lan
             AddCommand(Add)
             AddCommand(Remove)
             AddCommand(Host)
+            AddCommand(Auto)
         End Sub
 
         Public Overloads Function AddCommand(ByVal command As Command(Of Lan.Advertiser)) As IDisposable
@@ -18,6 +19,21 @@ Namespace Lan
                     command:=command,
                     projection:=Function(manager) manager.Advertiser))
         End Function
+
+        Private Shared ReadOnly Auto As New DelegatedTemplatedCommand(Of Lan.AdvertiserManager)(
+            Name:="Auto",
+            template:="On|Off",
+            Description:="Causes the advertiser to automatically advertise all games on any server when 'On'.",
+            func:=Function(target, user, argument)
+                      Select Case New InvariantString(argument.RawValue(0))
+                          Case "On"
+                              Return target.QueueSetAutomatic(True).EvalOnSuccess(Function() "Now automatically advertising games.")
+                          Case "Off"
+                              Return target.QueueSetAutomatic(False).EvalOnSuccess(Function() "Now not automatically advertising games.")
+                          Case Else
+                              Throw New ArgumentException("Must specify 'On' or 'Off' as an argument.")
+                      End Select
+                  End Function)
 
         Private Shared ReadOnly Add As New DelegatedTemplatedCommand(Of Lan.Advertiser)(
             Name:="Add",

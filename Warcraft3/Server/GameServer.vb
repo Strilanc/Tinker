@@ -485,7 +485,7 @@ Namespace WC3
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return _viewGameSets.BeginSync(adder:=Sub(sender, item) adder(Me, item),
-                                                 remover:=Sub(sender, item) remover(Me, item))
+                                           remover:=Sub(sender, item) remover(Me, item))
         End Function
         Public Function QueueCreateGameSetsAsyncView(ByVal adder As Action(Of GameServer, GameSet),
                                                      ByVal remover As Action(Of GameServer, GameSet)) As IFuture(Of IDisposable)

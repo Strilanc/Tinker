@@ -79,5 +79,42 @@ Namespace Bot
             Return this.Components.QueueGetOrConstructComponent(Of WC3.GameServerManager)(
                 factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer, this))
         End Function
+        <Extension()>
+        Public Function QueueCreateGameSetsAsyncView(ByVal this As MainBot,
+                                                     ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
+                                                     ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As IFuture(Of IDisposable)
+            Contract.Requires(this IsNot Nothing)
+            Contract.Requires(adder IsNot Nothing)
+            Contract.Requires(remover IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+
+            Dim inQueue = New TaskedCallQueue()
+            Dim hooks = New List(Of IFuture(Of IDisposable))
+            Dim viewHook = this.Components.QueueCreateAsyncView(Of WC3.GameServerManager)(
+                adder:=Sub(sender, manager) inQueue.QueueAction(
+                           Sub()
+                               If hooks Is Nothing Then Return
+                               Dim gameSetLink = manager.Server.QueueCreateGameSetsAsyncView(
+                                        adder:=Sub(sender2, gameSet) adder(this, sender2, gameSet),
+                                        remover:=Sub(sender2, gameSet) remover(this, sender2, gameSet))
+                               'async remove when view is disposed
+                               hooks.Add(gameSetLink)
+                               'async auto-remove when server is disposed
+                               Call {gameSetLink, manager.Server.FutureDisposed}.Defuturized.QueueCallOnSuccess(inQueue, Sub() gameSetLink.Value.Dispose()).SetHandled()
+                           End Sub),
+                remover:=Sub(sender, server)
+                             'no action needed
+                         End Sub)
+            hooks.Add(viewHook)
+
+            Return viewHook.Select(Function() New DelegatedDisposable(Sub() inQueue.QueueAction(
+                Sub()
+                    If hooks Is Nothing Then Return
+                    For Each hook In hooks
+                        hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                    Next hook
+                    hooks = Nothing
+                End Sub)))
+        End Function
     End Module
 End Namespace

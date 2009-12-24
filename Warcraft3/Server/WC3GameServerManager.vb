@@ -133,7 +133,7 @@ Namespace WC3
         End Property
 
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
-            Return ServerCommands.Invoke(_gameServer, user, argument)
+            Return ServerCommands.Invoke(Me, user, argument)
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
