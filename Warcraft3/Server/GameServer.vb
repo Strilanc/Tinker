@@ -1,4 +1,5 @@
 Imports Tinker.Links
+Imports Tinker.Pickling
 
 Namespace WC3
     Public NotInheritable Class GameServer

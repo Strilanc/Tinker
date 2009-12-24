@@ -117,7 +117,7 @@ Namespace Bnet
         End Sub
 
         Private Sub txtTalk_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtTalk.KeyPress
-            If e.KeyChar <> ChrW(Keys.Enter) Then Return
+            If e.KeyChar <> Microsoft.VisualBasic.ChrW(Keys.Enter) Then Return
             If txtTalk.Text = "" Then Return
             If _client Is Nothing Then Return
             e.Handled = True
@@ -149,7 +149,7 @@ Namespace Bnet
                                 lstState.Items.Add(g.Name)
                                 lstState.Items.Add(g.GameStats.relativePath)
                                 lstState.Items.Add(If(p, "Private", "Public"))
-                                lstState.Items.Add("Refreshed: {0}".Frmt(Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
+                                lstState.Items.Add("Refreshed: {0}".Frmt(DateTime.Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
                             End If
                             numPrimaryStates = lstState.Items.Count
                         Case Else

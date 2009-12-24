@@ -1,4 +1,6 @@
-﻿Namespace Warden
+﻿Imports Tinker.Pickling
+
+Namespace Warden
     Public NotInheritable Class ClientPacket
         Private ReadOnly _id As WardenPacketId
         Private ReadOnly _payload As IPickle(Of Object)

@@ -13,6 +13,8 @@
 ''You should have received a copy of the GNU General Public License
 ''along with this program.  If not, see http://www.gnu.org/licenses/
 
+Imports Tinker.Pickling
+
 Namespace Bnet
     Public Enum ClientState As Integer
         Disconnected
@@ -268,7 +270,7 @@ Namespace Bnet
                 _bnetRemoteHostName = remoteHost
 
                 'Establish connection
-                logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
+                Logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
                 If remoteHost.Contains(":"c) Then
                     Dim remotePortTemp = remoteHost.Split(":"c)(1)
                     Contract.Assume(remotePortTemp IsNot Nothing) 'remove once static verifier understands String.split
@@ -356,7 +358,7 @@ Namespace Bnet
             Me._userCredentials = credentials
             ChangeState(ClientState.WaitingForUserAuthenticationBegin)
             SendPacket(Bnet.Packet.MakeAccountLogOnBegin(credentials))
-            logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
+            Logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
             Return _futureLoggedIn
         End Function
         Public Function QueueLogOn(ByVal credentials As ClientCredentials) As IFuture
@@ -389,7 +391,7 @@ Namespace Bnet
             _futureAdvertisedGame.TrySetFailed(New InvalidOperationException("Disconnected before game creation completed ({0}).".Frmt(reason)))
 
             ChangeState(ClientState.Disconnected)
-            logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
+            Logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
             If _wardenClient IsNot Nothing Then
                 _wardenClient.Dispose()
                 _wardenClient = Nothing
@@ -401,7 +403,7 @@ Namespace Bnet
                 _allowRetryConnect = False
                 Call 5.Seconds.AsyncWait.CallWhenReady(
                     Sub()
-                        logger.Log("Attempting to reconnect...", LogMessageType.Positive)
+                        Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
                         QueueConnectAndLogOn(_bnetRemoteHostName, Me._userCredentials.Regenerate())
                     End Sub
                 )
@@ -670,18 +672,18 @@ Namespace Bnet
 
             'Pack or borrow CD Keys
             Dim futureKeys As IFuture(Of CKL.WC3CredentialPair)
-            If profile.CKLServerAddress Like "*:#*" Then
-                Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
-                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
+            If Profile.CKLServerAddress Like "*:#*" Then
+                Dim remoteHost = Profile.CKLServerAddress.Split(":"c)(0)
+                Dim port = UShort.Parse(Profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
                 futureKeys = CKL.Client.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
                 futureKeys.CallOnSuccess(
-                    Sub() logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
+                    Sub() Logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
                 ).Catch(
                     Sub(exception) Disconnect(expected:=False, reason:="Error borrowing keys: {0}".Frmt(exception.Message))
                 )
             Else
-                Dim roc = profile.cdKeyROC.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
-                Dim tft = profile.cdKeyTFT.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
+                Dim roc = Profile.cdKeyROC.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
+                Dim tft = Profile.cdKeyTFT.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
                 If roc.Product <> ProductType.Warcraft3ROC Then Throw New IO.InvalidDataException("Invalid ROC cd key.")
                 If tft.Product <> ProductType.Warcraft3TFT Then Throw New IO.InvalidDataException("Invalid TFT cd key.")
                 futureKeys = New CKL.WC3CredentialPair(roc, tft).Futurized
@@ -858,7 +860,7 @@ Namespace Bnet
         Private Sub ReceiveEnterChat(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            logger.Log("Entered chat", LogMessageType.Typical)
+            Logger.Log("Entered chat", LogMessageType.Typical)
             EnterChannel(Profile.initialChannel)
         End Sub
 #End Region
@@ -888,7 +890,7 @@ Namespace Bnet
 
             If succeeded Then
                 If _state = ClientState.CreatingGame Then
-                    logger.Log("Finished creating game.", LogMessageType.Positive)
+                    Logger.Log("Finished creating game.", LogMessageType.Positive)
                     ChangeState(ClientState.AdvertisingGame)
                     If Not _advertisedPrivate Then _advertiseRefreshTimer.Start()
                     _futureAdvertisedGame.TrySetSucceeded()
@@ -925,7 +927,7 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Dim msg = "MESSAGE BOX FROM BNET: " + CStr(vals("caption")) + ": " + CStr(vals("text"))
-            logger.Log(msg, LogMessageType.Problem)
+            Logger.Log(msg, LogMessageType.Problem)
         End Sub
 #End Region
 

@@ -1,4 +1,6 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+
+Namespace WC3
     Partial Public NotInheritable Class Player
         Public Property Ready As Boolean
 
@@ -11,8 +13,8 @@
 
         Public Event ReceivedReady(ByVal sender As Player)
         Private Sub ReceiveReady(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
+            Contract.Requires(pickle IsNot Nothing)
+            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
             Ready = True
             logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'

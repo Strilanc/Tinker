@@ -1,4 +1,6 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+
+Namespace WC3
     '''<summary>Game actions which can be performed by players.</summary>
     '''<original-source> http://www.wc3c.net/tools/specs/W3GActions.txt </original-source>
     Public Enum W3GameActionId As Byte

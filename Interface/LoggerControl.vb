@@ -134,9 +134,10 @@ Public Class LoggerControl
             Me._logger = logger
             If logger IsNot Nothing Then
                 _logFilename = "{0} {1}.txt".Frmt(name, DateTime.Now().ToString("MMM d, yyyy, HH-mm-ss", CultureInfo.InvariantCulture))
-                tips.SetToolTip(chkSaveFile, "Outputs logged messages to a file." + vbNewLine + _
-                                             "Unchecking does not remove messages from the file." + vbNewLine + _
-                                             "Current Target File: '(Documents)\{0}\Logs\{1}'".Frmt(Application.ProductName, _logFilename))
+                tips.SetToolTip(chkSaveFile, {"Outputs logged messages to a file.",
+                                              "Unchecking does not remove messages from the file.",
+                                              "Current Target File: '(Documents)\{0}\Logs\{1}'"
+                                             }.StringJoin(Environment.NewLine).Frmt(Application.ProductName, _logFilename))
             End If
             If dataEventsMode <> CallbackMode.Unspecified Then
                 callbackModeMap(LogMessageType.DataEvent) = dataEventsMode

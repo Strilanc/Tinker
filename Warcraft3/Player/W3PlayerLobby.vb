@@ -1,4 +1,6 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+
+Namespace WC3
     Partial Public NotInheritable Class Player
         Private knowMapState As Boolean
         Private mapDownloadPosition As Integer = -1
@@ -69,7 +71,7 @@
             mapUploadPosition = Math.Max(mapDownloadPosition, mapUploadPosition)
             If Not knowMapState Then
                 Dim hasMap = mapDownloadPosition = settings.Map.FileSize
-                If Not hasMap AndAlso Not settings.allowDownloads Then
+                If Not hasMap AndAlso Not settings.AllowDownloads Then
                     Disconnect(True, PlayerLeaveType.Disconnect, "no dls allowed")
                     Return
                 End If
@@ -78,7 +80,7 @@
                 scheduler.SetLink(Index, Game.LocalTransferClientKey, linked:=True).SetHandled()
                 knowMapState = True
             ElseIf mapDownloadPosition = settings.Map.FileSize Then
-                logger.Log("{0} finished downloading the map.".Frmt(name), LogMessageType.Positive)
+                logger.Log("{0} finished downloading the map.".Frmt(Name), LogMessageType.Positive)
                 scheduler.SetNotTransfering(Index, completed:=True).SetHandled()
             Else
                 Dim progress = New FiniteDouble(mapDownloadPosition)

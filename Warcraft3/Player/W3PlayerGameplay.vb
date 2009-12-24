@@ -1,4 +1,6 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+
+Namespace WC3
     Public NotInheritable Class TickRecord
         Public ReadOnly length As UShort
         Public ReadOnly startTime As Integer
@@ -55,8 +57,8 @@
         End Sub
 
         Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
+            Contract.Requires(pickle IsNot Nothing)
+            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
             Dim actions = CType(vals("actions"), IEnumerable(Of GameAction))
             Contract.Assume(actions IsNot Nothing)
             For Each action In actions
@@ -65,7 +67,7 @@
             RaiseEvent ReceivedGameData(Me, pickle.Data.ToArray.SubArray(4))
         End Sub
         Private Sub ReceiveTock(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Contract.Requires(Pickle IsNot Nothing)
+            Contract.Requires(pickle IsNot Nothing)
             If tickQueue.Count <= 0 Then
                 logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(Name), LogMessageType.Problem)
                 Disconnect(True, PlayerLeaveType.Disconnect, "overticked")

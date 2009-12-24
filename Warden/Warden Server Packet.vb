@@ -1,4 +1,6 @@
-﻿Namespace Warden
+﻿Imports Tinker.Pickling
+
+Namespace Warden
     <DebuggerDisplay("{ToString}")>
     Public Class ServerPacket
         Private Shared ReadOnly dataJar As New TupleJar("data",

@@ -1,4 +1,6 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+
+Namespace WC3
     Public NotInheritable Class GameStatsJar
         Inherits BaseJar(Of GameStats)
 

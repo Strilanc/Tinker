@@ -1,4 +1,6 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+
+Namespace WC3
     <ContractClass(GetType(W3ConnectionAccepterBase.ContractClass))>
     Public MustInherit Class W3ConnectionAccepterBase
         Private Shared ReadOnly FirstPacketTimeout As TimeSpan = 10.Seconds

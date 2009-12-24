@@ -219,7 +219,7 @@ Public Class SettingsForm
                         + "\t'root' - Control important bot functions like connect/disconnect\n" _
                         + "\t'users' - Add/remove users from bot\n" _
                         + "\t'games' - Host, create and control games\n" _
-                    + "").Replace("\n", Environment.NewLine).Replace("\t", vbTab))
+                    + "").Replace("\n", Environment.NewLine).Replace("\t", Microsoft.VisualBasic.vbTab))
     End Sub
 
     Private Sub btnPluginsHelp_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnPluginsHelp.Click
@@ -229,7 +229,7 @@ Public Class SettingsForm
                         + "\tThe name of the plugin. Used to referense the plugin in commands such as loadplugin.\n" _
                     + "Location: \n" _
                         + "\tThe location of the plugin's DLL.\n" _
-                    + "").Replace("\n", Environment.NewLine).Replace("\t", vbTab))
+                    + "").Replace("\n", Environment.NewLine).Replace("\t", Microsoft.VisualBasic.vbTab))
     End Sub
 
     Private Sub btnImportPlugin_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnImportPlugin.Click

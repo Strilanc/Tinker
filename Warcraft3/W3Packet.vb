@@ -1,3 +1,5 @@
+Imports Tinker.Pickling
+
 Namespace WC3
     '''<summary>Identifies a warcraft 3 packet type.</summary>
     '''<data>
@@ -698,7 +700,7 @@ Namespace WC3
                     {"state size", CUShort(slots.Count() * 9 + 7)},
                     {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToList()},
                     {"time", CUInt(time)},
-                    {"layout style", If(map.isMelee, 0, 3)},
+                    {"layout style", If(map.IsMelee, 0, 3)},
                     {"num player slots", If(Not hideSlots, map.NumPlayerSlots, If(map.NumPlayerSlots = 12, 11, 12))}})
         End Function
         <Pure()>
@@ -941,7 +943,7 @@ Namespace WC3
             Return New Dictionary(Of InvariantString, Object) From {
                     {"team index", slot.Team},
                     {"color", If(slot.Team = slot.ObserverTeamIndex, slot.ObserverTeamIndex, slot.color)},
-                    {"race", If(slot.game.Map.isMelee, slot.race Or slot.Races.Unlocked, slot.race)},
+                    {"race", If(slot.game.Map.IsMelee, slot.race Or slot.Races.Unlocked, slot.race)},
                     {"handicap", slot.handicap},
                     {"is computer", If(slot.Contents.ContentType = SlotContentType.Computer, 1, 0)},
                     {"computer difficulty", slot.Contents.DataComputerLevel},

@@ -1,4 +1,6 @@
-﻿<ContractClass(GetType(PacketHandler(Of ).ContractClass))>
+﻿Imports Tinker.Pickling
+
+<ContractClass(GetType(PacketHandler(Of ).ContractClass))>
 Public MustInherit Class PacketHandler(Of TKey)
     Private ReadOnly handlers As New KeyedEvent(Of TKey, IReadableList(Of Byte))
     Private ReadOnly logger As Logger

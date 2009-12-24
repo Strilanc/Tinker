@@ -1,3 +1,5 @@
+Imports Tinker.Pickling
+
 Namespace WC3
     Public NotInheritable Class Map
         Private ReadOnly _name As InvariantString
@@ -115,7 +117,7 @@ Namespace WC3
         Public ReadOnly Property SizeClassification As SizeClass
             Get
                 '[I don't know if area works for irregular sizes; might be max instead]
-                Select Case playableWidth * playableHeight
+                Select Case PlayableWidth * PlayableHeight
                     Case Is <= 64 * 64 : Return SizeClass.Tiny
                     Case Is <= 128 * 128 : Return SizeClass.Small
                     Case Is <= 160 * 160 : Return SizeClass.Medium
@@ -135,7 +137,7 @@ Namespace WC3
                     Case SizeClass.Large, SizeClass.Huge
                         f = f Or GameTypes.SizeLarge
                 End Select
-                If isMelee Then
+                If IsMelee Then
                     f = f Or GameTypes.TypeMelee
                 Else
                     f = f Or GameTypes.TypeScenario

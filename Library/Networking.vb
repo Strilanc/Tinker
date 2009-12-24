@@ -3,6 +3,7 @@ Imports System.Runtime.CompilerServices
 Imports System.Text
 Imports System.Net.Sockets
 Imports System.Net
+Imports Tinker.Pickling
 
 Public Module NetworkingCommon
     Private cachedExternalIP As Byte()

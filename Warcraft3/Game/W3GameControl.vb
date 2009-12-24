@@ -42,7 +42,7 @@ Namespace WC3
         End Sub
 
         Private Sub txtInput_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtInput.KeyPress
-            If e.KeyChar <> ChrW(Keys.Enter) Then Return
+            If e.KeyChar <> Microsoft.VisualBasic.ChrW(Keys.Enter) Then Return
             If txtInput.Text = "" Then Return
             _game.QueueBroadcastMessage(txtInput.Text)
             txtInput.Text = ""

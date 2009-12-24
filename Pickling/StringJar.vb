@@ -32,7 +32,7 @@ Namespace Pickling
             Dim i = 0
             While size > 0
                 size -= 1
-                data(i) = CByte(Asc(value(i)))
+                data(i) = CByte(Microsoft.VisualBasic.Asc(value(i)))
                 i += 1
             End While
 
@@ -69,7 +69,7 @@ Namespace Pickling
             While outputSize > 0
                 outputSize -= 1
                 Contract.Assume(i < data.Count)
-                cc(i) = Chr(data(i))
+                cc(i) = Microsoft.VisualBasic.Chr(data(i))
                 i += 1
             End While
 

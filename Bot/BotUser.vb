@@ -35,7 +35,7 @@ Public NotInheritable Class BotUser
         value = value.Replace("\", "\/")
         value = value.Replace(SEPARATION_CHAR, "\sep/")
         value = value.Replace(Environment.NewLine, "\n")
-        value = value.Replace(vbTab, "\t")
+        value = value.Replace(Microsoft.VisualBasic.vbTab, "\t")
         value = value.Replace("=", "\eq/")
         Return value
     End Function
@@ -43,7 +43,7 @@ Public NotInheritable Class BotUser
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         value = value.Replace("\eq/", "=")
-        value = value.Replace("\t", vbTab)
+        value = value.Replace("\t", Microsoft.VisualBasic.vbTab)
         value = value.Replace("\n", Environment.NewLine)
         value = value.Replace("\sep/", SEPARATION_CHAR)
         value = value.Replace("\/", "\")

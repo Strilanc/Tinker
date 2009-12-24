@@ -1,10 +1,12 @@
+Imports Tinker.Pickling
+
 Namespace WC3
     Partial Public NotInheritable Class Player
         Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of InvariantString, Object))
 #Region "Networking"
         Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
+            Contract.Requires(pickle IsNot Nothing)
+            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
             RaiseEvent ReceivedNonGameAction(Me, vals)
         End Sub
 
@@ -12,8 +14,8 @@ Namespace WC3
         End Sub
 
         Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Contract.Requires(Pickle IsNot Nothing)
-            Dim vals = CType(Pickle.Value, Dictionary(Of InvariantString, Object))
+            Contract.Requires(pickle IsNot Nothing)
+            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
             Dim leaveType = CType(vals("leave type"), PlayerLeaveType)
             Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
         End Sub
