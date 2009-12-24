@@ -15,7 +15,7 @@ Namespace Lan
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue()
 
         Private createCount As UInteger
-        Private WithEvents refreshTimer As New System.Timers.Timer(3000)
+        Private ReadOnly refreshTimer As New System.Timers.Timer(3000)
 
         Public Event AddedGame(ByVal sender As Lan.Advertiser, ByVal game As LanGame)
         Public Event RemovedGame(ByVal sender As Lan.Advertiser, ByVal game As LanGame)
@@ -62,57 +62,6 @@ Namespace Lan
             End Property
         End Class
 
-        'Private NotInheritable Class AdvertisingLinkMember
-        'Inherits FutureDisposable
-        'Implements IGameSourceSink
-
-        'Private ReadOnly parent As LanAdvertiser
-        'Private ReadOnly games As New HashSet(Of LocalGameDescription)
-
-        'Private Event DisposedLink(ByVal sender As Links.IGameSource, ByVal partner As IGameSink) Implements IGameSource.DisposedLink
-        'Private Event AddedGame(ByVal sender As IGameSource, ByVal game As LocalGameDescription, ByVal server As GameServer) Implements IGameSource.AddedGame
-        'Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As LocalGameDescription, ByVal reason As String) Implements IGameSource.RemovedGame
-
-        'Public Sub New(ByVal parent As LanAdvertiser)
-        ''contract bug wrt interface event implementation requires this:
-        ''Contract.Requires(parent IsNot Nothing)
-        'Contract.Assume(parent IsNot Nothing)
-        'Me.parent = parent
-        'DisposeLink.CreateOneWayLink(parent, Me)
-        'End Sub
-
-        'Public Sub AddGame(ByVal game As LocalGameDescription, ByVal server As GameServer) Implements IGameSourceSink.AddGame
-        ''If games.Contains(game) Then Return
-        ''games.Add(game)
-        ''parent.AddGame(game)
-        ''RaiseEvent AddedGame(Me, game, server)
-        ''If server IsNot Nothing Then
-        ''server.QueueOpenPort(parent.serverListenPort).CallWhenReady(
-        ''Sub(listenException)
-        ''If listenException IsNot Nothing Then
-        ''RemoveGame(game, reason:=listenException.Message)
-        ''End If
-        ''End Sub
-        '')
-        ''End If
-        'End Sub
-        'Public Sub RemoveGame(ByVal game As LocalGameDescription, ByVal reason As String) Implements IGameSourceSink.RemoveGame
-        ''If Not games.Contains(game) Then Return
-        ''games.Remove(game)
-        ''parent.RemoveGame(game)
-        ''RaiseEvent RemovedGame(Me, game, reason)
-        'End Sub
-        'Public Sub SetAdvertisingOptions(ByVal [private] As Boolean) Implements IGameSourceSink.SetAdvertisingOptions
-        ''no distinction between public/private on lan
-        'End Sub
-
-        'Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
-        'If finalizing Then Return Nothing
-        'RaiseEvent DisposedLink(Me, Nothing)
-        'Return Nothing
-        'End Function
-        'End Class
-
         Public Sub New(Optional ByVal defaultTargetHost As String = "localhost",
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(defaultTargetHost IsNot Nothing)
@@ -121,6 +70,7 @@ Namespace Lan
             Me._defaultTargetHost = defaultTargetHost
 
             Me.refreshTimer.Start()
+            AddHandler refreshTimer.Elapsed, Sub() inQueue.QueueAction(Sub() RefreshAll())
         End Sub
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
@@ -134,15 +84,11 @@ Namespace Lan
                 End Sub)
         End Function
 
-        'Public Function MakeAdvertisingLinkMember() As IGameSourceSink
-        'Contract.Ensures(Contract.Result(Of IGameSourceSink)() IsNot Nothing)
-        'Return New AdvertisingLinkMember(Me)
-        'End Function
-
         Private Sub AddGame(ByVal game As WC3.LocalGameDescription,
                             Optional ByVal targets As IEnumerable(Of String) = Nothing)
             Contract.Requires(game IsNot Nothing)
             If _games.ContainsKey(game.GameId) Then
+                If _games(game.GameId).GameDescription Is game Then Return
                 Throw New InvalidOperationException("There is already a game being advertised with id = {0}.".Frmt(game.GameId))
             End If
 
@@ -175,7 +121,7 @@ Namespace Lan
             Next id
         End Sub
 
-        Private Sub RefreshAll() Handles refreshTimer.Elapsed
+        Private Sub RefreshAll()
             For Each game In _games.Values
                 Contract.Assume(game IsNot Nothing)
                 RefreshGame(game)

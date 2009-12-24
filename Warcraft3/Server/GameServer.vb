@@ -13,6 +13,7 @@ Namespace WC3
         Private ReadOnly _logger As Logger
         Private ReadOnly _gameSets As New Dictionary(Of UInt32, GameSet)()
         Private ReadOnly _viewGameSets As New AsyncViewableCollection(Of GameSet)(outQueue:=outQueue)
+        Private ReadOnly _viewActiveGameSets As New AsyncViewableCollection(Of GameSet)(outQueue:=outQueue)
         Private ReadOnly _viewGames As New AsyncViewableCollection(Of Tuple(Of GameSet, Game))(outQueue:=outQueue)
         Private ReadOnly _viewPlayers As New AsyncViewableCollection(Of Tuple(Of GameSet, Game, Player))(outQueue:=outQueue)
 
@@ -285,6 +286,19 @@ Namespace WC3
             Dim gameSet = New GameSet(gameSettings)
             _gameSets(id) = gameSet
             _viewGameSets.Add(gameSet)
+            _viewActiveGameSets.Add(gameSet)
+            Dim activeAdder As WC3.GameSet.StateChangedEventHandler = Sub(sender, active) inQueue.QueueAction(
+                Sub()
+                    If _viewActiveGameSets.Contains(sender) <> active Then
+                        If active Then
+                            _viewActiveGameSets.Add(sender)
+                        Else
+                            _viewActiveGameSets.Remove(sender)
+                        End If
+                    End If
+                End Sub)
+            AddHandler gameSet.StateChanged, activeAdder
+
             Dim gameLink = gameSet.QueueCreateGamesAsyncView(
                     adder:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Add(New Tuple(Of GameSet, Game)(gameSet, game))),
                     remover:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Remove(New Tuple(Of GameSet, Game)(gameSet, game))))
@@ -293,12 +307,14 @@ Namespace WC3
                     remover:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(New Tuple(Of GameSet, Game, Player)(gameSet, game, player))))
 
             'Automatic removal
-            _gameSets(id).FutureDisposed.QueueCallWhenReady(inQueue,
+            gameSet.FutureDisposed.QueueCallWhenReady(inQueue,
                 Sub()
                     _gameSets.Remove(id)
                     _viewGameSets.Remove(gameSet)
+                    _viewActiveGameSets.Remove(gameSet)
                     gameLink.CallOnValueSuccess(Sub(link) link.Dispose()).SetHandled()
                     playerLink.CallOnValueSuccess(Sub(link) link.Dispose()).SetHandled()
+                    RemoveHandler gameSet.StateChanged, activeAdder
                 End Sub)
 
             Return gameSet
@@ -493,6 +509,22 @@ Namespace WC3
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CreateGameSetsAsyncView(adder, remover))
+        End Function
+
+        Private Function CreateActiveGameSetsAsyncView(ByVal adder As Action(Of GameServer, GameSet),
+                                                       ByVal remover As Action(Of GameServer, GameSet)) As IDisposable
+            Contract.Requires(adder IsNot Nothing)
+            Contract.Requires(remover IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return _viewActiveGameSets.BeginSync(adder:=Sub(sender, item) adder(Me, item),
+                                                 remover:=Sub(sender, item) remover(Me, item))
+        End Function
+        Public Function QueueCreateActiveGameSetsAsyncView(ByVal adder As Action(Of GameServer, GameSet),
+                                                           ByVal remover As Action(Of GameServer, GameSet)) As IFuture(Of IDisposable)
+            Contract.Requires(adder IsNot Nothing)
+            Contract.Requires(remover IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() CreateActiveGameSetsAsyncView(adder, remover))
         End Function
 
         Private Function CreateGamesAsyncView(ByVal adder As Action(Of GameServer, GameSet, Game),

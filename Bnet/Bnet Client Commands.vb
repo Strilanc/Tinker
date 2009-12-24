@@ -29,6 +29,7 @@ Namespace Bnet
             AddCommand(StartAdvertising)
             AddCommand(StopAdvertising)
             AddCommand(RefreshGamesList)
+            AddCommand(Auto)
         End Sub
 
         Public Overloads Function AddCommand(ByVal command As Command(Of Bnet.Client)) As IDisposable
@@ -232,6 +233,21 @@ Namespace Bnet
                       End If
                   End Function)
 
+        Private Shared ReadOnly Auto As New DelegatedTemplatedCommand(Of Bnet.ClientManager)(
+            Name:="Auto",
+            template:="On|Off",
+            Description:="Causes the client to automatically advertise any games on any server when 'On'.",
+            func:=Function(target, user, argument)
+                      Select Case New InvariantString(argument.RawValue(0))
+                          Case "On"
+                              Return target.QueueSetAutomatic(True).EvalOnSuccess(Function() "Now automatically advertising games.")
+                          Case "Off"
+                              Return target.QueueSetAutomatic(False).EvalOnSuccess(Function() "Now not automatically advertising games.")
+                          Case Else
+                              Throw New ArgumentException("Must specify 'On' or 'Off' as an argument.")
+                      End Select
+                  End Function)
+
         Private Shared ReadOnly LogOn As New DelegatedTemplatedCommand(Of Bnet.Client)(
             Name:="LogOn",
             template:="username password",
@@ -244,27 +260,35 @@ Namespace Bnet
 
         Private Shared ReadOnly Host As New DelegatedTemplatedCommand(Of Bnet.ClientManager)(
             Name:="Host",
-            template:=Concat({"name=<game name>", "map=<search query>", "-private -p"},
+            template:=Concat({"name=<game name>", "map=<search query>"},
                              WC3.GameSettings.PartialArgumentTemplates,
                              WC3.GameStats.PartialArgumentTemplates).StringJoin(" "),
             Description:="Hosts a game in the custom games list. See 'Help Host *' for more help topics.",
             Permissions:="games:1",
-            extraHelp:=Concat({"Private=-Private, -p: Creates a private game instead of a public game."},
-                              WC3.GameSettings.PartialArgumentHelp,
+            extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
                               WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine),
             func:=Function(target, user, argument)
                       Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
                       Dim futureGameSet = (From server In futureServer
                                            Select server.QueueAddGameFromArguments(argument, user)
                                            ).Defuturized
-                      Dim isPrivate = argument.HasOptionalSwitch("private") OrElse argument.HasOptionalSwitch("p")
-                      Dim futureAdvertised = futureGameSet.select(Function(gameSet) target.Client.QueueStartAdvertisingGame(
-                                  gameDescription:=gameSet.GameSettings.GameDescription,
-                                  private:=isPrivate)).Defuturized
-                      futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futuregameset.value.dispose())
-                      Dim futureDesc = futureAdvertised.EvalOnSuccess(Function() futureGameSet.Value.GameSettings.GameDescription)
-                      Return futureDesc.select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.name, desc.GameStats.relativePath))
-                  End Function)
+                      Dim futureAdvertised = futureGameSet.select(
+                          Function(gameSet)
+                              Dim result = target.Client.QueueStartAdvertisingGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                                                                                   isPrivate:=gameSet.GameSettings.IsPrivate)
+                              Dim onStarted As WC3.GameSet.StateChangedEventHandler
+                              onStarted = Sub(sender, active)
+                                              If active Then Return
+                                              RemoveHandler gameset.StateChanged, onStarted
+                                              target.Client.QueueStopAdvertisingGame(id:=gameSet.GameSettings.GameDescription.GameId, reason:="Game Started")
+                                          End Sub
+                              AddHandler gameSet.StateChanged, onStarted
+                              Return result
+                          End Function).Defuturized
+                              futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futuregameset.value.dispose())
+                              Dim futureDesc = futureAdvertised.EvalOnSuccess(Function() futureGameSet.Value.GameSettings.GameDescription)
+                              Return futureDesc.select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.name, desc.GameStats.relativePath))
+                          End Function)
 
         Private Shared ReadOnly Game As New DelegatedPartialCommand(Of Bnet.Client)(
             Name:="Game",
@@ -356,7 +380,7 @@ Namespace Bnet
                           WC3.LocalGameDescription.FromArguments(argument.NamedValue("name"),
                                                           map,
                                                           New WC3.GameStats(map, If(user Is Nothing, Application.ProductName, user.Name.Value), argument)),
-                          [private]:=argument.HasOptionalSwitch("Private") OrElse argument.hasoptionalswitch("p")).EvalOnSuccess(Function() "Started advertising")
+                          isPrivate:=argument.HasOptionalSwitch("Private") OrElse argument.hasoptionalswitch("p")).EvalOnSuccess(Function() "Started advertising")
                   End Function)
 
         Private Shared ReadOnly StopAdvertising As New DelegatedTemplatedCommand(Of Bnet.Client)(

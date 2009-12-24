@@ -14,7 +14,8 @@
                 "-NoDL",
                 "-Permanent -perm",
                 "-reserve -reserve=<name1 name2 ...> -r -r=<name1 name2 ...>",
-                "-teams=#v#... -t=#v#..."
+                "-teams=#v#... -t=#v#...",
+                "-private -p"
             }
         Public Shared ReadOnly PartialArgumentHelp As String() = {
                 "Admin=-Admin, -a, -Admin=user, -a=user: Sets the auto-elevated username. Use no argument to match your name.",
@@ -28,7 +29,8 @@
                 "NoDL=-NoDL: Boots players who don't already have the map.",
                 "Permanent=-Permanent, -Perm: Automatically recreate closed instances and automatically sets the game to private/public as new instances are available.",
                 "Reserve=-Reserve, -r, -Reserve=<user1 user2 ...>, -r=<user1 user2 ...>: Reserves the slots for players or yourself.",
-                "Teams=-Teams=#v#..., -t=#v#...: Sets the initial number of open slots for each team."
+                "Teams=-Teams=#v#..., -t=#v#...: Sets the initial number of open slots for each team.",
+                "Private=-Private, -p: Creates a private game instead of a public game."
             }
 #End Region
 
@@ -51,6 +53,7 @@
         Private ReadOnly _mapMode As String = ""
         Private ReadOnly _useMultiObs As Boolean
         Private ReadOnly _greeting As String
+        Private ReadOnly _isPrivate As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_map IsNot Nothing)
@@ -61,6 +64,8 @@
             Contract.Invariant(_reservations IsNot Nothing)
             Contract.Invariant(_mapMode IsNot Nothing)
             Contract.Invariant(_greeting IsNot Nothing)
+            Contract.Invariant(_numInstances >= 0)
+            Contract.Invariant((_numInstances = 0) = _useInstanceOnDemand)
         End Sub
 
         Public Sub New(ByVal map As Map,
@@ -83,6 +88,7 @@
             Me._usePermanent = argument.HasOptionalSwitch("Permanent") OrElse argument.HasOptionalSwitch("Perm")
             Me._greeting = If(argument.TryGetOptionalNamedValue("Greet"), "").Replace("\n", Environment.NewLine).Replace("\N", Environment.NewLine)
             Dim teamString = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
+            Me._isPrivate = argument.HasOptionalSwitch("p") OrElse argument.HasOptionalSwitch("private")
             If teamString IsNot Nothing Then
                 Me._teamSizes = TeamVersusStringToTeamSizes(teamString)
             End If
@@ -113,6 +119,11 @@
         End Sub
 
 #Region "Properties"
+        Public ReadOnly Property IsPrivate As Boolean
+            Get
+                Return _isPrivate
+            End Get
+        End Property
         Public ReadOnly Property GameDescription As LocalGameDescription
             Get
                 Contract.Ensures(Contract.Result(Of LocalGameDescription)() IsNot Nothing)
@@ -142,6 +153,8 @@
         End Property
         Public ReadOnly Property NumInstances As Integer
             Get
+                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                Contract.Ensures(Contract.Result(Of Integer)() > 0 OrElse UseInstanceOnDemand)
                 Return _numInstances
             End Get
         End Property

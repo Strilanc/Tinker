@@ -452,7 +452,7 @@ Namespace Bnet
                     New UInt32Jar("seconds since creation").Weaken,
                     New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
                     New UInt32Jar("unknown1=1023").Weaken,
-                    New UInt32Jar("use ladder").Weaken,
+                    New UInt32Jar("is ladder").Weaken,
                     New StringJar("name").Weaken,
                     New StringJar("password").Weaken,
                     New TextHexValueJar("num free slots", numdigits:=1).Weaken,

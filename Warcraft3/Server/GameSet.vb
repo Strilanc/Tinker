@@ -9,6 +9,7 @@
         Private ReadOnly _games As New AsyncViewableCollection(Of Game)(outQueue:=outQueue)
         Private ReadOnly _viewPlayers As New AsyncViewableCollection(Of Tuple(Of Game, Player))(outQueue:=outQueue)
         Private allocId As Integer
+        Public Event StateChanged(ByVal sender As GameSet, ByVal acceptingPlayers As Boolean)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_logger IsNot Nothing)
@@ -23,9 +24,11 @@
             Contract.Requires(gameSettings IsNot Nothing)
             Me._gameSettings = gameSettings
             Me._logger = If(logger, New Logger)
+            _activeGameCount = 1
             For i = 0 To gameSettings.NumInstances - 1
                 AddInstance()
             Next i
+            If Not gameSettings.UseInstanceOnDemand Then _activeGameCount -= 1
         End Sub
 
         Public ReadOnly Property GameSettings As GameSettings
@@ -33,6 +36,19 @@
                 Contract.Ensures(Contract.Result(Of GameSettings)() IsNot Nothing)
                 Return _gameSettings
             End Get
+        End Property
+
+        Private _activeGameCount As Integer
+        Private Property ActiveGameCount As Integer
+            Get
+                Return _activeGameCount
+            End Get
+            Set(ByVal value As Integer)
+                If (value = 0) <> (_activeGameCount = 0) Then
+                    outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, acceptingPlayers:=value <> 0))
+                End If
+                _activeGameCount = value
+            End Set
         End Property
 
         Private Function AsyncTryAcceptPlayer(ByVal player As W3ConnectingPlayer) As IFuture(Of Game)
@@ -75,8 +91,11 @@
 
             'AddHandler game.PlayerTalked, AddressOf c_PlayerTalked
             'AddHandler game.PlayerLeft, AddressOf c_PlayerLeft
-            AddHandler game.ChangedState, Sub(sender, newState, oldState) inQueue.QueueAction(
+            AddHandler game.ChangedState, Sub(sender, oldState, newState) inQueue.QueueAction(
                     Sub()
+                        If oldState < GameState.Loading AndAlso newState >= GameState.Loading Then
+                            ActiveGameCount -= 1
+                        End If
                         If newState = GameState.Closed Then
                             _games.Remove(sender)
                         End If
@@ -97,6 +116,7 @@
                     playerLink.CallOnValueSuccess(Sub(link) link.Dispose()).SetHandled()
                 End Sub)
 
+            ActiveGameCount += 1
             Return game
         End Function
 

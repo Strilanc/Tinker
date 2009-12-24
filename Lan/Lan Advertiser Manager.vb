@@ -98,7 +98,7 @@ Namespace Lan
         Private Sub SetAutomatic(ByVal slaved As Boolean)
             If slaved = (_autoHook IsNot Nothing) Then Return
             If slaved Then
-                _autoHook = _bot.QueueCreateGameSetsAsyncView(
+                _autoHook = _bot.QueueCreateActiveGameSetsAsyncView(
                         adder:=Sub(sender, server, gameSet) _advertiser.QueueAddGame(gameSet.GameSettings.GameDescription).SetHandled(),
                         remover:=Sub(sender, server, gameSet) _advertiser.QueueRemoveGame(gameSet.GameSettings.GameDescription.GameId).SetHandled())
             Else

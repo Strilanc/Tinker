@@ -33,7 +33,6 @@ Namespace Bnet
 
     Public NotInheritable Class Client
         Inherits FutureDisposable
-        'Implements IGameSourceSink
 
         Public Shared ReadOnly BnetServerPort As UShort = 6112
         Private Shared ReadOnly RefreshPeriod As TimeSpan = 20.Seconds
@@ -422,7 +421,7 @@ Namespace Bnet
         End Sub
 
         Private Function BeginAdvertiseGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                            ByVal [private] As Boolean) As IFuture
+                                            ByVal isPrivate As Boolean) As IFuture
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
 
@@ -436,6 +435,7 @@ Namespace Bnet
                 Case ClientState.Channel
                     SetReportedListenPort(gameDescription.Port)
                     Me._advertisedGameDescription = gameDescription
+                    Me._advertisedPrivate = isPrivate
                     Me._futureAdvertisedGame.TrySetFailed(New OperationFailedException("Started advertising another game."))
                     Me._futureAdvertisedGame = New FutureAction
                     Me._futureAdvertisedGame.SetHandled()
@@ -515,10 +515,10 @@ Namespace Bnet
             SendPacket(Bnet.Packet.MakeCreateGame3(_advertisedGameDescription))
         End Sub
         Public Function QueueStartAdvertisingGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                          ByVal [private] As Boolean) As IFuture
+                                                  ByVal isPrivate As Boolean) As IFuture
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() BeginAdvertiseGame(gameDescription, [private])).Defuturized
+            Return inQueue.QueueFunc(Function() BeginAdvertiseGame(gameDescription, isPrivate)).Defuturized
         End Function
 
         Private Sub StopAdvertisingGame(ByVal reason As String)
@@ -541,6 +541,16 @@ Namespace Bnet
             Contract.Requires(reason IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() StopAdvertisingGame(reason))
+        End Function
+        Public Function QueueStopAdvertisingGame(ByVal id As UInt32, ByVal reason As String) As IFuture
+            Contract.Requires(reason IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub()
+                                           If _advertisedGameDescription IsNot Nothing AndAlso _advertisedGameDescription.GameId <> id Then
+                                               Throw New InvalidOperationException("The game being advertised does not have that id.")
+                                           End If
+                                           StopAdvertisingGame(reason)
+                                       End Sub)
         End Function
 #End Region
 
@@ -591,37 +601,6 @@ Namespace Bnet
         'Return client.QueueSetUserServer(user, Nothing)
         'End Function
         'End Class
-
-        'Private Event DisposedAdvertisingLink(ByVal sender As IGameSource, ByVal partner As IGameSink) Implements IGameSource.DisposedLink
-        'Private Event AddedGame(ByVal sender As IGameSource, ByVal game As WC3.LocalGameDescription, ByVal server As WC3.GameServer) Implements IGameSource.AddedGame
-        'Private Event RemovedGame(ByVal sender As IGameSource, ByVal game As WC3.LocalGameDescription, ByVal reason As String) Implements IGameSource.RemovedGame
-        'Private Sub _QueueAddGame(ByVal game As WC3.LocalGameDescription, ByVal server As WC3.GameServer) Implements IGameSourceSink.AddGame
-        'inQueue.QueueAction(Sub() BeginAdvertiseGame(game, False, server)).SetHandled()
-        'End Sub
-        'Private Sub _QueueRemoveGame(ByVal game As WC3.LocalGameDescription, ByVal reason As String) Implements IGameSourceSink.RemoveGame
-        'inQueue.QueueAction(Sub() StopAdvertisingGame(reason)).SetHandled()
-        'End Sub
-        'Private Sub _QueueSetAdvertisingOptions(ByVal [private] As Boolean) Implements Links.IGameSourceSink.SetAdvertisingOptions
-        'inQueue.QueueAction(
-        'Sub()
-        'If state <> ClientState.AdvertisingGame And state <> ClientState.CreatingGame Then
-        'Throw New InvalidOperationException("Not advertising any games.")
-        'End If
-
-        '_advertisedPrivate = [private]
-        'Me.OnRefreshTimerTick()
-        'If [private] Then
-        'Me._advertiseRefreshTimer.Stop()
-        'Else
-        'Me._advertiseRefreshTimer.Start()
-        'End If
-        'End Sub
-        ')
-        'End Sub
-        '<Pure()>
-        'Public Sub QueueRemoveAdvertisingPartner(ByVal other As IGameSourceSink)
-        'outQueue.QueueAction(Sub() RaiseEvent DisposedAdvertisingLink(Me, other))
-        'End Sub
         '#End Region
 
 #Region "Networking (Send)"
@@ -651,7 +630,7 @@ Namespace Bnet
             Dim vals = value.Value
             Const LOGON_TYPE_WC3 As UInteger = 2
             If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
-                Throw New IO.InvalidDataException("Invalid state for receiving AUTHENTICATION_BEGIN")
+                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(PacketId.ProgramAuthenticationBegin))
             End If
             ChangeState(ClientState.EnterCDKeys)
 
@@ -737,7 +716,7 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             If _state <> ClientState.WaitingForProgramAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving AUTHENTICATION_FINISHED")
+                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(PacketId.ProgramAuthenticationFinish, _state))
             End If
 
             Dim result = CType(CUInt(vals("result")), Bnet.Packet.ProgramAuthenticationFinishResult)
@@ -776,7 +755,7 @@ Namespace Bnet
             Dim vals = value.Value
 
             If _state <> ClientState.WaitingForUserAuthenticationBegin Then
-                Throw New Exception("Invalid state for receiving ACCOUNT_LOGON_BEGIN")
+                Throw New Exception("Invalid state for receiving {0}".Frmt(PacketId.UserAuthenticationBegin))
             End If
 
             Dim result = CType(vals("result"), Bnet.Packet.UserAuthenticationBeginResult)
@@ -802,6 +781,7 @@ Namespace Bnet
             Dim serverProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
 
             Me._expectedServerPasswordProof = serverProof
+            ChangeState(ClientState.WaitingForUserAuthenticationFinish)
             SendPacket(Bnet.Packet.MakeAccountLogOnFinish(clientProof))
         End Sub
 
@@ -809,7 +789,7 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             If _state <> ClientState.WaitingForUserAuthenticationFinish Then
-                Throw New Exception("Invalid state for receiving ACCOUNT_LOGON_FINISH")
+                Throw New Exception("Invalid state for receiving {0}: {1}".Frmt(PacketId.UserAuthenticationFinish, _state))
             End If
 
             Dim result = CType(vals("result"), Bnet.Packet.UserAuthenticationFinishResult)

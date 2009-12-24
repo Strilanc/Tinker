@@ -1,4 +1,5 @@
 ﻿Imports Tinker.Components
+Imports Tinker.Bot
 
 Namespace Bnet
     Public NotInheritable Class ClientManager
@@ -7,6 +8,7 @@ Namespace Bnet
 
         Private Shared ReadOnly ClientCommands As New Bnet.ClientCommands()
 
+        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _name As InvariantString
         Private ReadOnly _client As Bnet.Client
@@ -14,6 +16,7 @@ Namespace Bnet
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_client IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
@@ -141,6 +144,27 @@ Namespace Bnet
             _client.Dispose()
             _control.Dispose()
             Return Nothing
+        End Function
+
+        Private _autoHook As IFuture(Of IDisposable)
+        Private Sub SetAutomatic(ByVal slaved As Boolean)
+            If slaved = (_autoHook IsNot Nothing) Then Return
+            If slaved Then
+                _autoHook = _bot.QueueCreateActiveGameSetsAsyncView(
+                        adder:=Sub(sender, server, gameSet) _client.QueueStartAdvertisingGame(
+                                     gameDescription:=gameSet.GameSettings.GameDescription,
+                                     isPrivate:=gameSet.GameSettings.IsPrivate).SetHandled(),
+                        remover:=Sub(sender, server, gameSet) _client.QueueStopAdvertisingGame(
+                                     reason:="Auto",
+                                     id:=gameSet.GameSettings.GameDescription.GameId).SetHandled())
+            Else
+                _autoHook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                _autoHook = Nothing
+            End If
+        End Sub
+        Public Function QueueSetAutomatic(ByVal slaved As Boolean) As IFuture
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetAutomatic(slaved))
         End Function
     End Class
 End Namespace

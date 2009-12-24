@@ -80,21 +80,21 @@ Namespace Bot
                 factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer, this))
         End Function
         <Extension()>
-        Public Function QueueCreateGameSetsAsyncView(ByVal this As MainBot,
-                                                     ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
-                                                     ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As IFuture(Of IDisposable)
+        Public Function QueueCreateActiveGameSetsAsyncView(ByVal this As MainBot,
+                                                           ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
+                                                           ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As IFuture(Of IDisposable)
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
 
-            Dim inQueue = New TaskedCallQueue()
+            Dim inQueue = New StartableCallQueue(New TaskedCallQueue())
             Dim hooks = New List(Of IFuture(Of IDisposable))
             Dim viewHook = this.Components.QueueCreateAsyncView(Of WC3.GameServerManager)(
                 adder:=Sub(sender, manager) inQueue.QueueAction(
                            Sub()
                                If hooks Is Nothing Then Return
-                               Dim gameSetLink = manager.Server.QueueCreateGameSetsAsyncView(
+                               Dim gameSetLink = manager.Server.QueueCreateActiveGameSetsAsyncView(
                                         adder:=Sub(sender2, gameSet) adder(this, sender2, gameSet),
                                         remover:=Sub(sender2, gameSet) remover(this, sender2, gameSet))
                                'async remove when view is disposed
@@ -107,6 +107,7 @@ Namespace Bot
                          End Sub)
             hooks.Add(viewHook)
 
+            inQueue.Start()
             Return viewHook.Select(Function() New DelegatedDisposable(Sub() inQueue.QueueAction(
                 Sub()
                     If hooks Is Nothing Then Return

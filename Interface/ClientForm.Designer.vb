@@ -27,6 +27,7 @@ Partial Class ClientForm
         Me.sep1 = New System.Windows.Forms.ToolStripSeparator()
         Me.mnuClose = New System.Windows.Forms.ToolStripMenuItem()
         Me.btnMinimizeToTray = New System.Windows.Forms.Button()
+        Me.panelBotControl = New System.Windows.Forms.Panel()
         Me.mnuTray.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -79,6 +80,16 @@ Partial Class ClientForm
         Me.btnMinimizeToTray.Text = "Minimize to Tray"
         Me.btnMinimizeToTray.UseVisualStyleBackColor = True
         '
+        'panelBotControl
+        '
+        Me.panelBotControl.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
+                    Or System.Windows.Forms.AnchorStyles.Left) _
+                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.panelBotControl.Location = New System.Drawing.Point(0, 0)
+        Me.panelBotControl.Name = "panelBotControl"
+        Me.panelBotControl.Size = New System.Drawing.Size(1005, 400)
+        Me.panelBotControl.TabIndex = 13
+        '
         'ClientForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -86,6 +97,7 @@ Partial Class ClientForm
         Me.AutoScroll = True
         Me.ClientSize = New System.Drawing.Size(1005, 447)
         Me.Controls.Add(Me.btnMinimizeToTray)
+        Me.Controls.Add(Me.panelBotControl)
         Me.Controls.Add(Me.btnSettings)
         Me.DoubleBuffered = True
         Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
@@ -104,4 +116,5 @@ Partial Class ClientForm
     Friend WithEvents sep1 As System.Windows.Forms.ToolStripSeparator
     Friend WithEvents mnuClose As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents btnMinimizeToTray As System.Windows.Forms.Button
+    Friend WithEvents panelBotControl As System.Windows.Forms.Panel
 End Class

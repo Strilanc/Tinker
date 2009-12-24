@@ -53,10 +53,10 @@ Public Class ClientForm
         Contract.Ensures(_bot Is Contract.OldValue(_bot))
 
         Dim componentsControl = New Tinker.Components.TabControl(_bot)
-        componentsControl.Dock = DockStyle.Top
+        componentsControl.Dock = DockStyle.Fill
         componentsControl.Name = "components"
         componentsControl.Height = btnSettings.Top - 3
-        Me.Controls.Add(componentsControl)
+        panelBotControl.Controls.Add(componentsControl)
         componentsControl.Focus()
     End Sub
     Private Sub InitFinish()

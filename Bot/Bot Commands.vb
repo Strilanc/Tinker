@@ -148,8 +148,8 @@ Namespace Bot
 
         Private Shared ReadOnly CreateClient As New DelegatedTemplatedCommand(Of MainBot)(
             Name:="CreateClient",
-            template:="name -profile=default",
-            Description:="Creates a new bnet client.",
+            template:="name -profile=default -auto",
+            Description:="Creates a new bnet client. -Auto causes the client to automatically advertising any games hosted byt he bot.",
             Permissions:="root:4",
             func:=Function(target, user, argument)
                       Dim profileName As InvariantString = If(argument.TryGetOptionalNamedValue("profile"), "default")
@@ -159,6 +159,7 @@ Namespace Bot
                           Function(manager)
                               Dim added = target.Components.QueueAddComponent(manager)
                               added.Catch(Sub() manager.Dispose())
+                              If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
                               Return added.EvalOnSuccess(Function() "Created Client")
                           End Function).defuturized
                           End Function)
@@ -230,7 +231,7 @@ Namespace Bot
             Public Sub New()
                 MyBase.New(Name:="Connect",
                 Format:="profile1 profile2 ...",
-                Description:="Creates and connects bnet clients, using the given profiles.",
+                Description:="Creates and connects bnet clients, using the given profiles. All of the clients will be set to automatic hosting.",
                 Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
@@ -243,6 +244,7 @@ Namespace Bot
                     Contract.Assume(profileName IsNot Nothing)
                     'Create and connect
                     Dim futureManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
+                    futureManager.CallOnValueSuccess(Sub(manager) manager.QueueSetAutomatic(True)).SetHandled()
                     Dim futureAdded = (From manager In futureManager Select target.Components.QueueAddComponent(manager)).Defuturized
                     Dim futureClient = futureAdded.EvalOnSuccess(Function() futureManager.Value.Client)
                     Dim futureConnected = (From client In futureClient
@@ -250,6 +252,7 @@ Namespace Bot
                                                             remoteHost:=client.Profile.server.Split(" "c)(0),
                                                             credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
                                                         ).Defuturized
+
                     'Cleanup on failure
                     futureManager.CallOnValueSuccess(Sub(manager) futureConnected.Catch(Sub() manager.Dispose())).SetHandled()
                     'Store
