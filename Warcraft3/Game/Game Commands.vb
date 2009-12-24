@@ -1,4 +1,6 @@
-Namespace Commands.Specializations
+Imports Tinker.Commands
+
+Namespace WC3
     Public NotInheritable Class InstancePlayCommands
         Inherits InstanceCommands
 
@@ -183,23 +185,23 @@ Namespace Commands.Specializations
     Public NotInheritable Class InstanceAdminCommands
         Inherits CommandSet(Of WC3.Game)
 
-        Public Sub New(ByVal bot As MainBot)
+        Public Sub New(ByVal bot As Bot.MainBot)
             Contract.Requires(bot IsNot Nothing)
             AddCommand(New CommandBot(bot))
         End Sub
 
         Public NotInheritable Class CommandBot
             Inherits Command(Of WC3.Game)
-            Private ReadOnly bot As MainBot
-            Public Sub New(ByVal bot As MainBot)
+            Private ReadOnly bot As Bot.MainBot
+            Public Sub New(ByVal bot As Bot.MainBot)
                 MyBase.New(Name:="Bot",
                            Format:="subcommand...",
                            Description:="Forwards commands to the bot.")
                 Contract.Requires(bot IsNot Nothing)
                 Me.bot = bot
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As WC3.Game, ByVal user As BotUser, ByVal argument As String) As Strilbrary.Threading.IFuture(Of String)
-                Return Components.MainBotManager.BotCommands.Invoke(bot, user, argument)
+            Protected Overrides Function PerformInvoke(ByVal target As WC3.Game, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+                Return Tinker.Bot.MainBotManager.BotCommands.Invoke(bot, user, argument)
             End Function
         End Class
     End Class

@@ -6,7 +6,7 @@ Namespace CKL
         Keys = 1
     End Enum
 
-    Public NotInheritable Class CKLKeyEntry
+    Public NotInheritable Class KeyEntry
         Private ReadOnly _name As InvariantString
         Private ReadOnly _keyROC As String
         Private ReadOnly _keyTFT As String

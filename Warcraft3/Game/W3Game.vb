@@ -26,10 +26,10 @@ Namespace WC3
     Partial Public NotInheritable Class Game
         Inherits FutureDisposable
 
-        Public Shared ReadOnly GameGuestCommandsLobby As New Commands.Specializations.InstanceGuestSetupCommands
-        Public Shared ReadOnly GameGuestCommandsGamePlay As New Commands.Specializations.InstanceGuestPlayCommands
-        Public Shared ReadOnly GameCommandsGamePlay As New Commands.Specializations.InstancePlayCommands
-        Public Shared ReadOnly GameCommandsLobby As New Commands.Specializations.InstanceSetupCommands
+        Public Shared ReadOnly GameGuestCommandsLobby As New WC3.InstanceGuestSetupCommands
+        Public Shared ReadOnly GameGuestCommandsGamePlay As New WC3.InstanceGuestPlayCommands
+        Public Shared ReadOnly GameCommandsGamePlay As New WC3.InstancePlayCommands
+        Public Shared ReadOnly GameCommandsLobby As New WC3.InstanceSetupCommands
 
         Private ReadOnly _map As Map
         Private ReadOnly _name As InvariantString
@@ -137,7 +137,7 @@ Namespace WC3
             Return inQueue.QueueAction(AddressOf ThrowUpdated)
         End Function
 
-        Private Function CommandProcessText(ByVal bot As MainBot,
+        Private Function CommandProcessText(ByVal bot As Bot.MainBot,
                                             ByVal player As Player,
                                             ByVal argument As String) As IFuture(Of String)
             Contract.Requires(bot IsNot Nothing)
@@ -150,7 +150,7 @@ Namespace WC3
                     Return Game.GameGuestCommandsGamePlay.Invoke(Me, user, argument)
                 End If
             ElseIf settings.IsAdminGame Then
-                Return New Commands.Specializations.InstanceAdminCommands(bot).Invoke(Me, Nothing, argument)
+                Return New WC3.InstanceAdminCommands(bot).Invoke(Me, Nothing, argument)
             Else
                 If state < GameState.Loading Then
                     Return Game.GameCommandsLobby.Invoke(Me, user, argument)
@@ -159,7 +159,7 @@ Namespace WC3
                 End If
             End If
         End Function
-        Public Function QueueCommandProcessText(ByVal bot As MainBot,
+        Public Function QueueCommandProcessText(ByVal bot As Bot.MainBot,
                                         ByVal player As Player,
                                         ByVal argument As String) As IFuture(Of String)
             Contract.Requires(bot IsNot Nothing)

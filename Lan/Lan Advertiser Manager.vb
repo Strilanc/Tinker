@@ -8,7 +8,7 @@ Namespace Lan
         Public Shared ReadOnly LanCommands As New Lan.AdvertiserCommands()
 
         Private ReadOnly _name As InvariantString
-        Private ReadOnly _bot As MainBot
+        Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _advertiser As Lan.Advertiser
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
         Private ReadOnly _control As Control
@@ -21,7 +21,7 @@ Namespace Lan
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
-                       ByVal bot As MainBot,
+                       ByVal bot As Bot.MainBot,
                        ByVal advertiser As Lan.Advertiser)
             Contract.Requires(advertiser IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
@@ -59,9 +59,9 @@ Namespace Lan
                 Return _advertiser
             End Get
         End Property
-        Public ReadOnly Property Bot As MainBot
+        Public ReadOnly Property Bot As Bot.MainBot
             Get
-                Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Bot.MainBot)() IsNot Nothing)
                 Return _bot
             End Get
         End Property

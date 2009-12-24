@@ -7,7 +7,7 @@ Namespace Bnet
 
         Private Shared ReadOnly ClientCommands As New Bnet.ClientCommands()
 
-        Private ReadOnly _bot As MainBot
+        Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _name As InvariantString
         Private ReadOnly _client As Bnet.Client
         Private ReadOnly _control As Control
@@ -21,7 +21,7 @@ Namespace Bnet
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
-                       ByVal bot As MainBot,
+                       ByVal bot As Bot.MainBot,
                        ByVal client As Bnet.Client)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
@@ -43,9 +43,9 @@ Namespace Bnet
                 Return _client
             End Get
         End Property
-        Public ReadOnly Property Bot As MainBot
+        Public ReadOnly Property Bot As Bot.MainBot
             Get
-                Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Bot.MainBot)() IsNot Nothing)
                 Return _bot
             End Get
         End Property
@@ -95,12 +95,12 @@ Namespace Bnet
                 Return 'user not allowed
             ElseIf id <> Bnet.Packet.ChatEventId.Talk And id <> Bnet.Packet.ChatEventId.Whisper Then
                 Return 'not a message
-            ElseIf text.Substring(0, My.Settings.commandPrefix.AssumeNotNull.Length) <> My.Settings.commandPrefix AndAlso text <> MainBot.TriggerCommandText Then
+            ElseIf text.Substring(0, My.Settings.commandPrefix.AssumeNotNull.Length) <> My.Settings.commandPrefix AndAlso text <> Tinker.Bot.MainBot.TriggerCommandText Then
                 Return 'not a command
             End If
 
             '?Trigger command
-            If text = MainBot.TriggerCommandText Then
+            If text = Tinker.Bot.MainBot.TriggerCommandText Then
                 _client.QueueSendWhisper(user.Name, "Command prefix: {0}".Frmt(My.Settings.commandPrefix))
                 Return
             End If
@@ -124,7 +124,7 @@ Namespace Bnet
 
         Public Shared Function AsyncCreateFromProfile(ByVal clientName As InvariantString,
                                                       ByVal profileName As InvariantString,
-                                                      ByVal bot As MainBot) As IFuture(Of ClientManager)
+                                                      ByVal bot As Bot.MainBot) As IFuture(Of ClientManager)
             Contract.Requires(bot IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of ClientManager))() IsNot Nothing)
 

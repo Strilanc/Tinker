@@ -1,9 +1,11 @@
-﻿Namespace Components
-    Public Class WC3GameServerManager
+﻿Imports Tinker.Components
+
+Namespace WC3
+    Public Class GameServerManager
         Inherits FutureDisposable
         Implements IBotComponent
 
-        Private Shared ReadOnly ServerCommands As New Commands.Specializations.ServerCommands()
+        Private Shared ReadOnly ServerCommands As New WC3.ServerCommands()
         Public Shared ReadOnly TypeName As String = "Server"
 
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
@@ -11,7 +13,7 @@
         Private ReadOnly _gameServer As WC3.GameServer
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
         Private ReadOnly _control As Control
-        Private ReadOnly _bot As MainBot
+        Private ReadOnly _bot As Bot.MainBot
         Private _listener As Net.Sockets.TcpListener
         Private _portHandle As PortPool.PortHandle
 
@@ -27,7 +29,7 @@
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal gameServer As WC3.GameServer,
-                       ByVal bot As MainBot)
+                       ByVal bot As Bot.MainBot)
             Contract.Requires(gameServer IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
 
@@ -36,7 +38,7 @@
             Me._name = name
             Me._gameServer = gameServer
 
-            Dim control = New W3ServerControl(Me)
+            Dim control = New WC3.W3ServerControl(Me)
             Me._control = control
             Me._bot = bot
             Me._listener = New Net.Sockets.TcpListener(New Net.IPEndPoint(Net.IPAddress.Any, Me._portHandle.Port))
@@ -115,9 +117,9 @@
                 Return True
             End Get
         End Property
-        Public ReadOnly Property Bot As MainBot
+        Public ReadOnly Property Bot As Bot.MainBot
             Get
-                Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Bot.MainBot)() IsNot Nothing)
                 Return _bot
             End Get
         End Property
@@ -155,12 +157,12 @@
 
             Dim prefix = My.Settings.commandPrefix
             Contract.Assume(prefix IsNot Nothing)
-            If Not text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) AndAlso text <> MainBot.TriggerCommandText Then
+            If Not text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) AndAlso text <> Tinker.Bot.MainBot.TriggerCommandText Then
                 Return
             End If
 
             '?trigger command
-            If text = MainBot.TriggerCommandText Then
+            If text = Tinker.Bot.MainBot.TriggerCommandText Then
                 game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(prefix), player)
                 Return
             End If
@@ -201,7 +203,7 @@
 
             Dim hostName = If(user Is Nothing, Application.ProductName, user.Name.Value)
             Contract.Assume(hostName IsNot Nothing)
-            Dim gameStats = New WC3.GameStats(map, hostname, argument)
+            Dim gameStats = New WC3.GameStats(map, hostName, argument)
 
             Dim totalSlotCount = map.NumPlayerSlots
             Select Case gameStats.observers

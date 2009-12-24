@@ -12,7 +12,7 @@ Namespace Plugins
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
-                       ByVal bot As MainBot,
+                       ByVal bot As Bot.MainBot,
                        ByVal assemblyPath As String)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(assemblyPath IsNot Nothing)

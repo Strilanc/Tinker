@@ -65,13 +65,13 @@ Namespace Plugins
 
     <ContractClass(GetType(IPluginFactory.ContractClass))>
     Public Interface IPluginFactory
-        Function CreatePlugin(ByVal bot As MainBot) As IPlugin
+        Function CreatePlugin(ByVal bot As Bot.MainBot) As IPlugin
 
         <ContractClassFor(GetType(IPluginFactory))>
         NotInheritable Class ContractClass
             Implements IPluginFactory
 
-            Public Function CreatePlugin(ByVal bot As MainBot) As IPlugin Implements IPluginFactory.CreatePlugin
+            Public Function CreatePlugin(ByVal bot As Bot.MainBot) As IPlugin Implements IPluginFactory.CreatePlugin
                 Contract.Requires(bot IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IPlugin)() IsNot Nothing)
                 Throw New NotSupportedException()

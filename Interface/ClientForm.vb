@@ -1,7 +1,7 @@
 Imports System.Threading
 
 Public Class ClientForm
-    Private _bot As MainBot
+    Private _bot As Bot.MainBot
 
     Private Shadows Sub OnLoad() Handles Me.Load
         Contract.Assume(_bot Is Nothing)
@@ -25,8 +25,8 @@ Public Class ClientForm
         Contract.Requires(_bot Is Nothing)
         Contract.Ensures(_bot IsNot Nothing)
 
-        _bot = New MainBot()
-        _bot.Components.QueueAddComponent(New Components.MainBotManager(_bot))
+        _bot = New Bot.MainBot()
+        _bot.Components.QueueAddComponent(New Bot.MainBotManager(_bot))
 
         'init port pool
         For Each port In SettingsForm.ParsePortList(My.Settings.port_pool, "")

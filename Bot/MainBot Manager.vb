@@ -1,39 +1,28 @@
-﻿Namespace Components
-    Public Class WC3GameManager
+﻿Imports Tinker.Components
+
+Namespace Bot
+    Public Class MainBotManager
         Inherits FutureDisposable
         Implements IBotComponent
 
+        Public Shared ReadOnly BotCommands As New Bot.BotCommands()
+
         Private ReadOnly _bot As MainBot
-        Private ReadOnly _name As InvariantString
-        Private ReadOnly _game As WC3.Game
         Private ReadOnly _control As Control
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_bot IsNot Nothing)
-            Contract.Invariant(_game IsNot Nothing)
-            Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal bot As MainBot,
-                       ByVal game As WC3.Game)
+        Public Sub New(ByVal bot As MainBot)
             Contract.Requires(bot IsNot Nothing)
-            Contract.Requires(game IsNot Nothing)
-
             Me._bot = bot
-            Me._name = name
-            Me._game = game
-            Me._control = New W3GameControl(Me)
+            Dim control = New GenericBotComponentControl(Me)
+            Me._control = control
+            control.logControl.AssumeNotNull.SetLogUnexpected(True)
         End Sub
 
-        Public ReadOnly Property Game As WC3.Game
-            Get
-                Contract.Ensures(Contract.Result(Of WC3.Game)() IsNot Nothing)
-                Return _game
-            End Get
-        End Property
         Public ReadOnly Property Bot As MainBot
             Get
                 Contract.Ensures(Contract.Result(Of MainBot)() IsNot Nothing)
@@ -42,17 +31,17 @@
         End Property
         Public ReadOnly Property Name As InvariantString Implements IBotComponent.Name
             Get
-                Return _name
+                Return "Main"
             End Get
         End Property
         Public ReadOnly Property Type As InvariantString Implements IBotComponent.Type
             Get
-                Return "Game"
+                Return "Bot"
             End Get
         End Property
         Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger
             Get
-                Return _game.Logger
+                Return _bot.Logger
             End Get
         End Property
         Public ReadOnly Property HasControl As Boolean Implements IBotComponent.HasControl
@@ -62,7 +51,7 @@
             End Get
         End Property
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
-            Return False
+            Return BotCommands.IsArgumentPrivate(argument)
         End Function
         Public ReadOnly Property Control As Control Implements IBotComponent.Control
             Get
@@ -71,15 +60,10 @@
         End Property
 
         Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
-            Return Game.QueueCommandProcessText(Bot, Nothing, argument)
+            Return BotCommands.Invoke(Bot, user, argument)
         End Function
-
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
-            For Each hook In _hooks
-                Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
-            Next hook
-            _game.Dispose()
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+            _bot.Dispose()
             _control.Dispose()
             Return Nothing
         End Function

@@ -56,7 +56,8 @@
     <DefineTrace>true</DefineTrace>
     <OutputPath>bin\Debug\</OutputPath>
     <DocumentationFile>Tinker.xml</DocumentationFile>
-    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <NoWarn>
+    </NoWarn>
     <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
     <CodeContractsCustomRewriterAssembly>
     </CodeContractsCustomRewriterAssembly>
@@ -87,6 +88,7 @@
     <CodeContractsEmitXMLDocs>True</CodeContractsEmitXMLDocs>
     <CodeContractsRedundantAssumptions>True</CodeContractsRedundantAssumptions>
     <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
+    <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036,42105,42106,42107</WarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -95,7 +97,8 @@
     <Optimize>false</Optimize>
     <OutputPath>bin\Release\</OutputPath>
     <DocumentationFile>Tinker.xml</DocumentationFile>
-    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <NoWarn>
+    </NoWarn>
     <CodeContractsEnableRuntimeChecking>False</CodeContractsEnableRuntimeChecking>
     <CodeContractsCustomRewriterAssembly>
     </CodeContractsCustomRewriterAssembly>
@@ -124,6 +127,7 @@
     <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
     <CodeContractsEmitXMLDocs>True</CodeContractsEmitXMLDocs>
     <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
+    <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036,42105,42106,42107</WarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MpqLibrary, Version=1.0.0.0, Culture=neutral, PublicKeyToken=9bae8fba86733575, processorArchitecture=x86">
@@ -168,6 +172,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Bnet\Bnet Packet.vb" />
+    <Compile Include="Bnet\BnetClientControl.Designer.vb">
+      <DependentUpon>BnetClientControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Bnet\BnetClientControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />
     <Compile Include="Bot\Settings.vb" />
@@ -181,19 +191,37 @@
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\StringJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
+    <Compile Include="Warcraft3\Game\GameLoggerControl.Designer.vb">
+      <DependentUpon>GameLoggerControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Warcraft3\Game\GameLoggerControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Warcraft3\Game\W3GameControl.Designer.vb">
+      <DependentUpon>W3GameControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Warcraft3\Game\W3GameControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Warcraft3\Server\W3ServerControl.Designer.vb">
+      <DependentUpon>W3ServerControl.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Warcraft3\Server\W3ServerControl.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Warden\Warden Client.vb" />
     <Compile Include="Warden\Warden Enums.vb" />
     <Compile Include="Warden\Warden Server Packet.vb" />
-    <Compile Include="Bot\Commands\Generic Commands.vb" />
-    <Compile Include="Bot\Components\CKLServerManager.vb" />
-    <Compile Include="Bot\Components\MainBotManager.vb" />
-    <Compile Include="Bot\Components\WC3GameManager.vb" />
+    <Compile Include="Bot\Generic Commands.vb" />
+    <Compile Include="CKL\CKL Server Manager.vb" />
+    <Compile Include="Bot\MainBot Manager.vb" />
+    <Compile Include="Warcraft3\Game\WC3GameManager.vb" />
     <Compile Include="Plugins\Plugin Manager.vb" />
-    <Compile Include="Bot\Components\WC3GameServerManager.vb" />
+    <Compile Include="Warcraft3\Server\WC3GameServerManager.vb" />
     <Compile Include="Components\Component Extensions.vb" />
     <Compile Include="Components\IBotComponent.vb" />
     <Compile Include="Bnet\Bnet Client Manager.vb" />
-    <Compile Include="Bot\Components\LanAdvertiserManager.vb" />
+    <Compile Include="Lan\Lan Advertiser Manager.vb" />
     <Compile Include="Components\ComponentSet.vb" />
     <Compile Include="Plugins\Plugin Interfaces.vb" />
     <Compile Include="Bot\Plugin Profile.vb" />
@@ -204,16 +232,16 @@
     <Compile Include="Interface\CommandControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\LanAdvertiserControl.Designer.vb">
+    <Compile Include="Lan\LanAdvertiserControl.Designer.vb">
       <DependentUpon>LanAdvertiserControl.vb</DependentUpon>
     </Compile>
-    <Compile Include="Interface\LanAdvertiserControl.vb">
+    <Compile Include="Lan\LanAdvertiserControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\GenericBotComponentControl.Designer.vb">
+    <Compile Include="Components\GenericBotComponentControl.Designer.vb">
       <DependentUpon>GenericBotComponentControl.vb</DependentUpon>
     </Compile>
-    <Compile Include="Interface\GenericBotComponentControl.vb">
+    <Compile Include="Components\GenericBotComponentControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Library\CachedValues.vb" />
@@ -250,20 +278,14 @@
     <Compile Include="Warcraft3\W3Socket.vb" />
     <Compile Include="Warden\Warden Socket.vb" />
     <Compile Include="Warden\Warden Client Packet.vb" />
-    <Compile Include="Bot\Commands\CKL Commands.vb" />
+    <Compile Include="CKL\CKL Commands.vb" />
     <Compile Include="Commands\CommandSet.vb" />
     <Compile Include="Commands\Command.vb" />
     <Compile Include="Commands\CommandArgument.vb" />
     <Compile Include="Commands\HelpCommand.vb" />
-    <Compile Include="Bot\Commands\Lan Commands.vb" />
+    <Compile Include="Lan\Lan Commands.vb" />
     <Compile Include="CKL\CKL Client.vb" />
     <Compile Include="CKL\CKL Keys.vb" />
-    <Compile Include="Interface\GameLoggerControl.Designer.vb">
-      <DependentUpon>GameLoggerControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\GameLoggerControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="Interface\ProfileSettingsControl.Designer.vb">
       <DependentUpon>ProfileSettingsControl.vb</DependentUpon>
     </Compile>
@@ -271,12 +293,12 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Warcraft3\W3DummyPlayer.vb" />
-    <Compile Include="Bot\Components\LanAdvertiser.vb" />
+    <Compile Include="Lan\LanAdvertiser.vb" />
     <Compile Include="Warcraft3\TransferScheduler.vb" />
-    <Compile Include="Bot\Commands\Bot Commands.vb" />
+    <Compile Include="Bot\Bot Commands.vb" />
     <Compile Include="Bnet\Bnet Client Commands.vb" />
-    <Compile Include="Bot\Commands\Game Commands.vb" />
-    <Compile Include="Bot\Commands\Server Commands.vb" />
+    <Compile Include="Warcraft3\Game\Game Commands.vb" />
+    <Compile Include="Warcraft3\Server\Server Commands.vb" />
     <Compile Include="Bot\Links.vb" />
     <Compile Include="Bot\Client Profile.vb" />
     <Compile Include="Components\Components Tab Control.Designer.vb">
@@ -307,27 +329,9 @@
     <Compile Include="Interface\LoggerControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Interface\BnetClientControl.Designer.vb">
-      <DependentUpon>BnetClientControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\BnetClientControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="Interface\W3ServerControl.Designer.vb">
-      <DependentUpon>W3ServerControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\W3ServerControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="Bot\MainBot.vb" />
     <Compile Include="Bnet\Bnet Client.vb" />
     <Compile Include="Bnet\Revision Check.vb" />
-    <Compile Include="Interface\W3GameControl.Designer.vb">
-      <DependentUpon>W3GameControl.vb</DependentUpon>
-    </Compile>
-    <Compile Include="Interface\W3GameControl.vb">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="Interface\ClientForm.Designer.vb">
       <DependentUpon>ClientForm.vb</DependentUpon>
     </Compile>
@@ -359,10 +363,12 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <Compile Include="Library\Future Common.vb" />
-    <Compile Include="Test\Test.vb" />
     <Compile Include="Components\Components Tab Manager.vb" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Bnet\BnetClientControl.resx">
+      <DependentUpon>BnetClientControl.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Components\Components Tab Control.resx">
       <SubType>Designer</SubType>
       <DependentUpon>Components Tab Control.vb</DependentUpon>
@@ -371,16 +377,13 @@
       <DependentUpon>CommandControl.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\LanAdvertiserControl.resx">
+    <EmbeddedResource Include="Lan\LanAdvertiserControl.resx">
       <DependentUpon>LanAdvertiserControl.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
-    <EmbeddedResource Include="Interface\GenericBotComponentControl.resx">
+    <EmbeddedResource Include="Components\GenericBotComponentControl.resx">
       <DependentUpon>GenericBotComponentControl.vb</DependentUpon>
       <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\GameLoggerControl.resx">
-      <DependentUpon>GameLoggerControl.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\ProfileSettingsControl.resx">
       <DependentUpon>ProfileSettingsControl.vb</DependentUpon>
@@ -389,18 +392,6 @@
     <EmbeddedResource Include="Interface\LoggerControl.resx">
       <SubType>Designer</SubType>
       <DependentUpon>LoggerControl.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\BnetClientControl.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>BnetClientControl.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\W3ServerControl.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>W3ServerControl.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Interface\W3GameControl.resx">
-      <SubType>Designer</SubType>
-      <DependentUpon>W3GameControl.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\ClientForm.resx">
       <DependentUpon>ClientForm.vb</DependentUpon>
@@ -415,6 +406,15 @@
       <LastGenOutput>Resources.Designer.vb</LastGenOutput>
       <CustomToolNamespace>My.Resources</CustomToolNamespace>
       <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Warcraft3\Game\GameLoggerControl.resx">
+      <DependentUpon>GameLoggerControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Warcraft3\Game\W3GameControl.resx">
+      <DependentUpon>W3GameControl.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Warcraft3\Server\W3ServerControl.resx">
+      <DependentUpon>W3ServerControl.vb</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -472,12 +472,12 @@
   <ItemGroup>
     <PublishFile Include="Docs.txt">
       <Visible>False</Visible>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
       <FileType>File</FileType>
     </PublishFile>
   </ItemGroup>

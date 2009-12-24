@@ -1,4 +1,6 @@
-Namespace Commands
+Imports Tinker.Commands
+
+Namespace Bot
     Public NotInheritable Class GenericCommands
         Public NotInheritable Class RecacheIP(Of T)
             Inherits TemplatedCommand(Of T)

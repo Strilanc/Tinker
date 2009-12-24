@@ -13,7 +13,7 @@ Namespace Components
             Contract.Invariant(inQueue IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal bot As MainBot)
+        Public Sub New(ByVal bot As Bot.MainBot)
             Contract.Assert(bot IsNot Nothing)
             InitializeComponent()
 

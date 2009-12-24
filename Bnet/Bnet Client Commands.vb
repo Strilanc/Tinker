@@ -1,3 +1,4 @@
+Imports Tinker.Bot
 Imports Tinker.Commands
 
 Namespace Bnet
@@ -12,8 +13,8 @@ Namespace Bnet
             AddCommand(Demote)
             AddCommand(RemoveUser)
             AddCommand(Disconnect)
-            AddCommand(New GenericCommands.FindMaps(Of Bnet.ClientManager))
-            AddCommand(New GenericCommands.DownloadMap(Of Bnet.ClientManager))
+            AddCommand(New Bot.GenericCommands.FindMaps(Of Bnet.ClientManager))
+            AddCommand(New Bot.GenericCommands.DownloadMap(Of Bnet.ClientManager))
             AddCommand(Promote)
             AddCommand(User)
             AddCommand(Connect)

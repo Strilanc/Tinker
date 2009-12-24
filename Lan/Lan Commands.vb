@@ -1,4 +1,5 @@
 ﻿Imports Tinker.Commands
+Imports Tinker.Bot
 
 Namespace Lan
     Public NotInheritable Class AdvertiserCommands

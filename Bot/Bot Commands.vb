@@ -1,4 +1,6 @@
-Namespace Commands
+Imports Tinker.Commands
+
+Namespace Bot
     Public NotInheritable Class BotCommands
         Inherits CommandSet(Of MainBot)
         Public Sub New()
@@ -123,8 +125,8 @@ Namespace Commands
                       Dim argName = argument.RawValue(0)
                       Dim argRemoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
 
-                      Dim advertiser = New WC3.LanAdvertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
-                      Dim manager = New Components.LanAdvertiserManager(argName, target, advertiser)
+                      Dim advertiser = New Lan.Advertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
+                      Dim manager = New Lan.AdvertiserManager(argName, target, advertiser)
                       Return target.Components.QueueAddComponent(manager).EvalOnSuccess(Function() "Created lan advertiser.")
                   End Function)
 
@@ -244,8 +246,8 @@ Namespace Commands
                     Dim futureClient = futureAdded.EvalOnSuccess(Function() futureManager.Value.Client)
                     Dim futureConnected = (From client In futureClient
                                            Select client.QueueConnectAndLogOn(
-                                                            remoteHost:=client.profile.server.Split(" "c)(0),
-                                                            credentials:=New Bnet.ClientCredentials(client.profile.userName, client.profile.password))
+                                                            remoteHost:=client.Profile.server.Split(" "c)(0),
+                                                            credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
                                                         ).Defuturized
                     'Cleanup on failure
                     futureManager.CallOnValueSuccess(Sub(manager) futureConnected.Catch(Sub() manager.Dispose())).SetHandled()
