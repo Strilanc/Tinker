@@ -1,6 +1,6 @@
 ﻿Namespace CKL
     '''<summary>Asynchronously connects to a CKLServer and requests a response to a cd key authentication challenge from bnet.</summary>
-    Public NotInheritable Class CKLClient
+    Public NotInheritable Class Client
         Private Shared ReadOnly jar As New Bnet.Packet.ProductCredentialsJar("authentication")
 
         Private Sub New()
@@ -11,7 +11,7 @@
                                                       ByVal serverCDKeySalt As UInt32) As IFuture(Of WC3CredentialPair)
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of WC3CredentialPair))() IsNot Nothing)
-            Dim requestPacket = Concat({CKLServer.PacketPrefixValue, CKLPacketId.Keys, 0, 0},
+            Dim requestPacket = Concat({CKL.Server.PacketPrefixValue, CKLPacketId.Keys, 0, 0},
                                        clientCDKeySalt.Bytes,
                                        serverCDKeySalt.Bytes)
 
@@ -40,7 +40,7 @@
                     Contract.Assume(packetData.Count >= 4)
                     Dim flag = packetData(0)
                     Dim id = packetData(1)
-                    If flag <> CKLServer.PacketPrefixValue Then
+                    If flag <> CKL.Server.PacketPrefixValue Then
                         Throw New IO.InvalidDataException("Incorrect header id in data returned from CKL server.")
                     End If
 

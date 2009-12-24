@@ -1,15 +1,15 @@
-﻿Imports Tinker.CKL
+﻿Imports Tinker.Commands
 
-Namespace Commands.Specializations
-    Public NotInheritable Class CKLCommands
-        Inherits CommandSet(Of CKLServer)
+Namespace CKL
+    Public NotInheritable Class ServerCommands
+        Inherits CommandSet(Of CKL.Server)
 
         Public Sub New()
             AddCommand(AddKey)
             AddCommand(RemoveKey)
         End Sub
 
-        Private Shared ReadOnly AddKey As New DelegatedTemplatedCommand(Of CKLServer)(
+        Private Shared ReadOnly AddKey As New DelegatedTemplatedCommand(Of CKL.Server)(
             Name:="AddKey",
             template:="Name roc=key tft=key",
             Description:="Adds a lendable key pair.",
@@ -20,7 +20,7 @@ Namespace Commands.Specializations
                       Return target.AddKey(name, rocKey, tftKey).EvalOnSuccess(Function() "Key '{0}' added.".Frmt(name))
                   End Function)
 
-        Private Shared ReadOnly RemoveKey As New DelegatedTemplatedCommand(Of CKLServer)(
+        Private Shared ReadOnly RemoveKey As New DelegatedTemplatedCommand(Of CKL.Server)(
             Name:="RemoveKey",
             template:="Name",
             Description:="Removes a lendable key pair.",

@@ -673,7 +673,7 @@ Namespace Bnet
             If profile.CKLServerAddress Like "*:#*" Then
                 Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
                 Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
-                futureKeys = CKL.CKLClient.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
+                futureKeys = CKL.Client.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
                 futureKeys.CallOnSuccess(
                     Sub() logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
                 ).Catch(

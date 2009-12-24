@@ -1,7 +1,7 @@
 ﻿Imports System.Net.Sockets
 
-Namespace WC3
-    Public NotInheritable Class LanAdvertiser
+Namespace Lan
+    Public NotInheritable Class Advertiser
         Inherits FutureDisposable
         Public Shared ReadOnly LanAdvertiserTypeName As InvariantString = "LanAdvertiser"
         Public Shared ReadOnly LanTargetPort As UShort = 6112
@@ -17,8 +17,8 @@ Namespace WC3
         Private createCount As UInteger
         Private WithEvents refreshTimer As New System.Timers.Timer(3000)
 
-        Public Event AddedGame(ByVal sender As LanAdvertiser, ByVal game As LanGame)
-        Public Event RemovedGame(ByVal sender As LanAdvertiser, ByVal game As LanGame)
+        Public Event AddedGame(ByVal sender As Lan.Advertiser, ByVal game As LanGame)
+        Public Event RemovedGame(ByVal sender As Lan.Advertiser, ByVal game As LanGame)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
@@ -32,7 +32,7 @@ Namespace WC3
         End Sub
 
         Public NotInheritable Class LanGame
-            Private ReadOnly _gameDescription As LocalGameDescription
+            Private ReadOnly _gameDescription As WC3.LocalGameDescription
             Private ReadOnly _targetHosts As List(Of String)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -40,7 +40,7 @@ Namespace WC3
                 Contract.Invariant(_targetHosts IsNot Nothing)
             End Sub
 
-            Public Sub New(ByVal gameDescription As LocalGameDescription,
+            Public Sub New(ByVal gameDescription As WC3.LocalGameDescription,
                            ByVal targetHosts As IEnumerable(Of String))
                 Contract.Requires(gameDescription IsNot Nothing)
                 Contract.Requires(targetHosts IsNot Nothing)
@@ -48,9 +48,9 @@ Namespace WC3
                 Me._targetHosts = targetHosts.ToList
             End Sub
 
-            Public ReadOnly Property GameDescription As LocalGameDescription
+            Public ReadOnly Property GameDescription As WC3.LocalGameDescription
                 Get
-                    Contract.Ensures(Contract.Result(Of LocalGameDescription)() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of WC3.LocalGameDescription)() IsNot Nothing)
                     Return _gameDescription
                 End Get
             End Property
@@ -139,7 +139,7 @@ Namespace WC3
         'Return New AdvertisingLinkMember(Me)
         'End Function
 
-        Private Sub AddGame(ByVal game As LocalGameDescription,
+        Private Sub AddGame(ByVal game As WC3.LocalGameDescription,
                             Optional ByVal targets As IEnumerable(Of String) = Nothing)
             Contract.Requires(game IsNot Nothing)
             If _games.ContainsKey(game.GameId) Then
@@ -159,7 +159,7 @@ Namespace WC3
             Contract.Assume(game IsNot Nothing)
 
             'Advertise game closed
-            Dim pk = Packet.MakeLanDestroyGame(game.GameDescription.GameId)
+            Dim pk = WC3.Packet.MakeLanDestroyGame(game.GameDescription.GameId)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host
@@ -183,17 +183,17 @@ Namespace WC3
         End Sub
         Private Sub RefreshGame(ByVal game As LanGame)
             Contract.Requires(game IsNot Nothing)
-            Dim pk = Packet.MakeLanDescribeGame(GetWC3MajorVersion, game.GameDescription)
+            Dim pk = WC3.Packet.MakeLanDescribeGame(GetWC3MajorVersion, game.GameDescription)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host
         End Sub
-        Private Sub SendPacket(ByVal pk As Packet, ByVal targetHost As String, ByVal targetPort As UShort)
+        Private Sub SendPacket(ByVal pk As WC3.Packet, ByVal targetHost As String, ByVal targetPort As UShort)
             Contract.Requires(pk IsNot Nothing)
             Try
                 'pack
                 Dim data = pk.Payload.Data.ToArray()
-                data = Concat({Packet.PacketPrefixValue, pk.id}, CUShort(data.Length + 4).Bytes(), data)
+                data = Concat({WC3.Packet.PacketPrefixValue, pk.id}, CUShort(data.Length + 4).Bytes(), data)
 
                 'Log
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, targetHost), LogMessageType.DataEvent)
@@ -225,7 +225,7 @@ Namespace WC3
             End Get
         End Property
 
-        Public Function QueueAddGame(ByVal gameDescription As LocalGameDescription,
+        Public Function QueueAddGame(ByVal gameDescription As WC3.LocalGameDescription,
                                      Optional ByVal targetHosts As IEnumerable(Of String) = Nothing) As IFuture
             Contract.Requires(gameDescription IsNot Nothing)
             Return inQueue.QueueAction(Sub() AddGame(gameDescription, targetHosts))
@@ -240,7 +240,7 @@ Namespace WC3
         Public Shared Function CreateLanAdmin(ByVal name As InvariantString,
                                               ByVal password As String,
                                               Optional ByVal remoteHost As String = "localhost",
-                                              Optional ByVal listenPort As UShort = 0) As WC3.LanAdvertiser
+                                              Optional ByVal listenPort As UShort = 0) As Lan.Advertiser
             Dim sha1Checksum = (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList
             Contract.Assume(sha1Checksum.Count = 20)
             Dim map = New WC3.Map("Maps\",

@@ -1,12 +1,14 @@
-﻿Namespace Components
-    Public NotInheritable Class BotCKLServer
+﻿Imports Tinker.Components
+
+Namespace CKL
+    Public NotInheritable Class ServerManager
         Inherits FutureDisposable
         Implements IBotComponent
 
         Public Shared ReadOnly WidgetTypeName As InvariantString = "CKL"
-        Private Shared ReadOnly Commands As New Commands.Specializations.CKLCommands()
+        Private Shared ReadOnly Commands As New CKL.ServerCommands()
 
-        Private ReadOnly _server As CKL.CKLServer
+        Private ReadOnly _server As CKL.Server
         Private ReadOnly _control As GenericBotComponentControl
         Private ReadOnly _bot As MainBot
 
@@ -16,7 +18,7 @@
             Contract.Invariant(_server IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal server As CKL.CKLServer,
+        Public Sub New(ByVal server As CKL.Server,
                        ByVal bot As MainBot)
             Contract.Requires(server IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)

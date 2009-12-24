@@ -1,18 +1,20 @@
-﻿Namespace Components
-    Public Class LanAdvertiserManager
+﻿Imports Tinker.Components
+
+Namespace Lan
+    Public Class AdvertiserManager
         Inherits FutureDisposable
         Implements IBotComponent
 
-        Public Shared ReadOnly LanCommands As New Commands.Specializations.LanCommands()
+        Public Shared ReadOnly LanCommands As New Lan.AdvertiserCommands()
 
         Private ReadOnly _name As InvariantString
         Private ReadOnly _bot As MainBot
-        Private ReadOnly _lanAdvertiser As WC3.LanAdvertiser
+        Private ReadOnly _advertiser As Lan.Advertiser
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
         Private ReadOnly _control As Control
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_lanAdvertiser IsNot Nothing)
+            Contract.Invariant(_advertiser IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
@@ -20,13 +22,13 @@
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal bot As MainBot,
-                       ByVal lanAdvertiser As WC3.LanAdvertiser)
-            Contract.Requires(lanAdvertiser IsNot Nothing)
+                       ByVal advertiser As Lan.Advertiser)
+            Contract.Requires(advertiser IsNot Nothing)
             Contract.Requires(bot IsNot Nothing)
 
             Me._bot = bot
             Me._name = name
-            Me._lanAdvertiser = lanAdvertiser
+            Me._advertiser = advertiser
             Me._control = New LanAdvertiserControl(Me)
         End Sub
 
@@ -51,10 +53,10 @@
                 Return _control
             End Get
         End Property
-        Public ReadOnly Property LanAdvertiser As WC3.LanAdvertiser
+        Public ReadOnly Property Advertiser As Lan.Advertiser
             Get
-                Contract.Ensures(Contract.Result(Of WC3.LanAdvertiser)() IsNot Nothing)
-                Return _lanAdvertiser
+                Contract.Ensures(Contract.Result(Of Lan.Advertiser)() IsNot Nothing)
+                Return _advertiser
             End Get
         End Property
         Public ReadOnly Property Bot As MainBot
@@ -74,7 +76,7 @@
 
         Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger
             Get
-                Return _lanAdvertiser.Logger
+                Return _advertiser.Logger
             End Get
         End Property
 
@@ -83,7 +85,7 @@
                 Contract.Assume(hook IsNot Nothing)
                 hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
             Next hook
-            _lanAdvertiser.Dispose()
+            _advertiser.Dispose()
             _control.Dispose()
             Return Nothing
         End Function

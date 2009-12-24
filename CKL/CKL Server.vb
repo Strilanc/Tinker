@@ -2,15 +2,15 @@
 
 Namespace CKL
     '''<summary>Provides answers to bnet cd key authentication challenges, allowing clients to login to bnet once with the server's keys.</summary>
-    Public NotInheritable Class CKLServer
+    Public NotInheritable Class Server
         Private Shared ReadOnly jar As New Bnet.Packet.ProductCredentialsJar("ckl")
         Public Const PacketPrefixValue As Byte = 1
 
         Public ReadOnly name As InvariantString
         Private WithEvents Accepter As New ConnectionAccepter()
         Private ReadOnly logger As New Logger()
-        Private ReadOnly keys As New AsyncViewableCollection(Of CKLKeyEntry)
-        Private ReadOnly ref As ICallQueue = New TaskedCallQueue
+        Private ReadOnly keys As New AsyncViewableCollection(Of CKL.KeyEntry)
+        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private keyIndex As Integer
         Private ReadOnly portHandle As PortPool.PortHandle
 
@@ -18,7 +18,7 @@ Namespace CKL
             Contract.Invariant(Accepter IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(keys IsNot Nothing)
-            Contract.Invariant(ref IsNot Nothing)
+            Contract.Invariant(inQueue IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -38,21 +38,21 @@ Namespace CKL
             Contract.Requires(cdKeyROC IsNot Nothing)
             Contract.Requires(cdKeyTFT IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return ref.QueueAction(
+            Return inQueue.QueueAction(
                 Sub()
                     If (From k In keys Where k.Name = keyName).Any Then
                         Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(keyName))
                     End If
                     If cdKeyROC.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Not a ROC cd key.", "cdKeyROC")
                     If cdKeyTFT.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("Not a TFT cd key.", "cdKeyTFT")
-                    Dim key = New CKLKeyEntry(keyName, cdKeyROC, cdKeyTFT)
+                    Dim key = New CKL.KeyEntry(keyName, cdKeyROC, cdKeyTFT)
                     keys.Add(key)
                 End Sub
             )
         End Function
         Public Function RemoveKey(ByVal keyName As InvariantString) As IFuture
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return ref.QueueAction(
+            Return inQueue.QueueAction(
                 Sub()
                     Dim key = (From k In keys Where k.Name = keyName).FirstOrDefault
                     If key Is Nothing Then Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(keyName))
@@ -75,7 +75,7 @@ Namespace CKL
 
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=Function(packetData) ref.QueueAction(
+                consumer:=Function(packetData) inQueue.QueueAction(
                     Sub()
                         Dim flag = packetData(0)
                         Dim id = packetData(0)
