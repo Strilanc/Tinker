@@ -157,7 +157,7 @@
             While gameDataQueue.Count > 0
                 Dim e = gameDataQueue.Peek()
                 Contract.Assume(e IsNot Nothing)
-                If dataLength + e.Data.Length < PacketSocket.DefaultBufferSize - 20 Then '[20 includes headers and a small safety margin]
+                If dataLength + e.Data.Length >= PacketSocket.DefaultBufferSize - 20 Then '[20 includes headers and a small safety margin]
                     Exit While
                 End If
 

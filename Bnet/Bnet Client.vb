@@ -488,8 +488,10 @@ Namespace Bnet
 
             Dim gameType = WC3.GameTypes.CreateGameUnknown0 Or Me._advertisedGameDescription.GameType
             If _advertisedPrivate Then
+                gameState = gameState Or Bnet.Packet.GameStates.Private
                 gameType = gameType Or WC3.GameTypes.PrivateGame
             Else
+                gameState = gameState And Not Bnet.Packet.GameStates.Private
                 gameType = gameType And Not WC3.GameTypes.PrivateGame
             End If
             Select Case Me._advertisedGameDescription.GameStats.observers
@@ -649,67 +651,77 @@ Namespace Bnet
                 clientCdKeySalt = clientKeySaltBytes.ToUInt32
             End Using
 
-            'Pack or borrow CD Keys
-            Dim futureKeys As IFuture(Of CKL.WC3CredentialPair)
+            'Asycn Enter Keys
+            AsyncRetrieveKeys(clientCdKeySalt, serverCdKeySalt).CallOnValueSuccess(
+                Sub(keys) EnterKeys(keys:=keys,
+                                    revisionCheckSeedString:=CStr(vals("revision check seed")),
+                                    revisionCheckChallenge:=CStr(vals("revision check challenge")),
+                                    clientCdKeySalt:=clientCdKeySalt,
+                                    serverCdKeySalt:=serverCdKeySalt)
+            ).Catch(
+                Sub(exception)
+                    QueueDisconnect(expected:=False, reason:="Error handling {0}: {1}".Frmt(PacketId.ProgramAuthenticationBegin, exception.Message))
+                End Sub
+            )
+        End Sub
+        Private Function AsyncRetrieveKeys(ByVal clientCdKeySalt As UInt32, ByVal serverCdKeySalt As UInt32) As IFuture(Of CKL.WC3CredentialPair)
             If Profile.CKLServerAddress Like "*:#*" Then
                 Dim remoteHost = Profile.CKLServerAddress.Split(":"c)(0)
                 Dim port = UShort.Parse(Profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
-                futureKeys = CKL.Client.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
-                futureKeys.CallOnSuccess(
+                Dim result = CKL.Client.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
+                result.CallOnSuccess(
                     Sub() Logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
                 ).Catch(
                     Sub(exception) Disconnect(expected:=False, reason:="Error borrowing keys: {0}".Frmt(exception.Message))
                 )
+                Return result
             Else
                 Dim roc = Profile.cdKeyROC.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
                 Dim tft = Profile.cdKeyTFT.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
                 If roc.Product <> ProductType.Warcraft3ROC Then Throw New IO.InvalidDataException("Invalid ROC cd key.")
                 If tft.Product <> ProductType.Warcraft3TFT Then Throw New IO.InvalidDataException("Invalid TFT cd key.")
-                futureKeys = New CKL.WC3CredentialPair(roc, tft).Futurized
+                Return New CKL.WC3CredentialPair(roc, tft).Futurized
+            End If
+        End Function
+        Private Sub EnterKeys(ByVal keys As CKL.WC3CredentialPair,
+                              ByVal revisionCheckSeedString As String,
+                              ByVal revisionCheckChallenge As String,
+                              ByVal clientCdKeySalt As UInt32,
+                              ByVal serverCdKeySalt As UInt32)
+            If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
+            Dim revisionCheckResponse = GenerateRevisionCheck(
+                            folder:=My.Settings.war3path,
+                            seedString:=revisionCheckSeedString,
+                            challengeString:=revisionCheckChallenge)
+            SendPacket(Bnet.Packet.MakeAuthenticationFinish(
+                        version:=GetWC3ExeVersion,
+                        revisionCheckResponse:=revisionCheckResponse,
+                        clientCDKeySalt:=clientCdKeySalt,
+                        serverCDKeySalt:=serverCdKeySalt,
+                        cdKeyOwner:=My.Settings.cdKeyOwner,
+                        exeInformation:="war3.exe {0} {1}".Frmt(GetWC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
+                                                                GetWC3FileSize),
+                        productAuthentication:=keys))
+
+            ChangeState(ClientState.WaitingForProgramAuthenticationFinish)
+
+            'Parse address setting
+            Dim remoteHost = ""
+            Dim remotePort = 0US
+            Dim address = My.Settings.bnls
+            If address Is Nothing OrElse address = "" Then
+                Logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
+            Else
+                Dim hostPortPair = address.Split(":"c)
+                remoteHost = hostPortPair(0)
+                If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), remotePort) Then
+                    Logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
+                End If
             End If
 
-            'Respond and begin BNLS connection
-            futureKeys.CallOnValueSuccess(
-                Sub(keys)
-                    If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
-                    Dim revisionCheckResponse = GenerateRevisionCheck(
-                                    folder:=My.Settings.war3path,
-                                    seedString:=CStr(vals("revision check seed")),
-                                    challengeString:=CStr(vals("revision check challenge")))
-                    SendPacket(Bnet.Packet.MakeAuthenticationFinish(
-                                    version:=GetWC3ExeVersion,
-                                    revisionCheckResponse:=revisionCheckResponse,
-                                    clientCDKeySalt:=clientCdKeySalt,
-                                    serverCDKeySalt:=serverCdKeySalt,
-                                    cdKeyOwner:=My.Settings.cdKeyOwner,
-                                    exeInformation:="war3.exe {0} {1}".Frmt(GetWC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss"), GetWC3FileSize),
-                                    productAuthentication:=keys))
-
-                    ChangeState(ClientState.WaitingForProgramAuthenticationFinish)
-
-                    'Parse address setting
-                    Dim remoteHost = ""
-                    Dim remotePort = 0US
-                    Dim address = My.Settings.bnls
-                    If address Is Nothing OrElse address = "" Then
-                        Logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
-                    Else
-                        Dim hostPortPair = address.Split(":"c)
-                        remoteHost = hostPortPair(0)
-                        If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), remotePort) Then
-                            Logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
-                        End If
-                    End If
-
-                    'Attempt connection
-                    Dim seed = keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32
-                    _wardenClient = New Warden.Client(remoteHost:=remoteHost, remotePort:=remotePort, seed:=seed, cookie:=seed, Logger:=Logger)
-                End Sub
-            ).Catch(
-                Sub(exception)
-                    QueueDisconnect(expected:=False, reason:="Error handling authentication begin: {0}".Frmt(exception.Message))
-                End Sub
-            )
+            'Attempt connection
+            Dim seed = keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32
+            _wardenClient = New Warden.Client(remoteHost:=remoteHost, remotePort:=remotePort, seed:=seed, cookie:=seed, Logger:=Logger)
         End Sub
 
         Private Sub ReceiveProgramAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))

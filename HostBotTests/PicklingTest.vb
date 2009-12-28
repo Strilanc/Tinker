@@ -256,7 +256,6 @@ Public Class PicklingTest
         Dim jar = New StringJar("jar", nullTerminated:=False, expectedSize:=1)
         JarTest(jar, "1", {Asc("1")})
         JarTest(jar, "a", {Asc("a")})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2}.AsReadableList))
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
 
         jar = New StringJar("jar", nullTerminated:=True)

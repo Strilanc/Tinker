@@ -227,7 +227,7 @@ Namespace Bnet
             Diablo2Join = 3
         End Enum
         Public Enum QueryGameResponse As UInteger
-            OK = 0
+            Ok = 0
             NotFound = 1
             IncorrectPassword = 2
             Full = 3
@@ -300,7 +300,7 @@ Namespace Bnet
                 Dim count = data.SubView(0, 4).ToUInt32
                 Dim games = New List(Of WC3.RemoteGameDescription)(capacity:=CInt(count))
                 Dim pickles = New List(Of IPickle(Of Object))(capacity:=CInt(count + 1))
-                Dim result = QueryGameResponse.OK
+                Dim result = QueryGameResponse.Ok
                 Dim offset = 4
                 If count = 0 Then
                     'result of single-game query

@@ -214,11 +214,11 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
                 For Each downloader In (From client In clients.Values Where Not client.completed)
                     Dim curUploader = downloader.other
                     Dim availableUploaders = From e In downloader.links Where e.completed AndAlso Not e.Busy
-                    If availableUploaders.None AndAlso curUploader Is Nothing Then  Continue For
+                    If availableUploaders.None AndAlso curUploader Is Nothing Then Continue For
 
                     Dim bestUploader = availableUploaders.Max(Function(e1, e2)
                                                                   Dim n = Math.Sign(e1.GetMaxRateEstimate - e2.GetMaxRateEstimate)
-                                                                  If n <> 0 Then  Return n
+                                                                  If n <> 0 Then Return n
                                                                   Return Math.Sign(e2.links.Count - e1.links.Count)
                                                               End Function)
 

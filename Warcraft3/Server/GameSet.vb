@@ -75,6 +75,11 @@
             )
             Return result
         End Function
+        Public Function QueueTryAcceptPlayer(ByVal player As W3ConnectingPlayer) As IFuture(Of Game)
+            Contract.Requires(player IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() AsyncTryAcceptPlayer(player)).Defuturized
+        End Function
 
         Private Function TryFindGame(ByVal name As InvariantString) As Game
             Return (From game In _games Where game.Name = name).FirstOrDefault
@@ -130,33 +135,27 @@
                 End Sub)
         End Function
 
-        Private Function AsyncTryFindPlayer(ByVal username As String) As IFuture(Of Player)
-            Contract.Requires(username IsNot Nothing)
+        Private Function AsyncTryFindPlayer(ByVal userName As String) As IFuture(Of Player)
+            Contract.Requires(userName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
-            Return From futureFindResults In (From game In _games Select game.QueueTryFindPlayer(username)).ToList.Defuturized
+            Return From futureFindResults In (From game In _games Select game.QueueTryFindPlayer(userName)).ToList.Defuturized
                    Select (From player In futureFindResults Where player IsNot Nothing).FirstOrDefault
         End Function
-
-        Private Function AsyncTryFindPlayerGame(ByVal username As String) As IFuture(Of Game)
-            Contract.Requires(username IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
-            Return _games.ToList.FutureSelect(Function(game) game.QueueTryFindPlayer(username).Select(Function(player) player IsNot Nothing))
-        End Function
-
-        Public Function QueueTryAcceptPlayer(ByVal player As W3ConnectingPlayer) As IFuture(Of Game)
-            Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncTryAcceptPlayer(player)).Defuturized
-        End Function
-        Public Function QueueTryFindPlayerGame(ByVal username As String) As IFuture(Of Game)
-            Contract.Requires(username IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncTryFindPlayerGame(username)).Defuturized
-        End Function
-        Public Function QueueTryFindPlayer(ByVal username As String) As IFuture(Of Player)
-            Contract.Requires(username IsNot Nothing)
+        Public Function QueueTryFindPlayer(ByVal userName As String) As IFuture(Of Player)
+            Contract.Requires(userName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncTryFindPlayer(username)).Defuturized
+            Return inQueue.QueueFunc(Function() AsyncTryFindPlayer(userName)).Defuturized
+        End Function
+
+        Private Function AsyncTryFindPlayerGame(ByVal userName As String) As IFuture(Of Game)
+            Contract.Requires(userName IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
+            Return _games.ToList.FutureSelect(Function(game) game.QueueTryFindPlayer(userName).Select(Function(player) player IsNot Nothing))
+        End Function
+        Public Function QueueTryFindPlayerGame(ByVal userName As String) As IFuture(Of Game)
+            Contract.Requires(userName IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() AsyncTryFindPlayerGame(userName)).Defuturized
         End Function
 
         Private Function CreateGameAsyncView(ByVal adder As Action(Of GameSet, Game),

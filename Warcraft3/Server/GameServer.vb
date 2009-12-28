@@ -420,57 +420,6 @@ Namespace WC3
         'End If
         'End Sub
 
-        'Private ReadOnly linkedAdvertisers As New HashSet(Of IGameSourceSink)
-        'Private Sub AddAdvertiser(ByVal m As IGameSourceSink)
-        'If state > ServerState.AcceptingPlayersAndPlayingGames Then Throw New InvalidOperationException("Not accepting players anymore.")
-        'If linkedAdvertisers.Contains(m) Then Throw New InvalidOperationException("Already have that advertiser.")
-        'AddHandler m.RemovedGame, AddressOf c_AdvertiserRemovedGame
-        'linkedAdvertisers.Add(m)
-        'End Sub
-        'Private Sub SetAdvertiserOptions(ByVal [private] As Boolean)
-        'For Each m In linkedAdvertisers
-        'm.SetAdvertisingOptions([private])
-        'Next m
-        'End Sub
-
-        'Private Sub c_AdvertiserRemovedGame(ByVal _m As IGameSource, ByVal header As GameDescription, ByVal reason As String)
-        'If header IsNot Settings.Header Then Return
-        'Dim m = CType(_m, IGameSourceSink)
-        'inQueue.QueueAction(
-        'Sub()
-        'If Not linkedAdvertisers.Contains(m) Then Return
-        'RemoveHandler m.RemovedGame, AddressOf c_AdvertiserRemovedGame
-        'linkedAdvertisers.Remove(m)
-        'End Sub
-        ')
-        'End Sub
-        'Private NotInheritable Class AdvertisingDependency
-        'Inherits FutureDisposable
-        'Private WithEvents server As GameServer
-
-        'Public Sub New(ByVal server As GameServer)
-        ''contract bug wrt interface event implementation requires this:
-        ''Contract.Requires(server IsNot Nothing)
-        'Contract.Assume(server IsNot Nothing)
-        'Me.server = server
-        'End Sub
-
-        'Protected Overrides Sub PerformDispose(ByVal finalizing As Boolean)
-        'If Not finalizing Then
-        'server.QueueStopAcceptingPlayers()
-        'server = Nothing
-        'End If
-        'End Sub
-
-        'Private Sub c_ServerStateChanged(ByVal sender As GameServer,
-        'ByVal oldState As ServerState,
-        'ByVal newState As ServerState) Handles server.ChangedState
-        'If oldState <= ServerState.AcceptingPlayersAndPlayingGames And newState > ServerState.AcceptingPlayersAndPlayingGames Then
-        'Dispose()
-        'End If
-        'End Sub
-        'End Class
-
         'Public Function QueueFindGame(ByVal gameName As String) As IFuture(Of Game)
         'Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
         'Return inQueue.QueueFunc(Function() asyncFindGame(gameName))
@@ -484,16 +433,6 @@ Namespace WC3
         'Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         'Return inQueue.QueueAction(Sub() RemoveGame(gameName, ignorePermanent))
         'End Function
-        Public Function QueueAddAdvertiser(ByVal advertiser As IGameSourceSink) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Throw New NotImplementedException
-            'Return inQueue.QueueAction(Sub() AddAdvertiser(advertiser))
-        End Function
-        Public Function CreateAdvertisingDependency() As FutureDisposable
-            Contract.Ensures(Contract.Result(Of FutureDisposable)() IsNot Nothing)
-            'Return New AdvertisingDependency(Me)
-            Throw New NotImplementedException
-        End Function
 
         Private Function CreateGameSetsAsyncView(ByVal adder As Action(Of GameServer, GameSet),
                                                  ByVal remover As Action(Of GameServer, GameSet)) As IDisposable
