@@ -195,7 +195,7 @@ Public Class SettingsForm
         My.Settings.Save()
         Me.wantSave = True
 
-        CacheExeInformation()
+        CachedExternalValues.Recache()
 
         Dispose()
     End Sub

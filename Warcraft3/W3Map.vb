@@ -273,7 +273,7 @@ Namespace WC3
             Contract.Requires(war3PatchFolder IsNot Nothing)
             Contract.Ensures(Contract.Result(Of MPQ.Archive)() IsNot Nothing)
             Dim normalPath = "{0}War3Patch.mpq".Frmt(war3PatchFolder)
-            Dim copyPath = "{0}HostBotTempCopyWar3Patch{1}.mpq".Frmt(war3PatchFolder, GetWC3ExeVersion().StringJoin("."))
+            Dim copyPath = "{0}HostBotTempCopyWar3Patch{1}.mpq".Frmt(war3PatchFolder, New CachedExternalValues().WC3ExeVersion.StringJoin("."))
             If IO.File.Exists(copyPath) Then
                 Return New MPQ.Archive(copyPath)
             ElseIf IO.File.Exists(normalPath) Then

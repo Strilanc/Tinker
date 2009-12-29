@@ -405,7 +405,7 @@ Namespace Bnet
                     New EnumByteJar(Of ClanRank)("rank").Weaken)
         End Class
         Public Class ClientPackets
-            Public Shared ReadOnly AuthenticationBegin As New DefJar(PacketId.ProgramAuthenticationBegin,
+            Public Shared ReadOnly ProgramAuthenticationBegin As New DefJar(PacketId.ProgramAuthenticationBegin,
                     New UInt32Jar("protocol").Weaken,
                     New DwordStringJar("platform").Weaken,
                     New DwordStringJar("product").Weaken,
@@ -417,7 +417,7 @@ Namespace Bnet
                     New EnumUInt32Jar(Of MPQ.LanguageId)("language id").Weaken,
                     New StringJar("country abrev").Weaken,
                     New StringJar("country name").Weaken)
-            Public Shared ReadOnly AuthenticationFinish As New DefJar(PacketId.ProgramAuthenticationFinish,
+            Public Shared ReadOnly ProgramAuthenticationFinish As New DefJar(PacketId.ProgramAuthenticationFinish,
                     New UInt32Jar("client cd key salt", showHex:=True).Weaken,
                     New RawDataJar("exe version", Size:=4).Weaken,
                     New UInt32Jar("revision check response", showHex:=True).Weaken,
@@ -427,10 +427,10 @@ Namespace Bnet
                     New ProductCredentialsJar("TFT cd key").Weaken,
                     New StringJar("exe info").Weaken,
                     New StringJar("owner").Weaken)
-            Public Shared ReadOnly AccountLogOnBegin As New DefJar(PacketId.UserAuthenticationBegin,
+            Public Shared ReadOnly UserAuthenticationBegin As New DefJar(PacketId.UserAuthenticationBegin,
                     New RawDataJar("client public key", Size:=32).Weaken,
                     New StringJar("username").Weaken)
-            Public Shared ReadOnly AccountLogOnFinish As New DefJar(PacketId.UserAuthenticationFinish,
+            Public Shared ReadOnly UserAuthenticationFinish As New DefJar(PacketId.UserAuthenticationFinish,
                     New RawDataJar("client password proof", Size:=20).Weaken)
 
             Public Shared ReadOnly ChatCommand As New DefJar(PacketId.ChatCommand,
@@ -482,7 +482,7 @@ Namespace Bnet
         Public Shared Function MakeAuthenticationBegin(ByVal majorVersion As UInteger,
                                                        ByVal localIPAddress As Net.IPAddress) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(ClientPackets.AuthenticationBegin, New Dictionary(Of InvariantString, Object) From {
+            Return New Packet(ClientPackets.ProgramAuthenticationBegin, New Dictionary(Of InvariantString, Object) From {
                     {"protocol", 0},
                     {"platform", "IX86"},
                     {"product", "W3XP"},
@@ -510,7 +510,7 @@ Namespace Bnet
             Contract.Requires(productAuthentication IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
 
-            Return New Packet(ClientPackets.AuthenticationFinish, New Dictionary(Of InvariantString, Object) From {
+            Return New Packet(ClientPackets.ProgramAuthenticationFinish, New Dictionary(Of InvariantString, Object) From {
                     {"client cd key salt", clientCDKeySalt},
                     {"exe version", version},
                     {"revision check response", revisionCheckResponse},
@@ -522,10 +522,19 @@ Namespace Bnet
                     {"owner", cdKeyOwner}
                 })
         End Function
+        Public Shared Function MakeGetFileTime(ByVal filename As String, ByVal requestId As UInt32) As Packet
+            Contract.Requires(filename IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
+            Return New Packet(ClientPackets.GetFileTime, New Dictionary(Of InvariantString, Object) From {
+                    {"request id", requestId},
+                    {"unknown", 0},
+                    {"filename", filename}
+                })
+        End Function
         Public Shared Function MakeAccountLogOnBegin(ByVal credentials As ClientCredentials) As Packet
             Contract.Requires(credentials IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(ClientPackets.AccountLogOnBegin, New Dictionary(Of InvariantString, Object) From {
+            Return New Packet(ClientPackets.UserAuthenticationBegin, New Dictionary(Of InvariantString, Object) From {
                     {"client public key", credentials.PublicKeyBytes},
                     {"username", credentials.UserName}
                 })
@@ -533,7 +542,7 @@ Namespace Bnet
         Public Shared Function MakeAccountLogOnFinish(ByVal clientPasswordProof As IReadableList(Of Byte)) As Packet
             Contract.Requires(clientPasswordProof IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(ClientPackets.AccountLogOnFinish, New Dictionary(Of InvariantString, Object) From {
+            Return New Packet(ClientPackets.UserAuthenticationFinish, New Dictionary(Of InvariantString, Object) From {
                     {"client password proof", clientPasswordProof}
                 })
         End Function
@@ -643,7 +652,7 @@ Namespace Bnet
 
             Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
                 If data.Count < 4 Then Throw New PicklingException("Not enough data")
-                Dim datum = data.SubView(4)
+                Dim datum = data.SubView(0, 4)
                 Dim value As String = datum.ParseChrString(nullTerminated:=True).Reverse.ToArray
                 Return New Pickling.Pickle(Of String)(Me.Name, value, datum)
             End Function

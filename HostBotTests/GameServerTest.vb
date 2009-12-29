@@ -102,9 +102,9 @@ Public Class GameServerTest
                             remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112)))
             server.QueueAcceptSocket(socket)
             'Try read Greet
-            Dim header = testStream.RetrieveWriteData(length:=4)
-            Dim body = testStream.RetrieveWriteData(length:=header.SubToArray(2, 2).ToUInt16 - 4)
-            Dim response = WC3.Packet.Jars.Greet.Parse(body.AsReadableList)
+            Dim packet = testStream.RetrieveWritePacket()
+            Assert.IsTrue(packet(1) = WC3.PacketId.Greet)
+            Dim response = WC3.Packet.Jars.Greet.Parse(packet.SubToArray(4).AsReadableList)
             'Check not closed
             Assert.IsTrue(Not testStream.RetrieveClosed(timeout:=100))
             'Cleanup

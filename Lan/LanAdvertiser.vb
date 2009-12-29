@@ -129,7 +129,7 @@ Namespace Lan
         End Sub
         Private Sub RefreshGame(ByVal game As LanGame)
             Contract.Requires(game IsNot Nothing)
-            Dim pk = WC3.Packet.MakeLanDescribeGame(GetWC3MajorVersion, game.GameDescription)
+            Dim pk = WC3.Packet.MakeLanDescribeGame(New CachedExternalValues().WC3MajorVersion, game.GameDescription)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host

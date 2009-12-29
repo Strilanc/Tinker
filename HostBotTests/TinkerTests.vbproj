@@ -66,6 +66,7 @@
     <Import Include="System.Linq" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BnetClientTest.vb" />
     <Compile Include="PicklingTest.vb" />
     <Compile Include="ProductCredentialsTest.vb" />
     <Compile Include="ClientCredentialsTest.vb" />

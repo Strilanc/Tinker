@@ -19,6 +19,7 @@ Namespace Bnet
     Public Enum ClientState As Integer
         Disconnected
         InitiatingConnection
+        FinishedInitiatingConnection
         WaitingForProgramAuthenticationBegin
         EnterCDKeys
         WaitingForProgramAuthenticationFinish
@@ -40,6 +41,7 @@ Namespace Bnet
         Private ReadOnly outQueue As ICallQueue
         Private ReadOnly inQueue As ICallQueue
 
+        Private ReadOnly _externalProvider As IExternalValues
         Private ReadOnly _profile As Bot.ClientProfile
         Private ReadOnly _logger As Logger
         Private ReadOnly _packetHandler As BnetPacketHandler
@@ -56,6 +58,7 @@ Namespace Bnet
         'connection
         Private _bnetRemoteHostName As String
         Private _userCredentials As ClientCredentials
+        Private _clientCdKeySalt As UInt32
         Private _expectedServerPasswordProof As IReadableList(Of Byte)
         Private _allowRetryConnect As Boolean
         Private _futureConnected As New FutureAction
@@ -76,6 +79,7 @@ Namespace Bnet
             Contract.Invariant(_futureConnected IsNot Nothing)
             Contract.Invariant(_futureAdvertisedGame IsNot Nothing)
             Contract.Invariant(_advertiseRefreshTimer IsNot Nothing)
+            Contract.Invariant(_externalProvider IsNot Nothing)
             Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.InitiatingConnection))
             Contract.Invariant((_wardenClient IsNot Nothing) = (_state > ClientState.WaitingForProgramAuthenticationBegin))
             Contract.Invariant((_state <= ClientState.EnterUserCredentials) OrElse (_userCredentials IsNot Nothing))
@@ -83,14 +87,17 @@ Namespace Bnet
         End Sub
 
         Public Sub New(ByVal profile As Bot.ClientProfile,
+                       ByVal externalProvider As IExternalValues,
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(profile IsNot Nothing)
+            Contract.Assume(externalProvider IsNot Nothing)
             Me._futureConnected.SetHandled()
             Me._futureLoggedIn.SetHandled()
             Me._futureAdvertisedGame.SetHandled()
 
             'Pass values
             Me._profile = profile
+            Me._externalProvider = externalProvider
             Me._logger = If(logger, New Logger)
             Me.outQueue = New TaskedCallQueue
             Me.inQueue = New TaskedCallQueue
@@ -110,6 +117,8 @@ Namespace Bnet
             AddQueuedPacketHandler(Packet.ServerPackets.Warden, AddressOf ReceiveWarden)
             AddQueuedPacketHandler(PacketId.Ping, Packet.ServerPackets.Ping, AddressOf ReceivePing)
             AddQueuedPacketHandler(PacketId.Null, Packet.ServerPackets.Null, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(PacketId.GetFileTime, Packet.ServerPackets.GetFileTime, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(PacketId.GetIconData, Packet.ServerPackets.GetIconData, AddressOf IgnorePacket)
 
             AddQueuedPacketHandler(PacketId.QueryGamesList, Packet.ServerPackets.QueryGamesList, AddressOf IgnorePacket)
             AddQueuedPacketHandler(Packet.ServerPackets.FriendsUpdate, AddressOf IgnorePacket)
@@ -256,8 +265,10 @@ Namespace Bnet
             _state = newState
             outQueue.QueueAction(Sub() RaiseEvent StateChanged(Me, oldState, newState))
         End Sub
+
         Private Function AsyncConnect(ByVal remoteHost As String) As IFuture
             Contract.Requires(remoteHost IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Ifuture)() IsNot Nothing)
             If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
             ChangeState(ClientState.InitiatingConnection)
 
@@ -283,7 +294,7 @@ Namespace Bnet
 
             Dim result = AsyncTcpConnect(remoteHost, port).QueueEvalOnValueSuccess(inQueue,
                 Function(tcpClient)
-                    Me._socket = New PacketSocket(
+                    Dim socket = New PacketSocket(
                             stream:=New ThrottledWriteStream(
                                         substream:=tcpClient.GetStream,
                                         initialSlack:=1000,
@@ -295,21 +306,8 @@ Namespace Bnet
                             timeout:=60.Seconds,
                             Logger:=Logger,
                             bufferSize:=PacketSocket.DefaultBufferSize * 10)
-                    AddHandler Me._socket.Disconnected, AddressOf OnSocketDisconnected
-                    Me._socket.Name = "BNET"
-                    ChangeState(ClientState.WaitingForProgramAuthenticationBegin)
-
-                    'Reset the class future for the connection outcome
-                    Me._futureConnected.TrySetFailed(New InvalidStateException("Another connection was initiated."))
-                    Me._futureConnected = New FutureAction
-                    Me._futureConnected.SetHandled()
-
-                    'Introductions
-                    tcpClient.GetStream.Write({1}, 0, 1) 'protocol version
-                    SendPacket(Bnet.Packet.MakeAuthenticationBegin(GetWC3MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
-
-                    BeginHandlingPackets()
-                    Return Me._futureConnected
+                    ChangeState(ClientState.FinishedInitiatingConnection)
+                    Return AsyncConnect(socket)
                 End Function
             ).Defuturized
             result.Catch(Sub(exception)
@@ -321,6 +319,45 @@ Namespace Bnet
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncConnect(remoteHost)).Defuturized
+        End Function
+
+        Private Function AsyncConnect(ByVal socket As PacketSocket,
+                                      Optional ByVal clientCdKeySalt As UInt32? = Nothing) As IFuture
+            Contract.Requires(socket IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Ifuture)() IsNot Nothing)
+            If Me._state <> ClientState.Disconnected AndAlso Me._state <> ClientState.FinishedInitiatingConnection Then
+                Throw New InvalidOperationException("Must disconnect before connecting again.")
+            End If
+
+            If clientCdKeySalt Is Nothing Then
+                Using rng = New System.Security.Cryptography.RNGCryptoServiceProvider()
+                    Dim clientKeySaltBytes(0 To 3) As Byte
+                    rng.GetBytes(clientKeySaltBytes)
+                    clientCdKeySalt = clientKeySaltBytes.ToUInt32
+                End Using
+            End If
+            Me._clientCdKeySalt = clientCdKeySalt.Value
+            Me._socket = socket
+            Me._socket.Name = "BNET"
+            ChangeState(ClientState.WaitingForProgramAuthenticationBegin)
+
+            'Reset the class future for the connection outcome
+            Me._futureConnected.TrySetFailed(New InvalidStateException("Another connection was initiated."))
+            Me._futureConnected = New FutureAction
+            Me._futureConnected.SetHandled()
+
+            'Introductions
+            socket.SubStream.Write({1}, 0, 1) 'protocol version
+            SendPacket(Bnet.Packet.MakeAuthenticationBegin(_externalProvider.WC3MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
+
+            BeginHandlingPackets()
+            Return Me._futureConnected
+        End Function
+        Public Function QueueConnect(ByVal socket As PacketSocket,
+                                     Optional ByVal clientCdKeySalt As UInt32? = Nothing) As IFuture
+            Contract.Requires(socket IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() AsyncConnect(socket, clientCdKeySalt)).Defuturized
         End Function
 
         Private Sub BeginHandlingPackets()
@@ -634,7 +671,6 @@ Namespace Bnet
             If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
                 Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(PacketId.ProgramAuthenticationBegin))
             End If
-            ChangeState(ClientState.EnterCDKeys)
 
             'Check
             If CType(vals("logon type"), UInteger) <> LOGON_TYPE_WC3 Then
@@ -644,15 +680,11 @@ Namespace Bnet
 
             'Salts
             Dim serverCdKeySalt = CUInt(vals("server cd key salt"))
-            Dim clientCdKeySalt As UInt32
-            Using rng = New System.Security.Cryptography.RNGCryptoServiceProvider()
-                Dim clientKeySaltBytes(0 To 3) As Byte
-                rng.GetBytes(clientKeySaltBytes)
-                clientCdKeySalt = clientKeySaltBytes.ToUInt32
-            End Using
+            Dim clientCdKeySalt = _clientCdKeySalt
 
-            'Asycn Enter Keys
-            AsyncRetrieveKeys(clientCdKeySalt, serverCdKeySalt).CallOnValueSuccess(
+            'Async Enter Keys
+            ChangeState(ClientState.EnterCDKeys)
+            AsyncRetrieveKeys(clientCdKeySalt, serverCdKeySalt).QueueCallOnValueSuccess(inQueue,
                 Sub(keys) EnterKeys(keys:=keys,
                                     revisionCheckSeedString:=CStr(vals("revision check seed")),
                                     revisionCheckChallenge:=CStr(vals("revision check challenge")),
@@ -669,11 +701,7 @@ Namespace Bnet
                 Dim remoteHost = Profile.CKLServerAddress.Split(":"c)(0)
                 Dim port = UShort.Parse(Profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
                 Dim result = CKL.Client.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
-                result.CallOnSuccess(
-                    Sub() Logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)
-                ).Catch(
-                    Sub(exception) Disconnect(expected:=False, reason:="Error borrowing keys: {0}".Frmt(exception.Message))
-                )
+                result.CallOnSuccess(Sub() Logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)).SetHandled()
                 Return result
             Else
                 Dim roc = Profile.cdKeyROC.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
@@ -689,18 +717,17 @@ Namespace Bnet
                               ByVal clientCdKeySalt As UInt32,
                               ByVal serverCdKeySalt As UInt32)
             If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
-            Dim revisionCheckResponse = GenerateRevisionCheck(
-                            folder:=My.Settings.war3path,
-                            seedString:=revisionCheckSeedString,
-                            challengeString:=revisionCheckChallenge)
+            Dim revisionCheckResponse = _externalProvider.GenerateRevisionCheck(folder:=My.Settings.war3path,
+                                                                                seedString:=revisionCheckSeedString,
+                                                                                challengeString:=revisionCheckChallenge)
             SendPacket(Bnet.Packet.MakeAuthenticationFinish(
-                        version:=GetWC3ExeVersion,
+                        version:=_externalProvider.WC3ExeVersion,
                         revisionCheckResponse:=revisionCheckResponse,
                         clientCDKeySalt:=clientCdKeySalt,
                         serverCDKeySalt:=serverCdKeySalt,
                         cdKeyOwner:=My.Settings.cdKeyOwner,
-                        exeInformation:="war3.exe {0} {1}".Frmt(GetWC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
-                                                                GetWC3FileSize),
+                        exeInformation:="war3.exe {0} {1}".Frmt(_externalProvider.WC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
+                                                                _externalProvider.WC3FileSize),
                         productAuthentication:=keys))
 
             ChangeState(ClientState.WaitingForProgramAuthenticationFinish)

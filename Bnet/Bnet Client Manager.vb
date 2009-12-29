@@ -133,7 +133,7 @@ Namespace Bnet
 
             Dim profile = (From p In bot.Settings.GetCopyOfClientProfiles Where p.name = profileName).FirstOrDefault
             If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
-            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile)).Futurized
+            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues)).Futurized
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
