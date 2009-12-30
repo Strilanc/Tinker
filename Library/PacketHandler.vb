@@ -60,7 +60,9 @@ Public MustInherit Class PacketHandler(Of TKey)
             End If
             Return result.Defuturized
         Catch e As Exception
-            Return e.FuturizedFail
+            Dim result = New FutureAction()
+            result.SetFailed(e)
+            Return result
         End Try
     End Function
 

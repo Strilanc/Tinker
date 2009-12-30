@@ -22,7 +22,7 @@ Namespace Components
 
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly _components As New AsyncViewableCollection(Of IBotComponent)
+        Private ReadOnly _components As New AsyncViewableCollection(Of IBotComponent)(outQueue:=outQueue)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)

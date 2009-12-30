@@ -6,11 +6,13 @@ Namespace CKL
         Private Shared ReadOnly jar As New Bnet.Packet.ProductCredentialsJar("ckl")
         Public Const PacketPrefixValue As Byte = 1
 
+        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
+
         Public ReadOnly name As InvariantString
         Private WithEvents Accepter As New ConnectionAccepter()
         Private ReadOnly logger As New Logger()
-        Private ReadOnly keys As New AsyncViewableCollection(Of CKL.KeyEntry)
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly keys As New AsyncViewableCollection(Of CKL.KeyEntry)(outQueue:=outQueue)
         Private keyIndex As Integer
         Private ReadOnly portHandle As PortPool.PortHandle
 

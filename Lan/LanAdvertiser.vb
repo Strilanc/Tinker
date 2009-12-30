@@ -3,27 +3,25 @@
 Namespace Lan
     Public NotInheritable Class Advertiser
         Inherits FutureDisposable
-        Public Shared ReadOnly LanAdvertiserTypeName As InvariantString = "LanAdvertiser"
         Public Shared ReadOnly LanTargetPort As UShort = 6112
-
-        Private ReadOnly _games As New Dictionary(Of UInt32, LanGame)
-        Private ReadOnly _socket As New UdpClient
-        Private ReadOnly _logger As Logger
-        Private ReadOnly _defaultTargetHost As String
 
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue()
 
+        Private ReadOnly _games As New Dictionary(Of UInt32, LanGame)
+        Private ReadOnly _viewGames As New AsyncViewableCollection(Of LanGame)(outQueue:=outQueue)
+        Private ReadOnly _socket As New UdpClient
+        Private ReadOnly _logger As Logger
+        Private ReadOnly _defaultTargetHost As String
+
         Private createCount As UInteger
         Private ReadOnly refreshTimer As New System.Timers.Timer(3000)
-
-        Public Event AddedGame(ByVal sender As Lan.Advertiser, ByVal game As LanGame)
-        Public Event RemovedGame(ByVal sender As Lan.Advertiser, ByVal game As LanGame)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_games IsNot Nothing)
+            Contract.Invariant(_viewGames IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_defaultTargetHost IsNot Nothing)
@@ -73,6 +71,13 @@ Namespace Lan
             AddHandler refreshTimer.Elapsed, Sub() inQueue.QueueAction(Sub() RefreshAll())
         End Sub
 
+        Public ReadOnly Property Logger() As Logger
+            Get
+                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
+                Return _logger
+            End Get
+        End Property
+
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
@@ -97,8 +102,14 @@ Namespace Lan
             RefreshGame(lanGame)
 
             _logger.Log("Added game {0}".Frmt(game.Name), LogMessageType.Positive)
-            outQueue.QueueAction(Sub() RaiseEvent AddedGame(Me, lanGame))
+            _viewGames.Add(lanGame)
         End Sub
+        Public Function QueueAddGame(ByVal gameDescription As WC3.LocalGameDescription,
+                                     Optional ByVal targetHosts As IEnumerable(Of String) = Nothing) As IFuture
+            Contract.Requires(gameDescription IsNot Nothing)
+            Return inQueue.QueueAction(Sub() AddGame(gameDescription, targetHosts))
+        End Function
+
         Private Function RemoveGame(ByVal id As UInt32) As Boolean
             If Not _games.ContainsKey(id) Then Return False
             Dim game = _games(id)
@@ -112,14 +123,21 @@ Namespace Lan
 
             _games.Remove(id)
             _logger.Log("Removed game {0}".Frmt(game.GameDescription.Name), LogMessageType.Negative)
-            outQueue.QueueAction(Sub() RaiseEvent RemovedGame(Me, game))
+            _viewGames.Remove(game)
             Return True
         End Function
+        Public Function QueueRemoveGame(ByVal id As UInt32) As IFuture(Of Boolean)
+            Return inQueue.QueueFunc(Function() RemoveGame(id))
+        End Function
+
         Private Sub ClearGames()
             For Each id In _games.Keys.ToArray
                 RemoveGame(id)
             Next id
         End Sub
+        Public Function QueueClearGames() As IFuture
+            Return inQueue.QueueAction(AddressOf ClearGames)
+        End Function
 
         Private Sub RefreshAll()
             For Each game In _games.Values
@@ -158,30 +176,6 @@ Namespace Lan
                 e.RaiseAsUnexpected("Exception rose past {0}.send".Frmt(Me.GetType.Name))
             End Try
         End Sub
-
-        Public ReadOnly Property Logger() As Logger
-            Get
-                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
-                Return _logger
-            End Get
-        End Property
-        Private ReadOnly Property Type() As InvariantString
-            Get
-                Return LanAdvertiserTypeName
-            End Get
-        End Property
-
-        Public Function QueueAddGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                     Optional ByVal targetHosts As IEnumerable(Of String) = Nothing) As IFuture
-            Contract.Requires(gameDescription IsNot Nothing)
-            Return inQueue.QueueAction(Sub() AddGame(gameDescription, targetHosts))
-        End Function
-        Public Function QueueRemoveGame(ByVal id As UInt32) As IFuture(Of Boolean)
-            Return inQueue.QueueFunc(Function() RemoveGame(id))
-        End Function
-        Public Function QueueClearGames() As IFuture
-            Return inQueue.QueueAction(AddressOf ClearGames)
-        End Function
 
         Public Shared Function CreateLanAdmin(ByVal name As InvariantString,
                                               ByVal password As String,
@@ -246,33 +240,20 @@ Namespace Lan
             'Return result
         End Function
 
-        Private Function WeaveGames(ByVal adder As AddedGameEventHandler,
-                                    ByVal remover As RemovedGameEventHandler) As IDisposable
+        Private Function CreateGamesAsyncView(ByVal adder As Action(Of Lan.Advertiser, LanGame),
+                                              ByVal remover As Action(Of Lan.Advertiser, LanGame)) As IDisposable
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-
-            'Report current games
-            For Each game In _games.Values
-                Dim game_ = game
-                outQueue.QueueAction(Sub() adder(Me, game_))
-            Next game
-
-            'Report future games
-            AddHandler AddedGame, adder
-            AddHandler RemovedGame, remover
-            Return New DelegatedDisposable(
-                Sub()
-                    RemoveHandler AddedGame, adder
-                    RemoveHandler RemovedGame, remover
-                End Sub)
+            Return _viewGames.BeginSync(adder:=Sub(sender, game) adder(Me, game),
+                                        remover:=Sub(sender, game) remover(Me, game))
         End Function
-        Public Function QueueWeaveGames(ByVal adder As AddedGameEventHandler,
-                                        ByVal remover As RemovedGameEventHandler) As IFuture(Of IDisposable)
+        Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of Lan.Advertiser, LanGame),
+                                                  ByVal remover As Action(Of Lan.Advertiser, LanGame)) As IFuture(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() WeaveGames(adder, remover))
+            Return inQueue.QueueFunc(Function() CreateGamesAsyncView(adder, remover))
         End Function
     End Class
 End Namespace

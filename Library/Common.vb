@@ -7,22 +7,6 @@ Imports Strilbrary.Enumeration
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
 #Region "Strings Extra"
-    <Extension()> <Pure()>
-    Public Function Linefy(ByVal text As String) As String
-        Contract.Requires(text IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return text.Replace("\n", Environment.NewLine)
-    End Function
-
-    <Pure()> <Extension()>
-    Public Function FuturizedFail(ByVal exception As Exception) As IFuture
-        Contract.Requires(exception IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-        Dim result = New FutureAction
-        result.SetFailed(exception)
-        Return result
-    End Function
-
     <Pure()>
     <ContractVerification(False)>
     Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IList(Of String) 'verification disabled due to stupid verifier

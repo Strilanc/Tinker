@@ -27,8 +27,9 @@ Namespace Lan
             Me._lanAdvertiser = manager.Advertiser
             logClient.SetLogger(Me._lanAdvertiser.Logger, "Lan")
 
-            _hooks.Add(Me._lanAdvertiser.QueueWeaveGames(adder:=Sub(sender, game) inQueue.QueueAction(Sub() OnAddedGame(game)),
-                                                         remover:=Sub(sender, game) inQueue.QueueAction(Sub() OnRemovedGame(game))))
+            _hooks.Add(Me._lanAdvertiser.QueueCreateGamesAsyncView(
+                                    adder:=Sub(sender, game) inQueue.QueueAction(Sub() OnAddedGame(game)),
+                                    remover:=Sub(sender, game) inQueue.QueueAction(Sub() OnRemovedGame(game))))
         End Sub
 
         Public Function QueueDispose() As IFuture

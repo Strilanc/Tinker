@@ -116,9 +116,7 @@
         Public Shared Function MakeListDescription(ByVal pickles As IEnumerable(Of IPickle(Of T))) As String
             Contract.Requires(pickles IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-            Return "{{\n{0}\n}}".Linefy.Frmt((From e In pickles
-                                              Select e.Description.Value
-                                              ).StringJoin(Environment.NewLine).Indent("    "))
+            Return {"{", (From e In pickles Select e.Description.Value).StringJoin(Environment.NewLine).Indent("    "), "}"}.StringJoin(Environment.NewLine)
         End Function
 
         Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle(Of T).Description

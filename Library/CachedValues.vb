@@ -11,7 +11,7 @@
     <Extension()>
     Function WC3MajorVersion(ByVal this As IExternalValues) As Byte
         Contract.Requires(this IsNot Nothing)
-        Return CByte(this.WC3ExeVersion(1) And &HFF)
+        Return CByte(this.WC3ExeVersion(2) And &HFF)
     End Function
 End Module
 
@@ -19,7 +19,7 @@ Public Class CachedExternalValues
     Implements IExternalValues
 
     Private Shared _cached As Boolean = False
-    Private Shared _exeVersion As Integer()
+    Private Shared _exeVersion As IReadableList(Of Byte)
     Private Shared _exeLastModifiedTime As Date
     Private Shared _exeSize As UInt32
 
@@ -28,24 +28,26 @@ Public Class CachedExternalValues
     End Sub
     Public Shared Sub Recache()
         Contract.Ensures(_exeVersion IsNot Nothing)
-        Contract.Ensures(_exeVersion.Length = 4)
+        Contract.Ensures(_exeVersion.Count = 4)
         Dim path = WC3Path() + "war3.exe"
         Dim versionInfo = FileVersionInfo.GetVersionInfo(path)
         Dim fileInfo = New IO.FileInfo(path)
         Contract.Assume(versionInfo IsNot Nothing)
-        _exeVersion = {versionInfo.ProductMajorPart, versionInfo.ProductMinorPart, versionInfo.ProductBuildPart, versionInfo.ProductPrivatePart}
+        _exeVersion = (From e In {versionInfo.ProductMajorPart, versionInfo.ProductMinorPart, versionInfo.ProductBuildPart, versionInfo.ProductPrivatePart}
+                       Select CByte(e And &HFF)).Reverse.ToArray.AsReadableList
         _exeLastModifiedTime = fileInfo.LastWriteTime
         _exeSize = CUInt(fileInfo.Length)
         _cached = True
     End Sub
 
     Private Function GetWC3ExeVersion() As IReadableList(Of Byte)
-        Dim result = (From e In _exeVersion.Reverse Select CByte(e And &HFF)).ToArray.AsReadableList
+        Dim result = _exeVersion
+        Contract.Assume(result IsNot Nothing)
         Contract.Assume(result.Count = 4)
         Return result
     End Function
 
-    Public ReadOnly Property WC3ExeVersion As Strilbrary.Collections.IReadableList(Of Byte) Implements IExternalValues.WC3ExeVersion
+    Public ReadOnly Property WC3ExeVersion As IReadableList(Of Byte) Implements IExternalValues.WC3ExeVersion
         Get
             Return GetWC3ExeVersion()
         End Get

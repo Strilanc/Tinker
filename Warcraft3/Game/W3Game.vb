@@ -41,7 +41,7 @@ Namespace WC3
         Private fakeHostPlayer As Player
         Private flagHasPlayerLeft As Boolean
         Private adminPlayer As Player
-        Private ReadOnly _players As New AsyncViewableCollection(Of Player)
+        Private ReadOnly _players As New AsyncViewableCollection(Of Player)(outQueue:=outQueue)
         Private ReadOnly indexMap(0 To 12) As Byte
         Private ReadOnly settings As GameSettings
 
