@@ -297,7 +297,6 @@
     <Compile Include="Bnet\Bnet Client Commands.vb" />
     <Compile Include="Warcraft3\Game\Game Commands.vb" />
     <Compile Include="Warcraft3\Server\Server Commands.vb" />
-    <Compile Include="Bot\Links.vb" />
     <Compile Include="Bot\Client Profile.vb" />
     <Compile Include="Components\Components Tab Control.Designer.vb">
       <DependentUpon>Components Tab Control.vb</DependentUpon>
@@ -470,12 +469,12 @@
   <ItemGroup>
     <PublishFile Include="Docs.txt">
       <Visible>False</Visible>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
       <FileType>File</FileType>
     </PublishFile>
   </ItemGroup>
