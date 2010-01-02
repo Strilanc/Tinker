@@ -64,7 +64,7 @@ Namespace Bot
         End Function
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
             _bot.Dispose()
-            _control.Dispose()
+            _control.AsyncInvokedAction(Sub() _control.Dispose())
             Return Nothing
         End Function
     End Class

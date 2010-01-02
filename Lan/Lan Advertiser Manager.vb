@@ -89,7 +89,7 @@ Namespace Lan
                 hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _advertiser.Dispose()
-            _control.Dispose()
+            _control.AsyncInvokedAction(Sub() _control.Dispose())
             QueueSetAutomatic(False)
             Return Nothing
         End Function

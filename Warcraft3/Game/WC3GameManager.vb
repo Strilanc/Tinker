@@ -82,7 +82,7 @@ Namespace WC3
                 hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _game.Dispose()
-            _control.Dispose()
+            _control.AsyncInvokedAction(Sub() _control.Dispose())
             Return Nothing
         End Function
     End Class

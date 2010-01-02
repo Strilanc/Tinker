@@ -30,7 +30,7 @@ Namespace CKL
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
             _server.Stop()
-            _control.Dispose()
+            _control.AsyncInvokedAction(Sub() _control.Dispose())
             Return Nothing
         End Function
 

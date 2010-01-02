@@ -142,7 +142,7 @@ Namespace Bnet
                 hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _client.Dispose()
-            _control.Dispose()
+            _control.AsyncInvokedAction(Sub() _control.Dispose())
             Return Nothing
         End Function
 
