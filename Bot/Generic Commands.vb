@@ -2,7 +2,7 @@ Imports Tinker.Commands
 
 Namespace Bot
     Public NotInheritable Class GenericCommands
-        Public NotInheritable Class RecacheIP(Of T)
+        Public NotInheritable Class CRecacheIP(Of T)
             Inherits TemplatedCommand(Of T)
             Public Sub New()
                 MyBase.New(Name:="RecacheIP",
@@ -16,7 +16,7 @@ Namespace Bot
             End Function
         End Class
 
-        Public NotInheritable Class DownloadMap(Of T)
+        Public NotInheritable Class CDownloadMap(Of T)
             Inherits TemplatedCommand(Of T)
             Public Sub New()
                 MyBase.New(Name:="DownloadMap",
@@ -96,7 +96,7 @@ Namespace Bot
             End Function
         End Class
 
-        Public NotInheritable Class FindMaps(Of T)
+        Public NotInheritable Class CFindMaps(Of T)
             Inherits Command(Of T)
             Public Sub New()
                 MyBase.New(Name:="FindMaps",
