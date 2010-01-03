@@ -1,4 +1,5 @@
 Namespace WC3
+    <ContractVerification(False)>
     Public Class W3ServerControl
         Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
         Private ReadOnly _manager As WC3.GameServerManager

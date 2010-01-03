@@ -22,6 +22,8 @@
             Contract.Requires(description IsNot Nothing)
         End Sub
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Protected NotOverridable Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
             Dim i = argument.IndexOf(" "c)
             If i = -1 Then i = argument.Length

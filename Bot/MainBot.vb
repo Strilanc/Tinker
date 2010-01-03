@@ -73,6 +73,16 @@ Namespace Bot
 
     Public Module BotExtensions
         <Extension()>
+        Public Function InvokeCommand(ByVal this As MainBot, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+            Contract.Requires(this IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+            Return (From components In this.Components.QueueGetAllComponents(Of MainBotManager)()
+                    Select manager = components.First
+                    Select manager.InvokeCommand(user, argument)
+                   ).Defuturized
+        End Function
+        <Extension()>
         Public Function QueueGetOrConstructGameServer(ByVal this As MainBot) As IFuture(Of WC3.GameServerManager)
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameServerManager))() IsNot Nothing)

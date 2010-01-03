@@ -1,12 +1,30 @@
 Namespace Pickling
     Public NotInheritable Class PrefixPickle(Of T)
-        Public ReadOnly index As T
-        Public ReadOnly payload As IPickle(Of Object)
-        Public Sub New(ByVal index As T, ByVal payload As IPickle(Of Object))
-            Contract.Requires(payload IsNot Nothing)
-            Me.index = index
-            Me.payload = payload
+        Private ReadOnly _key As T
+        Private ReadOnly _payload As IPickle(Of Object)
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_key IsNot Nothing)
+            Contract.Invariant(_payload IsNot Nothing)
         End Sub
+
+        Public Sub New(ByVal key As T, ByVal payload As IPickle(Of Object))
+            Contract.Requires(payload IsNot Nothing)
+            Me._key = key
+            Me._payload = payload
+        End Sub
+        Public ReadOnly Property Key As T
+            Get
+                Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
+                Return _key
+            End Get
+        End Property
+        Public ReadOnly Property Payload As IPickle(Of Object)
+            Get
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Return _payload
+            End Get
+        End Property
     End Class
     Public NotInheritable Class PrefixSwitchJar(Of T)
         Inherits BaseJar(Of PrefixPickle(Of T))
@@ -29,9 +47,11 @@ Namespace Pickling
             Dim payload = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
             Return New Pickle(Of PrefixPickle(Of T))(Name, payload, data.SubView(0, payload.payload.Data.Count + 1))
         End Function
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As PrefixPickle(Of T))(ByVal value As TValue) As IPickle(Of TValue)
-            Dim index = CByte(CType(value.index, Object))
-            If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.index.ToString())
+            Dim index = CByte(CType(value.Key, Object))
+            If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.Key.ToString())
             Return New Pickle(Of TValue)(Name, value, Concat({index}, packers(index).Pack(value.payload.Value).Data.ToArray).AsReadableList)
         End Function
 

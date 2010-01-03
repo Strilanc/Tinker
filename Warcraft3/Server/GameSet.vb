@@ -15,6 +15,7 @@
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_gameSettings IsNot Nothing)
             Contract.Invariant(_games IsNot Nothing)
+            Contract.Invariant(_viewPlayers IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
         End Sub

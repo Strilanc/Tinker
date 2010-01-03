@@ -160,6 +160,7 @@
         End Property
         Public ReadOnly Property UseInstanceOnDemand As Boolean
             Get
+                Contract.Ensures(Contract.Result(Of Boolean)() = (_numInstances = 0))
                 Return _numInstances = 0
             End Get
         End Property

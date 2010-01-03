@@ -16,6 +16,8 @@
             Me._tabControl = tabControl
         End Sub
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public Sub Add(ByVal component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
             Contract.Ensures(Me.Contains(component))
@@ -43,6 +45,8 @@
             Return _items.ContainsKey(component)
         End Function
 
+        'verification disabled due to stupid verifier
+        <ContractVerification(False)>
         Public Sub Remove(ByVal component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
             Contract.Ensures(Not Me.Contains(component))

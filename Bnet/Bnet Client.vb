@@ -32,6 +32,8 @@ Namespace Bnet
         AdvertisingGame
     End Enum
 
+    'verification disabled due to large amounts of impure methods
+    <ContractVerification(False)>
     Public NotInheritable Class Client
         Inherits FutureDisposable
 

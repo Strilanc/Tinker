@@ -26,6 +26,8 @@ Namespace WC3
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_viewGames IsNot Nothing)
             Contract.Invariant(_viewGameSets IsNot Nothing)
+            Contract.Invariant(_viewActiveGameSets IsNot Nothing)
+            Contract.Invariant(_viewPlayers IsNot Nothing)
             Contract.Invariant(_gameSets IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)

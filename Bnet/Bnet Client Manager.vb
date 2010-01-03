@@ -148,16 +148,23 @@ Namespace Bnet
 
         Private _autoHook As IFuture(Of IDisposable)
         Private Sub SetAutomatic(ByVal slaved As Boolean)
-            If slaved = (_autoHook IsNot Nothing) Then Return
+            'Do nothing if already in the correct state
+            If slaved = (_autoHook IsNot Nothing) Then
+                Return
+            End If
+
             If slaved Then
                 _autoHook = _bot.QueueCreateActiveGameSetsAsyncView(
-                        adder:=Sub(sender, server, gameSet) _client.QueueStartAdvertisingGame(
-                                     gameDescription:=gameSet.GameSettings.GameDescription,
-                                     isPrivate:=gameSet.GameSettings.IsPrivate).SetHandled(),
-                        remover:=Sub(sender, server, gameSet) _client.QueueStopAdvertisingGame(
-                                     reason:="Auto",
-                                     id:=gameSet.GameSettings.GameDescription.GameId).SetHandled())
+                        adder:=Sub(sender, server, gameSet)
+                                   _client.QueueStartAdvertisingGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                                                                     isPrivate:=gameSet.GameSettings.IsPrivate).SetHandled()
+                               End Sub,
+                        remover:=Sub(sender, server, gameSet)
+                                     _client.QueueStopAdvertisingGame(reason:="Auto",
+                                                                      id:=gameSet.GameSettings.GameDescription.GameId).SetHandled()
+                                 End Sub)
             Else
+                Contract.Assume(_autoHook IsNot Nothing)
                 _autoHook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
                 _autoHook = Nothing
             End If

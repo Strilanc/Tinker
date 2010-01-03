@@ -1,5 +1,6 @@
 Imports System.Threading
 
+<ContractVerification(False)>
 Public Class ClientForm
     Private _bot As Bot.MainBot
 

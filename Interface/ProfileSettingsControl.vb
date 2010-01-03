@@ -1,4 +1,5 @@
-﻿Public Class ProfileSettingsControl
+﻿<ContractVerification(False)>
+Public Class ProfileSettingsControl
     Public lastLoadedProfile As Bot.ClientProfile
     Public Event Delete(ByVal sender As ProfileSettingsControl)
 
@@ -15,7 +16,8 @@
         cboLanHost.Text = profile.LanHost
 
         gridUsers.Rows.Clear()
-        For Each user As BotUser In profile.users.Users
+        For Each user In profile.Users.Users
+            Contract.Assume(user IsNot Nothing)
             gridUsers.Rows.Add(user.Name.ToString, user.PackPermissions(), user.PackSettings())
         Next user
 
@@ -41,13 +43,13 @@
                 If .Cells(0).Value Is Nothing Then Continue For
                 Dim s = CStr(.Cells(0).Value)
                 currentUsers.Add(s)
-                profile.users.UpdateUser(New BotUser( _
+                profile.Users.UpdateUser(New BotUser( _
                             s,
                             CStr(.Cells(1).Value),
                             CStr(.Cells(2).Value)))
             End With
         Next i
-        profile.users.RemoveAllExcept(currentUsers)
+        profile.Users.RemoveAllExcept(currentUsers)
     End Sub
 
     Private Sub btnDeleteProfile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnDeleteProfile.Click

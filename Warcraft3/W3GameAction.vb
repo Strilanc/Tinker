@@ -131,7 +131,7 @@ Namespace WC3
         Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of W3GameActionId)))
             Contract.Requires(payload IsNot Nothing)
             Me._payload = payload.Value.payload
-            Me.id = payload.Value.index
+            Me.id = payload.Value.Key
         End Sub
 
         Public ReadOnly Property Payload As IPickle(Of Object)

@@ -8,10 +8,12 @@
         Return My.Settings.mapPath.AssumeNotNull
     End Function
 
-    <Extension()>
+    'verification disabled due to stupid verifier
+    <ContractVerification(False)>
+    <Extension()> <Pure()>
     Function WC3MajorVersion(ByVal this As IExternalValues) As Byte
         Contract.Requires(this IsNot Nothing)
-        Return CByte(this.WC3ExeVersion(2) And &HFF)
+        Return this.WC3ExeVersion(2)
     End Function
 End Module
 
@@ -35,21 +37,18 @@ Public Class CachedExternalValues
         Contract.Assume(versionInfo IsNot Nothing)
         _exeVersion = (From e In {versionInfo.ProductMajorPart, versionInfo.ProductMinorPart, versionInfo.ProductBuildPart, versionInfo.ProductPrivatePart}
                        Select CByte(e And &HFF)).Reverse.ToArray.AsReadableList
+        Contract.Assume(_exeVersion.Count = 4)
         _exeLastModifiedTime = fileInfo.LastWriteTime
         _exeSize = CUInt(fileInfo.Length)
         _cached = True
     End Sub
 
-    Private Function GetWC3ExeVersion() As IReadableList(Of Byte)
-        Dim result = _exeVersion
-        Contract.Assume(result IsNot Nothing)
-        Contract.Assume(result.Count = 4)
-        Return result
-    End Function
-
     Public ReadOnly Property WC3ExeVersion As IReadableList(Of Byte) Implements IExternalValues.WC3ExeVersion
         Get
-            Return GetWC3ExeVersion()
+            Dim result = _exeVersion
+            Contract.Assume(result IsNot Nothing)
+            Contract.Assume(result.Count = 4)
+            Return result
         End Get
     End Property
 

@@ -8,7 +8,7 @@ Namespace Bnet
         Public Sub New()
             'AddCommand(AdLink)
             'AddCommand(AdUnlink)
-            AddCommand(Bot)
+            AddCommand(New CBot())
             AddCommand(AddUser)
             AddCommand(Demote)
             AddCommand(RemoveUser)
@@ -19,7 +19,6 @@ Namespace Bnet
             AddCommand(User)
             AddCommand(Connect)
             AddCommand(LogOn)
-            AddCommand(FloodTest)
             AddCommand(AdminCode)
             AddCommand(CancelHost)
             AddCommand(Elevate)
@@ -40,78 +39,18 @@ Namespace Bnet
                     projection:=Function(manager) manager.Client))
         End Function
 
-        Private Shared ReadOnly FloodTest As New DelegatedTemplatedCommand(Of Bnet.Client)(
-            Name:="FloodTest",
-            template:="length=# times=# period=ms -burst=1",
-            Description:="Repeats a message.",
-            func:=Function(target, user, argument)
-                      Dim length = UInt32.Parse(argument.NamedValue("length"), CultureInfo.InvariantCulture)
-                      Dim times = UInt32.Parse(argument.NamedValue("times"), CultureInfo.InvariantCulture)
-                      Dim period = UInt32.Parse(argument.NamedValue("period"), CultureInfo.InvariantCulture)
-                      Dim burst = UInt32.Parse(If(argument.TryGetOptionalNamedValue("burst"), "1"), CultureInfo.InvariantCulture)
-                      Dim r = New Random()
-                      Dim t As ModInt32 = Environment.TickCount
-                      For repeat = 0UI To times - 1UI
-                          Dim dt = CInt((t + period * repeat) - Environment.TickCount)
-                          If dt > 0 Then System.Threading.Thread.Sleep(dt)
-                          For b = 0 To burst - 1
-                              target.QueueSendText((From i In Enumerable.Range(0, CInt(length)) Select "ab"(r.Next(2))).ToArray)
-                          Next b
-                      Next repeat
-                      Dim result = New FutureFunction(Of String)
-                      result.SetSucceeded("Finished")
-                      Return result
-                  End Function)
-
-        'Private Shared ReadOnly AdLink As New DelegatedTemplatedCommand(Of Bnet.Client)(
-        'Name:="AdLink",
-        'template:="otherClientName",
-        'Description:="Causes the other client to advertise the same games as this client.",
-        'Permissions:="root:3",
-        'func:=Function(target, user, argument)
-        'Dim otherClient = target.Parent.QueueFindClient(argument.RawValue(0))
-        'Return otherClient.Select(
-        'Function(client2)
-        'If client2 Is Nothing Then
-        'Throw New InvalidOperationException("No client matching that name.")
-        'ElseIf client2 Is target Then
-        'Throw New InvalidOperationException("Can't link to self.")
-        'End If
-
-        'AdvertisingLink.CreateMultiWayLink({target, client2})
-        'Return "Created an advertising link between client {0} and client {1}.".Frmt(target.Name, client2.Name)
-        'End Function
-        ')
-        'End Function)
-        'Private Shared ReadOnly AdUnlink As New DelegatedTemplatedCommand(Of Bnet.Client)(
-        'Name:="AdUnlink",
-        'template:="otherClientName",
-        'Description:="Breaks any advertising link to the other client.",
-        'Permissions:="root:4",
-        'func:=Function(target, user, argument)
-        'Dim otherClient = target.Parent.QueueFindClient(argument.RawValue(0))
-        'Return otherClient.Select(
-        'Function(client2)
-        'If client2 Is Nothing Then
-        'Throw New ArgumentException("No client matching that name.")
-        'ElseIf client2 Is target Then
-        'Throw New ArgumentException("Can't link to self.")
-        'End If
-
-        'target.QueueRemoveAdvertisingPartner(client2)
-        'Return "Any link between client {0} and client {1} has been removed.".Frmt(target.Name, client2.Name)
-        'End Function
-        ')
-        'End Function)
-
-        Private Shared ReadOnly Bot As New DelegatedCommand(Of Bnet.ClientManager)(
-            Name:="Bot",
-            Format:="...",
-            Description:="Forwards commands to the main bot.",
-            Permissions:="root:1",
-            func:=Function(target, user, argument)
-                      Return target.InvokeCommand(user, argument)
-                  End Function)
+        Private NotInheritable Class CBot
+            Inherits Command(Of Bnet.ClientManager)
+            Public Sub New()
+                MyBase.New(Name:="Bot",
+                           Format:="...",
+                           Description:="Forwards commands to the main bot.",
+                           Permissions:="root:1")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As ClientManager, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+                Return target.Bot.InvokeCommand(user, argument)
+            End Function
+        End Class
 
         Private Shared ReadOnly Disconnect As New DelegatedTemplatedCommand(Of Bnet.Client)(
             Name:="Disconnect",

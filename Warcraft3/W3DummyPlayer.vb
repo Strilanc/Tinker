@@ -6,6 +6,8 @@ Namespace WC3
         EnterGame
     End Enum
 
+    'verification disabled until this class can be looked at more closely
+    <ContractVerification(False)>
     Public NotInheritable Class W3DummyPlayer
         Private ReadOnly name As String
         Private ReadOnly listenPort As UShort
@@ -28,12 +30,13 @@ Namespace WC3
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(otherPlayers IsNot Nothing)
         End Sub
-#Region "Life"
+
         Public Sub New(ByVal name As InvariantString,
                        ByVal poolPort As PortPool.PortHandle,
                        Optional ByVal logger As Logger = Nothing,
                        Optional ByVal mode As DummyPlayerMode = DummyPlayerMode.DownloadMap)
             Me.New(name, poolPort.Port, logger, mode)
+            Contract.Requires(poolPort IsNot Nothing)
             Me.poolPort = poolPort
         End Sub
         Public Sub New(ByVal name As InvariantString,
@@ -47,7 +50,6 @@ Namespace WC3
             Me.logger = If(logger, New Logger)
             If listenPort <> 0 Then accepter.Accepter.OpenPort(listenPort)
         End Sub
-#End Region
 
 #Region "Networking"
         Public Function QueueConnect(ByVal hostName As String, ByVal port As UShort) As IFuture
@@ -144,6 +146,7 @@ Namespace WC3
         End Sub
 
         Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of InvariantString, Object)) As Boolean
+            Contract.Requires(vals IsNot Nothing)
             If dl Is Nothing OrElse dl.file Is Nothing Then Throw New InvalidOperationException()
             Dim position = CInt(CUInt(vals("file position")))
             Dim fileData = CType(vals("file data"), IReadableList(Of Byte))

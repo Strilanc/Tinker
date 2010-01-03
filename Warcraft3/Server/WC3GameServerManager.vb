@@ -17,8 +17,12 @@ Namespace WC3
         Private _listener As Net.Sockets.TcpListener
         Private _portHandle As PortPool.PortHandle
 
+        Private _gameIdCount As UInteger
+        Private ReadOnly _gameIdGenerator As New Random()
+
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
+            Contract.Invariant(_gameIdGenerator IsNot Nothing)
             Contract.Invariant(_gameServer IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
@@ -184,13 +188,11 @@ Namespace WC3
             )
         End Sub
 
-        Private allocId As UInteger
-        Private ReadOnly r As New Random()
         Private Function AllocateGameId() As UInt32
             Contract.Ensures(Contract.Result(Of UInt32)() > 0)
-            allocId += 1UI
-            If allocId > 1000 Then allocId = 1
-            Dim result = allocId * 10000UI + CUInt(r.Next(1000))
+            _gameIdCount += 1UI
+            If _gameIdCount > 1000 Then _gameIdCount = 1
+            Dim result = _gameIdCount * 10000UI + CUInt(_gameIdGenerator.Next(1000))
             Contract.Assume(result > 0)
             Return result
         End Function
