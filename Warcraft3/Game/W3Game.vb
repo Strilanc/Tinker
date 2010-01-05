@@ -20,7 +20,7 @@ Namespace WC3
         CountingDown = 2
         Loading = 3
         Playing = 4
-        Closed = 5
+        Disposed = 5
     End Enum
 
     Partial Public NotInheritable Class Game
@@ -103,7 +103,7 @@ Namespace WC3
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
                 Sub()
-                    ChangeState(GameState.Closed)
+                    ChangeState(GameState.Disposed)
                     For Each player In _players
                         player.Dispose()
                     Next player

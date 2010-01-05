@@ -468,8 +468,10 @@ Namespace Bnet
                 Case ClientState.Disconnected To ClientState.WaitingForEnterChat
                     Throw New InvalidOperationException("Can't advertise a game until connected.")
                 Case ClientState.CreatingGame
+                    If _advertisedGameDescription.GameId = gameDescription.GameId Then Return _futureAdvertisedGame
                     Throw New InvalidOperationException("Already creating a game.")
                 Case ClientState.AdvertisingGame
+                    If _advertisedGameDescription.GameId = gameDescription.GameId Then Return _futureAdvertisedGame
                     Throw New InvalidOperationException("Already advertising a game.")
                 Case ClientState.Channel
                     SetReportedListenPort(gameDescription.Port)

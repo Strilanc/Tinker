@@ -102,9 +102,6 @@
                         If oldState < GameState.Loading AndAlso newState >= GameState.Loading Then
                             ActiveGameCount -= 1
                         End If
-                        If newState = GameState.Closed Then
-                            _games.Remove(sender)
-                        End If
                     End Sub)
             'AddHandler game.PlayerEntered, AddressOf c_PlayerEntered
             'AddHandler game.PlayerSentData, AddressOf c_PlayerSentData
@@ -120,6 +117,10 @@
                 Sub()
                     _games.Remove(game)
                     playerLink.CallOnValueSuccess(Sub(link) link.Dispose()).SetHandled()
+                    If _gameSettings.UsePermanent Then AddInstance()
+                    If _games.Count = 0 AndAlso Not _gameSettings.UseInstanceOnDemand Then
+                        Me.Dispose()
+                    End If
                 End Sub)
 
             ActiveGameCount += 1
