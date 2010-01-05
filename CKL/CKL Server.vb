@@ -21,6 +21,7 @@ Namespace CKL
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(keys IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
+            Contract.Invariant(portHandle IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -29,11 +30,6 @@ Namespace CKL
             Me.name = name
             Me.portHandle = listenPort
             Me.Accepter.OpenPort(listenPort.Port)
-        End Sub
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal listenPort As UShort)
-            Me.name = name
-            Me.Accepter.OpenPort(listenPort)
         End Sub
 
         Public Function AddKey(ByVal keyName As InvariantString, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As IFuture

@@ -4,96 +4,104 @@ Namespace Bot
     Public NotInheritable Class BotCommands
         Inherits CommandSet(Of MainBot)
         Public Sub New()
-            AddCommand([To])
-            AddCommand(ListComponents)
-            AddCommand(New Connect)
-            'AddCommand(CreateCKL)
-            AddCommand(CreateClient)
-            'AddCommand(New CommandCreateServer)
+            AddCommand(New CTo)
+            AddCommand(New CListComponents)
+            AddCommand(New CConnect)
+            AddCommand(New CCreateCKL)
+            AddCommand(New CCreateClient)
             AddCommand(New GenericCommands.CFindMaps(Of MainBot))
             AddCommand(New GenericCommands.CDownloadMap(Of MainBot))
             AddCommand(New GenericCommands.CRecacheIP(Of MainBot))
-            AddCommand(Dispose)
-            AddCommand(New CommandLoadPlugin)
-            AddCommand([Get])
-            AddCommand([Set])
+            AddCommand(New CDispose)
+            AddCommand(New CLoadPlugin)
+            AddCommand(New CGet)
+            AddCommand(New CSet)
             'AddCommand(CreateAdmin)
-            AddCommand(CreateLan)
+            AddCommand(New CCreateLan)
         End Sub
 
-        Private Shared ReadOnly ListComponents As New DelegatedTemplatedCommand(Of MainBot)(
-            Name:="Components",
-            template:="-type=type",
-            Description:="Lists all bot components. Use -type= to filter by component type.",
-            Permissions:="root:1",
-            func:=Function(target, user, argument)
-                      Dim futureComponents = target.Components.QueueGetAllComponents()
-                      Dim typeFilter = argument.TryGetOptionalNamedValue("type")
-                      If typeFilter Is Nothing Then
-                          Return From components In futureComponents
-                                 Select "Components: {0}.".Frmt(
-                                     (From component In components
-                                      Select "{0}:{1}".Frmt(component.type, component.name)
-                                      ).StringJoin(", "))
-                      Else
-                          Return From components In futureComponents
-                                 Select "{0} Components: {1}.".Frmt(typeFilter,
-                                     (From component In components
-                                      Where component.type = typeFilter
-                                      Select component.name
-                                      ).StringJoin(", "))
-                      End If
-                  End Function)
+        Private NotInheritable Class CListComponents
+            Inherits TemplatedCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="Components",
+                           template:="-type=type",
+                           Description:="Lists all bot components. Use -type= to filter by component type.",
+                           Permissions:="root:1")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Dim typeFilter = argument.TryGetOptionalNamedValue("type")
+                If typeFilter Is Nothing Then
+                    Return From components In target.Components.QueueGetAllComponents()
+                           Select "Components: {0}.".Frmt((From component In components
+                                                           Select "{0}:{1}".Frmt(component.Type, component.Name)
+                                                          ).StringJoin(", "))
+                Else
+                    Return From components In target.Components.QueueGetAllComponents()
+                           Select "{0} Components: {1}.".Frmt(typeFilter, (From component In components
+                                                                           Where component.Type = typeFilter
+                                                                           Select component.Name
+                                                                           ).StringJoin(", "))
+                End If
+            End Function
+        End Class
 
-        Private Shared ReadOnly [Get] As New DelegatedTemplatedCommand(Of MainBot)(
-            Name:="Get",
-            template:="setting",
-            Description:="Returns a global setting's value {tickperiod, laglimit, commandprefix, gamerate}.",
-            Permissions:="root:1",
-            func:=Function(target, user, argument)
-                      Dim argSetting As InvariantString = argument.RawValue(0)
+        Private NotInheritable Class CGet
+            Inherits TemplatedCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="Get",
+                           template:="setting",
+                           Description:="Returns a global setting's value {tickperiod, laglimit, commandprefix, gamerate}.",
+                           Permissions:="root:1")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Dim argSetting As InvariantString = argument.RawValue(0)
 
-                      Dim settingValue As Object
-                      Select Case argSetting
-                          Case "TickPeriod" : settingValue = My.Settings.game_tick_period
-                          Case "LagLimit" : settingValue = My.Settings.game_lag_limit
-                          Case "CommandPrefix" : settingValue = My.Settings.commandPrefix
-                          Case "GameRate" : settingValue = My.Settings.game_speed_factor
-                          Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argSetting))
-                      End Select
-                      Return "{0} = '{1}'".Frmt(argSetting, settingValue).Futurized
-                  End Function)
+                Dim settingValue As Object
+                Select Case argSetting
+                    Case "TickPeriod" : settingValue = My.Settings.game_tick_period
+                    Case "LagLimit" : settingValue = My.Settings.game_lag_limit
+                    Case "CommandPrefix" : settingValue = My.Settings.commandPrefix
+                    Case "GameRate" : settingValue = My.Settings.game_speed_factor
+                    Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argSetting))
+                End Select
+                Return "{0} = '{1}'".Frmt(argSetting, settingValue).Futurized
+            End Function
+        End Class
 
-        Private Shared ReadOnly [Set] As New DelegatedTemplatedCommand(Of MainBot)(
-            Name:="Set",
-            template:="setting value",
-            Description:="Sets a global setting {tickperiod, laglimit, commandprefix, gamerate}.",
-            Permissions:="root:2",
-            func:=Function(target, user, argument)
-                      Dim argSetting As InvariantString = argument.RawValue(0)
-                      Dim argValue = argument.RawValue(1)
+        Private NotInheritable Class CSet
+            Inherits TemplatedCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="Set",
+                           template:="setting value",
+                           Description:="Sets a global setting {tickperiod, laglimit, commandprefix, gamerate}.",
+                           Permissions:="root:2")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Dim argSetting As InvariantString = argument.RawValue(0)
+                Dim argValue = argument.RawValue(1)
 
-                      Dim valueIntegral As UShort
-                      Dim valueFloat As Double
-                      Dim isShort = UShort.TryParse(argValue, valueIntegral)
-                      Dim isDouble = Double.TryParse(argValue, valueFloat)
-                      Select Case argSetting
-                          Case "TickPeriod"
-                              If Not isShort Or valueIntegral < 1 Or valueIntegral > 20000 Then Throw New ArgumentException("Invalid value")
-                              My.Settings.game_tick_period = valueIntegral
-                          Case "LagLimit"
-                              If Not isShort Or valueIntegral < 1 Or valueIntegral > 20000 Then Throw New ArgumentException("Invalid value")
-                              My.Settings.game_lag_limit = valueIntegral
-                          Case "CommandPrefix"
-                              My.Settings.commandPrefix = argValue
-                          Case "GameRate"
-                              If Not isDouble Or valueFloat < 0.01 Or valueFloat > 10 Then Throw New ArgumentException("Invalid value")
-                              My.Settings.game_speed_factor = valueFloat
-                          Case Else
-                              Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argSetting))
-                      End Select
-                      Return "{0} set to {1}".Frmt(argSetting, argValue).Futurized
-                  End Function)
+                Dim valueIntegral As UShort
+                Dim valueFloat As Double
+                Dim isShort = UShort.TryParse(argValue, valueIntegral)
+                Dim isDouble = Double.TryParse(argValue, valueFloat)
+                Select Case argSetting
+                    Case "TickPeriod"
+                        If Not isShort Or valueIntegral < 1 Or valueIntegral > 20000 Then Throw New ArgumentException("Invalid value")
+                        My.Settings.game_tick_period = valueIntegral
+                    Case "LagLimit"
+                        If Not isShort Or valueIntegral < 1 Or valueIntegral > 20000 Then Throw New ArgumentException("Invalid value")
+                        My.Settings.game_lag_limit = valueIntegral
+                    Case "CommandPrefix"
+                        My.Settings.commandPrefix = argValue
+                    Case "GameRate"
+                        If Not isDouble Or valueFloat < 0.01 Or valueFloat > 10 Then Throw New ArgumentException("Invalid value")
+                        My.Settings.game_speed_factor = valueFloat
+                    Case Else
+                        Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argSetting))
+                End Select
+                Return "{0} set to {1}".Frmt(argSetting, argValue).Futurized
+            End Function
+        End Class
 
         'Private Shared ReadOnly CreateAdmin As New DelegatedTemplatedCommand(Of MainBot)(
         'Name:="CreateAdmin",
@@ -116,103 +124,101 @@ Namespace Bot
         'argListenPort)).EvalOnSuccess(Function() "Created Lan Admin.")
         'End Function)
 
-        Private Shared ReadOnly CreateLan As New DelegatedTemplatedCommand(Of MainBot)(
-            Name:="CreateLan",
-            template:="name -receiver=localhost -auto",
-            Description:="Creates a lan advertiser. -Auto causes the advertiser to automatically advertise any games hosted by the bot.",
-            Permissions:="root:5",
-            func:=Function(target, user, argument)
-                      Dim argName = argument.RawValue(0)
-                      Dim argRemoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
+        Private NotInheritable Class CCreateLan
+            Inherits TemplatedCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="CreateLan",
+                           template:="name -receiver=localhost -auto",
+                           Description:="Creates a lan advertiser. -Auto causes the advertiser to automatically advertise any games hosted by the bot.",
+                           Permissions:="root:4")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Dim name = argument.RawValue(0)
+                Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
+                Dim auto = argument.HasOptionalSwitch("auto")
 
-                      Dim advertiser = New Lan.Advertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
-                      Dim manager = New Lan.AdvertiserManager(argName, target, advertiser)
-                      If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
-                      Return target.Components.QueueAddComponent(manager).EvalOnSuccess(Function() "Created lan advertiser.")
-                  End Function)
+                Dim advertiser = New Lan.Advertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
+                Dim manager = New Lan.AdvertiserManager(name, target, advertiser)
+                If auto Then manager.QueueSetAutomatic(auto)
+                Dim finished = target.Components.QueueAddComponent(manager)
+                finished.Catch(Sub() manager.Dispose())
+                Return finished.EvalOnSuccess(Function() "Created lan advertiser.")
+            End Function
+        End Class
 
-        Public Shared ReadOnly [To] As New DelegatedPartialCommand(Of MainBot)(
-            Name:="To",
-            headtype:="type:name",
-            Description:="Forwards commands to the named component.",
-            Permissions:="root:3",
-            func:=Function(target, user, argumentHead, argumentRest)
-                      Dim args = argumentHead.Split(":"c)
-                      If args.Length <> 2 Then Throw New ArgumentException("Expected widget type:name.")
-                      Dim type As InvariantString = args(0)
-                      Dim name As InvariantString = args(1)
-                      Return (From component In target.Components.QueueFindComponent(type, name)
-                              Select component.InvokeCommand(user, argumentRest)
-                             ).Defuturized()
-                  End Function)
+        Private NotInheritable Class CTo
+            Inherits PartialCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="To",
+                           headtype:="type:name",
+                           Description:="Forwards commands to the named component.",
+                           Permissions:="root:3")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As IFuture(Of String)
+                'parse
+                Dim args = argumentHead.Split(":"c)
+                If args.Length <> 2 Then Throw New ArgumentException("Expected widget type:name.")
+                Dim type As InvariantString = args(0)
+                Dim name As InvariantString = args(1)
+                'send
+                Return (From component In target.Components.QueueFindComponent(type, name)
+                        Select component.InvokeCommand(user, argumentRest)
+                       ).Defuturized()
+            End Function
+        End Class
 
-        Private Shared ReadOnly CreateClient As New DelegatedTemplatedCommand(Of MainBot)(
-            Name:="CreateClient",
-            template:="name -profile=default -auto",
-            Description:="Creates a new bnet client. -Auto causes the client to automatically advertising any games hosted byt he bot.",
-            Permissions:="root:4",
-            func:=Function(target, user, argument)
+        Private NotInheritable Class CCreateClient
+            Inherits TemplatedCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="CreateClient",
+                           template:="name -profile=default -auto",
+                           Description:="Creates a new bnet client. -Auto causes the client to automatically advertising any games hosted by the bot.",
+                           Permissions:="root:4")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                       Dim profileName As InvariantString = If(argument.TryGetOptionalNamedValue("profile"), "default")
-                      Dim clientName As InvariantString = argument.RawValue(0)
+                Dim clientName As InvariantString = argument.RawValue(0)
 
-                      Return Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target).Select(
-                          Function(manager)
-                              Dim added = target.Components.QueueAddComponent(manager)
-                              added.Catch(Sub() manager.Dispose())
-                              If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
-                              Return added.EvalOnSuccess(Function() "Created Client")
-                          End Function).defuturized
-                          End Function)
+                Return Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target).Select(
+                    Function(manager)
+                        Dim added = target.Components.QueueAddComponent(manager)
+                        added.Catch(Sub() manager.Dispose())
+                        If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
+                        Return added.EvalOnSuccess(Function() "Created Client")
+                    End Function).Defuturized
+            End Function
+        End Class
 
-        Public Shared ReadOnly Dispose As New DelegatedTemplatedCommand(Of MainBot)(
-            Name:="Dispose",
-            template:="type:name",
-            Description:="Disposes a bot component.",
-            Permissions:="root:4",
-            func:=Function(target, user, argument)
-                      Dim args = argument.RawValue(0).Split(":"c)
-                      If args.Length <> 2 Then Throw New ArgumentException("Expected a component argument like: type:name.")
-                      Dim type As InvariantString = args(0)
-                      Dim name As InvariantString = args(1)
-                      Dim futureComponent = target.Components.QueueFindComponent(type, name)
-                      Return futureComponent.Select(
-                          Function(component)
-                              component.dispose()
-                              Return "Disposed {0}".Frmt(argument.RawValue(0))
-                          End Function)
-                          End Function)
+        Private NotInheritable Class CDispose
+            Inherits TemplatedCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="Dispose",
+                           template:="type:name",
+                           Description:="Disposes a bot component.",
+                           Permissions:="root:5")
+            End Sub
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                'parse
+                Dim args = argument.RawValue(0).Split(":"c)
+                If args.Length <> 2 Then Throw New ArgumentException("Expected a component argument like: type:name.")
+                Dim type As InvariantString = args(0)
+                Dim name As InvariantString = args(1)
+                'dispose
+                Return target.Components.QueueFindComponent(type, name).Select(
+                    Function(component)
+                        component.Dispose()
+                        Return "Disposed {0}".Frmt(argument.RawValue(0))
+                    End Function)
+            End Function
+        End Class
 
-        '''''<summary>A command which creates a new warcraft 3 game server.</summary>
-        'Public NotInheritable Class CommandCreateServer
-        'Inherits TemplatedCommand(Of MainBot)
-        'Public Sub New()
-        'MyBase.New(Name:="CreateServer",
-        'template:=Concat({"name", "map=<search query>"}, WC3.GameSettings.PartialArgumentTemplates).StringJoin(" "),
-        'Description:="Creates a new wc3 game server. 'Help CreateSever *' for help with options.",
-        'Permissions:="root:4",
-        'extraHelp:=WC3.GameSettings.PartialArgumentHelp.StringJoin(Environment.NewLine))
-        'End Sub
-        'Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-        'Dim name = argument.RawValue(0)
-        'Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
-        'Dim stats = New WC3.GameStats(map,
-        'If(user Is Nothing, My.Resources.ProgramName, user.Name),
-        'argument)
-        'Dim desc = WC3.LocalGameDescription.FromArguments(name, map, stats)
-        'Dim settings = New WC3.GameSettings(map, desc, argument)
-        'Throw New NotImplementedException
-        ''Return target.QueueCreateServer(name, settings).
-        ''EvalOnSuccess(Function() "Created server with name '{0}'. Admin password is {1}.".Frmt(name, settings.AdminPassword))
-        'End Function
-        'End Class
-
-        Public NotInheritable Class CommandLoadPlugin
+        Private NotInheritable Class CLoadPlugin
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="LoadPlugin",
-                template:="name",
-                Description:="Loads the named plugin.",
-                Permissions:="root:5")
+                           template:="name",
+                           Description:="Loads the named plugin.",
+                           Permissions:="root:5")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Strilbrary.Threading.IFuture(Of String)
                 Dim profile = (From p In target.Settings.GetCopyOfPluginProfiles() Where p.name = argument.RawValue(0)).FirstOrDefault
@@ -225,14 +231,13 @@ Namespace Bot
             End Function
         End Class
 
-        ''''<summary>A command which creates a battle.net client and logs on to a battle.net server.</summary>
-        Private NotInheritable Class Connect
+        Private NotInheritable Class CConnect
             Inherits Command(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="Connect",
-                Format:="profile1 profile2 ...",
-                Description:="Creates and connects bnet clients, using the given profiles. All of the clients will be set to automatic hosting.",
-                Permissions:="root:4")
+                           Format:="profile1 profile2 ...",
+                           Description:="Creates and connects bnet clients, using the given profiles. All of the clients will be set to automatic hosting.",
+                           Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
                 Dim profileNames = (From word In argument.Split(" "c) Where word <> "").ToArray
@@ -282,24 +287,24 @@ Namespace Bot
             End Function
         End Class
 
-        'Private Shared ReadOnly CreateCKL As New DelegatedTemplatedCommand(Of MainBot)(
-        'Name:="CreateCKL",
-        'Description:="Starts a CD Key Lending server that others can connect to and use to logon to bnet. This will NOT allow others to learn your cd keys, but WILL allow them to logon with your keys ONCE.",
-        'template:="name -port=#",
-        'Permissions:="root:5",
-        'func:=Function(target, user, argument)
-        'If argument.TryGetOptionalNamedValue("port") Is Nothing Then
-        'Dim port = target.portPool.TryAcquireAnyPort()
-        'If port Is Nothing Then Throw New OperationFailedException("Failed to get a port from pool.")
-        'Return target.QueueAddWidget(New CKL.BotCKLServer(argument.RawValue(0), port)).EvalOnSuccess(Function() "Added CKL server {0}".Frmt(argument.RawValue(0)))
-        'Else
-        'Dim port As UShort
-        'If Not UShort.TryParse(argument.TryGetOptionalNamedValue("port"), port) Then
-        'Throw New OperationFailedException("Expected port number for second argument.")
-        'End If
-        'Dim widget = New CKL.BotCKLServer(argument.RawValue(0), port)
-        'Return target.QueueAddWidget(widget).EvalOnSuccess(Function() "Added CKL server {0}".Frmt(argument.RawValue(0)))
-        'End If
-        'End Function)
+        Private NotInheritable Class CCreateCKL
+            Inherits TemplatedCommand(Of MainBot)
+            Public Sub New()
+                MyBase.New(Name:="CreateCKL",
+                           Description:="Starts a CD Key Lending server that others can connect to and use to logon to bnet. This will NOT allow others to learn your cd keys, but WILL allow them to logon with your keys ONCE.",
+                           template:="name",
+                           Permissions:="root:5")
+            End Sub
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Dim port = target.PortPool.TryAcquireAnyPort()
+                If port Is Nothing Then Throw New OperationFailedException("No available ports in the pool.")
+                Dim name = argument.RawValue(0)
+                Dim server = New CKL.Server(name, port)
+                Dim manager = New CKL.ServerManager(server, target)
+                Dim finished = target.Components.QueueAddComponent(manager)
+                finished.Catch(Sub() manager.Dispose())
+                Return finished.EvalOnSuccess(Function() "Added CKL server {0}".Frmt(name))
+            End Function
+        End Class
     End Class
 End Namespace

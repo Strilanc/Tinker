@@ -39,20 +39,6 @@ Public Class GameServerTest
             usedSlotCount:=0)
 
     <TestMethod()>
-    Public Sub TimeoutTest()
-        Using server = New WC3.GameServer()
-            Dim testStream = New TestStream()
-            Dim socket = New WC3.W3Socket(New PacketSocket(
-                            stream:=testStream,
-                            localEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-                            remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112)))
-
-            server.QueueAcceptSocket(socket)
-            Assert.IsTrue(testStream.RetrieveClosed(timeout:=6000))
-        End Using
-    End Sub
-
-    <TestMethod()>
     Public Sub MissGameTest()
         Using server = New WC3.GameServer()
             Dim testStream = New TestStream()
