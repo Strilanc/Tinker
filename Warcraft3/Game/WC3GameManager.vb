@@ -28,6 +28,38 @@ Namespace WC3
             Me._name = name
             Me._game = game
             Me._control = New W3GameControl(Me)
+
+            AddHandler game.PlayerTalked, Sub(sender, player, text) HandleText(player, text)
+        End Sub
+        Private Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
+            'Check
+            If text.Substring(0, My.Settings.commandPrefix.AssumeNotNull.Length) <> My.Settings.commandPrefix _
+                    AndAlso text <> Tinker.Bot.MainBot.TriggerCommandText Then
+                Return 'not a command
+            End If
+
+            '?Trigger command
+            If text = Tinker.Bot.MainBot.TriggerCommandText Then
+                _game.QueueSendMessageTo("Command prefix: {0}".Frmt(My.Settings.commandPrefix), player)
+                Return
+            End If
+
+            'Normal commands
+            Dim commandText = text.Substring(My.Settings.commandPrefix.AssumeNotNull.Length)
+            Dim commandResult = _game.QueueCommandProcessText(_bot, player, commandText)
+            commandResult.CallOnValueSuccess(
+                Sub(message) _game.QueueSendMessageTo(If(message, "Command Succeeded"), player)
+            ).Catch(
+                Sub(exception) _game.QueueSendMessageTo("Failed: {0}".Frmt(exception.Message), player)
+            )
+
+            'Delay notification
+            Call 2.Seconds.AsyncWait().CallWhenReady(
+                Sub()
+                    If commandResult.State = FutureState.Unknown Then
+                        _game.QueueSendMessageTo("Command '{0}' is running... You will be informed when it finishes.".Frmt(text), player)
+                    End If
+                End Sub)
         End Sub
 
         Public ReadOnly Property Game As WC3.Game

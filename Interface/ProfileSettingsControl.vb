@@ -13,7 +13,6 @@ Public Class ProfileSettingsControl
         cboGateway.Text = profile.server
         txtInitialChannel.Text = profile.initialChannel
         txtCKLServer.Text = profile.CKLServerAddress
-        cboLanHost.Text = profile.LanHost
 
         gridUsers.Rows.Clear()
         For Each user In profile.Users.Users
@@ -35,7 +34,6 @@ Public Class ProfileSettingsControl
         profile.server = cboGateway.Text.AssumeNotNull
         profile.initialChannel = txtInitialChannel.Text.AssumeNotNull
         profile.CKLServerAddress = txtCKLServer.Text.AssumeNotNull
-        profile.LanHost = cboLanHost.Text.AssumeNotNull
 
         Dim currentUsers = New List(Of InvariantString)
         For i = 0 To gridUsers.RowCount - 1

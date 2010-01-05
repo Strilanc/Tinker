@@ -1,6 +1,25 @@
 ----------------
-Command Permission Levels ~:
+General Architecture:
+
+The bot is divided into components, which follow Model-View-Controller. The 'View' is usually suffixed with 'Control' and the 
+'Controller' is usually suffixed with 'Manager'. The View/Control is used for interacting with the user, the Controller/Manager 
+implements the IBotComponent interface, and the Model/whatever does all the nitty gritty stuff. As a rule of thumb, the main
+bot class has no special knowledge of any component, the Controllers have no internal knowledge of their View, and the Models
+have no knowledge of their Controller, View, or the main bot.
 ----------------
+Concurrency via Futures:
+
+Many classes are synchronized using message passing, not locks. Internally these classes use an inQueue (sometimes named 'ref') to
+queue requests, and an outQueue (sometimes named 'eref') to queue outgoing events. Any 'public' function which is not thread-safe
+will be private, and provide a public QueueThatFunction method which returns a future for the result.
+
+Programming with message-passing and futures is not the same as programming with locks. In particular, there is no directy equivalent for
+holding two locks at the same time. However, it is impossible to deadlock using message-passing (although you can create a self-
+queueing loop). Keep in mind it is not guaranteed what thread the a future callback will arrive on. If your code uses
+future.CallWhenReady(some_thread_unsafe_function), you have introduced a bug! Use the Queue-variants of the extension methods or
+change the callback to properly synchronize the real callback.
+----------------
+Command Permission Levels ~:
 	root: control the bot
 		1 say stuff
 		2 download maps
@@ -24,18 +43,4 @@ Command Permission Levels ~:
 
 	local: No remote usage (eg. from bnet commands)
 		-
-----------------
-
-----------------
-Synchronization:
-----------------
-Many classes are synchronized using message passing, not locks. Internally these classes use an inQueue (sometimes named 'ref') to
-queue requests, and an outQueue (sometimes named 'eref') to queue outgoing events. Any 'public' function which is not thread-safe
-will be private, and provide a public QueueThatFunction method which returns a future for the result.
-
-Programming with message-passing and futures is not the same as programming with locks. In particular, there is no analogy for
-holding two locks at the same time. However, it is impossible to deadlock using message-passing (although you can create a self-
-queueing loop). Keep in mind it is not guaranteed what thread will make available the results of a future. If your code uses
-future.CallWhenReady(some_thread_unsafe_function), you have introduced a bug! Use the Queue-variants of the extension methods or
-change the callback to properly synchronize the real callback.
 ----------------

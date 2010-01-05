@@ -20,6 +20,13 @@
             Contract.Assume(remoteHost IsNot Nothing)
             logger = If(logger, New Logger)
 
+            If remoteHost = "" Then
+                Dim result = New FutureFunction(Of Warden.Socket)
+                result.SetFailed(New ArgumentException("No remote host specified."))
+                _socket = result
+                Return
+            End If
+
             logger.Log("Connecting to bnls server at {0}:{1}...".Frmt(remoteHost, remotePort), LogMessageType.Positive)
 
             Dim futureSocket = From tcpClient In AsyncTcpConnect(remoteHost, remotePort)
@@ -53,7 +60,8 @@
                         End Sub
             ).Catch(
                 Sub(exception)
-                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, exception), LogMessageType.Problem)
+                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, exception.Message), LogMessageType.Problem)
+                    exception.RaiseAsUnexpected("Connecting to bnls server.")
                 End Sub
             )
         End Sub

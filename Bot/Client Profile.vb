@@ -42,16 +42,6 @@ Namespace Bot
                 Me._users = value
             End Set
         End Property
-        Public Property LanHost As String
-            Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return Me._lanHost
-            End Get
-            Set(ByVal value As String)
-                Contract.Requires(value IsNot Nothing)
-                Me._lanHost = value
-            End Set
-        End Property
         Public Property CKLServerAddress As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -79,7 +69,7 @@ Namespace Bot
             If version >= 1 Then
                 reader.ReadString() 'lan_admin_host
                 reader.ReadUInt16() 'lan_admin_port
-                LanHost = reader.ReadString()
+                reader.ReadString() 'lan_host
                 reader.ReadString() 'lan_admin_password
             End If
         End Sub
@@ -100,7 +90,7 @@ Namespace Bot
             If version >= 1 Then
                 bw.Write(" (None)") 'old default lan_admin_host
                 bw.Write(CUShort(6114)) 'old default lan_admin_port
-                bw.Write(LanHost)
+                bw.Write("") 'old lan_host
                 bw.Write("") 'old default lan_admin_password
             End If
         End Sub

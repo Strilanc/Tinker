@@ -290,7 +290,8 @@ Namespace Bnet
                     remoteHost = remoteHost.Split(":"c)(0)
                 End If
             Catch e As Exception
-                Disconnect(expected:=False, reason:="Failed to start connection: {0}.".Frmt(e))
+                Disconnect(expected:=False, reason:="Failed to start connection: {0}.".Frmt(e.Message))
+                e.RaiseAsUnexpected("Failed to start bnet connection.")
                 Throw
             End Try
 
@@ -657,7 +658,8 @@ Namespace Bnet
 
                 _socket.WritePacket(Concat({Bnet.Packet.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
             Catch e As Exception
-                Disconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, e))
+                Disconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, e.Message))
+                e.RaiseAsUnexpected("Error sending {0} to {1}".Frmt(packet.Id, _socket.Name))
             End Try
         End Sub
         Public Function QueueSendPacket(ByVal packet As Bnet.Packet) As IFuture
@@ -790,7 +792,7 @@ Namespace Bnet
             End Select
 
             _futureConnected.TrySetFailed(New IO.IOException("Failed to connect: {0} {1}".Frmt(errmsg, vals("info"))))
-            Throw New Exception(errmsg)
+            Throw New IO.InvalidDataException(errmsg)
         End Sub
 
         Private Sub ReceiveUserAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
@@ -798,7 +800,7 @@ Namespace Bnet
             Dim vals = value.Value
 
             If _state <> ClientState.WaitingForUserAuthenticationBegin Then
-                Throw New Exception("Invalid state for receiving {0}".Frmt(PacketId.UserAuthenticationBegin))
+                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(PacketId.UserAuthenticationBegin))
             End If
 
             Dim result = CType(vals("result"), Bnet.Packet.UserAuthenticationBeginResult)
@@ -813,7 +815,7 @@ Namespace Bnet
                         errmsg = "Unrecognized login problem: " + result.ToString()
                 End Select
                 _futureLoggedIn.TrySetFailed(New IO.IOException("Failed to login: " + errmsg))
-                Throw New Exception(errmsg)
+                Throw New IO.InvalidDataException(errmsg)
             End If
 
             Dim accountPasswordSalt = CType(vals("account password salt"), IReadableList(Of Byte)).AssumeNotNull
@@ -832,7 +834,7 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             If _state <> ClientState.WaitingForUserAuthenticationFinish Then
-                Throw New Exception("Invalid state for receiving {0}: {1}".Frmt(PacketId.UserAuthenticationFinish, _state))
+                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(PacketId.UserAuthenticationFinish, _state))
             End If
 
             Dim result = CType(vals("result"), Bnet.Packet.UserAuthenticationFinishResult)
@@ -850,7 +852,7 @@ Namespace Bnet
                         errmsg = "Unrecognized logon error: " + result.ToString()
                 End Select
                 _futureLoggedIn.TrySetFailed(New IO.IOException("Failed to logon: " + errmsg))
-                Throw New Exception(errmsg)
+                Throw New IO.InvalidDataException(errmsg)
             End If
 
             'validate
@@ -902,6 +904,7 @@ Namespace Bnet
         Private Sub OnWardenFail(ByVal exception As Exception)
             Contract.Requires(exception IsNot Nothing)
             QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(exception.Message))
+            exception.RaiseAsUnexpected("Warden/BNLS Error")
         End Sub
 #End Region
 

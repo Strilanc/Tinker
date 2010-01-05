@@ -447,6 +447,7 @@ Namespace WC3
             Try
                 Return If(TryGetMapString(mapArchive, nameKey), nameKey)
             Catch e As Exception
+                e.RaiseAsUnexpected("Error reading map strings file for {0}".Frmt(nameKey))
                 Return "{0} (error reading strings file: {1})".Frmt(nameKey, e.Message)
             End Try
         End Function

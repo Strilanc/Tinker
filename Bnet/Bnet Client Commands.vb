@@ -259,7 +259,9 @@ Namespace Bnet
                     End Function).Defuturized
                 futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futureGameSet.value.dispose())
                 Dim futureDesc = futureAdvertised.EvalOnSuccess(Function() futureGameSet.Value.GameSettings.GameDescription)
-                Return futureDesc.Select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.Name, desc.GameStats.AdvertisedPath))
+                Return futureDesc.Select(Function(desc) "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(desc.Name,
+                                                                                                                desc.GameStats.AdvertisedPath,
+                                                                                                                futureGameSet.Value.GameSettings.AdminPassword))
             End Function
         End Class
 

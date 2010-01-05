@@ -28,8 +28,6 @@ Partial Class ProfileSettingsControl
         Me.btnDeleteProfile = New System.Windows.Forms.Button()
         Me.txtCKLServer = New System.Windows.Forms.TextBox()
         Me.lblCKLServer = New System.Windows.Forms.Label()
-        Me.lblLanHost = New System.Windows.Forms.Label()
-        Me.cboLanHost = New System.Windows.Forms.ComboBox()
         Me.lblRocKey = New System.Windows.Forms.Label()
         Me.txtRocKey = New System.Windows.Forms.TextBox()
         Me.txtTftKey = New System.Windows.Forms.TextBox()
@@ -72,8 +70,6 @@ Partial Class ProfileSettingsControl
         Me.tabSettings.Controls.Add(Me.btnDeleteProfile)
         Me.tabSettings.Controls.Add(Me.txtCKLServer)
         Me.tabSettings.Controls.Add(Me.lblCKLServer)
-        Me.tabSettings.Controls.Add(Me.lblLanHost)
-        Me.tabSettings.Controls.Add(Me.cboLanHost)
         Me.tabSettings.Controls.Add(Me.lblRocKey)
         Me.tabSettings.Controls.Add(Me.txtRocKey)
         Me.tabSettings.Controls.Add(Me.txtTftKey)
@@ -122,25 +118,6 @@ Partial Class ProfileSettingsControl
         Me.lblCKLServer.Size = New System.Drawing.Size(174, 13)
         Me.lblCKLServer.TabIndex = 59
         Me.lblCKLServer.Text = "(Advanced) Cd Key Lending Server"
-        '
-        'lblLanHost
-        '
-        Me.lblLanHost.AutoSize = True
-        Me.lblLanHost.Location = New System.Drawing.Point(229, 121)
-        Me.lblLanHost.Name = "lblLanHost"
-        Me.lblLanHost.Size = New System.Drawing.Size(100, 13)
-        Me.lblLanHost.TabIndex = 57
-        Me.lblLanHost.Text = "LAN Advertise Host"
-        '
-        'cboLanHost
-        '
-        Me.cboLanHost.FormattingEnabled = True
-        Me.cboLanHost.Items.AddRange(New Object() {" (None)", "127.0.0.1 (LocalHost)", "255.255.255.255 (Broadcast Local LAN)"})
-        Me.cboLanHost.Location = New System.Drawing.Point(232, 137)
-        Me.cboLanHost.Name = "cboLanHost"
-        Me.cboLanHost.Size = New System.Drawing.Size(220, 21)
-        Me.cboLanHost.TabIndex = 7
-        Me.tipNormal.SetToolTip(Me.cboLanHost, "Games hosted with this profile will be advertised on LAN to this address.")
         '
         'lblRocKey
         '
@@ -337,8 +314,6 @@ Partial Class ProfileSettingsControl
     Friend WithEvents tabUsers As System.Windows.Forms.TabPage
     Friend WithEvents txtCKLServer As System.Windows.Forms.TextBox
     Friend WithEvents lblCKLServer As System.Windows.Forms.Label
-    Friend WithEvents lblLanHost As System.Windows.Forms.Label
-    Friend WithEvents cboLanHost As System.Windows.Forms.ComboBox
     Friend WithEvents lblRocKey As System.Windows.Forms.Label
     Friend WithEvents txtRocKey As System.Windows.Forms.TextBox
     Friend WithEvents txtTftKey As System.Windows.Forms.TextBox

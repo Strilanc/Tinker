@@ -104,6 +104,7 @@
                 _keepAlive.Reset()
 
             Catch e As Exception
+                e.RaiseAsUnexpected("Sending {0} to {1}".Frmt(packet.Id, _socket.Name))
                 _socket.Disconnect(expected:=False, reason:="Error sending {0} for {1}: {2}".Frmt(packet.Id, _socket.Name, e))
                 Throw
             End Try
