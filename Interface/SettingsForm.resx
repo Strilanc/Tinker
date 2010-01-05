@@ -130,16 +130,27 @@ Player names can be at most 15 characters, counting the characters for a color c
 Weird characters may or may not cause problems, depending on the character.</value>
   </data>
   <data name="txtPortPool.ToolTip" xml:space="preserve">
-    <value>A set of unmanaged ports the bot can use to listen for connections.
-For example, if port 0 specified for a lan advertiser or a client profile, they take a port from the pool.
-Separate ports with commas, and use hyphens to denote ranges.
-Example: 6112, 6114-6116</value>
+    <value>The ports the bot may use for accepting connections.
+For example, when a game server is started it will use a port from the pool for hosting.
+The included ports should all be reachable (eg. forwarded if you are behind a router with NAT).
+The included ports should not include warcraft 3's hosting port (usually 6112, but you can change it within wc3).
+Separate entries with commas, and use hyphens to denote ranges.
+Example: 6113, 6115-6116</value>
   </data>
   <data name="txtBnlsServer.ToolTip" xml:space="preserve">
     <value>The address:port of a BNLS server which supports warden responses (e.g. example.com:9999).
 The server is not given your username, password, or CD Keys.
 However, if the server accidentally or purposefully returns incorrect responses, bnet will think you are cheating.</value>
   </data>
+  <metadata name="colName.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
+  <metadata name="colAccess.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
+  <metadata name="colSettings.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
   <metadata name="colName.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>

@@ -18,9 +18,7 @@ Namespace Bot
         Public Sub New(ByVal bot As MainBot)
             Contract.Requires(bot IsNot Nothing)
             Me._bot = bot
-            Dim control = New GenericBotComponentControl(Me)
-            Me._control = control
-            control.logControl.AssumeNotNull.SetLogUnexpected(True)
+            Me._control = New GenericBotComponentControl(Me)
         End Sub
 
         Public ReadOnly Property Bot As MainBot

@@ -19,16 +19,15 @@ Partial Class LoggerControl
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
-        Me.components = New System.ComponentModel.Container()
         Me.txtLog = New System.Windows.Forms.RichTextBox()
         Me.chkDataEvents = New System.Windows.Forms.CheckBox()
         Me.chkParsedData = New System.Windows.Forms.CheckBox()
         Me.chkRawData = New System.Windows.Forms.CheckBox()
         Me.btnClear = New System.Windows.Forms.Button()
         Me.lblBuffering = New System.Windows.Forms.Label()
-        Me.lblNumBuffered = New System.Windows.Forms.Label()
         Me.chkSaveFile = New System.Windows.Forms.CheckBox()
-        Me.tips = New System.Windows.Forms.ToolTip(Me.components)
+        Me.tips = New System.Windows.Forms.ToolTip()
+        Me.btnUnbuffer = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'txtLog
@@ -56,7 +55,6 @@ Partial Class LoggerControl
         Me.chkDataEvents.TabIndex = 1
         Me.chkDataEvents.Text = "Data Events"
         Me.chkDataEvents.ThreeState = True
-        Me.tips.SetToolTip(Me.chkRawData, "Shows data events such as packet arrivals." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Half-check to only save to file.")
         Me.chkDataEvents.UseVisualStyleBackColor = False
         '
         'chkParsedData
@@ -70,7 +68,6 @@ Partial Class LoggerControl
         Me.chkParsedData.TabIndex = 2
         Me.chkParsedData.Text = "Parsed Data"
         Me.chkParsedData.ThreeState = True
-        Me.tips.SetToolTip(Me.chkRawData, "Shows parsed data such as received packet contents." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Half-check to only saveto file.")
         Me.chkParsedData.UseVisualStyleBackColor = False
         '
         'chkRawData
@@ -104,26 +101,12 @@ Partial Class LoggerControl
         Me.lblBuffering.BackColor = System.Drawing.Color.White
         Me.lblBuffering.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
         Me.lblBuffering.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblBuffering.Location = New System.Drawing.Point(541, 582)
+        Me.lblBuffering.Location = New System.Drawing.Point(506, 594)
         Me.lblBuffering.Name = "lblBuffering"
-        Me.lblBuffering.Size = New System.Drawing.Size(372, 15)
+        Me.lblBuffering.Size = New System.Drawing.Size(307, 15)
         Me.lblBuffering.TabIndex = 5
-        Me.lblBuffering.Text = "Buffering new text until cursor returns to end-of-text... (ctrl+end)"
+        Me.lblBuffering.Text = "Buffering new messages (cursor not at end-of-text)..."
         Me.lblBuffering.Visible = False
-        '
-        'lblNumBuffered
-        '
-        Me.lblNumBuffered.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.lblNumBuffered.BackColor = System.Drawing.Color.White
-        Me.lblNumBuffered.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle
-        Me.lblNumBuffered.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblNumBuffered.Location = New System.Drawing.Point(541, 597)
-        Me.lblNumBuffered.Name = "lblNumBuffered"
-        Me.lblNumBuffered.Size = New System.Drawing.Size(372, 15)
-        Me.lblNumBuffered.TabIndex = 6
-        Me.lblNumBuffered.Text = "(0 messages buffered)"
-        Me.lblNumBuffered.TextAlign = System.Drawing.ContentAlignment.TopCenter
-        Me.lblNumBuffered.Visible = False
         '
         'chkSaveFile
         '
@@ -137,17 +120,28 @@ Partial Class LoggerControl
         Me.chkSaveFile.Text = "Save"
         Me.chkSaveFile.UseVisualStyleBackColor = False
         '
+        'btnUnbuffer
+        '
+        Me.btnUnbuffer.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnUnbuffer.Location = New System.Drawing.Point(819, 590)
+        Me.btnUnbuffer.Name = "btnUnbuffer"
+        Me.btnUnbuffer.Size = New System.Drawing.Size(94, 21)
+        Me.btnUnbuffer.TabIndex = 8
+        Me.btnUnbuffer.Text = "Unbuffer (0)"
+        Me.btnUnbuffer.UseVisualStyleBackColor = True
+        Me.btnUnbuffer.Visible = False
+        '
         'LoggerControl
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.Controls.Add(Me.chkSaveFile)
-        Me.Controls.Add(Me.lblNumBuffered)
         Me.Controls.Add(Me.lblBuffering)
         Me.Controls.Add(Me.btnClear)
         Me.Controls.Add(Me.chkRawData)
         Me.Controls.Add(Me.chkParsedData)
         Me.Controls.Add(Me.chkDataEvents)
+        Me.Controls.Add(Me.btnUnbuffer)
         Me.Controls.Add(Me.txtLog)
         Me.Name = "LoggerControl"
         Me.Size = New System.Drawing.Size(938, 640)
@@ -161,8 +155,8 @@ Partial Class LoggerControl
     Private WithEvents chkRawData As System.Windows.Forms.CheckBox
     Private WithEvents btnClear As System.Windows.Forms.Button
     Friend WithEvents lblBuffering As System.Windows.Forms.Label
-    Friend WithEvents lblNumBuffered As System.Windows.Forms.Label
     Private WithEvents chkSaveFile As System.Windows.Forms.CheckBox
     Friend WithEvents tips As System.Windows.Forms.ToolTip
+    Friend WithEvents btnUnbuffer As System.Windows.Forms.Button
 
 End Class

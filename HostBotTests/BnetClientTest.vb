@@ -51,17 +51,20 @@ Public Class BnetClientTest
         Dim fConnect = client.QueueConnect(socket, clientCdKeySalt)
         Assert.IsTrue(stream.RetrieveWriteData(1).SequenceEqual({1}))
 
+        'program auth begin (C->S)
         Dim packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Bnet.PacketId.ProgramAuthenticationBegin)
         Dim body = Bnet.Packet.ClientPackets.ProgramAuthenticationBegin.Parse(packet.SubToArray(4).AsReadableList)
         Assert.IsTrue(CUInt(body.Value("protocol")) = 0)
 
+        'ping
         stream.EnqueueRead({&HFF, &H25, &H8, &H0, &H6A, &H55, &H70, &H1C})
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Bnet.PacketId.Ping)
         body = Bnet.Packet.ClientPackets.Ping.Parse(packet.SubToArray(4).AsReadableList)
         Assert.IsTrue(CUInt(body.Value("salt")) = New Byte() {&H6A, &H55, &H70, &H1C}.ToUInt32)
 
+        'program auth begin (S->C)
         Dim serverCdKeySalt = 19UI
         stream.EnqueuedReadPacket(
             preheader:={&HFF, Bnet.PacketId.ProgramAuthenticationBegin},
@@ -76,6 +79,7 @@ Public Class BnetClientTest
                     {"server signature", (From i In Enumerable.Range(0, 128) Select CByte(i)).ToArray.AsReadableList}
                 }).Data)
 
+        'program auth finish (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Bnet.PacketId.ProgramAuthenticationFinish)
         body = Bnet.Packet.ClientPackets.ProgramAuthenticationFinish.Parse(packet.SubToArray(4).AsReadableList)
@@ -91,17 +95,26 @@ Public Class BnetClientTest
         Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).PublicKey = 2818526)
         Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).AuthenticationProof.SequenceEqual(profile.cdKeyTFT.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
 
-        stream.EnqueueRead({&HFF, &H51, &H9, &H0, &H0, &H0, &H0, &H0, &H0})
+        'program auth finish (S->C)
+        stream.EnqueuedReadPacket(
+            preheader:={&HFF, Bnet.PacketId.ProgramAuthenticationFinish},
+            sizeByteCount:=2,
+            body:=Bnet.Packet.ServerPackets.ProgramAuthenticationFinish.Pack(New Dictionary(Of InvariantString, Object) From {
+                    {"result", Bnet.Packet.ProgramAuthenticationFinishResult.Passed},
+                    {"info", ""}
+                }).Data)
         Assert.IsTrue(BlockOnFuture(fConnect))
         Dim credentials = New Bnet.ClientCredentials(profile.userName, profile.password, privateKey:=2)
         client.QueueLogOn(credentials)
 
+        'user auth begin (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Bnet.PacketId.UserAuthenticationBegin)
         body = Bnet.Packet.ClientPackets.UserAuthenticationBegin.Parse(packet.SubToArray(4).AsReadableList)
         Assert.IsTrue(CType(body.Value("client public key"), IReadableList(Of Byte)).SequenceEqual(credentials.PublicKeyBytes))
         Assert.IsTrue(CStr(body.Value("username")) = profile.userName)
 
+        'user auth begin (S->C)
         Dim accountSalt = Linq.Enumerable.Repeat(CByte(1), 32).ToArray.AsReadableList
         Dim serverPublicKey = Linq.Enumerable.Repeat(CByte(2), 32).ToArray.AsReadableList
         stream.EnqueuedReadPacket(
@@ -112,11 +125,14 @@ Public Class BnetClientTest
                     {"account password salt", accountSalt},
                     {"server public key", serverPublicKey}
                 }).Data)
+
+        'user auth finish (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Bnet.PacketId.UserAuthenticationFinish)
         body = Bnet.Packet.ClientPackets.UserAuthenticationFinish.Parse(packet.SubToArray(4).AsReadableList)
         Assert.IsTrue(CType(body.Value("client password proof"), IReadableList(Of Byte)).SequenceEqual(credentials.ClientPasswordProof(accountSalt, serverPublicKey)))
 
+        'user auth finish (S->C)
         stream.EnqueuedReadPacket(
             preheader:={&HFF, Bnet.PacketId.UserAuthenticationFinish},
             sizeByteCount:=2,
@@ -125,13 +141,16 @@ Public Class BnetClientTest
                     {"server password proof", credentials.ServerPasswordProof(accountSalt, serverPublicKey)},
                     {"custom error info", ""}
                 }).Data)
-        'clan info
+
+        'clan info (S->C)
         stream.EnqueueRead({&HFF, &H75, &HA, &H0, &H0, &H44, &H45, &H6F, &H47, &H2})
 
+        'net game port (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Bnet.PacketId.NetGamePort)
         body = Bnet.Packet.ClientPackets.NetGamePort.Parse(packet.SubToArray(4).AsReadableList)
 
+        'enter chat (C->S)
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Bnet.PacketId.EnterChat)
         body = Bnet.Packet.ClientPackets.EnterChat.Parse(packet.SubToArray(4).AsReadableList)

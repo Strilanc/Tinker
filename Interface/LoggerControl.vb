@@ -10,7 +10,6 @@ Public Class LoggerControl
     Protected lock As New Object()
     Private _logFilename As String
     Private filestream As IO.Stream
-    Private isLoggingUnexpectedExceptions As Boolean
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(callbackModeMap IsNot Nothing)
@@ -105,18 +104,6 @@ Public Class LoggerControl
     End Sub
 
 #Region "State"
-    Public Sub SetLogUnexpected(ByVal value As Boolean)
-        SyncLock lock
-            If value = isLoggingUnexpectedExceptions Then Return
-            isLoggingUnexpectedExceptions = value
-            If isLoggingUnexpectedExceptions Then
-                AddHandler UnexpectedException, AddressOf OnLoggedUnexpectedException
-            Else
-                RemoveHandler UnexpectedException, AddressOf OnLoggedUnexpectedException
-            End If
-        End SyncLock
-    End Sub
-
     Public Sub SetLogger(ByVal logger As Logger,
                          ByVal name As InvariantString,
                          Optional ByVal dataEventsMode As CallbackMode = CallbackMode.Unspecified,
@@ -223,8 +210,8 @@ Public Class LoggerControl
         Try
             If txtLog.SelectionStart <> txtLog.TextLength Then
                 SyncLock lock
-                    lblNumBuffered.Text = "({0} messages buffered)".Frmt(numQueuedMessages)
-                    lblNumBuffered.Visible = True
+                    btnUnbuffer.Text = "Unbuffer ({0})".Frmt(numQueuedMessages)
+                    btnUnbuffer.Visible = True
                     lblBuffering.Visible = True
                 End SyncLock
                 Return
@@ -320,10 +307,6 @@ Public Class LoggerControl
                                       ByVal out As IFuture(Of String)) Handles _logger.LoggedFutureMessage
         uiRef.QueueAction(Sub() LogFutureMessage(placeholder, out))
     End Sub
-    Private Sub OnLoggedUnexpectedException(ByVal exception As Exception,
-                                            ByVal context As String)
-        LogMessage("Unexpected exception ({0}): {1}".Frmt(context, exception), Color.Red)
-    End Sub
 #End Region
 
 #Region "UI Events"
@@ -378,19 +361,22 @@ Public Class LoggerControl
 
     Private Sub OnDisposed() Handles Me.Disposed
         SetLogger(Nothing, Nothing)
-        SetLogUnexpected(False)
     End Sub
 
     Private Sub OnSelectionChangedLog() Handles txtLog.SelectionChanged
         If txtLog.SelectionStart = txtLog.TextLength AndAlso lblBuffering.Visible Then
             lblBuffering.Visible = False
-            lblNumBuffered.Visible = False
+            btnUnbuffer.Visible = False
             SyncLock lock
                 If numQueuedMessages > 0 Then
                     uiRef.QueueAction(AddressOf EmptyQueue)
                 End If
             End SyncLock
         End If
+    End Sub
+
+    Private Sub btnUnbuffer_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnUnbuffer.Click
+        txtLog.Select(txtLog.TextLength, 0)
     End Sub
 #End Region
 End Class

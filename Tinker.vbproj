@@ -181,6 +181,12 @@
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />
     <Compile Include="Bot\Settings.vb" />
+    <Compile Include="Interface\ExceptionForm.Designer.vb">
+      <DependentUpon>ExceptionForm.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Interface\ExceptionForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="Pickling\SizePrefixedDataJar.vb" />
     <Compile Include="Pickling\RemainingDataJar.vb" />
     <Compile Include="Pickling\PrefixSwitchJar.vb" />
@@ -374,6 +380,10 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Interface\CommandControl.resx">
       <DependentUpon>CommandControl.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface\ExceptionForm.resx">
+      <DependentUpon>ExceptionForm.vb</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="Lan\LanAdvertiserControl.resx">

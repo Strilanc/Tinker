@@ -84,13 +84,15 @@
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-            Dim result = New FutureFunction(Of IFuture(Of String))
             If IsUserAllowed(user) Then
-                result.SetByEvaluating(Function() PerformInvoke(target, user, argument))
+                Dim result = PerformInvoke(target, user, argument)
+                result.Catch(Sub(ex) ex.RaiseAsUnexpected("Error invoking command"))
+                Return result
             Else
-                result.SetFailed(New InvalidOperationException("Unsufficient permissions. Need {0}.".Frmt(Me.Permissions)))
+                Dim result = New FutureFunction(Of String)
+                result.SetFailed(New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions)))
+                Return result
             End If
-            Return result.Defuturized
         End Function
 
         Protected MustOverride Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)

@@ -28,6 +28,8 @@ Partial Class ClientForm
         Me.mnuClose = New System.Windows.Forms.ToolStripMenuItem()
         Me.btnMinimizeToTray = New System.Windows.Forms.Button()
         Me.panelBotControl = New System.Windows.Forms.Panel()
+        Me.btnShowExceptionLog = New System.Windows.Forms.Button()
+        Me.tip = New System.Windows.Forms.ToolTip()
         Me.mnuTray.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -90,12 +92,23 @@ Partial Class ClientForm
         Me.panelBotControl.Size = New System.Drawing.Size(1005, 400)
         Me.panelBotControl.TabIndex = 13
         '
+        'btnShowExceptionLog
+        '
+        Me.btnShowExceptionLog.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnShowExceptionLog.Location = New System.Drawing.Point(12, 406)
+        Me.btnShowExceptionLog.Name = "btnShowExceptionLog"
+        Me.btnShowExceptionLog.Size = New System.Drawing.Size(146, 29)
+        Me.btnShowExceptionLog.TabIndex = 14
+        Me.btnShowExceptionLog.Text = "Exception Log (0)"
+        Me.btnShowExceptionLog.UseVisualStyleBackColor = True
+        '
         'ClientForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.AutoScroll = True
         Me.ClientSize = New System.Drawing.Size(1005, 447)
+        Me.Controls.Add(Me.btnShowExceptionLog)
         Me.Controls.Add(Me.btnMinimizeToTray)
         Me.Controls.Add(Me.panelBotControl)
         Me.Controls.Add(Me.btnSettings)
@@ -117,4 +130,6 @@ Partial Class ClientForm
     Friend WithEvents mnuClose As System.Windows.Forms.ToolStripMenuItem
     Friend WithEvents btnMinimizeToTray As System.Windows.Forms.Button
     Friend WithEvents panelBotControl As System.Windows.Forms.Panel
+    Friend WithEvents btnShowExceptionLog As System.Windows.Forms.Button
+    Friend WithEvents tip As System.Windows.Forms.ToolTip
 End Class

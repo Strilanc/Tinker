@@ -3,6 +3,7 @@ Imports System.Threading
 <ContractVerification(False)>
 Public Class ClientForm
     Private _bot As Bot.MainBot
+    Private _exceptionForm As New ExceptionForm()
 
     Private Shadows Sub OnLoad() Handles Me.Load
         Contract.Assume(_bot Is Nothing)
@@ -16,6 +17,7 @@ Public Class ClientForm
             InitMainControl()
             InitFinish()
 
+            AddHandler _exceptionForm.ExceptionCountChanged, Sub() btnShowExceptionLog.Text = "Exception Log ({0})".Frmt(_exceptionForm.ExceptionCount)
             _bot.FutureDisposed.CallWhenReady(Sub() Me.BeginInvoke(Sub() Me.Dispose())).SetHandled()
         Catch ex As Exception
             MessageBox.Show("Error loading program: {0}.".Frmt(ex))
@@ -151,5 +153,9 @@ Public Class ClientForm
     Private Sub OnClickMinimizeToTray() Handles btnMinimizeToTray.Click
         trayIcon.Visible = True
         Me.Visible = False
+    End Sub
+
+    Private Sub btnShowExceptionLog_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnShowExceptionLog.Click
+        _exceptionForm.Show()
     End Sub
 End Class
