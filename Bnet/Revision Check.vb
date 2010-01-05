@@ -190,7 +190,7 @@ Namespace Bnet
 
             'Process hash files
             For Each filename In HashFiles
-                Using file = New IO.FileStream(folder + filename, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+                Using file = New IO.FileStream(IO.Path.Combine(folder, filename), IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
                     'Apply operations using each dword in stream
                     Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({file, New IO.MemoryStream(tailBuffer)})))
                     For repeat = 0 To CInt(file.Length).CeilingMultiple(1024) - 1 Step 4

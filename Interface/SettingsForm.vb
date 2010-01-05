@@ -270,4 +270,8 @@ Public Class SettingsForm
             End If
         End With
     End Sub
+
+    Private Sub txtProgramPath_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles txtProgramPath.TextChanged
+        lblWar3FolderPathError.Visible = Not CachedExternalValues.Recache(txtProgramPath.Text)
+    End Sub
 End Class

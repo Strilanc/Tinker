@@ -116,6 +116,10 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(directory IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
 
+        If Not directory.EndsWith(IO.Path.DirectorySeparatorChar) AndAlso Not directory.EndsWith(IO.Path.AltDirectorySeparatorChar) Then
+            directory += IO.Path.DirectorySeparatorChar
+        End If
+
         'Separate directory and filename patterns
         fileQuery = fileQuery.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
         Dim dirQuery As InvariantString = "*"

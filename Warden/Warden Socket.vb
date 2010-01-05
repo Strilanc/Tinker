@@ -79,7 +79,8 @@
             If packet.Cookie <> _cookie Then
                 Throw New IO.InvalidDataException("Incorrect cookie from BNLS server.")
             ElseIf packet.Result <> 0 Then
-                Throw New IO.IOException("BNLS server indicated there was a failure.")
+                Throw New IO.IOException("BNLS server indicated there was a failure: {0}: ""{1}"".".Frmt(packet.Result,
+                                                                                                     packet.ResponseData.ParseChrString(nullTerminated:=False)))
             End If
 
             Select Case packet.Id

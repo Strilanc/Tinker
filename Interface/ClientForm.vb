@@ -19,7 +19,6 @@ Public Class ClientForm
             _exceptionForm.WindowState = FormWindowState.Minimized
             _exceptionForm.Show()
             _exceptionForm.Hide()
-            _exceptionForm.WindowState = FormWindowState.Normal
             Contract.Assume(_exceptionForm.IsHandleCreated)
 
             AddHandler _exceptionForm.ExceptionCountChanged, Sub() btnShowExceptionLog.Text = "Exception Log ({0})".Frmt(_exceptionForm.ExceptionCount)
@@ -162,6 +161,12 @@ Public Class ClientForm
     End Sub
 
     Private Sub btnShowExceptionLog_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnShowExceptionLog.Click
+        _exceptionForm.Left = Me.Left + Me.Width \ 4
+        _exceptionForm.Top = Me.Top + Me.Height \ 4
+        _exceptionForm.Width = Me.Width \ 2
+        _exceptionForm.Height = Me.Height \ 2
         _exceptionForm.Show()
+        _exceptionForm.WindowState = FormWindowState.Normal
+        _exceptionForm.Focus()
     End Sub
 End Class

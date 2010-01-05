@@ -26,12 +26,16 @@ Public Class CachedExternalValues
     Private Shared _exeSize As UInt32
 
     Public Sub New()
-        If Not _cached Then Recache()
+        If Not _cached Then
+            If Not Recache() Then Throw New InvalidStateException("Failed to cache war3.exe program details.")
+        End If
     End Sub
-    Public Shared Sub Recache()
+    Public Shared Function Recache(Optional ByVal programFolder As String = Nothing) As Boolean
         Contract.Ensures(_exeVersion IsNot Nothing)
         Contract.Ensures(_exeVersion.Count = 4)
-        Dim path = WC3Path() + "war3.exe"
+        Dim path = IO.Path.Combine(If(programFolder, WC3Path()), "war3.exe")
+        If Not IO.File.Exists(path) Then Return False
+
         Dim versionInfo = FileVersionInfo.GetVersionInfo(path)
         Dim fileInfo = New IO.FileInfo(path)
         Contract.Assume(versionInfo IsNot Nothing)
@@ -41,7 +45,8 @@ Public Class CachedExternalValues
         _exeLastModifiedTime = fileInfo.LastWriteTime
         _exeSize = CUInt(fileInfo.Length)
         _cached = True
-    End Sub
+        Return True
+    End Function
 
     Public ReadOnly Property WC3ExeVersion As IReadableList(Of Byte) Implements IExternalValues.WC3ExeVersion
         Get

@@ -61,6 +61,7 @@ Partial Class SettingsForm
         Me.btnSave = New System.Windows.Forms.Button()
         Me.btnUserHelp = New System.Windows.Forms.Button()
         Me.OpenFileDialog = New System.Windows.Forms.OpenFileDialog()
+        Me.lblWar3FolderPathError = New System.Windows.Forms.Label()
         Me.tabsSettings.SuspendLayout()
         Me.tabGlobalSettings.SuspendLayout()
         Me.tabPlugins.SuspendLayout()
@@ -207,6 +208,7 @@ Partial Class SettingsForm
         'tabGlobalSettings
         '
         Me.tabGlobalSettings.AutoScroll = True
+        Me.tabGlobalSettings.Controls.Add(Me.lblWar3FolderPathError)
         Me.tabGlobalSettings.Controls.Add(Me.lblGreeting)
         Me.tabGlobalSettings.Controls.Add(Me.txtGreeting)
         Me.tabGlobalSettings.Controls.Add(Me.txtBnlsServer)
@@ -476,6 +478,18 @@ Partial Class SettingsForm
         '
         Me.OpenFileDialog.Title = "Select Plugin"
         '
+        'lblWar3FolderPathError
+        '
+        Me.lblWar3FolderPathError.AutoSize = True
+        Me.lblWar3FolderPathError.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblWar3FolderPathError.ForeColor = System.Drawing.Color.Red
+        Me.lblWar3FolderPathError.Location = New System.Drawing.Point(386, 42)
+        Me.lblWar3FolderPathError.Name = "lblWar3FolderPathError"
+        Me.lblWar3FolderPathError.Size = New System.Drawing.Size(66, 13)
+        Me.lblWar3FolderPathError.TabIndex = 64
+        Me.lblWar3FolderPathError.Text = "Not Found"
+        Me.lblWar3FolderPathError.Visible = False
+        '
         'SettingsForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -541,4 +555,5 @@ Partial Class SettingsForm
     Friend WithEvents lblBnlsServer As System.Windows.Forms.Label
     Friend WithEvents lblGreeting As System.Windows.Forms.Label
     Friend WithEvents txtGreeting As System.Windows.Forms.TextBox
+    Friend WithEvents lblWar3FolderPathError As System.Windows.Forms.Label
 End Class

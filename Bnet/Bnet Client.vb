@@ -48,7 +48,7 @@ Namespace Bnet
         Private ReadOnly _logger As Logger
         Private ReadOnly _packetHandler As BnetPacketHandler
         Private _socket As PacketSocket
-        Private _wardenClient As Warden.Client
+        Private WithEvents _wardenClient As Warden.Client
 
         'game
         Private _advertisedGameDescription As WC3.LocalGameDescription
@@ -698,6 +698,7 @@ Namespace Bnet
                                     serverCdKeySalt:=serverCdKeySalt)
             ).Catch(
                 Sub(exception)
+                    exception.RaiseAsUnexpected("Error Handling {0}".Frmt(PacketId.ProgramAuthenticationBegin))
                     QueueDisconnect(expected:=False, reason:="Error handling {0}: {1}".Frmt(PacketId.ProgramAuthenticationBegin, exception.Message))
                 End Sub
             )
@@ -897,11 +898,11 @@ Namespace Bnet
             Dim encryptedData = CType(pickle.Value("encrypted data"), IReadableList(Of Byte)).AssumeNotNull
             _wardenClient.QueueSendWardenData(encryptedData)
         End Sub
-        Private Sub OnWardenSend(ByVal data As IReadableList(Of Byte))
+        Private Sub OnWardenReceivedResponseData(ByVal sender As Warden.Client, ByVal data As IReadableList(Of Byte)) Handles _wardenClient.ReceivedWardenData
             Contract.Requires(data IsNot Nothing)
             inQueue.QueueAction(Sub() SendPacket(Bnet.Packet.MakeWarden(data)))
         End Sub
-        Private Sub OnWardenFail(ByVal exception As Exception)
+        Private Sub OnWardenFail(ByVal sender As Warden.Client, ByVal exception As Exception) Handles _wardenClient.Failed
             Contract.Requires(exception IsNot Nothing)
             QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(exception.Message))
             exception.RaiseAsUnexpected("Warden/BNLS Error")

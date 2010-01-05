@@ -221,7 +221,8 @@ Namespace WC3
                        ByVal relativePath As String,
                        ByVal wc3PatchMPQFolder As String)
             Me.fileAvailable = True
-            Me._advertisedPath = "Maps\" + relativePath
+            Me._advertisedPath = IO.Path.Combine("Maps", relativePath).Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar).
+                                                                       Replace(IO.Path.DirectorySeparatorChar, "\")
             Me._fullPath = IO.Path.Combine(folder, relativePath.ToString.Replace("\", IO.Path.DirectorySeparatorChar))
             Me._folder = folder
             Using f = New IO.FileStream(FullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
@@ -266,8 +267,8 @@ Namespace WC3
         Private Shared Function OpenWar3PatchArchive(ByVal war3PatchFolder As String) As MPQ.Archive
             Contract.Requires(war3PatchFolder IsNot Nothing)
             Contract.Ensures(Contract.Result(Of MPQ.Archive)() IsNot Nothing)
-            Dim normalPath = "{0}War3Patch.mpq".Frmt(war3PatchFolder)
-            Dim copyPath = "{0}HostBotTempCopyWar3Patch{1}.mpq".Frmt(war3PatchFolder, New CachedExternalValues().WC3ExeVersion.StringJoin("."))
+            Dim normalPath = IO.Path.Combine(war3PatchFolder, "War3Patch.mpq")
+            Dim copyPath = IO.Path.Combine(war3PatchFolder, "TinkerTempCopyWar3Patch{0}.mpq".Frmt(New CachedExternalValues().WC3ExeVersion.StringJoin(".")))
             If IO.File.Exists(copyPath) Then
                 Return New MPQ.Archive(copyPath)
             ElseIf IO.File.Exists(normalPath) Then
