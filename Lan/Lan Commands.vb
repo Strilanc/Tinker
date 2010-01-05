@@ -45,7 +45,7 @@ Namespace Lan
                       Dim gameStats = New WC3.GameStats(map, If(user Is Nothing, Application.ProductName, user.Name.Value), argument)
                       Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, gameStats)
 
-                      Return target.queueAddGame(gameDescription).EvalOnSuccess(Function() "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.relativePath))
+                      Return target.queueAddGame(gameDescription).EvalOnSuccess(Function() "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath))
                   End Function)
 
         Private Shared ReadOnly Remove As New DelegatedTemplatedCommand(Of Lan.Advertiser)(
@@ -86,7 +86,7 @@ Namespace Lan
                                   gameDescription:=gameSet.GameSettings.GameDescription)).Defuturized
                       futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futuregameset.value.dispose())
                       Dim futureDesc = futureAdvertised.EvalOnSuccess(Function() futureGameSet.Value.GameSettings.GameDescription)
-                      Return futureDesc.select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.name, desc.GameStats.relativePath))
+                      Return futureDesc.select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.name, desc.GameStats.AdvertisedPath))
                   End Function)
     End Class
 End Namespace

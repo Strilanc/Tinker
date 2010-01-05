@@ -63,7 +63,7 @@ Namespace Bnet
                 lstState.Items.Add("---")
                 lstState.Items.Add(game.Name)
                 lstState.Items.Add(game.GameStats.HostName)
-                lstState.Items.Add(game.GameStats.relativePath.Split("\"c).Last)
+                lstState.Items.Add(game.GameStats.AdvertisedPath.ToString.Split("\"c).Last)
             Next game
         End Sub
         Private Sub OnClientReceivedChatEvent(ByVal sender As Bnet.Client, ByVal vals As Dictionary(Of InvariantString, Object))
@@ -147,7 +147,7 @@ Namespace Bnet
                             Dim p = _client.AdvertisedPrivate
                             If g IsNot Nothing Then
                                 lstState.Items.Add(g.Name)
-                                lstState.Items.Add(g.GameStats.relativePath)
+                                lstState.Items.Add(g.GameStats.AdvertisedPath)
                                 lstState.Items.Add(If(p, "Private", "Public"))
                                 lstState.Items.Add("Refreshed: {0}".Frmt(DateTime.Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
                             End If

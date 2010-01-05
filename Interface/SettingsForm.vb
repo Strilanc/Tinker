@@ -32,9 +32,9 @@ Public Class SettingsForm
     Public Sub New(ByVal clientProfiles As IEnumerable(Of Bot.ClientProfile),
                    ByVal pluginProfiles As IEnumerable(Of Bot.PluginProfile),
                    ByVal portPool As PortPool)
-        Contract.Requires(clientProfiles IsNot Nothing)
-        Contract.Requires(pluginProfiles IsNot Nothing)
-        Contract.Requires(portPool IsNot Nothing)
+        Contract.Assume(clientProfiles IsNot Nothing)
+        Contract.Assume(pluginProfiles IsNot Nothing)
+        Contract.Assume(portPool IsNot Nothing)
         InitializeComponent()
         Me._clientProfiles = clientProfiles.ToList
         Me._pluginProfiles = pluginProfiles.ToList
@@ -234,8 +234,8 @@ Public Class SettingsForm
 
     Private Sub btnImportPlugin_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnImportPlugin.Click
         With OpenFileDialog
-            If Not IO.Directory.Exists(Application.StartupPath + IO.Path.DirectorySeparatorChar + "Plugins") Then
-                IO.Directory.CreateDirectory(Application.StartupPath + IO.Path.DirectorySeparatorChar + "Plugins")
+            If Not IO.Directory.Exists(IO.Path.Combine(Application.StartupPath, "Plugins")) Then
+                IO.Directory.CreateDirectory(IO.Path.Combine(Application.StartupPath, "Plugins"))
             End If
 
             .InitialDirectory = My.Settings.last_plugin_dir
@@ -249,8 +249,8 @@ Public Class SettingsForm
                     If pluginName.EndsWith("plugin") Then
                         pluginName = pluginName.Substring(0, pluginName.Length - "plugin".Length)
                     End If
-                    Dim rel_path = "Plugins{0}{1}".Frmt(IO.Path.DirectorySeparatorChar, IO.Path.GetFileName(path))
-                    Dim newPath = Application.StartupPath + IO.Path.DirectorySeparatorChar + rel_path
+                    Dim rel_path = IO.Path.Combine("Plugins", IO.Path.GetFileName(path))
+                    Dim newPath = IO.Path.Combine(Application.StartupPath, rel_path)
                     If newPath = path Then
                         gridPlugins.Rows.Add(pluginName, rel_path, "")
                     ElseIf IO.File.Exists(newPath) Then

@@ -643,7 +643,7 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(PacketId.HostMapInfo, New Dictionary(Of InvariantString, Object) From {
                     {"unknown", 1},
-                    {"path", "Maps\" + map.RelativePath},
+                    {"path", map.AdvertisedPath.ToString},
                     {"size", map.FileSize},
                     {"crc32", map.FileChecksumCRC32},
                     {"xoro checksum", map.MapChecksumXORO},

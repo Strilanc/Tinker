@@ -184,7 +184,7 @@ Namespace Lan
             Dim sha1Checksum = (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList
             Contract.Assume(sha1Checksum.Count = 20)
             Dim map = New WC3.Map("Maps\",
-                                  "Maps\AdminGame.w3x",
+                                  "AdminGame.w3x",
                                   filesize:=1,
                                   fileChecksumCRC32:=&H12345678UI,
                                   mapChecksumSHA1:=sha1Checksum,

@@ -18,7 +18,7 @@ Public NotInheritable Class DeadManSwitch
     End Sub
 
     Public Sub New(ByVal period As TimeSpan)
-        Contract.Requires(period.Ticks > 0)
+        Contract.Assume(period.Ticks > 0)
         Me._period = period
     End Sub
 

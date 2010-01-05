@@ -33,13 +33,14 @@
         Public ReadOnly playableHeight As Integer
         Public ReadOnly mapChecksumXORO As UInt32
         Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
-        Public ReadOnly relativePath As String
+        Private ReadOnly _advertisedPath As String
         Private ReadOnly _hostName As String
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(_mapChecksumSHA1.Count = 20)
             Contract.Invariant(_hostName IsNot Nothing)
+            Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
         End Sub
 
         Public ReadOnly Property HostName As String
@@ -53,6 +54,12 @@
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
                 Return _mapChecksumSHA1
+            End Get
+        End Property
+        Public ReadOnly Property AdvertisedPath As InvariantString
+            Get
+                Contract.Ensures(Contract.Result(Of InvariantString)().StartsWith("Maps\"))
+                Return _advertisedPath
             End Get
         End Property
 
@@ -71,8 +78,9 @@
                        ByVal playableHeight As Integer,
                        ByVal mapChecksumXORO As UInt32,
                        ByVal mapChecksumSHA1 As IReadableList(Of Byte),
-                       ByVal relativePath As String,
+                       ByVal advertisedPath As InvariantString,
                        ByVal hostName As String)
+            Contract.Requires(advertisedPath.StartsWith("Maps\"))
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
             Contract.Requires(hostName IsNot Nothing)
@@ -89,7 +97,7 @@
             Me.playableHeight = playableHeight
             Me.mapChecksumXORO = mapChecksumXORO
             Me._mapChecksumSHA1 = mapChecksumSHA1
-            Me.relativePath = relativePath
+            Me._advertisedPath = advertisedPath
             Me._hostName = hostName
         End Sub
 
@@ -107,7 +115,7 @@
             Me.playableHeight = map.playableHeight
             Me.mapChecksumXORO = map.MapChecksumXORO
             Me._mapChecksumSHA1 = map.MapChecksumSHA1
-            Me.relativePath = map.RelativePath
+            Me._advertisedPath = map.AdvertisedPath
             Me._hostName = hostName
 
             Me.randomHero = argument.HasOptionalSwitch("RandomHero")

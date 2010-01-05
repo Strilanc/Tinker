@@ -8,7 +8,7 @@
         End Sub
 
         Public Sub New(ByVal component As Components.IBotComponent)
-            Contract.Requires(component IsNot Nothing)
+            Contract.Assume(component IsNot Nothing)
             Me.InitializeComponent()
             Me._component = component
             logControl.SetLogger(logger:=component.Logger,

@@ -54,7 +54,7 @@ Namespace Lan
             lstState.Items.Clear()
             For Each game In Me._syncedGames
                 lstState.Items.Add(game.GameDescription.Name)
-                lstState.Items.Add(game.GameDescription.GameStats.relativePath)
+                lstState.Items.Add(game.GameDescription.GameStats.AdvertisedPath)
                 lstState.Items.Add("Game id: {0}".Frmt(game.GameDescription.GameId))
                 lstState.Items.Add("----------")
             Next game

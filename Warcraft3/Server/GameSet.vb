@@ -22,7 +22,7 @@
 
         Public Sub New(ByVal gameSettings As GameSettings,
                        Optional ByVal logger As Logger = Nothing)
-            Contract.Requires(gameSettings IsNot Nothing)
+            Contract.Assume(gameSettings IsNot Nothing)
             Me._gameSettings = gameSettings
             Me._logger = If(logger, New Logger)
             _activeGameCount = 1

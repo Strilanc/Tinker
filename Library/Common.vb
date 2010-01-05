@@ -1,8 +1,4 @@
-Imports System.Runtime.CompilerServices
-Imports System.IO.Path
-Imports System.IO
 Imports System.Numerics
-Imports Strilbrary.Enumeration
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
@@ -120,18 +116,11 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(directory IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
 
-        'Normalize input
-        directory = directory.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
-        Contract.Assume(directory.Length > 0)
-        If directory(directory.Length - 1) <> DirectorySeparatorChar Then
-            directory += DirectorySeparatorChar
-        End If
-
         'Separate directory and filename patterns
-        fileQuery = fileQuery.Replace(AltDirectorySeparatorChar, DirectorySeparatorChar)
+        fileQuery = fileQuery.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
         Dim dirQuery As InvariantString = "*"
-        If fileQuery.Contains(DirectorySeparatorChar) Then
-            Dim words = fileQuery.Split(DirectorySeparatorChar)
+        If fileQuery.Contains(IO.Path.DirectorySeparatorChar) Then
+            Dim words = fileQuery.Split(IO.Path.DirectorySeparatorChar)
             Dim filePattern = words(words.Length - 1)
             Contract.Assume(filePattern IsNot Nothing)
             Contract.Assume(fileQuery.Length > filePattern.Length)
@@ -141,15 +130,14 @@ Public Module PoorlyCategorizedFunctions
 
         'Check files in folder
         Dim matches = New List(Of String)
-        For Each filename In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
-            Contract.Assume(filename IsNot Nothing)
-            Contract.Assume(filename.Length > directory.Length)
-            filename = filename.Substring(directory.Length)
-            If filename Like likeQuery AndAlso filename Like dirQuery Then
-                matches.Add(filename)
+        For Each filepath In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
+            Contract.Assume(filepath IsNot Nothing)
+            Dim relativePath = filepath.Substring(directory.Length)
+            If relativePath Like likeQuery AndAlso relativePath Like dirQuery Then
+                matches.Add(relativePath)
                 If matches.Count >= maxResults Then Exit For
             End If
-        Next filename
+        Next filepath
         Return matches
     End Function
     Public Function GetDataFolderPath(ByVal subfolder As String) As String
@@ -160,7 +148,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Assume(path.Length > 0)
         Try
             If Not IO.Directory.Exists(path) Then IO.Directory.CreateDirectory(path)
-            Return path + IO.Path.DirectorySeparatorChar
+            Return path
         Catch e As Exception
             e.RaiseAsUnexpected("Error creating folder: {0}.".Frmt(path))
             Throw
@@ -260,13 +248,13 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()>
-    Public Sub WriteNullTerminatedString(ByVal bw As BinaryWriter, ByVal data As String)
+    Public Sub WriteNullTerminatedString(ByVal bw As IO.BinaryWriter, ByVal data As String)
         Contract.Requires(bw IsNot Nothing)
         Contract.Requires(data IsNot Nothing)
         bw.Write(data.ToAscBytes(True))
     End Sub
     <Extension()>
-    Public Function ReadNullTerminatedData(ByVal reader As BinaryReader) As IList(Of Byte)
+    Public Function ReadNullTerminatedData(ByVal reader As IO.BinaryReader) As IList(Of Byte)
         Contract.Requires(reader IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
         Dim data = New List(Of Byte)
@@ -278,14 +266,14 @@ Public Module PoorlyCategorizedFunctions
         Return data
     End Function
     <Extension()>
-    Public Function ReadNullTerminatedString(ByVal reader As BinaryReader) As String
+    Public Function ReadNullTerminatedString(ByVal reader As IO.BinaryReader) As String
         Contract.Requires(reader IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Return reader.ReadNullTerminatedData.ParseChrString(nullTerminated:=False)
     End Function
     <Extension()>
     <ContractVerification(False)>
-    Public Function ReadNullTerminatedString(ByVal reader As BinaryReader,
+    Public Function ReadNullTerminatedString(ByVal reader As IO.BinaryReader,
                                              ByVal maxLength As Integer) As String 'verification disabled due to stupdid verifier
         Contract.Requires(reader IsNot Nothing)
         Contract.Requires(maxLength >= 0)
@@ -301,7 +289,7 @@ Public Module PoorlyCategorizedFunctions
             ElseIf data.Count < maxLength Then
                 data.Add(b)
             Else
-                Throw New InvalidDataException("Null-terminated string exceeded maximum length.")
+                Throw New IO.InvalidDataException("Null-terminated string exceeded maximum length.")
             End If
         Loop
     End Function

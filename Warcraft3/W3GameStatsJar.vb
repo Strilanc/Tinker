@@ -95,7 +95,7 @@ Namespace WC3
                     {"settings", settings},
                     {"xoro checksum", value.mapChecksumXORO},
                     {"sha1 checksum", value.MapChecksumSHA1},
-                    {"relative path", value.relativePath},
+                    {"relative path", value.AdvertisedPath.tostring},
                     {"host name", value.HostName},
                     {"unknown1", 0},
                     {"unknown2", ""}

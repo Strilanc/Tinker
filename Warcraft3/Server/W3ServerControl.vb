@@ -83,7 +83,7 @@ Namespace WC3
                 s.AppendLine("")
                 s.AppendLine(game.GameSettings.GameDescription.Name)
                 s.AppendLine("ID: {0}".Frmt(game.GameSettings.GameDescription.GameId))
-                s.AppendLine("Map: {0}".Frmt(game.GameSettings.GameDescription.GameStats.relativePath))
+                s.AppendLine("Map: {0}".Frmt(game.GameSettings.GameDescription.GameStats.AdvertisedPath))
             Next game
             txtInfo.Text = s.ToString
         End Sub

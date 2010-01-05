@@ -11,9 +11,9 @@ Namespace WC3
         Private ReadOnly _fileChecksumCRC32 As UInt32
         Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Private ReadOnly _mapChecksumXORO As UInt32
-        Private ReadOnly _folder As String
-        Private ReadOnly _relativePath As String
-        Private ReadOnly _fullPath As String
+        Private ReadOnly _folder As InvariantString
+        Private ReadOnly _advertisedPath As InvariantString
+        Private ReadOnly _fullPath As InvariantString
         Public ReadOnly fileAvailable As Boolean
         Private ReadOnly _slots As IReadableList(Of Slot)
         Public ReadOnly Property Slots As IReadableList(Of Slot)
@@ -30,11 +30,9 @@ Namespace WC3
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(_mapChecksumSHA1.Count = 20)
             Contract.Invariant(_slots IsNot Nothing)
-            Contract.Invariant(_folder IsNot Nothing)
-            Contract.Invariant(_relativePath IsNot Nothing)
-            Contract.Invariant(_fullPath IsNot Nothing)
             Contract.Invariant(_numPlayerSlots > 0)
             Contract.Invariant(_numPlayerSlots <= 12)
+            Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
         End Sub
         Public ReadOnly Property NumPlayerSlots As Integer
             Get
@@ -66,21 +64,19 @@ Namespace WC3
                 Return _mapChecksumXORO
             End Get
         End Property
-        Public ReadOnly Property Folder As String
+        Public ReadOnly Property Folder As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _folder
             End Get
         End Property
-        Public ReadOnly Property RelativePath As String
+        Public ReadOnly Property AdvertisedPath As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return _relativePath
+                Contract.Ensures(Contract.Result(Of InvariantString)().StartsWith("Maps\"))
+                Return _advertisedPath
             End Get
         End Property
-        Public ReadOnly Property FullPath As String
+        Public ReadOnly Property FullPath As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _fullPath
             End Get
         End Property
@@ -166,34 +162,32 @@ Namespace WC3
                 Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
 
                 'Extract values
-                Dim path = CStr(vals("path")).AssumeNotNull
+                Dim path As InvariantString = CStr(vals("path")).AssumeNotNull
                 Dim size = CUInt(vals("size"))
                 Dim crc32 = CUInt(vals("crc32"))
                 Dim xoro = CUInt(vals("xoro checksum"))
                 Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
-                If Not path.StartsWith("Maps\", StringComparison.OrdinalIgnoreCase) Then
+                If Not path.StartsWith("Maps\") Then
                     Throw New IO.InvalidDataException("Invalid map path.")
                 End If
+                path = path.Substring("Maps\".Length)
                 Contract.Assume(sha1.Count = 20)
                 Contract.Assume(size > 0)
 
                 Return New Map(My.Settings.mapPath.AssumeNotNull, path, size, crc32, sha1, xoro, slotCount:=3)
             Else 'Map specified by path
                 Return New Map(My.Settings.mapPath.AssumeNotNull,
-                                 FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", My.Settings.mapPath.AssumeNotNull),
-                                 My.Settings.war3path.AssumeNotNull)
+                               FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", My.Settings.mapPath.AssumeNotNull),
+                               My.Settings.war3path.AssumeNotNull)
             End If
         End Function
-        Public Sub New(ByVal folder As String,
-                       ByVal relativePath As String,
+        Public Sub New(ByVal folder As InvariantString,
+                       ByVal relativePath As InvariantString,
                        ByVal fileSize As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
                        ByVal mapChecksumSHA1 As IReadableList(Of Byte),
                        ByVal mapChecksumXORO As UInt32,
                        ByVal slotCount As Integer)
-            Contract.Requires(folder IsNot Nothing)
-            Contract.Requires(relativePath IsNot Nothing)
-            Contract.Requires(relativePath.StartsWith("Maps\", StringComparison.OrdinalIgnoreCase))
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
             Contract.Requires(slotCount > 0)
@@ -201,13 +195,13 @@ Namespace WC3
             Contract.Requires(fileSize > 0)
             Contract.Ensures(Me.Slots.Count = slotCount)
 
-            Me._fullPath = folder + relativePath.Substring(5)
-            Me._relativePath = relativePath
+            Me._fullPath = IO.Path.Combine(folder, relativePath.ToString.Replace("\", IO.Path.DirectorySeparatorChar))
+            Me._advertisedPath = "Maps\" + relativePath
             Me._folder = folder
             Me._playableHeight = 256
             Me._playableWidth = 256
             Me._isMelee = True
-            Me._name = relativePath.Split("\"c).Last.AssumeNotNull
+            Me._name = relativePath.ToString.Split("\"c).Last.AssumeNotNull
             Me._numPlayerSlots = slotCount
             Me._fileSize = fileSize
             Me._fileChecksumCRC32 = fileChecksumCRC32
@@ -227,8 +221,8 @@ Namespace WC3
                        ByVal relativePath As String,
                        ByVal wc3PatchMPQFolder As String)
             Me.fileAvailable = True
-            Me._relativePath = relativePath
-            Me._fullPath = folder + relativePath
+            Me._advertisedPath = "Maps\" + relativePath
+            Me._fullPath = IO.Path.Combine(folder, relativePath.ToString.Replace("\", IO.Path.DirectorySeparatorChar))
             Me._folder = folder
             Using f = New IO.FileStream(FullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
                 Me._fileSize = CUInt(f.Length)

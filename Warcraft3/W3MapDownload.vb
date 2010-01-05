@@ -34,12 +34,9 @@
             Dim fileExtension = IO.Path.GetExtension(filename)
             Dim n = 1
             Do
-                Me.destinationPath = "{0}{1}{2}{3}{4}{5}".Frmt(My.Settings.mapPath,
-                                                               "HostBot",
-                                                               IO.Path.DirectorySeparatorChar,
-                                                               filenameWithoutExtension,
-                                                               If(n = 1, "", " " + n.ToString(CultureInfo.InvariantCulture)),
-                                                               fileExtension)
+                Me.destinationPath = IO.Path.Combine(My.Settings.mapPath, "HostBot", filenameWithoutExtension +
+                                                                                     If(n = 1, "", " " + n.ToString(CultureInfo.InvariantCulture)) +
+                                                                                     fileExtension)
                 Me.downloadPath = Me.destinationPath + ".dl"
                 n += 1
             Loop While IO.File.Exists(Me.destinationPath) Or IO.File.Exists(Me.downloadPath)

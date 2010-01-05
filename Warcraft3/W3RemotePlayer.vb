@@ -113,9 +113,9 @@
                        ByVal listenPort As UShort,
                        ByVal ip As Net.IPAddress,
                        ByVal peerKey As UInt32)
-            Contract.Requires(index > 0)
-            Contract.Requires(index <= 12)
-            Contract.Requires(ip IsNot Nothing)
+            Contract.Assume(index > 0)
+            Contract.Assume(index <= 12)
+            Contract.Assume(ip IsNot Nothing)
             Me.name = name
             Me._index = index
             Me.listenPort = listenPort

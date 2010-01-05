@@ -16,7 +16,7 @@ Public Class GameServerTest
             internalAddress:=Net.IPAddress.Loopback).Payload.Data.ToArray
     Private Shared ReadOnly TestMap As New WC3.Map(
             folder:="Test:\Maps",
-            relativePath:="Maps\test",
+            relativePath:="test",
             fileChecksumCRC32:=1,
             filesize:=1,
             mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,

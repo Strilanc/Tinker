@@ -3,7 +3,7 @@ Imports System.Threading
 <ContractVerification(False)>
 Public Class ClientForm
     Private _bot As Bot.MainBot
-    Private _exceptionForm As New ExceptionForm()
+    Private ReadOnly _exceptionForm As New ExceptionForm()
 
     Private Shadows Sub OnLoad() Handles Me.Load
         Contract.Assume(_bot Is Nothing)
@@ -16,6 +16,11 @@ Public Class ClientForm
             InitBot()
             InitMainControl()
             InitFinish()
+            _exceptionForm.WindowState = FormWindowState.Minimized
+            _exceptionForm.Show()
+            _exceptionForm.Hide()
+            _exceptionForm.WindowState = FormWindowState.Normal
+            Contract.Assume(_exceptionForm.IsHandleCreated)
 
             AddHandler _exceptionForm.ExceptionCountChanged, Sub() btnShowExceptionLog.Text = "Exception Log ({0})".Frmt(_exceptionForm.ExceptionCount)
             _bot.FutureDisposed.CallWhenReady(Sub() Me.BeginInvoke(Sub() Me.Dispose())).SetHandled()
@@ -74,10 +79,10 @@ Public Class ClientForm
         _bot.Logger.Log("---", LogMessageType.Typical)
 
         If My.Settings.war3path = "" Then
-            My.Settings.war3path = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Warcraft III", "")
+            My.Settings.war3path = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Warcraft III")
         End If
         If My.Settings.mapPath = "" Then
-            My.Settings.mapPath = IO.Path.Combine(My.Settings.war3path, "Maps", "")
+            My.Settings.mapPath = IO.Path.Combine(My.Settings.war3path, "Maps")
         End If
         If My.Settings.botstore = "" Then
             OnClickSettings()
