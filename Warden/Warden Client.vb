@@ -7,40 +7,47 @@
         Public Event Disconnected(ByVal sender As Warden.Client, ByVal expected As Boolean, ByVal reason As String)
 
         Private ReadOnly _socket As IFuture(Of Warden.Socket)
+        Private ReadOnly _activated As New FutureAction()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_activated IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal remoteHost As String,
+        Public Sub New(ByVal remoteHost As InvariantString,
                        ByVal remotePort As UInt16,
                        ByVal seed As UInt32,
                        ByVal cookie As UInt32,
                        Optional ByVal logger As Logger = Nothing)
-            Contract.Assume(remoteHost IsNot Nothing)
             logger = If(logger, New Logger)
+            _activated.SetHandled()
 
             If remoteHost = "" Then
                 Dim result = New FutureFunction(Of Warden.Socket)
                 result.SetFailed(New ArgumentException("No remote host specified."))
+                result.SetHandled()
+                _activated.CallOnSuccess(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)).SetHandled()
                 _socket = result
                 Return
             End If
-
             logger.Log("Connecting to bnls server at {0}:{1}...".Frmt(remoteHost, remotePort), LogMessageType.Positive)
 
-            Dim futureSocket = From tcpClient In AsyncTcpConnect(remoteHost, remotePort)
-                               Select New PacketSocket(stream:=tcpClient.GetStream,
-                                                       localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                                       remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                                                       timeout:=5.Minutes,
-                                                       numBytesBeforeSize:=0,
-                                                       numSizeBytes:=2,
-                                                       logger:=logger,
-                                                       Name:="BNLS")
-            _socket = From socket In futureSocket
-                      Select New Warden.Socket(socket, seed, seed, logger)
+            'Initiate connection
+            Me._socket = From tcpClient In AsyncTcpConnect(remoteHost, remotePort)
+                         Select packetSocket = New PacketSocket(stream:=tcpClient.GetStream,
+                                                                localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                                remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                                timeout:=5.Minutes,
+                                                                numBytesBeforeSize:=0,
+                                                                numSizeBytes:=2,
+                                                                logger:=logger,
+                                                                Name:="BNLS")
+                         Select New Warden.Socket(Socket:=packetSocket,
+                                                  seed:=seed,
+                                                  cookie:=seed,
+                                                  logger:=logger)
 
+            'Register events (and setup unregister-on-dispose)
             Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler = Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
             Dim failForward As Warden.Socket.FailedEventHandler = Sub(sender, e) RaiseEvent Failed(Me, e)
             Dim disconnectForward As Warden.Socket.DisconnectedEventHandler = Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
@@ -66,9 +73,17 @@
             )
         End Sub
 
+        Public ReadOnly Property Activated As IFuture
+            Get
+                Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+                Return _activated
+            End Get
+        End Property
+
         Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As IFuture
             Contract.Requires(wardenData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            _activated.TrySetSucceeded()
             Return _socket.Select(Function(wardenClient) wardenClient.QueueSendWardenData(wardenData))
         End Function
 

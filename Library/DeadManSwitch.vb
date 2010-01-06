@@ -31,8 +31,8 @@ Public NotInheritable Class DeadManSwitch
             Sub()
                 If _isArmed Then Return
                 _isArmed = True
-                Reset()
                 _isTimerRunning = True
+                Reset()
                 OnTimeout()
             End Sub)
     End Sub

@@ -742,18 +742,16 @@ Namespace Bnet
             'Parse address setting
             Dim remoteHost = ""
             Dim remotePort = 0US
-            Dim address = My.Settings.bnls
-            If address Is Nothing OrElse address = "" Then
-                Logger.Log("No bnls server is specified. Battle.net will most likely disconnect the bot after two minutes.", LogMessageType.Problem)
-            Else
-                Dim hostPortPair = address.Split(":"c)
+            Dim remoteEndPointArg As InvariantString = If(My.Settings.bnls, "")
+            If remoteEndPointArg <> "" Then
+                Dim hostPortPair = remoteEndPointArg.ToString.Split(":"c)
                 remoteHost = hostPortPair(0)
                 If hostPortPair.Length <> 2 OrElse Not UShort.TryParse(hostPortPair(1), remotePort) Then
                     Logger.Log("Invalid bnls server format specified. Expected hostname:port.", LogMessageType.Problem)
                 End If
             End If
 
-            'Attempt connection
+            'Attempt BNLS connection
             Dim seed = keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32
             _wardenClient = New Warden.Client(remoteHost:=remoteHost, remotePort:=remotePort, seed:=seed, cookie:=seed, Logger:=Logger)
         End Sub
@@ -904,7 +902,12 @@ Namespace Bnet
         End Sub
         Private Sub OnWardenFail(ByVal sender As Warden.Client, ByVal exception As Exception) Handles _wardenClient.Failed
             Contract.Requires(exception IsNot Nothing)
-            QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(exception.Message))
+            sender.Activated.CallOnSuccess(Sub()
+                                               QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(exception.Message))
+                                           End Sub).SetHandled()
+            If sender.Activated.State = FutureState.Unknown Then
+                Logger.Log("Lost connection to BNLS server: {0}".Frmt(exception.Message), LogMessageType.Problem)
+            End If
             exception.RaiseAsUnexpected("Warden/BNLS Error")
         End Sub
 #End Region

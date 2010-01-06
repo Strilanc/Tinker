@@ -12,7 +12,6 @@
         Private ReadOnly _logger As Logger
         Private ReadOnly _cookie As UInt32
         Private ReadOnly _seed As UInt32
-        Private ReadOnly _keepAlive As New DeadManSwitch(period:=30.Seconds)
         Private _connected As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -20,7 +19,6 @@
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
-            Contract.Invariant(_keepAlive IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal socket As PacketSocket,
@@ -34,16 +32,11 @@
             Me._seed = seed
 
             AddHandler _socket.Disconnected, Sub(sender, expected, reason) outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
-            AddHandler _keepAlive.Triggered, Sub()
-                                                 _keepAlive.Arm()
-                                                 _socket.WritePacket({0, 0, BNLSPacketId.Null})
-                                             End Sub
 
             Start()
         End Sub
 
         Private Sub Start()
-            Me._keepAlive.Arm()
             WritePacket(ClientPacket.MakeFullServiceConnect(_cookie, _seed))
             BeginReading()
         End Sub
@@ -102,7 +95,6 @@
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
                 _logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
                 _socket.WritePacket(Concat(Of Byte)({0, 0, BNLSPacketId.Warden, packet.Id}, packet.Payload.Data.ToArray))
-                _keepAlive.Reset()
 
             Catch e As Exception
                 e.RaiseAsUnexpected("Sending {0} to {1}".Frmt(packet.Id, _socket.Name))
