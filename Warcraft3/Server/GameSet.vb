@@ -137,31 +137,27 @@
                 End Sub)
         End Function
 
-        Private Function AsyncTryFindPlayer(ByVal userName As String) As IFuture(Of Player)
-            Contract.Requires(userName IsNot Nothing)
+        Private Function AsyncTryFindPlayer(ByVal userName As InvariantString) As IFuture(Of Player)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return From futureFindResults In (From game In _games Select game.QueueTryFindPlayer(userName)).ToList.Defuturized
                    Select (From player In futureFindResults Where player IsNot Nothing).FirstOrDefault
         End Function
-        Public Function QueueTryFindPlayer(ByVal userName As String) As IFuture(Of Player)
-            Contract.Requires(userName IsNot Nothing)
+        Public Function QueueTryFindPlayer(ByVal userName As InvariantString) As IFuture(Of Player)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncTryFindPlayer(userName)).Defuturized
         End Function
 
-        Private Function AsyncTryFindPlayerGame(ByVal userName As String) As IFuture(Of Game)
-            Contract.Requires(userName IsNot Nothing)
+        Private Function AsyncTryFindPlayerGame(ByVal userName As InvariantString) As IFuture(Of Game)
             Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
             Return _games.ToList.FutureSelect(Function(game) game.QueueTryFindPlayer(userName).Select(Function(player) player IsNot Nothing))
         End Function
-        Public Function QueueTryFindPlayerGame(ByVal userName As String) As IFuture(Of Game)
-            Contract.Requires(userName IsNot Nothing)
+        Public Function QueueTryFindPlayerGame(ByVal userName As InvariantString) As IFuture(Of Game)
             Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncTryFindPlayerGame(userName)).Defuturized
         End Function
 
         Private Function CreateGameAsyncView(ByVal adder As Action(Of GameSet, Game),
-                                         ByVal remover As Action(Of GameSet, Game)) As IDisposable
+                                             ByVal remover As Action(Of GameSet, Game)) As IDisposable
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
@@ -169,11 +165,15 @@
                                     remover:=Sub(sender, item) remover(Me, item))
         End Function
         Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of GameSet, Game),
-                                                     ByVal remover As Action(Of GameSet, Game)) As IFuture(Of IDisposable)
+                                                  ByVal remover As Action(Of GameSet, Game)) As IFuture(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CreateGameAsyncView(adder, remover))
+        End Function
+        Public Function QueueTryFindGame(ByVal gameName As InvariantString) As IFuture(Of Game)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() (From game In _games Where game.Name = gameName).FirstOrDefault)
         End Function
 
         Private Function CreatePlayersAsyncView(ByVal adder As Action(Of GameSet, Game, Player),

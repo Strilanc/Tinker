@@ -598,55 +598,6 @@ Namespace Bnet
         End Function
 #End Region
 
-        '#Region "Link"
-        'Private Event Disconnected(ByVal sender As Client, ByVal reason As String)
-        'Private ReadOnly userLinkMap As New Dictionary(Of BotUser, ClientServerUserLink)
-
-        'Private Function GetUserServer(ByVal user As BotUser) As WC3.GameServer
-        'If user Is Nothing Then Return Nothing
-        'If Not userLinkMap.ContainsKey(user) Then Return Nothing
-        'Return userLinkMap(user).server
-        'End Function
-        'Private Sub SetUserServer(ByVal user As BotUser, ByVal server As WC3.GameServer)
-        'If user Is Nothing Then Return
-        'If userLinkMap.ContainsKey(user) Then
-        'Dim link = userLinkMap(user)
-        'Contract.Assume(link IsNot Nothing)
-        'link.Dispose()
-        'userLinkMap.Remove(user)
-        'End If
-        'If server Is Nothing Then Return
-        'userLinkMap(user) = New ClientServerUserLink(Me, server, user)
-        'End Sub
-
-        'Private NotInheritable Class ClientServerUserLink
-        'Inherits FutureDisposable
-        'Public ReadOnly client As Client
-        'Public ReadOnly server As WC3.GameServer
-        'Public ReadOnly user As BotUser
-
-        'Public Sub New(ByVal client As Client, ByVal server As WC3.GameServer, ByVal user As BotUser)
-        ''contract bug wrt interface event implementation requires this:
-        ''Contract.Requires(client IsNot Nothing)
-        ''Contract.Requires(server IsNot Nothing)
-        ''Contract.Requires(user IsNot Nothing)
-        'Contract.Assume(client IsNot Nothing)
-        'Contract.Assume(server IsNot Nothing)
-        'Contract.Assume(user IsNot Nothing)
-        'Me.client = client
-        'Me.server = server
-        'Me.user = user
-        'DisposeLink.CreateOneWayLink(client, Me)
-        'DisposeLink.CreateOneWayLink(server, Me)
-        'End Sub
-
-        'Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
-        'If finalizing Then Return Nothing
-        'Return client.QueueSetUserServer(user, Nothing)
-        'End Function
-        'End Class
-        '#End Region
-
 #Region "Networking (Send)"
         Private Sub SendPacket(ByVal packet As Bnet.Packet)
             Contract.Requires(Me._state > ClientState.InitiatingConnection)
@@ -836,21 +787,20 @@ Namespace Bnet
                 Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(PacketId.UserAuthenticationFinish, _state))
             End If
 
-            Dim result = CType(vals("result"), Bnet.Packet.UserAuthenticationFinishResult)
-
-            If result <> Bnet.Packet.UserAuthenticationFinishResult.Passed Then
+            Dim result = CType(vals("result"), Packet.UserAuthenticationFinishResult)
+            If result <> Packet.UserAuthenticationFinishResult.Passed Then
                 Dim errmsg As String
                 Select Case result
-                    Case Bnet.Packet.UserAuthenticationFinishResult.IncorrectPassword
+                    Case Packet.UserAuthenticationFinishResult.IncorrectPassword
                         errmsg = "Incorrect password."
-                    Case Bnet.Packet.UserAuthenticationFinishResult.NeedEmail
+                    Case Packet.UserAuthenticationFinishResult.NeedEmail
                         errmsg = "No email address associated with account"
-                    Case Bnet.Packet.UserAuthenticationFinishResult.CustomError
-                        errmsg = "Logon error: " + CType(vals("custom error info"), String)
+                    Case Packet.UserAuthenticationFinishResult.CustomError
+                        errmsg = "Logon error: {0}".Frmt(CStr(vals("custom error info")))
                     Case Else
-                        errmsg = "Unrecognized logon error: " + result.ToString()
+                        errmsg = "Unrecognized logon error: {0}".Frmt(result)
                 End Select
-                _futureLoggedIn.TrySetFailed(New IO.IOException("Failed to logon: " + errmsg))
+                _futureLoggedIn.TrySetFailed(New IO.IOException("Failed to logon: {0}".Frmt(errmsg)))
                 Throw New IO.InvalidDataException(errmsg)
             End If
 
@@ -861,21 +811,11 @@ Namespace Bnet
                 _futureLoggedIn.TrySetFailed(New IO.InvalidDataException("Failed to logon: Server didn't give correct password proof"))
                 Throw New IO.InvalidDataException("Server didn't give correct password proof.")
             End If
-            'Dim lan_host = profile.LanHost.Split(" "c)(0)
-            'If lan_host <> "" Then
-            'Try
-            'Dim lan = New WC3.LanAdvertiser(Parent, Name, lan_host)
-            'Parent.QueueAddWidget(lan)
-            'DisposeLink.CreateOneWayLink(Me, lan)
-            'AdvertisingLink.CreateMultiWayLink({Me, lan.MakeAdvertisingLinkMember})
-            'Catch e As Exception
-            'logger.Log("Error creating lan advertiser: {0}".Frmt(e.ToString), LogMessageType.Problem)
-            'End Try
-            'End If
-            'log
+
             ChangeState(ClientState.WaitingForEnterChat)
             Logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
             _futureLoggedIn.TrySetSucceeded()
+
             'respond
             SetReportedListenPort(6112)
             SendPacket(Bnet.Packet.MakeEnterChat())
@@ -960,16 +900,5 @@ Namespace Bnet
             Logger.Log(msg, LogMessageType.Problem)
         End Sub
 #End Region
-
-        Public Function QueueGetUserServer(ByVal user As BotUser) As IFuture(Of WC3.GameServer)
-            Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameServer))() IsNot Nothing)
-            'Return inQueue.QueueFunc(Function() GetUserServer(user))
-            Throw New NotImplementedException
-        End Function
-        Public Function QueueSetUserServer(ByVal user As BotUser, ByVal server As WC3.GameServer) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            'Return inQueue.QueueAction(Sub() SetUserServer(user, server))
-            Throw New NotImplementedException
-        End Function
     End Class
 End Namespace

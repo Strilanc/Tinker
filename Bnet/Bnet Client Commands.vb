@@ -244,10 +244,14 @@ Namespace Bnet
                 Dim futureGameSet = (From server In futureServer
                                      Select server.QueueAddGameFromArguments(argument, user)
                                      ).Defuturized
-                Dim futureAdvertised = futureGameSet.select(
+                Dim futureAdvertised = futureGameSet.Select(
                     Function(gameSet)
                         Dim result = target.Client.QueueStartAdvertisingGame(gameDescription:=gameSet.GameSettings.GameDescription,
                                                                              isPrivate:=gameSet.GameSettings.IsPrivate)
+                        If user IsNot Nothing Then
+                            target.QueueSetUserGameSet(user, gameSet)
+                            gameSet.FutureDisposed.CallOnSuccess(Sub() target.QueueResetUserGameSet(user, gameSet)).SetHandled()
+                        End If
                         Dim onStarted As WC3.GameSet.StateChangedEventHandler
                         onStarted = Sub(sender, active)
                                         If active Then Return
@@ -266,34 +270,34 @@ Namespace Bnet
         End Class
 
         Private NotInheritable Class CGame
-            Inherits PartialCommand(Of Bnet.Client)
+            Inherits PartialCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Game",
                            headType:="InstanceName",
-                           Description:="Forwards commands to an instance in your hosted game. The default instance is '0'.")
+                           Description:="Forwards commands to an instance in your hosted game. By default game instances are numbered, starting with 0.")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Client, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Strilbrary.Threading.IFuture(Of String)
-                'Find hosted server, then find game, then pass command
-                'Return target.QueueGetUserServer(user).Select(
-                'Function(server)
-                'If server Is Nothing Then
-                'Throw New InvalidOperationException("You don't have a hosted game to forward that command to.")
-                'End If
+            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Strilbrary.Threading.IFuture(Of String)
+                Dim gameName = argumentHead
 
-                ''Find game, then pass command
-                'Return server.QueueFindGame(head).Select(
-                'Function(game)
-                'If game Is Nothing Then
-                'Throw New InvalidOperationException("No game with that name.")
-                'End If
+                'Find hosted game set, then find named instance, then pass command
+                Return target.QueueTryGetUserGameSet(user).Select(
+                    Function(gameSet)
+                        If gameSet Is Nothing Then
+                            Throw New InvalidOperationException("You don't have a hosted game.")
+                        End If
 
-                ''Pass command
-                'Return game.QueueCommandProcessText(target.Parent, Nothing, rest)
-                'End Function
-                ').Defuturized()
-                'End Function
-                ').Defuturized()
-                Throw New NotImplementedException
+                        'Find named instance, then pass command
+                        Return gameSet.QueueTryFindGame(gameName).Select(
+                            Function(game)
+                                If game Is Nothing Then
+                                    Throw New InvalidOperationException("No matching game instance found.")
+                                End If
+
+                                Return game.QueueCommandProcessText(target.Bot, Nothing, argumentRest)
+                            End Function
+                        )
+                            End Function
+                ).Defuturized.Defuturized
             End Function
         End Class
 
@@ -311,21 +315,21 @@ Namespace Bnet
         End Class
 
         Private NotInheritable Class CCancelHost
-            Inherits TemplatedCommand(Of Bnet.Client)
+            Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="CancelHost",
                 template:="",
                 Description:="Cancels a host command if it was issued by you, and unlinks the attached server.",
                 Permissions:="")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Return target.QueueGetUserServer(user).Select(
-                  Function(server)
-                      If server Is Nothing Then
+            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Return target.QueueTryGetUserGameSet(user).Select(
+                  Function(gameSet)
+                      If gameSet Is Nothing Then
                           Throw New InvalidOperationException("You don't have a hosted game to cancel.")
                       End If
 
-                      server.Dispose()
+                      gameSet.Dispose()
                       Return "Cancelled hosting."
                   End Function
               )
@@ -333,21 +337,20 @@ Namespace Bnet
         End Class
 
         Private NotInheritable Class CAdminCode
-            Inherits TemplatedCommand(Of Bnet.Client)
+            Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="AdminCode",
                            template:="",
                            Description:="Returns the admin code for a game you have hosted.",
                            Permissions:="")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Return target.QueueGetUserServer(user).Select(
-                    Function(server)
-                        If server Is Nothing Then
+            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Return target.QueueTryGetUserGameSet(user).Select(
+                    Function(gameSet)
+                        If gameSet Is Nothing Then
                             Throw New InvalidOperationException("You don't have a hosted game to cancel.")
                         End If
-                        Throw New NotImplementedException
-                        Return ""
+                        Return gameSet.GameSettings.AdminPassword
                     End Function)
             End Function
         End Class
@@ -398,28 +401,28 @@ Namespace Bnet
         End Class
 
         Private NotInheritable Class CElevate
-            Inherits TemplatedCommand(Of Bnet.Client)
+            Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Elevate",
                            template:="-player=name",
                            Description:="Elevates you or a specified player to admin in your hosted game.",
                            Permissions:="games:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Dim username = If(argument.TryGetOptionalNamedValue("player"), If(user Is Nothing, Nothing, user.Name.Value))
                 If username Is Nothing Then
                     Throw New ArgumentException("No player specified.")
                 End If
 
                 'Find hosted server, then find player's game, then elevate player
-                Return target.QueueGetUserServer(user).Select(
-                    Function(server)
-                        If server Is Nothing Then
+                Return target.QueueTryGetUserGameSet(user).Select(
+                    Function(gameSet)
+                        If gameSet Is Nothing Then
                             Throw New InvalidOperationException("You don't have a hosted game.")
                         End If
 
                         'Find player's game, then elevate player
-                        Return server.QueueFindPlayerGame(username).Select(
+                        Return gameSet.QueueTryFindPlayerGame(username).Select(
                             Function(game)
                                 If game Is Nothing Then
                                     Throw New InvalidOperationException("No matching user found.")

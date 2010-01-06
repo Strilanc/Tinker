@@ -14,9 +14,11 @@ Namespace Bnet
         Private ReadOnly _client As Bnet.Client
         Private ReadOnly _control As Control
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _userGameSetMap As New Dictionary(Of BotUser, WC3.GameSet)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
+            Contract.Invariant(_userGameSetMap IsNot Nothing)
             Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_client IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
@@ -172,6 +174,37 @@ Namespace Bnet
         Public Function QueueSetAutomatic(ByVal slaved As Boolean) As IFuture
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SetAutomatic(slaved))
+        End Function
+
+        Private Property UserGameSet(ByVal user As BotUser) As WC3.GameSet
+            Get
+                Contract.Requires(user IsNot Nothing)
+                If Not _userGameSetMap.ContainsKey(user) Then Return Nothing
+                Return _userGameSetMap(user)
+            End Get
+            Set(ByVal value As WC3.GameSet)
+                Contract.Requires(user IsNot Nothing)
+                If value Is Nothing Then
+                    _userGameSetMap.Remove(user)
+                Else
+                    _userGameSetMap(user) = value
+                End If
+            End Set
+        End Property
+        Public Function QueueTryGetUserGameSet(ByVal user As BotUser) As IFuture(Of WC3.GameSet)
+            Contract.Requires(user IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameSet))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() UserGameSet(user))
+        End Function
+        Public Function QueueSetUserGameSet(ByVal user As BotUser, ByVal gameSet As WC3.GameSet) As IFuture
+            Contract.Requires(user IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() UserGameSet(user) = gameSet)
+        End Function
+        Public Function QueueResetUserGameSet(ByVal user As BotUser, ByVal gameSet As WC3.GameSet) As IFuture
+            Contract.Requires(user IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() If UserGameSet(user) Is gameSet Then UserGameSet(user) = Nothing)
         End Function
     End Class
 End Namespace
