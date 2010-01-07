@@ -36,73 +36,6 @@ Namespace WC3
 
         Public Sub New(Optional ByVal logger As Logger = Nothing)
             Me._logger = If(logger, New Logger)
-
-            'For i = 1 To Me.Settings.instances
-            'CreateGame()
-            'Next i
-            'Me.Parent.logger.Log("Server started for map {0}.".Frmt(Me.Settings.Map.RelativePath), LogMessageType.Positive)
-
-            'If Me.Settings.grabMap Then
-            'Dim serverPort = Me.Settings.defaultListenPorts.FirstOrDefault
-            'If serverPort = 0 Then
-            'Throw New InvalidOperationException("Server has no port for Grab player to connect on.")
-            'End If
-
-            'Dim grabPort = parent.PortPool.TryAcquireAnyPort()
-            'If grabPort Is Nothing Then
-            'Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
-            'End If
-
-            'FutureWait(3.Seconds).CallWhenReady(
-            'Sub()
-            'Dim p = New W3DummyPlayer("Grab", grabPort, logger)
-            'p.QueueConnect("localhost", serverPort)
-            'End Sub
-            ')
-            'End If
-
-            'If Me.Settings.testFakePlayers AndAlso Me.Settings.defaultListenPorts.Any Then
-            'FutureWait(3.Seconds).CallWhenReady(
-            'Sub()
-            'For i = 1 To 3
-            'Dim receivedPort = Me.Parent.PortPool.TryAcquireAnyPort()
-            'If receivedPort Is Nothing Then
-            'logger.Log("Failed to get port for fake player.", LogMessageType.Negative)
-            'Exit For
-            'End If
-
-            'Dim p = New W3DummyPlayer("Wait {0}min".Frmt(i), receivedPort, logger, DummyPlayerMode.EnterGame)
-            'p.readyDelay = i.Minutes
-            'Dim i_ = i
-            'p.QueueConnect("localhost", Me.Settings.defaultListenPorts.FirstOrDefault).CallWhenReady(
-            'Sub(exception)
-            'If exception Is Nothing Then
-            'Me.logger.Log("Fake player {0} Connected", LogMessageType.Positive)
-            'Else
-            'Me.logger.Log("Fake player {0}: {1}".Frmt(i_, exception.Message), LogMessageType.Negative)
-            'End If
-            'End Sub)
-            'Next i
-            'End Sub)
-            'End If
-
-            'If Me.Settings.grabMap Then
-            'Dim server_port = Me.Settings.defaultListenPorts.FirstOrDefault
-            'If server_port = 0 Then
-            'Throw New InvalidOperationException("Server has no port for Grab player to connect on.")
-            'End If
-
-            'Dim grabPort = Me.Parent.PortPool.TryAcquireAnyPort()
-            'If grabPort Is Nothing Then
-            'Throw New InvalidOperationException("Failed to get port from pool for Grab player to listen on.")
-            'End If
-
-            'FutureWait(3.Seconds).CallWhenReady(
-            'Sub()
-            'Dim p = New W3DummyPlayer("Grab", grabPort, logger)
-            'p.QueueConnect("localhost", server_port)
-            'End Sub)
-            'End If
         End Sub
 
         Public ReadOnly Property Logger As Logger
@@ -111,96 +44,6 @@ Namespace WC3
                 Return _logger
             End Get
         End Property
-
-#Region "Events"
-        'Private Sub e_ThrowStateChanged(ByVal old_state As ServerState, ByVal new_state As ServerState)
-        'outQueue.QueueAction(
-        'Sub()
-        'RaiseEvent ChangedState(Me, old_state, new_state)
-        'End Sub
-        ')
-        'End Sub
-        'Private Sub e_ThrowAddedGame(ByVal game As Game)
-        'outQueue.QueueAction(
-        'Sub()
-        'RaiseEvent AddedGame(Me, game)
-        'End Sub
-        ')
-        'End Sub
-        'Private Sub e_ThrowRemovedGame(ByVal game As Game)
-        'outQueue.QueueAction(
-        'Sub()
-        'RaiseEvent RemovedGame(Me, game)
-        'End Sub
-        ')
-        'End Sub
-
-        'Private Sub c_PlayerTalked(ByVal game As Game, ByVal player As Player, ByVal text As String)
-        'RaiseEvent PlayerTalked(Me, game, player, text)
-        'End Sub
-        'Private Sub c_PlayerSentData(ByVal game As Game, ByVal player As Player, ByVal data As Byte())
-        'RaiseEvent PlayerSentData(Me, game, player, data)
-        'End Sub
-        'Private Sub c_PlayerLeft(ByVal game As Game, ByVal game_state As GameState, ByVal player As Player, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
-        'logger.Log("{0} left game {1}. ({2})".Frmt(player.Name, game.Name, reason), LogMessageType.Negative)
-        'RaiseEvent PlayerLeft(Me, game, game_state, player, leaveType, reason)
-        'End Sub
-        'Private Sub c_PlayerEntered(ByVal game As Game, ByVal player As Player)
-        'RaiseEvent PlayerEntered(Me, game, player)
-        'End Sub
-        'Private Sub c_GameStateChanged(ByVal sender As Game, ByVal old_state As GameState, ByVal new_state As GameState)
-        'inQueue.QueueAction(
-        'Sub()
-        ''If Not games_all.Contains(sender) Then Return
-
-        'Select Case new_state
-        'Case GameState.Loading
-        'Logger.Log(sender.Name + " has begun loading.", LogMessageType.Positive)
-        '' games_lobby.Remove(sender)
-        '' games_load_screen.Add(sender)
-        'Case GameState.Playing
-        'Logger.Log(sender.Name + " has started play.", LogMessageType.Positive)
-        '' games_load_screen.Remove(sender)
-        '' games_gameplay.Add(sender)
-        'Case GameState.Closed
-        'Logger.Log(sender.Name + " has closed.", LogMessageType.Negative)
-        'RemoveGame(sender.Name)
-        'End Select
-
-        ''Advance from only_accepting if there is a game started
-        ''If state = ServerState.OnlyAcceptingPlayers Then
-        ''If games_all.Count > games_lobby.Count Then
-        ''change_state(ServerState.AcceptingPlayersAndPlayingGames)
-        ''End If
-        ''End If
-
-        ''Advance from accepting_and_playing if there are no more games accepting players
-        ''If state = ServerState.AcceptingPlayersAndPlayingGames AndAlso Settings.instances > 0 Then
-        ''If games_lobby.Count = 0 Then
-        ''If Settings.permanent Then
-        ''SetAdvertiserOptions(True)
-        ''Else
-        ''StopAcceptingPlayers()
-        ''End If
-        ''End If
-        ''End If
-
-        ''Advance from only_playing_out if there are no more games being played
-        ''If state = ServerState.OnlyPlayingGames Then
-        ''If games_all.Count = 0 Then
-        ''Kill()
-        ''End If
-        ''End If
-        'End Sub
-        ')
-        'End Sub
-#End Region
-
-        'Dim socket = New W3Socket(New PacketSocket(stream:=TcpClient.GetStream,
-        'localendpoint:=CType(TcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-        'remoteendpoint:=CType(TcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-        'timeout:=60.Seconds,
-        'Logger:=_logger))
 
         '''<summary>Handles new connections to the server.</summary>
         Private Sub AcceptSocket(ByVal socket As W3Socket)
@@ -333,45 +176,8 @@ Namespace WC3
                     For Each entry In _gameSets.Values
                         entry.Dispose()
                     Next entry
-
-                    'For Each adv In linkedAdvertisers
-                    'adv.RemoveGame(Me.Settings.Header, "Server killed.")
-                    'Next adv
-
-                    'change_state(ServerState.Disposed)
-                    'Parent.QueueRemoveServer(Me.Name)
                 End Sub)
         End Function
-
-
-        '''''<summary>Adds a game to the server.</summary>
-        ''Private Function CreateGame(Optional ByVal gameName As String = Nothing,
-        ''Optional ByVal arguments As IEnumerable(Of String) = Nothing) As Game
-        ''gameName = If(gameName, instanceCreationCount.ToString(CultureInfo.InvariantCulture))
-        ''If state > ServerState.AcceptingPlayersAndPlayingGames Then
-        ''Throw New InvalidOperationException("No longer accepting players. Can't create new instances.")
-        ''End If
-        ''Dim game = FindGame(gameName)
-        ''If game IsNot Nothing Then
-        ''Throw New InvalidOperationException("A game called '{0}' already exists.".Frmt(gameName))
-        ''End If
-
-        ''game = New Game(gameName, Settings.Map, Settings)
-        ''Logger.Log(game.Name + " opened.", LogMessageType.Positive)
-        ''instanceCreationCount += 1
-        ''games_all.Add(game)
-        ''games_lobby.Add(game)
-
-        ''AddHandler game.PlayerTalked, AddressOf c_PlayerTalked
-        ''AddHandler game.PlayerLeft, AddressOf c_PlayerLeft
-        ''AddHandler game.ChangedState, AddressOf c_GameStateChanged
-        ''AddHandler game.PlayerEntered, AddressOf c_PlayerEntered
-        ''AddHandler game.PlayerSentData, AddressOf c_PlayerSentData
-
-        ''SetAdvertiserOptions(private:=False)
-        ''e_ThrowAddedGame(game)
-        ''Return game
-        ''End Function
 
         Private Function AsyncFindPlayer(ByVal username As String) As IFuture(Of Player)
             Contract.Requires(username IsNot Nothing)
@@ -394,46 +200,6 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncFindPlayerGame(userName)).Defuturized
         End Function
-
-        ''''<summary>Removes a game with the given name.</summary>
-        'Private Sub RemoveGame(ByVal gameName As String,
-        'Optional ByVal ignorePermanent As Boolean = False)
-        'Dim game = FindGame(gameName)
-        'If game Is Nothing Then Throw New InvalidOperationException("No game with that name.")
-
-        'RemoveHandler game.PlayerTalked, AddressOf c_PlayerTalked
-        'RemoveHandler game.PlayerLeft, AddressOf c_PlayerLeft
-        'RemoveHandler game.ChangedState, AddressOf c_GameStateChanged
-        'RemoveHandler game.PlayerEntered, AddressOf c_PlayerEntered
-        'RemoveHandler game.PlayerSentData, AddressOf c_PlayerSentData
-
-        'games_all.Remove(game)
-        'games_lobby.Remove(game)
-        'games_load_screen.Remove(game)
-        'games_gameplay.Remove(game)
-        'game.QueueClose()
-        'e_ThrowRemovedGame(game)
-
-        'If Not ignorePermanent AndAlso Settings.permanent AndAlso
-        'Settings.instances > 0 AndAlso
-        'state < ServerState.OnlyPlayingGames Then
-        'CreateGame()
-        'End If
-        'End Sub
-
-        'Public Function QueueFindGame(ByVal gameName As String) As IFuture(Of Game)
-        'Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
-        'Return inQueue.QueueFunc(Function() asyncFindGame(gameName))
-        'End Function
-
-        'Public Function QueueCreateGame(Optional ByVal gameName As String = Nothing) As IFuture(Of Game)
-        'Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
-        'Return inQueue.QueueFunc(Function() CreateGame(gameName))
-        'End Function
-        'Public Function QueueRemoveGame(ByVal gameName As String, Optional ByVal ignorePermanent As Boolean = False) As IFuture
-        'Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-        'Return inQueue.QueueAction(Sub() RemoveGame(gameName, ignorePermanent))
-        'End Function
 
         Private Function CreateGameSetsAsyncView(ByVal adder As Action(Of GameServer, GameSet),
                                                  ByVal remover As Action(Of GameServer, GameSet)) As IDisposable

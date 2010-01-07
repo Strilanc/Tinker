@@ -42,8 +42,10 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>false</MapFileExtensions>
+    <ProductName>Tinker</ProductName>
+    <PublisherName>-</PublisherName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>34</ApplicationRevision>
+    <ApplicationRevision>44</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -263,7 +265,7 @@
     <Compile Include="Warcraft3\Player\W3PlayerLobby.vb" />
     <Compile Include="Warcraft3\Player\W3PlayerPart.vb" />
     <Compile Include="Warcraft3\Server\GameSet.vb" />
-    <Compile Include="Warcraft3\Server\ServerEntry.vb" />
+    <Compile Include="Warcraft3\Server\GameSettings.vb" />
     <Compile Include="Warcraft3\W3GameStatsJar.vb" />
     <Compile Include="Warcraft3\KeyedEvent.vb" />
     <Compile Include="Warcraft3\Pinger.vb" />
@@ -439,6 +441,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.0">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
       <Visible>False</Visible>
       <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
@@ -462,7 +469,7 @@
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
       <Visible>False</Visible>
       <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>true</Install>
+      <Install>false</Install>
     </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
       <Visible>False</Visible>

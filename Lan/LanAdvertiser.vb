@@ -177,69 +177,6 @@ Namespace Lan
             End Try
         End Sub
 
-        Public Shared Function CreateLanAdmin(ByVal name As InvariantString,
-                                              ByVal password As String,
-                                              Optional ByVal remoteHost As String = "localhost",
-                                              Optional ByVal listenPort As UShort = 0) As Lan.Advertiser
-            Dim sha1Checksum = (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList
-            Contract.Assume(sha1Checksum.Count = 20)
-            Dim map = New WC3.Map("Maps\",
-                                  "AdminGame.w3x",
-                                  filesize:=1,
-                                  fileChecksumCRC32:=&H12345678UI,
-                                  mapChecksumSHA1:=sha1Checksum,
-                                  mapChecksumXORO:=&H2357BDUI,
-                                  slotCount:=2)
-            Contract.Assume(map.Slots(1) IsNot Nothing)
-            map.Slots(1).Contents = New WC3.SlotContentsComputer(map.Slots(1), WC3.Slot.ComputerLevel.Normal)
-            Dim hostName = Application.ProductName
-            Contract.Assume(hostName IsNot Nothing)
-            Dim header = New WC3.LocalGameDescription("Admin Game",
-                                          New WC3.GameStats(map, hostName, New Commands.CommandArgument("")),
-                                          gameid:=1,
-                                          entryKey:=0,
-                                          totalSlotCount:=map.NumPlayerSlots,
-                                          gameType:=map.GameType,
-                                          state:=0,
-                                          usedSlotCount:=0,
-                                          hostPort:=0)
-            Throw New NotImplementedException
-            'Dim settings = New WC3.ServerSettings(map:=map,
-            'header:=header,
-            'allowUpload:=False,
-            'defaultSlotLockState:=WC3.Slot.Lock.Frozen,
-            'instances:=0,
-            'password:=password,
-            'isAdminGame:=True,
-            'argument:=New Commands.CommandArgument("-permanent"))
-            'Dim server = CreateServer(name, settings)
-            'Dim lan As WC3.LanAdvertiser
-            'lan = New WC3.LanAdvertiser(Me, name, remoteHost)
-            'Try
-            'AddWidget(lan)
-            'lan.QueueAddGame(header)
-            'Catch e As Exception
-            'lan.Dispose()
-            'Throw
-            'End Try
-
-            'Dim result = server.QueueOpenPort(listenPort)
-            'result.CallWhenReady(
-            'Sub(exception)
-            'Contract.Assume(lan IsNot Nothing)
-            'Contract.Assume(server IsNot Nothing)
-            'If exception IsNot Nothing Then
-            'server.QueueKill()
-            'lan.Dispose()
-            'Else
-            'DisposeLink.CreateOneWayLink(lan, server)
-            'DisposeLink.CreateOneWayLink(server, lan)
-            'End If
-            'End Sub
-            ')
-            'Return result
-        End Function
-
         Private Function CreateGamesAsyncView(ByVal adder As Action(Of Lan.Advertiser, LanGame),
                                               ByVal remover As Action(Of Lan.Advertiser, LanGame)) As IDisposable
             Contract.Requires(adder IsNot Nothing)

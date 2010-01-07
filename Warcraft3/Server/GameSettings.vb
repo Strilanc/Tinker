@@ -70,7 +70,9 @@
 
         Public Sub New(ByVal map As Map,
                        ByVal gameDescription As LocalGameDescription,
-                       ByVal argument As Commands.CommandArgument)
+                       ByVal argument As Commands.CommandArgument,
+                       Optional ByVal isAdminGame As Boolean = False,
+                       Optional ByVal adminPassword As String = Nothing)
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
@@ -80,8 +82,8 @@
             Me._allowUpload = Not argument.HasOptionalSwitch("NoUL")
             Me._isAutoStarted = argument.HasOptionalSwitch("AutoStart") OrElse argument.HasOptionalSwitch("as")
             Me._defaultSlotLockState = Slot.Lock.Unlocked
-            Me._adminPassword = New Random().Next(0, 1000).ToString("000", CultureInfo.InvariantCulture)
-            Me._isAdminGame = False
+            Me._adminPassword = If(adminPassword, New Random().Next(0, 1000).ToString("000", CultureInfo.InvariantCulture))
+            Me._isAdminGame = isAdminGame
             Me._shouldGrabMap = argument.HasOptionalSwitch("grab")
             Me._mapMode = If(argument.TryGetOptionalNamedValue("Mode"), "")
             Me._useLoadInGame = argument.HasOptionalSwitch("LoadInGame") OrElse argument.HasOptionalSwitch("lig")

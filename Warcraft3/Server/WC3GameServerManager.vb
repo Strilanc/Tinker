@@ -244,5 +244,46 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of UShort))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _portHandle.Port)
         End Function
+
+        Private Function AsyncAddAdminGame(ByVal name As InvariantString, ByVal password As String) As IFuture(Of GameSet)
+            Contract.Requires(password IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of GameSet))() IsNot Nothing)
+
+            Dim sha1Checksum = (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList
+            Contract.Assume(sha1Checksum.Count = 20)
+            Dim map = New WC3.Map(folder:="Maps\",
+                                  relativepath:="AdminGame.w3x",
+                                  filesize:=1,
+                                  fileChecksumCRC32:=&H12345678UI,
+                                  mapChecksumSHA1:=sha1Checksum,
+                                  mapChecksumXORO:=&H2357BDUI,
+                                  slotCount:=2)
+            Contract.Assume(map.Slots(1) IsNot Nothing)
+            map.Slots(1).Contents = New WC3.SlotContentsComputer(map.Slots(1), WC3.Slot.ComputerLevel.Normal)
+            Dim hostName = Application.ProductName
+            Contract.Assume(hostName IsNot Nothing)
+            Dim gameDescription = New WC3.LocalGameDescription(
+                                          name:=name,
+                                          GameStats:=New WC3.GameStats(map, hostName, New Commands.CommandArgument("")),
+                                          gameid:=AllocateGameId(),
+                                          entryKey:=0,
+                                          totalSlotCount:=map.NumPlayerSlots,
+                                          gameType:=map.GameType,
+                                          state:=0,
+                                          usedSlotCount:=0,
+                                          hostPort:=_portHandle.Port)
+            Dim gameSettings = New WC3.GameSettings(map,
+                                                    gameDescription,
+                                                    New Commands.CommandArgument("-permanent -noul -i=0"),
+                                                    isAdminGame:=True,
+                                                    adminPassword:=password)
+
+            Return _gameServer.QueueAddGameSet(gameSettings)
+        End Function
+        Public Function QueueAddAminGame(ByVal name As InvariantString, ByVal password As String) As IFuture(Of GameSet)
+            Contract.Requires(password IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of GameSet))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Defuturized
+        End Function
     End Class
 End Namespace

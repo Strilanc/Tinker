@@ -16,7 +16,7 @@ Namespace Bot
             AddCommand(New CLoadPlugin)
             AddCommand(New CGet)
             AddCommand(New CSet)
-            'AddCommand(CreateAdmin)
+            AddCommand(New CCreateAdminGame)
             AddCommand(New CCreateLan)
         End Sub
 
@@ -103,26 +103,25 @@ Namespace Bot
             End Function
         End Class
 
-        'Private Shared ReadOnly CreateAdmin As New DelegatedTemplatedCommand(Of MainBot)(
-        'Name:="CreateAdmin",
-        'template:="name password=x -port=pool -receiver=localhost",
-        'Description:="Creates a server with an admin game and a lan advertiser for the server.",
-        'HasPrivateArguments:=True,
-        'Permissions:="root:2",
-        'func:=Function(target, user, argument)
-        'Dim argName = argument.RawValue(0)
-        'Dim argPassword = argument.NamedValue("password")
-        'Dim argListenPort = CUShort(0)
-        'If argument.TryGetOptionalNamedValue("port") IsNot Nothing AndAlso Not UShort.TryParse(argument.TryGetOptionalNamedValue("port"), argListenPort) Then
-        'Throw New ArgumentException("Invalid listen port.")
-        'End If
-        'Dim argRemoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
+        Private NotInheritable Class CCreateAdminGame
+            Inherits TemplatedCommand(Of MainBot)
 
-        'Return target.QueueAddWidget(WC3.LanAdvertiser.CreateLanAdmin(argName,
-        'argPassword,
-        'argRemoteHost,
-        'argListenPort)).EvalOnSuccess(Function() "Created Lan Admin.")
-        'End Function)
+            Public Sub New()
+                MyBase.New(Name:="CreateAdminGame",
+                           template:="name password=x",
+                           Description:="Picks or creates a game server, and adds an admin game to it.",
+                           Permissions:="local:1",
+                           hasPrivateArguments:=True)
+            End Sub
+
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Dim name = argument.RawValue(0)
+                Dim password = argument.NamedValue("password")
+                Return From server In target.QueueGetOrConstructGameServer()
+                       Select server.QueueAddAminGame(name, password)
+                       Select "Added admin game to server. Use Lan Advertiser on auto to advertise it."
+            End Function
+        End Class
 
         Private NotInheritable Class CCreateLan
             Inherits TemplatedCommand(Of MainBot)
