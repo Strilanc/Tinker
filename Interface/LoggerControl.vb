@@ -173,7 +173,7 @@ Public Class LoggerControl
         End Get
     End Property
 
-    Public Sub LogMessage(ByVal message As LazyValue(Of String),
+    Public Sub LogMessage(ByVal message As Lazy(Of String),
                           ByVal color As Color,
                           Optional ByVal fileOnly As Boolean = False)
         Contract.Requires(message IsNot Nothing)
@@ -293,7 +293,7 @@ Public Class LoggerControl
 
 #Region "Log Events"
     Private Sub OnLoggedMessage(ByVal type As LogMessageType,
-                                ByVal message As LazyValue(Of String)) Handles _logger.LoggedMessage
+                                ByVal message As Lazy(Of String)) Handles _logger.LoggedMessage
         Dim color As Color
         Dim fileOnly As Boolean
         SyncLock lock

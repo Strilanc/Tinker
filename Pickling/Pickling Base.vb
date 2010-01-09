@@ -73,7 +73,7 @@
 
         Private ReadOnly _data As IReadableList(Of Byte)
         Private ReadOnly _value As T
-        Private ReadOnly _description As LazyValue(Of String)
+        Private ReadOnly _description As Lazy(Of String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_data IsNot Nothing)
@@ -83,7 +83,7 @@
 
         Public Sub New(ByVal value As T,
                        ByVal data As IReadableList(Of Byte),
-                       ByVal description As LazyValue(Of String))
+                       ByVal description As Lazy(Of String))
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
@@ -97,7 +97,7 @@
         Public Sub New(ByVal jarName As InvariantString,
                        ByVal value As T,
                        ByVal data As IReadableList(Of Byte))
-            Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, value)))
+            Me.new(value, data, New Lazy(Of String)(Function() "{0}: {1}".Frmt(jarName, value)))
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Me.Data Is data)
@@ -106,7 +106,7 @@
                        ByVal value As T,
                        ByVal data As IReadableList(Of Byte),
                        ByVal valueDescription As Func(Of String))
-            Me.new(value, data, New LazyValue(Of String)(Function() "{0}: {1}".Frmt(jarName, valueDescription())))
+            Me.new(value, data, New Lazy(Of String)(Function() "{0}: {1}".Frmt(jarName, valueDescription())))
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(valueDescription IsNot Nothing)
@@ -119,9 +119,9 @@
             Return {"{", (From e In pickles Select e.Description.Value).StringJoin(Environment.NewLine).Indent("    "), "}"}.StringJoin(Environment.NewLine)
         End Function
 
-        Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle(Of T).Description
+        Public ReadOnly Property Description As Lazy(Of String) Implements IPickle(Of T).Description
             Get
-                Contract.Ensures(Contract.Result(Of LazyValue(Of String))() Is _description)
+                Contract.Ensures(Contract.Result(Of Lazy(Of String))() Is _description)
                 Return _description
             End Get
         End Property

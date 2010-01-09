@@ -3,7 +3,7 @@
     <ContractClass(GetType(IPickle.ContractClass))>
     Public Interface IPickle
         ReadOnly Property Data As IReadableList(Of Byte)
-        ReadOnly Property Description As LazyValue(Of String)
+        ReadOnly Property Description As Lazy(Of String)
 
         <ContractClassFor(GetType(IPickle))>
         Class ContractClass
@@ -14,9 +14,9 @@
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle.Description
+            Public ReadOnly Property Description As Lazy(Of String) Implements IPickle.Description
                 Get
-                    Contract.Ensures(Contract.Result(Of LazyValue(Of String))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of Lazy(Of String))() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get
             End Property
@@ -37,7 +37,7 @@
                 Throw New NotSupportedException
             End Get
         End Property
-        Public ReadOnly Property Description As LazyValue(Of String) Implements IPickle.Description
+        Public ReadOnly Property Description As Lazy(Of String) Implements IPickle.Description
             Get
                 Throw New NotSupportedException
             End Get

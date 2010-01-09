@@ -9,35 +9,33 @@
 End Enum
 
 Public NotInheritable Class Logger
-    Public Event LoggedMessage(ByVal type As LogMessageType, ByVal message As LazyValue(Of String))
+    Public Event LoggedMessage(ByVal type As LogMessageType, ByVal message As Lazy(Of String))
     Public Event LoggedFutureMessage(ByVal placeholder As String, ByVal message As IFuture(Of String))
-    Private ReadOnly ref As ICallQueue
+    Private ReadOnly outQueue As ICallQueue
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
-        Contract.Invariant(ref IsNot Nothing)
+        Contract.Invariant(outQueue IsNot Nothing)
     End Sub
 
-    Public Sub New(Optional ByVal ref As ICallQueue = Nothing)
-        Me.ref = If(ref, New TaskedCallQueue())
+    Public Sub New(Optional ByVal outQueue As ICallQueue = Nothing)
+        Me.outQueue = If(outQueue, New TaskedCallQueue())
     End Sub
 
     Public Sub FutureLog(ByVal placeholder As String, ByVal message As IFuture(Of String))
         Contract.Requires(placeholder IsNot Nothing)
         Contract.Requires(message IsNot Nothing)
-        ref.QueueAction(Sub()
-                            Contract.Assume(Me IsNot Nothing)
-                            RaiseEvent LoggedFutureMessage(placeholder, message)
-                        End Sub)
+        outQueue.QueueAction(Sub() RaiseEvent LoggedFutureMessage(placeholder, message))
     End Sub
-    Public Sub Log(ByVal message As LazyValue(Of String), ByVal messageType As LogMessageType)
+    Public Sub Log(ByVal message As Lazy(Of String), ByVal messageType As LogMessageType)
         Contract.Requires(message IsNot Nothing)
-        ref.QueueAction(Sub()
-                            Contract.Assume(Me IsNot Nothing)
-                            RaiseEvent LoggedMessage(messageType, message)
-                        End Sub)
+        outQueue.QueueAction(Sub() RaiseEvent LoggedMessage(messageType, message))
     End Sub
     Public Sub Log(ByVal message As Func(Of String), ByVal messageType As LogMessageType)
         Contract.Requires(message IsNot Nothing)
-        Log(New LazyValue(Of String)(message), messageType)
+        Log(New Lazy(Of String)(message), messageType)
+    End Sub
+    Public Sub Log(ByVal message As String, ByVal messageType As LogMessageType)
+        Contract.Requires(message IsNot Nothing)
+        Log(Function() message, messageType)
     End Sub
 End Class

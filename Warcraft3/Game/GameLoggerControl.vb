@@ -26,7 +26,7 @@
                                    ByVal action As WC3.GameAction) Handles game.PlayerAction
             Dim mode = actionMode
             If mode = CallbackMode.Off Then Return
-            LogMessage(New LazyValue(Of String)(Function() "{0}: {1}".Frmt(player.Name, action.Payload.Description.Value)),
+            LogMessage(New Lazy(Of String)(Function() "{0}: {1}".Frmt(player.Name, action.Payload.Description.Value)),
                        Color.DarkBlue,
                        mode = CallbackMode.File)
         End Sub
