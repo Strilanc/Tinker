@@ -50,41 +50,38 @@ Namespace Bnet
 
         '''<summary>A parsed hashing operation.</summary>
         Private Structure Operation
-            Private ReadOnly leftVar As Char
-            Private ReadOnly rightVar As Char
-            Private ReadOnly destVar As Char
-            Private ReadOnly operation As Func(Of ModInt32, ModInt32, ModInt32)
+            Private ReadOnly _leftVarIndex As Integer
+            Private ReadOnly _rightVarIndex As Integer
+            Private ReadOnly _destVarIndex As Integer
+            Private ReadOnly _operation As Func(Of ModInt32, ModInt32, ModInt32)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(operation IsNot Nothing)
+                Contract.Invariant(_operation IsNot Nothing)
             End Sub
 
-            Public Sub New(ByVal leftVar As Char, ByVal rightVar As Char, ByVal destVar As Char, ByVal [operator] As Char)
-                Me.leftVar = leftVar
-                Me.rightVar = rightVar
-                Me.destVar = destVar
-                Me.operation = Operations([operator])
-                Contract.Assume(operation IsNot Nothing)
+            Public Sub New(ByVal leftVarIndex As Integer,
+                           ByVal rightVarIndex As Integer,
+                           ByVal destVarIndex As Integer,
+                           ByVal [operator] As Char)
+                Me._leftVarIndex = leftVarIndex
+                Me._rightVarIndex = rightVarIndex
+                Me._destVarIndex = destVarIndex
+                Me._operation = Operations([operator])
+                Contract.Assume(_operation IsNot Nothing)
             End Sub
 
-            Public Sub ApplyTo(ByVal vars As Dictionary(Of Char, ModInt32))
+            Public Sub ApplyTo(ByVal vars As CachedLookupTable(Of Char, ModInt32))
                 Contract.Requires(vars IsNot Nothing)
-                vars(destVar) = operation(vars(leftVar), vars(rightVar))
+                vars.ValueAt(_destVarIndex) = _operation(vars.ValueAt(_leftVarIndex), vars.ValueAt(_rightVarIndex))
             End Sub
         End Structure
 
         '''<summary>Extracts the initial variable values from the challenge.</summary>
-        Private Function ReadVariablesFrom(ByVal lines As IEnumerator(Of String)) As Dictionary(Of Char, ModInt32)
+        Private Function ReadVariablesFrom(ByVal lines As IEnumerator(Of String)) As CachedLookupTable(Of Char, ModInt32)
             Contract.Requires(lines IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))().ContainsKey("A"c))
-            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))().ContainsKey("C"c))
-            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ModInt32))().ContainsKey("S"c))
+            Contract.Ensures(Contract.Result(Of CachedLookupTable(Of Char, ModInt32))() IsNot Nothing)
 
-            Dim variables = New Dictionary(Of Char, ModInt32)
-            variables("A"c) = 0
-            variables("C"c) = 0
-            variables("S"c) = 0
+            Dim variables = New CachedLookupTable(Of Char, ModInt32)(capacity:=4)
             Do 'Read until a non-variable declaration line is met
                 If Not lines.MoveNext Then Throw New ArgumentException("Instructions ended prematurely.")
                 If lines.Current Is Nothing OrElse Not lines.Current Like "?=*" Then Exit Do
@@ -95,15 +92,14 @@ Namespace Bnet
                 If Not UInteger.TryParse(lines.Current.Substring(2), u) Then
                     Throw New ArgumentException("Invalid variable initialization line: {0}".Frmt(lines.Current))
                 End If
-                variables(lines.Current(0)) = u
+                variables.ValueAt(variables.CacheIndexOf(lines.Current(0))) = u
             Loop
-            Contract.Assume(variables.ContainsKey("A"c))
             Return variables
         End Function
 
         '''<summary>Extracts the hash operations from the challenge.</summary>
         Private Function ReadOperationsFrom(ByVal lines As IEnumerator(Of String),
-                                            ByVal variables As Dictionary(Of Char, ModInt32)) As IEnumerable(Of Operation)
+                                            ByVal variables As CachedLookupTable(Of Char, ModInt32)) As IEnumerable(Of Operation)
             Contract.Requires(lines IsNot Nothing)
             Contract.Requires(variables IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Operation))() IsNot Nothing)
@@ -123,20 +119,11 @@ Namespace Bnet
                     Throw New ArgumentException("Invalid operation specified: {0}".Frmt(lines.Current))
                 End If
 
-                'Parse
-                Dim destVar = lines.Current(0)
-                Dim leftVar = lines.Current(2)
-                Dim [operator] = lines.Current(3)
-                Dim rightVar = lines.Current(4)
-                'Check
-                If Not variables.ContainsKey(destVar) OrElse
-                        Not variables.ContainsKey(leftVar) OrElse
-                        Not variables.ContainsKey(rightVar) OrElse
-                        Not Operations.ContainsKey([operator]) Then
-                    Throw New ArgumentException("Operation involved unexpected variable or operator: {0}.".Frmt(lines.Current))
-                End If
-                'Store
-                result.Add(New Operation(leftVar, rightVar, destVar, [operator]))
+                'Parse and Store
+                result.Add(New Operation(destVarIndex:=variables.CacheIndexOf(lines.Current(0)),
+                                         leftVarIndex:=variables.CacheIndexOf(lines.Current(2)),
+                                         [operator]:=lines.Current(3),
+                                         rightVarIndex:=variables.CacheIndexOf(lines.Current(4))))
             Next i
             Return result
         End Function
@@ -179,8 +166,12 @@ Namespace Bnet
             Dim operations = ReadOperationsFrom(lines, variables)
             If lines.MoveNext Then Throw New ArgumentException("More revision check instructions than expected.")
 
+            Dim indexA = variables.CacheIndexOf("A"c)
+            Dim indexC = variables.CacheIndexOf("C"c)
+            Dim indexS = variables.CacheIndexOf("S"c)
+
             'Seed variable A [the point of this? obfuscation I guess]
-            variables("A"c) = variables("A"c) Xor ExtractIndexStringHashSeed(seedString)
+            variables.ValueAt(indexA) = variables.ValueAt(indexA) Xor ExtractIndexStringHashSeed(seedString)
 
             'Init tail buffer [used to extend file data to a multiple of 1024]
             Dim tailBuffer(0 To 1024 - 1) As Byte
@@ -194,7 +185,7 @@ Namespace Bnet
                     'Apply operations using each dword in stream
                     Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({file, New IO.MemoryStream(tailBuffer)})))
                     For repeat = 0 To CInt(file.Length).CeilingMultiple(1024) - 1 Step 4
-                        variables("S"c) = br.ReadUInt32()
+                        variables.ValueAt(indexS) = br.ReadUInt32()
                         For Each op In operations
                             op.ApplyTo(variables)
                         Next op
@@ -203,7 +194,7 @@ Namespace Bnet
             Next filename
 
             'Result is the final value of Variable C
-            Return variables("C"c)
+            Return variables.ValueAt(indexC)
         End Function
     End Module
 End Namespace

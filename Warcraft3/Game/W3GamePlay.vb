@@ -96,19 +96,20 @@
         Private Sub OnTick()
             If _gameTickTimer Is Nothing Then Return 'ended
 
-            Dim dt = _gameTickTimer.Reset().TotalMilliseconds * Me.SettingSpeedFactor
-            Dim dgt = CUShort(Me.SettingTickPeriod * Me.SettingSpeedFactor)
-
             'Stop for laggers
             UpdateLagScreen()
             If laggingPlayers.Count > 0 Then
+                _clock.AsyncWait(CUInt(Me.SettingTickPeriod).Milliseconds).QueueCallOnSuccess(inQueue, AddressOf OnTick)
                 Return
             End If
 
             'Schedule next tick
+            Dim dt = _gameTickTimer.Reset().TotalMilliseconds * Me.SettingSpeedFactor
+            Dim dgt = CUShort(Me.SettingTickPeriod * Me.SettingSpeedFactor)
             gameTimeBuffer += dt - dgt
             gameTimeBuffer = gameTimeBuffer.Between(-dgt * 10, dgt * 10)
-            _clock.AsyncWait(CUInt(dgt - gameTimeBuffer).Between(dgt \ 2US, dgt * 2US).Milliseconds).QueueCallOnSuccess(inQueue, AddressOf OnTick)
+            Dim nextTickTime = CUInt(dgt - gameTimeBuffer).Between(dgt \ 2US, dgt * 2US).Milliseconds
+            _clock.AsyncWait(nextTickTime).QueueCallOnSuccess(inQueue, AddressOf OnTick)
 
             'Send
             SendQueuedGameData(New TickRecord(dgt, _gameTime))
