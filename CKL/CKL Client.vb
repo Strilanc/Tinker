@@ -8,7 +8,9 @@
         Public Shared Function AsyncBorrowCredentials(ByVal remoteHost As String,
                                                       ByVal remotePort As UShort,
                                                       ByVal clientCDKeySalt As UInt32,
-                                                      ByVal serverCDKeySalt As UInt32) As IFuture(Of WC3CredentialPair)
+                                                      ByVal serverCDKeySalt As UInt32,
+                                                      ByVal clock As IClock) As IFuture(Of WC3CredentialPair)
+            Contract.Requires(clock IsNot Nothing)
             Contract.Requires(remoteHost IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of WC3CredentialPair))() IsNot Nothing)
             Dim requestPacket = Concat({CKL.Server.PacketPrefixValue, CKLPacketId.Keys, 0, 0},
@@ -21,7 +23,8 @@
                     Dim socket = New PacketSocket(stream:=tcpClient.GetStream,
                                                   localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                                                   remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                                                  timeout:=10.Seconds)
+                                                  timeout:=10.Seconds,
+                                                  clock:=clock)
                     socket.WritePacket(requestPacket)
                     Return socket
                 End Function)

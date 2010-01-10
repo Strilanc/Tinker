@@ -44,6 +44,7 @@ Namespace Bnet
         Private ReadOnly inQueue As ICallQueue
 
         Private ReadOnly _externalProvider As IExternalValues
+        Private ReadOnly _clock As IClock
         Private ReadOnly _profile As Bot.ClientProfile
         Private ReadOnly _logger As Logger
         Private ReadOnly _packetHandler As BnetPacketHandler
@@ -53,7 +54,7 @@ Namespace Bnet
         'game
         Private _advertisedGameDescription As WC3.LocalGameDescription
         Private _advertisedPrivate As Boolean
-        Private ReadOnly _advertiseRefreshTimer As New Timers.Timer(RefreshPeriod.TotalMilliseconds)
+        Private _advertiseTicker As IDisposable
         Private _futureAdvertisedGame As New FutureAction
         Private _reportedListenPort As UShort
 
@@ -75,12 +76,12 @@ Namespace Bnet
             Contract.Invariant(_packetHandler IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
+            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_profile IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_futureLoggedIn IsNot Nothing)
             Contract.Invariant(_futureConnected IsNot Nothing)
             Contract.Invariant(_futureAdvertisedGame IsNot Nothing)
-            Contract.Invariant(_advertiseRefreshTimer IsNot Nothing)
             Contract.Invariant(_externalProvider IsNot Nothing)
             Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.InitiatingConnection))
             Contract.Invariant((_wardenClient IsNot Nothing) = (_state > ClientState.WaitingForProgramAuthenticationBegin))
@@ -90,20 +91,22 @@ Namespace Bnet
 
         Public Sub New(ByVal profile As Bot.ClientProfile,
                        ByVal externalProvider As IExternalValues,
+                       ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(profile IsNot Nothing)
             Contract.Assume(externalProvider IsNot Nothing)
+            Contract.Assume(clock IsNot Nothing)
             Me._futureConnected.SetHandled()
             Me._futureLoggedIn.SetHandled()
             Me._futureAdvertisedGame.SetHandled()
 
             'Pass values
+            Me._clock = clock
             Me._profile = profile
             Me._externalProvider = externalProvider
             Me._logger = If(logger, New Logger)
             Me.outQueue = New TaskedCallQueue
             Me.inQueue = New TaskedCallQueue
-            AddHandler _advertiseRefreshTimer.Elapsed, Sub() OnRefreshTimerTick()
 
             'Start packet machinery
             Me._packetHandler = New BnetPacketHandler(Me._logger)
@@ -252,10 +255,6 @@ Namespace Bnet
             inQueue.QueueAction(Sub() Disconnect(expected, reason))
         End Sub
 
-        Private Sub OnRefreshTimerTick()
-            inQueue.QueueAction(Sub() AdvertiseGame(False, True))
-        End Sub
-
 #Region "State"
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
             If finalizing Then Return Nothing
@@ -303,9 +302,11 @@ Namespace Bnet
                                         initialSlack:=1000,
                                         costEstimator:=Function(data) 100 + data.Length,
                                         costLimit:=400,
-                                        costRecoveredPerMillisecond:=0.048),
+                                        costRecoveredPerMillisecond:=0.048,
+                                        clock:=_clock),
                             localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                             remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                            clock:=_clock,
                             timeout:=60.Seconds,
                             Logger:=Logger,
                             bufferSize:=PacketSocket.DefaultBufferSize * 10)
@@ -440,7 +441,7 @@ Namespace Bnet
 
             If Not expected AndAlso _allowRetryConnect Then
                 _allowRetryConnect = False
-                Call 5.Seconds.AsyncWait.CallWhenReady(
+                _clock.AsyncWait(5.Seconds).CallWhenReady(
                     Sub()
                         Logger.Log("Attempting to reconnect...", LogMessageType.Positive)
                         QueueConnectAndLogOn(_bnetRemoteHostName, Me._userCredentials.Regenerate())
@@ -555,7 +556,7 @@ Namespace Bnet
                     gameType:=gameType,
                     state:=gameState,
                     usedslotcount:=_advertisedGameDescription.UsedSlotCount,
-                    baseAgeMilliSeconds:=_advertisedGameDescription.AgeMilliseconds)
+                    baseage:=_advertisedGameDescription.Age)
             SendPacket(Bnet.Packet.MakeCreateGame3(_advertisedGameDescription))
         End Sub
         Public Function QueueStartAdvertisingGame(ByVal gameDescription As WC3.LocalGameDescription,
@@ -571,7 +572,10 @@ Namespace Bnet
             Select Case _state
                 Case ClientState.CreatingGame, ClientState.AdvertisingGame
                     SendPacket(Bnet.Packet.MakeCloseGame3())
-                    _advertiseRefreshTimer.Stop()
+                    If _advertiseTicker IsNot Nothing Then
+                        _advertiseTicker.Dispose()
+                        _advertiseTicker = Nothing
+                    End If
                     EnterChannel(_lastChannel)
                     _advertisedGameDescription = Nothing
                     _futureAdvertisedGame.TrySetFailed(New OperationFailedException("Advertising cancelled."))
@@ -658,7 +662,7 @@ Namespace Bnet
             If Profile.CKLServerAddress Like "*:#*" Then
                 Dim remoteHost = Profile.CKLServerAddress.Split(":"c)(0)
                 Dim port = UShort.Parse(Profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
-                Dim result = CKL.Client.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt)
+                Dim result = CKL.Client.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt, _clock)
                 result.CallOnSuccess(Sub() Logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)).SetHandled()
                 Return result
             Else
@@ -704,7 +708,12 @@ Namespace Bnet
 
             'Attempt BNLS connection
             Dim seed = keys.AuthenticationROC.AuthenticationProof.Take(4).ToUInt32
-            _wardenClient = New Warden.Client(remoteHost:=remoteHost, remotePort:=remotePort, seed:=seed, cookie:=seed, Logger:=Logger)
+            _wardenClient = New Warden.Client(remoteHost:=remoteHost,
+                                              remotePort:=remotePort,
+                                              seed:=seed,
+                                              cookie:=seed,
+                                              Logger:=Logger,
+                                              clock:=_clock)
         End Sub
 
         Private Sub ReceiveProgramAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
@@ -862,17 +871,22 @@ Namespace Bnet
                 If _state = ClientState.CreatingGame Then
                     Logger.Log("Finished creating game.", LogMessageType.Positive)
                     ChangeState(ClientState.AdvertisingGame)
-                    If Not _advertisedPrivate Then _advertiseRefreshTimer.Start()
+                    If Not _advertisedPrivate Then
+                        _advertiseTicker = _clock.AsyncRepeat(RefreshPeriod, Sub() inQueue.QueueAction(Sub() AdvertiseGame(useFull:=False, refreshing:=True)))
+                    End If
                     _futureAdvertisedGame.TrySetSucceeded()
                 Else
                     ChangeState(ClientState.AdvertisingGame) 'throw event
                 End If
             Else
                 _futureAdvertisedGame.TrySetFailed(New OperationFailedException("BNET didn't allow game creation. Most likely cause is game name in use."))
-                _advertiseRefreshTimer.Stop()
+                If _advertiseTicker IsNot Nothing Then
+                    _advertiseTicker.Dispose()
+                    _advertiseTicker = Nothing
+                End If
                 EnterChannel(_lastChannel)
                 'RaiseEvent RemovedGame(Me, _advertisedGameDescription, "Failed to advertise the game. Most likely cause is game name in use.")
-            End If
+                End If
         End Sub
         Private Sub IgnorePacket(ByVal value As Object)
             Contract.Requires(value IsNot Nothing)

@@ -29,10 +29,9 @@
             End Sub
         End Class
 
-        Private ReadOnly tickTimer As New Timers.Timer(My.Settings.game_tick_period)
-        Private lastTickTime As ModInt32
+        Private _gameTickTimer As ITimer
         Private laggingPlayers As New List(Of Player)
-        Private lagStartTime As ModInt32
+        Private _lagTimer As ITimer
         Private gameDataQueue As New Queue(Of GameTickDatum)
         Private _gameTime As Integer
         Private gameTimeBuffer As Double
@@ -52,18 +51,17 @@
             SettingSpeedFactor = gsf
             SettingTickPeriod = gtp
             SettingLagLimit = gll
-            AddHandler tickTimer.Elapsed, Sub() OnTick()
         End Sub
         Private Sub GameplayStart()
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartPlaying()
             Next player
-            Me.lastTickTime = Environment.TickCount
-            Me.tickTimer.Start()
+            _gameTickTimer = _clock.StartTimer()
+            inQueue.QueueAction(AddressOf OnTick)
         End Sub
         Private Sub GameplayStop()
-            tickTimer.Stop()
+            _gameTickTimer = Nothing
         End Sub
 
         Private Sub e_ThrowPlayerSentData(ByVal player As Player, ByVal data As Byte())
@@ -96,29 +94,25 @@
 
         '''<summary>Advances game time</summary>
         Private Sub OnTick()
-            inQueue.QueueAction(
-                Sub()
-                    Dim t As ModInt32 = Environment.TickCount
-                    Dim dt = CUInt(t - lastTickTime) * Me.SettingSpeedFactor
-                    Dim dgt = CUShort(Me.SettingTickPeriod * Me.SettingSpeedFactor)
-                    lastTickTime = t
+            If _gameTickTimer Is Nothing Then Return 'ended
 
-                    'Stop for laggers
-                    UpdateLagScreen()
-                    If laggingPlayers.Count > 0 Then
-                        Return
-                    End If
+            Dim dt = _gameTickTimer.Reset().TotalMilliseconds * Me.SettingSpeedFactor
+            Dim dgt = CUShort(Me.SettingTickPeriod * Me.SettingSpeedFactor)
 
-                    'Throttle tick rate
-                    gameTimeBuffer += dt - dgt
-                    gameTimeBuffer = gameTimeBuffer.Between(-dgt * 10, dgt * 10)
-                    tickTimer.Interval = (dgt - gameTimeBuffer).Between(dgt / 2, dgt * 2)
+            'Stop for laggers
+            UpdateLagScreen()
+            If laggingPlayers.Count > 0 Then
+                Return
+            End If
 
-                    'Send
-                    SendQueuedGameData(New TickRecord(dgt, _gameTime))
-                    _gameTime += dgt
-                End Sub
-            )
+            'Schedule next tick
+            gameTimeBuffer += dt - dgt
+            gameTimeBuffer = gameTimeBuffer.Between(-dgt * 10, dgt * 10)
+            _clock.AsyncWait(CUInt(dgt - gameTimeBuffer).Between(dgt \ 2US, dgt * 2US).Milliseconds).QueueCallOnSuccess(inQueue, AddressOf OnTick)
+
+            'Send
+            SendQueuedGameData(New TickRecord(dgt, _gameTime))
+            _gameTime += dgt
         End Sub
         Private Sub UpdateLagScreen()
             If laggingPlayers.Count > 0 Then
@@ -133,7 +127,7 @@
                                                       Where GetVisiblePlayer(q) Is GetVisiblePlayer(p_)).None Then
                             BroadcastPacket(Packet.MakeRemovePlayerFromLagScreen(
                                 player:=GetVisiblePlayer(p),
-                                lagTimeInMilliseconds:=CUInt(lastTickTime - lagStartTime)))
+                                lagTimeInMilliseconds:=CUInt(_lagTimer.ElapsedTime.TotalMilliseconds)))
                         End If
                     End If
                 Next p
@@ -144,7 +138,7 @@
                                   ).ToList
                 If laggingPlayers.Count > 0 Then
                     BroadcastPacket(Packet.MakeShowLagScreen(laggingPlayers), Nothing)
-                    lagStartTime = lastTickTime
+                    _lagTimer = _clock.StartTimer()
                 End If
             End If
         End Sub
@@ -152,8 +146,8 @@
             Contract.Requires(record IsNot Nothing)
             'Include all the data we can fit in a packet
             Dim dataLength = 0
-            Dim dataList = New List(Of Byte())(gameDataQueue.Count)
-            Dim outgoingData = New List(Of GameTickDatum)(gameDataQueue.Count)
+            Dim dataList = New List(Of Byte())(capacity:=gameDataQueue.Count)
+            Dim outgoingData = New List(Of GameTickDatum)(capacity:=gameDataQueue.Count)
             While gameDataQueue.Count > 0
                 Dim e = gameDataQueue.Peek()
                 Contract.Assume(e IsNot Nothing)

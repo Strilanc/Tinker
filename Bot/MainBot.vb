@@ -87,7 +87,7 @@ Namespace Bot
             Contract.Requires(this IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameServerManager))() IsNot Nothing)
             Return this.Components.QueueGetOrConstructComponent(Of WC3.GameServerManager)(
-                factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer, this))
+                factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer(New SystemClock()), this))
         End Function
         <Extension()>
         Public Function QueueCreateActiveGameSetsAsyncView(ByVal this As MainBot,

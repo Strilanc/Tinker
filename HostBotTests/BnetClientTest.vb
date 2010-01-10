@@ -42,11 +42,13 @@ Public Class BnetClientTest
         profile.password = "rekniT"
         profile.cdKeyROC = "EDKBRTRXG88Z9V8M84HY2XVW7N"
         profile.cdKeyTFT = "M68YC4278JJXXVJMKRP8ETN4TC"
-        Dim client = New Bnet.Client(profile, New TestExternalProvider())
+        Dim clock = New Strilbrary.Time.ManualClock()
+        Dim client = New Bnet.Client(profile, New TestExternalProvider(), clock)
         Dim stream = New TestStream()
         Dim socket = New PacketSocket(stream,
                                       New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-                                      New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
+                                      New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                                      clock)
         Dim clientCdKeySalt = 13UI
         Dim fConnect = client.QueueConnect(socket, clientCdKeySalt)
         Assert.IsTrue(stream.RetrieveWriteData(1).SequenceEqual({1}))

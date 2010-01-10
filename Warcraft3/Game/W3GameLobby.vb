@@ -5,8 +5,8 @@
         Private _downloadScheduler As TransferScheduler(Of Byte)
         Private ReadOnly downloadTimer As New Timers.Timer(interval:=250)
         Private ReadOnly freeIndexes As New List(Of Byte)
-        Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds)
-        Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds)
+        Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds, clock:=New SystemClock())
+        Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds, clock:=New SystemClock())
 
         Private Sub LobbyNew()
             Contract.Ensures(DownloadScheduler IsNot Nothing)
@@ -15,8 +15,9 @@
             Dim switchTime As FiniteDouble = 3000
             Dim size As FiniteDouble = New FiniteDouble(Map.FileSize)
             Me._downloadScheduler = New TransferScheduler(Of Byte)(typicalRate:=rate,
-                                                                   typicalSwitchTime:=3000,
-                                                                   filesize:=size)
+                                                                   typicalSwitchTime:=3.Seconds,
+                                                                   filesize:=size,
+                                                                   clock:=_clock)
             AddHandler DownloadScheduler.Actions, Sub(started, stopped) inQueue.QueueAction(Sub() OnDownloadSchedulerActions(started, stopped))
             AddHandler downloadTimer.Elapsed, Sub() DownloadScheduler.Update()
 
@@ -105,7 +106,7 @@
             ChangeState(GameState.PreCounting)
 
             'Give people a few seconds to realize the game is full before continuing
-            Call 3.Seconds.AsyncWait().QueueCallWhenReady(inQueue,
+            Call _clock.AsyncWait(3.Seconds).QueueCallWhenReady(inQueue,
                 Sub()
                     If state <> GameState.PreCounting Then Return
                     If Not settings.IsAutoStarted OrElse CountFreeSlots() > 0 Then
@@ -140,12 +141,12 @@
                                         ChangedLobbyState()
                                     ElseIf ticksLeft > 0 Then 'continue ticking
                                         BroadcastMessage("Starting in {0}...".Frmt(ticksLeft), messageType:=LogMessageType.Positive)
-                                        Call 1.Seconds.AsyncWait().QueueCallWhenReady(inQueue, Sub() continueCountdown(ticksLeft - 1))
+                                        _clock.AsyncWait(1.Seconds).QueueCallWhenReady(inQueue, Sub() continueCountdown(ticksLeft - 1))
                                     Else 'start
                                         StartLoading()
                                     End If
                                 End Sub
-            Call 1.Seconds.AsyncWait().QueueCallWhenReady(inQueue, Sub() continueCountdown(5))
+            Call _clock.AsyncWait(1.Seconds).QueueCallWhenReady(inQueue, Sub() continueCountdown(5))
 
             Return True
         End Function
@@ -303,7 +304,7 @@
             End If
 
             'Create player object
-            Dim newPlayer = New Player(index, settings, _downloadScheduler, connectingPlayer, Logger)
+            Dim newPlayer = New Player(index, settings, _downloadScheduler, connectingPlayer, _clock, Logger)
             bestSlot.Contents = bestSlot.Contents.TakePlayer(newPlayer)
             _players.Add(newPlayer)
 
@@ -429,10 +430,10 @@
         Private Sub SendLobbyState()
             If state >= GameState.Loading Then Return
 
-            Dim time As ModInt32 = Environment.TickCount()
+            Dim randomSeed As ModInt32 = Environment.TickCount()
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
-                player.QueueSendPacket(Packet.MakeLobbyState(player, Map, slots, time, settings.IsAdminGame))
+                player.QueueSendPacket(Packet.MakeLobbyState(player, Map, slots, randomSeed, settings.IsAdminGame))
             Next player
             TryBeginAutoStart()
         End Sub

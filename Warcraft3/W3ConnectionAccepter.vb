@@ -5,20 +5,25 @@ Namespace WC3
     Public MustInherit Class W3ConnectionAccepterBase
         Private Shared ReadOnly FirstPacketTimeout As TimeSpan = 10.Seconds
 
+        Private ReadOnly _clock As IClock
         Private ReadOnly _accepter As New ConnectionAccepter
         Private ReadOnly logger As Logger
         Private ReadOnly sockets As New HashSet(Of W3Socket)
         Private ReadOnly lock As New Object()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_accepter IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(sockets IsNot Nothing)
             Contract.Invariant(lock IsNot Nothing)
         End Sub
 
-        Protected Sub New(Optional ByVal logger As Logger = Nothing)
+        Protected Sub New(ByVal clock As IClock,
+                          Optional ByVal logger As Logger = Nothing)
+            Contract.Assume(clock IsNot Nothing)
             Me.logger = If(logger, New Logger)
+            Me._clock = clock
             AddHandler _accepter.AcceptedConnection, AddressOf OnAcceptConnection
         End Sub
 
@@ -55,7 +60,8 @@ Namespace WC3
                                                            localendpoint:=CType(client.Client.LocalEndPoint, Net.IPEndPoint),
                                                            remoteendpoint:=CType(client.Client.RemoteEndPoint, Net.IPEndPoint),
                                                            timeout:=60.Seconds,
-                                                           logger:=logger))
+                                                           logger:=logger,
+                                                           clock:=_clock))
                 logger.Log("New player connecting from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 
                 SyncLock lock
@@ -79,7 +85,7 @@ Namespace WC3
                         End Try
                     End Sub
                 )
-                FirstPacketTimeout.AsyncWait().CallWhenReady(
+                _clock.AsyncWait(FirstPacketTimeout).CallWhenReady(
                     Sub()
                         If Not TryRemoveSocket(socket) Then Return
                         logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)
@@ -104,7 +110,10 @@ Namespace WC3
         <ContractClassFor(GetType(W3ConnectionAccepterBase))>
         Public MustInherit Class ContractClass
             Inherits W3ConnectionAccepterBase
-
+            Protected Sub New()
+                MyBase.New(Nothing, Nothing)
+                Throw New NotSupportedException
+            End Sub
             Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
                 Contract.Requires(socket IsNot Nothing)
                 Contract.Requires(packetData IsNot Nothing)
@@ -120,8 +129,10 @@ Namespace WC3
 
         Public Event Connection(ByVal sender As W3ConnectionAccepter, ByVal player As W3ConnectingPlayer)
 
-        Public Sub New(Optional ByVal logger As Logger = Nothing)
-            MyBase.New(logger)
+        Public Sub New(ByVal clock As IClock,
+                       Optional ByVal logger As Logger = Nothing)
+            MyBase.New(clock, logger)
+            Contract.Assume(clock IsNot Nothing)
         End Sub
 
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
@@ -150,8 +161,10 @@ Namespace WC3
 
         Public Event Connection(ByVal sender As W3PeerConnectionAccepter, ByVal player As W3ConnectingPeer)
 
-        Public Sub New(Optional ByVal logger As Logger = Nothing)
-            MyBase.New(logger)
+        Public Sub New(ByVal clock As IClock,
+                       Optional ByVal logger As Logger = Nothing)
+            MyBase.New(clock, logger)
+            Contract.Assume(clock IsNot Nothing)
         End Sub
 
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle

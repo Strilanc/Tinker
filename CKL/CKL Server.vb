@@ -15,6 +15,7 @@ Namespace CKL
         Private ReadOnly keys As New AsyncViewableCollection(Of CKL.KeyEntry)(outQueue:=outQueue)
         Private keyIndex As Integer
         Private ReadOnly portHandle As PortPool.PortHandle
+        Private ReadOnly _clock As IClock
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(Accepter IsNot Nothing)
@@ -22,12 +23,16 @@ Namespace CKL
             Contract.Invariant(keys IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(portHandle IsNot Nothing)
+            Contract.Invariant(_clock IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
-                       ByVal listenPort As PortPool.PortHandle)
+                       ByVal listenPort As PortPool.PortHandle,
+                       ByVal clock As IClock)
             Contract.Assume(listenPort IsNot Nothing)
+            Contract.Assume(clock IsNot Nothing)
             Me.name = name
+            Me._clock = clock
             Me.portHandle = listenPort
             Me.Accepter.OpenPort(listenPort.Port)
         End Sub
@@ -68,6 +73,7 @@ Namespace CKL
                                           localendpoint:=CType(acceptedClient.Client.LocalEndPoint, Net.IPEndPoint),
                                           remoteendpoint:=CType(acceptedClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                           timeout:=10.Seconds,
+                                          clock:=_clock,
                                           logger:=Me.logger)
             logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 

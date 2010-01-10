@@ -71,7 +71,8 @@ Namespace WC3
                                                                 localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                                                                 remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                                                 timeout:=60.Seconds,
-                                                                Logger:=Logger))
+                                                                Logger:=Logger,
+                                                                clock:=_gameServer.clock))
                               Return _gameServer.QueueAcceptSocket(socket)
                           End Function,
                 errorHandler:=Sub(exception)

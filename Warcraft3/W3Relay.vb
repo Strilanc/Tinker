@@ -27,7 +27,7 @@
                                                            game.GameType,
                                                            game.GameState,
                                                            game.UsedSlotCount,
-                                                           game.AgeSeconds)
+                                                           game.Age)
                 Me._localGame = New LocalGameDescription(_localGame.Name,
                                                          _localGame.GameStats,
                                                          _localGame.Port,
@@ -37,7 +37,7 @@
                                                          game.GameType,
                                                          game.GameState,
                                                          game.UsedSlotCount,
-                                                         game.AgeSeconds)
+                                                         game.Age)
             End Sub
             Public ReadOnly Property RemoteGame As RemoteGameDescription
                 Get
@@ -55,18 +55,24 @@
 
         Private ReadOnly _games As New Dictionary(Of UInteger, GamePair)
         Private ReadOnly _portHandle As PortPool.PortHandle
-        Private ReadOnly _accepter As New W3ConnectionAccepter()
+        Private ReadOnly _accepter As W3ConnectionAccepter
+        Private ReadOnly _clock As IClock
         Private _gameCount As UInteger
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_portHandle IsNot Nothing)
             Contract.Invariant(_games IsNot Nothing)
             Contract.Invariant(_accepter IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal portHandle As PortPool.PortHandle)
+        Public Sub New(ByVal portHandle As PortPool.PortHandle,
+                       ByVal clock As IClock)
             Contract.Requires(portHandle IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
             Me._portHandle = portHandle
+            Me._clock = clock
+            Me._accepter = New W3ConnectionAccepter(clock)
             Me._accepter.Accepter.OpenPort(portHandle.Port)
         End Sub
         Public Function AddGame(ByVal game As RemoteGameDescription) As UInteger
@@ -80,7 +86,7 @@
                                                      game.GameType,
                                                      game.GameState,
                                                      game.UsedSlotCount,
-                                                     game.AgeSeconds)
+                                                     game.Age)
             _games(_gameCount) = New GamePair(game, localGame)
             Return _gameCount
         End Function
@@ -113,7 +119,8 @@
 
                     Dim w = New W3Socket(New PacketSocket(stream:=result.GetStream,
                                                           localendpoint:=CType(result.Client.LocalEndPoint, Net.IPEndPoint),
-                                                          remoteendpoint:=CType(result.Client.RemoteEndPoint, Net.IPEndPoint)))
+                                                          remoteendpoint:=CType(result.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                          clock:=_clock))
                     w.SendPacket(Packet.MakeKnock(connector.Name,
                                                   connector.ListenPort,
                                                   CUShort(connector.RemoteEndPoint.Port),

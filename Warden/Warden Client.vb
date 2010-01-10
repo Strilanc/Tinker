@@ -8,17 +8,21 @@
 
         Private ReadOnly _socket As IFuture(Of Warden.Socket)
         Private ReadOnly _activated As New FutureAction()
+        Private ReadOnly _clock As IClock
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_activated IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
+            Contract.Invariant(_clock IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal remoteHost As InvariantString,
                        ByVal remotePort As UInt16,
                        ByVal seed As UInt32,
                        ByVal cookie As UInt32,
+                       ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
+            Contract.Assume(clock IsNot Nothing)
             logger = If(logger, New Logger)
             _activated.SetHandled()
 
@@ -41,7 +45,8 @@
                                                                 numBytesBeforeSize:=0,
                                                                 numSizeBytes:=2,
                                                                 logger:=logger,
-                                                                Name:="BNLS")
+                                                                Name:="BNLS",
+                                                                clock:=_clock)
                          Select New Warden.Socket(Socket:=packetSocket,
                                                   seed:=seed,
                                                   cookie:=seed,

@@ -107,6 +107,7 @@
                        ByVal settings As GameSettings,
                        ByVal scheduler As TransferScheduler(Of Byte),
                        ByVal connectingPlayer As W3ConnectingPlayer,
+                       ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
             'Contract.Requires(index > 0)
             'Contract.Requires(index <= 12)
@@ -150,7 +151,7 @@
             Me.testCanHost.SetHandled()
 
             'Pings
-            pinger = New Pinger(period:=5.Seconds, timeoutCount:=10)
+            pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
             AddHandler pinger.SendPing, Sub(sender, salt) QueueSendPacket(Packet.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) QueueDisconnect(expected:=False,
                                                                    leaveType:=PlayerLeaveType.Disconnect,

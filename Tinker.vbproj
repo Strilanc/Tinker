@@ -159,6 +159,7 @@
     <Import Include="Strilbrary.Misc" />
     <Import Include="Strilbrary.Streams" />
     <Import Include="Strilbrary.Threading" />
+    <Import Include="Strilbrary.Time" />
     <Import Include="Strilbrary.Values" />
     <Import Include="System" />
     <Import Include="System.Collections.Generic" />

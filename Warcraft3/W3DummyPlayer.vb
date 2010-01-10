@@ -15,7 +15,7 @@ Namespace WC3
         Private ReadOnly otherPlayers As New List(Of W3Peer)
         Private ReadOnly logger As Logger
         Private WithEvents socket As W3Socket
-        Private WithEvents accepter As New W3PeerConnectionAccepter()
+        Private WithEvents accepter As New W3PeerConnectionAccepter(New SystemClock())
         Public readyDelay As TimeSpan = TimeSpan.Zero
         Private index As Byte
         Private dl As MapDownload
@@ -69,7 +69,8 @@ Namespace WC3
                                                    localendpoint:=CType(tcp.Client.LocalEndPoint, Net.IPEndPoint),
                                                    remoteendpoint:=CType(tcp.Client.RemoteEndPoint, Net.IPEndPoint),
                                                    timeout:=60.Seconds,
-                                                   logger:=Me.logger))
+                                                   logger:=Me.logger,
+                                                   clock:=New SystemClock))
 
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
@@ -117,7 +118,7 @@ Namespace WC3
                                     If mode = DummyPlayerMode.DownloadMap Then
                                         Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
                                     ElseIf mode = DummyPlayerMode.EnterGame Then
-                                        readyDelay.AsyncWait().CallWhenReady(Sub() socket.SendPacket(packet.MakeReady()))
+                                        Call New SystemClock().AsyncWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(packet.MakeReady()))
                                     End If
                                 Case Tick
                                     If CUShort(vals("time span")) > 0 Then

@@ -8,10 +8,12 @@
         Private ReadOnly _gameSettings As GameSettings
         Private ReadOnly _games As New AsyncViewableCollection(Of Game)(outQueue:=outQueue)
         Private ReadOnly _viewPlayers As New AsyncViewableCollection(Of Tuple(Of Game, Player))(outQueue:=outQueue)
+        Private ReadOnly _clock As IClock
         Private allocId As Integer
         Public Event StateChanged(ByVal sender As GameSet, ByVal acceptingPlayers As Boolean)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_gameSettings IsNot Nothing)
             Contract.Invariant(_games IsNot Nothing)
@@ -21,9 +23,12 @@
         End Sub
 
         Public Sub New(ByVal gameSettings As GameSettings,
+                       ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(gameSettings IsNot Nothing)
+            Contract.Assume(clock IsNot Nothing)
             Me._gameSettings = gameSettings
+            Me._clock = clock
             Me._logger = If(logger, New Logger)
             _activeGameCount = 1
             For i = 0 To gameSettings.NumInstances - 1
@@ -91,7 +96,7 @@
             Dim name = allocId.ToString(CultureInfo.InvariantCulture)
             allocId += 1
 
-            Dim game = New Game(name, _gameSettings)
+            Dim game = New Game(name, _gameSettings, _clock)
             _logger.Log("{0} opened.".Frmt(name), LogMessageType.Positive)
             _games.Add(game)
 

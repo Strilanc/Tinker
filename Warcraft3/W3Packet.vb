@@ -835,7 +835,7 @@ Namespace WC3
                     {"game type", game.GameType},
                     {"num players + 1", 1},
                     {"free slots + 1", game.TotalSlotCount + 1 - game.UsedSlotCount},
-                    {"age", game.AgeMilliseconds},
+                    {"age", CUInt(game.Age.TotalMilliseconds)},
                     {"listen port", game.Port}})
         End Function
         Public Shared Function MakeLanDestroyGame(ByVal gameId As UInteger) As Packet

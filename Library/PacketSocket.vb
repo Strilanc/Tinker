@@ -54,12 +54,14 @@ Public NotInheritable Class PacketSocket
     Public Sub New(ByVal stream As IO.Stream,
                    ByVal localEndPoint As Net.IPEndPoint,
                    ByVal remoteEndPoint As Net.IPEndPoint,
+                   ByVal clock As IClock,
                    Optional ByVal timeout As TimeSpan? = Nothing,
                    Optional ByVal logger As Logger = Nothing,
                    Optional ByVal bufferSize As Integer = DefaultBufferSize,
                    Optional ByVal numBytesBeforeSize As Integer = 2,
                    Optional ByVal numSizeBytes As Integer = 2,
                    Optional ByVal name As String = Nothing)
+        Contract.Assume(clock IsNot Nothing)
         Contract.Assume(stream IsNot Nothing)
         Contract.Assume(localEndPoint IsNot Nothing)
         Contract.Assume(remoteEndPoint IsNot Nothing)
@@ -73,7 +75,7 @@ Public NotInheritable Class PacketSocket
         Me._stream = stream
         Me.bufferSize = bufferSize
         If timeout IsNot Nothing Then
-            Me.deadManSwitch = New DeadManSwitch(timeout.Value)
+            Me.deadManSwitch = New DeadManSwitch(timeout.Value, clock)
             Me.deadManSwitch.Arm()
         End If
         Me._logger = If(logger, New Logger)

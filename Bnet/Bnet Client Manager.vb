@@ -118,7 +118,7 @@ Namespace Bnet
             ).Catch(
                 Sub(exception) _client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(exception.Message))
             )
-            Call 2.Seconds.AsyncWait().CallWhenReady(
+            Call New SystemClock().AsyncWait(2.Seconds).CallWhenReady(
                 Sub()
                     If commandResult.State = FutureState.Unknown Then
                         _client.QueueSendWhisper(user.Name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
@@ -135,7 +135,7 @@ Namespace Bnet
 
             Dim profile = (From p In bot.Settings.GetCopyOfClientProfiles Where p.name = profileName).FirstOrDefault
             If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
-            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues)).Futurized
+            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues, New SystemClock())).Futurized
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture

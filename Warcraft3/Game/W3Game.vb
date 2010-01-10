@@ -31,6 +31,7 @@ Namespace WC3
         Public Shared ReadOnly GameCommandsGamePlay As New WC3.InstancePlayCommands
         Public Shared ReadOnly GameCommandsLobby As New WC3.InstanceSetupCommands
 
+        Private ReadOnly _clock As IClock
         Private ReadOnly _map As Map
         Private ReadOnly _name As InvariantString
         Private ReadOnly slots As New List(Of Slot)
@@ -53,6 +54,7 @@ Namespace WC3
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_map IsNot Nothing)
+            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(slots IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
@@ -63,7 +65,6 @@ Namespace WC3
 
             Contract.Invariant(settings IsNot Nothing)
             Contract.Invariant(freeIndexes IsNot Nothing)
-            Contract.Invariant(tickTimer IsNot Nothing)
             Contract.Invariant(readyPlayers IsNot Nothing)
             Contract.Invariant(unreadyPlayers IsNot Nothing)
             Contract.Invariant(visibleReadyPlayers IsNot Nothing)
@@ -80,6 +81,7 @@ Namespace WC3
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal settings As GameSettings,
+                       ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
             'contract bug wrt interface event implementation requires this:
             'Contract.Requires(map IsNot Nothing)
@@ -88,6 +90,7 @@ Namespace WC3
 
             Me.settings = settings
             Me._map = settings.Map
+            Me._clock = clock
             Me._name = name
             Me._logger = If(logger, New Logger)
             For i = 0 To indexMap.Length - 1
@@ -266,7 +269,6 @@ Namespace WC3
                                                        receiverType:=Packet.ChatReceiverType.Private,
                                                        receivingPlayers:=_players,
                                                        sender:=sender))
-
             Next line
 
             If display Then

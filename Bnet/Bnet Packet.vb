@@ -323,7 +323,7 @@ Namespace Bnet
                                                                 gameType:=CType(vals("game type"), WC3.GameTypes),
                                                                 state:=CType(vals("game state"), GameStates),
                                                                 usedSlotCount:=0,
-                                                                baseageseconds:=CUInt(vals("elapsed seconds"))))
+                                                                baseAge:=CUInt(vals("elapsed seconds")).Seconds))
                     Next repeat
                 End If
 
@@ -592,7 +592,7 @@ Namespace Bnet
 
             Return New Packet(ClientPackets.CreateGame3, New Dictionary(Of InvariantString, Object) From {
                     {"game state", game.GameState},
-                    {"seconds since creation", game.AgeSeconds},
+                    {"seconds since creation", CUInt(game.Age.TotalSeconds)},
                     {"game type", game.GameType},
                     {"unknown1=1023", 1023},
                     {"is ladder", 0},

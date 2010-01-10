@@ -54,7 +54,7 @@ Namespace WC3
             )
 
             'Delay notification
-            Call 2.Seconds.AsyncWait().CallWhenReady(
+            Call New SystemClock().AsyncWait(2.Seconds).CallWhenReady(
                 Sub()
                     If commandResult.State = FutureState.Unknown Then
                         _game.QueueSendMessageTo("Command '{0}' is running... You will be informed when it finishes.".Frmt(text), player)

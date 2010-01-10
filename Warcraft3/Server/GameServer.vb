@@ -9,6 +9,7 @@ Namespace WC3
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
 
+        Private ReadOnly _clock As IClock
         Private ReadOnly _logger As Logger
         Private ReadOnly _gameSets As New Dictionary(Of UInt32, GameSet)()
         Private ReadOnly _viewGameSets As New AsyncViewableCollection(Of GameSet)(outQueue:=outQueue)
@@ -24,6 +25,7 @@ Namespace WC3
         Private instanceCreationCount As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_viewGames IsNot Nothing)
             Contract.Invariant(_viewGameSets IsNot Nothing)
             Contract.Invariant(_viewActiveGameSets IsNot Nothing)
@@ -34,14 +36,22 @@ Namespace WC3
             Contract.Invariant(outQueue IsNot Nothing)
         End Sub
 
-        Public Sub New(Optional ByVal logger As Logger = Nothing)
+        Public Sub New(ByVal clock As IClock,
+                       Optional ByVal logger As Logger = Nothing)
             Me._logger = If(logger, New Logger)
+            Me._clock = clock
         End Sub
 
         Public ReadOnly Property Logger As Logger
             Get
                 Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
                 Return _logger
+            End Get
+        End Property
+        Public ReadOnly Property Clock As IClock
+            Get
+                Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+                Return _clock
             End Get
         End Property
 
@@ -53,7 +63,7 @@ Namespace WC3
             Dim socketHandled = New OnetimeLock()
 
             'Setup initial timeout
-            InitialConnectionTimeout.AsyncWait().CallWhenReady(
+            _clock.AsyncWait(InitialConnectionTimeout).CallWhenReady(
                 Sub()
                     If Not socketHandled.TryAcquire Then Return
                     socket.Disconnect(expected:=True, reason:="Timeout")
@@ -127,7 +137,7 @@ Namespace WC3
 
             Dim id = gameSettings.GameDescription.GameId
             If _gameSets.ContainsKey(id) Then Throw New InvalidOperationException("There is already a server entry with that game id.")
-            Dim gameSet = New GameSet(gameSettings)
+            Dim gameSet = New GameSet(gameSettings, _clock)
             _gameSets(id) = gameSet
             _viewGameSets.Add(gameSet)
             _viewActiveGameSets.Add(gameSet)

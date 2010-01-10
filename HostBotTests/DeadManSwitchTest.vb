@@ -1,4 +1,4 @@
-﻿Imports Strilbrary.Misc
+﻿Imports Strilbrary.Time
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Tinker
 Imports System.Threading
@@ -7,40 +7,49 @@ Imports System.Threading
 Public Class DeadManSwitchTest
     <TestMethod()>
     Public Sub ConstructTest()
+        Dim c = New ManualClock()
         Dim s = New ManualResetEvent(initialState:=False)
-        Dim d = New DeadManSwitch(period:=25.Milliseconds)
+        Dim d = New DeadManSwitch(period:=1.Milliseconds, clock:=c)
         AddHandler d.Triggered, Sub() s.Set()
-        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=50))
+        c.Advance(2.Milliseconds)
+        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=10))
     End Sub
 
     <TestMethod()>
     Public Sub ArmTest()
+        Dim c = New ManualClock()
         Dim s = New ManualResetEvent(initialState:=False)
-        Dim d = New DeadManSwitch(period:=25.Milliseconds)
-        d.Arm()
+        Dim d = New DeadManSwitch(period:=1.Milliseconds, clock:=c)
+        BlockOnFuture(d.Arm())
         AddHandler d.Triggered, Sub() s.Set()
-        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=10)) 'time-sensitive
-        Assert.IsTrue(s.WaitOne(millisecondsTimeout:=1000))
+        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=10))
+        c.Advance(2.Milliseconds)
+        Assert.IsTrue(s.WaitOne(millisecondsTimeout:=10000))
     End Sub
     <TestMethod()>
     Public Sub ResetTest()
+        Dim c = New ManualClock()
         Dim s = New ManualResetEvent(initialState:=False)
-        Dim d = New DeadManSwitch(period:=50.Milliseconds)
-        d.Arm()
+        Dim d = New DeadManSwitch(period:=3.Milliseconds, clock:=c)
+        BlockOnFuture(d.Arm())
         AddHandler d.Triggered, Sub() s.Set()
-        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=25)) 'time-sensitive
-        d.Reset()
-        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=25)) 'time-sensitive
-        Assert.IsTrue(s.WaitOne(millisecondsTimeout:=1000))
+        c.Advance(2.Milliseconds)
+        BlockOnFuture(d.Reset())
+        c.Advance(2.Milliseconds)
+        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=10))
+        c.Advance(2.Milliseconds)
+        Assert.IsTrue(s.WaitOne(millisecondsTimeout:=10000))
     End Sub
     <TestMethod()>
     Public Sub DisarmTest()
+        Dim c = New ManualClock()
         Dim s = New ManualResetEvent(initialState:=False)
-        Dim d = New DeadManSwitch(period:=25.Milliseconds)
-        d.Arm()
+        Dim d = New DeadManSwitch(period:=3.Milliseconds, clock:=c)
+        BlockOnFuture(d.Arm())
         AddHandler d.Triggered, Sub() s.Set()
-        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=10)) 'time-sensitive
-        d.Disarm()
-        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=50))
+        c.Advance(2.Milliseconds)
+        BlockOnFuture(d.Disarm())
+        c.Advance(2.Milliseconds)
+        Assert.IsTrue(Not s.WaitOne(millisecondsTimeout:=10))
     End Sub
 End Class

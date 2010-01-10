@@ -32,7 +32,8 @@
         Private ReadOnly _gameStats As GameStats
         Private ReadOnly _gameId As UInt32
         Private ReadOnly _entryKey As UInteger
-        Private ReadOnly _creationTick As ModInt32
+        Private ReadOnly _ageTimer As ITimer
+        Private ReadOnly _baseAge As TimeSpan
         Private ReadOnly _gameType As GameTypes
         Private ReadOnly _state As Bnet.Packet.GameStates
         Private ReadOnly _totalSlotCount As Integer
@@ -75,19 +76,21 @@
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
-                       Optional ByVal baseAgeMilliSeconds As UInt32 = 0) 'change to uint32
+                       Optional ByVal baseAge As TimeSpan = Nothing)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
             Contract.Requires(usedSlotCount >= 0)
             Contract.Requires(usedSlotCount <= totalSlotCount)
             Contract.Requires(gameStats IsNot Nothing)
+            Contract.Requires(baseAge.Ticks >= 0)
             Me._name = name
             Me._gameStats = gameStats
             Me._gameType = gameType
             Me._gameId = gameId
             Me._entryKey = entryKey
-            Me._creationTick = Environment.TickCount - CType(baseAgeMilliSeconds, ModInt32)
+            Me._ageTimer = New SystemClock().StartTimer
+            Me._baseAge = baseAge
             Me._totalSlotCount = totalSlotCount
             Me._usedSlotCount = usedSlotCount
         End Sub
@@ -115,14 +118,9 @@
                 Return _totalSlotCount
             End Get
         End Property
-        Public ReadOnly Property AgeSeconds As UInteger
+        Public ReadOnly Property Age As TimeSpan
             Get
-                Return CUInt(Environment.TickCount - _creationTick) \ 1000UI
-            End Get
-        End Property
-        Public ReadOnly Property AgeMilliseconds As UInteger
-            Get
-                Return CUInt(Environment.TickCount - _creationTick)
+                Return _ageTimer.ElapsedTime + _baseAge
             End Get
         End Property
         Public ReadOnly Property GameId As UInteger
@@ -186,7 +184,7 @@
                    gameDescription.GameType,
                    gameDescription.GameState,
                    gameDescription.UsedSlotCount,
-                   gameDescription.AgeMilliseconds)
+                   gameDescription.Age)
             Contract.Requires(gameDescription IsNot Nothing)
         End Sub
         Public Sub New(ByVal name As InvariantString,
@@ -198,14 +196,15 @@
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
-                       Optional ByVal baseAgeMilliSeconds As UInteger = 0)
-            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAgeMilliSeconds)
+                       Optional ByVal baseAge As TimeSpan = Nothing)
+            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAge)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
             Contract.Requires(usedSlotCount >= 0)
             Contract.Requires(usedSlotCount <= totalSlotCount)
             Contract.Requires(gameStats IsNot Nothing)
+            Contract.Requires(baseAge.Ticks >= 0)
             Me._hostPort = hostPort
         End Sub
 
@@ -232,8 +231,8 @@
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
-                       Optional ByVal baseAgeSeconds As UInteger = 0)
-            MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAgeSeconds)
+                       Optional ByVal baseAge As TimeSpan = Nothing)
+            MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAge)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
@@ -242,6 +241,7 @@
             Contract.Requires(gameStats IsNot Nothing)
             Contract.Requires(location IsNot Nothing)
             Contract.Requires(location.Address IsNot Nothing)
+            Contract.Requires(baseAge.Ticks >= 0)
             Me._address = location.Address
         End Sub
 

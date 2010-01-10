@@ -97,6 +97,23 @@ Public Module PoorlyCategorizedFunctions
     End Function
 #End Region
 
+    <Extension()>
+    Public Function AsyncRepeat(ByVal clock As IClock, ByVal period As TimeSpan, ByVal action As action) As IDisposable
+        Contract.Requires(clock IsNot Nothing)
+        Contract.Requires(action IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+
+        Dim stopFlag As Boolean
+        Dim callback As Action
+        callback = Sub()
+                       If stopFlag Then Return
+                       Call action()
+                       clock.AsyncWait(period).CallOnSuccess(callback)
+                   End Sub
+        clock.AsyncWait(period).CallOnSuccess(callback)
+        Return New DelegatedDisposable(Sub() stopFlag = True)
+    End Function
+
 #Region "Filepaths"
     Public Function FindFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As String
         Contract.Requires(fileQuery IsNot Nothing)

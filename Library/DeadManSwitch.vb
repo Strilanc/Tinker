@@ -6,71 +6,73 @@ Public NotInheritable Class DeadManSwitch
     Private ReadOnly _period As TimeSpan
     Private _isArmed As Boolean
     Private _wasReset As Boolean
-    Private _isTimerRunning As Boolean
-    Private _timerStartTick As ModInt32
+    Private _timer As ITimer
+    Private ReadOnly _clock As IClock
     Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
 
     Public Event Triggered(ByVal sender As DeadManSwitch)
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(_period.Ticks > 0)
+        Contract.Invariant(_clock IsNot Nothing)
         Contract.Invariant(inQueue IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal period As TimeSpan)
+    Public Sub New(ByVal period As TimeSpan, ByVal clock As IClock)
         Contract.Assume(period.Ticks > 0)
+        Contract.Assume(clock IsNot Nothing)
         Me._period = period
+        Me._clock = clock
     End Sub
 
     ''' <summary>
     ''' Starts the countdown timer.
     ''' No effect if the timer is already started.
     ''' </summary>
-    Public Sub Arm()
-        inQueue.QueueAction(
+    Public Function Arm() As ifuture
+        Return inQueue.QueueAction(
             Sub()
                 If _isArmed Then Return
                 _isArmed = True
-                _isTimerRunning = True
-                Reset()
+                _timer = _clock.StartTimer
+                _wasReset = True
                 OnTimeout()
             End Sub)
-    End Sub
+    End Function
     ''' <summary>
     ''' Resets the countdown timer.
     ''' No effect if the timer is stopped.
     ''' </summary>
-    Public Sub Reset()
-        inQueue.QueueAction(
+    Public Function Reset() As IFuture
+        Return inQueue.QueueAction(
             Sub()
-                _timerStartTick = Environment.TickCount
+                _timer.Reset()
                 _wasReset = True
             End Sub)
-    End Sub
+    End Function
     ''' <summary>
     ''' Cancels the countdown timer.
     ''' No effect if the timer is already stopped.
     ''' </summary>
-    Public Sub Disarm()
-        inQueue.QueueAction(
+    Public Function Disarm() As ifuture
+        Return inQueue.QueueAction(
             Sub()
                 _isArmed = False
             End Sub)
-    End Sub
+    End Function
 
     Private Sub OnTimeout()
         inQueue.QueueAction(
             Sub()
-                If Not _isTimerRunning Then Throw New InvalidStateException("OnTimeout called without running timer.")
-                _isTimerRunning = False
+                If _timer Is Nothing Then Throw New InvalidStateException("OnTimeout called without running timer.")
                 If Not _isArmed Then Return
 
                 If _wasReset Then
                     _wasReset = False
-                    _isTimerRunning = True
-                    Dim dt = _period - CInt(Environment.TickCount - _timerStartTick).Milliseconds
-                    dt.AsyncWait().CallWhenReady(Sub() OnTimeout())
+                    Dim dt = _timer.Reset()
+                    _clock.AsyncWait(_period - dt).CallWhenReady(Sub() OnTimeout())
                 Else
+                    _timer = Nothing
                     _isArmed = False
                     RaiseEvent Triggered(Me)
                 End If
@@ -79,7 +81,7 @@ Public NotInheritable Class DeadManSwitch
 
     Public Overrides Function ToString() As String
         If _isArmed Then
-            Return "Armed: {0} of {1}".Frmt(_period - CInt(Environment.TickCount - _timerStartTick).Milliseconds, _period)
+            Return "Armed: {0} of {1}".Frmt(_period - _timer.ElapsedTime, _period)
         Else
             Return "Disarmed: {0}".Frmt(_period)
         End If

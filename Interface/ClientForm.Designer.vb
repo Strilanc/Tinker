@@ -94,7 +94,7 @@ Partial Class ClientForm
         '
         'btnShowExceptionLog
         '
-        Me.btnShowExceptionLog.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnShowExceptionLog.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.btnShowExceptionLog.Location = New System.Drawing.Point(12, 406)
         Me.btnShowExceptionLog.Name = "btnShowExceptionLog"
         Me.btnShowExceptionLog.Size = New System.Drawing.Size(146, 29)

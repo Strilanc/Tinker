@@ -1,5 +1,6 @@
 ﻿Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Tinker
+Imports Strilbrary.Time
 Imports Strilbrary.Values
 Imports Strilbrary.Threading
 Imports Strilbrary.Collections
@@ -40,12 +41,14 @@ Public Class GameServerTest
 
     <TestMethod()>
     Public Sub MissGameTest()
-        Using server = New WC3.GameServer()
+        Dim clock = New ManualClock()
+        Using server = New WC3.GameServer(clock:=clock)
             Dim testStream = New TestStream()
             Dim socket = New WC3.W3Socket(New PacketSocket(
                             stream:=testStream,
                             localEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-                            remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112)))
+                            remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                            clock:=clock))
 
             server.QueueAcceptSocket(socket)
             testStream.EnqueueRead(KnockData)
@@ -54,8 +57,26 @@ Public Class GameServerTest
     End Sub
 
     <TestMethod()>
+    Public Sub TimeoutTest()
+        Dim clock = New ManualClock()
+        Using server = New WC3.GameServer(clock:=clock)
+            Dim testStream = New TestStream()
+            Dim socket = New WC3.W3Socket(New PacketSocket(
+                                    stream:=testStream,
+                                    localEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                                    remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                                    clock:=clock))
+
+            BlockOnFuture(server.QueueAcceptSocket(socket))
+            clock.Advance(1.Minutes)
+            Assert.IsTrue(testStream.RetrieveClosed)
+        End Using
+    End Sub
+
+    <TestMethod()>
     Public Sub AddGameSetTest()
-        Using server = New WC3.GameServer()
+        Dim clock = New ManualClock()
+        Using server = New WC3.GameServer(clock:=clock)
             Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             BlockOnFuture(result)
             Assert.IsTrue(result.State = FutureState.Succeeded)
@@ -64,7 +85,8 @@ Public Class GameServerTest
 
     <TestMethod()>
     Public Sub DuplicateGameTest()
-        Using server = New WC3.GameServer()
+        Dim clock = New ManualClock()
+        Using server = New WC3.GameServer(clock:=clock)
             server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             BlockOnFuture(result)
@@ -74,7 +96,8 @@ Public Class GameServerTest
 
     <TestMethod()>
     Public Sub EnterGameTest()
-        Using server = New WC3.GameServer()
+        Dim clock = New ManualClock()
+        Using server = New WC3.GameServer(clock:=clock)
             server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             'Prep data
             Dim testStream = New TestStream()
@@ -85,7 +108,8 @@ Public Class GameServerTest
             Dim socket = New WC3.W3Socket(New PacketSocket(
                             stream:=testStream,
                             localEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-                            remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112)))
+                            remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+                            clock:=clock))
             server.QueueAcceptSocket(socket)
             'Try read Greet
             Dim packet = testStream.RetrieveWritePacket()

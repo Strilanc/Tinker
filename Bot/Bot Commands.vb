@@ -298,7 +298,9 @@ Namespace Bot
                 Dim port = target.PortPool.TryAcquireAnyPort()
                 If port Is Nothing Then Throw New OperationFailedException("No available ports in the pool.")
                 Dim name = argument.RawValue(0)
-                Dim server = New CKL.Server(name, port)
+                Dim server = New CKL.Server(name:=name,
+                                            listenport:=port,
+                                            clock:=New SystemClock())
                 Dim manager = New CKL.ServerManager(server, target)
                 Dim finished = target.Components.QueueAddComponent(manager)
                 finished.Catch(Sub() manager.Dispose())

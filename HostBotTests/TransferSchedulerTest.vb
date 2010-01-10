@@ -1,4 +1,5 @@
 ﻿Imports Strilbrary.Threading
+Imports Strilbrary.Time
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
 Imports Tinker
@@ -7,14 +8,16 @@ Imports Tinker
 Public Class TransferSchedulerTest
     <TestMethod()>
     Public Sub AddTest_Single()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         Dim f = ts.AddClient(0, True)
         BlockOnFuture(f)
         Assert.IsTrue(f.State = FutureState.Succeeded)
     End Sub
     <TestMethod()>
     Public Sub AddTest_Double()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, True)
         Dim f = ts.AddClient(1, True)
         BlockOnFuture(f)
@@ -22,7 +25,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub AddTest_Collide()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, True)
         Dim f = ts.AddClient(0, True)
         BlockOnFuture(f)
@@ -31,7 +35,8 @@ Public Class TransferSchedulerTest
 
     <TestMethod()>
     Public Sub SetLinkTest_Hit()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, True)
         ts.AddClient(1, True)
         Dim f = ts.SetLink(0, 1, True)
@@ -40,7 +45,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub SetLinkTest_Miss()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, True)
         ts.AddClient(1, True)
         Dim f = ts.SetLink(0, 2, True)
@@ -50,14 +56,16 @@ Public Class TransferSchedulerTest
 
     <TestMethod()>
     Public Sub RemoveTest_Miss()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         Dim f = ts.RemoveClient(0)
         BlockOnFuture(f)
         Assert.IsTrue(f.State = FutureState.Failed)
     End Sub
     <TestMethod()>
     Public Sub RemoveTest_Hit()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, True)
         Dim f = ts.RemoveClient(0)
         BlockOnFuture(f)
@@ -65,7 +73,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub RemoveTest_DoubleHit()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, True)
         ts.RemoveClient(0)
         Dim f = ts.RemoveClient(0)
@@ -75,8 +84,9 @@ Public Class TransferSchedulerTest
 
     <TestMethod()>
     Public Sub UpdateTest_Count()
+        Dim c = New ManualClock()
         Dim count = 0
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         AddHandler ts.Actions, Sub()
                                    System.Threading.Interlocked.Increment(count)
                                End Sub
@@ -91,8 +101,9 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub UpdateTest_Start()
+        Dim c = New ManualClock()
         Dim flag = False
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False)
         ts.SetLink(0, 1, True)
@@ -109,8 +120,9 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub UpdateTest_SwitchBetter1()
+        Dim c = New ManualClock()
         Dim flag = False
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=100000, minSwitchPeriodMilliseconds:=0)
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=100000, minSwitchPeriodMilliseconds:=0, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False, expectedRate:=1000)
         ts.SetLink(0, 1, True)
@@ -133,8 +145,9 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub UpdateTest_SwitchBetter2()
+        Dim c = New ManualClock()
         Dim flag = False
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=100000, minSwitchPeriodMilliseconds:=0)
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=100000, minSwitchPeriodMilliseconds:=0, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False, expectedRate:=1000)
         ts.SetLink(0, 1, True)
@@ -164,8 +177,9 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub UpdateTest_Select()
+        Dim c = New ManualClock()
         Dim flag = False
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=100000)
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=100000, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False, expectedRate:=1000)
         ts.AddClient(2, completed:=True, expectedRate:=1000)
@@ -184,8 +198,9 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub UpdateTest_Freeze()
+        Dim c = New ManualClock()
         Dim flag = False
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1, freezePeriodMilliseconds:=0)
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, freezePeriodMilliseconds:=0, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False)
         ts.SetLink(0, 1, True)
@@ -203,8 +218,9 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub UpdateTest_Stable()
+        Dim c = New ManualClock()
         Dim flag = True
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False)
         ts.SetLink(0, 1, True)
@@ -220,7 +236,8 @@ Public Class TransferSchedulerTest
 
     <TestMethod()>
     Public Sub SetNotTransfering_Finish()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False)
         ts.SetLink(0, 1, True)
@@ -237,7 +254,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub SetNotTransfering_Cancel()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False)
         ts.SetLink(0, 1, True)
@@ -254,7 +272,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub SetNotTransfering_MissFinish()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=False)
         Dim f = ts.SetNotTransfering(0, completed:=True)
         Dim fs0 = ts.GetClientState(0)
@@ -266,7 +285,8 @@ Public Class TransferSchedulerTest
 
     <TestMethod()>
     Public Sub GetClientStateTest_Miss()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         Dim f = ts.GetClientState(clientKey:=0)
         BlockOnFuture(f)
         Assert.IsTrue(f.State = FutureState.Succeeded)
@@ -274,7 +294,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub GetClientStateTest_Idle()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=False)
         Dim f = ts.GetClientState(0)
         BlockOnFuture(f)
@@ -283,7 +304,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub GetClientStateTest_Ready()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=True)
         Dim f = ts.GetClientState(0)
         BlockOnFuture(f)
@@ -292,7 +314,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub GetClientStateTest_Uploading()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=True)
         ts.AddClient(1, completed:=False)
         ts.SetLink(0, 1, True)
@@ -304,7 +327,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub GetClientStateTest_Downloading()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=False)
         ts.AddClient(1, completed:=True)
         ts.SetLink(0, 1, True)
@@ -316,7 +340,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub GetClientStateTest_Finish()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=False)
         ts.AddClient(1, completed:=True)
         ts.SetLink(0, 1, True)
@@ -329,7 +354,8 @@ Public Class TransferSchedulerTest
     End Sub
     <TestMethod()>
     Public Sub GetClientStateTest_Cancel()
-        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1, fileSize:=1)
+        Dim c = New ManualClock()
+        Dim ts = New TransferScheduler(Of Integer)(typicalRate:=1, typicalSwitchTime:=1.Milliseconds, fileSize:=1, clock:=c)
         ts.AddClient(0, completed:=False)
         ts.AddClient(1, completed:=True)
         ts.SetLink(0, 1, True)
