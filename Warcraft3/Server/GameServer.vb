@@ -121,14 +121,11 @@ Namespace WC3
             Dim entry = _gameSets(player.GameId)
 
             'Send player to game set
-            entry.QueueTryAcceptPlayer(player).CallWhenValueReady(
-                Sub(game, exception)
-                    If exception IsNot Nothing Then
-                        _logger.Log("A game could not be found for {0}.".Frmt(player.Name), LogMessageType.Negative)
-                    Else
-                        _logger.Log("{0} entered {1}.".Frmt(player.Name, game.Name), LogMessageType.Positive)
-                    End If
-                End Sub)
+            entry.QueueTryAcceptPlayer(player).CallOnValueSuccess(
+                Sub(game) _logger.Log("{0} entered {1}.".Frmt(player.Name, game.Name), LogMessageType.Positive)
+            ).Catch(
+                Sub(exception) _logger.Log("A game could not be found for {0}.".Frmt(player.Name), LogMessageType.Negative)
+            )
         End Sub
 
         Private Function AddGameSet(ByVal gameSettings As GameSettings) As GameSet

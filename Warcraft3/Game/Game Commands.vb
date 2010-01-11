@@ -161,7 +161,12 @@ Namespace WC3
             template:="name -slot=any",
             Description:="Reserves a slot for a player.",
             func:=Function(target, user, argument)
-                      Return target.QueueReserveSlot(argument.RawValue(0), argument.TryGetOptionalNamedValue("slot")).EvalOnSuccess(Function() "Reserved Wc3.Slot")
+                      Dim name = argument.RawValue(0)
+                      Dim slotQueryString = argument.TryGetOptionalNamedValue("slot")
+                      Dim slotQuery = If(slotQueryString Is Nothing, Nothing, New InvariantString?(slotQueryString))
+
+                      Return target.QueueReserveSlot(name, slotQuery).
+                                        EvalOnSuccess(Function() "Reserved {0} for {1}.".Frmt(If(slotQueryString, "slot"), name))
                   End Function)
 
         Private Shared ReadOnly Start As New DelegatedTemplatedCommand(Of WC3.Game)(

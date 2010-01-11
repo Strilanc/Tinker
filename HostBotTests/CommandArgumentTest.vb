@@ -48,7 +48,10 @@ Public Class CommandArgumentTest
     Public Sub OptionalNamedTest()
         Dim result = New CommandArgument("-test=2")
         Assert.IsTrue(result.Count = 1)
+        Assert.IsTrue(result.HasOptionalNamedValue("test"))
         Assert.IsTrue(result.TryGetOptionalNamedValue("test") = "2")
+        Assert.IsTrue(result.OptionalNamedValue("test") = "2")
+        Assert.IsTrue(Not result.HasOptionalNamedValue("xrr"))
         Assert.IsTrue(result.TryGetOptionalNamedValue("xrr") Is Nothing)
     End Sub
 

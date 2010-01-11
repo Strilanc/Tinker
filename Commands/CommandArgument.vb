@@ -203,8 +203,8 @@ Namespace Commands
                 Return result
             End Get
         End Property
-        ''' <summary>Determines if the argument contains the given optional switch.</summary>
-        ''' <param name="switch">The optional switch to check for. Do not include the leading '-'.</param>
+        '''<summary>Determines if the argument contains the given optional switch.</summary>
+        '''<param name="switch">The optional switch to check for. Do not include the leading '-'.</param>
         Public ReadOnly Property HasOptionalSwitch(ByVal switch As InvariantString) As Boolean
             Get
                 Return _optionalSwitches.Contains(switch)
@@ -220,14 +220,31 @@ Namespace Commands
                 Return _named(name)
             End Get
         End Property
+        '''<summary>Determines if the given optional named value is included in the argument.</summary>
+        '''<param name="name">The name of the optional value to check for. Do not include the leading '-'.</param>
+        Public ReadOnly Property HasOptionalNamedValue(ByVal name As InvariantString) As Boolean
+            Get
+                Return _optionalNamed.ContainsKey(name)
+            End Get
+        End Property
         ''' <summary>
-        ''' Returns the value of the specified optional named value from the argument.
+        ''' Returns the value of the given optional named value from the argument.
         ''' Returns nothing if the optional named value is not included in the argument.
         ''' </summary>
         ''' <param name="name">The name of the optional value to check for. Do not include the leading '-'.</param>
         Public ReadOnly Property TryGetOptionalNamedValue(ByVal name As InvariantString) As String
             Get
+                Contract.Ensures((Contract.Result(Of String)() IsNot Nothing) = HasOptionalNamedValue(name))
                 If Not _optionalNamed.ContainsKey(name) Then Return Nothing
+                Return _optionalNamed(name)
+            End Get
+        End Property
+        '''<summary>Returns the value of the given optional named value from the argument.</summary>
+        '''<param name="name">The name of the optional value to check for. Do not include the leading '-'.</param>
+        Public ReadOnly Property OptionalNamedValue(ByVal name As InvariantString) As String
+            Get
+                Contract.Requires(HasOptionalNamedValue(name))
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _optionalNamed(name)
             End Get
         End Property
