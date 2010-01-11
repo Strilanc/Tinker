@@ -69,8 +69,7 @@
 
             futureSelectGame.CallOnValueSuccess(
                 Sub(game) result.SetSucceeded(game)
-            )
-            futureSelectGame.Catch(
+            ).Catch(
                 Sub(exception)
                     If _gameSettings.UseInstanceOnDemand Then
                         result.SetSucceeded(AddInstance())
