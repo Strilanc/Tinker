@@ -208,8 +208,8 @@ Namespace WC3
         Private Function FindMatchingSlot(ByVal query As InvariantString) As Slot
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Dim bestSlot As Slot = Nothing
-            Dim bestMatch = Slot.Match.None
-            slots.MaxPair(Function(slot) slot.Matches(query), bestSlot, bestMatch)
+            Dim bestMatch = Slot.Match.None * 3 - SlotContentType.Empty
+            slots.MaxPair(Function(slot) slot.Matches(query) * 3 - slot.Contents.ContentType, bestSlot, bestMatch)
             If bestMatch = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
             Contract.Assume(bestSlot IsNot Nothing)
             Return bestSlot

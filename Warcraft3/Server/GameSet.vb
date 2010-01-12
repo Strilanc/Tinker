@@ -176,7 +176,7 @@
             Return inQueue.QueueFunc(Function() CreateGameAsyncView(adder, remover))
         End Function
         Public Function QueueTryFindGame(ByVal gameName As InvariantString) As IFuture(Of Game)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() (From game In _games Where game.Name = gameName).FirstOrDefault)
         End Function
 

@@ -126,7 +126,7 @@
             'Observers
             If argument.HasOptionalSwitch("Referees") OrElse argument.HasOptionalSwitch("ref") Then
                 Me.observers = GameObserverOption.Referees
-            ElseIf argument.HasOptionalSwitch("Obs") OrElse argument.HasOptionalSwitch("MultiObs") Then
+            ElseIf argument.HasOptionalSwitch("Obs") OrElse argument.HasOptionalSwitch("MultiObs") OrElse argument.HasOptionalNamedValue("Obs") Then
                 Me.observers = GameObserverOption.FullObservers
             ElseIf argument.HasOptionalSwitch("ObsOnDefeat") OrElse argument.HasOptionalSwitch("od") Then
                 Me.observers = GameObserverOption.ObsOnDefeat
@@ -154,6 +154,7 @@
 
         Public Shared ReadOnly PartialArgumentTemplates As String() = {
                 "-Obs",
+                "-Obs=<# or reservations>",
                 "-ObsOnDefeat -od",
                 "-Referees -ref",
                 "-MultiObs",
@@ -166,7 +167,7 @@
                 "-Visibility={AlwaysVisible,Explored,HideTerrain}"
             }
         Public Shared ReadOnly PartialArgumentHelp As String() = {
-                "Obs=-Obs: Turns on full observers.",
+                "Obs=-Obs, -Obs=#, -Obs=<name1 name2 ...>: Turns on full observers. If a quantity or reservations are specified, only the minimum number of observer slots will be open.",
                 "ObsOnDefeat=-ObsOnDefeat, -od: Turns on observers on defeat.",
                 "FullShare=-FullShare: Turns on wc3's 'full shared control' option.",
                 "MultiObs=-MultiObs, mo: Turns on observers, and creates a special slot which can accept large amounts of players. The map must have two available obs slots for this to work.",

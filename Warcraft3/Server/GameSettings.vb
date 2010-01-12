@@ -43,8 +43,10 @@
         Private ReadOnly _useInstanceOnDemand As Boolean
         Private ReadOnly _isAutoStarted As Boolean
         Private ReadOnly _adminPassword As String
-        Private ReadOnly _teamSizes As IList(Of Integer) = New List(Of Integer)
-        Private ReadOnly _reservations As New List(Of String)
+        Private ReadOnly _teamSizes As IReadableList(Of Integer) = New Integer() {}.AsReadableList
+        Private ReadOnly _reservations As IReadableList(Of InvariantString)
+        Private ReadOnly _observerReservations As IReadableList(Of InvariantString) = New InvariantString() {}.AsReadableList
+        Private ReadOnly _observerCount As Integer
         Private ReadOnly _usePermanent As Boolean
         Private ReadOnly _defaultSlotLockState As Slot.Lock
         Private ReadOnly _autoElevateUserName As InvariantString?
@@ -64,6 +66,8 @@
             Contract.Invariant(_reservations IsNot Nothing)
             Contract.Invariant(_mapMode IsNot Nothing)
             Contract.Invariant(_greeting IsNot Nothing)
+            Contract.Invariant(_observerReservations IsNot Nothing)
+            Contract.Invariant(_observerCount >= 0)
             Contract.Invariant(_numInstances >= 0)
             Contract.Invariant((_numInstances = 0) = _useInstanceOnDemand)
         End Sub
@@ -96,17 +100,30 @@
             Dim teamString = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
             Me._isPrivate = argument.HasOptionalSwitch("p") OrElse argument.HasOptionalSwitch("private")
             If teamString IsNot Nothing Then
-                Me._teamSizes = TeamVersusStringToTeamSizes(teamString)
+                Me._teamSizes = TeamVersusStringToTeamSizes(teamString).AsReadableList
+            End If
+            'Observers
+            If argument.HasOptionalNamedValue("obs") Then
+                Dim obsArg = argument.OptionalNamedValue("obs")
+                If Integer.TryParse(obsArg, _observerCount) Then
+                    If _observerCount <= 0 Then Throw New ArgumentOutOfRangeException("Observer count must be positive.")
+                Else
+                    _observerReservations = (From name In argument.OptionalNamedValue("obs").Split(" "c)
+                                             Select New InvariantString(name)
+                                            ).ToArray.AsReadableList
+                End If
             End If
             Me._useMultiObs = argument.HasOptionalSwitch("MultiObs")
             'Reservations
+            Dim reserverations = New List(Of InvariantString)
             If argument.HasOptionalSwitch("Reserve") OrElse argument.HasOptionalSwitch("r") Then
-                _reservations.Add(gameDescription.GameStats.HostName)
+                reserverations.Add(gameDescription.GameStats.HostName)
             End If
             For Each username In Concat(If(argument.TryGetOptionalNamedValue("Reserve"), "").Split(" "c),
                                         If(argument.TryGetOptionalNamedValue("r"), "").Split(" "c))
-                If username <> "" Then _reservations.Add(username)
+                If username <> "" Then reserverations.Add(username)
             Next username
+            _reservations = reserverations.AsReadableList
             'Instance count
             If argument.TryGetOptionalNamedValue("Inst") Is Nothing Then
                 Me._numInstances = 1
@@ -181,15 +198,15 @@
                 Return _adminPassword
             End Get
         End Property
-        Public ReadOnly Property TeamSizes As IList(Of Integer)
+        Public ReadOnly Property TeamSizes As IReadableList(Of Integer)
             Get
-                Contract.Ensures(Contract.Result(Of IList(Of Integer))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Integer))() IsNot Nothing)
                 Return _teamSizes
             End Get
         End Property
-        Public ReadOnly Property Reservations As IEnumerable(Of String)
+        Public ReadOnly Property Reservations As IReadableList(Of InvariantString)
             Get
-                Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IEnumerable(Of InvariantString))() IsNot Nothing)
                 Return _reservations
             End Get
         End Property
@@ -233,6 +250,18 @@
         Public ReadOnly Property UseMultiObs As Boolean
             Get
                 Return _useMultiObs
+            End Get
+        End Property
+        Public ReadOnly Property ObserverCount As Integer
+            Get
+                Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+                Return _observerCount
+            End Get
+        End Property
+        Public ReadOnly Property ObserverReservations As IReadableList(Of InvariantString)
+            Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
+                Return _observerReservations
             End Get
         End Property
 #End Region

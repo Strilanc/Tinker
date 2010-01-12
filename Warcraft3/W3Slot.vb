@@ -72,9 +72,10 @@
         End Enum
         Public Enum Match
             None = 0
-            Contents = 1
-            Color = 2
-            Index = 3
+            Team = 1
+            Contents = 2
+            Color = 3
+            Index = 4
         End Enum
 #End Region
 
@@ -90,9 +91,12 @@
             End Get
         End Property
         Public Function Matches(ByVal query As InvariantString) As Match
+            '[checked in decreasing order of importance]
             If query = (index + 1).ToString(CultureInfo.InvariantCulture) Then Return Match.Index
             If query = color.ToString Then Return Match.Color
             If Contents.Matches(query) Then Return Match.Contents
+            If query = "team{0}".Frmt(Me.Team + 1) Then Return Match.Team
+            If Me.Team = ObserverTeamIndex AndAlso (query = "obs" OrElse query = "observer") Then Return Match.Team
             Return Match.None
         End Function
         Public Function Cloned() As Slot

@@ -76,9 +76,26 @@
             End If
             TrySetTeamSizes(settings.TeamSizes)
             For Each reservation In settings.reservations
-                Contract.Assume(reservation IsNot Nothing)
                 ReserveSlot(reservation)
             Next reservation
+            If settings.ObserverCount > 0 Then
+                Dim n = settings.ObserverCount
+                For Each slot In Me.slots
+                    If slot.Team = slot.ObserverTeamIndex Then
+                        If n <= 0 Then CloseSlot(slot.MatchableId)
+                        n -= 1
+                    End If
+                Next slot
+            ElseIf settings.ObserverReservations.Count > 0 Then
+                For Each reservation In settings.ObserverReservations
+                    ReserveSlot(reservation, "obs")
+                Next reservation
+                For Each slot In Me.slots
+                    If slot.Team = slot.ObserverTeamIndex AndAlso slot.Contents.ContentType <> SlotContentType.Player Then
+                        CloseSlot(slot.MatchableId)
+                    End If
+                Next slot
+            End If
         End Sub
         Private Sub InitDownloads()
             If settings.allowUpload AndAlso Map.fileAvailable Then
@@ -439,7 +456,7 @@
         End Sub
 
         '''<summary>Opens slots, closes slots and moves players around to try to match the desired team sizes.</summary>
-        Private Sub TrySetTeamSizes(ByVal desiredTeamSizes As IList(Of Integer))
+        Private Sub TrySetTeamSizes(ByVal desiredTeamSizes As IEnumerable(Of Integer))
             Contract.Requires(desiredTeamSizes IsNot Nothing)
             If state > GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't change team sizes after launch.")
