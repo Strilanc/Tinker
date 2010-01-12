@@ -88,7 +88,11 @@
             Me._mapMode = If(argument.TryGetOptionalNamedValue("Mode"), "")
             Me._useLoadInGame = argument.HasOptionalSwitch("LoadInGame") OrElse argument.HasOptionalSwitch("lig")
             Me._usePermanent = argument.HasOptionalSwitch("Permanent") OrElse argument.HasOptionalSwitch("Perm")
-            Me._greeting = If(argument.TryGetOptionalNamedValue("Greet"), "").Replace("\n", Environment.NewLine).Replace("\N", Environment.NewLine)
+            If argument.HasOptionalNamedValue("Greet") Then
+                Me._greeting = argument.OptionalNamedValue("Greet").Replace("\n", Environment.NewLine).Replace("\N", Environment.NewLine)
+            Else
+                Me._greeting = My.Settings.DefaultGameGreet
+            End If
             Dim teamString = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
             Me._isPrivate = argument.HasOptionalSwitch("p") OrElse argument.HasOptionalSwitch("private")
             If teamString IsNot Nothing Then

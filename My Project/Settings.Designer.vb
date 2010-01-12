@@ -140,7 +140,7 @@ Namespace My
         
         <Global.System.Configuration.UserScopedSettingAttribute(),  _
          Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
-         Global.System.Configuration.DefaultSettingValueAttribute("|cFFFF0000Tinkr")>  _
+         Global.System.Configuration.DefaultSettingValueAttribute("|cFF00FF00Tinkr")>  _
         Public Property ingame_name() As String
             Get
                 Return CType(Me("ingame_name"),String)

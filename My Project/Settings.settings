@@ -24,7 +24,7 @@
       <Value Profile="(Default)">100</Value>
     </Setting>
     <Setting Name="ingame_name" Type="System.String" Scope="User">
-      <Value Profile="(Default)">|cFFFF0000Tinkr</Value>
+      <Value Profile="(Default)">|cFF00FF00Tinkr</Value>
     </Setting>
     <Setting Name="initial_plugins" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
