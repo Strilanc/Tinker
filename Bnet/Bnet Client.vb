@@ -294,7 +294,11 @@ Namespace Bnet
                 Throw
             End Try
 
-            Dim result = AsyncTcpConnect(remoteHost, port).QueueEvalOnValueSuccess(inQueue,
+            Dim futureSocket = (From hostEntry In AsyncDNSLookup(remoteHost)
+                                Select address = hostEntry.AddressList(New Random().Next(hostEntry.AddressList.Count))
+                                Select AsyncTcpConnect(address, port)
+                               ).Defuturized
+            Dim result = futureSocket.QueueEvalOnValueSuccess(inQueue,
                 Function(tcpClient)
                     Dim socket = New PacketSocket(
                             stream:=New ThrottledWriteStream(
@@ -312,8 +316,7 @@ Namespace Bnet
                             bufferSize:=PacketSocket.DefaultBufferSize * 10)
                     ChangeState(ClientState.FinishedInitiatingConnection)
                     Return AsyncConnect(socket)
-                End Function
-            ).Defuturized
+                End Function).Defuturized()
             result.Catch(Sub(exception)
                              QueueDisconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(exception))
                          End Sub)

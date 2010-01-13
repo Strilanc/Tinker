@@ -102,6 +102,15 @@ Public Module NetworkingCommon
             callback:=Sub(ar) result.SetByEvaluating(Function() listener.EndAcceptTcpClient(ar))))
         Return result
     End Function
+
+    Public Function AsyncDNSLookup(ByVal remoteHost As String) As IFuture(Of Net.IPHostEntry)
+        Contract.Requires(remoteHost IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture(Of Net.IPHostEntry))() IsNot Nothing)
+        Dim result = New FutureFunction(Of Net.IPHostEntry)()
+        result.DependentCall(Sub() Net.Dns.BeginGetHostEntry(hostNameOrAddress:=remoteHost, stateObject:=Nothing,
+            requestCallback:=Sub(ar) result.SetByEvaluating(Function() Net.Dns.EndGetHostEntry(ar))))
+        Return result
+    End Function
 End Module
 
 Public Class NetIPAddressJar
