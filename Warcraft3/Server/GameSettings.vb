@@ -206,7 +206,7 @@
         End Property
         Public ReadOnly Property Reservations As IReadableList(Of InvariantString)
             Get
-                Contract.Ensures(Contract.Result(Of IEnumerable(Of InvariantString))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
                 Return _reservations
             End Get
         End Property

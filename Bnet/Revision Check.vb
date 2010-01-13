@@ -49,7 +49,8 @@ Namespace Bnet
 #End Region
 
         '''<summary>A parsed hashing operation.</summary>
-        Private Structure Operation
+        <ContractVerification(False)>
+        Private Structure Operation 'verification disabled to allow skipping some checks
             Private ReadOnly _leftVarIndex As Integer
             Private ReadOnly _rightVarIndex As Integer
             Private ReadOnly _destVarIndex As Integer

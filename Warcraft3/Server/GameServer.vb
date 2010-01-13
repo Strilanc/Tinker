@@ -38,6 +38,7 @@ Namespace WC3
 
         Public Sub New(ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
+            Contract.Assume(clock IsNot Nothing)
             Me._logger = If(logger, New Logger)
             Me._clock = clock
         End Sub

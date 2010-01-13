@@ -46,6 +46,7 @@
             Contract.Invariant(_usedSlotCount >= 0)
             Contract.Invariant(_usedSlotCount <= _totalSlotCount)
             Contract.Invariant(_gameStats IsNot Nothing)
+            Contract.Invariant(_ageTimer IsNot Nothing)
         End Sub
 
         Public Shared Function FromArguments(ByVal name As InvariantString,

@@ -224,6 +224,7 @@ Namespace Commands
         '''<param name="name">The name of the optional value to check for. Do not include the leading '-'.</param>
         Public ReadOnly Property HasOptionalNamedValue(ByVal name As InvariantString) As Boolean
             Get
+                Contract.Ensures(Contract.Result(Of Boolean)() = _optionalNamed.ContainsKey(name))
                 Return _optionalNamed.ContainsKey(name)
             End Get
         End Property
@@ -236,7 +237,9 @@ Namespace Commands
             Get
                 Contract.Ensures((Contract.Result(Of String)() IsNot Nothing) = HasOptionalNamedValue(name))
                 If Not _optionalNamed.ContainsKey(name) Then Return Nothing
-                Return _optionalNamed(name)
+                Dim result = _optionalNamed(name)
+                Contract.Assume(result IsNot Nothing)
+                Return result
             End Get
         End Property
         '''<summary>Returns the value of the given optional named value from the argument.</summary>
@@ -245,7 +248,9 @@ Namespace Commands
             Get
                 Contract.Requires(HasOptionalNamedValue(name))
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Return _optionalNamed(name)
+                Dim result = _optionalNamed(name)
+                Contract.Assume(result IsNot Nothing)
+                Return result
             End Get
         End Property
 

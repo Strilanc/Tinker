@@ -2,6 +2,8 @@ Imports Tinker.Bot
 Imports Tinker.Commands
 
 Namespace Bnet
+    'verification disabled due to stupid verifier
+    <ContractVerification(False)>
     Public NotInheritable Class ClientCommands
         Inherits CommandSet(Of Bnet.ClientManager)
 
@@ -261,7 +263,7 @@ Namespace Bnet
                         AddHandler gameSet.StateChanged, onStarted
                         Return result
                     End Function).Defuturized
-                futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futureGameSet.value.dispose())
+                futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futureGameSet.Value.Dispose())
                 Dim futureDesc = futureAdvertised.EvalOnSuccess(Function() futureGameSet.Value.GameSettings.GameDescription)
                 Return futureDesc.Select(Function(desc) "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(desc.Name,
                                                                                                                 desc.GameStats.AdvertisedPath,
@@ -360,7 +362,7 @@ Namespace Bnet
             Public Sub New()
                 MyBase.New(Name:="Say",
                            template:="text",
-                           description:="Causes the bot to say the given text, including any bnet commands.",
+                           Description:="Causes the bot to say the given text, including any bnet commands.",
                            Permissions:="root:1")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)

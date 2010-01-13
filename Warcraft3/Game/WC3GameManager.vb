@@ -32,6 +32,9 @@ Namespace WC3
             AddHandler game.PlayerTalked, Sub(sender, player, text) HandleText(player, text)
         End Sub
         Private Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(text IsNot Nothing)
+
             'Check
             If text.Substring(0, My.Settings.commandPrefix.AssumeNotNull.Length) <> My.Settings.commandPrefix _
                     AndAlso text <> Tinker.Bot.MainBot.TriggerCommandText Then

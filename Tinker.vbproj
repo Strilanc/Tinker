@@ -189,6 +189,8 @@
     <Compile Include="Interface\ExceptionForm.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Library\CachedLookupTable.vb" />
+    <Compile Include="Library\DelegatedDisposable.vb" />
     <Compile Include="Pickling\SizePrefixedDataJar.vb" />
     <Compile Include="Pickling\RemainingDataJar.vb" />
     <Compile Include="Pickling\PrefixSwitchJar.vb" />

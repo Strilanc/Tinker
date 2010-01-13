@@ -25,6 +25,7 @@
             Contract.Assume(clock IsNot Nothing)
             logger = If(logger, New Logger)
             _activated.SetHandled()
+            Me._clock = clock
 
             If remoteHost = "" Then
                 Dim result = New FutureFunction(Of Warden.Socket)

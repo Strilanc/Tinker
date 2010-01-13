@@ -263,6 +263,9 @@ Namespace WC3
             Dim prefix = If(fakeHostPlayer Is Nothing, "{0}: ".Frmt(Application.ProductName), "")
             Dim chatType = If(state >= GameState.Loading, Packet.ChatType.Game, Packet.ChatType.Lobby)
             Dim sender = If(fakeHostPlayer, player)
+            If Packet.MaxChatTextLength - prefix.Length <= 0 Then
+                Throw New InvalidStateException("The product name is so long there's no room for text to follow it!")
+            End If
             For Each line In SplitText(body:=message, maxLineLength:=Packet.MaxChatTextLength - prefix.Length)
                 player.QueueSendPacket(Packet.MakeText(text:=prefix + line,
                                                        chatType:=chatType,

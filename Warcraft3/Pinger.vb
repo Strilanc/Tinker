@@ -54,6 +54,8 @@
         End If
 
         Dim stored = _pingQueue.Dequeue()
+        Contract.Assume(stored IsNot Nothing)
+        Contract.Assume(stored.Item2 IsNot Nothing)
         If salt <> stored.Item1 Then
             Throw New InvalidOperationException("Pong didn't match ping.")
         End If
@@ -63,6 +65,7 @@
         _latency *= 1 - lambda
         _latency += lambda * New FiniteDouble(stored.Item2.ElapsedTime.TotalMilliseconds)
         If _latency <= 0 Then _latency = Double.Epsilon
+        Contract.Assume(_latency >= 0)
     End Sub
     Public Function QueueReceivedPong(ByVal salt As UInteger) As IFuture
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)

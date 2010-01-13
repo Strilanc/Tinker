@@ -33,19 +33,17 @@
         Public ReadOnly playableHeight As Integer
         Public ReadOnly mapChecksumXORO As UInt32
         Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
-        Private ReadOnly _advertisedPath As String
-        Private ReadOnly _hostName As String
+        Private ReadOnly _advertisedPath As InvariantString
+        Private ReadOnly _hostName As InvariantString
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(_mapChecksumSHA1.Count = 20)
-            Contract.Invariant(_hostName IsNot Nothing)
             Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
         End Sub
 
-        Public ReadOnly Property HostName As String
+        Public ReadOnly Property HostName As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return _hostName
             End Get
         End Property
@@ -79,11 +77,10 @@
                        ByVal mapChecksumXORO As UInt32,
                        ByVal mapChecksumSHA1 As IReadableList(Of Byte),
                        ByVal advertisedPath As InvariantString,
-                       ByVal hostName As String)
+                       ByVal hostName As InvariantString)
             Contract.Requires(advertisedPath.StartsWith("Maps\"))
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
-            Contract.Requires(hostName IsNot Nothing)
 
             Me.randomHero = randomHero
             Me.randomRace = randomRace
@@ -105,14 +102,13 @@
         ''' Constructs the game stats based on a map and arguments.
         ''' </summary>
         Public Sub New(ByVal map As Map,
-                       ByVal hostName As String,
+                       ByVal hostName As InvariantString,
                        ByVal argument As Commands.CommandArgument)
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Requires(hostName IsNot Nothing)
 
-            Me.playableWidth = map.playableWidth
-            Me.playableHeight = map.playableHeight
+            Me.playableWidth = map.PlayableWidth
+            Me.playableHeight = map.PlayableHeight
             Me.mapChecksumXORO = map.MapChecksumXORO
             Me._mapChecksumSHA1 = map.MapChecksumSHA1
             Me._advertisedPath = map.AdvertisedPath

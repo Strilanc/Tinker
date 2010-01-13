@@ -1,6 +1,8 @@
 Imports Tinker.Commands
 
 Namespace Bot
+    'verification disabled due to stupid verifier
+    <ContractVerification(False)>
     Public NotInheritable Class BotCommands
         Inherits CommandSet(Of MainBot)
         Public Sub New()
@@ -175,7 +177,7 @@ Namespace Bot
                            Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                      Dim profileName As InvariantString = If(argument.TryGetOptionalNamedValue("profile"), "default")
+                Dim profileName As InvariantString = If(argument.TryGetOptionalNamedValue("profile"), "default")
                 Dim clientName As InvariantString = argument.RawValue(0)
 
                 Return Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target).Select(

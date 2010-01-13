@@ -16,6 +16,7 @@ Public NotInheritable Class DeadManSwitch
         Contract.Invariant(_period.Ticks > 0)
         Contract.Invariant(_clock IsNot Nothing)
         Contract.Invariant(inQueue IsNot Nothing)
+        Contract.Invariant(Not _isArmed OrElse _timer IsNot Nothing)
     End Sub
 
     Public Sub New(ByVal period As TimeSpan, ByVal clock As IClock)
@@ -62,21 +63,18 @@ Public NotInheritable Class DeadManSwitch
     End Function
 
     Private Sub OnTimeout()
-        inQueue.QueueAction(
-            Sub()
-                If _timer Is Nothing Then Throw New InvalidStateException("OnTimeout called without running timer.")
-                If Not _isArmed Then Return
+        If _timer Is Nothing Then Throw New InvalidStateException("OnTimeout called without running timer.")
+        If Not _isArmed Then Return
 
-                If _wasReset Then
-                    _wasReset = False
-                    Dim dt = _timer.Reset()
-                    _clock.AsyncWait(_period - dt).CallWhenReady(Sub() OnTimeout())
-                Else
-                    _timer = Nothing
-                    _isArmed = False
-                    RaiseEvent Triggered(Me)
-                End If
-            End Sub)
+        If _wasReset Then
+            _wasReset = False
+            Dim dt = _timer.Reset()
+            _clock.AsyncWait(_period - dt).QueueCallWhenReady(inQueue, Sub() OnTimeout())
+        Else
+            _timer = Nothing
+            _isArmed = False
+            RaiseEvent Triggered(Me)
+        End If
     End Sub
 
     Public Overrides Function ToString() As String

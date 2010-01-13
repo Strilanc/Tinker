@@ -53,6 +53,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
         Contract.Assume(fileSize > 0) 'bug in contracts required not using requires here
         Contract.Assume(typicalRate > 0)
         Contract.Assume(typicalSwitchTime.Ticks >= 0)
+        Contract.Assume(clock IsNot Nothing)
         Me.ref = If(pq, New TaskedCallQueue)
         Me.minSwithPeriod = minSwitchPeriodMilliseconds.Milliseconds
         Me.freezePeriod = freezePeriodMilliseconds.Milliseconds
@@ -66,6 +67,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
     Public Function AddClient(ByVal clientKey As TClientKey,
                               ByVal completed As Boolean,
                               Optional ByVal expectedRate As FiniteDouble = Nothing) As IFuture
+        Contract.Requires(clientKey IsNot Nothing)
         'Contract.Requires(expectedRate = Nothing OrElse expectedRate > 0)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         If expectedRate = Nothing Then expectedRate = typicalRate
@@ -82,6 +84,8 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
     Public Function SetLink(ByVal clientKey1 As TClientKey,
                             ByVal clientKey2 As TClientKey,
                             ByVal linked As Boolean) As IFuture
+        Contract.Requires(clientKey1 IsNot Nothing)
+        Contract.Requires(clientKey2 IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
@@ -106,6 +110,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
 
     '''<summary>Removes a client from the pool.</summary>
     Public Function RemoveClient(ByVal clientKey As TClientKey) As IFuture
+        Contract.Requires(clientKey IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
@@ -126,6 +131,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
 
     Public ReadOnly Property GenerateRateDescription(ByVal clientKey As TClientKey) As IFuture(Of String)
         Get
+            Contract.Requires(clientKey IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return ref.QueueFunc(
                 Function()
@@ -151,6 +157,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
     End Property
 
     Public Function GetClientState(ByVal clientKey As TClientKey) As IFuture(Of ClientTransferState)
+        Contract.Requires(clientKey IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture(Of ClientTransferState))() IsNot Nothing)
         Return ref.QueueFunc(
             Function()
@@ -175,6 +182,7 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
     '''<summary>Updates the progress of a transfer to or from the given client.</summary>
     Public Function UpdateProgress(ByVal clientKey As TClientKey,
                                    ByVal progress As FiniteDouble) As IFuture
+        Contract.Requires(clientKey IsNot Nothing)
         Contract.Requires(progress >= 0)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
@@ -192,10 +200,11 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
     '''<summary>Stops any transfers to or from the given client. Marks the destination as completed if completed is set.</summary>
     Public Function SetNotTransfering(ByVal clientKey As TClientKey,
                                       ByVal completed As Boolean) As IFuture
+        Contract.Requires(clientKey IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
         Return ref.QueueAction(
             Sub()
-                If Not clients.ContainsKey(clientKey) Then  Throw New InvalidOperationException("No such client key.")
+                If Not clients.ContainsKey(clientKey) Then Throw New InvalidOperationException("No such client key.")
 
                 Dim client = clients(clientKey)
                 Dim other = client.other
@@ -293,10 +302,16 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
             Contract.Invariant(_lastEstimateTimer IsNot Nothing)
             Contract.Invariant(_lastStartTimer IsNot Nothing)
             Contract.Invariant(_links IsNot Nothing)
+            Contract.Invariant(key IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal key As TClientKey, ByVal completed As Boolean, ByVal typicalRatePerMillisecond As FiniteDouble, ByVal clock As IClock)
+        Public Sub New(ByVal key As TClientKey,
+                       ByVal completed As Boolean,
+                       ByVal typicalRatePerMillisecond As FiniteDouble,
+                       ByVal clock As IClock)
+            Contract.Requires(key IsNot Nothing)
             Contract.Requires(typicalRatePerMillisecond > 0)
+            Contract.Requires(clock IsNot Nothing)
             Me.key = key
             Me.completed = completed
             Me._lastEstimateTimer = clock.StartTimer

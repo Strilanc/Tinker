@@ -217,9 +217,12 @@ Namespace WC3
             Me._slots = slots.AsReadableList
             Contract.Assume(Me.Slots.Count = slotCount)
         End Sub
-        Public Sub New(ByVal folder As String,
-                       ByVal relativePath As String,
-                       ByVal wc3PatchMPQFolder As String)
+
+        'contract verification disabled due to stupid verifier
+        <ContractVerification(False)>
+        Public Sub New(ByVal folder As InvariantString,
+                       ByVal relativePath As InvariantString,
+                       ByVal wc3PatchMPQFolder As InvariantString)
             Me.fileAvailable = True
             Me._advertisedPath = IO.Path.Combine("Maps", relativePath).Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar).
                                                                        Replace(IO.Path.DirectorySeparatorChar, "\")

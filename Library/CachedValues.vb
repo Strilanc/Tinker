@@ -31,8 +31,8 @@ Public Class CachedExternalValues
         End If
     End Sub
     Public Shared Function Recache(Optional ByVal programFolder As String = Nothing) As Boolean
-        Contract.Ensures(_exeVersion IsNot Nothing)
-        Contract.Ensures(_exeVersion.Count = 4)
+        Contract.Ensures(Not Contract.Result(Of Boolean)() OrElse _exeVersion IsNot Nothing)
+        Contract.Ensures(Not Contract.Result(Of Boolean)() OrElse _exeVersion.Count = 4)
         Dim path = IO.Path.Combine(If(programFolder, WC3Path()), "war3.exe")
         If Not IO.File.Exists(path) Then Return False
 

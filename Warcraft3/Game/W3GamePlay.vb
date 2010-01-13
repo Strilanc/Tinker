@@ -118,6 +118,7 @@
         End Sub
         Private Sub UpdateLagScreen()
             If laggingPlayers.Count > 0 Then
+                Contract.Assume(_lagTimer IsNot Nothing)
                 For Each p In laggingPlayers.ToList
                     Contract.Assume(p IsNot Nothing)
                     If Not _players.Contains(p) Then
