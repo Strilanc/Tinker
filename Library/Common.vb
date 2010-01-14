@@ -157,7 +157,7 @@ Public Module PoorlyCategorizedFunctions
         Dim matches = New List(Of String)
         For Each filepath In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
             Contract.Assume(filepath IsNot Nothing)
-            Contract.Assume(filepath.Length < directory.Length)
+            Contract.Assume(filepath.Length > directory.Length)
             Dim relativePath = filepath.Substring(directory.Length)
             If relativePath Like likeQuery AndAlso relativePath Like dirQuery Then
                 matches.Add(relativePath)
