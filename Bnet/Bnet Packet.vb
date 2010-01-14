@@ -441,8 +441,8 @@ Namespace Bnet
                     New UInt32Jar("unknown0").Weaken,
                     New UInt32Jar("list count").Weaken,
                     New StringJar("game name", info:="empty means list games").Weaken,
-                    New StringJar("game password", True).Weaken,
-                    New StringJar("game stats", True).Weaken)
+                    New StringJar("game password").Weaken,
+                    New StringJar("game stats").Weaken)
 
             Public Shared ReadOnly EnterChat As New DefJar(PacketId.EnterChat,
                     New StringJar("username", info:="[unused]").Weaken,
