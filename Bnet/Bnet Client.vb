@@ -889,7 +889,7 @@ Namespace Bnet
                 End If
                 EnterChannel(_lastChannel)
                 'RaiseEvent RemovedGame(Me, _advertisedGameDescription, "Failed to advertise the game. Most likely cause is game name in use.")
-                End If
+            End If
         End Sub
         Private Sub IgnorePacket(ByVal value As Object)
             Contract.Requires(value IsNot Nothing)

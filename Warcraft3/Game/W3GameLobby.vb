@@ -294,7 +294,18 @@
 
             'Assign index
             Dim index As Byte = 0
-            If bestSlot.Contents.PlayerIndex <> 0 And bestMatch <> SlotContents.WantPlayerPriority.Reserved Then
+            If bestMatch = SlotContents.WantPlayerPriority.Reserved Then
+                'the player has a reserved slot and index
+                index = bestSlot.Contents.PlayerIndex
+                For Each player In bestSlot.Contents.EnumPlayers
+                    Contract.Assume(player IsNot Nothing)
+                    RemovePlayer(player, wasExpected:=True, leaveType:=PlayerLeaveType.Disconnect, reason:="Reservation fulfilled")
+                Next player
+                If fakeHostPlayer IsNot Nothing AndAlso fakeHostPlayer.Index = index Then
+                    RemovePlayer(fakeHostPlayer, True, PlayerLeaveType.Disconnect, "Need player index for joining player.")
+                End If
+                Contract.Assume(freeIndexes.Contains(index))
+            ElseIf bestSlot.Contents.PlayerIndex <> 0 Then
                 'the slot requires the player to take a specific index
                 index = bestSlot.Contents.PlayerIndex
             ElseIf freeIndexes.Count > 0 Then
@@ -304,6 +315,7 @@
                 'the only player index left belongs to the fake host
                 index = fakeHostPlayer.Index
                 RemovePlayer(fakeHostPlayer, True, PlayerLeaveType.Disconnect, "Need player index for joining player.")
+                Contract.Assume(freeIndexes.Contains(index))
             Else
                 'no indexes left, go away
                 Throw New InvalidOperationException("No index space available for player.")
@@ -311,14 +323,6 @@
             freeIndexes.Remove(index)
             Contract.Assume(index > 0)
             Contract.Assume(index <= 12)
-
-            'Reservation
-            If bestMatch = SlotContents.WantPlayerPriority.Reserved Then
-                For Each player In bestSlot.Contents.EnumPlayers
-                    Contract.Assume(player IsNot Nothing)
-                    RemovePlayer(player, True, PlayerLeaveType.Disconnect, "Reservation fulfilled")
-                Next player
-            End If
 
             'Create player object
             Dim newPlayer = New Player(index, settings, _downloadScheduler, connectingPlayer, _clock, Logger)
@@ -340,13 +344,13 @@
             End If
 
             'Inform bot
-            Logger.Log("{0} has entered the game.".Frmt(newPlayer.name), LogMessageType.Positive)
+            Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Update state
             ChangedLobbyState()
             TryBeginAutoStart()
-            If settings.autoElevateUserName IsNot Nothing Then
-                If newPlayer.Name = settings.autoElevateUserName.Value Then
+            If settings.AutoElevateUserName IsNot Nothing Then
+                If newPlayer.Name = settings.AutoElevateUserName.Value Then
                     ElevatePlayer(newPlayer.Name)
                 End If
             End If

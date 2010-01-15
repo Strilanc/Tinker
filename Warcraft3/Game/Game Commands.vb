@@ -135,7 +135,7 @@ Namespace WC3
             template:="?slot -full",
             Description:="Prevents players from leaving a slot or from changing slot properties (if -full). Omit the slot argument to affect all slots.",
             func:=Function(target, user, argument)
-                      Dim lockType = If(argument.HasOptionalSwitch("full"), WC3.Slot.Lock.Sticky, WC3.Slot.Lock.Frozen)
+                      Dim lockType = If(argument.HasOptionalSwitch("full"), WC3.Slot.Lock.Frozen, WC3.Slot.Lock.Sticky)
                       If argument.RawValueCount = 0 Then
                           Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Locked slots")
                       Else

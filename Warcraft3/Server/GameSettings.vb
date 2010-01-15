@@ -136,9 +136,11 @@
             'Admin name
             If argument.HasOptionalSwitch("Admin") OrElse argument.HasOptionalSwitch("a") Then
                 Me._autoElevateUserName = gameDescription.GameStats.HostName
+            ElseIf argument.HasOptionalNamedValue("Admin") Then
+                Me._autoElevateUserName = argument.OptionalNamedValue("Admin")
+            ElseIf argument.HasOptionalNamedValue("a") Then
+                Me._autoElevateUserName = argument.OptionalNamedValue("a")
             End If
-            If Me._autoElevateUserName Is Nothing Then Me._autoElevateUserName = argument.TryGetOptionalNamedValue("Admin")
-            If Me._autoElevateUserName Is Nothing Then Me._autoElevateUserName = argument.TryGetOptionalNamedValue("a")
         End Sub
 
 #Region "Properties"

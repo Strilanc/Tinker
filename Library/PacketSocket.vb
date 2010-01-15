@@ -7,7 +7,7 @@ Public NotInheritable Class PacketSocket
     Private ReadOnly _remoteEndPoint As IPEndPoint
     Private ReadOnly _localEndPoint As IPEndPoint
     Private _logger As Logger
-    Private _name As String
+    Private _name As InvariantString
 
     Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
     Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue()
@@ -17,13 +17,11 @@ Public NotInheritable Class PacketSocket
     Public Event Disconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String)
     Private WithEvents deadManSwitch As DeadManSwitch
 
-    Public Property Name As String
+    Public Property Name As InvariantString
         Get
-            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Return Me._name
         End Get
-        Set(ByVal value As String)
-            Contract.Requires(value IsNot Nothing)
+        Set(ByVal value As InvariantString)
             Me._name = value
         End Set
     End Property
@@ -45,10 +43,13 @@ Public NotInheritable Class PacketSocket
         Contract.Invariant(packetStreamer IsNot Nothing)
         Contract.Invariant(_localEndPoint IsNot Nothing)
         Contract.Invariant(_localEndPoint.Address IsNot Nothing)
+        Contract.Invariant(_localEndPoint.Port >= UInt16.MinValue)
+        Contract.Invariant(_localEndPoint.Port <= UInt16.MaxValue)
         Contract.Invariant(_remoteEndPoint IsNot Nothing)
         Contract.Invariant(_remoteEndPoint.Address IsNot Nothing)
+        Contract.Invariant(_remoteEndPoint.Port >= UInt16.MinValue)
+        Contract.Invariant(_remoteEndPoint.Port <= UInt16.MaxValue)
         Contract.Invariant(_logger IsNot Nothing)
-        Contract.Invariant(_name IsNot Nothing)
     End Sub
 
     Public Sub New(ByVal stream As IO.Stream,
@@ -60,13 +61,17 @@ Public NotInheritable Class PacketSocket
                    Optional ByVal bufferSize As Integer = DefaultBufferSize,
                    Optional ByVal numBytesBeforeSize As Integer = 2,
                    Optional ByVal numSizeBytes As Integer = 2,
-                   Optional ByVal name As String = Nothing)
+                   Optional ByVal name As InvariantString? = Nothing)
         Contract.Assume(clock IsNot Nothing)
         Contract.Assume(stream IsNot Nothing)
         Contract.Assume(localEndPoint IsNot Nothing)
         Contract.Assume(remoteEndPoint IsNot Nothing)
         Contract.Assume(localEndPoint.Address IsNot Nothing)
         Contract.Assume(remoteEndPoint.Address IsNot Nothing)
+        Contract.Assume(localEndPoint.Port >= UInt16.MinValue)
+        Contract.Assume(localEndPoint.Port <= UInt16.MaxValue)
+        Contract.Assume(remoteEndPoint.Port >= UInt16.MinValue)
+        Contract.Assume(remoteEndPoint.Port <= UInt16.MaxValue)
         Contract.Assume(numBytesBeforeSize >= 0)
         Contract.Assume(numSizeBytes > 0)
         Contract.Assume(bufferSize >= numBytesBeforeSize + numSizeBytes)
@@ -85,12 +90,11 @@ Public NotInheritable Class PacketSocket
         Me._localEndPoint = localEndPoint
 
         Dim addrBytes = remoteEndPoint.Address.GetAddressBytes
-        Contract.Assume(addrBytes IsNot Nothing)
         If addrBytes.SequenceEqual(GetCachedIPAddressBytes(external:=False)) OrElse addrBytes.SequenceEqual({127, 0, 0, 1}) Then
             _remoteEndPoint = New Net.IPEndPoint(New Net.IPAddress(GetCachedIPAddressBytes(external:=True)), remoteEndPoint.Port)
             Contract.Assume(_remoteEndPoint.Address IsNot Nothing)
         End If
-        Me._name = If(name, Me.RemoteEndPoint.ToString)
+        Me._name = If(name, New InvariantString(Me.RemoteEndPoint.ToString))
     End Sub
 
     Public ReadOnly Property RemoteEndPoint As IPEndPoint
