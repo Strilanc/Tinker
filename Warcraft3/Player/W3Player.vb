@@ -214,7 +214,7 @@
             End Get
         End Property
 
-        Public ReadOnly Property GetRemoteEndPoint As Net.IPEndPoint
+        Public ReadOnly Property RemoteEndPoint As Net.IPEndPoint
             Get
                 Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address IsNot Nothing)
@@ -222,7 +222,7 @@
                 Return socket.RemoteEndPoint
             End Get
         End Property
-        Public Function GetLatency() As IFuture(Of FiniteDouble)
+        Public Function QueueGetLatency() As IFuture(Of FiniteDouble)
             Contract.Ensures(Contract.Result(Of IFuture(Of FiniteDouble))() IsNot Nothing)
             If pinger Is Nothing Then
                 Return New FiniteDouble().Futurized
@@ -230,10 +230,10 @@
                 Return pinger.QueueGetLatency
             End If
         End Function
-        Public ReadOnly Property GetLatencyDescription As IFuture(Of String)
+        Public ReadOnly Property QueueGetLatencyDescription As IFuture(Of String)
             Get
                 Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-                Dim futureLatency = GetLatency()
+                Dim futureLatency = QueueGetLatency()
                 Dim futureTransferState = scheduler.GetClientState(Me.Index)
                 Return New IFuture() {futureLatency, futureTransferState}.Defuturized.EvalOnSuccess(
                     Function()

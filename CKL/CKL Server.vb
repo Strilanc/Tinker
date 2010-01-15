@@ -46,8 +46,8 @@ Namespace CKL
                     If (From k In keys Where k.Name = keyName).Any Then
                         Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(keyName))
                     End If
-                    If cdKeyROC.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Not a ROC cd key.", "cdKeyROC")
-                    If cdKeyTFT.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("Not a TFT cd key.", "cdKeyTFT")
+                    If cdKeyROC.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("cdKeyROC", "Not a ROC cd key.")
+                    If cdKeyTFT.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("cdKeyTFT", "Not a TFT cd key.")
                     Dim key = New CKL.KeyEntry(keyName, cdKeyROC, cdKeyTFT)
                     keys.Add(key)
                 End Sub

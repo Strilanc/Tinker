@@ -29,13 +29,12 @@ Namespace WC3
 
         Private Shared ReadOnly Add As New DelegatedTemplatedCommand(Of WC3.GameServerManager)(
             Name:="Add",
-            template:=Concat({"name=<game name>", "map=<search query>"},
-                         WC3.GameSettings.PartialArgumentTemplates,
-                         WC3.GameStats.PartialArgumentTemplates).StringJoin(" "),
+            template:=Fold({New String() {"name=<game name>", "map=<search query>"},
+                            WC3.GameSettings.PartialArgumentTemplates,
+                            WC3.GameStats.PartialArgumentTemplates}).StringJoin(" "),
             Description:="Adds a game set to the server.",
-            extraHelp:=Concat(New String() {},
-                          WC3.GameSettings.PartialArgumentHelp,
-                          WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine),
+            extraHelp:=Fold({WC3.GameSettings.PartialArgumentHelp,
+                             WC3.GameStats.PartialArgumentHelp}).StringJoin(Environment.NewLine),
             func:=Function(target, user, argument)
                       Return target.QueueAddGameFromArguments(argument, user).select(Function() "Game added.")
                   End Function)

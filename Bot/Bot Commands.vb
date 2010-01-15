@@ -222,7 +222,7 @@ Namespace Bot
                            Permissions:="root:5")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Strilbrary.Threading.IFuture(Of String)
-                Dim profile = (From p In target.Settings.GetCopyOfPluginProfiles() Where p.name = argument.RawValue(0)).FirstOrDefault
+                Dim profile = (From p In target.Settings.PluginProfiles Where p.name = argument.RawValue(0)).FirstOrDefault
                 If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
                 Dim socket = New Plugins.Socket(profile.name, target, profile.location)
                 Dim manager = New Plugins.PluginManager(socket)
@@ -303,7 +303,7 @@ Namespace Bot
                 Dim server = New CKL.Server(name:=name,
                                             listenport:=port,
                                             clock:=New SystemClock())
-                Dim manager = New CKL.ServerManager(server, target)
+                Dim manager = New CKL.ServerManager(server)
                 Dim finished = target.Components.QueueAddComponent(manager)
                 finished.Catch(Sub() manager.Dispose())
                 Return finished.EvalOnSuccess(Function() "Added CKL server {0}".Frmt(name))

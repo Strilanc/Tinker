@@ -22,8 +22,6 @@ Namespace WC3
         Public Event PlayerSentData(ByVal sever As GameServer, ByVal game As Game, ByVal player As Player, ByVal data As Byte())
         Public Event PlayerEntered(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player)
 
-        Private instanceCreationCount As Integer
-
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_viewGames IsNot Nothing)

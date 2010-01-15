@@ -2,7 +2,7 @@
     Public Class GameSettings
 #Region "Data"
         Public Const HCLChars As String = "abcdefghijklmnopqrstuvwxyz0123456789 -=,."
-        Public Shared ReadOnly PartialArgumentTemplates As String() = {
+        Public Shared ReadOnly PartialArgumentTemplates As IEnumerable(Of String) = {
                 "-Admin=user -Admin -a=user -a",
                 "-AutoStart -as",
                 "-Inst=#Instances",
@@ -17,7 +17,7 @@
                 "-teams=#v#... -t=#v#...",
                 "-private -p"
             }
-        Public Shared ReadOnly PartialArgumentHelp As String() = {
+        Public Shared ReadOnly PartialArgumentHelp As IEnumerable(Of String) = {
                 "Admin=-Admin, -a, -Admin=user, -a=user: Sets the auto-elevated username. Use no argument to match your name.",
                 "Autostart=-Autostart, -as: Instances will start automatically when they fill up.",
                 "Instances=-Inst=value: Sets the initial number of instances. Use 0 for unlimited instances.",
@@ -40,7 +40,6 @@
         Private ReadOnly _allowDownloads As Boolean
         Private ReadOnly _allowUpload As Boolean
         Private ReadOnly _numInstances As Integer
-        Private ReadOnly _useInstanceOnDemand As Boolean
         Private ReadOnly _isAutoStarted As Boolean
         Private ReadOnly _adminPassword As String
         Private ReadOnly _teamSizes As IReadableList(Of Integer) = New Integer() {}.AsReadableList
@@ -69,7 +68,6 @@
             Contract.Invariant(_observerReservations IsNot Nothing)
             Contract.Invariant(_observerCount >= 0)
             Contract.Invariant(_numInstances >= 0)
-            Contract.Invariant((_numInstances = 0) = _useInstanceOnDemand)
         End Sub
 
         Public Sub New(ByVal map As Map,
@@ -106,7 +104,7 @@
             If argument.HasOptionalNamedValue("obs") Then
                 Dim obsArg = argument.OptionalNamedValue("obs")
                 If Integer.TryParse(obsArg, _observerCount) Then
-                    If _observerCount <= 0 Then Throw New ArgumentOutOfRangeException("Observer count must be positive.")
+                    If _observerCount <= 0 Then Throw New ArgumentOutOfRangeException("argument", "Observer count must be positive.")
                 Else
                     _observerReservations = (From name In argument.OptionalNamedValue("obs").Split(" "c)
                                              Select New InvariantString(name)
@@ -131,7 +129,6 @@
                 If Not Integer.TryParse(argument.TryGetOptionalNamedValue("Inst"), Me._numInstances) OrElse Me._numInstances < 0 Then
                     Throw New ArgumentException("Invalid number of instances.")
                 End If
-                Me._useInstanceOnDemand = _numInstances = 0
             End If
             'Admin name
             If argument.HasOptionalSwitch("Admin") OrElse argument.HasOptionalSwitch("a") Then

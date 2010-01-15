@@ -2,6 +2,9 @@ Imports Tinker.Commands
 
 Namespace Bot
     Public NotInheritable Class GenericCommands
+        Private Sub New()
+        End Sub
+
         Public NotInheritable Class CRecacheIP(Of T)
             Inherits TemplatedCommand(Of T)
             Public Sub New()

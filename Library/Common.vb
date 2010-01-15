@@ -131,10 +131,9 @@ Public Module PoorlyCategorizedFunctions
     <ContractVerification(False)>
     Public Function FindFilesMatching(ByVal fileQuery As String,
                                       ByVal likeQuery As InvariantString,
-                                      ByVal directory As String,
+                                      ByVal directory As InvariantString,
                                       ByVal maxResults As Integer) As IList(Of String)
         Contract.Requires(fileQuery IsNot Nothing)
-        Contract.Requires(directory IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
 
         If Not directory.EndsWith(IO.Path.DirectorySeparatorChar) AndAlso Not directory.EndsWith(IO.Path.AltDirectorySeparatorChar) Then

@@ -286,7 +286,7 @@ Namespace WC3
                       Dim futurePlayers = target.QueueGetPlayers()
                       Return futurePlayers.Select(
                           Function(players)
-                              Dim futureLatencies = (From player In players Select player.GetLatencyDescription).ToList.Defuturized
+                              Dim futureLatencies = (From player In players Select player.QueueGetLatencyDescription).ToList.Defuturized
                               Return futureLatencies.Select(
                                   Function(latencies)
                                       Return "Estimated RTT: {0}".Frmt((From i In Enumerable.Range(0, players.Count)

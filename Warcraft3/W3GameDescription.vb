@@ -101,6 +101,7 @@
             Me._baseAge = baseAge
             Me._totalSlotCount = totalSlotCount
             Me._usedSlotCount = usedSlotCount
+            Me._state = state
         End Sub
 
         Public ReadOnly Property Name As InvariantString
@@ -155,6 +156,9 @@
             End Get
         End Property
 
+        Public Overrides Function GetHashCode() As Integer
+            Return GameId.GetHashCode Xor Name.GetHashCode
+        End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Dim other = TryCast(obj, GameDescription)
             If other Is Nothing Then Return False
@@ -251,6 +255,9 @@
             End Get
         End Property
 
+        Public Overrides Function GetHashCode() As Integer
+            Return Port.GetHashCode Xor MyBase.GetHashCode
+        End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Dim other = TryCast(obj, LocalGameDescription)
             If other Is Nothing Then Return False
@@ -304,6 +311,9 @@
             End Get
         End Property
 
+        Public Overrides Function GetHashCode() As Integer
+            Return MyBase.GetHashCode
+        End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Dim other = TryCast(obj, RemoteGameDescription)
             If other Is Nothing Then Return False

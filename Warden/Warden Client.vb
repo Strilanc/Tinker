@@ -50,7 +50,7 @@
                                                                 clock:=_clock)
                          Select New Warden.Socket(Socket:=packetSocket,
                                                   seed:=seed,
-                                                  cookie:=seed,
+                                                  cookie:=cookie,
                                                   logger:=logger)
 
             'Register events (and setup unregister-on-dispose)

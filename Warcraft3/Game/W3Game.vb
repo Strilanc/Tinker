@@ -397,7 +397,7 @@ Namespace WC3
                 Case Is < GameState.Loading
                     LobbyCatchRemovedPlayer(player, slot)
                 Case GameState.Loading
-                    OnLoadScreenRemovedPlayer(player, slot)
+                    OnLoadScreenRemovedPlayer()
                 Case Is > GameState.Loading
             End Select
             If player Is fakeHostPlayer Then

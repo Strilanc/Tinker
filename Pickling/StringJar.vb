@@ -9,10 +9,8 @@ Namespace Pickling
         Public Sub New(ByVal name As InvariantString,
                        Optional ByVal nullTerminated As Boolean = True,
                        Optional ByVal expectedSize As Integer = 0,
-                       Optional ByVal maximumContentSize As Integer = 0,
-                       Optional ByVal info As String = "No Info")
+                       Optional ByVal maximumContentSize As Integer = 0)
             MyBase.New(name)
-            Contract.Requires(info IsNot Nothing)
             Contract.Requires(maximumContentSize >= 0)
             If expectedSize < 0 Then Throw New ArgumentOutOfRangeException("expectedSize")
             If expectedSize = 0 And Not nullTerminated Then Throw New ArgumentException(Me.GetType.Name + " must be either nullTerminated or have an expectedSize")

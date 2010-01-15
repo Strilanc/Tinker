@@ -13,7 +13,7 @@ Namespace Pickling
                        ByVal prefixSize As Integer)
             MyBase.New(name)
             Contract.Requires(prefixSize > 0)
-            If prefixSize > 4 Then Throw New ArgumentOutOfRangeException("sizePrefixSize", "prefix size must be less than or equal to 4.")
+            If prefixSize > 4 Then Throw New ArgumentOutOfRangeException("prefixSize", "prefix size must be less than or equal to 4.")
             Me._prefixSize = prefixSize
         End Sub
 

@@ -14,7 +14,6 @@ Namespace Lan
         Private ReadOnly _logger As Logger
         Private ReadOnly _defaultTargetHost As String
 
-        Private createCount As UInteger
         Private ReadOnly refreshTimer As New System.Timers.Timer(3000)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -25,7 +24,6 @@ Namespace Lan
             Contract.Invariant(_socket IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_defaultTargetHost IsNot Nothing)
-            Contract.Invariant(createCount >= 0)
             Contract.Invariant(refreshTimer IsNot Nothing)
         End Sub
 

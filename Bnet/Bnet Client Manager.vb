@@ -133,7 +133,7 @@ Namespace Bnet
             Contract.Requires(bot IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of ClientManager))() IsNot Nothing)
 
-            Dim profile = (From p In bot.Settings.GetCopyOfClientProfiles Where p.name = profileName).FirstOrDefault
+            Dim profile = (From p In bot.Settings.ClientProfiles Where p.name = profileName).FirstOrDefault
             If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
             Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues, New SystemClock())).Futurized
         End Function

@@ -16,6 +16,13 @@ Public Class ExceptionForm
     End Property
 
     Private Sub AddException(ByVal ex As Exception, ByVal context As String)
+        'Skip double-reported exceptions
+        For i = Math.Max(0, _exceptions.Count - 5) To _exceptions.Count - 1
+            If _exceptions(i).Item2 Is ex AndAlso _exceptions(i).Item1 = context Then
+                Return
+            End If
+        Next i
+
         _exceptions.Add(New Tuple(Of String, Exception)(context, ex))
         If Me.Visible Then
             If txtExceptions.SelectionStart < txtExceptions.TextLength Then

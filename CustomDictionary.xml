@@ -15,8 +15,6 @@
       <Word>Mana</Word>
       <Word>Matchable</Word>
       <Word>Futurized</Word>
-      <Word>subjar</Word>
-      <Word>subjars</Word>
       <Word>Hookable</Word>
       <Word>Trackable</Word>
       <Word>Minimap</Word>
@@ -26,6 +24,7 @@
       <Word>Rescuable</Word>
       <Word>Advex</Word>
       <Word>Starcraft</Word>
+      <Word>Cooldown</Word>
     </Recognized>
     <Unrecognized>
       <Word>Nongame</Word>

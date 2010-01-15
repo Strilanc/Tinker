@@ -294,7 +294,7 @@ Namespace Bnet
                 Throw
             End Try
 
-            Dim futureSocket = (From hostEntry In AsyncDNSLookup(remoteHost)
+            Dim futureSocket = (From hostEntry In AsyncDnsLookup(remoteHost)
                                 Select address = hostEntry.AddressList(New Random().Next(hostEntry.AddressList.Count))
                                 Select AsyncTcpConnect(address, port)
                                ).Defuturized
@@ -302,7 +302,7 @@ Namespace Bnet
                 Function(tcpClient)
                     Dim socket = New PacketSocket(
                             stream:=New ThrottledWriteStream(
-                                        substream:=tcpClient.GetStream,
+                                        subStream:=tcpClient.GetStream,
                                         initialSlack:=1000,
                                         costEstimator:=Function(data) 100 + data.Length,
                                         costLimit:=400,
@@ -361,10 +361,10 @@ Namespace Bnet
             Return Me._futureConnected
         End Function
         Public Function QueueConnect(ByVal socket As PacketSocket,
-                                     Optional ByVal clientCdKeySalt As UInt32? = Nothing) As IFuture
+                                     Optional ByVal clientCDKeySalt As UInt32? = Nothing) As IFuture
             Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncConnect(socket, clientCdKeySalt)).Defuturized
+            Return inQueue.QueueFunc(Function() AsyncConnect(socket, clientCDKeySalt)).Defuturized
         End Function
 
         Private Sub BeginHandlingPackets()
@@ -582,7 +582,7 @@ Namespace Bnet
                     End If
                     EnterChannel(_lastChannel)
                     _advertisedGameDescription = Nothing
-                    _futureAdvertisedGame.TrySetFailed(New OperationFailedException("Advertising cancelled."))
+                    _futureAdvertisedGame.TrySetFailed(New OperationFailedException("Advertising cancelled: {0}.".Frmt(reason)))
                     'outQueue.QueueAction(Sub() RaiseEvent RemovedGame(Me, _advertisedGameDescription, reason))
 
                 Case Else
@@ -653,8 +653,7 @@ Namespace Bnet
                 Sub(keys) EnterKeys(keys:=keys,
                                     revisionCheckSeedString:=CStr(vals("revision check seed")),
                                     revisionCheckChallenge:=CStr(vals("revision check challenge")),
-                                    clientCdKeySalt:=clientCdKeySalt,
-                                    serverCdKeySalt:=serverCdKeySalt)
+                                    clientCdKeySalt:=clientCdKeySalt)
             ).Catch(
                 Sub(exception)
                     exception.RaiseAsUnexpected("Error Handling {0}".Frmt(PacketId.ProgramAuthenticationBegin))
@@ -680,8 +679,7 @@ Namespace Bnet
         Private Sub EnterKeys(ByVal keys As CKL.WC3CredentialPair,
                               ByVal revisionCheckSeedString As String,
                               ByVal revisionCheckChallenge As String,
-                              ByVal clientCdKeySalt As UInt32,
-                              ByVal serverCdKeySalt As UInt32)
+                              ByVal clientCdKeySalt As UInt32)
             If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
             Dim revisionCheckResponse = _externalProvider.GenerateRevisionCheck(folder:=My.Settings.war3path,
                                                                                 seedString:=revisionCheckSeedString,
@@ -690,7 +688,6 @@ Namespace Bnet
                         version:=_externalProvider.WC3ExeVersion,
                         revisionCheckResponse:=revisionCheckResponse,
                         clientCDKeySalt:=clientCdKeySalt,
-                        serverCDKeySalt:=serverCdKeySalt,
                         cdKeyOwner:=My.Settings.cdKeyOwner,
                         exeInformation:="war3.exe {0} {1}".Frmt(_externalProvider.WC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
                                                                 _externalProvider.WC3FileSize),
@@ -805,7 +802,7 @@ Namespace Bnet
                 Dim errmsg As String
                 Select Case result
                     Case Packet.UserAuthenticationFinishResult.IncorrectPassword
-                        errmsg = "Incorrect password."
+                        errmsg = "Incorrect password. (note: this can happen due to a bnet bug, try again)"
                     Case Packet.UserAuthenticationFinishResult.NeedEmail
                         errmsg = "No email address associated with account"
                     Case Packet.UserAuthenticationFinishResult.CustomError

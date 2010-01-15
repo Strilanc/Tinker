@@ -7,7 +7,6 @@ Namespace Bot
         Public userName As String = ""
         Public password As String = ""
         Public server As String = "useast.battle.net (Azeroth)"
-        Private _lanHost As String = " (None)"
         Public initialChannel As String = "HostBot"
         Private _cklServerAddress As String = ""
         Private Const version As UInt16 = 1
@@ -19,7 +18,6 @@ Namespace Bot
             Contract.Invariant(userName IsNot Nothing)
             Contract.Invariant(password IsNot Nothing)
             Contract.Invariant(server IsNot Nothing)
-            Contract.Invariant(_lanHost IsNot Nothing)
             Contract.Invariant(initialChannel IsNot Nothing)
             Contract.Invariant(_cklServerAddress IsNot Nothing)
         End Sub

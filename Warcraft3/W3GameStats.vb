@@ -207,7 +207,7 @@
             End If
         End Sub
 
-        Public Shared ReadOnly PartialArgumentTemplates As String() = {
+        Public Shared ReadOnly PartialArgumentTemplates As IEnumerable(Of String) = {
                 "-Obs",
                 "-Obs=<# or reservations>",
                 "-ObsOnDefeat -od",
@@ -221,7 +221,7 @@
                 "-UnlockTeams",
                 "-Visibility={AlwaysVisible,Explored,HideTerrain}"
             }
-        Public Shared ReadOnly PartialArgumentHelp As String() = {
+        Public Shared ReadOnly PartialArgumentHelp As IEnumerable(Of String) = {
                 "Obs=-Obs, -Obs=#, -Obs=<name1 name2 ...>: Turns on full observers. If a quantity or reservations are specified, only the minimum number of observer slots will be open.",
                 "ObsOnDefeat=-ObsOnDefeat, -od: Turns on observers on defeat.",
                 "FullShare=-FullShare: Turns on wc3's 'full shared control' option.",
@@ -235,6 +235,9 @@
                 "Visibility=-Visibility=value: Changes wc3's visibility option from MapDefault to AlwaysVisible, Explored, or HideTerrain."
             }
 
+        Public Overrides Function GetHashCode() As Integer
+            Return AdvertisedPath.GetHashCode Xor HostName.GetHashCode Xor MapChecksumXORO.GetHashCode
+        End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Dim other = TryCast(obj, GameStats)
             If other Is Nothing Then Return False

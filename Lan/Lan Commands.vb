@@ -69,14 +69,13 @@ Namespace Lan
 
         Private Shared ReadOnly Host As New DelegatedTemplatedCommand(Of Lan.AdvertiserManager)(
             Name:="Host",
-            template:=Concat({"name=<game name>", "map=<search query>"},
-                             WC3.GameSettings.PartialArgumentTemplates,
-                             WC3.GameStats.PartialArgumentTemplates).StringJoin(" "),
+            template:=Fold({New String() {"name=<game name>", "map=<search query>"},
+                            WC3.GameSettings.PartialArgumentTemplates,
+                            WC3.GameStats.PartialArgumentTemplates}).StringJoin(" "),
             Description:="Creates a server of a game and advertises it on lan. More help topics under 'Help Host *'.",
             Permissions:="games:1",
-            extraHelp:=Concat(New String() {},
-                              WC3.GameSettings.PartialArgumentHelp,
-                              WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine),
+            extraHelp:=Fold({WC3.GameSettings.PartialArgumentHelp,
+                             WC3.GameStats.PartialArgumentHelp}).StringJoin(Environment.NewLine),
             func:=Function(target, user, argument)
                       Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
                       Dim futureGameSet = (From server In futureServer
@@ -84,7 +83,7 @@ Namespace Lan
                                            ).Defuturized
                       Dim futureAdvertised = futureGameSet.select(Function(gameSet) target.Advertiser.QueueAddGame(
                                   gameDescription:=gameSet.GameSettings.GameDescription)).Defuturized
-                      futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futuregameset.value.dispose())
+                      futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futureGameSet.value.dispose())
                       Dim futureDesc = futureAdvertised.EvalOnSuccess(Function() futureGameSet.Value.GameSettings.GameDescription)
                       Return futureDesc.select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.name, desc.GameStats.AdvertisedPath))
                   End Function)

@@ -43,7 +43,7 @@
             fakeTickTimer.Stop()
         End Sub
 
-        Private Sub OnLoadScreenRemovedPlayer(ByVal player As Player, ByVal slot As Slot)
+        Private Sub OnLoadScreenRemovedPlayer()
             TryLaunch()
         End Sub
 

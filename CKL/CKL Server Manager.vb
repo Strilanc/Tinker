@@ -10,21 +10,16 @@ Namespace CKL
 
         Private ReadOnly _server As CKL.Server
         Private ReadOnly _control As GenericBotComponentControl
-        Private ReadOnly _bot As Bot.MainBot
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_bot IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
             Contract.Invariant(_server IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal server As CKL.Server,
-                       ByVal bot As Bot.MainBot)
+        Public Sub New(ByVal server As CKL.Server)
             Contract.Requires(server IsNot Nothing)
-            Contract.Requires(bot IsNot Nothing)
 
             Me._server = server
-            Me._bot = bot
             Me._control = New GenericBotComponentControl(Me)
         End Sub
 

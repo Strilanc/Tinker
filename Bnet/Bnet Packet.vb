@@ -338,7 +338,10 @@ Namespace Bnet
             End Function
         End Class
 
-        Public Class ServerPackets
+        Public NotInheritable Class ServerPackets
+            Private Sub New()
+            End Sub
+
             Public Shared ReadOnly ProgramAuthenticationBegin As New DefJar(PacketId.ProgramAuthenticationBegin,
                     New EnumUInt32Jar(Of ProgramAuthenticationBeginLogOnType)("logon type").Weaken,
                     New UInt32Jar("server cd key salt", showHex:=True).Weaken,
@@ -407,7 +410,10 @@ Namespace Bnet
                     New DwordStringJar("clan tag").Weaken,
                     New EnumByteJar(Of ClanRank)("rank").Weaken)
         End Class
-        Public Class ClientPackets
+        Public NotInheritable Class ClientPackets
+            Private Sub New()
+            End Sub
+
             Public Shared ReadOnly ProgramAuthenticationBegin As New DefJar(PacketId.ProgramAuthenticationBegin,
                     New UInt32Jar("protocol").Weaken,
                     New DwordStringJar("platform").Weaken,
@@ -443,13 +449,13 @@ Namespace Bnet
                     New EnumUInt32Jar(Of WC3.GameTypes)("filter mask").Weaken,
                     New UInt32Jar("unknown0").Weaken,
                     New UInt32Jar("list count").Weaken,
-                    New StringJar("game name", info:="empty means list games").Weaken,
+                    New StringJar("game name").Weaken,
                     New StringJar("game password").Weaken,
-                    New StringJar("game stats").Weaken)
+                    New StringJar("game stats").Weaken) '[empty game name means list games]
 
             Public Shared ReadOnly EnterChat As New DefJar(PacketId.EnterChat,
-                    New StringJar("username", info:="[unused]").Weaken,
-                    New StringJar("statstring", info:="[unused]").Weaken)
+                    New StringJar("username").Weaken,
+                    New StringJar("statstring").Weaken) '[both parameters are unused in wc3]
             Public Shared ReadOnly CreateGame3 As New DefJar(PacketId.CreateGame3,
                     New EnumUInt32Jar(Of GameStates)("game state").Weaken,
                     New UInt32Jar("seconds since creation").Weaken,
@@ -503,7 +509,6 @@ Namespace Bnet
         Public Shared Function MakeAuthenticationFinish(ByVal version As IReadableList(Of Byte),
                                                         ByVal revisionCheckResponse As UInt32,
                                                         ByVal clientCDKeySalt As UInt32,
-                                                        ByVal serverCDKeySalt As UInt32,
                                                         ByVal cdKeyOwner As String,
                                                         ByVal exeInformation As String,
                                                         ByVal productAuthentication As CKL.WC3CredentialPair) As Packet
@@ -525,13 +530,13 @@ Namespace Bnet
                     {"owner", cdKeyOwner}
                 })
         End Function
-        Public Shared Function MakeGetFileTime(ByVal filename As String, ByVal requestId As UInt32) As Packet
-            Contract.Requires(filename IsNot Nothing)
+        Public Shared Function MakeGetFileTime(ByVal fileName As String, ByVal requestId As UInt32) As Packet
+            Contract.Requires(fileName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(ClientPackets.GetFileTime, New Dictionary(Of InvariantString, Object) From {
                     {"request id", requestId},
                     {"unknown", 0},
-                    {"filename", filename}
+                    {"filename", fileName}
                 })
         End Function
         Public Shared Function MakeAccountLogOnBegin(ByVal credentials As ClientCredentials) As Packet
@@ -590,7 +595,7 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Const MAX_GAME_NAME_LENGTH As UInteger = 31
             If game.Name.Length > MAX_GAME_NAME_LENGTH Then
-                Throw New ArgumentException("Game name must be less than 32 characters long.", "name")
+                Throw New ArgumentException("Game name must be less than 32 characters long.", "game")
             End If
 
             Return New Packet(ClientPackets.CreateGame3, New Dictionary(Of InvariantString, Object) From {

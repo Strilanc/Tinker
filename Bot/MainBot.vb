@@ -20,7 +20,6 @@ Namespace Bot
         Public Shared ReadOnly TriggerCommandText As InvariantString = "?trigger"
 
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
 
         Private ReadOnly _settings As New Bot.Settings()
         Private ReadOnly _portPool As New PortPool()
@@ -29,7 +28,6 @@ Namespace Bot
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
-            Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_settings IsNot Nothing)
             Contract.Invariant(_portPool IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)

@@ -143,7 +143,7 @@ Namespace Bnet
             Contract.Assume(indexString.Length >= 5)
 
             Dim index = Byte.Parse(indexString(indexString.Length - 5), CultureInfo.InvariantCulture)
-            If index >= IndexStringSeeds.Length Then Throw New ArgumentOutOfRangeException("Extracted index is larger than the hash seed table.")
+            If index >= IndexStringSeeds.Length Then Throw New ArgumentOutOfRangeException("indexString", "Extracted index is larger than the hash seed table.")
             Return IndexStringSeeds(index)
         End Function
 

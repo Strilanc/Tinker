@@ -233,13 +233,13 @@ Namespace Bnet
             Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Host",
-                            template:=Concat({"name=<game name>", "map=<search query>"},
-                                             WC3.GameSettings.PartialArgumentTemplates,
-                                             WC3.GameStats.PartialArgumentTemplates).StringJoin(" "),
+                            template:=Fold({New String() {"name=<game name>", "map=<search query>"},
+                                            WC3.GameSettings.PartialArgumentTemplates,
+                                            WC3.GameStats.PartialArgumentTemplates}).StringJoin(" "),
                             Description:="Hosts a game in the custom games list. See 'Help Host *' for more help topics.",
                             Permissions:="games:1",
-                            extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp,
-                                              WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
+                            extraHelp:=Fold({WC3.GameSettings.PartialArgumentHelp,
+                                             WC3.GameStats.PartialArgumentHelp}).StringJoin(Environment.NewLine))
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Dim futureServer = target.Bot.QueueGetOrConstructGameServer()

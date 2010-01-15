@@ -90,7 +90,7 @@ Public Class ClientForm
     Private Sub LoadInitialPlugins()
         For Each pluginName In (From name In My.Settings.initial_plugins.Split(","c) Where name <> "").ToList
             Dim pluginName_ = pluginName
-            Dim profile = (From p In _bot.Settings.GetCopyOfPluginProfiles Where p.name = pluginName_).FirstOrDefault
+            Dim profile = (From p In _bot.Settings.PluginProfiles Where p.name = pluginName_).FirstOrDefault
             If profile Is Nothing Then
                 _bot.Logger.Log("Failed to load plugin profile '{0}' because there is no profile with that name.".Frmt(pluginName), LogMessageType.Problem)
                 Continue For
@@ -131,8 +131,8 @@ Public Class ClientForm
     End Sub
 
     Private Sub OnClickSettings() Handles btnSettings.Click
-        Dim cp As IEnumerable(Of Bot.ClientProfile) = _bot.Settings.GetCopyOfClientProfiles
-        Dim pp As IEnumerable(Of Bot.PluginProfile) = _bot.Settings.GetCopyOfPluginProfiles
+        Dim cp As IEnumerable(Of Bot.ClientProfile) = _bot.Settings.ClientProfiles
+        Dim pp As IEnumerable(Of Bot.PluginProfile) = _bot.Settings.PluginProfiles
         If Not SettingsForm.ShowWithProfiles(cp, pp, _bot.PortPool) Then Return
         _bot.Settings.UpdateProfiles(cp, pp)
         Using m = New IO.MemoryStream()

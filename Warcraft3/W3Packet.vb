@@ -280,7 +280,10 @@ Namespace WC3
             End Sub
         End Class
 
-        Public Class Jars
+        Public NotInheritable Class Jars
+            Private Sub New()
+            End Sub
+
 #Region "Misc"
             Public Shared ReadOnly Ping As New DefParser(PacketId.Ping,
                     New UInt32Jar("salt").Weaken)
@@ -390,7 +393,7 @@ Namespace WC3
                     New UInt32Jar("game id").Weaken,
                     New UInt32Jar("entry key", showhex:=True).Weaken,
                     New StringJar("name", True).Weaken,
-                    New StringJar("password", info:="unused").Weaken,
+                    New StringJar("password").Weaken,
                     New GameStatsJar("statstring").Weaken,
                     New UInt32Jar("num slots").Weaken,
                     New EnumUInt32Jar(Of GameTypes)("game type").Weaken,
@@ -629,7 +632,7 @@ Namespace WC3
             Return New Packet(PacketId.Greet, New Dictionary(Of InvariantString, Object) From {
                     {"slot data", New Byte() {}.AsReadableList},
                     {"player index", assignedIndex},
-                    {"external address", player.GetRemoteEndPoint()}})
+                    {"external address", player.RemoteEndPoint()}})
         End Function
         <Pure()>
         Public Shared Function MakeReject(ByVal reason As RejectReason) As Packet
@@ -654,7 +657,7 @@ Namespace WC3
                                                      Optional ByVal overrideIndex As Byte = 0) As Packet
             Contract.Requires(stranger IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim address = New Net.IPEndPoint(stranger.GetRemoteEndPoint.Address, stranger.listenPort)
+            Dim address = New Net.IPEndPoint(stranger.RemoteEndPoint.Address, stranger.listenPort)
             Return New Packet(PacketId.OtherPlayerJoined, New Dictionary(Of InvariantString, Object) From {
                     {"peer key", stranger.peerKey},
                     {"index", If(overrideIndex <> 0, overrideIndex, stranger.Index)},

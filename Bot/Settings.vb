@@ -1,7 +1,7 @@
 Namespace Bot
     Public Class Settings
-        Private _clientProfiles As New List(Of ClientProfile)
-        Private _pluginProfiles As New List(Of PluginProfile)
+        Private _clientProfiles As IReadableList(Of ClientProfile) = New List(Of ClientProfile)().AsReadableList
+        Private _pluginProfiles As IReadableList(Of PluginProfile) = New List(Of PluginProfile)().AsReadableList
         Private ReadOnly lock As New Object()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -14,24 +14,24 @@ Namespace Bot
             Contract.Requires(clientProfiles IsNot Nothing)
             Contract.Requires(pluginProfiles IsNot Nothing)
             SyncLock lock
-                Me._clientProfiles = clientProfiles.ToList
-                Me._pluginProfiles = pluginProfiles.ToList
+                Me._clientProfiles = clientProfiles.ToList.AsReadableList
+                Me._pluginProfiles = pluginProfiles.ToList.AsReadableList
             End SyncLock
         End Sub
         <Pure()>
-        Public Function GetCopyOfClientProfiles() As IList(Of Bot.ClientProfile)
-            Contract.Ensures(Contract.Result(Of IList(Of Bot.ClientProfile))() IsNot Nothing)
-            SyncLock lock
-                Return _clientProfiles.ToList
-            End SyncLock
-        End Function
+        Public ReadOnly Property ClientProfiles() As IReadableList(Of Bot.ClientProfile)
+            Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Bot.ClientProfile))() IsNot Nothing)
+                Return _clientProfiles
+            End Get
+        End Property
         <Pure()>
-        Public Function GetCopyOfPluginProfiles() As IList(Of Bot.PluginProfile)
-            Contract.Ensures(Contract.Result(Of IList(Of Bot.PluginProfile))() IsNot Nothing)
-            SyncLock lock
-                Return _pluginProfiles.ToList
-            End SyncLock
-        End Function
+        Public ReadOnly Property PluginProfiles() As IReadableList(Of Bot.PluginProfile)
+            Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Bot.PluginProfile))() IsNot Nothing)
+                Return _pluginProfiles
+            End Get
+        End Property
 
 #Region "Serialization"
         Private Const FormatMagic As UInteger = 7352
@@ -77,16 +77,17 @@ Namespace Bot
                 End If
 
                 'Data
-                _clientProfiles.Clear()
+                Dim clientProfiles = New List(Of ClientProfile)
                 For repeat = 1UI To reader.ReadUInt32()
                     Dim p = New Bot.ClientProfile(reader)
-                    _clientProfiles.Add(p)
+                    clientProfiles.Add(p)
                 Next repeat
-                _pluginProfiles.Clear()
+                Dim pluginProfiles = New List(Of PluginProfile)
                 For repeat = 1UI To reader.ReadUInt32()
                     Dim p = New Bot.PluginProfile(reader)
-                    _pluginProfiles.Add(p)
+                    pluginProfiles.Add(p)
                 Next repeat
+                UpdateProfiles(clientProfiles, pluginProfiles)
             End SyncLock
         End Sub
 #End Region

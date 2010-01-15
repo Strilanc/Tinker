@@ -34,7 +34,7 @@ Namespace WC3
 
         Public Function Description() As IFuture(Of String)
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-            Return GetLatencyDescription.Select(
+            Return QueueGetLatencyDescription.Select(
                 Function(latencyDesc)
                     Dim base = Name.Value.Padded(20) +
                                "Host={0}".Frmt(CanHost()).Padded(12) +
@@ -54,14 +54,14 @@ Namespace WC3
                                            Padded("DL={0}".Frmt(dl), 9) +
                                            "EB={0}".Frmt(rateDescription)
                                 End Function)
-                                        Case PlayerState.Loading
-                                            Return (base + "Ready={0}".Frmt(Ready)).Futurized
-                                        Case PlayerState.Playing
-                                            Return (base + "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime)).Futurized
-                                        Case Else
-                                            Throw state.MakeImpossibleValueException
-                                    End Select
-                                End Function
+                        Case PlayerState.Loading
+                            Return (base + "Ready={0}".Frmt(Ready)).Futurized
+                        Case PlayerState.Playing
+                            Return (base + "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime)).Futurized
+                        Case Else
+                            Throw state.MakeImpossibleValueException
+                    End Select
+                End Function
             ).Defuturized
         End Function
     End Class

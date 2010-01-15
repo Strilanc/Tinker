@@ -26,15 +26,15 @@ Public NotInheritable Class ThrottledWriteStream
         Contract.Invariant(_timer IsNot Nothing)
     End Sub
 
-    Public Sub New(ByVal substream As IO.Stream,
+    Public Sub New(ByVal subStream As IO.Stream,
                    ByVal costEstimator As Func(Of Byte(), Integer),
                    ByVal clock As IClock,
                    Optional ByVal initialSlack As Double = 0,
                    Optional ByVal costLimit As Double = 0,
                    Optional ByVal costRecoveredPerMillisecond As Double = 1)
-        MyBase.New(substream)
+        MyBase.New(subStream)
         Contract.Requires(clock IsNot Nothing)
-        Contract.Requires(substream IsNot Nothing)
+        Contract.Requires(subStream IsNot Nothing)
         Contract.Requires(initialSlack >= 0)
         Contract.Requires(costEstimator IsNot Nothing)
         Contract.Requires(costLimit >= 0)

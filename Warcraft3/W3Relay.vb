@@ -143,7 +143,10 @@
         End Sub
     End Class
 
-    Public Class StreamRelay
+    Public NotInheritable Class StreamRelay
+        Private Sub New()
+        End Sub
+
         Public Shared Function InterShunt(ByVal stream1 As IO.Stream, ByVal stream2 As IO.Stream) As FutureDisposable
             Contract.Requires(stream1 IsNot Nothing)
             Contract.Requires(stream2 IsNot Nothing)

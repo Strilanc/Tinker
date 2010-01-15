@@ -103,7 +103,7 @@ Public Module NetworkingCommon
         Return result
     End Function
 
-    Public Function AsyncDNSLookup(ByVal remoteHost As String) As IFuture(Of Net.IPHostEntry)
+    Public Function AsyncDnsLookup(ByVal remoteHost As String) As IFuture(Of Net.IPHostEntry)
         Contract.Requires(remoteHost IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IFuture(Of Net.IPHostEntry))() IsNot Nothing)
         Dim result = New FutureFunction(Of Net.IPHostEntry)()

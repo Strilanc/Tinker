@@ -28,7 +28,7 @@ Namespace WC3
         ChangeSelection = &H16
         AssignGroupHotkey = &H17
         SelectGroupHotkey = &H18
-        SelectSubgroup = &H19
+        SelectSubGroup = &H19
         PreSubGroupSelection = &H1A
         TriggerSelectionEvent = &H1B
         SelectGroundItem = &H1C
@@ -247,7 +247,7 @@ Namespace WC3
             reg(jar, W3GameActionId.SelectGroupHotkey,
                         New ByteJar("group index").Weaken,
                         New ByteJar("unknown").Weaken)
-            reg(jar, W3GameActionId.SelectSubgroup,
+            reg(jar, W3GameActionId.SelectSubGroup,
                         New ObjectTypeJar("unit type").Weaken,
                         New ObjectIdJar("target").Weaken)
             reg(jar, W3GameActionId.PreSubGroupSelection)

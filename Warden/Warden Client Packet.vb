@@ -31,7 +31,10 @@ Namespace Warden
             Return "{0}: {1}".Frmt(Id, Payload.Description.Value())
         End Function
 
-        Public Class ClientPackets
+        Public NotInheritable Class ClientPackets
+            Private Sub New()
+            End Sub
+
             Public Shared ReadOnly FullServerConnect As New TupleJar(WardenPacketId.FullServiceConnect.ToString,
                     New UInt32Jar("cookie").Weaken,
                     New EnumUInt32Jar(Of ClientType)("client type").Weaken,
