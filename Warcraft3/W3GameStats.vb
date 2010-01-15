@@ -21,17 +21,19 @@
     ''' Stores the data contained in a warcraft 3 game 'statstring'.
     ''' </summary>
     Public NotInheritable Class GameStats
-        Public ReadOnly randomHero As Boolean
-        Public ReadOnly randomRace As Boolean
-        Public ReadOnly allowFullSharedControl As Boolean
-        Public ReadOnly lockTeams As Boolean
-        Public ReadOnly teamsTogether As Boolean
-        Public ReadOnly observers As GameObserverOption
-        Public ReadOnly visibility As GameVisibilityOption
-        Public ReadOnly speed As GameSpeedOption
-        Public ReadOnly playableWidth As Integer
-        Public ReadOnly playableHeight As Integer
-        Public ReadOnly mapChecksumXORO As UInt32
+        Implements IEquatable(Of GameStats)
+
+        Private ReadOnly _randomHero As Boolean
+        Private ReadOnly _randomRace As Boolean
+        Private ReadOnly _allowFullSharedControl As Boolean
+        Private ReadOnly _lockTeams As Boolean
+        Private ReadOnly _teamsTogether As Boolean
+        Private ReadOnly _observers As GameObserverOption
+        Private ReadOnly _visibility As GameVisibilityOption
+        Private ReadOnly _speed As GameSpeedOption
+        Private ReadOnly _playableWidth As Integer
+        Private ReadOnly _playableHeight As Integer
+        Private ReadOnly _mapChecksumXORO As UInt32
         Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Private ReadOnly _advertisedPath As InvariantString
         Private ReadOnly _hostName As InvariantString
@@ -42,6 +44,7 @@
             Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
         End Sub
 
+#Region "Properties"
         Public ReadOnly Property HostName As InvariantString
             Get
                 Return _hostName
@@ -60,6 +63,62 @@
                 Return _advertisedPath
             End Get
         End Property
+        Public ReadOnly Property RandomHero As Boolean
+            Get
+                Return _randomHero
+            End Get
+        End Property
+        Public ReadOnly Property RandomRace As Boolean
+            Get
+                Return _randomRace
+            End Get
+        End Property
+        Public ReadOnly Property AllowFullSharedControl As Boolean
+            Get
+                Return _allowFullSharedControl
+            End Get
+        End Property
+        Public ReadOnly Property LockTeams As Boolean
+            Get
+                Return _lockTeams
+            End Get
+        End Property
+        Public ReadOnly Property TeamsTogether As Boolean
+            Get
+                Return _teamsTogether
+            End Get
+        End Property
+        Public ReadOnly Property Observers As GameObserverOption
+            Get
+                Return _observers
+            End Get
+        End Property
+        Public ReadOnly Property Visibility As GameVisibilityOption
+            Get
+                Return _visibility
+            End Get
+        End Property
+        Public ReadOnly Property Speed As GameSpeedOption
+            Get
+                Return _speed
+            End Get
+        End Property
+        Public ReadOnly Property PlayableWidth As Integer
+            Get
+                Return _playableWidth
+            End Get
+        End Property
+        Public ReadOnly Property PlayableHeight As Integer
+            Get
+                Return _playableHeight
+            End Get
+        End Property
+        Public ReadOnly Property MapChecksumXORO As UInt32
+            Get
+                Return _mapChecksumXORO
+            End Get
+        End Property
+#End Region
 
         ''' <summary>
         ''' Constructs the game stats directly.
@@ -82,17 +141,17 @@
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
 
-            Me.randomHero = randomHero
-            Me.randomRace = randomRace
-            Me.allowFullSharedControl = allowFullSharedControl
-            Me.lockTeams = lockTeams
-            Me.teamsTogether = teamsTogether
-            Me.observers = observers
-            Me.visibility = visibility
-            Me.speed = speed
-            Me.playableWidth = playableWidth
-            Me.playableHeight = playableHeight
-            Me.mapChecksumXORO = mapChecksumXORO
+            Me._randomHero = randomHero
+            Me._randomRace = randomRace
+            Me._allowFullSharedControl = allowFullSharedControl
+            Me._lockTeams = lockTeams
+            Me._teamsTogether = teamsTogether
+            Me._observers = observers
+            Me._visibility = visibility
+            Me._speed = speed
+            Me._playableWidth = playableWidth
+            Me._playableHeight = playableHeight
+            Me._mapChecksumXORO = mapChecksumXORO
             Me._mapChecksumSHA1 = mapChecksumSHA1
             Me._advertisedPath = advertisedPath
             Me._hostName = hostName
@@ -107,42 +166,42 @@
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
 
-            Me.playableWidth = map.PlayableWidth
-            Me.playableHeight = map.PlayableHeight
-            Me.mapChecksumXORO = map.MapChecksumXORO
+            Me._playableWidth = map.PlayableWidth
+            Me._playableHeight = map.PlayableHeight
+            Me._mapChecksumXORO = map.MapChecksumXORO
             Me._mapChecksumSHA1 = map.MapChecksumSHA1
             Me._advertisedPath = map.AdvertisedPath
             Me._hostName = hostName
 
-            Me.randomHero = argument.HasOptionalSwitch("RandomHero")
-            Me.randomRace = argument.HasOptionalSwitch("RandomRace")
-            Me.lockTeams = Not argument.HasOptionalSwitch("UnlockTeams")
-            Me.allowFullSharedControl = argument.HasOptionalSwitch("FullShare")
-            Me.teamsTogether = Not argument.HasOptionalSwitch("TeamsApart")
+            Me._randomHero = argument.HasOptionalSwitch("RandomHero")
+            Me._randomRace = argument.HasOptionalSwitch("RandomRace")
+            Me._lockTeams = Not argument.HasOptionalSwitch("UnlockTeams")
+            Me._allowFullSharedControl = argument.HasOptionalSwitch("FullShare")
+            Me._teamsTogether = Not argument.HasOptionalSwitch("TeamsApart")
             'Observers
             If argument.HasOptionalSwitch("Referees") OrElse argument.HasOptionalSwitch("ref") Then
-                Me.observers = GameObserverOption.Referees
+                Me._observers = GameObserverOption.Referees
             ElseIf argument.HasOptionalSwitch("Obs") OrElse argument.HasOptionalSwitch("MultiObs") OrElse argument.HasOptionalNamedValue("Obs") Then
-                Me.observers = GameObserverOption.FullObservers
+                Me._observers = GameObserverOption.FullObservers
             ElseIf argument.HasOptionalSwitch("ObsOnDefeat") OrElse argument.HasOptionalSwitch("od") Then
-                Me.observers = GameObserverOption.ObsOnDefeat
+                Me._observers = GameObserverOption.ObsOnDefeat
             Else
-                Me.observers = GameObserverOption.NoObservers
+                Me._observers = GameObserverOption.NoObservers
             End If
             'Speed
             If argument.TryGetOptionalNamedValue("Speed") Is Nothing Then
-                Me.speed = GameSpeedOption.Fast
+                Me._speed = GameSpeedOption.Fast
             Else
                 'Parse
-                If Not argument.TryGetOptionalNamedValue("Speed").EnumTryParse(ignoreCase:=True, result:=Me.speed) Then
+                If Not argument.TryGetOptionalNamedValue("Speed").EnumTryParse(ignoreCase:=True, result:=Me._speed) Then
                     Throw New ArgumentException("Invalid game speed value: {0}".Frmt(argument.TryGetOptionalNamedValue("Speed")))
                 End If
             End If
             'Visibility
             If argument.TryGetOptionalNamedValue("Visibility") Is Nothing Then
-                Me.visibility = GameVisibilityOption.MapDefault
+                Me._visibility = GameVisibilityOption.MapDefault
             Else
-                If Not argument.TryGetOptionalNamedValue("Visibility").EnumTryParse(ignoreCase:=True, result:=Me.visibility) Then
+                If Not argument.TryGetOptionalNamedValue("Visibility").EnumTryParse(ignoreCase:=True, result:=Me._visibility) Then
                     Throw New ArgumentException("Invalid map visibility value: {0}".Frmt(argument.TryGetOptionalNamedValue("Visibility")))
                 End If
             End If
@@ -175,5 +234,29 @@
                 "UnlockTeams=-UnlockTeams: Turns off wc3's 'lock teams' option.",
                 "Visibility=-Visibility=value: Changes wc3's visibility option from MapDefault to AlwaysVisible, Explored, or HideTerrain."
             }
+
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Dim other = TryCast(obj, GameStats)
+            If other Is Nothing Then Return False
+            Return Me.Equals(other)
+        End Function
+        Public Overloads Function Equals(ByVal other As GameStats) As Boolean Implements IEquatable(Of GameStats).Equals
+            If other Is Nothing Then Return False
+            If Me.AdvertisedPath <> other.AdvertisedPath Then Return False
+            If Me.AllowFullSharedControl <> other.AllowFullSharedControl Then Return False
+            If Me.HostName <> other.HostName Then Return False
+            If Me.LockTeams <> other.LockTeams Then Return False
+            If Not Me.MapChecksumSHA1.SequenceEqual(other.MapChecksumSHA1) Then Return False
+            If Me.MapChecksumXORO <> other.MapChecksumXORO Then Return False
+            If Me.Observers <> other.Observers Then Return False
+            If Me.PlayableHeight <> other.PlayableHeight Then Return False
+            If Me.PlayableWidth <> other.PlayableWidth Then Return False
+            If Me.RandomHero <> other.RandomHero Then Return False
+            If Me.RandomRace <> other.RandomRace Then Return False
+            If Me.Speed <> other.Speed Then Return False
+            If Me.TeamsTogether <> other.TeamsTogether Then Return False
+            If Me.Visibility <> other.Visibility Then Return False
+            Return True
+        End Function
     End Class
 End Namespace

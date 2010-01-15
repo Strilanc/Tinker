@@ -37,7 +37,8 @@ Public Class GameServerTest
             totalSlotCount:=TestMap.NumPlayerSlots,
             gameType:=TestMap.GameType,
             state:=Bnet.Packet.GameStates.Unknown0x10,
-            usedSlotCount:=0)
+            usedSlotCount:=0,
+            clock:=New ManualClock())
 
     <TestMethod()>
     Public Sub MissGameTest()

@@ -559,7 +559,8 @@ Namespace Bnet
                     gameType:=gameType,
                     state:=gameState,
                     usedslotcount:=_advertisedGameDescription.UsedSlotCount,
-                    baseage:=_advertisedGameDescription.Age)
+                    baseage:=_advertisedGameDescription.Age,
+                    clock:=New SystemClock())
             SendPacket(Bnet.Packet.MakeCreateGame3(_advertisedGameDescription))
         End Sub
         Public Function QueueStartAdvertisingGame(ByVal gameDescription As WC3.LocalGameDescription,
@@ -868,9 +869,9 @@ Namespace Bnet
         Private Sub ReceiveCreateGame3(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            Dim succeeded = CUInt(vals("result")) = 0
+            Dim result = CUInt(vals("result"))
 
-            If succeeded Then
+            If result = 0 Then
                 If _state = ClientState.CreatingGame Then
                     Logger.Log("Finished creating game.", LogMessageType.Positive)
                     ChangeState(ClientState.AdvertisingGame)
@@ -882,7 +883,7 @@ Namespace Bnet
                     ChangeState(ClientState.AdvertisingGame) 'throw event
                 End If
             Else
-                _futureAdvertisedGame.TrySetFailed(New OperationFailedException("BNET didn't allow game creation. Most likely cause is game name in use."))
+                _futureAdvertisedGame.TrySetFailed(New OperationFailedException("BNET didn't allow game creation (error code: {0}). Most likely cause is game name in use.".Frmt(result)))
                 If _advertiseTicker IsNot Nothing Then
                     _advertiseTicker.Dispose()
                     _advertiseTicker = Nothing

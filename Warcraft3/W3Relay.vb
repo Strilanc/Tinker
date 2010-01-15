@@ -27,7 +27,8 @@
                                                            game.GameType,
                                                            game.GameState,
                                                            game.UsedSlotCount,
-                                                           game.Age)
+                                                           clock:=New SystemClock(),
+                                                           baseage:=game.Age)
                 Me._localGame = New LocalGameDescription(_localGame.Name,
                                                          _localGame.GameStats,
                                                          _localGame.Port,
@@ -37,7 +38,8 @@
                                                          game.GameType,
                                                          game.GameState,
                                                          game.UsedSlotCount,
-                                                         game.Age)
+                                                         baseage:=game.Age,
+                                                         clock:=New SystemClock())
             End Sub
             Public ReadOnly Property RemoteGame As RemoteGameDescription
                 Get
@@ -86,7 +88,8 @@
                                                      game.GameType,
                                                      game.GameState,
                                                      game.UsedSlotCount,
-                                                     game.Age)
+                                                     baseage:=game.Age,
+                                                     clock:=New SystemClock())
             _games(_gameCount) = New GamePair(game, localGame)
             Return _gameCount
         End Function

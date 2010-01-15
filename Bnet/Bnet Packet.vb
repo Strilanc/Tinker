@@ -314,16 +314,19 @@ Namespace Bnet
                         pickles.Add(pickle)
                         offset += pickle.Data.Count
                         Dim vals = pickle.Value
+                        Dim totalSlots = CInt(vals("num free slots"))
+                        Dim usedSlots = 0
                         games.Add(New WC3.RemoteGameDescription(Name:=CStr(vals("game name")).AssumeNotNull,
                                                                 gamestats:=CType(vals("game statstring"), WC3.GameStats).AssumeNotNull,
                                                                 location:=CType(vals("host address"), Net.IPEndPoint).AssumeNotNull,
                                                                 gameid:=CUInt(vals("game id")),
                                                                 entryKey:=0,
-                                                                totalSlotCount:=CInt(vals("num free slots")),
+                                                                totalSlotCount:=totalSlots,
                                                                 gameType:=CType(vals("game type"), WC3.GameTypes),
                                                                 state:=CType(vals("game state"), GameStates),
-                                                                usedSlotCount:=0,
-                                                                baseAge:=CUInt(vals("elapsed seconds")).Seconds))
+                                                                usedSlotCount:=usedSlots,
+                                                                baseAge:=CUInt(vals("elapsed seconds")).Seconds,
+                                                                clock:=New SystemClock()))
                     Next repeat
                 End If
 

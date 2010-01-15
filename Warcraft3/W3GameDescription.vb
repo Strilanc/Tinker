@@ -28,6 +28,8 @@
     End Enum
 
     Public Class GameDescription
+        Implements IEquatable(Of GameDescription)
+
         Private ReadOnly _name As InvariantString
         Private ReadOnly _gameStats As GameStats
         Private ReadOnly _gameId As UInt32
@@ -51,12 +53,14 @@
 
         Public Shared Function FromArguments(ByVal name As InvariantString,
                                              ByVal map As Map,
-                                             ByVal stats As GameStats) As GameDescription
+                                             ByVal stats As GameStats,
+                                             ByVal clock As IClock) As GameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
             Dim totalSlotCount = map.NumPlayerSlots
-            If stats.observers = GameObserverOption.FullObservers OrElse stats.observers = GameObserverOption.Referees Then
+            If stats.Observers = GameObserverOption.FullObservers OrElse stats.Observers = GameObserverOption.Referees Then
                 totalSlotCount = 12
             End If
 
@@ -67,7 +71,8 @@
                                        totalSlotCount:=totalSlotCount,
                                        GameType:=map.GameType,
                                        state:=0,
-                                       UsedSlotCount:=0)
+                                       UsedSlotCount:=0,
+                                       clock:=clock)
         End Function
         Public Sub New(ByVal name As InvariantString,
                        ByVal gameStats As GameStats,
@@ -77,6 +82,7 @@
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
+                       ByVal clock As IClock,
                        Optional ByVal baseAge As TimeSpan = Nothing)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
@@ -85,12 +91,13 @@
             Contract.Requires(usedSlotCount <= totalSlotCount)
             Contract.Requires(gameStats IsNot Nothing)
             Contract.Requires(baseAge.Ticks >= 0)
+            Contract.Requires(clock IsNot Nothing)
             Me._name = name
             Me._gameStats = gameStats
             Me._gameType = gameType
             Me._gameId = gameId
             Me._entryKey = entryKey
-            Me._ageTimer = New SystemClock().StartTimer
+            Me._ageTimer = clock.StartTimer
             Me._baseAge = baseAge
             Me._totalSlotCount = totalSlotCount
             Me._usedSlotCount = usedSlotCount
@@ -147,19 +154,42 @@
                 Return _entryKey
             End Get
         End Property
+
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Dim other = TryCast(obj, GameDescription)
+            If other Is Nothing Then Return False
+            Return Me.Equals(other)
+        End Function
+        Public Overloads Function Equals(ByVal other As GameDescription) As Boolean Implements IEquatable(Of GameDescription).Equals
+            If other Is Nothing Then Return False
+            If Me._baseAge <> other._baseAge Then Return False
+            If Me.EntryKey <> other.EntryKey Then Return False
+            If Me.GameId <> other.GameId Then Return False
+            If Me.GameState <> other.GameState Then Return False
+            If Not Me.GameStats.Equals(other.GameStats) Then Return False
+            If Me.GameType <> other.GameType Then Return False
+            If Me.Name <> other.Name Then Return False
+            If Me.TotalSlotCount <> other.TotalSlotCount Then Return False
+            If Me.UsedSlotCount <> other.UsedSlotCount Then Return False
+            Return True
+        End Function
     End Class
     Public Class LocalGameDescription
         Inherits GameDescription
+        Implements IEquatable(Of LocalGameDescription)
+
         Private ReadOnly _hostPort As UShort
 
         Public Shared Shadows Function FromArguments(ByVal name As InvariantString,
                                                      ByVal map As Map,
-                                                     ByVal stats As GameStats) As LocalGameDescription
+                                                     ByVal stats As GameStats,
+                                                     ByVal clock As IClock) As LocalGameDescription
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(stats IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of LocalGameDescription)() IsNot Nothing)
             Dim totalSlotCount = map.NumPlayerSlots
-            If stats.observers = GameObserverOption.FullObservers OrElse stats.observers = GameObserverOption.Referees Then
+            If stats.Observers = GameObserverOption.FullObservers OrElse stats.Observers = GameObserverOption.Referees Then
                 totalSlotCount = 12
             End If
 
@@ -171,11 +201,13 @@
                                             GameType:=map.GameType,
                                             state:=0,
                                             UsedSlotCount:=0,
-                                            hostPort:=0)
+                                            hostPort:=0,
+                                            clock:=clock)
         End Function
 
         Public Sub New(ByVal gameDescription As GameDescription,
-                       ByVal port As UShort)
+                       ByVal port As UShort,
+                       ByVal clock As IClock)
             Me.New(gameDescription.Name,
                    gameDescription.GameStats,
                    port,
@@ -185,8 +217,10 @@
                    gameDescription.GameType,
                    gameDescription.GameState,
                    gameDescription.UsedSlotCount,
+                   clock,
                    gameDescription.Age)
             Contract.Requires(gameDescription IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
         End Sub
         Public Sub New(ByVal name As InvariantString,
                        ByVal gameStats As GameStats,
@@ -197,8 +231,9 @@
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
+                       ByVal clock As IClock,
                        Optional ByVal baseAge As TimeSpan = Nothing)
-            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAge)
+            MyBase.new(name, gameStats, gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, clock, baseAge)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
@@ -206,6 +241,7 @@
             Contract.Requires(usedSlotCount <= totalSlotCount)
             Contract.Requires(gameStats IsNot Nothing)
             Contract.Requires(baseAge.Ticks >= 0)
+            Contract.Requires(clock IsNot Nothing)
             Me._hostPort = hostPort
         End Sub
 
@@ -214,9 +250,22 @@
                 Return _hostPort
             End Get
         End Property
+
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Dim other = TryCast(obj, LocalGameDescription)
+            If other Is Nothing Then Return False
+            Return Me.Equals(other)
+        End Function
+        Public Overloads Function Equals(ByVal other As LocalGameDescription) As Boolean Implements IEquatable(Of LocalGameDescription).Equals
+            If other Is Nothing Then Return False
+            If Me.Port <> other.Port Then Return False
+            Return MyBase.Equals(other)
+        End Function
     End Class
     Public Class RemoteGameDescription
         Inherits LocalGameDescription
+        Implements IEquatable(Of RemoteGameDescription)
+
         Private ReadOnly _address As Net.IPAddress
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -232,8 +281,9 @@
                        ByVal gameType As GameTypes,
                        ByVal state As Bnet.Packet.GameStates,
                        ByVal usedSlotCount As Integer,
+                       ByVal clock As IClock,
                        Optional ByVal baseAge As TimeSpan = Nothing)
-            MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, baseAge)
+            MyBase.new(name, gameStats, CUShort(location.Port), gameId, entryKey, totalSlotCount, gameType, state, usedSlotCount, clock, baseAge)
             Contract.Requires(gameId > 0)
             Contract.Requires(totalSlotCount > 0)
             Contract.Requires(totalSlotCount <= 12)
@@ -243,6 +293,7 @@
             Contract.Requires(location IsNot Nothing)
             Contract.Requires(location.Address IsNot Nothing)
             Contract.Requires(baseAge.Ticks >= 0)
+            Contract.Requires(clock IsNot Nothing)
             Me._address = location.Address
         End Sub
 
@@ -252,5 +303,16 @@
                 Return _address
             End Get
         End Property
+
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Dim other = TryCast(obj, RemoteGameDescription)
+            If other Is Nothing Then Return False
+            Return Me.Equals(other)
+        End Function
+        Public Overloads Function Equals(ByVal other As RemoteGameDescription) As Boolean Implements IEquatable(Of RemoteGameDescription).Equals
+            If other Is Nothing Then Return False
+            If Not Me.Address.GetAddressBytes.SequenceEqual(other.Address.GetAddressBytes) Then Return False
+            Return MyBase.Equals(other)
+        End Function
     End Class
 End Namespace

@@ -223,7 +223,8 @@ Namespace WC3
                                             totalSlotCount:=totalSlotCount,
                                             GameType:=map.GameType,
                                             state:=0,
-                                            UsedSlotCount:=0)
+                                            UsedSlotCount:=0,
+                                            clock:=New SystemClock())
 
             Dim gameSettings = New WC3.GameSettings(map, gameDescription, argument)
 
@@ -272,7 +273,8 @@ Namespace WC3
                                           gameType:=map.GameType,
                                           state:=0,
                                           usedSlotCount:=0,
-                                          hostPort:=_portHandle.Port)
+                                          hostPort:=_portHandle.Port,
+                                          clock:=New SystemClock())
             Dim gameSettings = New WC3.GameSettings(map,
                                                     gameDescription,
                                                     New Commands.CommandArgument("-permanent -noul -i=0"),

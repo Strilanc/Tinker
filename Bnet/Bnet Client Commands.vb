@@ -384,7 +384,8 @@ Namespace Bnet
                     gameDescription:=WC3.LocalGameDescription.FromArguments(
                         name:=argument.NamedValue("name"),
                         map:=map,
-                        stats:=New WC3.GameStats(map, If(user Is Nothing, Application.ProductName, user.Name.Value), argument)),
+                        stats:=New WC3.GameStats(map, If(user Is Nothing, Application.ProductName, user.Name.Value), argument),
+                        clock:=New SystemClock()),
                     isPrivate:=argument.HasOptionalSwitch("Private") OrElse argument.HasOptionalSwitch("p")).EvalOnSuccess(Function() "Started advertising")
             End Function
         End Class

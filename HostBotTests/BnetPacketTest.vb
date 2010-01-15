@@ -1,5 +1,6 @@
 ﻿Imports Strilbrary.Values
 Imports Strilbrary.Collections
+Imports Strilbrary.Time
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
 Imports Tinker.Bnet.Packet
@@ -8,6 +9,65 @@ Imports Tinker.WC3
 
 <TestClass()>
 Public Class BnetPacketTest
+    Private Shared ReadOnly TestMap As New Map(
+            folder:="Test:\Maps",
+            relativePath:="test",
+            fileChecksumCRC32:=1,
+            filesize:=1,
+            mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
+            mapChecksumXORO:=1,
+            slotCount:=2)
+    Private Shared ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")
+    Private Shared ReadOnly TestStats As New GameStats(
+            Map:=TestMap,
+            hostName:="StrilancHost",
+            argument:=TestArgument)
+    Private Shared ReadOnly TestDesc As New RemoteGameDescription(
+            name:="test",
+            GameStats:=TestStats,
+            location:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
+            gameid:=42,
+            entrykey:=0,
+            totalslotcount:=12,
+            gameType:=GameTypes.AuthenticatedMakerBlizzard,
+            state:=GameStates.Private,
+            usedSlotCount:=0,
+            baseage:=5.Seconds,
+            clock:=New ManualClock())
+    Private Shared ReadOnly TestDate As New Date(Year:=2000, Month:=1, Day:=1)
+    Private Shared ReadOnly TestDateData As Byte() = TestDate.ToFileTime.BitwiseToUInt64.Bytes()
+
+    Private Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
+        If TypeOf v1 Is Collections.IEnumerable AndAlso TypeOf v2 Is Collections.IEnumerable Then
+            Return ListEqual(CType(v1, Collections.IEnumerable), CType(v2, Collections.IEnumerable))
+        Else
+            Return v1.Equals(v2)
+        End If
+    End Function
+    Private Function ListEqual(ByVal l1 As Collections.IEnumerable, ByVal l2 As Collections.IEnumerable) As Boolean
+        Dim e1 = l1.GetEnumerator
+        Dim e2 = l2.GetEnumerator
+        Do
+            Dim b1 = e1.MoveNext
+            Dim b2 = e2.MoveNext
+            If b1 <> b2 Then Return False
+            If Not b1 Then Return True
+            If Not ObjectEqual(e1.Current, e2.Current) Then Return False
+        Loop
+    End Function
+    Private Function DictionaryEqual(Of TKey, TVal)(ByVal d1 As Dictionary(Of TKey, TVal),
+                                                    ByVal d2 As Dictionary(Of TKey, TVal)) As Boolean
+        For Each pair In d1
+            If Not d2.ContainsKey(pair.Key) Then Return False
+            If Not ObjectEqual(d2(pair.Key), pair.Value) Then Return False
+        Next pair
+        For Each pair In d2
+            If Not d1.ContainsKey(pair.Key) Then Return False
+            If Not ObjectEqual(d1(pair.Key), pair.Value) Then Return False
+        Next pair
+        Return True
+    End Function
+
     <TestMethod()>
     Public Sub ClientChatCommandText()
         Assert.IsTrue(ClientPackets.ChatCommand.Pack(New Dictionary(Of InvariantString, Object)() From {
@@ -214,9 +274,9 @@ Public Class BnetPacketTest
     <TestMethod()>
     Public Sub ClientUserAuthenticationFinish()
         Dim proof = (From i In Enumerable.Range(0, 20)
-                     Select CByte(i)).ToArray
+                     Select CByte(i)).ToArray.AsReadableList
         Assert.IsTrue(ClientPackets.UserAuthenticationFinish.Pack(New Dictionary(Of InvariantString, Object)() From {
-                    {"client password proof", proof.AsReadableList}
+                    {"client password proof", proof}
                 }).Data.SequenceEqual(
                     proof
                 ))
@@ -224,11 +284,240 @@ Public Class BnetPacketTest
     <TestMethod()>
     Public Sub ClientWarden()
         Dim data = (From i In Enumerable.Range(0, 50)
-                    Select CByte(i)).ToArray
+                    Select CByte(i)).ToArray.AsReadableList
         Assert.IsTrue(ClientPackets.Warden.Pack(New Dictionary(Of InvariantString, Object)() From {
-                    {"encrypted data", data.AsReadableList}
+                    {"encrypted data", data}
                 }).Data.SequenceEqual(
                     data
                 ))
+    End Sub
+
+    <TestMethod()>
+    Public Sub ServerChatEvent()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"event id", ChatEventId.Talk},
+                    {"flags", 0UI},
+                    {"ping", 25UI},
+                    {"ip", Net.IPAddress.Loopback},
+                    {"acc#", &HDEADBEEFUI},
+                    {"authority", &HBEEFDEADUI},
+                    {"username", "test"},
+                    {"text", "est"}
+                }, ServerPackets.ChatEvent.Parse(New Byte() _
+                    {5, 0, 0, 0,
+                     0, 0, 0, 0,
+                     25, 0, 0, 0,
+                     127, 0, 0, 1,
+                     &HEF, &HBE, &HAD, &HDE,
+                     &HAD, &HDE, &HEF, &HBE,
+                     116, 101, 115, 116, 0,
+                     101, 115, 116, 0}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerClanInfo()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"unknown", CByte(0)},
+                    {"clan tag", "clan"},
+                    {"rank", ClanRank.Leader}
+                }, ServerPackets.ClanInfo.Parse(New Byte() _
+                    {0,
+                     110, 97, 108, 99,
+                     4}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerCreateGame3()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"result", 0UI}
+                }, ServerPackets.CreateGame3.Parse(New Byte() _
+                    {0, 0, 0, 0}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerEnterChat()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"chat username", "test"},
+                    {"statstring", ""},
+                    {"account username", "est"}
+                }, ServerPackets.EnterChat.Parse(New Byte() _
+                    {116, 101, 115, 116, 0,
+                     0,
+                     101, 115, 116, 0}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerFriendsUpdate()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"entry number", CByte(0)},
+                    {"location id", CByte(1)},
+                    {"status", CByte(2)},
+                    {"product id", "war3"},
+                    {"location", "test"}
+                }, ServerPackets.FriendsUpdate.Parse(New Byte() _
+                    {0,
+                     1,
+                     2,
+                     51, 114, 97, 119,
+                     116, 101, 115, 116, 0}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerGetFileTime()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"request id", 1UI},
+                    {"unknown", 0UI},
+                    {"filetime", TestDate},
+                    {"filename", "test"}
+                }, ServerPackets.GetFileTime.Parse(New Byte() _
+                    {1, 0, 0, 0,
+                     0, 0, 0, 0}.Concat(
+                     TestDateData).Concat({
+                     116, 101, 115, 116, 0}).ToArray.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerGetIconData()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"filetime", TestDate},
+                    {"filename", "test"}
+                }, ServerPackets.GetIconData.Parse(
+                    TestDateData.Concat({
+                     116, 101, 115, 116, 0}).ToArray.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerMessageBox()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"style", 1UI},
+                    {"text", "test"},
+                    {"caption", "est"}
+                }, ServerPackets.MessageBox.Parse(New Byte() _
+                    {1, 0, 0, 0,
+                     116, 101, 115, 116, 0,
+                     101, 115, 116, 0}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerNull()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                }, ServerPackets.Null.Parse(New Byte() _
+                    {}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerPing()
+        Assert.IsTrue(ServerPackets.Ping.Parse(New Byte() {3, 1, 0, 0}.AsReadableList).Value = 259UI)
+    End Sub
+    <TestMethod()>
+    Public Sub ServerProgramAuthenticationBegin()
+        Dim sig = (From e In Enumerable.Range(0, 128)
+                   Select CByte(e)
+                  ).ToArray.AsReadableList
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"logon type", ProgramAuthenticationBeginLogOnType.Warcraft3},
+                    {"server cd key salt", 42UI},
+                    {"udp value", 1UI},
+                    {"mpq filetime", TestDate},
+                    {"revision check seed", "test"},
+                    {"revision check challenge", "est"},
+                    {"server signature", sig}
+                }, ServerPackets.ProgramAuthenticationBegin.Parse(New Byte() _
+                    {2, 0, 0, 0,
+                     42, 0, 0, 0,
+                     1, 0, 0, 0}.Concat(
+                     TestDateData).Concat({
+                     116, 101, 115, 116, 0,
+                     101, 115, 116, 0}).Concat(
+                     sig).ToArray.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerProgramAuthenticationFinish()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"result", ProgramAuthenticationFinishResult.Passed},
+                    {"info", "test"}
+                }, ServerPackets.ProgramAuthenticationFinish.Parse(New Byte() _
+                    {0, 0, 0, 0,
+                     116, 101, 115, 116, 0}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerQueryGamesList()
+        'multiple games
+        Dim testGameData = New Byte() _
+                    {8, 0, 0, 0,
+                     255, 255, 255, 255,
+                     2, 0, &H17, &HE0, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                     1, 0, 0, 0,
+                     5, 0, 0, 0,
+                     116, 101, 115, 116, 0,
+                     0,
+                     67,
+                     65, &H32, &H30, &H30, &H30, &H30, &H30, &H30
+                     }.Concat(New GameStatsJar("test").Pack(TestStats).Data
+                ).ToArray.AsReadableList
+        Dim value = ServerPackets.QueryGamesList.Parse(New Byte() _
+                    {2, 0, 0, 0}.
+                    Concat(testGameData).
+                    Concat(testGameData).
+                ToArray.AsReadableList).Value
+        Assert.IsTrue(value.Result = QueryGameResponse.Ok)
+        Assert.IsTrue(value.Games.Count = 2)
+        For Each game In value.Games
+            Assert.IsTrue(game.Equals(TestDesc))
+        Next game
+
+        'single game
+        value = ServerPackets.QueryGamesList.Parse(New Byte() _
+                    {0, 0, 0, 0,
+                     0, 0, 0, 0}.AsReadableList).Value
+        Assert.IsTrue(value.Result = QueryGameResponse.Ok)
+        Assert.IsTrue(value.Games.Count = 0)
+    End Sub
+    <TestMethod()>
+    Public Sub ServerRequiredWork()
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"filename", "test"}
+                }, ServerPackets.RequiredWork.Parse(New Byte() _
+                    {116, 101, 115, 116, 0}.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerUserAuthenticationBegin()
+        Dim key = (From i In Enumerable.Range(0, 32)
+                   Select CByte(i)).ToArray.AsReadableList
+        Dim salt = key.Reverse.ToArray.AsReadableList
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"result", UserAuthenticationBeginResult.Passed},
+                    {"account password salt", salt},
+                    {"server public key", key}
+                }, ServerPackets.UserAuthenticationBegin.Parse(New Byte() _
+                    {0, 0, 0, 0}.Concat(salt).Concat(key).ToArray.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerUserAuthenticationFinish()
+        Dim proof = (From i In Enumerable.Range(0, 20)
+                     Select CByte(i)).ToArray.AsReadableList
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"result", UserAuthenticationFinishResult.Passed},
+                    {"server password proof", proof},
+                    {"custom error info", "test"}
+                }, ServerPackets.UserAuthenticationFinish.Parse(New Byte() _
+                    {0, 0, 0, 0}.Concat(
+                    proof).Concat(
+                    {116, 101, 115, 116, 0}).ToArray.AsReadableList
+                ).Value))
+    End Sub
+    <TestMethod()>
+    Public Sub ServerWarden()
+        Dim data = (From i In Enumerable.Range(0, 50)
+                    Select CByte(i)).ToArray.AsReadableList
+        Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
+                    {"encrypted data", data}
+                }, ServerPackets.Warden.Parse(
+                    data
+                ).Value))
     End Sub
 End Class
