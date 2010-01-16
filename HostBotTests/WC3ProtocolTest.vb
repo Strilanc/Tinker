@@ -11,13 +11,13 @@ Imports TinkerTests.PicklingTest
 <TestClass()>
 Public Class WC3ProtocolTest
     <TestMethod()>
-    Public Sub TestClientConfirmHostLeavingTest()
+    Public Sub ClientConfirmHostLeavingTest()
         JarTest(Packets.ClientConfirmHostLeaving,
                 data:={},
                 value:=New Dictionary(Of InvariantString, Object) From {})
     End Sub
     <TestMethod()>
-    Public Sub TestClientMapInfo()
+    Public Sub ClientMapInfoTest()
         JarTest(Packets.ClientMapInfo,
                 data:={1, 0, 0, 0,
                        3,
@@ -29,7 +29,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestGameAction()
+    Public Sub GameActionTest()
         JarTest(Packets.GameAction,
                 appendSafe:=False,
                 data:={32, 0, 0, 0},
@@ -39,7 +39,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestGreet()
+    Public Sub GreetTest()
         JarTest(Packets.Greet,
                 data:={0, 0,
                        2,
@@ -51,13 +51,13 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestHostConfirmHostLeaving()
+    Public Sub HostConfirmHostLeavingTest()
         JarTest(Packets.HostConfirmHostLeaving,
                 data:={},
                 value:=New Dictionary(Of InvariantString, Object) From {})
     End Sub
     <TestMethod()>
-    Public Sub TestHostMapInfo()
+    Public Sub HostMapInfoTest()
         Dim sha1 = (From i In Enumerable.Range(0, 20)
                     Select CByte(i)).ToArray.AsReadableList
         JarTest(Packets.HostMapInfo,
@@ -78,7 +78,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestKnock()
+    Public Sub KnockTest()
         JarTest(Packets.Knock,
                 data:={42, 0, 0, 0,
                        99, 0, 0, 0,
@@ -100,7 +100,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestLanCreateGame()
+    Public Sub LanCreateGameTest()
         JarTest(Packets.LanCreateGame,
                 data:={Asc("3"), Asc("r"), Asc("a"), Asc("w"),
                        20, 0, 0, 0,
@@ -112,7 +112,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestLanDescribeGame()
+    Public Sub LanDescribeGameTest()
         JarTest(Packets.LanDescribeGame,
                 data:=New Byte() _
                       {Asc("3"), Asc("r"), Asc("a"), Asc("w"),
@@ -145,7 +145,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestLanDestroyGame()
+    Public Sub LanDestroyGameTest()
         JarTest(Packets.LanDestroyGame,
                 data:={20, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -153,7 +153,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestLanRefreshGame()
+    Public Sub LanRefreshGameTest()
         JarTest(Packets.LanRefreshGame,
                 data:={42, 0, 0, 0,
                        2, 0, 0, 0,
@@ -165,7 +165,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestLanRequestGame()
+    Public Sub LanRequestGameTest()
         JarTest(Packets.LanRequestGame,
                 data:={Asc("3"), Asc("r"), Asc("a"), Asc("w"),
                        20, 0, 0, 0,
@@ -177,7 +177,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestLeaving()
+    Public Sub LeavingTest()
         JarTest(Packets.Leaving,
                 data:={7, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -185,7 +185,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestLobbyState()
+    Public Sub LobbyStateTest()
         Dim slots = New List(Of Slot)()
         JarTest(Packets.LobbyState,
                 data:={7, 0,
@@ -202,7 +202,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestMapFileData()
+    Public Sub MapFileDataTest()
         JarTest(Packets.MapFileData,
                 appendSafe:=False,
                 requireAllData:=False,
@@ -222,7 +222,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestMapFileDataProblem()
+    Public Sub MapFileDataProblemTest()
         JarTest(Packets.MapFileDataProblem,
                 data:={2,
                        3,
@@ -234,7 +234,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestMapFileDataReceived()
+    Public Sub MapFileDataReceivedTest()
         JarTest(Packets.MapFileDataReceived,
                 data:={2,
                        3,
@@ -248,7 +248,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestNewHost()
+    Public Sub NewHostTest()
         JarTest(Packets.NewHost,
                 data:={1},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -256,7 +256,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestNonGameAction()
+    Public Sub NonGameActionTest()
         JarTest(Packets.NonGameAction,
                 data:={3, 1, 2, 3,
                        4,
@@ -327,7 +327,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestOtherPlayerJoined()
+    Public Sub OtherPlayerJoinedTestTest()
         JarTest(Packets.OtherPlayerJoined,
                 data:={27, 0, 0, 0,
                        1,
@@ -345,7 +345,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestOtherPlayerLeft()
+    Public Sub OtherPlayerLeftTest()
         JarTest(Packets.OtherPlayerLeft,
                 data:={1,
                        7, 0, 0, 0},
@@ -355,7 +355,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestOtherPlayerReady()
+    Public Sub OtherPlayerReadyTest()
         JarTest(Packets.OtherPlayerReady,
                 data:={3},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -363,7 +363,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestPeerConnectionInfo()
+    Public Sub PeerConnectionInfoTest()
         JarTest(Packets.PeerConnectionInfo,
                 data:={7, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -371,7 +371,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestPeerKnock()
+    Public Sub PeerKnockTest()
         JarTest(Packets.PeerKnock,
                 data:={42, 0, 0, 0,
                        0, 0, 0, 0,
@@ -387,7 +387,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestPeerPing()
+    Public Sub PeerPingTest()
         JarTest(Packets.PeerPing,
                 data:={&HEF, &HBE, &HAD, &HDE,
                        7, 0, 0, 0,
@@ -399,7 +399,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestPeerPong()
+    Public Sub PeerPongTest()
         JarTest(Packets.PeerPong,
                 data:={&HEF, &HBE, &HAD, &HDE},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -407,7 +407,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestPing()
+    Public Sub PingTest()
         JarTest(Packets.Ping,
                 data:={&HEF, &HBE, &HAD, &HDE},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -415,7 +415,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestPong()
+    Public Sub PongTest()
         JarTest(Packets.Pong,
                 data:={&HEF, &HBE, &HAD, &HDE},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -423,13 +423,13 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestReady()
+    Public Sub ReadyTest()
         JarTest(Packets.Ready,
                 data:={},
                 value:=New Dictionary(Of InvariantString, Object) From {})
     End Sub
     <TestMethod()>
-    Public Sub TestRejectEntry()
+    Public Sub RejectEntryTest()
         JarTest(Packets.RejectEntry,
                 data:={27, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -437,7 +437,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestRemovePlayerFromLagScreen()
+    Public Sub RemovePlayerFromLagScreenTest()
         JarTest(Packets.RemovePlayerFromLagScreen,
                 data:={4,
                        23, 0, 0, 0},
@@ -447,13 +447,13 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestRequestDropLaggers()
+    Public Sub RequestDropLaggersTest()
         JarTest(Packets.RequestDropLaggers,
                 data:={},
                 value:=New Dictionary(Of InvariantString, Object) From {})
     End Sub
     <TestMethod()>
-    Public Sub TestSetDownloadSource()
+    Public Sub SetDownloadSourceTest()
         JarTest(Packets.SetDownloadSource,
                 data:={0, 0, 0, 0,
                        2},
@@ -463,7 +463,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestSetUploadTarget()
+    Public Sub SetUploadTargetTest()
         JarTest(Packets.SetUploadTarget,
                 data:={0, 0, 0, 0,
                        3,
@@ -475,7 +475,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestShowLagScreen()
+    Public Sub ShowLagScreenTest()
         Dim lagger = New Dictionary(Of InvariantString, Object) From {
                              {"player index", 2},
                              {"initial milliseconds used", 25}
@@ -489,19 +489,19 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestStartCountdown()
+    Public Sub StartCountdownTest()
         JarTest(Packets.StartCountdown,
                 data:={},
                 value:=New Dictionary(Of InvariantString, Object) From {})
     End Sub
     <TestMethod()>
-    Public Sub TestStartLoading()
+    Public Sub StartLoadingTest()
         JarTest(Packets.StartLoading,
                 data:={},
                 value:=New Dictionary(Of InvariantString, Object) From {})
     End Sub
     <TestMethod()>
-    Public Sub TestTick()
+    Public Sub TickTest()
         JarTest(Packets.Tick,
                 requireAllData:=False,
                 appendSafe:=False,
@@ -513,7 +513,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TestTock()
+    Public Sub TockTest()
         JarTest(Packets.Tock,
                 data:={1, 2, 3, 4, 5},
                 value:=New Dictionary(Of InvariantString, Object) From {

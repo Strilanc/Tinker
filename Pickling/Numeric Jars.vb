@@ -149,21 +149,15 @@
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As Single)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim buffer(0 To 4 - 1) As Byte
-            Using bw = New IO.BinaryWriter(New IO.MemoryStream(buffer))
-                bw.Write(value)
-            End Using
-            Return New Pickle(Of TValue)(Name, value, buffer.ToArray.AsReadableList, Function() ValueToString(value))
+            Dim data = BitConverter.GetBytes(value).AsReadableList
+            Return New Pickle(Of TValue)(Name, value, data, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Single)
             If data.Count < 4 Then Throw New PicklingException("Not enough data.")
-            data = data.SubView(0, 4)
-            Dim value As Single
-            Using br = New IO.BinaryReader(New IO.MemoryStream(data.ToArray()))
-                value = br.ReadSingle()
-            End Using
-            Return New Pickle(Of Single)(Name, value, data, Function() ValueToString(value))
+            Dim datum = data.SubView(0, 4)
+            Dim value = BitConverter.ToSingle(datum.ToArray, 0)
+            Return New Pickle(Of Single)(Name, value, datum, Function() ValueToString(value))
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As Single) As String
@@ -180,21 +174,15 @@
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As Double)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim buffer(0 To 8 - 1) As Byte
-            Using bw = New IO.BinaryWriter(New IO.MemoryStream(buffer))
-                bw.Write(value)
-            End Using
-            Return New Pickle(Of TValue)(Name, value, buffer.ToArray.AsReadableList, Function() ValueToString(value))
+            Dim data = BitConverter.GetBytes(value).AsReadableList
+            Return New Pickle(Of TValue)(Name, value, data, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Double)
             If data.Count < 8 Then Throw New PicklingException("Not enough data.")
-            data = data.SubView(0, 8)
-            Dim value As Double
-            Using br = New IO.BinaryReader(New IO.MemoryStream(data.ToArray()))
-                value = br.ReadDouble()
-            End Using
-            Return New Pickle(Of Double)(Name, value, data, Function() ValueToString(value))
+            Dim datum = data.SubView(0, 8)
+            Dim value = BitConverter.ToDouble(datum.ToArray, 0)
+            Return New Pickle(Of Double)(Name, value, datum, Function() ValueToString(value))
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As Double) As String

@@ -69,6 +69,7 @@
     <Compile Include="BnetClientTest.vb" />
     <Compile Include="BnetProtocolTest.vb" />
     <Compile Include="BnetProtocolJarsTest.vb" />
+    <Compile Include="GameActionProtocolTest.vb" />
     <Compile Include="WC3ProtocolTest.vb" />
     <Compile Include="PicklingTest.vb" />
     <Compile Include="ProductCredentialsTest.vb" />
