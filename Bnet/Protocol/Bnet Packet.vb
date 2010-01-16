@@ -35,7 +35,7 @@ Namespace Bnet.Protocol
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal packer As DefJar, ByVal vals As Dictionary(Of InvariantString, Object))
+        Public Sub New(ByVal packer As SimplePacketDefinition, ByVal vals As Dictionary(Of InvariantString, Object))
             Contract.Requires(packer IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Contract.Ensures(Me.Id = packer.id)

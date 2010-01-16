@@ -228,33 +228,33 @@ Namespace WC3.Protocol
         [Private] = 16
     End Enum
 
-    Public Class DefParser
-        Inherits TupleJar
-        Public ReadOnly id As PacketId
-        Public Sub New(ByVal id As PacketId, ByVal ParamArray subjars() As IJar(Of Object))
-            MyBase.New(id.ToString, subjars)
-            Contract.Requires(subjars IsNot Nothing)
-            Me.id = id
-        End Sub
-    End Class
-
     Public NotInheritable Class Packets
         Private Sub New()
         End Sub
         Public Const PacketPrefix As Byte = &HF7
 
-        Public Shared ReadOnly Ping As New DefParser(PacketId.Ping,
+        Public Class SimpleDefinition
+            Inherits TupleJar
+            Public ReadOnly id As PacketId
+            Public Sub New(ByVal id As PacketId, ByVal ParamArray subjars() As IJar(Of Object))
+                MyBase.New(id.ToString, subjars)
+                Contract.Requires(subjars IsNot Nothing)
+                Me.id = id
+            End Sub
+        End Class
+
+        Public Shared ReadOnly Ping As New SimpleDefinition(PacketId.Ping,
                 New UInt32Jar("salt").Weaken)
-        Public Shared ReadOnly Pong As New DefParser(PacketId.Pong,
+        Public Shared ReadOnly Pong As New SimpleDefinition(PacketId.Pong,
                 New UInt32Jar("salt").Weaken)
 
-        Public Shared ReadOnly Leaving As New DefParser(PacketId.Leaving,
+        Public Shared ReadOnly Leaving As New SimpleDefinition(PacketId.Leaving,
                 New EnumUInt32Jar(Of PlayerLeaveType)("leave type").Weaken)
-        Public Shared ReadOnly OtherPlayerLeft As New DefParser(PacketId.OtherPlayerLeft,
+        Public Shared ReadOnly OtherPlayerLeft As New SimpleDefinition(PacketId.OtherPlayerLeft,
                 New ByteJar("player index").Weaken,
                 New EnumUInt32Jar(Of PlayerLeaveType)("leave type").Weaken)
 
-        Public Shared ReadOnly Knock As New DefParser(PacketId.Knock,
+        Public Shared ReadOnly Knock As New SimpleDefinition(PacketId.Knock,
                 New UInt32Jar("game id").Weaken,
                 New UInt32Jar("entry key", showhex:=True).Weaken,
                 New ByteJar("unknown value").Weaken,
@@ -263,20 +263,20 @@ Namespace WC3.Protocol
                 New StringJar("name", maximumContentSize:=15).Weaken,
                 New SizePrefixedDataJar("unknown data", prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
-        Public Shared ReadOnly Greet As New DefParser(PacketId.Greet,
+        Public Shared ReadOnly Greet As New SimpleDefinition(PacketId.Greet,
                 New SizePrefixedDataJar("slot data", prefixSize:=2).Weaken,
                 New ByteJar("player index").Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken)
-        Public Shared ReadOnly HostMapInfo As New DefParser(PacketId.HostMapInfo,
+        Public Shared ReadOnly HostMapInfo As New SimpleDefinition(PacketId.HostMapInfo,
                 New UInt32Jar("unknown").Weaken,
                 New StringJar("path").Weaken,
                 New UInt32Jar("size").Weaken,
                 New UInt32Jar("crc32", showhex:=True).Weaken,
                 New UInt32Jar("xoro checksum", showhex:=True).Weaken,
                 New RawDataJar("sha1 checksum", Size:=20).Weaken)
-        Public Shared ReadOnly RejectEntry As New DefParser(PacketId.RejectEntry,
+        Public Shared ReadOnly RejectEntry As New SimpleDefinition(PacketId.RejectEntry,
                 New EnumUInt32Jar(Of RejectReason)("reason").Weaken)
-        Public Shared ReadOnly OtherPlayerJoined As New DefParser(PacketId.OtherPlayerJoined,
+        Public Shared ReadOnly OtherPlayerJoined As New SimpleDefinition(PacketId.OtherPlayerJoined,
                 New UInt32Jar("peer key", showhex:=True).Weaken,
                 New ByteJar("index").Weaken,
                 New StringJar("name", maximumContentSize:=15).Weaken,
@@ -284,18 +284,18 @@ Namespace WC3.Protocol
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
 
-        Public Shared ReadOnly OtherPlayerReady As New DefParser(PacketId.OtherPlayerReady,
+        Public Shared ReadOnly OtherPlayerReady As New SimpleDefinition(PacketId.OtherPlayerReady,
                 New ByteJar("player index").Weaken)
-        Public Shared ReadOnly StartLoading As New DefParser(PacketId.StartLoading)
-        Public Shared ReadOnly StartCountdown As New DefParser(PacketId.StartCountdown)
-        Public Shared ReadOnly Ready As New DefParser(PacketId.Ready)
-        Public Shared ReadOnly LobbyState As New DefParser(PacketId.LobbyState,
+        Public Shared ReadOnly StartLoading As New SimpleDefinition(PacketId.StartLoading)
+        Public Shared ReadOnly StartCountdown As New SimpleDefinition(PacketId.StartCountdown)
+        Public Shared ReadOnly Ready As New SimpleDefinition(PacketId.Ready)
+        Public Shared ReadOnly LobbyState As New SimpleDefinition(PacketId.LobbyState,
                 New UInt16Jar("state size").Weaken,
                 New ListJar(Of Dictionary(Of InvariantString, Object))("slots", New SlotJar("slot")).Weaken,
                 New UInt32Jar("time").Weaken,
                 New ByteJar("layout style").Weaken,
                 New ByteJar("num player slots").Weaken)
-        Public Shared ReadOnly PeerConnectionInfo As New DefParser(PacketId.PeerConnectionInfo,
+        Public Shared ReadOnly PeerConnectionInfo As New SimpleDefinition(PacketId.PeerConnectionInfo,
                 New UInt16Jar("player bitflags", showhex:=True).Weaken)
 
         Public Const MaxChatTextLength As Integer = 220
@@ -339,43 +339,43 @@ Namespace WC3.Protocol
             Return commandJar
         End Function
 
-        Public Shared ReadOnly ShowLagScreen As New DefParser(PacketId.ShowLagScreen,
+        Public Shared ReadOnly ShowLagScreen As New SimpleDefinition(PacketId.ShowLagScreen,
                 New ListJar(Of Dictionary(Of InvariantString, Object))("laggers",
                     New TupleJar("lagger",
                         New ByteJar("player index").Weaken,
                         New UInt32Jar("initial milliseconds used").Weaken)).Weaken)
-        Public Shared ReadOnly RemovePlayerFromLagScreen As New DefParser(PacketId.RemovePlayerFromLagScreen,
+        Public Shared ReadOnly RemovePlayerFromLagScreen As New SimpleDefinition(PacketId.RemovePlayerFromLagScreen,
                 New ByteJar("player index").Weaken,
                 New UInt32Jar("marginal milliseconds used").Weaken)
-        Public Shared ReadOnly RequestDropLaggers As New DefParser(PacketId.RequestDropLaggers)
-        Public Shared ReadOnly Tick As New DefParser(PacketId.Tick,
+        Public Shared ReadOnly RequestDropLaggers As New SimpleDefinition(PacketId.RequestDropLaggers)
+        Public Shared ReadOnly Tick As New SimpleDefinition(PacketId.Tick,
                 New UInt16Jar("time span").Weaken,
                 New RemainingDataJar("subpacket").Weaken)
-        Public Shared ReadOnly Tock As New DefParser(PacketId.Tock,
+        Public Shared ReadOnly Tock As New SimpleDefinition(PacketId.Tock,
                 New RawDataJar("game state checksum", Size:=5).Weaken)
-        Public Shared ReadOnly GameAction As New DefParser(PacketId.GameAction,
+        Public Shared ReadOnly GameAction As New SimpleDefinition(PacketId.GameAction,
                 New UInt32Jar("crc32").Weaken,
                 New RepeatingJar(Of GameAction)("actions", New W3GameActionJar("action")).Weaken)
-        Public Shared ReadOnly NewHost As New DefParser(PacketId.NewHost,
+        Public Shared ReadOnly NewHost As New SimpleDefinition(PacketId.NewHost,
                 New ByteJar("player index").Weaken)
-        Public Shared ReadOnly ClientConfirmHostLeaving As New DefParser(PacketId.ClientConfirmHostLeaving)
-        Public Shared ReadOnly HostConfirmHostLeaving As New DefParser(PacketId.HostConfirmHostLeaving)
+        Public Shared ReadOnly ClientConfirmHostLeaving As New SimpleDefinition(PacketId.ClientConfirmHostLeaving)
+        Public Shared ReadOnly HostConfirmHostLeaving As New SimpleDefinition(PacketId.HostConfirmHostLeaving)
 
-        Public Shared ReadOnly LanRequestGame As New DefParser(PacketId.LanRequestGame,
+        Public Shared ReadOnly LanRequestGame As New SimpleDefinition(PacketId.LanRequestGame,
                 New Bnet.Protocol.DwordStringJar("product id").Weaken,
                 New UInt32Jar("major version").Weaken,
                 New UInt32Jar("unknown1").Weaken)
-        Public Shared ReadOnly LanRefreshGame As New DefParser(PacketId.LanRefreshGame,
+        Public Shared ReadOnly LanRefreshGame As New SimpleDefinition(PacketId.LanRefreshGame,
                 New UInt32Jar("game id").Weaken,
                 New UInt32Jar("num players").Weaken,
                 New UInt32Jar("free slots").Weaken)
-        Public Shared ReadOnly LanCreateGame As New DefParser(PacketId.LanCreateGame,
+        Public Shared ReadOnly LanCreateGame As New SimpleDefinition(PacketId.LanCreateGame,
                 New Bnet.Protocol.DwordStringJar("product id").Weaken,
                 New UInt32Jar("major version").Weaken,
                 New UInt32Jar("game id").Weaken)
-        Public Shared ReadOnly LanDestroyGame As New DefParser(PacketId.LanDestroyGame,
+        Public Shared ReadOnly LanDestroyGame As New SimpleDefinition(PacketId.LanDestroyGame,
                 New UInt32Jar("game id").Weaken)
-        Public Shared ReadOnly LanDescribeGame As New DefParser(PacketId.LanDescribeGame,
+        Public Shared ReadOnly LanDescribeGame As New SimpleDefinition(PacketId.LanDescribeGame,
                 New Bnet.Protocol.DwordStringJar("product id").Weaken,
                 New UInt32Jar("major version").Weaken,
                 New UInt32Jar("game id").Weaken,
@@ -390,43 +390,43 @@ Namespace WC3.Protocol
                 New UInt32Jar("age").Weaken,
                 New UInt16Jar("listen port").Weaken)
 
-        Public Shared ReadOnly PeerKnock As New DefParser(PacketId.PeerKnock,
+        Public Shared ReadOnly PeerKnock As New SimpleDefinition(PacketId.PeerKnock,
                 New UInt32Jar("receiver peer key", showhex:=True).Weaken,
                 New UInt32Jar("unknown1").Weaken,
                 New ByteJar("sender player id").Weaken,
                 New ByteJar("unknown3").Weaken,
                 New UInt32Jar("sender peer connection flags").Weaken)
-        Public Shared ReadOnly PeerPing As New DefParser(PacketId.PeerPing,
+        Public Shared ReadOnly PeerPing As New SimpleDefinition(PacketId.PeerPing,
                 New UInt32Jar("salt", showhex:=True).Weaken,
                 New UInt32Jar("sender peer connection flags").Weaken,
                 New UInt32Jar("unknown2").Weaken)
-        Public Shared ReadOnly PeerPong As New DefParser(PacketId.PeerPong,
+        Public Shared ReadOnly PeerPong As New SimpleDefinition(PacketId.PeerPong,
                 New UInt32Jar("salt", showhex:=True).Weaken)
 
-        Public Shared ReadOnly ClientMapInfo As New DefParser(PacketId.ClientMapInfo,
+        Public Shared ReadOnly ClientMapInfo As New SimpleDefinition(PacketId.ClientMapInfo,
                 New UInt32Jar("unknown").Weaken,
                 New EnumByteJar(Of DownloadState)("dl state").Weaken,
                 New UInt32Jar("total downloaded").Weaken)
-        Public Shared ReadOnly SetUploadTarget As New DefParser(PacketId.SetUploadTarget,
+        Public Shared ReadOnly SetUploadTarget As New SimpleDefinition(PacketId.SetUploadTarget,
                 New UInt32Jar("unknown1").Weaken,
                 New ByteJar("receiving player index").Weaken,
                 New UInt32Jar("starting file pos").Weaken)
-        Public Shared ReadOnly SetDownloadSource As New DefParser(PacketId.SetDownloadSource,
+        Public Shared ReadOnly SetDownloadSource As New SimpleDefinition(PacketId.SetDownloadSource,
                 New UInt32Jar("unknown").Weaken,
                 New ByteJar("sending player index").Weaken)
-        Public Shared ReadOnly MapFileData As New DefParser(PacketId.MapFileData,
+        Public Shared ReadOnly MapFileData As New SimpleDefinition(PacketId.MapFileData,
                 New ByteJar("receiving player index").Weaken,
                 New ByteJar("sending player index").Weaken,
                 New UInt32Jar("unknown").Weaken,
                 New UInt32Jar("file position").Weaken,
                 New UInt32Jar("crc32", showhex:=True).Weaken,
                 New RemainingDataJar("file data").Weaken)
-        Public Shared ReadOnly MapFileDataReceived As New DefParser(PacketId.MapFileDataReceived,
+        Public Shared ReadOnly MapFileDataReceived As New SimpleDefinition(PacketId.MapFileDataReceived,
                 New ByteJar("sender index").Weaken,
                 New ByteJar("receiver index").Weaken,
                 New UInt32Jar("unknown").Weaken,
                 New UInt32Jar("total downloaded").Weaken)
-        Public Shared ReadOnly MapFileDataProblem As New DefParser(PacketId.MapFileDataProblem,
+        Public Shared ReadOnly MapFileDataProblem As New SimpleDefinition(PacketId.MapFileDataProblem,
                 New ByteJar("sender index").Weaken,
                 New ByteJar("receiver index").Weaken,
                 New UInt32Jar("unknown").Weaken)

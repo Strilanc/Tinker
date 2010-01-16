@@ -31,9 +31,9 @@ Namespace WC3.Protocol
         Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal id As PacketId, ByVal ParamArray subJars() As IJar(Of Object))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(subJars IsNot Nothing)
-            jar.AddPackerParser(id, New DefParser(id, subJars).Weaken)
+            jar.AddPackerParser(id, New Protocol.Packets.SimpleDefinition(id, subJars).Weaken)
         End Sub
-        Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal subjar As DefParser)
+        Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal subjar As Protocol.Packets.SimpleDefinition)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(subjar IsNot Nothing)
             jar.AddPackerParser(subjar.id, subjar.Weaken)

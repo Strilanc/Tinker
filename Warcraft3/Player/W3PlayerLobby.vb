@@ -8,7 +8,7 @@ Namespace WC3
         Private mapUploadPosition As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
 
-        Private Function AddQueuedPacketHandler(ByVal jar As Protocol.DefParser,
+        Private Function AddQueuedPacketHandler(ByVal jar As Protocol.Packets.SimpleDefinition,
                                                 ByVal handler As Action(Of IPickle(Of Dictionary(Of InvariantString, Object)))) As IDisposable
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)

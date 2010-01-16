@@ -162,7 +162,7 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() _state)
         End Function
 
-        Private Function AddQueuedPacketHandler(ByVal jar As Protocol.DefJar,
+        Private Function AddQueuedPacketHandler(ByVal jar As Protocol.SimplePacketDefinition,
                                                 ByVal handler As Action(Of IPickle(Of Dictionary(Of InvariantString, Object)))) As IDisposable
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)

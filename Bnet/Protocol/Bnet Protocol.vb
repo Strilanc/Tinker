@@ -206,7 +206,7 @@ Namespace Bnet.Protocol
         Leader = 4
     End Enum
 
-    Public Class DefJar
+    Public Class SimplePacketDefinition
         Inherits TupleJar
         Public ReadOnly id As PacketId
         Public Sub New(ByVal id As PacketId, ByVal ParamArray subjars() As IJar(Of Object))
@@ -221,7 +221,7 @@ Namespace Bnet.Protocol
         Private Sub New()
         End Sub
 
-        Public Shared ReadOnly ProgramAuthenticationBegin As New DefJar(PacketId.ProgramAuthenticationBegin,
+        Public Shared ReadOnly ProgramAuthenticationBegin As New SimplePacketDefinition(PacketId.ProgramAuthenticationBegin,
                 New EnumUInt32Jar(Of ProgramAuthenticationBeginLogOnType)("logon type").Weaken,
                 New UInt32Jar("server cd key salt", showHex:=True).Weaken,
                 New UInt32Jar("udp value", showHex:=True).Weaken,
@@ -229,21 +229,21 @@ Namespace Bnet.Protocol
                 New StringJar("revision check seed").Weaken,
                 New StringJar("revision check challenge").Weaken,
                 New RawDataJar("server signature", Size:=128).Weaken)
-        Public Shared ReadOnly ProgramAuthenticationFinish As New DefJar(PacketId.ProgramAuthenticationFinish,
+        Public Shared ReadOnly ProgramAuthenticationFinish As New SimplePacketDefinition(PacketId.ProgramAuthenticationFinish,
                 New EnumUInt32Jar(Of ProgramAuthenticationFinishResult)("result").Weaken,
                 New StringJar("info").Weaken)
-        Public Shared ReadOnly UserAuthenticationBegin As New DefJar(PacketId.UserAuthenticationBegin,
+        Public Shared ReadOnly UserAuthenticationBegin As New SimplePacketDefinition(PacketId.UserAuthenticationBegin,
                 New EnumUInt32Jar(Of UserAuthenticationBeginResult)("result").Weaken,
                 New RawDataJar("account password salt", Size:=32).Weaken,
                 New RawDataJar("server public key", Size:=32).Weaken)
-        Public Shared ReadOnly UserAuthenticationFinish As New DefJar(PacketId.UserAuthenticationFinish,
+        Public Shared ReadOnly UserAuthenticationFinish As New SimplePacketDefinition(PacketId.UserAuthenticationFinish,
                 New EnumUInt32Jar(Of UserAuthenticationFinishResult)("result").Weaken,
                 New RawDataJar("server password proof", Size:=20).Weaken,
                 New StringJar("custom error info").Weaken)
-        Public Shared ReadOnly RequiredWork As New DefJar(PacketId.RequiredWork,
+        Public Shared ReadOnly RequiredWork As New SimplePacketDefinition(PacketId.RequiredWork,
                 New StringJar("filename").Weaken)
 
-        Public Shared ReadOnly ChatEvent As New DefJar(PacketId.ChatEvent,
+        Public Shared ReadOnly ChatEvent As New SimplePacketDefinition(PacketId.ChatEvent,
                 New EnumUInt32Jar(Of ChatEventId)("event id").Weaken,
                 New UInt32Jar("flags", showhex:=True).Weaken,
                 New UInt32Jar("ping").Weaken,
@@ -252,11 +252,11 @@ Namespace Bnet.Protocol
                 New UInt32Jar("authority", showhex:=True).Weaken,
                 New StringJar("username").Weaken,
                 New StringJar("text").Weaken)
-        Public Shared ReadOnly MessageBox As New DefJar(PacketId.MessageBox,
+        Public Shared ReadOnly MessageBox As New SimplePacketDefinition(PacketId.MessageBox,
                 New UInt32Jar("style").Weaken,
                 New StringJar("text").Weaken,
                 New StringJar("caption").Weaken)
-        Public Shared ReadOnly FriendsUpdate As New DefJar(PacketId.FriendsUpdate,
+        Public Shared ReadOnly FriendsUpdate As New SimplePacketDefinition(PacketId.FriendsUpdate,
                 New ByteJar("entry number").Weaken,
                 New ByteJar("location id").Weaken,
                 New ByteJar("status").Weaken,
@@ -264,27 +264,27 @@ Namespace Bnet.Protocol
                 New StringJar("location").Weaken)
         Public Shared ReadOnly QueryGamesList As New QueryGamesListResponseJar()
 
-        Public Shared ReadOnly EnterChat As New DefJar(PacketId.EnterChat,
+        Public Shared ReadOnly EnterChat As New SimplePacketDefinition(PacketId.EnterChat,
                 New StringJar("chat username").Weaken,
                 New StringJar("statstring").Weaken,
                 New StringJar("account username").Weaken)
-        Public Shared ReadOnly CreateGame3 As New DefJar(PacketId.CreateGame3,
+        Public Shared ReadOnly CreateGame3 As New SimplePacketDefinition(PacketId.CreateGame3,
                 New UInt32Jar("result").Weaken)
 
-        Public Shared ReadOnly Null As New DefJar(PacketId.Null)
+        Public Shared ReadOnly Null As New SimplePacketDefinition(PacketId.Null)
         Public Shared ReadOnly Ping As New UInt32Jar("salt", showHex:=True)
-        Public Shared ReadOnly Warden As New DefJar(PacketId.Warden,
+        Public Shared ReadOnly Warden As New SimplePacketDefinition(PacketId.Warden,
                 New RemainingDataJar("encrypted data").Weaken)
 
-        Public Shared ReadOnly GetFileTime As New DefJar(PacketId.GetFileTime,
+        Public Shared ReadOnly GetFileTime As New SimplePacketDefinition(PacketId.GetFileTime,
                 New UInt32Jar("request id").Weaken,
                 New UInt32Jar("unknown").Weaken,
                 New FileTimeJar("filetime").Weaken,
                 New StringJar("filename").Weaken)
-        Public Shared ReadOnly GetIconData As New DefJar(PacketId.GetIconData,
+        Public Shared ReadOnly GetIconData As New SimplePacketDefinition(PacketId.GetIconData,
                 New FileTimeJar("filetime").Weaken,
                 New StringJar("filename").Weaken)
-        Public Shared ReadOnly ClanInfo As New DefJar(PacketId.ClanInfo,
+        Public Shared ReadOnly ClanInfo As New SimplePacketDefinition(PacketId.ClanInfo,
                 New ByteJar("unknown").Weaken,
                 New DwordStringJar("clan tag").Weaken,
                 New EnumByteJar(Of ClanRank)("rank").Weaken)
@@ -295,7 +295,7 @@ Namespace Bnet.Protocol
         Private Sub New()
         End Sub
 
-        Public Shared ReadOnly ProgramAuthenticationBegin As New DefJar(PacketId.ProgramAuthenticationBegin,
+        Public Shared ReadOnly ProgramAuthenticationBegin As New SimplePacketDefinition(PacketId.ProgramAuthenticationBegin,
                 New UInt32Jar("protocol").Weaken,
                 New DwordStringJar("platform").Weaken,
                 New DwordStringJar("product").Weaken,
@@ -307,7 +307,7 @@ Namespace Bnet.Protocol
                 New EnumUInt32Jar(Of MPQ.LanguageId)("language id").Weaken,
                 New StringJar("country abrev").Weaken,
                 New StringJar("country name").Weaken)
-        Public Shared ReadOnly ProgramAuthenticationFinish As New DefJar(PacketId.ProgramAuthenticationFinish,
+        Public Shared ReadOnly ProgramAuthenticationFinish As New SimplePacketDefinition(PacketId.ProgramAuthenticationFinish,
                 New UInt32Jar("client cd key salt", showHex:=True).Weaken,
                 New RawDataJar("exe version", Size:=4).Weaken,
                 New UInt32Jar("revision check response", showHex:=True).Weaken,
@@ -317,16 +317,16 @@ Namespace Bnet.Protocol
                 New ProductCredentialsJar("TFT cd key").Weaken,
                 New StringJar("exe info").Weaken,
                 New StringJar("owner").Weaken)
-        Public Shared ReadOnly UserAuthenticationBegin As New DefJar(PacketId.UserAuthenticationBegin,
+        Public Shared ReadOnly UserAuthenticationBegin As New SimplePacketDefinition(PacketId.UserAuthenticationBegin,
                 New RawDataJar("client public key", Size:=32).Weaken,
                 New StringJar("username").Weaken)
-        Public Shared ReadOnly UserAuthenticationFinish As New DefJar(PacketId.UserAuthenticationFinish,
+        Public Shared ReadOnly UserAuthenticationFinish As New SimplePacketDefinition(PacketId.UserAuthenticationFinish,
                 New RawDataJar("client password proof", Size:=20).Weaken)
 
         Public Const MaxChatCommandTextLength As Integer = 222
-        Public Shared ReadOnly ChatCommand As New DefJar(PacketId.ChatCommand,
+        Public Shared ReadOnly ChatCommand As New SimplePacketDefinition(PacketId.ChatCommand,
                 New StringJar("text").Weaken)
-        Public Shared ReadOnly QueryGamesList As New DefJar(PacketId.QueryGamesList,
+        Public Shared ReadOnly QueryGamesList As New SimplePacketDefinition(PacketId.QueryGamesList,
                 New EnumUInt32Jar(Of WC3.GameTypes)("filter").Weaken,
                 New EnumUInt32Jar(Of WC3.GameTypes)("filter mask").Weaken,
                 New UInt32Jar("unknown0").Weaken,
@@ -335,10 +335,10 @@ Namespace Bnet.Protocol
                 New StringJar("game password").Weaken,
                 New StringJar("game stats").Weaken) '[empty game name means list games]
 
-        Public Shared ReadOnly EnterChat As New DefJar(PacketId.EnterChat,
+        Public Shared ReadOnly EnterChat As New SimplePacketDefinition(PacketId.EnterChat,
                 New StringJar("username").Weaken,
                 New StringJar("statstring").Weaken) '[both parameters are unused in wc3]
-        Public Shared ReadOnly CreateGame3 As New DefJar(PacketId.CreateGame3,
+        Public Shared ReadOnly CreateGame3 As New SimplePacketDefinition(PacketId.CreateGame3,
                 New EnumUInt32Jar(Of GameStates)("game state").Weaken,
                 New UInt32Jar("seconds since creation").Weaken,
                 New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
@@ -349,23 +349,23 @@ Namespace Bnet.Protocol
                 New TextHexValueJar("num free slots", numdigits:=1).Weaken,
                 New TextHexValueJar("game id", numdigits:=8).Weaken,
                 New WC3.GameStatsJar("statstring").Weaken)
-        Public Shared ReadOnly CloseGame3 As New DefJar(PacketId.CloseGame3)
-        Public Shared ReadOnly JoinChannel As New DefJar(PacketId.JoinChannel,
+        Public Shared ReadOnly CloseGame3 As New SimplePacketDefinition(PacketId.CloseGame3)
+        Public Shared ReadOnly JoinChannel As New SimplePacketDefinition(PacketId.JoinChannel,
                 New EnumUInt32Jar(Of JoinChannelType)("join type").Weaken,
                 New StringJar("channel").Weaken)
-        Public Shared ReadOnly NetGamePort As New DefJar(PacketId.NetGamePort,
+        Public Shared ReadOnly NetGamePort As New SimplePacketDefinition(PacketId.NetGamePort,
                 New UInt16Jar("port").Weaken)
 
-        Public Shared ReadOnly Null As New DefJar(PacketId.Null)
-        Public Shared ReadOnly Ping As New DefJar(PacketId.Ping,
+        Public Shared ReadOnly Null As New SimplePacketDefinition(PacketId.Null)
+        Public Shared ReadOnly Ping As New SimplePacketDefinition(PacketId.Ping,
                 New UInt32Jar("salt", showhex:=True).Weaken)
-        Public Shared ReadOnly Warden As New DefJar(PacketId.Warden,
+        Public Shared ReadOnly Warden As New SimplePacketDefinition(PacketId.Warden,
                 New RemainingDataJar("encrypted data").Weaken)
 
-        Public Shared ReadOnly GetFileTime As New DefJar(PacketId.GetFileTime,
+        Public Shared ReadOnly GetFileTime As New SimplePacketDefinition(PacketId.GetFileTime,
                 New UInt32Jar("request id").Weaken,
                 New UInt32Jar("unknown").Weaken,
                 New StringJar("filename").Weaken)
-        Public Shared ReadOnly GetIconData As New DefJar(PacketId.GetIconData)
+        Public Shared ReadOnly GetIconData As New SimplePacketDefinition(PacketId.GetIconData)
     End Class
 End Namespace
