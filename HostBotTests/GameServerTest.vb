@@ -102,7 +102,7 @@ Public Class GameServerTest
             server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             'Prep data
             Dim testStream = New TestStream()
-            testStream.EnqueueRead({WC3.Protocol.Jars.PacketPrefix, WC3.Protocol.PacketId.Knock})
+            testStream.EnqueueRead({WC3.Protocol.Packets.PacketPrefix, WC3.Protocol.PacketId.Knock})
             testStream.EnqueueRead(CUShort(KnockData.Length + 4).Bytes)
             testStream.EnqueueRead(KnockData)
             'Connect
@@ -115,7 +115,7 @@ Public Class GameServerTest
             'Try read Greet
             Dim packet = testStream.RetrieveWritePacket()
             Assert.IsTrue(packet(1) = WC3.Protocol.PacketId.Greet)
-            Dim response = WC3.Protocol.Jars.Greet.Parse(packet.SubToArray(4).AsReadableList)
+            Dim response = WC3.Protocol.Packets.Greet.Parse(packet.SubToArray(4).AsReadableList)
             'Check not closed
             Assert.IsTrue(Not testStream.RetrieveClosed(timeout:=100))
             'Cleanup

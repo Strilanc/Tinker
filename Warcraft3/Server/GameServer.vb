@@ -72,12 +72,12 @@ Namespace WC3
             socket.AsyncReadPacket().CallOnValueSuccess(
                 Sub(data)
                     If Not socketHandled.TryAcquire Then Return
-                    If data.Count < 4 OrElse data(0) <> Protocol.Jars.PacketPrefix OrElse data(1) <> Protocol.PacketId.Knock Then
+                    If data.Count < 4 OrElse data(0) <> Protocol.Packets.PacketPrefix OrElse data(1) <> Protocol.PacketId.Knock Then
                         Throw New IO.InvalidDataException("{0} was not a warcraft 3 player connection.".Frmt(socket.Name))
                     End If
 
                     'Parse
-                    Dim pickle = Protocol.Jars.Knock.Parse(data.SubView(4))
+                    Dim pickle = Protocol.Packets.Knock.Parse(data.SubView(4))
                     Dim vals = pickle.Value
                     Dim player = New W3ConnectingPlayer(Name:=CStr(vals("name")).AssumeNotNull,
                                                         gameid:=CUInt(vals("game id")),

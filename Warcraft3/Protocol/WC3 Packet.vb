@@ -43,8 +43,8 @@ Namespace WC3.Protocol
             Dim jar = New ManualSwitchJar
 
             'Misc
-            reg(jar, Jars.Ping)
-            reg(jar, Jars.Pong)
+            reg(jar, Packets.Ping)
+            reg(jar, Packets.Pong)
 
             'Chat
             Dim chatJar = New InteriorSwitchJar(Of ChatType, Dictionary(Of InvariantString, Object))(
@@ -63,54 +63,54 @@ Namespace WC3.Protocol
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New StringJar("message").Weaken))
             jar.AddPackerParser(PacketId.Text, chatJar.Weaken)
-            jar.AddPackerParser(PacketId.NonGameAction, Jars.NonGameAction.Weaken)
+            jar.AddPackerParser(PacketId.NonGameAction, Packets.NonGameAction.Weaken)
 
             'Player Exit
-            reg(jar, Jars.Leaving)
-            reg(jar, Jars.OtherPlayerLeft)
+            reg(jar, Packets.Leaving)
+            reg(jar, Packets.OtherPlayerLeft)
 
             'Player Entry
-            reg(jar, Jars.Knock)
-            reg(jar, Jars.Greet)
-            reg(jar, Jars.HostMapInfo)
-            reg(jar, Jars.RejectEntry)
-            reg(jar, Jars.OtherPlayerJoined)
+            reg(jar, Packets.Knock)
+            reg(jar, Packets.Greet)
+            reg(jar, Packets.HostMapInfo)
+            reg(jar, Packets.RejectEntry)
+            reg(jar, Packets.OtherPlayerJoined)
 
             'Lobby
-            reg(jar, Jars.OtherPlayerReady)
-            reg(jar, Jars.StartLoading)
-            reg(jar, Jars.StartCountdown)
-            reg(jar, Jars.Ready)
-            reg(jar, Jars.LobbyState)
-            reg(jar, Jars.PeerConnectionInfo)
+            reg(jar, Packets.OtherPlayerReady)
+            reg(jar, Packets.StartLoading)
+            reg(jar, Packets.StartCountdown)
+            reg(jar, Packets.Ready)
+            reg(jar, Packets.LobbyState)
+            reg(jar, Packets.PeerConnectionInfo)
 
             'Gameplay
-            reg(jar, Jars.ShowLagScreen)
-            reg(jar, Jars.RemovePlayerFromLagScreen)
-            reg(jar, Jars.RequestDropLaggers)
-            reg(jar, Jars.Tick)
-            reg(jar, Jars.Tock)
-            reg(jar, Jars.GameAction)
+            reg(jar, Packets.ShowLagScreen)
+            reg(jar, Packets.RemovePlayerFromLagScreen)
+            reg(jar, Packets.RequestDropLaggers)
+            reg(jar, Packets.Tick)
+            reg(jar, Packets.Tock)
+            reg(jar, Packets.GameAction)
 
             'Lan
-            reg(jar, Jars.LanRequestGame)
-            reg(jar, Jars.LanRefreshGame)
-            reg(jar, Jars.LanCreateGame)
-            reg(jar, Jars.LanDestroyGame)
-            reg(jar, Jars.LanDescribeGame)
+            reg(jar, Packets.LanRequestGame)
+            reg(jar, Packets.LanRefreshGame)
+            reg(jar, Packets.LanCreateGame)
+            reg(jar, Packets.LanDestroyGame)
+            reg(jar, Packets.LanDescribeGame)
 
             'Peer
-            reg(jar, Jars.PeerKnock)
-            reg(jar, Jars.PeerPing)
-            reg(jar, Jars.PeerPong)
+            reg(jar, Packets.PeerKnock)
+            reg(jar, Packets.PeerPing)
+            reg(jar, Packets.PeerPong)
 
             'Map Download
-            reg(jar, Jars.ClientMapInfo)
-            reg(jar, Jars.SetUploadTarget)
-            reg(jar, Jars.SetDownloadSource)
-            reg(jar, Jars.MapFileData)
-            reg(jar, Jars.MapFileDataReceived)
-            reg(jar, Jars.MapFileDataProblem)
+            reg(jar, Packets.ClientMapInfo)
+            reg(jar, Packets.SetUploadTarget)
+            reg(jar, Packets.SetDownloadSource)
+            reg(jar, Packets.MapFileData)
+            reg(jar, Packets.MapFileDataReceived)
+            reg(jar, Packets.MapFileDataProblem)
 
             Return jar
         End Function

@@ -155,7 +155,7 @@ Namespace Lan
             Try
                 'pack
                 Dim data = pk.Payload.Data.ToArray()
-                data = Concat({WC3.Protocol.Jars.PacketPrefix, pk.id}, CUShort(data.Length + 4).Bytes(), data)
+                data = Concat({WC3.Protocol.Packets.PacketPrefix, pk.id}, CUShort(data.Length + 4).Bytes(), data)
 
                 'Log
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, targetHost), LogMessageType.DataEvent)

@@ -23,7 +23,7 @@
 
         Private Sub OnPlayerAction(ByVal sender As WC3.Game,
                                    ByVal player As WC3.Player,
-                                   ByVal action As WC3.GameAction) Handles game.PlayerAction
+                                   ByVal action As WC3.Protocol.GameAction) Handles game.PlayerAction
             Dim mode = actionMode
             If mode = CallbackMode.Off Then Return
             LogMessage(New Lazy(Of String)(Function() "{0}: {1}".Frmt(player.Name, action.Payload.Description.Value)),

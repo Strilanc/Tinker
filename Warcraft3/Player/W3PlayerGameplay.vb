@@ -30,7 +30,7 @@ Namespace WC3
 
     Partial Public NotInheritable Class Player
         Public Event ReceivedRequestDropLaggers(ByVal sender As Player)
-        Public Event ReceivedGameAction(ByVal sender As Player, ByVal action As GameAction)
+        Public Event ReceivedGameAction(ByVal sender As Player, ByVal action As Protocol.GameAction)
         Public Event ReceivedGameData(ByVal sender As Player, ByVal data As Byte())
 
         Private ReadOnly tickQueue As New Queue(Of TickRecord)
@@ -39,9 +39,9 @@ Namespace WC3
 
         Public Sub GamePlayStart()
             state = PlayerState.Playing
-            AddQueuedPacketHandler(Protocol.Jars.Tock, AddressOf ReceiveTock)
-            AddQueuedPacketHandler(Protocol.Jars.RequestDropLaggers, AddressOf ReceiveRequestDropLaggers)
-            AddQueuedPacketHandler(Protocol.Jars.ClientConfirmHostLeaving, Sub() SendPacket(Protocol.MakeHostConfirmHostLeaving()))
+            AddQueuedPacketHandler(Protocol.Packets.Tock, AddressOf ReceiveTock)
+            AddQueuedPacketHandler(Protocol.Packets.RequestDropLaggers, AddressOf ReceiveRequestDropLaggers)
+            AddQueuedPacketHandler(Protocol.Packets.ClientConfirmHostLeaving, Sub() SendPacket(Protocol.MakeHostConfirmHostLeaving()))
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord, ByVal data As Byte())
@@ -59,7 +59,7 @@ Namespace WC3
         Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
-            Dim actions = CType(vals("actions"), IEnumerable(Of GameAction))
+            Dim actions = CType(vals("actions"), IEnumerable(Of Protocol.GameAction))
             Contract.Assume(actions IsNot Nothing)
             For Each action In actions
                 RaiseEvent ReceivedGameAction(Me, action)

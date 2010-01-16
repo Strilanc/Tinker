@@ -7,8 +7,8 @@ Namespace WC3
         Public Sub LoadScreenStart()
             state = PlayerState.Loading
             SendPacket(Protocol.MakeStartLoading())
-            AddQueuedPacketHandler(Protocol.Jars.Ready, AddressOf ReceiveReady)
-            AddQueuedPacketHandler(Protocol.Jars.GameAction, AddressOf ReceiveGameAction)
+            AddQueuedPacketHandler(Protocol.Packets.Ready, AddressOf ReceiveReady)
+            AddQueuedPacketHandler(Protocol.Packets.GameAction, AddressOf ReceiveGameAction)
         End Sub
 
         Public Event ReceivedReady(ByVal sender As Player)

@@ -77,7 +77,7 @@
             gameDataQueue.Enqueue(New GameTickDatum(sender, data))
         End Sub
         Public Function QueueReceiveGameAction(ByVal player As Player,
-                                               ByVal action As GameAction) As ifuture
+                                               ByVal action As Protocol.GameAction) As ifuture
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(action IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)

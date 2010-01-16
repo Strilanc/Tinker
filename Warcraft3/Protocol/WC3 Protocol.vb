@@ -238,7 +238,7 @@ Namespace WC3.Protocol
         End Sub
     End Class
 
-    Public NotInheritable Class Jars
+    Public NotInheritable Class Packets
         Private Sub New()
         End Sub
         Public Const PacketPrefix As Byte = &HF7

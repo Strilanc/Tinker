@@ -26,8 +26,8 @@ Namespace WC3
         End Function
         Private Sub LobbyStart()
             state = PlayerState.Lobby
-            AddQueuedPacketHandler(Protocol.Jars.ClientMapInfo, AddressOf ReceiveClientMapInfo)
-            AddQueuedPacketHandler(Protocol.Jars.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
+            AddQueuedPacketHandler(Protocol.Packets.ClientMapInfo, AddressOf ReceiveClientMapInfo)
+            AddQueuedPacketHandler(Protocol.Packets.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
         End Sub
 
 #Region "Networking"

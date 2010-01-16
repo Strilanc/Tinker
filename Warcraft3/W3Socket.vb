@@ -78,7 +78,7 @@ Namespace WC3
                 Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
                 'Send
-                _socket.WritePacket(Concat({Protocol.Jars.PacketPrefix, packet.id, 0, 0},
+                _socket.WritePacket(Concat({Protocol.Packets.PacketPrefix, packet.id, 0, 0},
                                             packet.Payload.Data.ToArray))
 
             Catch e As Pickling.PicklingException

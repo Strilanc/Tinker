@@ -46,7 +46,7 @@ Namespace WC3
         Private ReadOnly indexMap(0 To 12) As Byte
         Private ReadOnly settings As GameSettings
 
-        Public Event PlayerAction(ByVal sender As Game, ByVal player As Player, ByVal action As GameAction)
+        Public Event PlayerAction(ByVal sender As Game, ByVal player As Player, ByVal action As Protocol.GameAction)
         Public Event Updated(ByVal sender As Game, ByVal slots As List(Of Slot))
         Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String)
         Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
@@ -263,10 +263,10 @@ Namespace WC3
             Dim prefix = If(fakeHostPlayer Is Nothing, "{0}: ".Frmt(Application.ProductName), "")
             Dim chatType = If(state >= GameState.Loading, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
             Dim sender = If(fakeHostPlayer, player)
-            If Protocol.Jars.MaxChatTextLength - prefix.Length <= 0 Then
+            If Protocol.Packets.MaxChatTextLength - prefix.Length <= 0 Then
                 Throw New InvalidStateException("The product name is so long there's no room for text to follow it!")
             End If
-            For Each line In SplitText(body:=message, maxLineLength:=Protocol.Jars.MaxChatTextLength - prefix.Length)
+            For Each line In SplitText(body:=message, maxLineLength:=Protocol.Packets.MaxChatTextLength - prefix.Length)
                 player.QueueSendPacket(Protocol.MakeText(text:=prefix + line,
                                                          chatType:=chatType,
                                                          receiverType:=Protocol.ChatReceiverType.Private,

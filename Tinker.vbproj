@@ -221,6 +221,10 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Bnet\Protocol\IPEndPointJar.vb" />
+    <Compile Include="Warcraft3\Protocol\ObjectTypeJar.vb" />
+    <Compile Include="Warcraft3\Protocol\OrderTypeJar.vb" />
+    <Compile Include="Warcraft3\Protocol\Game Action Protocol.vb" />
+    <Compile Include="Warcraft3\Protocol\GameObjectIdJar.vb" />
     <Compile Include="Warcraft3\Protocol\SlotJar.vb" />
     <Compile Include="Warcraft3\Protocol\WC3 Protocol Packers.vb" />
     <Compile Include="Warcraft3\Protocol\WC3 Packet.vb" />
@@ -283,7 +287,7 @@
     <Compile Include="Warcraft3\W3GameStatsJar.vb" />
     <Compile Include="Warcraft3\KeyedEvent.vb" />
     <Compile Include="Warcraft3\Pinger.vb" />
-    <Compile Include="Warcraft3\W3GameAction.vb" />
+    <Compile Include="Warcraft3\Protocol\GameAction.vb" />
     <Compile Include="Warcraft3\W3GameDescription.vb" />
     <Compile Include="Warcraft3\W3Relay.vb" />
     <Compile Include="Warcraft3\W3RemotePlayer.vb" />

@@ -131,17 +131,17 @@
             AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
 
             AddQueuedPacketHandler(Protocol.PacketId.Pong,
-                                   Protocol.Jars.Pong,
+                                   Protocol.Packets.Pong,
                                    handler:=Function(pickle)
                                                 outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
                                                 Return pinger.QueueReceivedPong(CUInt(pickle.Value("salt")))
                                             End Function)
             AddQueuedPacketHandler(Protocol.PacketId.NonGameAction,
-                                   Protocol.Jars.NonGameAction,
+                                   Protocol.Packets.NonGameAction,
                                    handler:=AddressOf ReceiveNonGameAction)
-            AddQueuedPacketHandler(Protocol.Jars.Leaving, AddressOf ReceiveLeaving)
-            AddQueuedPacketHandler(Protocol.Jars.MapFileDataReceived, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(Protocol.Jars.MapFileDataProblem, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.Packets.Leaving, AddressOf ReceiveLeaving)
+            AddQueuedPacketHandler(Protocol.Packets.MapFileDataReceived, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.Packets.MapFileDataProblem, AddressOf IgnorePacket)
 
             LobbyStart()
             BeginReading()
