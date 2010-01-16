@@ -12,6 +12,7 @@ Public Class PicklingTest
                                     ByVal value As T,
                                     ByVal data As IList(Of Byte),
                                     Optional ByVal appendSafe As Boolean = True,
+                                    Optional ByVal requireAllData As Boolean = True,
                                     Optional ByVal description As String = Nothing)
         Dim packed = jar.Pack(value)
         Dim parsed = jar.Parse(data.AsReadableList)
@@ -26,6 +27,14 @@ Public Class PicklingTest
             Assert.IsTrue(packed.Description.Value = parsed.Description.Value)
         End If
 
+        If data.Count > 0 Then
+            Try
+                jar.Parse(data.Take(data.Count - 1).ToArray.AsReadableList)
+                Assert.IsTrue(Not requireAllData)
+            Catch ex As Exception
+                Assert.IsTrue(requireAllData)
+            End Try
+        End If
         If appendSafe Then
             Dim data2 = {data, New Byte() {1, 2, 3}}.Fold.ToList
             Dim parsed2 = jar.Parse(data2.AsReadableList)
@@ -51,8 +60,9 @@ Public Class PicklingTest
                                                         ByVal value As T,
                                                         ByVal data As IList(Of Byte),
                                                         Optional ByVal appendSafe As Boolean = True,
+                                                        Optional ByVal requireAllData As Boolean = True,
                                                         Optional ByVal description As String = Nothing)
-        JarTest(jar, Function(a As T, b As T) a.Equals(b), value, data, appendSafe, description)
+        JarTest(jar, Function(a As T, b As T) a.Equals(b), value, data, appendSafe, requireAllData, description)
     End Sub
 
 #Region "Numeric Jars"

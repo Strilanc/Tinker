@@ -37,14 +37,32 @@ Public Class BnetProtocolTest
     Private Shared ReadOnly TestDate As New Date(Year:=2000, Month:=1, Day:=1)
     Private Shared ReadOnly TestDateData As Byte() = TestDate.ToFileTime.BitwiseToUInt64.Bytes()
 
-    Private Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
-        If TypeOf v1 Is Collections.IEnumerable AndAlso TypeOf v2 Is Collections.IEnumerable Then
+    Private Shared Function TryCastToNumber(ByVal v As Object) As Numerics.BigInteger?
+        If TypeOf v Is SByte Then Return CSByte(v)
+        If TypeOf v Is Int16 Then Return CShort(v)
+        If TypeOf v Is Int32 Then Return CInt(v)
+        If TypeOf v Is Int64 Then Return CLng(v)
+        If TypeOf v Is Byte Then Return CByte(v)
+        If TypeOf v Is UInt16 Then Return CUShort(v)
+        If TypeOf v Is UInt32 Then Return CUInt(v)
+        If TypeOf v Is UInt64 Then Return CULng(v)
+        If TypeOf v Is Numerics.BigInteger Then Return CType(v, Numerics.BigInteger)
+        Return Nothing
+    End Function
+    Private Shared Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
+        Dim n1 = TryCastToNumber(v1)
+        Dim n2 = TryCastToNumber(v2)
+        If n1 IsNot Nothing AndAlso n2 IsNot Nothing Then
+            Return n1.Value = n2.Value
+        ElseIf TypeOf v1 Is Dictionary(Of InvariantString, Object) AndAlso TypeOf v2 Is Dictionary(Of InvariantString, Object) Then
+            Return DictionaryEqual(CType(v1, Dictionary(Of InvariantString, Object)), CType(v2, Dictionary(Of InvariantString, Object)))
+        ElseIf TypeOf v1 Is Collections.IEnumerable AndAlso TypeOf v2 Is Collections.IEnumerable Then
             Return ListEqual(CType(v1, Collections.IEnumerable), CType(v2, Collections.IEnumerable))
         Else
             Return v1.Equals(v2)
         End If
     End Function
-    Private Function ListEqual(ByVal l1 As Collections.IEnumerable, ByVal l2 As Collections.IEnumerable) As Boolean
+    Private Shared Function ListEqual(ByVal l1 As Collections.IEnumerable, ByVal l2 As Collections.IEnumerable) As Boolean
         Dim e1 = l1.GetEnumerator
         Dim e2 = l2.GetEnumerator
         Do
@@ -55,8 +73,8 @@ Public Class BnetProtocolTest
             If Not ObjectEqual(e1.Current, e2.Current) Then Return False
         Loop
     End Function
-    Private Function DictionaryEqual(Of TKey, TVal)(ByVal d1 As Dictionary(Of TKey, TVal),
-                                                    ByVal d2 As Dictionary(Of TKey, TVal)) As Boolean
+    Friend Shared Function DictionaryEqual(Of TKey, TVal)(ByVal d1 As Dictionary(Of TKey, TVal),
+                                                          ByVal d2 As Dictionary(Of TKey, TVal)) As Boolean
         For Each pair In d1
             If Not d2.ContainsKey(pair.Key) Then Return False
             If Not ObjectEqual(d2(pair.Key), pair.Value) Then Return False
@@ -69,7 +87,7 @@ Public Class BnetProtocolTest
     End Function
 
     <TestMethod()>
-    Public Sub ClientChatCommandText()
+    Public Sub ClientChatCommandTest()
         Assert.IsTrue(ClientPackets.ChatCommand.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"text", "test"}
                 }).Data.SequenceEqual(
@@ -77,14 +95,14 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientCloseGame3()
+    Public Sub ClientCloseGame3Test()
         Assert.IsTrue(ClientPackets.CloseGame3.Pack(New Dictionary(Of InvariantString, Object)() From {
                 }).Data.SequenceEqual(
                     {}
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientCreateGame3()
+    Public Sub ClientCreateGame3Test()
         Assert.IsTrue(ClientPackets.CreateGame3.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"game state", GameStates.Full},
                     {"seconds since creation", 25},
@@ -110,7 +128,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientEnterChat()
+    Public Sub ClientEnterChatTest()
         Assert.IsTrue(ClientPackets.EnterChat.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"username", "a"},
                     {"statstring", "b"}
@@ -120,7 +138,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientGetFileTime()
+    Public Sub ClientGetFileTimeTest()
         Assert.IsTrue(ClientPackets.GetFileTime.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"request id", 4},
                     {"unknown", 0},
@@ -132,14 +150,14 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientGetIconData()
+    Public Sub ClientGetIconDataTest()
         Assert.IsTrue(ClientPackets.GetIconData.Pack(New Dictionary(Of InvariantString, Object)() From {
                 }).Data.SequenceEqual(
                     {}
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientJoinChannel()
+    Public Sub ClientJoinChannelTest()
         Assert.IsTrue(ClientPackets.JoinChannel.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"join type", JoinChannelType.ForcedJoin},
                     {"channel", "test"}
@@ -149,7 +167,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientNetGamePort()
+    Public Sub ClientNetGamePortTest()
         Assert.IsTrue(ClientPackets.NetGamePort.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"port", 6112}
                 }).Data.SequenceEqual(
@@ -157,14 +175,14 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientNull()
+    Public Sub ClientNullTest()
         Assert.IsTrue(ClientPackets.Null.Pack(New Dictionary(Of InvariantString, Object)() From {
                 }).Data.SequenceEqual(
                     {}
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientPing()
+    Public Sub ClientPingTest()
         Assert.IsTrue(ClientPackets.Ping.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"salt", 256}
                 }).Data.SequenceEqual(
@@ -172,7 +190,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientProgramAuthenticationBegin()
+    Public Sub ClientProgramAuthenticationBeginTest()
         Assert.IsTrue(ClientPackets.ProgramAuthenticationBegin.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"protocol", 1},
                     {"platform", "ix86"},
@@ -200,7 +218,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientProgramAuthenticationFinish()
+    Public Sub ClientProgramAuthenticationFinishTest()
         Dim rocCred = "EDKBRTRXG88Z9V8M84HY2XVW7N".ToWC3CDKeyCredentials(0UI.Bytes, 0UI.Bytes)
         Dim tftCred = "M68YC4278JJXXVJMKRP8ETN4TC".ToWC3CDKeyCredentials(0UI.Bytes, 0UI.Bytes)
         Dim credJar = New ProductCredentialsJar("test")
@@ -227,7 +245,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientQueryGamesList()
+    Public Sub ClientQueryGamesListTest()
         Assert.IsTrue(ClientPackets.QueryGamesList.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"filter", GameTypes.PrivateGame},
                     {"filter mask", GameTypes.SizeLarge},
@@ -247,7 +265,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientUserAuthenticationBegin()
+    Public Sub ClientUserAuthenticationBeginTest()
         Dim key = (From i In Enumerable.Range(0, 32)
                    Select CByte(i)).ToArray
         Assert.IsTrue(ClientPackets.UserAuthenticationBegin.Pack(New Dictionary(Of InvariantString, Object)() From {
@@ -259,7 +277,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientUserAuthenticationFinish()
+    Public Sub ClientUserAuthenticationFinishTest()
         Dim proof = (From i In Enumerable.Range(0, 20)
                      Select CByte(i)).ToArray.AsReadableList
         Assert.IsTrue(ClientPackets.UserAuthenticationFinish.Pack(New Dictionary(Of InvariantString, Object)() From {
@@ -269,7 +287,7 @@ Public Class BnetProtocolTest
                 ))
     End Sub
     <TestMethod()>
-    Public Sub ClientWarden()
+    Public Sub ClientWardenTest()
         Dim data = (From i In Enumerable.Range(0, 50)
                     Select CByte(i)).ToArray.AsReadableList
         Assert.IsTrue(ClientPackets.Warden.Pack(New Dictionary(Of InvariantString, Object)() From {
@@ -280,7 +298,7 @@ Public Class BnetProtocolTest
     End Sub
 
     <TestMethod()>
-    Public Sub ServerChatEvent()
+    Public Sub ServerChatEventTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"event id", ChatEventId.Talk},
                     {"flags", 0UI},
@@ -302,7 +320,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerClanInfo()
+    Public Sub ServerClanInfoTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"unknown", CByte(0)},
                     {"clan tag", "clan"},
@@ -314,7 +332,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerCreateGame3()
+    Public Sub ServerCreateGame3Test()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"result", 0UI}
                 }, ServerPackets.CreateGame3.Parse(New Byte() _
@@ -322,7 +340,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerEnterChat()
+    Public Sub ServerEnterChatTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"chat username", "test"},
                     {"statstring", ""},
@@ -334,7 +352,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerFriendsUpdate()
+    Public Sub ServerFriendsUpdateTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"entry number", CByte(0)},
                     {"location id", CByte(1)},
@@ -350,7 +368,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerGetFileTime()
+    Public Sub ServerGetFileTimeTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"request id", 1UI},
                     {"unknown", 0UI},
@@ -364,7 +382,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerGetIconData()
+    Public Sub ServerGetIconDataTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"filetime", TestDate},
                     {"filename", "test"}
@@ -374,7 +392,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerMessageBox()
+    Public Sub ServerMessageBoxTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"style", 1UI},
                     {"text", "test"},
@@ -386,18 +404,18 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerNull()
+    Public Sub ServerNullTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                 }, ServerPackets.Null.Parse(New Byte() _
                     {}.AsReadableList
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerPing()
+    Public Sub ServerPingTest()
         Assert.IsTrue(ServerPackets.Ping.Parse(New Byte() {3, 1, 0, 0}.AsReadableList).Value = 259UI)
     End Sub
     <TestMethod()>
-    Public Sub ServerProgramAuthenticationBegin()
+    Public Sub ServerProgramAuthenticationBeginTest()
         Dim sig = (From e In Enumerable.Range(0, 128)
                    Select CByte(e)
                   ).ToArray.AsReadableList
@@ -420,7 +438,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerProgramAuthenticationFinish()
+    Public Sub ServerProgramAuthenticationFinishTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"result", ProgramAuthenticationFinishResult.Passed},
                     {"info", "test"}
@@ -430,7 +448,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerQueryGamesList()
+    Public Sub ServerQueryGamesListTest()
         'multiple games
         Dim testGameData = New Byte() _
                     {8, 0, 0, 0,
@@ -463,7 +481,7 @@ Public Class BnetProtocolTest
         Assert.IsTrue(value.Games.Count = 0)
     End Sub
     <TestMethod()>
-    Public Sub ServerRequiredWork()
+    Public Sub ServerRequiredWorkTest()
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"filename", "test"}
                 }, ServerPackets.RequiredWork.Parse(New Byte() _
@@ -471,7 +489,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerUserAuthenticationBegin()
+    Public Sub ServerUserAuthenticationBeginTest()
         Dim key = (From i In Enumerable.Range(0, 32)
                    Select CByte(i)).ToArray.AsReadableList
         Dim salt = key.Reverse.ToArray.AsReadableList
@@ -484,7 +502,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerUserAuthenticationFinish()
+    Public Sub ServerUserAuthenticationFinishTest()
         Dim proof = (From i In Enumerable.Range(0, 20)
                      Select CByte(i)).ToArray.AsReadableList
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
@@ -498,7 +516,7 @@ Public Class BnetProtocolTest
                 ).Value))
     End Sub
     <TestMethod()>
-    Public Sub ServerWarden()
+    Public Sub ServerWardenTest()
         Dim data = (From i In Enumerable.Range(0, 50)
                     Select CByte(i)).ToArray.AsReadableList
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {

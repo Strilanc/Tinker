@@ -364,7 +364,7 @@ Namespace WC3
             Public Shared ReadOnly Tock As New DefParser(PacketId.Tock,
                     New RawDataJar("game state checksum", Size:=5).Weaken)
             Public Shared ReadOnly GameAction As New DefParser(PacketId.GameAction,
-                    New RawDataJar("crc32", Size:=4).Weaken,
+                    New UInt32Jar("crc32").Weaken,
                     New RepeatingJar(Of GameAction)("actions", New W3GameActionJar("action")).Weaken)
             Public Shared ReadOnly NewHost As New DefParser(PacketId.NewHost,
                     New ByteJar("player index").Weaken)
