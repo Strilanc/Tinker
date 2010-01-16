@@ -39,9 +39,9 @@ Namespace WC3
 
         Public Sub GamePlayStart()
             state = PlayerState.Playing
-            AddQueuedPacketHandler(Packet.Jars.Tock, AddressOf ReceiveTock)
-            AddQueuedPacketHandler(Packet.Jars.RequestDropLaggers, AddressOf ReceiveRequestDropLaggers)
-            AddQueuedPacketHandler(Packet.Jars.ClientConfirmHostLeaving, Sub() SendPacket(Packet.MakeHostConfirmHostLeaving()))
+            AddQueuedPacketHandler(Protocol.Jars.Tock, AddressOf ReceiveTock)
+            AddQueuedPacketHandler(Protocol.Jars.RequestDropLaggers, AddressOf ReceiveRequestDropLaggers)
+            AddQueuedPacketHandler(Protocol.Jars.ClientConfirmHostLeaving, Sub() SendPacket(Protocol.MakeHostConfirmHostLeaving()))
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord, ByVal data As Byte())
@@ -49,7 +49,7 @@ Namespace WC3
             If isFake Then Return
             tickQueue.Enqueue(record)
             maxTockTime += record.length
-            SendPacket(Packet.MakeTick(record.length, data))
+            SendPacket(Protocol.MakeTick(record.length, data))
         End Sub
 
         Private Sub ReceiveRequestDropLaggers(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))

@@ -32,7 +32,7 @@ Namespace Bnet.Protocol
         Private Shared ReadOnly gameDataJar As New TupleJar("game",
                 New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
                 New UInt32Jar("language id").Weaken,
-                New NetIPEndPointJar("host address").Weaken,
+                New IPEndPointJar("host address").Weaken,
                 New EnumUInt32Jar(Of GameStates)("game state").Weaken,
                 New UInt32Jar("elapsed seconds").Weaken,
                 New StringJar("game name").Weaken,

@@ -227,7 +227,7 @@ Namespace WC3
 
 #Region "Networking"
         '''<summary>Broadcasts a packet to all players. Requires a packer for the packet, and values matching the packer.</summary>
-        Private Sub BroadcastPacket(ByVal pk As Packet,
+        Private Sub BroadcastPacket(ByVal pk As Protocol.Packet,
                                     Optional ByVal source As Player = Nothing)
             Contract.Requires(pk IsNot Nothing)
             For Each player In (From _player In _players Where _player IsNot source)
@@ -261,17 +261,17 @@ Namespace WC3
 
             'Send Text (from fake host or spoofed from receiver)
             Dim prefix = If(fakeHostPlayer Is Nothing, "{0}: ".Frmt(Application.ProductName), "")
-            Dim chatType = If(state >= GameState.Loading, Packet.ChatType.Game, Packet.ChatType.Lobby)
+            Dim chatType = If(state >= GameState.Loading, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
             Dim sender = If(fakeHostPlayer, player)
-            If Packet.MaxChatTextLength - prefix.Length <= 0 Then
+            If Protocol.Jars.MaxChatTextLength - prefix.Length <= 0 Then
                 Throw New InvalidStateException("The product name is so long there's no room for text to follow it!")
             End If
-            For Each line In SplitText(body:=message, maxLineLength:=Packet.MaxChatTextLength - prefix.Length)
-                player.QueueSendPacket(Packet.MakeText(text:=prefix + line,
-                                                       chatType:=chatType,
-                                                       receiverType:=Packet.ChatReceiverType.Private,
-                                                       receivingPlayers:=_players,
-                                                       sender:=sender))
+            For Each line In SplitText(body:=message, maxLineLength:=Protocol.Jars.MaxChatTextLength - prefix.Length)
+                player.QueueSendPacket(Protocol.MakeText(text:=prefix + line,
+                                                         chatType:=chatType,
+                                                         receiverType:=Protocol.ChatReceiverType.Private,
+                                                         receivingPlayers:=_players,
+                                                         sender:=sender))
             Next line
 
             If display Then
@@ -287,8 +287,8 @@ Namespace WC3
 
         Private Sub ReceiveChat(ByVal sender As Player,
                                 ByVal text As String,
-                                ByVal type As Packet.ChatType,
-                                ByVal receiverType As Packet.ChatReceiverType,
+                                ByVal type As Protocol.ChatType,
+                                ByVal receiverType As Protocol.ChatReceiverType,
                                 ByVal requestedReceiverIndexes As IReadableList(Of Byte))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
@@ -305,7 +305,7 @@ Namespace WC3
                 text = visibleSender.Name + ": " + text
             End If
             'packet
-            Dim pk = Packet.MakeText(text, type, receiverType, _players, visibleSender)
+            Dim pk = Protocol.MakeText(text, type, receiverType, _players, visibleSender)
             'receivers
             For Each receiver In _players
                 Contract.Assume(receiver IsNot Nothing)
@@ -320,16 +320,16 @@ Namespace WC3
         Private Sub ReceiveNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of InvariantString, Object))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
-            Dim commandType = CType(vals("command type"), Packet.NonGameAction)
+            Dim commandType = CType(vals("command type"), Protocol.NonGameAction)
 
             'Player Chat
             Select Case commandType
-                Case Packet.NonGameAction.GameChat, Packet.NonGameAction.LobbyChat
+                Case Protocol.NonGameAction.GameChat, Protocol.NonGameAction.LobbyChat
                     Dim message = CStr(vals("message")).AssumeNotNull
-                    Dim chatType = If(commandType = Packet.NonGameAction.GameChat, Packet.ChatType.Game, Packet.ChatType.Lobby)
-                    Dim receiverType As Packet.ChatReceiverType
-                    If chatType = Packet.ChatType.Game Then
-                        receiverType = CType(vals("receiver type"), Packet.ChatReceiverType)
+                    Dim chatType = If(commandType = Protocol.NonGameAction.GameChat, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
+                    Dim receiverType As Protocol.ChatReceiverType
+                    If chatType = Protocol.ChatType.Game Then
+                        receiverType = CType(vals("receiver type"), Protocol.ChatReceiverType)
                     End If
                     Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IReadableList(Of Byte)).AssumeNotNull
 
@@ -339,16 +339,16 @@ Namespace WC3
                                 receiverType,
                                 receivingPlayerIndexes)
 
-                Case Packet.NonGameAction.SetTeam
+                Case Protocol.NonGameAction.SetTeam
                     ReceiveSetTeam(sender, CByte(vals("new value")))
 
-                Case Packet.NonGameAction.SetHandicap
+                Case Protocol.NonGameAction.SetHandicap
                     ReceiveSetHandicap(sender, CByte(vals("new value")))
 
-                Case Packet.NonGameAction.SetRace
+                Case Protocol.NonGameAction.SetRace
                     ReceiveSetRace(sender, CType(vals("new value"), Slot.Races))
 
-                Case Packet.NonGameAction.SetColor
+                Case Protocol.NonGameAction.SetColor
                     ReceiveSetColor(sender, CType(vals("new value"), Slot.PlayerColor))
 
                 Case Else
@@ -386,7 +386,7 @@ Namespace WC3
 
             'Clean player
             If IsPlayerVisible(player) Then
-                BroadcastPacket(Packet.MakeOtherPlayerLeft(player, leaveType), player)
+                BroadcastPacket(Protocol.MakeOtherPlayerLeft(player, leaveType), player)
             End If
             If player Is adminPlayer Then
                 adminPlayer = Nothing

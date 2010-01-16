@@ -181,6 +181,7 @@
     </Compile>
     <Compile Include="Bnet\Protocol\Bnet Protocol Packers.vb" />
     <Compile Include="Bnet\Protocol\Bnet Protocol.vb" />
+    <Compile Include="Bnet\Protocol\IPAddressJar.vb" />
     <Compile Include="Bnet\Protocol\QueryGamesListResponseJar.vb" />
     <Compile Include="Bnet\Protocol\ProductCredentialsJar.vb" />
     <Compile Include="Bnet\Protocol\FileTimeJar.vb" />
@@ -219,6 +220,10 @@
     <Compile Include="Warcraft3\Game\W3GameControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Bnet\Protocol\IPEndPointJar.vb" />
+    <Compile Include="Warcraft3\Protocol\SlotJar.vb" />
+    <Compile Include="Warcraft3\Protocol\WC3 Protocol Packers.vb" />
+    <Compile Include="Warcraft3\Protocol\WC3 Packet.vb" />
     <Compile Include="Warcraft3\Server\W3ServerControl.Designer.vb">
       <DependentUpon>W3ServerControl.vb</DependentUpon>
     </Compile>
@@ -336,7 +341,7 @@
     <Compile Include="Library\Streams\ThrottledWriteStream.vb" />
     <Compile Include="Plugins\Plugin Socket.vb" />
     <Compile Include="CKL\CKL Server.vb" />
-    <Compile Include="Warcraft3\W3Packet.vb" />
+    <Compile Include="Warcraft3\Protocol\WC3 Protocol.vb" />
     <Compile Include="Bot\BotUser.vb" />
     <Compile Include="Interface\LoggerControl.Designer.vb">
       <DependentUpon>LoggerControl.vb</DependentUpon>

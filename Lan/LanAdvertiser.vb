@@ -114,7 +114,7 @@ Namespace Lan
             Contract.Assume(game IsNot Nothing)
 
             'Advertise game closed
-            Dim pk = WC3.Packet.MakeLanDestroyGame(game.GameDescription.GameId)
+            Dim pk = WC3.Protocol.MakeLanDestroyGame(game.GameDescription.GameId)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host
@@ -145,17 +145,17 @@ Namespace Lan
         End Sub
         Private Sub RefreshGame(ByVal game As LanGame)
             Contract.Requires(game IsNot Nothing)
-            Dim pk = WC3.Packet.MakeLanDescribeGame(New CachedExternalValues().WC3MajorVersion, game.GameDescription)
+            Dim pk = WC3.Protocol.MakeLanDescribeGame(New CachedExternalValues().WC3MajorVersion, game.GameDescription)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host
         End Sub
-        Private Sub SendPacket(ByVal pk As WC3.Packet, ByVal targetHost As String, ByVal targetPort As UShort)
+        Private Sub SendPacket(ByVal pk As WC3.Protocol.Packet, ByVal targetHost As String, ByVal targetPort As UShort)
             Contract.Requires(pk IsNot Nothing)
             Try
                 'pack
                 Dim data = pk.Payload.Data.ToArray()
-                data = Concat({WC3.Packet.PacketPrefixValue, pk.id}, CUShort(data.Length + 4).Bytes(), data)
+                data = Concat({WC3.Protocol.Jars.PacketPrefix, pk.id}, CUShort(data.Length + 4).Bytes(), data)
 
                 'Log
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, targetHost), LogMessageType.DataEvent)

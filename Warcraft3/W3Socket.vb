@@ -64,7 +64,7 @@ Namespace WC3
             _socket.Disconnect(expected, reason)
         End Sub
 
-        Public Sub SendPacket(ByVal packet As Packet)
+        Public Sub SendPacket(ByVal packet As Protocol.Packet)
             Contract.Requires(packet IsNot Nothing)
 
             Try
@@ -78,8 +78,8 @@ Namespace WC3
                 Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
                 'Send
-                _socket.WritePacket(Concat({Packet.PacketPrefixValue, packet.id, 0, 0},
-                                           packet.Payload.Data.ToArray))
+                _socket.WritePacket(Concat({Protocol.Jars.PacketPrefix, packet.id, 0, 0},
+                                            packet.Payload.Data.ToArray))
 
             Catch e As Pickling.PicklingException
                 Dim msg = "Error packing {0} for {1}: {2}".Frmt(packet.id, Name, e)

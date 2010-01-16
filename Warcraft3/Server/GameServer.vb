@@ -72,12 +72,12 @@ Namespace WC3
             socket.AsyncReadPacket().CallOnValueSuccess(
                 Sub(data)
                     If Not socketHandled.TryAcquire Then Return
-                    If data.Count < 4 OrElse data(0) <> Packet.PacketPrefixValue OrElse data(1) <> PacketId.Knock Then
+                    If data.Count < 4 OrElse data(0) <> Protocol.Jars.PacketPrefix OrElse data(1) <> Protocol.PacketId.Knock Then
                         Throw New IO.InvalidDataException("{0} was not a warcraft 3 player connection.".Frmt(socket.Name))
                     End If
 
                     'Parse
-                    Dim pickle = Packet.Jars.Knock.Parse(data.SubView(4))
+                    Dim pickle = Protocol.Jars.Knock.Parse(data.SubView(4))
                     Dim vals = pickle.Value
                     Dim player = New W3ConnectingPlayer(Name:=CStr(vals("name")).AssumeNotNull,
                                                         gameid:=CUInt(vals("game id")),
@@ -91,8 +91,8 @@ Namespace WC3
                     Dim oldSocketName = socket.Name
                     _logger.Log(Function() "{0} self-identified as {1} and wants to join game with id = {2}".Frmt(oldSocketName, player.Name, player.GameId), LogMessageType.Positive)
                     socket.Name = player.Name
-                    _logger.Log(Function() "Received {0}".Frmt(PacketId.Knock), LogMessageType.DataEvent)
-                    _logger.Log(Function() "{0}: {1}".Frmt(PacketId.Knock, pickle.Description.Value), LogMessageType.DataParsed)
+                    _logger.Log(Function() "Received {0}".Frmt(Protocol.PacketId.Knock), LogMessageType.DataEvent)
+                    _logger.Log(Function() "{0}: {1}".Frmt(Protocol.PacketId.Knock, pickle.Description.Value), LogMessageType.DataParsed)
                     inQueue.QueueAction(Sub() OnPlayerIntroduction(player))
                 End Sub
             ).Catch(

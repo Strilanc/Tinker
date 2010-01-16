@@ -93,7 +93,7 @@
         Public ReadOnly ip As Net.IPAddress
         Public ReadOnly peerKey As UInteger
         Private WithEvents _socket As W3Socket
-        Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal packet As Packet)
+        Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal packet As Protocol.Packet)
         Public Event Disconnected(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
         Public ReadOnly Property Index As Byte
             Get
@@ -134,7 +134,7 @@
             AsyncProduceConsumeUntilError2(
                 producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Sub(packetData)
-                              RaiseEvent ReceivedPacket(Me, Packet.FromData(CType(packetData(1), PacketId), packetData.SubView(4)))
+                              RaiseEvent ReceivedPacket(Me, Protocol.Packet.FromData(CType(packetData(1), Protocol.PacketId), packetData.SubView(4)))
                           End Sub,
                 errorHandler:=Sub(exception)
                                   'ignore

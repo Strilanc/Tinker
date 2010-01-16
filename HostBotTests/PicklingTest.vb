@@ -64,6 +64,18 @@ Public Class PicklingTest
                                                         Optional ByVal description As String = Nothing)
         JarTest(jar, Function(a As T, b As T) a.Equals(b), value, data, appendSafe, requireAllData, description)
     End Sub
+    Friend Shared Sub JarTest(ByVal jar As IJar(Of Dictionary(Of InvariantString, Object)),
+                              ByVal value As Dictionary(Of InvariantString, Object),
+                              ByVal data As IList(Of Byte),
+                              Optional ByVal appendSafe As Boolean = True,
+                              Optional ByVal requireAllData As Boolean = True)
+        TinkerTests.PicklingTest.JarTest(jar,
+                                         Function(d1, d2) BnetProtocolTest.DictionaryEqual(d1, d2),
+                                         value,
+                                         data,
+                                         requireAllData:=requireAllData,
+                                         appendSafe:=appendSafe)
+    End Sub
 
 #Region "Numeric Jars"
     <TestMethod()>

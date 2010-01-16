@@ -76,7 +76,7 @@ Namespace WC3
                         End If
 
                         Try
-                            Dim id = CType(packetData(1), PacketId)
+                            Dim id = CType(packetData(1), Protocol.PacketId)
                             Dim pickle = ProcessConnectingPlayer(socket, packetData)
                             logger.Log(Function() "Received {0}".Frmt(id), LogMessageType.DataEvent)
                             logger.Log(Function() "{0} = {1}".Frmt(id, pickle.Description.Value), LogMessageType.DataParsed)
@@ -136,11 +136,11 @@ Namespace WC3
         End Sub
 
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
-            If packetData(1) <> PacketId.Knock Then
+            If packetData(1) <> Protocol.PacketId.Knock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
 
-            Dim pickle = Packet.Jars.Knock.Parse(packetData.SubView(4))
+            Dim pickle = Protocol.Jars.Knock.Parse(packetData.SubView(4))
             Dim vals = pickle.Value.AssumeNotNull
             Dim player = New W3ConnectingPlayer(CStr(vals("name")).AssumeNotNull,
                                                 CUInt(vals("game id")),
@@ -168,10 +168,10 @@ Namespace WC3
         End Sub
 
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
-            If packetData(1) <> PacketId.PeerKnock Then
+            If packetData(1) <> Protocol.PacketId.PeerKnock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
             End If
-            Dim pickle = Packet.Jars.PeerKnock.Parse(packetData.SubView(4))
+            Dim pickle = Protocol.Jars.PeerKnock.Parse(packetData.SubView(4))
             Dim vals = pickle.Value.AssumeNotNull
             Dim player = New W3ConnectingPeer(socket,
                                               CByte(vals("receiver peer key")),

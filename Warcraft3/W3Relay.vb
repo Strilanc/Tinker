@@ -124,13 +124,13 @@
                                                           localendpoint:=CType(result.Client.LocalEndPoint, Net.IPEndPoint),
                                                           remoteendpoint:=CType(result.Client.RemoteEndPoint, Net.IPEndPoint),
                                                           clock:=_clock))
-                    w.SendPacket(Packet.MakeKnock(connector.Name,
-                                                  connector.ListenPort,
-                                                  CUShort(connector.RemoteEndPoint.Port),
-                                                  game.RemoteGame.GameId,
-                                                  game.RemoteGame.EntryKey,
-                                                  connector.PeerKey,
-                                                  connector.RemoteEndPoint.Address))
+                    w.SendPacket(Protocol.MakeKnock(connector.Name,
+                                                    connector.ListenPort,
+                                                    CUShort(connector.RemoteEndPoint.Port),
+                                                    game.RemoteGame.GameId,
+                                                    game.RemoteGame.EntryKey,
+                                                    connector.PeerKey,
+                                                    connector.RemoteEndPoint.Address))
 
                     StreamRelay.InterShunt(w.Socket.SubStream, connector.Socket.Socket.SubStream)
                 End Sub

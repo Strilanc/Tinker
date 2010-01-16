@@ -7,7 +7,7 @@ Imports Strilbrary.Collections
 
 <TestClass()>
 Public Class GameServerTest
-    Private Shared ReadOnly KnockData As Byte() = WC3.Packet.MakeKnock(
+    Private Shared ReadOnly KnockData As Byte() = WC3.Protocol.MakeKnock(
             name:="Strilanc",
             listenPort:=6112,
             sendingPort:=6112,
@@ -102,7 +102,7 @@ Public Class GameServerTest
             server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
             'Prep data
             Dim testStream = New TestStream()
-            testStream.EnqueueRead({WC3.Packet.PacketPrefixValue, WC3.PacketId.Knock})
+            testStream.EnqueueRead({WC3.Protocol.Jars.PacketPrefix, WC3.Protocol.PacketId.Knock})
             testStream.EnqueueRead(CUShort(KnockData.Length + 4).Bytes)
             testStream.EnqueueRead(KnockData)
             'Connect
@@ -114,8 +114,8 @@ Public Class GameServerTest
             server.QueueAcceptSocket(socket)
             'Try read Greet
             Dim packet = testStream.RetrieveWritePacket()
-            Assert.IsTrue(packet(1) = WC3.PacketId.Greet)
-            Dim response = WC3.Packet.Jars.Greet.Parse(packet.SubToArray(4).AsReadableList)
+            Assert.IsTrue(packet(1) = WC3.Protocol.PacketId.Greet)
+            Dim response = WC3.Protocol.Jars.Greet.Parse(packet.SubToArray(4).AsReadableList)
             'Check not closed
             Assert.IsTrue(Not testStream.RetrieveClosed(timeout:=100))
             'Cleanup

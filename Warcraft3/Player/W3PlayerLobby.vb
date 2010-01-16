@@ -8,14 +8,14 @@ Namespace WC3
         Private mapUploadPosition As Integer
         Private Const MAX_BUFFERED_MAP_SIZE As UInteger = 64000
 
-        Private Function AddQueuedPacketHandler(ByVal jar As Packet.DefParser,
+        Private Function AddQueuedPacketHandler(ByVal jar As Protocol.DefParser,
                                                 ByVal handler As Action(Of IPickle(Of Dictionary(Of InvariantString, Object)))) As IDisposable
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return AddQueuedPacketHandler(jar.id, jar, handler)
         End Function
-        Private Function AddQueuedPacketHandler(Of T)(ByVal id As PacketId,
+        Private Function AddQueuedPacketHandler(Of T)(ByVal id As Protocol.PacketId,
                                                       ByVal jar As IJar(Of T),
                                                       ByVal handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(jar IsNot Nothing)
@@ -26,8 +26,8 @@ Namespace WC3
         End Function
         Private Sub LobbyStart()
             state = PlayerState.Lobby
-            AddQueuedPacketHandler(Packet.Jars.ClientMapInfo, AddressOf ReceiveClientMapInfo)
-            AddQueuedPacketHandler(Packet.Jars.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
+            AddQueuedPacketHandler(Protocol.Jars.ClientMapInfo, AddressOf ReceiveClientMapInfo)
+            AddQueuedPacketHandler(Protocol.Jars.PeerConnectionInfo, AddressOf ReceivePeerConnectionInfo)
         End Sub
 
 #Region "Networking"
@@ -119,7 +119,7 @@ Namespace WC3
                         Dim out_DataSize = 0
                         Contract.Assume(senderIndex >= 0)
                         Contract.Assume(senderIndex <= 12)
-                        Dim pk = Packet.MakeMapFileData(settings.Map, Index, mapUploadPosition, out_DataSize, senderIndex)
+                        Dim pk = Protocol.MakeMapFileData(settings.Map, Index, mapUploadPosition, out_DataSize, senderIndex)
                         mapUploadPosition += out_DataSize
                         Try
                             SendPacket(pk)

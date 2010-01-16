@@ -32,7 +32,7 @@
                 visibleReadyPlayers.Add(player)
                 visibleUnreadyPlayers.Remove(player)
                 player.Ready = True
-                BroadcastPacket(Packet.MakeOtherPlayerReady(player), Nothing)
+                BroadcastPacket(Protocol.MakeOtherPlayerReady(player), Nothing)
             Next player
 
             If settings.useLoadInGame Then
@@ -76,7 +76,7 @@
             If IsPlayerVisible(sendingPlayer) Then
                 visibleReadiedPlayer = sendingPlayer
             Else
-                sendingPlayer.QueueSendPacket(Packet.MakeOtherPlayerReady(sendingPlayer))
+                sendingPlayer.QueueSendPacket(Protocol.MakeOtherPlayerReady(sendingPlayer))
                 readyPlayers.Add(sendingPlayer)
                 unreadyPlayers.Remove(sendingPlayer)
 
@@ -98,11 +98,11 @@
                 For Each player In _players
                     Contract.Assume(player IsNot Nothing)
                     If IsPlayerVisible(player) Then
-                        sendingPlayer.QueueSendPacket(Packet.MakeOtherPlayerReady(player))
+                        sendingPlayer.QueueSendPacket(Protocol.MakeOtherPlayerReady(player))
                     End If
                 Next player
                 For i = 1 To numFakeTicks
-                    sendingPlayer.QueueSendPacket(Packet.MakeTick(0))
+                    sendingPlayer.QueueSendPacket(Protocol.MakeTick(0))
                 Next i
 
                 If unreadyPlayers.Any Then
@@ -113,17 +113,17 @@
                     If player IsNot sendingPlayer Then
                         SendMessageTo("{0} is ready.".Frmt(sendingPlayer.Name), player)
                         If visibleReadiedPlayer IsNot Nothing Then
-                            player.QueueSendPacket(Packet.MakeRemovePlayerFromLagScreen(visibleReadiedPlayer, 0))
+                            player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(visibleReadiedPlayer, 0))
                         End If
                     End If
                 Next player
 
                 If visibleUnreadyPlayers.Count > 0 Then
-                    sendingPlayer.QueueSendPacket(Packet.MakeShowLagScreen(visibleUnreadyPlayers))
+                    sendingPlayer.QueueSendPacket(Protocol.MakeShowLagScreen(visibleUnreadyPlayers))
                 End If
             Else
                 If visibleReadiedPlayer IsNot Nothing Then
-                    BroadcastPacket(Packet.MakeOtherPlayerReady(visibleReadiedPlayer), Nothing)
+                    BroadcastPacket(Protocol.MakeOtherPlayerReady(visibleReadiedPlayer), Nothing)
                 End If
             End If
 
@@ -141,10 +141,10 @@
                         Contract.Assume(player IsNot Nothing)
                         For Each other In visibleUnreadyPlayers
                             Contract.Assume(other IsNot Nothing)
-                            player.QueueSendPacket(Packet.MakeRemovePlayerFromLagScreen(other, 0))
+                            player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(other, 0))
                         Next other
-                        player.QueueSendPacket(Packet.MakeTick(0))
-                        player.QueueSendPacket(Packet.MakeShowLagScreen(visibleUnreadyPlayers))
+                        player.QueueSendPacket(Protocol.MakeTick(0))
+                        player.QueueSendPacket(Protocol.MakeShowLagScreen(visibleUnreadyPlayers))
                     Next player
                 End Sub
             )

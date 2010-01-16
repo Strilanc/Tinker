@@ -247,7 +247,7 @@
             'Inform other players
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
-                player.QueueSendPacket(Packet.MakeOtherPlayerJoined(newPlayer, index))
+                player.QueueSendPacket(Protocol.MakeOtherPlayerJoined(newPlayer, index))
             Next player
 
             'Inform bot
@@ -330,16 +330,16 @@
             _players.Add(newPlayer)
 
             'Greet new player
-            newPlayer.QueueSendPacket(Packet.MakeGreet(newPlayer, index))
+            newPlayer.QueueSendPacket(Protocol.MakeGreet(newPlayer, index))
             For Each player In (From p In _players Where p IsNot newPlayer AndAlso IsPlayerVisible(p))
-                newPlayer.QueueSendPacket(Packet.MakeOtherPlayerJoined(player))
+                newPlayer.QueueSendPacket(Protocol.MakeOtherPlayerJoined(player))
             Next player
-            newPlayer.QueueSendPacket(Packet.MakeHostMapInfo(Map))
+            newPlayer.QueueSendPacket(Protocol.MakeHostMapInfo(Map))
 
             'Inform other players
             If IsPlayerVisible(newPlayer) Then
                 For Each player In (From p In _players Where p IsNot newPlayer)
-                    player.QueueSendPacket(Packet.MakeOtherPlayerJoined(newPlayer, index))
+                    player.QueueSendPacket(Protocol.MakeOtherPlayerJoined(newPlayer, index))
                 Next player
             End If
 
@@ -401,8 +401,8 @@
                     dst.QueueBufferMap()
                 ElseIf src IsNot Nothing Then
                     Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
-                    src.QueueSendPacket(Packet.MakeSetUploadTarget(dst.Index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
-                    dst.QueueSendPacket(Packet.MakeSetDownloadSource(src.Index))
+                    src.QueueSendPacket(Protocol.MakeSetUploadTarget(dst.Index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
+                    dst.QueueSendPacket(Protocol.MakeSetDownloadSource(src.Index))
                 End If
             Next e
 
@@ -420,10 +420,10 @@
                     dst.IsGettingMapFromBot = False
                 ElseIf src IsNot Nothing Then
                     Logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
-                    src.QueueSendPacket(Packet.MakeOtherPlayerLeft(dst, PlayerLeaveType.Disconnect))
-                    src.QueueSendPacket(Packet.MakeOtherPlayerJoined(dst))
-                    dst.QueueSendPacket(Packet.MakeOtherPlayerLeft(src, PlayerLeaveType.Disconnect))
-                    dst.QueueSendPacket(Packet.MakeOtherPlayerJoined(src))
+                    src.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dst, PlayerLeaveType.Disconnect))
+                    src.QueueSendPacket(Protocol.MakeOtherPlayerJoined(dst))
+                    dst.QueueSendPacket(Protocol.MakeOtherPlayerLeft(src, PlayerLeaveType.Disconnect))
+                    dst.QueueSendPacket(Protocol.MakeOtherPlayerJoined(src))
                 End If
             Next e
         End Sub
@@ -454,7 +454,7 @@
             Dim randomSeed As ModInt32 = Environment.TickCount()
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
-                player.QueueSendPacket(Packet.MakeLobbyState(player, Map, slots, randomSeed, settings.IsAdminGame))
+                player.QueueSendPacket(Protocol.MakeLobbyState(player, Map, slots, randomSeed, settings.IsAdminGame))
             Next player
             TryBeginAutoStart()
         End Sub

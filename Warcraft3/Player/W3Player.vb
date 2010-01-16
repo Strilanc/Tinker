@@ -27,7 +27,7 @@
         Private ReadOnly testCanHost As IFuture
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
-        Private ReadOnly packetHandler As W3PacketHandler
+        Private ReadOnly packetHandler As Protocol.W3PacketHandler
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
         Private _numPeerConnections As Integer
@@ -90,7 +90,7 @@
             Me.settings = settings
             Me.scheduler = scheduler
             Me.logger = If(logger, New Logger)
-            Me.packetHandler = New W3PacketHandler(Me.logger)
+            Me.packetHandler = New Protocol.W3PacketHandler(Me.logger)
             Me._index = index
             If name.Length > MAX_NAME_LENGTH Then Throw New ArgumentException("Player name must be less than 16 characters long.")
             Me._name = name
@@ -120,7 +120,7 @@
             Me.settings = settings
             Me.scheduler = scheduler
             Me.logger = If(logger, New Logger)
-            Me.packetHandler = New W3PacketHandler(Me.logger)
+            Me.packetHandler = New Protocol.W3PacketHandler(Me.logger)
             connectingPlayer.Socket.Logger = Me.logger
             Me.peerKey = connectingPlayer.PeerKey
 
@@ -130,18 +130,18 @@
             Me._index = index
             AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
 
-            AddQueuedPacketHandler(PacketId.Pong,
-                                   Packet.Jars.Pong,
+            AddQueuedPacketHandler(Protocol.PacketId.Pong,
+                                   Protocol.Jars.Pong,
                                    handler:=Function(pickle)
                                                 outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
                                                 Return pinger.QueueReceivedPong(CUInt(pickle.Value("salt")))
                                             End Function)
-            AddQueuedPacketHandler(PacketId.NonGameAction,
-                                   Packet.Jars.NonGameAction,
+            AddQueuedPacketHandler(Protocol.PacketId.NonGameAction,
+                                   Protocol.Jars.NonGameAction,
                                    handler:=AddressOf ReceiveNonGameAction)
-            AddQueuedPacketHandler(Packet.Jars.Leaving, AddressOf ReceiveLeaving)
-            AddQueuedPacketHandler(Packet.Jars.MapFileDataReceived, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(Packet.Jars.MapFileDataProblem, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.Jars.Leaving, AddressOf ReceiveLeaving)
+            AddQueuedPacketHandler(Protocol.Jars.MapFileDataReceived, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.Jars.MapFileDataProblem, AddressOf IgnorePacket)
 
             LobbyStart()
             BeginReading()
@@ -152,7 +152,7 @@
 
             'Pings
             pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
-            AddHandler pinger.SendPing, Sub(sender, salt) QueueSendPacket(Packet.MakePing(salt))
+            AddHandler pinger.SendPing, Sub(sender, salt) QueueSendPacket(Protocol.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) QueueDisconnect(expected:=False,
                                                                    leaveType:=PlayerLeaveType.Disconnect,
                                                                    reason:="Stopped responding to pings.")
@@ -192,7 +192,7 @@
             RaiseEvent Disconnected(Me, expected, leaveType, reason)
         End Sub
 
-        Private Sub SendPacket(ByVal pk As Packet)
+        Private Sub SendPacket(ByVal pk As Protocol.Packet)
             Contract.Requires(pk IsNot Nothing)
             If Me.isFake Then Return
             socket.SendPacket(pk)
@@ -263,7 +263,7 @@
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() Disconnect(expected, leaveType, reason))
         End Function
-        Public Function QueueSendPacket(ByVal packet As Packet) As IFuture
+        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendPacket(packet))

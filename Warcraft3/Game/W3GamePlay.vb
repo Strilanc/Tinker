@@ -128,7 +128,7 @@
                         Dim p_ = p
                         If IsPlayerVisible(p) OrElse (From q In laggingPlayers
                                                       Where GetVisiblePlayer(q) Is GetVisiblePlayer(p_)).None Then
-                            BroadcastPacket(Packet.MakeRemovePlayerFromLagScreen(
+                            BroadcastPacket(Protocol.MakeRemovePlayerFromLagScreen(
                                 player:=GetVisiblePlayer(p),
                                 lagTimeInMilliseconds:=CUInt(_lagTimer.ElapsedTime.TotalMilliseconds)))
                         End If
@@ -140,7 +140,7 @@
                                   AndAlso p.GetTockTime < _gameTime - Me.SettingLagLimit
                                   ).ToList
                 If laggingPlayers.Count > 0 Then
-                    BroadcastPacket(Packet.MakeShowLagScreen(laggingPlayers), Nothing)
+                    BroadcastPacket(Protocol.MakeShowLagScreen(laggingPlayers), Nothing)
                     _lagTimer = _clock.StartTimer()
                 End If
             End If

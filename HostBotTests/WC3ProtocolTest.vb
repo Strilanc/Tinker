@@ -5,24 +5,11 @@ Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
 Imports Tinker.Pickling
 Imports Tinker.WC3
-Imports Tinker.WC3.Packet
+Imports Tinker.WC3.Protocol
 Imports TinkerTests.PicklingTest
 
 <TestClass()>
 Public Class WC3ProtocolTest
-    Private Sub JarTest(ByVal jar As IJar(Of Dictionary(Of InvariantString, Object)),
-                        ByVal value As Dictionary(Of InvariantString, Object),
-                        ByVal data As IList(Of Byte),
-                        Optional ByVal appendSafe As Boolean = True,
-                        Optional ByVal requireAllData As Boolean = True)
-        TinkerTests.PicklingTest.JarTest(jar,
-                                         Function(d1, d2) BnetProtocolTest.DictionaryEqual(d1, d2),
-                                         value,
-                                         data,
-                                         requireAllData:=requireAllData,
-                                         appendSafe:=appendSafe)
-    End Sub
-
     <TestMethod()>
     Public Sub TestClientConfirmHostLeavingTest()
         JarTest(Jars.ClientConfirmHostLeaving,
