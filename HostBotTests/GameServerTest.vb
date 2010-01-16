@@ -36,7 +36,7 @@ Public Class GameServerTest
             hostport:=0,
             totalSlotCount:=TestMap.NumPlayerSlots,
             gameType:=TestMap.GameType,
-            state:=Bnet.Packet.GameStates.Unknown0x10,
+            state:=Bnet.Protocol.GameStates.Unknown0x10,
             usedSlotCount:=0,
             clock:=New ManualClock())
 

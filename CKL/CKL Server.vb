@@ -3,7 +3,7 @@
 Namespace CKL
     '''<summary>Provides answers to bnet cd key authentication challenges, allowing clients to login to bnet once with the server's keys.</summary>
     Public NotInheritable Class Server
-        Private Shared ReadOnly jar As New Bnet.Packet.ProductCredentialsJar("ckl")
+        Private Shared ReadOnly jar As New Bnet.Protocol.ProductCredentialsJar("ckl")
         Public Const PacketPrefixValue As Byte = 1
 
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue

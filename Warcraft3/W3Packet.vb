@@ -374,7 +374,7 @@ Namespace WC3
 
 #Region "Lan"
             Public Shared ReadOnly LanRequestGame As New DefParser(PacketId.LanRequestGame,
-                    New Bnet.Packet.DwordStringJar("product id").Weaken,
+                    New Bnet.Protocol.DwordStringJar("product id").Weaken,
                     New UInt32Jar("major version").Weaken,
                     New UInt32Jar("unknown1").Weaken)
             Public Shared ReadOnly LanRefreshGame As New DefParser(PacketId.LanRefreshGame,
@@ -382,13 +382,13 @@ Namespace WC3
                     New UInt32Jar("num players").Weaken,
                     New UInt32Jar("free slots").Weaken)
             Public Shared ReadOnly LanCreateGame As New DefParser(PacketId.LanCreateGame,
-                    New Bnet.Packet.DwordStringJar("product id").Weaken,
+                    New Bnet.Protocol.DwordStringJar("product id").Weaken,
                     New UInt32Jar("major version").Weaken,
                     New UInt32Jar("game id").Weaken)
             Public Shared ReadOnly LanDestroyGame As New DefParser(PacketId.LanDestroyGame,
                     New UInt32Jar("game id").Weaken)
             Public Shared ReadOnly LanDescribeGame As New DefParser(PacketId.LanDescribeGame,
-                    New Bnet.Packet.DwordStringJar("product id").Weaken,
+                    New Bnet.Protocol.DwordStringJar("product id").Weaken,
                     New UInt32Jar("major version").Weaken,
                     New UInt32Jar("game id").Weaken,
                     New UInt32Jar("entry key", showhex:=True).Weaken,

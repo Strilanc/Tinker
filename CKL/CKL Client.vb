@@ -1,7 +1,7 @@
 ﻿Namespace CKL
     '''<summary>Asynchronously connects to a CKLServer and requests a response to a cd key authentication challenge from bnet.</summary>
     Public NotInheritable Class Client
-        Private Shared ReadOnly jar As New Bnet.Packet.ProductCredentialsJar("authentication")
+        Private Shared ReadOnly jar As New Bnet.Protocol.ProductCredentialsJar("authentication")
 
         Private Sub New()
         End Sub

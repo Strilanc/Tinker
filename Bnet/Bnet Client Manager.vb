@@ -37,8 +37,8 @@ Namespace Bnet
             Me._control = New BnetClientControl(Me)
 
             Me._hooks.Add(client.QueueAddPacketHandler(
-                    id:=Bnet.PacketId.ChatEvent,
-                    jar:=Bnet.Packet.ServerPackets.ChatEvent,
+                    id:=Bnet.Protocol.PacketId.ChatEvent,
+                    jar:=Bnet.Protocol.ServerPackets.ChatEvent,
                     handler:=Function(pickle) TaskedAction(Sub() OnReceivedChatEvent(pickle.Value))))
         End Sub
 
@@ -91,14 +91,14 @@ Namespace Bnet
         Private Sub OnReceivedChatEvent(ByVal vals As Dictionary(Of InvariantString, Object))
             Contract.Requires(vals IsNot Nothing)
 
-            Dim id = CType(vals("event id"), Bnet.Packet.ChatEventId)
+            Dim id = CType(vals("event id"), Bnet.Protocol.ChatEventId)
             Dim user = _client.Profile.Users(CStr(vals("username")))
             Dim text = CStr(vals("text"))
 
             'Check
             If user Is Nothing Then
                 Return 'user not allowed
-            ElseIf id <> Bnet.Packet.ChatEventId.Talk And id <> Bnet.Packet.ChatEventId.Whisper Then
+            ElseIf id <> Bnet.Protocol.ChatEventId.Talk And id <> Bnet.Protocol.ChatEventId.Whisper Then
                 Return 'not a message
             ElseIf text.Substring(0, My.Settings.commandPrefix.AssumeNotNull.Length) <> My.Settings.commandPrefix AndAlso text <> Tinker.Bot.MainBot.TriggerCommandText Then
                 Return 'not a command

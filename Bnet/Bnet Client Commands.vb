@@ -312,7 +312,7 @@ Namespace Bnet
                            Permissions:="local:1")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Return target.QueueSendPacket(Bnet.Packet.MakeQueryGamesList()).EvalOnSuccess(Function() "Sent request.")
+                Return target.QueueSendPacket(Protocol.MakeQueryGamesList()).EvalOnSuccess(Function() "Sent request.")
             End Function
         End Class
 

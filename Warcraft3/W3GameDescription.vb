@@ -37,7 +37,7 @@
         Private ReadOnly _ageTimer As ITimer
         Private ReadOnly _baseAge As TimeSpan
         Private ReadOnly _gameType As GameTypes
-        Private ReadOnly _state As Bnet.Packet.GameStates
+        Private ReadOnly _state As Bnet.Protocol.GameStates
         Private ReadOnly _totalSlotCount As Integer
         Private ReadOnly _usedSlotCount As Integer
 
@@ -80,7 +80,7 @@
                        ByVal entryKey As UInteger,
                        ByVal totalSlotCount As Integer,
                        ByVal gameType As GameTypes,
-                       ByVal state As Bnet.Packet.GameStates,
+                       ByVal state As Bnet.Protocol.GameStates,
                        ByVal usedSlotCount As Integer,
                        ByVal clock As IClock,
                        Optional ByVal baseAge As TimeSpan = Nothing)
@@ -145,7 +145,7 @@
                 Return _usedSlotCount
             End Get
         End Property
-        Public Overridable ReadOnly Property GameState As Bnet.Packet.GameStates
+        Public Overridable ReadOnly Property GameState As Bnet.Protocol.GameStates
             Get
                 Return _state
             End Get
@@ -233,7 +233,7 @@
                        ByVal entryKey As UInteger,
                        ByVal totalSlotCount As Integer,
                        ByVal gameType As GameTypes,
-                       ByVal state As Bnet.Packet.GameStates,
+                       ByVal state As Bnet.Protocol.GameStates,
                        ByVal usedSlotCount As Integer,
                        ByVal clock As IClock,
                        Optional ByVal baseAge As TimeSpan = Nothing)
@@ -286,7 +286,7 @@
                        ByVal entryKey As UInteger,
                        ByVal totalSlotCount As Integer,
                        ByVal gameType As GameTypes,
-                       ByVal state As Bnet.Packet.GameStates,
+                       ByVal state As Bnet.Protocol.GameStates,
                        ByVal usedSlotCount As Integer,
                        ByVal clock As IClock,
                        Optional ByVal baseAge As TimeSpan = Nothing)

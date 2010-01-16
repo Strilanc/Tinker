@@ -7,12 +7,12 @@ Imports System.Collections.Generic
 
 <TestClass()>
 Public Class PicklingTest
-    Private Shared Sub JarTest(Of T)(ByVal jar As IJar(Of T),
-                                     ByVal equater As Func(Of T, T, Boolean),
-                                     ByVal value As T,
-                                     ByVal data As IList(Of Byte),
-                                     Optional ByVal appendSafe As Boolean = True,
-                                     Optional ByVal description As String = Nothing)
+    Friend Shared Sub JarTest(Of T)(ByVal jar As IJar(Of T),
+                                    ByVal equater As Func(Of T, T, Boolean),
+                                    ByVal value As T,
+                                    ByVal data As IList(Of Byte),
+                                    Optional ByVal appendSafe As Boolean = True,
+                                    Optional ByVal description As String = Nothing)
         Dim packed = jar.Pack(value)
         Dim parsed = jar.Parse(data.AsReadableList)
         Assert.IsTrue(equater(packed.Value, value))
@@ -47,11 +47,11 @@ Public Class PicklingTest
             End Try
         End If
     End Sub
-    Private Shared Sub JarTest(Of T As IEquatable(Of T))(ByVal jar As IJar(Of T),
-                                                         ByVal value As T,
-                                                         ByVal data As IList(Of Byte),
-                                                         Optional ByVal appendSafe As Boolean = True,
-                                                         Optional ByVal description As String = Nothing)
+    Friend Shared Sub JarTest(Of T As IEquatable(Of T))(ByVal jar As IJar(Of T),
+                                                        ByVal value As T,
+                                                        ByVal data As IList(Of Byte),
+                                                        Optional ByVal appendSafe As Boolean = True,
+                                                        Optional ByVal description As String = Nothing)
         JarTest(jar, Function(a As T, b As T) a.Equals(b), value, data, appendSafe, description)
     End Sub
 

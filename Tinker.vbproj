@@ -172,13 +172,20 @@
     <Import Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Bnet\Bnet Packet.vb" />
+    <Compile Include="Bnet\Protocol\Bnet Packet.vb" />
     <Compile Include="Bnet\BnetClientControl.Designer.vb">
       <DependentUpon>BnetClientControl.vb</DependentUpon>
     </Compile>
     <Compile Include="Bnet\BnetClientControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Bnet\Protocol\Bnet Protocol Packers.vb" />
+    <Compile Include="Bnet\Protocol\Bnet Protocol.vb" />
+    <Compile Include="Bnet\Protocol\QueryGamesListResponseJar.vb" />
+    <Compile Include="Bnet\Protocol\ProductCredentialsJar.vb" />
+    <Compile Include="Bnet\Protocol\FileTimeJar.vb" />
+    <Compile Include="Bnet\Protocol\DwordStringJar.vb" />
+    <Compile Include="Bnet\Protocol\TextHexValueJar.vb" />
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />
     <Compile Include="Bot\Settings.vb" />
@@ -489,15 +496,16 @@
   <ItemGroup>
     <PublishFile Include="Docs.txt">
       <Visible>False</Visible>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
       <FileType>File</FileType>
     </PublishFile>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

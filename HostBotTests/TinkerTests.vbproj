@@ -7,8 +7,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{044A3176-F3F7-494D-BEAA-49B112A07C8C}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>HostBotTests</RootNamespace>
-    <AssemblyName>HostBotTests</AssemblyName>
+    <RootNamespace>TinkerTests</RootNamespace>
+    <AssemblyName>TinkerTests</AssemblyName>
     <FileAlignment>512</FileAlignment>
     <MyType>Windows</MyType>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
@@ -25,7 +25,7 @@
     <DefineDebug>true</DefineDebug>
     <DefineTrace>true</DefineTrace>
     <OutputPath>bin\Debug\</OutputPath>
-    <DocumentationFile>HostBotTests.xml</DocumentationFile>
+    <DocumentationFile>TinkerTests.xml</DocumentationFile>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
@@ -34,7 +34,7 @@
     <DefineTrace>true</DefineTrace>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DocumentationFile>HostBotTests.xml</DocumentationFile>
+    <DocumentationFile>TinkerTests.xml</DocumentationFile>
     <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
   </PropertyGroup>
   <ItemGroup>
@@ -67,7 +67,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BnetClientTest.vb" />
-    <Compile Include="BnetPacketTest.vb" />
+    <Compile Include="BnetProtocolTest.vb" />
+    <Compile Include="BnetProtocolJarsTest.vb" />
     <Compile Include="PicklingTest.vb" />
     <Compile Include="ProductCredentialsTest.vb" />
     <Compile Include="ClientCredentialsTest.vb" />

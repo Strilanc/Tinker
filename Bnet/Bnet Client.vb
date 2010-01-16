@@ -47,7 +47,7 @@ Namespace Bnet
         Private ReadOnly _clock As IClock
         Private ReadOnly _profile As Bot.ClientProfile
         Private ReadOnly _logger As Logger
-        Private ReadOnly _packetHandler As BnetPacketHandler
+        Private ReadOnly _packetHandler As Protocol.BnetPacketHandler
         Private _socket As PacketSocket
         Private WithEvents _wardenClient As Warden.Client
 
@@ -109,24 +109,24 @@ Namespace Bnet
             Me.inQueue = New TaskedCallQueue
 
             'Start packet machinery
-            Me._packetHandler = New BnetPacketHandler(Me._logger)
+            Me._packetHandler = New Protocol.BnetPacketHandler(Me._logger)
 
-            AddQueuedPacketHandler(Packet.ServerPackets.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
-            AddQueuedPacketHandler(Packet.ServerPackets.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
-            AddQueuedPacketHandler(Packet.ServerPackets.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
-            AddQueuedPacketHandler(Packet.ServerPackets.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
-            AddQueuedPacketHandler(Packet.ServerPackets.ChatEvent, AddressOf ReceiveChatEvent)
-            AddQueuedPacketHandler(Packet.ServerPackets.EnterChat, AddressOf ReceiveEnterChat)
-            AddQueuedPacketHandler(Packet.ServerPackets.MessageBox, AddressOf ReceiveMessageBox)
-            AddQueuedPacketHandler(Packet.ServerPackets.CreateGame3, AddressOf ReceiveCreateGame3)
-            AddQueuedPacketHandler(Packet.ServerPackets.Warden, AddressOf ReceiveWarden)
-            AddQueuedPacketHandler(PacketId.Ping, Packet.ServerPackets.Ping, AddressOf ReceivePing)
-            AddQueuedPacketHandler(PacketId.Null, Packet.ServerPackets.Null, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(PacketId.GetFileTime, Packet.ServerPackets.GetFileTime, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(PacketId.GetIconData, Packet.ServerPackets.GetIconData, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.ServerPackets.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
+            AddQueuedPacketHandler(Protocol.ServerPackets.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
+            AddQueuedPacketHandler(Protocol.ServerPackets.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
+            AddQueuedPacketHandler(Protocol.ServerPackets.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
+            AddQueuedPacketHandler(Protocol.ServerPackets.ChatEvent, AddressOf ReceiveChatEvent)
+            AddQueuedPacketHandler(Protocol.ServerPackets.EnterChat, AddressOf ReceiveEnterChat)
+            AddQueuedPacketHandler(Protocol.ServerPackets.MessageBox, AddressOf ReceiveMessageBox)
+            AddQueuedPacketHandler(Protocol.ServerPackets.CreateGame3, AddressOf ReceiveCreateGame3)
+            AddQueuedPacketHandler(Protocol.ServerPackets.Warden, AddressOf ReceiveWarden)
+            AddQueuedPacketHandler(Protocol.PacketId.Ping, Protocol.ServerPackets.Ping, AddressOf ReceivePing)
+            AddQueuedPacketHandler(Protocol.PacketId.Null, Protocol.ServerPackets.Null, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.PacketId.GetFileTime, Protocol.ServerPackets.GetFileTime, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.PacketId.GetIconData, Protocol.ServerPackets.GetIconData, AddressOf IgnorePacket)
 
-            AddQueuedPacketHandler(PacketId.QueryGamesList, Packet.ServerPackets.QueryGamesList, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(Packet.ServerPackets.FriendsUpdate, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.PacketId.QueryGamesList, Protocol.ServerPackets.QueryGamesList, AddressOf IgnorePacket)
+            AddQueuedPacketHandler(Protocol.ServerPackets.FriendsUpdate, AddressOf IgnorePacket)
         End Sub
 
         Public ReadOnly Property Profile As Bot.ClientProfile
@@ -162,14 +162,14 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() _state)
         End Function
 
-        Private Function AddQueuedPacketHandler(ByVal jar As Packet.DefJar,
+        Private Function AddQueuedPacketHandler(ByVal jar As Protocol.DefJar,
                                                 ByVal handler As Action(Of IPickle(Of Dictionary(Of InvariantString, Object)))) As IDisposable
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return AddQueuedPacketHandler(jar.id, jar, handler)
         End Function
-        Private Function AddQueuedPacketHandler(Of T)(ByVal id As PacketId,
+        Private Function AddQueuedPacketHandler(Of T)(ByVal id As Protocol.PacketId,
                                                       ByVal jar As IParseJar(Of T),
                                                       ByVal handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(jar IsNot Nothing)
@@ -178,7 +178,7 @@ Namespace Bnet
             _packetHandler.AddLogger(id, jar.Weaken)
             Return _packetHandler.AddHandler(id, Function(data) inQueue.QueueAction(Sub() handler(jar.Parse(data))))
         End Function
-        Public Function QueueAddPacketHandler(Of T)(ByVal id As PacketId,
+        Public Function QueueAddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
                                                     ByVal jar As IParseJar(Of T),
                                                     ByVal handler As Func(Of IPickle(Of T), ifuture)) As IFuture(Of IDisposable)
             Contract.Requires(jar IsNot Nothing)
@@ -202,14 +202,14 @@ Namespace Bnet
                     End If
             End Select
 
-            Dim lines = SplitText(text, maxLineLength:=Packet.MaxChatCommandTextLength)
+            Dim lines = SplitText(text, maxLineLength:=Protocol.ClientPackets.MaxChatCommandTextLength)
             If isBnetCommand AndAlso lines.Count > 1 Then
-                Throw New InvalidOperationException("Can't send multi-line commands or commands larger than {0} characters.".Frmt(Packet.MaxChatCommandTextLength))
+                Throw New InvalidOperationException("Can't send multi-line commands or commands larger than {0} characters.".Frmt(Protocol.ClientPackets.MaxChatCommandTextLength))
             End If
             For Each line In lines
                 Contract.Assume(line IsNot Nothing)
                 If line.Length = 0 Then Continue For
-                SendPacket(Bnet.Packet.MakeChatCommand(line))
+                SendPacket(Protocol.MakeChatCommand(line))
             Next line
         End Sub
         Public Function QueueSendText(ByVal text As String) As IFuture
@@ -228,13 +228,13 @@ Namespace Bnet
 
             Dim prefix = "/w {0} ".Frmt(username)
             Contract.Assume(prefix.Length >= 5)
-            If prefix.Length >= Bnet.Packet.MaxChatCommandTextLength \ 2 Then
+            If prefix.Length >= Protocol.ClientPackets.MaxChatCommandTextLength \ 2 Then
                 Throw New ArgumentOutOfRangeException("username", "Username is too long.")
             End If
 
-            For Each line In SplitText(text, maxLineLength:=Bnet.Packet.MaxChatCommandTextLength - prefix.Length)
+            For Each line In SplitText(text, maxLineLength:=Protocol.ClientPackets.MaxChatCommandTextLength - prefix.Length)
                 Contract.Assume(line IsNot Nothing)
-                SendPacket(Bnet.Packet.MakeChatCommand(prefix + line))
+                SendPacket(Protocol.MakeChatCommand(prefix + line))
             Next line
         End Sub
         Public Function QueueSendWhisper(ByVal userName As String, ByVal text As String) As IFuture
@@ -248,7 +248,7 @@ Namespace Bnet
         Private Sub SetReportedListenPort(ByVal port As UShort)
             If port = Me._reportedListenPort Then Return
             Me._reportedListenPort = port
-            SendPacket(Bnet.Packet.MakeNetGamePort(Me._reportedListenPort))
+            SendPacket(Protocol.MakeNetGamePort(Me._reportedListenPort))
         End Sub
 
         Private Sub OnSocketDisconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String)
@@ -355,7 +355,7 @@ Namespace Bnet
 
             'Introductions
             socket.SubStream.Write({1}, 0, 1) 'protocol version
-            SendPacket(Bnet.Packet.MakeAuthenticationBegin(_externalProvider.WC3MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
+            SendPacket(Protocol.MakeAuthenticationBegin(_externalProvider.WC3MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
 
             BeginHandlingPackets()
             Return Me._futureConnected
@@ -383,7 +383,7 @@ Namespace Bnet
             Contract.Requires(packetData.Count >= 4)
             Dim result = Me._packetHandler.HandlePacket(packetData, _socket.Name)
             result.Catch(Sub(exception) QueueDisconnect(expected:=False,
-                                                        reason:="Error handling packet {0}: {1}.".Frmt(CType(packetData(1), PacketId), exception.Message)))
+                                                        reason:="Error handling packet {0}: {1}.".Frmt(CType(packetData(1), Protocol.PacketId), exception.Message)))
             Return result
         End Function
 
@@ -400,7 +400,7 @@ Namespace Bnet
 
             Me._userCredentials = credentials
             ChangeState(ClientState.WaitingForUserAuthenticationBegin)
-            SendPacket(Bnet.Packet.MakeAccountLogOnBegin(credentials))
+            SendPacket(Protocol.MakeAccountLogOnBegin(credentials))
             Logger.Log("Initiating logon with username {0}.".Frmt(credentials.UserName), LogMessageType.Typical)
             Return _futureLoggedIn
         End Function
@@ -460,7 +460,7 @@ Namespace Bnet
 
         Private Sub EnterChannel(ByVal channel As String)
             _futureAdvertisedGame.TrySetFailed(New InvalidOperationException("Re-entered channel before game was created."))
-            SendPacket(Bnet.Packet.MakeJoinChannel(Bnet.Packet.JoinChannelType.ForcedJoin, channel))
+            SendPacket(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
             ChangeState(ClientState.Channel)
         End Sub
 
@@ -522,25 +522,25 @@ Namespace Bnet
                 ChangeState(ClientState.AdvertisingGame) '[throws event]
             End If
 
-            Dim gameState = Bnet.Packet.GameStates.Unknown0x10
-            If _advertisedPrivate Then gameState = gameState Or Bnet.Packet.GameStates.Private
+            Dim gameState = Protocol.GameStates.Unknown0x10
+            If _advertisedPrivate Then gameState = gameState Or Protocol.GameStates.Private
             If useFull Then
-                gameState = gameState Or Bnet.Packet.GameStates.Full
+                gameState = gameState Or Protocol.GameStates.Full
             Else
-                gameState = gameState And Not Bnet.Packet.GameStates.Full
+                gameState = gameState And Not Protocol.GameStates.Full
             End If
             'If in_progress Then gameState = gameState Or BnetPacket.GameStateFlags.InProgress
             'If Not empty Then game_state_flags = game_state_flags Or FLAG_NOT_EMPTY [causes problems: why?]
 
             Dim gameType = WC3.GameTypes.CreateGameUnknown0 Or Me._advertisedGameDescription.GameType
             If _advertisedPrivate Then
-                gameState = gameState Or Bnet.Packet.GameStates.Private
+                gameState = gameState Or Protocol.GameStates.Private
                 gameType = gameType Or WC3.GameTypes.PrivateGame
             Else
-                gameState = gameState And Not Bnet.Packet.GameStates.Private
+                gameState = gameState And Not Protocol.GameStates.Private
                 gameType = gameType And Not WC3.GameTypes.PrivateGame
             End If
-            Select Case Me._advertisedGameDescription.GameStats.observers
+            Select Case Me._advertisedGameDescription.GameStats.Observers
                 Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
                     gameType = gameType Or WC3.GameTypes.ObsFull
                 Case WC3.GameObserverOption.ObsOnDefeat
@@ -561,7 +561,7 @@ Namespace Bnet
                     usedslotcount:=_advertisedGameDescription.UsedSlotCount,
                     baseage:=_advertisedGameDescription.Age,
                     clock:=New SystemClock())
-            SendPacket(Bnet.Packet.MakeCreateGame3(_advertisedGameDescription))
+            SendPacket(Protocol.MakeCreateGame3(_advertisedGameDescription))
         End Sub
         Public Function QueueStartAdvertisingGame(ByVal gameDescription As WC3.LocalGameDescription,
                                                   ByVal isPrivate As Boolean) As IFuture
@@ -575,7 +575,7 @@ Namespace Bnet
 
             Select Case _state
                 Case ClientState.CreatingGame, ClientState.AdvertisingGame
-                    SendPacket(Bnet.Packet.MakeCloseGame3())
+                    SendPacket(Protocol.MakeCloseGame3())
                     If _advertiseTicker IsNot Nothing Then
                         _advertiseTicker.Dispose()
                         _advertiseTicker = Nothing
@@ -607,7 +607,7 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Send)"
-        Private Sub SendPacket(ByVal packet As Bnet.Packet)
+        Private Sub SendPacket(ByVal packet As Protocol.Packet)
             Contract.Requires(Me._state > ClientState.InitiatingConnection)
             Contract.Requires(packet IsNot Nothing)
 
@@ -615,13 +615,13 @@ Namespace Bnet
                 Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
                 Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
 
-                _socket.WritePacket(Concat({Bnet.Packet.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
+                _socket.WritePacket(Concat({Protocol.ClientPackets.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
             Catch e As Exception
                 Disconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, e.Message))
                 e.RaiseAsUnexpected("Error sending {0} to {1}".Frmt(packet.Id, _socket.Name))
             End Try
         End Sub
-        Public Function QueueSendPacket(ByVal packet As Bnet.Packet) As IFuture
+        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendPacket(packet))
@@ -634,7 +634,7 @@ Namespace Bnet
             Dim vals = value.Value
             Const LOGON_TYPE_WC3 As UInteger = 2
             If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(PacketId.ProgramAuthenticationBegin))
+                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))
             End If
 
             'Check
@@ -656,8 +656,8 @@ Namespace Bnet
                                     clientCdKeySalt:=clientCdKeySalt)
             ).Catch(
                 Sub(exception)
-                    exception.RaiseAsUnexpected("Error Handling {0}".Frmt(PacketId.ProgramAuthenticationBegin))
-                    QueueDisconnect(expected:=False, reason:="Error handling {0}: {1}".Frmt(PacketId.ProgramAuthenticationBegin, exception.Message))
+                    exception.RaiseAsUnexpected("Error Handling {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))
+                    QueueDisconnect(expected:=False, reason:="Error handling {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin, exception.Message))
                 End Sub
             )
         End Sub
@@ -684,7 +684,7 @@ Namespace Bnet
             Dim revisionCheckResponse = _externalProvider.GenerateRevisionCheck(folder:=My.Settings.war3path,
                                                                                 seedString:=revisionCheckSeedString,
                                                                                 challengeString:=revisionCheckChallenge)
-            SendPacket(Bnet.Packet.MakeAuthenticationFinish(
+            SendPacket(Protocol.MakeAuthenticationFinish(
                         version:=_externalProvider.WC3ExeVersion,
                         revisionCheckResponse:=revisionCheckResponse,
                         clientCDKeySalt:=clientCdKeySalt,
@@ -721,31 +721,31 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             If _state <> ClientState.WaitingForProgramAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(PacketId.ProgramAuthenticationFinish, _state))
+                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationFinish, _state))
             End If
 
-            Dim result = CType(CUInt(vals("result")), Bnet.Packet.ProgramAuthenticationFinishResult)
+            Dim result = CType(CUInt(vals("result")), Protocol.ProgramAuthenticationFinishResult)
             Dim errmsg As String
             Select Case result
-                Case Bnet.Packet.ProgramAuthenticationFinishResult.Passed
+                Case Protocol.ProgramAuthenticationFinishResult.Passed
                     ChangeState(ClientState.EnterUserCredentials)
                     _futureConnected.TrySetSucceeded()
                     _allowRetryConnect = True
                     Return
 
-                Case Bnet.Packet.ProgramAuthenticationFinishResult.OldVersion
+                Case Protocol.ProgramAuthenticationFinishResult.OldVersion
                     errmsg = "Out of date version"
-                Case Bnet.Packet.ProgramAuthenticationFinishResult.InvalidVersion
+                Case Protocol.ProgramAuthenticationFinishResult.InvalidVersion
                     errmsg = "Invalid version"
-                Case Bnet.Packet.ProgramAuthenticationFinishResult.FutureVersion
+                Case Protocol.ProgramAuthenticationFinishResult.FutureVersion
                     errmsg = "Future version (need to downgrade apparently)"
-                Case Bnet.Packet.ProgramAuthenticationFinishResult.InvalidCDKey
+                Case Protocol.ProgramAuthenticationFinishResult.InvalidCDKey
                     errmsg = "Invalid CD key"
-                Case Bnet.Packet.ProgramAuthenticationFinishResult.UsedCDKey
+                Case Protocol.ProgramAuthenticationFinishResult.UsedCDKey
                     errmsg = "CD key in use by:"
-                Case Bnet.Packet.ProgramAuthenticationFinishResult.BannedCDKey
+                Case Protocol.ProgramAuthenticationFinishResult.BannedCDKey
                     errmsg = "CD key banned!"
-                Case Bnet.Packet.ProgramAuthenticationFinishResult.WrongProduct
+                Case Protocol.ProgramAuthenticationFinishResult.WrongProduct
                     errmsg = "Wrong product."
                 Case Else
                     errmsg = "Unknown authentication failure id: {0}.".Frmt(result)
@@ -760,16 +760,16 @@ Namespace Bnet
             Dim vals = value.Value
 
             If _state <> ClientState.WaitingForUserAuthenticationBegin Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(PacketId.UserAuthenticationBegin))
+                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.UserAuthenticationBegin))
             End If
 
-            Dim result = CType(vals("result"), Bnet.Packet.UserAuthenticationBeginResult)
-            If result <> Bnet.Packet.UserAuthenticationBeginResult.Passed Then
+            Dim result = CType(vals("result"), Protocol.UserAuthenticationBeginResult)
+            If result <> Protocol.UserAuthenticationBeginResult.Passed Then
                 Dim errmsg As String
                 Select Case result
-                    Case Bnet.Packet.UserAuthenticationBeginResult.BadUserName
+                    Case Protocol.UserAuthenticationBeginResult.BadUserName
                         errmsg = "Username doesn't exist."
-                    Case Bnet.Packet.UserAuthenticationBeginResult.UpgradeAccount
+                    Case Protocol.UserAuthenticationBeginResult.UpgradeAccount
                         errmsg = "Account requires upgrade."
                     Case Else
                         errmsg = "Unrecognized login problem: " + result.ToString()
@@ -787,25 +787,25 @@ Namespace Bnet
 
             Me._expectedServerPasswordProof = serverProof
             ChangeState(ClientState.WaitingForUserAuthenticationFinish)
-            SendPacket(Bnet.Packet.MakeAccountLogOnFinish(clientProof))
+            SendPacket(Protocol.MakeAccountLogOnFinish(clientProof))
         End Sub
 
         Private Sub ReceiveUserAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             If _state <> ClientState.WaitingForUserAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(PacketId.UserAuthenticationFinish, _state))
+                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.UserAuthenticationFinish, _state))
             End If
 
-            Dim result = CType(vals("result"), Packet.UserAuthenticationFinishResult)
-            If result <> Packet.UserAuthenticationFinishResult.Passed Then
+            Dim result = CType(vals("result"), Protocol.UserAuthenticationFinishResult)
+            If result <> Protocol.UserAuthenticationFinishResult.Passed Then
                 Dim errmsg As String
                 Select Case result
-                    Case Packet.UserAuthenticationFinishResult.IncorrectPassword
+                    Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
                         errmsg = "Incorrect password. (note: this can happen due to a bnet bug, try again)"
-                    Case Packet.UserAuthenticationFinishResult.NeedEmail
+                    Case Protocol.UserAuthenticationFinishResult.NeedEmail
                         errmsg = "No email address associated with account"
-                    Case Packet.UserAuthenticationFinishResult.CustomError
+                    Case Protocol.UserAuthenticationFinishResult.CustomError
                         errmsg = "Logon error: {0}".Frmt(CStr(vals("custom error info")))
                     Case Else
                         errmsg = "Unrecognized logon error: {0}".Frmt(result)
@@ -828,7 +828,7 @@ Namespace Bnet
 
             'respond
             SetReportedListenPort(6112)
-            SendPacket(Bnet.Packet.MakeEnterChat())
+            SendPacket(Protocol.MakeEnterChat())
         End Sub
 
         Private Sub ReceiveEnterChat(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
@@ -848,7 +848,7 @@ Namespace Bnet
         End Sub
         Private Sub OnWardenReceivedResponseData(ByVal sender As Warden.Client, ByVal data As IReadableList(Of Byte)) Handles _wardenClient.ReceivedWardenData
             Contract.Requires(data IsNot Nothing)
-            inQueue.QueueAction(Sub() SendPacket(Bnet.Packet.MakeWarden(data)))
+            inQueue.QueueAction(Sub() SendPacket(Protocol.MakeWarden(data)))
         End Sub
         Private Sub OnWardenFail(ByVal sender As Warden.Client, ByVal exception As Exception) Handles _wardenClient.Failed
             Contract.Requires(exception IsNot Nothing)
@@ -898,14 +898,14 @@ Namespace Bnet
         Private Sub ReceiveChatEvent(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            Dim eventId = CType(vals("event id"), Bnet.Packet.ChatEventId)
+            Dim eventId = CType(vals("event id"), Protocol.ChatEventId)
             Dim text = CStr(vals("text"))
-            If eventId = Bnet.Packet.ChatEventId.Channel Then _lastChannel = text
+            If eventId = Protocol.ChatEventId.Channel Then _lastChannel = text
         End Sub
 
         Private Sub ReceivePing(ByVal value As IPickle(Of UInt32))
             Contract.Requires(value IsNot Nothing)
-            SendPacket(Bnet.Packet.MakePing(salt:=value.Value))
+            SendPacket(Protocol.MakePing(salt:=value.Value))
         End Sub
 
         Private Sub ReceiveMessageBox(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))

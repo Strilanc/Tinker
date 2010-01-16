@@ -1,4 +1,4 @@
-Imports Tinker.Bnet.Packet
+Imports Tinker.Bnet.Protocol
 
 Namespace Bnet
     <ContractVerification(False)>
@@ -29,12 +29,12 @@ Namespace Bnet
             logClient.SetLogger(Me._client.Logger, "Client")
 
             Me._hooks.Add(Me._client.QueueAddPacketHandler(
-                id:=Bnet.PacketId.ChatEvent,
-                jar:=Bnet.Packet.ServerPackets.ChatEvent,
+                id:=PacketId.ChatEvent,
+                jar:=ServerPackets.ChatEvent,
                 handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedChatEvent(Me._client, pickle.Value))))
             Me._hooks.Add(Me._client.QueueAddPacketHandler(
-                id:=Bnet.PacketId.QueryGamesList,
-                jar:=Bnet.Packet.ServerPackets.QueryGamesList,
+                id:=PacketId.QueryGamesList,
+                jar:=ServerPackets.QueryGamesList,
                 handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value))))
 
             Me._client.QueueGetState.CallOnValueSuccess(Sub(state) OnClientStateChanged(Me._client, state, state))

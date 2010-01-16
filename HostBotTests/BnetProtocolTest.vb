@@ -3,13 +3,13 @@ Imports Strilbrary.Collections
 Imports Strilbrary.Time
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
-Imports Tinker.Bnet.Packet
+Imports Tinker.Bnet.Protocol
 Imports Tinker.Bnet
 Imports Tinker.WC3
 
 <TestClass()>
-Public Class BnetPacketTest
-    Private Shared ReadOnly TestMap As New Map(
+Public Class BnetProtocolTest
+    Friend Shared ReadOnly TestMap As New Map(
             folder:="Test:\Maps",
             relativePath:="test",
             fileChecksumCRC32:=1,
@@ -17,12 +17,12 @@ Public Class BnetPacketTest
             mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
             mapChecksumXORO:=1,
             slotCount:=2)
-    Private Shared ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")
-    Private Shared ReadOnly TestStats As New GameStats(
+    Friend Shared ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")
+    Friend Shared ReadOnly TestStats As New GameStats(
             Map:=TestMap,
             hostName:="StrilancHost",
             argument:=TestArgument)
-    Private Shared ReadOnly TestDesc As New RemoteGameDescription(
+    Friend Shared ReadOnly TestDesc As New RemoteGameDescription(
             name:="test",
             GameStats:=TestStats,
             location:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
@@ -85,19 +85,6 @@ Public Class BnetPacketTest
     End Sub
     <TestMethod()>
     Public Sub ClientCreateGame3()
-        Dim testMap = New Map(
-                folder:="Test:\Maps",
-                relativePath:="test",
-                fileChecksumCRC32:=1,
-                filesize:=1,
-                mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
-                mapChecksumXORO:=1,
-                slotCount:=2)
-        Dim testArgument = New Tinker.Commands.CommandArgument("")
-        Dim testStats = New GameStats(
-                Map:=testMap,
-                hostName:="StrilancHost",
-                argument:=testArgument)
         Assert.IsTrue(ClientPackets.CreateGame3.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"game state", GameStates.Full},
                     {"seconds since creation", 25},
@@ -108,7 +95,7 @@ Public Class BnetPacketTest
                     {"password", "a"},
                     {"num free slots", 3},
                     {"game id", 33},
-                    {"statstring", testStats}
+                    {"statstring", TestStats}
                 }).Data.SequenceEqual(New Byte() _
                     {2, 0, 0, 0,
                      25, 0, 0, 0,
@@ -119,7 +106,7 @@ Public Class BnetPacketTest
                      97, 0,
                      &H33,
                      &H31, &H32, &H30, &H30, &H30, &H30, &H30, &H30
-                    }.Concat(New GameStatsJar("test").Pack(testStats).Data)
+                    }.Concat(New GameStatsJar("test").Pack(TestStats).Data)
                 ))
     End Sub
     <TestMethod()>
