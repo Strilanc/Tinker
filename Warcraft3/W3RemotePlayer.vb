@@ -73,51 +73,45 @@
     Public NotInheritable Class W3ConnectingPeer
         Public ReadOnly socket As W3Socket
         Public ReadOnly receiverPeerKey As Byte
-        Public ReadOnly index As Byte
+        Public ReadOnly pid As PID
         Public ReadOnly connectionFlags As UShort
         Public Sub New(ByVal socket As W3Socket,
                        ByVal receiverPeerKey As Byte,
-                       ByVal index As Byte,
+                       ByVal pid As PID,
                        ByVal connectionFlags As UShort)
             Me.socket = socket
             Me.receiverPeerKey = receiverPeerKey
-            Me.index = index
+            Me.pid = pid
             Me.connectionFlags = connectionFlags
         End Sub
     End Class
 
     Public NotInheritable Class W3Peer
         Public ReadOnly name As String
-        Private ReadOnly _index As Byte
+        Private ReadOnly _pid As PID
         Public ReadOnly listenPort As UShort
         Public ReadOnly ip As Net.IPAddress
         Public ReadOnly peerKey As UInteger
         Private WithEvents _socket As W3Socket
         Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal packet As Protocol.Packet)
         Public Event Disconnected(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
-        Public ReadOnly Property Index As Byte
+        Public ReadOnly Property PID As PID
             Get
-                Contract.Ensures(Contract.Result(Of Byte)() > 0)
-                Contract.Ensures(Contract.Result(Of Byte)() <= 12)
-                Return _index
+                Return _pid
             End Get
         End Property
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_index > 0)
-            Contract.Invariant(_index <= 12)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
-                       ByVal index As Byte,
+                       ByVal pid As PID,
                        ByVal listenPort As UShort,
                        ByVal ip As Net.IPAddress,
                        ByVal peerKey As UInt32)
-            Contract.Assume(index > 0)
-            Contract.Assume(index <= 12)
             Contract.Assume(ip IsNot Nothing)
             Me.name = name
-            Me._index = index
+            Me._pid = pid
             Me.listenPort = listenPort
             Me.ip = ip
             Me.peerKey = peerKey

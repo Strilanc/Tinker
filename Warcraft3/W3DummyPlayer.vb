@@ -15,14 +15,12 @@
         Private WithEvents socket As W3Socket
         Private WithEvents accepter As New W3PeerConnectionAccepter(New SystemClock())
         Public readyDelay As TimeSpan = TimeSpan.Zero
-        Private index As Byte
+        Private index As PID
         Private dl As MapDownload
         Private poolPort As PortPool.PortHandle
         Private mode As DummyPlayerMode
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(index > 0)
-            Contract.Invariant(index <= 12)
             Contract.Invariant(ref IsNot Nothing)
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
@@ -81,7 +79,7 @@
                         Try
                             Select Case id
                                 Case Protocol.PacketId.Greet
-                                    index = CByte(vals("player index"))
+                                    index = New PID(CByte(vals("player index")))
                                 Case Protocol.PacketId.HostMapInfo
                                     If mode = DummyPlayerMode.DownloadMap Then
                                         dl = New MapDownload(CStr(vals("path")),
@@ -98,7 +96,7 @@
                                 Case Protocol.PacketId.OtherPlayerJoined
                                     Dim ext_addr = CType(vals("external address"), Dictionary(Of InvariantString, Object))
                                     Dim player = New W3Peer(CStr(vals("name")),
-                                                            CByte(vals("index")),
+                                                            New PID(CByte(vals("index"))),
                                                             CUShort(ext_addr("port")),
                                                             New Net.IPAddress(CType(ext_addr("ip"), Byte())),
                                                             CUInt(vals("peer key")))
@@ -106,7 +104,7 @@
                                     AddHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
                                     AddHandler player.Disconnected, AddressOf OnPeerDisconnect
                                 Case Protocol.PacketId.OtherPlayerLeft
-                                    Dim player = (From p In otherPlayers Where p.Index = CByte(vals("player index"))).FirstOrDefault
+                                    Dim player = (From p In otherPlayers Where p.PID.Index = CByte(vals("player index"))).FirstOrDefault
                                     If player IsNot Nothing Then
                                         otherPlayers.Remove(player)
                                         RemoveHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
@@ -127,7 +125,7 @@
                                     If ReceiveDLMapChunk(vals) Then
                                         Disconnect(expected:=True, reason:="Download finished.")
                                     Else
-                                        socket.SendPacket(Protocol.MakeMapFileDataReceived(1, Me.index, pos))
+                                        socket.SendPacket(Protocol.MakeMapFileDataReceived(New PID(1), Me.index, pos))
                                     End If
                             End Select
                         Catch e As Exception
@@ -161,7 +159,7 @@
             End If
         End Function
         Private Sub SendPlayersConnected()
-            socket.SendPacket(Protocol.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.Index))
+            socket.SendPacket(Protocol.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.PID))
         End Sub
 
         Private Sub c_Disconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
@@ -195,7 +193,7 @@
                                      ByVal acceptedPlayer As W3ConnectingPeer) Handles accepter.Connection
             ref.QueueAction(
                 Sub()
-                    Dim player = (From p In otherPlayers Where p.Index = acceptedPlayer.index).FirstOrDefault
+                    Dim player = (From p In otherPlayers Where p.PID = acceptedPlayer.pid).FirstOrDefault
                     Dim socket = acceptedPlayer.socket
                     If player Is Nothing Then
                         Dim msg = "{0} was not another player in the game.".Frmt(socket.Name)
@@ -237,7 +235,7 @@
                                 If ReceiveDLMapChunk(vals) Then
                                     Disconnect(expected:=True, reason:="Download finished.")
                                 Else
-                                    sender.Socket.SendPacket(Protocol.MakeMapFileDataReceived(sender.Index, Me.index, pos))
+                                    sender.Socket.SendPacket(Protocol.MakeMapFileDataReceived(sender.PID, Me.index, pos))
                                 End If
                         End Select
                     Catch e As Exception

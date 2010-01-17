@@ -37,6 +37,7 @@ Namespace WC3
             Return QueueGetLatencyDescription.Select(
                 Function(latencyDesc)
                     Dim base = Name.Value.Padded(20) +
+                               "pid={0}".Frmt(Me.PID).Padded(6) +
                                "Host={0}".Frmt(CanHost()).Padded(12) +
                                "{0}c".Frmt(_numPeerConnections).Padded(5) +
                                latencyDesc.Padded(12)
@@ -48,20 +49,20 @@ Namespace WC3
                                 Case "254" : dl = "fake"
                                 Case Else : dl += "%"
                             End Select
-                            Return scheduler.GenerateRateDescription(Index).Select(
+                            Return scheduler.GenerateRateDescription(Me.PID.Index).Select(
                                 Function(rateDescription)
                                     Return base +
                                            Padded("DL={0}".Frmt(dl), 9) +
                                            "EB={0}".Frmt(rateDescription)
                                 End Function)
-                        Case PlayerState.Loading
-                            Return (base + "Ready={0}".Frmt(Ready)).Futurized
-                        Case PlayerState.Playing
-                            Return (base + "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime)).Futurized
-                        Case Else
-                            Throw state.MakeImpossibleValueException
-                    End Select
-                End Function
+                                        Case PlayerState.Loading
+                                            Return (base + "Ready={0}".Frmt(Ready)).Futurized
+                                        Case PlayerState.Playing
+                                            Return (base + "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime)).Futurized
+                                        Case Else
+                                            Throw state.MakeImpossibleValueException
+                                    End Select
+                                End Function
             ).Defuturized
         End Function
     End Class

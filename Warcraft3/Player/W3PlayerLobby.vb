@@ -46,7 +46,7 @@ Namespace WC3
             If state = PlayerState.Lobby Then
                 For Each flag In flags
                     Contract.Assume(flag IsNot Nothing)
-                    scheduler.SetLink(Me.Index, flag.pid, flag.connected).SetHandled()
+                    scheduler.SetLink(Me.PID.Index, flag.pid, flag.connected).SetHandled()
                 Next flag
             End If
             RaiseEvent SuperficialStateUpdated(Me)
@@ -76,16 +76,16 @@ Namespace WC3
                     Return
                 End If
 
-                scheduler.AddClient(Index, hasMap).SetHandled()
-                scheduler.SetLink(Index, Game.LocalTransferClientKey, linked:=True).SetHandled()
+                scheduler.AddClient(Me.PID.Index, hasMap).SetHandled()
+                scheduler.SetLink(Me.PID.Index, Game.LocalTransferClientKey, linked:=True).SetHandled()
                 knowMapState = True
             ElseIf mapDownloadPosition = settings.Map.FileSize Then
                 logger.Log("{0} finished downloading the map.".Frmt(Name), LogMessageType.Positive)
-                scheduler.SetNotTransfering(Index, completed:=True).SetHandled()
+                scheduler.SetNotTransfering(Me.PID.Index, completed:=True).SetHandled()
             Else
                 Dim progress = New FiniteDouble(mapDownloadPosition)
                 Contract.Assume(progress >= 0)
-                scheduler.UpdateProgress(Index, progress).SetHandled()
+                scheduler.UpdateProgress(Me.PID.Index, progress).SetHandled()
                 If IsGettingMapFromBot Then
                     BufferMap()
                 End If
@@ -110,17 +110,13 @@ Namespace WC3
 
 #Region "Misc"
         Public Event WantMapSender(ByVal sender As Player)
-        Public Sub GiveMapSender(ByVal senderIndex As Byte)
-            Contract.Requires(senderIndex >= 0)
-            Contract.Requires(senderIndex <= 12)
+        Public Sub GiveMapSender(ByVal senderIndex As PID?)
             inQueue.QueueAction(
                 Sub()
                     While mapUploadPosition < Math.Min(settings.Map.FileSize, mapDownloadPosition + MAX_BUFFERED_MAP_SIZE)
-                        Dim out_DataSize = 0
-                        Contract.Assume(senderIndex >= 0)
-                        Contract.Assume(senderIndex <= 12)
-                        Dim pk = Protocol.MakeMapFileData(settings.Map, Index, mapUploadPosition, out_DataSize, senderIndex)
-                        mapUploadPosition += out_DataSize
+                        Dim filedata = settings.Map.ReadChunk(mapUploadPosition)
+                        Dim pk = Protocol.MakeMapFileData(PID, mapUploadPosition, filedata, senderIndex)
+                        mapUploadPosition += filedata.Count
                         Try
                             SendPacket(pk)
                         Catch e As Exception '[check this more thoroughly]

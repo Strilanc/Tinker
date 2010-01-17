@@ -19,15 +19,16 @@ Namespace WC3.Protocol
 
         Public Shared Function PackSlot(ByVal slot As Slot,
                                         ByVal receiver As Player) As Dictionary(Of InvariantString, Object)
+            Dim pid = slot.Contents.DataPlayerIndex(receiver)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"team index", slot.Team},
-                    {"color", If(slot.Team = slot.ObserverTeamIndex, slot.ObserverTeamIndex, slot.color)},
+                    {"color", If(slot.Team = slot.ObserverTeamIndex, slot.PlayerColor.Observer, slot.color)},
                     {"race", If(slot.game.Map.IsMelee, slot.race Or slot.Races.Unlocked, slot.race)},
                     {"handicap", slot.handicap},
                     {"is computer", If(slot.Contents.ContentType = SlotContentType.Computer, 1, 0)},
                     {"computer difficulty", slot.Contents.DataComputerLevel},
                     {"slot state", slot.Contents.DataState(receiver)},
-                    {"player index", slot.Contents.DataPlayerIndex(receiver)},
+                    {"player index", If(pid Is Nothing, 0, pid.Value.Index)},
                     {"dl percent", slot.Contents.DataDownloadPercent(receiver)}}
         End Function
     End Class

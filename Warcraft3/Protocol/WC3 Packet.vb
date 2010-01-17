@@ -5,7 +5,6 @@ Namespace WC3.Protocol
         Public Const PacketPrefixValue As Byte = &HF7
         Public ReadOnly id As PacketId
         Private ReadOnly _payload As IPickle(Of Object)
-        Private Shared ReadOnly packetJar As ManualSwitchJar = MakeW3PacketJar()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
@@ -18,15 +17,23 @@ Namespace WC3.Protocol
             End Get
         End Property
 
-        Public Sub New(ByVal id As PacketId, ByVal payload As IPickle(Of Object))
+        Private Sub New(ByVal id As PacketId, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
             Me._payload = payload
             Me.id = id
         End Sub
-        Public Sub New(ByVal id As PacketId, ByVal value As Object)
-            Me.New(id, packetJar.Pack(id, value))
-            Contract.Requires(value IsNot Nothing)
+        Public Sub New(ByVal definition As Packets.SimpleDefinition, ByVal vals As Dictionary(Of InvariantString, Object))
+            Me.New(definition.id, definition.Pack(vals))
+            Contract.Requires(definition IsNot Nothing)
+            Contract.Requires(vals IsNot Nothing)
         End Sub
+
+        Public Shared Function FromValue(Of T)(ByVal id As PacketId, ByVal jar As IPackJar(Of T), ByVal value As T) As Packet
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
+            Return New Packet(id, jar.Weaken.Pack(CType(value, Object)))
+        End Function
 
         Private Shared Sub reg(ByVal jar As ManualSwitchJar, ByVal id As PacketId, ByVal ParamArray subJars() As IJar(Of Object))
             Contract.Requires(jar IsNot Nothing)
@@ -45,25 +52,6 @@ Namespace WC3.Protocol
             'Misc
             reg(jar, Packets.Ping)
             reg(jar, Packets.Pong)
-
-            'Chat
-            Dim chatJar = New InteriorSwitchJar(Of ChatType, Dictionary(Of InvariantString, Object))(
-                        PacketId.Text.ToString,
-                        Function(val) CType(val("type"), ChatType),
-                        Function(data) CType(data(data(0) + 2), ChatType))
-            chatJar.AddPackerParser(ChatType.Game, New TupleJar(PacketId.Text.ToString,
-                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
-                    New ByteJar("sending player index").Weaken,
-                    New EnumByteJar(Of ChatType)("type").Weaken,
-                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
-                    New StringJar("message").Weaken))
-            chatJar.AddPackerParser(ChatType.Lobby, New TupleJar(PacketId.Text.ToString,
-                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
-                    New ByteJar("sending player index").Weaken,
-                    New EnumByteJar(Of ChatType)("type").Weaken,
-                    New StringJar("message").Weaken))
-            jar.AddPackerParser(PacketId.Text, chatJar.Weaken)
-            jar.AddPackerParser(PacketId.NonGameAction, Packets.NonGameAction.Weaken)
 
             'Player Exit
             reg(jar, Packets.Leaving)
@@ -112,13 +100,16 @@ Namespace WC3.Protocol
             reg(jar, Packets.MapFileDataReceived)
             reg(jar, Packets.MapFileDataProblem)
 
+            reg(jar, Packets.HostConfirmHostLeaving)
+            reg(jar, Packets.ClientConfirmHostLeaving)
+
             Return jar
         End Function
 
         Public Shared Function FromData(ByVal id As PacketId, ByVal data As IReadableList(Of Byte)) As Packet
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(id, packetJar.Parse(id, data))
+            Return New Packet(id, MakeW3PacketJar.Parse(id, data))
         End Function
     End Class
 

@@ -43,7 +43,7 @@ Namespace WC3
         Private flagHasPlayerLeft As Boolean
         Private adminPlayer As Player
         Private ReadOnly _players As New AsyncViewableCollection(Of Player)(outQueue:=outQueue)
-        Private ReadOnly indexMap(0 To 12) As Byte
+        Private ReadOnly pidVisiblityMap As New Dictionary(Of PID, PID)()
         Private ReadOnly settings As GameSettings
 
         Public Event PlayerAction(ByVal sender As Game, ByVal player As Player, ByVal action As Protocol.GameAction)
@@ -60,8 +60,7 @@ Namespace WC3
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_players IsNot Nothing)
-            Contract.Invariant(indexMap IsNot Nothing)
-            Contract.Invariant(indexMap.Length = 13)
+            Contract.Invariant(pidVisiblityMap IsNot Nothing)
 
             Contract.Invariant(settings IsNot Nothing)
             Contract.Invariant(freeIndexes IsNot Nothing)
@@ -93,8 +92,8 @@ Namespace WC3
             Me._clock = clock
             Me._name = name
             Me._logger = If(logger, New Logger)
-            For i = 0 To indexMap.Length - 1
-                indexMap(i) = CByte(i)
+            For i As Byte = 1 To 12
+                pidVisiblityMap(New PID(i)) = New PID(i)
             Next i
 
             LobbyNew()
@@ -270,8 +269,8 @@ Namespace WC3
                 player.QueueSendPacket(Protocol.MakeText(text:=prefix + line,
                                                          chatType:=chatType,
                                                          receiverType:=Protocol.ChatReceiverType.Private,
-                                                         receivingPlayers:=_players,
-                                                         sender:=sender))
+                                                         receivingPIDs:=(From p In _players Select p.PID),
+                                                         senderPID:=sender.PID))
             Next line
 
             If display Then
@@ -289,7 +288,7 @@ Namespace WC3
                                 ByVal text As String,
                                 ByVal type As Protocol.ChatType,
                                 ByVal receiverType As Protocol.ChatReceiverType,
-                                ByVal requestedReceiverIndexes As IReadableList(Of Byte))
+                                ByVal requestedReceiverIndexes As IReadableList(Of PID))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(requestedReceiverIndexes IsNot Nothing)
@@ -305,12 +304,12 @@ Namespace WC3
                 text = visibleSender.Name + ": " + text
             End If
             'packet
-            Dim pk = Protocol.MakeText(text, type, receiverType, _players, visibleSender)
+            Dim pk = Protocol.MakeText(text, type, receiverType, requestedReceiverIndexes, visibleSender.PID)
             'receivers
             For Each receiver In _players
                 Contract.Assume(receiver IsNot Nothing)
                 Dim visibleReceiver = GetVisiblePlayer(receiver)
-                If requestedReceiverIndexes.Contains(visibleReceiver.Index) Then
+                If requestedReceiverIndexes.Contains(visibleReceiver.PID) Then
                     receiver.QueueSendPacket(pk)
                 ElseIf visibleReceiver Is visibleSender AndAlso sender IsNot receiver Then
                     receiver.QueueSendPacket(pk)
@@ -332,12 +331,14 @@ Namespace WC3
                         receiverType = CType(vals("receiver type"), Protocol.ChatReceiverType)
                     End If
                     Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IReadableList(Of Byte)).AssumeNotNull
+                    Dim receivingPIDs = (From index In receivingPlayerIndexes
+                                         Select New PID(index)).ToArray.AsReadableList
 
                     ReceiveChat(sender,
                                 message,
                                 chatType,
                                 receiverType,
-                                receivingPlayerIndexes)
+                                receivingPIDs)
 
                 Case Protocol.NonGameAction.SetTeam
                     ReceiveSetTeam(sender, CByte(vals("new value")))
@@ -386,7 +387,7 @@ Namespace WC3
 
             'Clean player
             If IsPlayerVisible(player) Then
-                BroadcastPacket(Protocol.MakeOtherPlayerLeft(player, leaveType), player)
+                BroadcastPacket(Protocol.MakeOtherPlayerLeft(player.PID, leaveType), player)
             End If
             If player Is adminPlayer Then
                 adminPlayer = Nothing
@@ -456,9 +457,9 @@ Namespace WC3
             Return inQueue.QueueAction(Sub() ElevatePlayer(name, password))
         End Function
 
-        Private Function TryFindPlayer(ByVal index As Byte) As Player
+        Private Function TryFindPlayer(ByVal pid As PID) As Player
             Return (From player In _players
-                    Where player.AssumeNotNull.Index = index).
+                    Where player.AssumeNotNull.PID = pid).
                     FirstOrDefault
         End Function
         Private Function TryFindPlayer(ByVal userName As InvariantString) As Player
@@ -501,25 +502,23 @@ Namespace WC3
         <Pure()>
         Private Function IsPlayerVisible(ByVal player As Player) As Boolean
             Contract.Requires(player IsNot Nothing)
-            Return indexMap(player.Index) = player.Index
+            Return pidVisiblityMap(player.PID) = player.PID
         End Function
         <Pure()>
         Private Function GetVisiblePlayer(ByVal player As Player) As Player
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
             If IsPlayerVisible(player) Then Return player
-            Dim visibleIndex = indexMap(player.Index)
-            Dim visiblePlayer = (From p In _players Where p.Index = visibleIndex).First
+            Dim visibleIndex = pidVisiblityMap(player.PID)
+            Dim visiblePlayer = (From p In _players Where p.PID = visibleIndex).First
             Contract.Assume(visiblePlayer IsNot Nothing)
             Return visiblePlayer
         End Function
         Private Shared Sub SetupCoveredSlot(ByVal coveringSlot As Slot,
                                             ByVal coveredSlot As Slot,
-                                            ByVal playerIndex As Byte)
+                                            ByVal playerIndex As PID)
             Contract.Requires(coveringSlot IsNot Nothing)
             Contract.Requires(coveredSlot IsNot Nothing)
-            Contract.Requires(playerIndex > 0)
-            Contract.Requires(playerIndex <= 12)
             If coveringSlot.Contents.EnumPlayers.Count <> 1 Then Throw New InvalidOperationException()
             If coveredSlot.Contents.EnumPlayers.Any Then Throw New InvalidOperationException()
             Dim player = coveringSlot.Contents.EnumPlayers.First

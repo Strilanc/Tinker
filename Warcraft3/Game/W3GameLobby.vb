@@ -4,7 +4,7 @@
 
         Private _downloadScheduler As TransferScheduler(Of Byte)
         Private ReadOnly downloadTimer As New Timers.Timer(interval:=250)
-        Private ReadOnly freeIndexes As New List(Of Byte)
+        Private ReadOnly freeIndexes As New List(Of PID)
         Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds, clock:=New SystemClock())
         Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds, clock:=New SystemClock())
 
@@ -39,7 +39,7 @@
                 slot.team = baseSlot.team
                 slot.locked = settings.defaultSlotLockState
                 slots.Add(slot)
-                freeIndexes.Add(CByte(i + 1))
+                freeIndexes.Add(New PID(CByte(i + 1)))
             Next i
 
             'create observer slots
@@ -51,7 +51,7 @@
                         slot.Team = slot.ObserverTeamIndex
                         slot.race = slot.Races.Random
                         slots.Add(slot)
-                        freeIndexes.Add(CByte(i + 1))
+                        freeIndexes.Add(New PID(CByte(i + 1)))
                     Next i
             End Select
         End Sub
@@ -68,8 +68,6 @@
                     freeIndexes.Remove(playerIndex)
                     Contract.Assume(slots(10) IsNot Nothing)
                     Contract.Assume(slots(11) IsNot Nothing)
-                    Contract.Assume(playerIndex > 0)
-                    Contract.Assume(playerIndex <= 12)
                     AddFakePlayer("# multi obs", slots(10))
                     SetupCoveredSlot(slots(10), slots(11), playerIndex)
                 End If
@@ -99,7 +97,7 @@
         End Sub
         Private Sub InitDownloads()
             If settings.allowUpload AndAlso Map.fileAvailable Then
-                Me.DownloadScheduler.AddClient(LocalTransferClientKey, True)
+                Me.DownloadScheduler.AddClient(LocalTransferClientKey, completed:=True)
             End If
         End Sub
 
@@ -236,8 +234,6 @@
             freeIndexes.Remove(index)
 
             'Make player
-            Contract.Assume(index > 0)
-            Contract.Assume(index <= 12)
             Dim newPlayer As Player = New Player(index, settings, _downloadScheduler, name, Logger)
             If newSlot IsNot Nothing Then
                 newSlot.Contents = New SlotContentsPlayer(newSlot, newPlayer)
@@ -247,7 +243,7 @@
             'Inform other players
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
-                player.QueueSendPacket(Protocol.MakeOtherPlayerJoined(newPlayer, index))
+                player.QueueSendPacket(Protocol.MakeOtherPlayerJoined(newPlayer))
             Next player
 
             'Inform bot
@@ -293,44 +289,42 @@
             Contract.Assume(bestSlot IsNot Nothing)
 
             'Assign index
-            Dim index As Byte = 0
+            Dim pid As PID
             If bestMatch = SlotContents.WantPlayerPriority.Reserved Then
                 'the player has a reserved slot and index
-                index = bestSlot.Contents.PlayerIndex
+                pid = bestSlot.Contents.PlayerIndex.Value
                 For Each player In bestSlot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
                     RemovePlayer(player, wasExpected:=True, leaveType:=PlayerLeaveType.Disconnect, reason:="Reservation fulfilled")
                 Next player
-                If fakeHostPlayer IsNot Nothing AndAlso fakeHostPlayer.Index = index Then
+                If fakeHostPlayer IsNot Nothing AndAlso fakeHostPlayer.PID = pid Then
                     RemovePlayer(fakeHostPlayer, True, PlayerLeaveType.Disconnect, "Need player index for joining player.")
                 End If
-                Contract.Assume(freeIndexes.Contains(index))
-            ElseIf bestSlot.Contents.PlayerIndex <> 0 Then
+                Contract.Assume(freeIndexes.Contains(pid))
+            ElseIf bestSlot.Contents.PlayerIndex IsNot Nothing Then
                 'the slot requires the player to take a specific index
-                index = bestSlot.Contents.PlayerIndex
+                pid = bestSlot.Contents.PlayerIndex.Value
             ElseIf freeIndexes.Count > 0 Then
                 'there is a player index available
-                index = freeIndexes(0)
+                pid = freeIndexes(0)
             ElseIf fakeHostPlayer IsNot Nothing Then
                 'the only player index left belongs to the fake host
-                index = fakeHostPlayer.Index
+                pid = fakeHostPlayer.PID
                 RemovePlayer(fakeHostPlayer, True, PlayerLeaveType.Disconnect, "Need player index for joining player.")
-                Contract.Assume(freeIndexes.Contains(index))
+                Contract.Assume(freeIndexes.Contains(pid))
             Else
                 'no indexes left, go away
                 Throw New InvalidOperationException("No index space available for player.")
             End If
-            freeIndexes.Remove(index)
-            Contract.Assume(index > 0)
-            Contract.Assume(index <= 12)
+            freeIndexes.Remove(pid)
 
             'Create player object
-            Dim newPlayer = New Player(index, settings, _downloadScheduler, connectingPlayer, _clock, Logger)
+            Dim newPlayer = New Player(pid, settings, _downloadScheduler, connectingPlayer, _clock, Logger)
             bestSlot.Contents = bestSlot.Contents.TakePlayer(newPlayer)
             _players.Add(newPlayer)
 
             'Greet new player
-            newPlayer.QueueSendPacket(Protocol.MakeGreet(newPlayer, index))
+            newPlayer.QueueSendPacket(Protocol.MakeGreet(newPlayer.RemoteEndPoint, newPlayer.PID))
             For Each player In (From p In _players Where p IsNot newPlayer AndAlso IsPlayerVisible(p))
                 newPlayer.QueueSendPacket(Protocol.MakeOtherPlayerJoined(player))
             Next player
@@ -339,7 +333,7 @@
             'Inform other players
             If IsPlayerVisible(newPlayer) Then
                 For Each player In (From p In _players Where p IsNot newPlayer)
-                    player.QueueSendPacket(Protocol.MakeOtherPlayerJoined(newPlayer, index))
+                    player.QueueSendPacket(Protocol.MakeOtherPlayerJoined(newPlayer))
                 Next player
             End If
 
@@ -368,7 +362,7 @@
             AddHandler newPlayer.StateUpdated, Sub() inQueue.QueueAction(AddressOf ChangedLobbyState)
             AddHandler newPlayer.ReceivedNonGameAction, AddressOf QueueReceiveNonGameAction
             AddHandler newPlayer.WantMapSender, Sub(sender) QueueGetFakeHostPlayer.CallOnValueSuccess(
-                                                        Sub(value) sender.GiveMapSender(If(value Is Nothing, CByte(0), value.Index))
+                                                        Sub(value) sender.GiveMapSender(If(value Is Nothing, Nothing, value.PID))
                                                     )
 
             Return newPlayer
@@ -385,44 +379,47 @@
                                                ByVal stopped As List(Of TransferScheduler(Of Byte).TransferEndpoints))
             Contract.Requires(started IsNot Nothing)
             Contract.Requires(stopped IsNot Nothing)
-
             'Start transfers
             For Each e In started
                 Contract.Assume(e IsNot Nothing)
-                'Find matching players
-                Dim src = TryFindPlayer(e.source)
-                Dim dst = TryFindPlayer(e.destination)
-                If dst Is Nothing Then Continue For
+                Contract.Assume(e.destination > 0)
+                Contract.Assume(e.destination <= 12)
+                Contract.Assume(e.source = LocalTransferClientKey OrElse e.source > 0)
+                Contract.Assume(e.source = LocalTransferClientKey OrElse e.source <= 12)
 
-                'Apply
+                Dim dst = TryFindPlayer(New PID(e.destination))
+                If dst Is Nothing Then Continue For
                 If e.source = LocalTransferClientKey Then
                     Logger.Log("Initiating map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
                     dst.IsGettingMapFromBot = True
                     dst.QueueBufferMap()
-                ElseIf src IsNot Nothing Then
+                Else
+                    Dim src = TryFindPlayer(New PID(e.source))
+                    If src Is Nothing Then Continue For
                     Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
-                    src.QueueSendPacket(Protocol.MakeSetUploadTarget(dst.Index, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
-                    dst.QueueSendPacket(Protocol.MakeSetDownloadSource(src.Index))
+                    src.QueueSendPacket(Protocol.MakeSetUploadTarget(dst.PID, CUInt(Math.Max(0, dst.GetMapDownloadPosition))))
+                    dst.QueueSendPacket(Protocol.MakeSetDownloadSource(src.PID))
                 End If
             Next e
 
             'Stop transfers
             For Each e In stopped
                 Contract.Assume(e IsNot Nothing)
-                'Find matching players
-                Dim src = TryFindPlayer(e.source)
-                Dim dst = TryFindPlayer(e.destination)
-                If dst Is Nothing Then Continue For
+                Contract.Assume(e.destination > 0)
+                Contract.Assume(e.destination <= 12)
+                Contract.Assume(e.source = LocalTransferClientKey OrElse e.source > 0)
+                Contract.Assume(e.source = LocalTransferClientKey OrElse e.source <= 12)
 
-                'Apply
+                Dim dst = TryFindPlayer(New PID(e.destination))
+                If dst Is Nothing Then Continue For
                 If e.source = LocalTransferClientKey Then
                     Logger.Log("Stopping map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
                     dst.IsGettingMapFromBot = False
-                ElseIf src IsNot Nothing Then
-                    Logger.Log("Stopping peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
-                    src.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dst, PlayerLeaveType.Disconnect))
+                Else
+                    Dim src = TryFindPlayer(New PID(e.source))
+                    If src Is Nothing Then Continue For
                     src.QueueSendPacket(Protocol.MakeOtherPlayerJoined(dst))
-                    dst.QueueSendPacket(Protocol.MakeOtherPlayerLeft(src, PlayerLeaveType.Disconnect))
+                    dst.QueueSendPacket(Protocol.MakeOtherPlayerLeft(src.PID, PlayerLeaveType.Disconnect))
                     dst.QueueSendPacket(Protocol.MakeOtherPlayerJoined(src))
                 End If
             Next e
@@ -431,10 +428,10 @@
         Public Sub LobbyCatchRemovedPlayer(ByVal player As Player, ByVal slot As Slot)
             Contract.Requires(player IsNot Nothing)
 
-            If slot Is Nothing OrElse slot.Contents.PlayerIndex <> player.Index Then
-                freeIndexes.Add(player.Index)
+            If slot Is Nothing OrElse slot.Contents.PlayerIndex <> player.PID Then
+                freeIndexes.Add(player.PID)
             End If
-            DownloadScheduler.RemoveClient(player.Index).SetHandled()
+            DownloadScheduler.RemoveClient(player.PID.Index).SetHandled()
             If player IsNot fakeHostPlayer Then TryRestoreFakeHost()
             ChangedLobbyState()
         End Sub

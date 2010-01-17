@@ -64,6 +64,7 @@
             LightBlue = 9
             DarkGreen = 10
             Brown = 11
+            Observer = 12
         End Enum
         Public Enum Lock
             Unlocked = 0
@@ -102,7 +103,7 @@
         Public Function Cloned() As Slot
             Dim slot = New Slot(game, index)
             slot.color = color
-            slot.team = team
+            slot.Team = Team
             slot.handicap = handicap
             slot.race = race
             slot.Contents = Contents.Clone(slot)
@@ -111,10 +112,10 @@
         End Function
         Public Function GenerateDescription() As IFuture(Of String)
             Dim s = ""
-            If team = ObserverTeamIndex Then
+            If Team = ObserverTeamIndex Then
                 s = "Observer"
             Else
-                s = "Team {0}, {1}, {2}".Frmt(team + 1, race, color)
+                s = "Team {0}, {1}, {2}".Frmt(Team + 1, race, color)
             End If
             Select Case locked
                 Case Slot.Lock.Frozen
@@ -160,9 +161,9 @@
                 Return True
             End Get
         End Property
-        Public Overridable ReadOnly Property PlayerIndex() As Byte
+        Public Overridable ReadOnly Property PlayerIndex() As PID?
             Get
-                Return 0
+                Return Nothing
             End Get
         End Property
 
@@ -182,10 +183,10 @@
                 Return Slot.ComputerLevel.Normal
             End Get
         End Property
-        Public Overridable ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As Byte
+        Public Overridable ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As PID?
             Get
                 Contract.Requires(receiver IsNot Nothing)
-                Return 0
+                Return Nothing
             End Get
         End Property
         Public Overridable ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
@@ -341,9 +342,9 @@
         Public Overrides Function GenerateDescription() As IFuture(Of String)
             Return If(player.isFake, "(Fake){0}".Frmt(player.name).Futurized, player.Description)
         End Function
-        Public Overrides ReadOnly Property PlayerIndex() As Byte
+        Public Overrides ReadOnly Property PlayerIndex() As PID?
             Get
-                Return player.Index
+                Return player.PID
             End Get
         End Property
         Public Overrides Function WantPlayer(ByVal name As InvariantString?) As SlotContents.WantPlayerPriority
@@ -373,9 +374,9 @@
                 Return SlotContentType.Player
             End Get
         End Property
-        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As Byte
+        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As PID?
             Get
-                Return player.Index
+                Return player.PID
             End Get
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
@@ -436,50 +437,53 @@
     Public NotInheritable Class SlotContentsCovered
         Inherits SlotContents
         Public ReadOnly coveringSlot As Slot
-        Private ReadOnly _playerIndex As Byte
-        Private ReadOnly players As List(Of Player)
+        Private ReadOnly _playerIndex As PID
+        Private ReadOnly _players As List(Of Player)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(players IsNot Nothing)
+            Contract.Invariant(_players IsNot Nothing)
             Contract.Invariant(coveringSlot IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal parent As Slot, ByVal coveringSlot As Slot, ByVal playerIndex As Byte, ByVal players As IEnumerable(Of Player))
+        Public Sub New(ByVal parent As Slot,
+                       ByVal coveringSlot As Slot,
+                       ByVal playerIndex As PID,
+                       ByVal players As IEnumerable(Of Player))
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)
             Contract.Requires(players IsNot Nothing)
             Contract.Requires(coveringSlot IsNot Nothing)
             Me.coveringSlot = coveringSlot
-            Me.players = players.ToList
+            Me._players = players.ToList
             Me._playerIndex = playerIndex
         End Sub
         Public Overrides Function GenerateDescription() As IFuture(Of String)
-            Return "[Covered by {0}] Players: {1}".Frmt(coveringSlot.color, (From player In players Select player.name).StringJoin(", ")).Futurized
+            Return "[Covered by {0}] Players: {1}".Frmt(coveringSlot.color, (From player In _players Select player.name).StringJoin(", ")).Futurized
         End Function
         Public Overrides Function Clone(ByVal parent As Slot) As SlotContents
-            Return New SlotContentsCovered(parent, coveringSlot, _playerIndex, players)
+            Return New SlotContentsCovered(parent, coveringSlot, _playerIndex, _players)
         End Function
         Public Overrides Function RemovePlayer(ByVal player As Player) As SlotContents
-            If Not players.Contains(player) Then Throw New InvalidOperationException()
-            Return New SlotContentsCovered(Parent, coveringSlot, _playerIndex, (From p In players Where p IsNot player))
+            If Not _players.Contains(player) Then Throw New InvalidOperationException()
+            Return New SlotContentsCovered(Parent, coveringSlot, _playerIndex, (From p In _players Where p IsNot player))
         End Function
         Public Overrides Function TakePlayer(ByVal player As Player) As SlotContents
-            If players.Contains(player) Then Throw New InvalidOperationException()
-            Return New SlotContentsCovered(Parent, coveringSlot, _playerIndex, players.Concat(New Player() {player}))
+            If _players.Contains(player) Then Throw New InvalidOperationException()
+            Return New SlotContentsCovered(Parent, coveringSlot, _playerIndex, _players.Concat(New Player() {player}))
         End Function
-        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As Byte
+        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As PID?
             Get
-                Return If(players.Contains(receiver), receiver.index, CByte(0))
+                Return If(_players.Contains(receiver), receiver.PID, Nothing)
             End Get
         End Property
-        Public Overrides ReadOnly Property PlayerIndex() As Byte
+        Public Overrides ReadOnly Property PlayerIndex() As PID?
             Get
                 Return _playerIndex
             End Get
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
             Get
-                If players.Contains(receiver) Then
+                If _players.Contains(receiver) Then
                     Return receiver.GetDownloadPercent
                 Else
                     Return 100
@@ -488,7 +492,7 @@
         End Property
         Public Overrides ReadOnly Property DataState(ByVal receiver As Player) As State
             Get
-                Return If(players.Contains(receiver), State.Occupied, State.Closed)
+                Return If(_players.Contains(receiver), State.Occupied, State.Closed)
             End Get
         End Property
         Public Overrides ReadOnly Property ContentType() As SlotContentType

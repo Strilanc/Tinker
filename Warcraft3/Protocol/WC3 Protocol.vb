@@ -184,6 +184,10 @@ Namespace WC3.Protocol
         Pong = &H46
     End Enum
 
+    Public Enum LobbyLayoutStyle
+        Melee = 0
+        Forces = 3
+    End Enum
     Public Enum DownloadState As Byte
         NotDownloading = 1
         Downloading = 3
@@ -283,6 +287,25 @@ Namespace WC3.Protocol
                 New SizePrefixedDataJar("unknown data", prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
+        Public Shared ReadOnly Text As IJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
+        Private Shared Function MakeTextJar() As IJar(Of Dictionary(Of InvariantString, Object))
+            Dim jar = New InteriorSwitchJar(Of ChatType, Dictionary(Of InvariantString, Object))(
+                    name:=PacketId.Text.ToString,
+                    valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
+                    dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType))
+            jar.AddPackerParser(ChatType.Game, New TupleJar(PacketId.Text.ToString,
+                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
+                    New ByteJar("sending player index").Weaken,
+                    New EnumByteJar(Of ChatType)("type").Weaken,
+                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
+                    New StringJar("message").Weaken))
+            jar.AddPackerParser(ChatType.Lobby, New TupleJar(PacketId.Text.ToString,
+                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
+                    New ByteJar("sending player index").Weaken,
+                    New EnumByteJar(Of ChatType)("type").Weaken,
+                    New StringJar("message").Weaken))
+            Return jar
+        End Function
 
         Public Shared ReadOnly OtherPlayerReady As New SimpleDefinition(PacketId.OtherPlayerReady,
                 New ByteJar("player index").Weaken)
@@ -293,7 +316,7 @@ Namespace WC3.Protocol
                 New UInt16Jar("state size").Weaken,
                 New ListJar(Of Dictionary(Of InvariantString, Object))("slots", New SlotJar("slot")).Weaken,
                 New UInt32Jar("time").Weaken,
-                New ByteJar("layout style").Weaken,
+                New EnumByteJar(Of LobbyLayoutStyle)("layout style").Weaken,
                 New ByteJar("num player slots").Weaken)
         Public Shared ReadOnly PeerConnectionInfo As New SimpleDefinition(PacketId.PeerConnectionInfo,
                 New UInt16Jar("player bitflags", showhex:=True).Weaken)

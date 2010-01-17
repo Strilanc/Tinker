@@ -11,34 +11,10 @@ Public Class GameServerTest
             name:="Strilanc",
             listenPort:=6112,
             sendingPort:=6112,
-            gameId:=1,
+            gameId:=42,
             entryKey:=0,
             peerKey:=0,
             internalAddress:=Net.IPAddress.Loopback).Payload.Data.ToArray
-    Private Shared ReadOnly TestMap As New WC3.Map(
-            folder:="Test:\Maps",
-            relativePath:="test",
-            fileChecksumCRC32:=1,
-            filesize:=1,
-            mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
-            mapChecksumXORO:=1,
-            slotCount:=2)
-    Private Shared ReadOnly TestArgument As New Commands.CommandArgument("")
-    Private Shared ReadOnly TestStats As New WC3.GameStats(
-            map:=TestMap,
-            hostName:="StrilancHost",
-            argument:=TestArgument)
-    Private Shared ReadOnly TestDescription As New WC3.LocalGameDescription(
-            name:="Fun Game",
-            gamestats:=TestStats,
-            gameid:=1,
-            entryKey:=0,
-            hostport:=0,
-            totalSlotCount:=TestMap.NumPlayerSlots,
-            gameType:=TestMap.GameType,
-            state:=Bnet.Protocol.GameStates.Unknown0x10,
-            usedSlotCount:=0,
-            clock:=New ManualClock())
 
     <TestMethod()>
     Public Sub MissGameTest()
@@ -78,7 +54,7 @@ Public Class GameServerTest
     Public Sub AddGameSetTest()
         Dim clock = New ManualClock()
         Using server = New WC3.GameServer(clock:=clock)
-            Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
+            Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
             BlockOnFuture(result)
             Assert.IsTrue(result.State = FutureState.Succeeded)
         End Using
@@ -88,8 +64,8 @@ Public Class GameServerTest
     Public Sub DuplicateGameTest()
         Dim clock = New ManualClock()
         Using server = New WC3.GameServer(clock:=clock)
-            server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
-            Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
+            server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
+            Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
             BlockOnFuture(result)
             Assert.IsTrue(result.State = FutureState.Failed)
         End Using
@@ -99,7 +75,7 @@ Public Class GameServerTest
     Public Sub EnterGameTest()
         Dim clock = New ManualClock()
         Using server = New WC3.GameServer(clock:=clock)
-            server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDescription, TestArgument))
+            server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
             'Prep data
             Dim testStream = New TestStream()
             testStream.EnqueueRead({WC3.Protocol.Packets.PacketPrefix, WC3.Protocol.PacketId.Knock})

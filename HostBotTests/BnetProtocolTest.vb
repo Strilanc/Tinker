@@ -9,31 +9,6 @@ Imports Tinker.WC3
 
 <TestClass()>
 Public Class BnetProtocolTest
-    Friend Shared ReadOnly TestMap As New Map(
-            folder:="Test:\Maps",
-            relativePath:="test",
-            fileChecksumCRC32:=1,
-            filesize:=1,
-            mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
-            mapChecksumXORO:=1,
-            slotCount:=2)
-    Friend Shared ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")
-    Friend Shared ReadOnly TestStats As New GameStats(
-            Map:=TestMap,
-            hostName:="StrilancHost",
-            argument:=TestArgument)
-    Friend Shared ReadOnly TestDesc As New RemoteGameDescription(
-            name:="test",
-            GameStats:=TestStats,
-            location:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
-            gameid:=42,
-            entrykey:=0,
-            totalslotcount:=12,
-            gameType:=GameTypes.AuthenticatedMakerBlizzard,
-            state:=GameStates.Private,
-            usedSlotCount:=0,
-            baseage:=5.Seconds,
-            clock:=New ManualClock())
     Private Shared ReadOnly TestDate As New Date(Year:=2000, Month:=1, Day:=1)
     Private Shared ReadOnly TestDateData As Byte() = TestDate.ToFileTime.BitwiseToUInt64.Bytes()
 

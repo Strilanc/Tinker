@@ -162,9 +162,9 @@
                 outgoingData.Add(e)
 
                 'append client data to broadcast game data
-                Dim data = Concat({GetVisiblePlayer(e.Source).Index},
-                                  CUShort(e.Data.Length).Bytes,
-                                  e.Data)
+                Dim data = Concat({GetVisiblePlayer(e.Source).PID.Index},
+                                   CUShort(e.Data.Length).Bytes,
+                                   e.Data)
                 dataList.Add(data)
                 dataLength += data.Length
             End While
@@ -186,7 +186,7 @@
             Contract.Requires(receiver IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-            Return Concat((From e In data Select Concat({If(e.Source Is receiver, receiver, GetVisiblePlayer(e.Source)).Index},
+            Return Concat((From e In data Select Concat({If(e.Source Is receiver, receiver, GetVisiblePlayer(e.Source)).PID.Index},
                                                         CUShort(e.Data.Length).Bytes,
                                                         e.Data)))
         End Function

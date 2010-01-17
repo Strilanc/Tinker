@@ -23,7 +23,7 @@
         Inherits FutureDisposable
 
         Private state As PlayerState = PlayerState.Lobby
-        Private ReadOnly _index As Byte
+        Private ReadOnly _index As PID
         Private ReadOnly testCanHost As IFuture
         Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
@@ -50,10 +50,8 @@
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property Index As Byte
+        Public ReadOnly Property PID As PID
             Get
-                Contract.Ensures(Contract.Result(Of Byte)() > 0)
-                Contract.Ensures(Contract.Result(Of Byte)() <= 12)
                 Return _index
             End Get
         End Property
@@ -72,20 +70,16 @@
             Contract.Invariant(settings IsNot Nothing)
             Contract.Invariant(socket IsNot Nothing)
             Contract.Invariant(scheduler IsNot Nothing)
-            Contract.Invariant(_index > 0)
-            Contract.Invariant(_index <= 12)
             Contract.Invariant(totalTockTime >= 0)
             Contract.Invariant(mapDownloadPosition >= 0)
         End Sub
 
         '''<summary>Creates a fake player.</summary>
-        Public Sub New(ByVal index As Byte,
+        Public Sub New(ByVal index As PID,
                        ByVal settings As GameSettings,
                        ByVal scheduler As TransferScheduler(Of Byte),
                        ByVal name As InvariantString,
                        Optional ByVal logger As Logger = Nothing)
-            Contract.Assume(index > 0)
-            Contract.Assume(index <= 12)
 
             Me.settings = settings
             Me.scheduler = scheduler
@@ -103,18 +97,14 @@
         End Sub
 
         '''<summary>Creates a real player.</summary>
-        Public Sub New(ByVal index As Byte,
+        Public Sub New(ByVal index As PID,
                        ByVal settings As GameSettings,
                        ByVal scheduler As TransferScheduler(Of Byte),
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
-            'Contract.Requires(index > 0)
-            'Contract.Requires(index <= 12)
             'Contract.Requires(game IsNot Nothing)
             'Contract.Requires(connectingPlayer IsNot Nothing)
-            Contract.Assume(index > 0)
-            Contract.Assume(index <= 12)
             Contract.Assume(connectingPlayer IsNot Nothing)
 
             Me.settings = settings
@@ -234,7 +224,7 @@
             Get
                 Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
                 Dim futureLatency = QueueGetLatency()
-                Dim futureTransferState = scheduler.GetClientState(Me.Index)
+                Dim futureTransferState = scheduler.GetClientState(Me.PID.Index)
                 Return New IFuture() {futureLatency, futureTransferState}.Defuturized.EvalOnSuccess(
                     Function()
                         Dim downloadState = futureTransferState.Value

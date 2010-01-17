@@ -121,7 +121,7 @@ Public Class WC3ProtocolTest
                        16, 0, 0, 0,
                        116, 101, 115, 116, 0,
                        0}.Concat(
-                       New GameStatsJar("test").Pack(BnetProtocolTest.TestStats).Data).Concat({
+                       New GameStatsJar("test").Pack(TestStats).Data).Concat({
                        12, 0, 0, 0,
                        8, 0, 0, 0,
                        2, 0, 0, 0,
@@ -135,7 +135,7 @@ Public Class WC3ProtocolTest
                         {"entry key", 16},
                         {"name", "test"},
                         {"password", ""},
-                        {"statstring", BnetProtocolTest.TestStats},
+                        {"statstring", TestStats},
                         {"num slots", 12},
                         {"game type", GameTypes.AuthenticatedMakerBlizzard},
                         {"num players + 1", 2},
@@ -191,13 +191,13 @@ Public Class WC3ProtocolTest
                 data:={7, 0,
                        0,
                        13, 0, 0, 0,
-                       1,
+                       3,
                        12},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"state size", 7},
                         {"slots", New List(Of Dictionary(Of InvariantString, Object))()},
                         {"time", 13},
-                        {"layout style", 1},
+                        {"layout style", LobbyLayoutStyle.Forces},
                         {"num player slots", 12}
                     })
     End Sub
@@ -499,6 +499,33 @@ Public Class WC3ProtocolTest
         JarTest(Packets.StartLoading,
                 data:={},
                 value:=New Dictionary(Of InvariantString, Object) From {})
+    End Sub
+    <TestMethod()>
+    Public Sub TextTest()
+        JarTest(Packets.Text,
+                data:={2, 2, 3,
+                       1,
+                       32,
+                       1, 0, 0, 0,
+                       116, 101, 115, 116, 0},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"receiving player indexes", New List(Of Byte) From {2, 3}},
+                        {"sending player index", 1},
+                        {"type", ChatType.Game},
+                        {"receiver type", ChatReceiverType.Allies},
+                        {"message", "test"}
+                    })
+        JarTest(Packets.Text,
+                data:={2, 2, 3,
+                       1,
+                       16,
+                       116, 101, 115, 116, 0},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"receiving player indexes", New List(Of Byte) From {2, 3}},
+                        {"sending player index", 1},
+                        {"type", ChatType.Lobby},
+                        {"message", "test"}
+                    })
     End Sub
     <TestMethod()>
     Public Sub TickTest()

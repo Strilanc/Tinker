@@ -1,0 +1,48 @@
+﻿Imports Strilbrary.Collections
+Imports Strilbrary.Time
+Imports Strilbrary.Values
+Imports Microsoft.VisualStudio.TestTools.UnitTesting
+Imports System.Collections.Generic
+Imports Tinker.WC3
+Imports Tinker
+Imports Tinker.Pickling
+Imports Tinker.WC3.Protocol
+
+<TestClass()>
+Public Class WC3ProtocolJarsTest
+    <TestMethod()>
+    Public Sub SlotJarTest()
+        Dim jar = New SlotJar("test")
+        JarTest(jar,
+                data:={1, 255, 0, 0, 1, 2, 2, 1, 100},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"player index", 1},
+                        {"dl percent", 255},
+                        {"slot state", SlotContents.State.Open},
+                        {"is computer", 0},
+                        {"team index", 1},
+                        {"color", Slot.PlayerColor.Teal},
+                        {"race", Slot.Races.Orc},
+                        {"computer difficulty", Slot.ComputerLevel.Normal},
+                        {"handicap", 100}
+                    })
+
+        Dim g = New WC3.Game("test", TestSettings, New ManualClock())
+        Dim s1 = New WC3.Slot(g, 1) : s1.Contents = New WC3.SlotContentsOpen(s1)
+        Dim s2 = New WC3.Slot(g, 2) : s2.Contents = New WC3.SlotContentsClosed(s2)
+        Dim s3 = New WC3.Slot(g, 3) : s3.Contents = New WC3.SlotContentsComputer(s3, Slot.ComputerLevel.Insane)
+        Dim s4 = New WC3.Slot(g, 4) : s4.Contents = New WC3.SlotContentsPlayer(s4, TestPlayer)
+        JarTest(jar,
+                value:=SlotJar.PackSlot(s1, Nothing),
+                data:={0, 255, 0, 0, 0, 0, 96, 1, 100})
+        JarTest(jar,
+                value:=SlotJar.PackSlot(s2, Nothing),
+                data:={0, 255, 1, 0, 0, 0, 96, 1, 100})
+        JarTest(jar,
+                value:=SlotJar.PackSlot(s3, Nothing),
+                data:={0, 255, 2, 1, 0, 0, 96, 2, 100})
+        JarTest(jar,
+                value:=SlotJar.PackSlot(s4, Nothing),
+                data:={1, 254, 2, 0, 0, 0, 96, 1, 100})
+    End Sub
+End Class
