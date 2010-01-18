@@ -163,7 +163,7 @@
         Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)
             Contract.Requires(packetData.Count >= 4)
-            Dim result = packetHandler.HandlePacket(packetData, "test")
+            Dim result = packetHandler.HandlePacket(packetData, socket.Name)
             result.Catch(Sub(exception) QueueDisconnect(expected:=False,
                                                         leaveType:=PlayerLeaveType.Disconnect,
                                                         reason:=exception.Message))

@@ -23,7 +23,7 @@ Public Class WC3ProtocolTest
                        3,
                        128, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 1},
+                        {"map transfer key", 1},
                         {"dl state", DownloadState.Downloading},
                         {"total downloaded", 128}
                     })
@@ -69,7 +69,7 @@ Public Class WC3ProtocolTest
                        13, 0, 0, 0}.Concat(
                        sha1).ToArray,
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 0},
+                        {"map transfer key", 0},
                         {"path", "test"},
                         {"size", 15},
                         {"crc32", 32},
@@ -95,7 +95,7 @@ Public Class WC3ProtocolTest
                         {"listen port", 6112},
                         {"peer key", 16},
                         {"name", "test"},
-                        {"unknown data", New Byte() {0}.AsReadableList},
+                        {"peer data", New Byte() {0}.AsReadableList},
                         {"internal address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)}
                     })
     End Sub
@@ -215,7 +215,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"receiving player index", 2},
                         {"sending player index", 3},
-                        {"unknown", 0},
+                        {"map transfer key", 0},
                         {"file position", 128},
                         {"crc32", 32},
                         {"file data", New Byte() {1, 2, 3, 4}.AsReadableList}
@@ -230,7 +230,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"sender index", 2},
                         {"receiver index", 3},
-                        {"unknown", 0}
+                        {"map transfer key", 0}
                     })
     End Sub
     <TestMethod()>
@@ -243,7 +243,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"sender index", 2},
                         {"receiver index", 3},
-                        {"unknown", 0},
+                        {"map transfer key", 0},
                         {"total downloaded", 128}
                     })
     End Sub
@@ -339,7 +339,7 @@ Public Class WC3ProtocolTest
                         {"peer key", 27},
                         {"index", 1},
                         {"name", "test"},
-                        {"unknown data", New Byte() {42}.AsReadableList},
+                        {"peer data", New Byte() {42}.AsReadableList},
                         {"external address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6112)},
                         {"internal address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)}
                     })
@@ -458,7 +458,7 @@ Public Class WC3ProtocolTest
                 data:={0, 0, 0, 0,
                        2},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 0},
+                        {"map transfer key", 0},
                         {"sending player index", 2}
                     })
     End Sub
@@ -469,7 +469,7 @@ Public Class WC3ProtocolTest
                        3,
                        128, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown1", 0},
+                        {"map transfer key", 0},
                         {"receiving player index", 3},
                         {"starting file pos", 128}
                     })

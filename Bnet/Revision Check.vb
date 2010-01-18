@@ -108,7 +108,7 @@ Namespace Bnet
             'Read Operation Count [already loaded from reading variables; no need for MoveNext]
             Dim numOps As Byte 'number of operations
             If Not Byte.TryParse(lines.Current, numOps) Then
-                Throw New ArgumentException("Instructions did not include a valid operation count: {0}".Frmt(lines.Current))
+                Throw New ArgumentException("Revision check instructions did not include a valid operation count: ""{0}""".Frmt(lines.Current))
             End If
 
             'Read Operations

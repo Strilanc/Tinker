@@ -154,6 +154,7 @@ Namespace WC3.Protocol
         ''' <summary>
         ''' Sent by the server to new clients after they have entered the game.
         ''' Contains information about the map they must have to play the game.
+        ''' Specifies the map transfer key, which is included in all map-related packets (players ignore them if it does not match)
         ''' </summary>
         HostMapInfo = &H3D
         ''' <summary>
@@ -265,14 +266,14 @@ Namespace WC3.Protocol
                 New UInt16Jar("listen port").Weaken,
                 New UInt32Jar("peer key", showhex:=True).Weaken,
                 New StringJar("name", maximumContentSize:=15).Weaken,
-                New SizePrefixedDataJar("unknown data", prefixSize:=1).Weaken,
+                New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
         Public Shared ReadOnly Greet As New SimpleDefinition(PacketId.Greet,
                 New SizePrefixedDataJar("slot data", prefixSize:=2).Weaken,
                 New ByteJar("player index").Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken)
         Public Shared ReadOnly HostMapInfo As New SimpleDefinition(PacketId.HostMapInfo,
-                New UInt32Jar("unknown").Weaken,
+                New UInt32Jar("map transfer key").Weaken,
                 New StringJar("path").Weaken,
                 New UInt32Jar("size").Weaken,
                 New UInt32Jar("crc32", showhex:=True).Weaken,
@@ -284,7 +285,7 @@ Namespace WC3.Protocol
                 New UInt32Jar("peer key", showhex:=True).Weaken,
                 New ByteJar("index").Weaken,
                 New StringJar("name", maximumContentSize:=15).Weaken,
-                New SizePrefixedDataJar("unknown data", prefixSize:=1).Weaken,
+                New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
         Public Shared ReadOnly Text As IJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
@@ -427,31 +428,31 @@ Namespace WC3.Protocol
                 New UInt32Jar("salt", showhex:=True).Weaken)
 
         Public Shared ReadOnly ClientMapInfo As New SimpleDefinition(PacketId.ClientMapInfo,
-                New UInt32Jar("unknown").Weaken,
+                New UInt32Jar("map transfer key").Weaken,
                 New EnumByteJar(Of DownloadState)("dl state").Weaken,
                 New UInt32Jar("total downloaded").Weaken)
         Public Shared ReadOnly SetUploadTarget As New SimpleDefinition(PacketId.SetUploadTarget,
-                New UInt32Jar("unknown1").Weaken,
+                New UInt32Jar("map transfer key").Weaken,
                 New ByteJar("receiving player index").Weaken,
                 New UInt32Jar("starting file pos").Weaken)
         Public Shared ReadOnly SetDownloadSource As New SimpleDefinition(PacketId.SetDownloadSource,
-                New UInt32Jar("unknown").Weaken,
+                New UInt32Jar("map transfer key").Weaken,
                 New ByteJar("sending player index").Weaken)
         Public Shared ReadOnly MapFileData As New SimpleDefinition(PacketId.MapFileData,
                 New ByteJar("receiving player index").Weaken,
                 New ByteJar("sending player index").Weaken,
-                New UInt32Jar("unknown").Weaken,
+                New UInt32Jar("map transfer key").Weaken,
                 New UInt32Jar("file position").Weaken,
                 New UInt32Jar("crc32", showhex:=True).Weaken,
                 New RemainingDataJar("file data").Weaken)
         Public Shared ReadOnly MapFileDataReceived As New SimpleDefinition(PacketId.MapFileDataReceived,
                 New ByteJar("sender index").Weaken,
                 New ByteJar("receiver index").Weaken,
-                New UInt32Jar("unknown").Weaken,
+                New UInt32Jar("map transfer key").Weaken,
                 New UInt32Jar("total downloaded").Weaken)
         Public Shared ReadOnly MapFileDataProblem As New SimpleDefinition(PacketId.MapFileDataProblem,
                 New ByteJar("sender index").Weaken,
                 New ByteJar("receiver index").Weaken,
-                New UInt32Jar("unknown").Weaken)
+                New UInt32Jar("map transfer key").Weaken)
     End Class
 End Namespace

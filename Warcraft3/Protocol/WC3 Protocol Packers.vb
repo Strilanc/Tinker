@@ -68,7 +68,7 @@ Namespace WC3.Protocol
             Contract.Requires(map IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.HostMapInfo, New Dictionary(Of InvariantString, Object) From {
-                    {"unknown", 1},
+                    {"map transfer key", 23},
                     {"path", map.AdvertisedPath.ToString},
                     {"size", map.FileSize},
                     {"crc32", map.FileChecksumCRC32},
@@ -86,7 +86,7 @@ Namespace WC3.Protocol
                     {"peer key", peerKey},
                     {"index", pid.Index},
                     {"name", name.ToString},
-                    {"unknown data", New Byte() {0}.AsReadableList},
+                    {"peer data", New Byte() {0}.AsReadableList},
                     {"external address", listenAddress},
                     {"internal address", listenAddress}})
         End Function
@@ -181,7 +181,8 @@ Namespace WC3.Protocol
         Public Function MakeMapFileData(ByVal receiverIndex As PID,
                                         ByVal filePosition As Integer,
                                         ByVal fileData As IReadableList(Of Byte),
-                                        Optional ByVal senderIndex As PID? = Nothing) As Packet
+                                        Optional ByVal senderIndex As PID? = Nothing,
+                                        Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Requires(filePosition >= 0)
             Contract.Requires(fileData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
@@ -192,45 +193,49 @@ Namespace WC3.Protocol
             Return New Packet(Packets.MapFileData, New Dictionary(Of InvariantString, Object) From {
                     {"receiving player index", receiverIndex.Index},
                     {"sending player index", senderIndex.Value.Index},
-                    {"unknown", 1},
+                    {"map transfer key", mapTransferKey},
                     {"file position", filePosition},
                     {"crc32", fileData.CRC32},
                     {"file data", fileData}})
         End Function
         <Pure()>
         Public Function MakeSetUploadTarget(ByVal receiverIndex As PID,
-                                            ByVal filePosition As UInteger) As Packet
+                                            ByVal filePosition As UInteger,
+                                            Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.SetUploadTarget, New Dictionary(Of InvariantString, Object) From {
-                    {"unknown1", 1},
+                    {"map transfer key", mapTransferKey},
                     {"receiving player index", receiverIndex.Index},
                     {"starting file pos", filePosition}})
         End Function
         <Pure()>
-        Public Function MakeSetDownloadSource(ByVal senderIndex As PID) As Packet
+        Public Function MakeSetDownloadSource(ByVal senderIndex As PID,
+                                              Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.SetDownloadSource, New Dictionary(Of InvariantString, Object) From {
-                    {"unknown", 1},
+                    {"map transfer key", mapTransferKey},
                     {"sending player index", senderIndex.Index}})
         End Function
         <Pure()>
         Public Function MakeClientMapInfo(ByVal state As DownloadState,
-                                          ByVal totalDownloaded As UInteger) As Packet
+                                          ByVal totalDownloaded As UInteger,
+                                          Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.ClientMapInfo, New Dictionary(Of InvariantString, Object) From {
-                    {"unknown", 1},
+                    {"map transfer key", mapTransferKey},
                     {"dl state", state},
                     {"total downloaded", totalDownloaded}})
         End Function
         <Pure()>
         Public Function MakeMapFileDataReceived(ByVal senderIndex As PID,
                                                 ByVal receiverIndex As PID,
-                                                ByVal totalDownloaded As UInteger) As Packet
+                                                ByVal totalDownloaded As UInteger,
+                                                Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.MapFileDataReceived, New Dictionary(Of InvariantString, Object) From {
                     {"sender index", senderIndex.Index},
                     {"receiver index", receiverIndex.Index},
-                    {"unknown", 1},
+                    {"map transfer key", mapTransferKey},
                     {"total downloaded", totalDownloaded}})
         End Function
 
@@ -299,7 +304,7 @@ Namespace WC3.Protocol
                     {"listen port", listenPort},
                     {"peer key", peerKey},
                     {"name", name.ToString},
-                    {"unknown data", New Byte() {0}.AsReadableList},
+                    {"peer data", New Byte() {0}.AsReadableList},
                     {"internal address", New Net.IPEndPoint(internalAddress, sendingPort)}})
         End Function
         <Pure()>

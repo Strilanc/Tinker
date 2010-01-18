@@ -681,17 +681,26 @@ Namespace Bnet
                               ByVal revisionCheckChallenge As String,
                               ByVal clientCdKeySalt As UInt32)
             If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
-            Dim revisionCheckResponse = _externalProvider.GenerateRevisionCheck(folder:=My.Settings.war3path,
-                                                                                seedString:=revisionCheckSeedString,
-                                                                                challengeString:=revisionCheckChallenge)
+            Dim revisionCheckResponse As UInt32
+            Try
+                revisionCheckResponse = _externalProvider.GenerateRevisionCheck(
+                    folder:=My.Settings.war3path,
+                    seedString:=revisionCheckSeedString,
+                    challengeString:=revisionCheckChallenge)
+            Catch ex As ArgumentException
+                If revisionCheckChallenge = "" Then
+                    Throw New IO.InvalidDataException("Received an invalid revision check challenge from bnet. Try connecting again.")
+                End If
+                Throw New OperationCanceledException("Failed to compute revision check.", ex)
+            End Try
             SendPacket(Protocol.MakeAuthenticationFinish(
-                        version:=_externalProvider.WC3ExeVersion,
-                        revisionCheckResponse:=revisionCheckResponse,
-                        clientCDKeySalt:=clientCdKeySalt,
-                        cdKeyOwner:=My.Settings.cdKeyOwner,
-                        exeInformation:="war3.exe {0} {1}".Frmt(_externalProvider.WC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
-                                                                _externalProvider.WC3FileSize),
-                        productAuthentication:=keys))
+                       version:=_externalProvider.WC3ExeVersion,
+                       revisionCheckResponse:=revisionCheckResponse,
+                       clientCDKeySalt:=clientCdKeySalt,
+                       cdKeyOwner:=My.Settings.cdKeyOwner,
+                       exeInformation:="war3.exe {0} {1}".Frmt(_externalProvider.WC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
+                                                               _externalProvider.WC3FileSize),
+                       productAuthentication:=keys))
 
             ChangeState(ClientState.WaitingForProgramAuthenticationFinish)
 
