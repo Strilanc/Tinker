@@ -7,9 +7,8 @@ Namespace Pickling
             MyBase.New(name)
         End Sub
 
-        'verification disabled due to inherited preconditions being lost
-        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As IReadableList(Of Byte))(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Return New Pickle(Of TValue)(Me.Name, value, value, Function() "[{0}]".Frmt(value.ToHexString))
         End Function
 

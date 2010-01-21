@@ -111,14 +111,17 @@ Namespace WC3.Protocol
             MyBase.New(name)
         End Sub
 
-        Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+        Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Return New Pickle(Of TValue)(Name, value, Concat({value.id}, value.Payload.Data.ToArray).AsReadableList)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of GameAction)
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameAction)
             Dim val = GameAction.FromData(data)
-            Dim n = val.Payload.Data.Count
-            Return New Pickle(Of GameAction)(Name, val, data.SubView(0, n + 1))
+            Dim datum = data.SubView(0, val.Payload.Data.Count + 1) 'include the id
+            Return New Pickle(Of GameAction)(Name, val, datum)
         End Function
     End Class
 End Namespace

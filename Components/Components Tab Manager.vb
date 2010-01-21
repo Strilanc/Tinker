@@ -16,7 +16,7 @@
             Me._tabControl = tabControl
         End Sub
 
-        'verification disabled due to stupid verifier
+        'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Public Sub Add(ByVal component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)
@@ -45,7 +45,7 @@
             Return _items.ContainsKey(component)
         End Function
 
-        'verification disabled due to stupid verifier
+        'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Public Sub Remove(ByVal component As Components.IBotComponent)
             Contract.Requires(component IsNot Nothing)

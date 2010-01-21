@@ -13,9 +13,12 @@
 
             Public Sub New(ByVal remoteGame As RemoteGameDescription,
                            ByVal localGame As LocalGameDescription)
+                Contract.Requires(remoteGame IsNot Nothing)
+                Contract.Requires(localGame IsNot Nothing)
                 Me._remoteGame = remoteGame
                 Me._localGame = localGame
             End Sub
+            <ContractVerification(False)>
             Public Sub Update(ByVal game As RemoteGameDescription)
                 Contract.Requires(game IsNot Nothing)
                 Me._remoteGame = New RemoteGameDescription(_remoteGame.Name,
@@ -77,17 +80,19 @@
             Me._accepter = New W3ConnectionAccepter(clock)
             Me._accepter.Accepter.OpenPort(portHandle.Port)
         End Sub
+        <ContractVerification(False)>
         Public Function AddGame(ByVal game As RemoteGameDescription) As UInteger
+            Contract.Requires(game IsNot Nothing)
             _gameCount += 1UI
-            Dim localGame = New LocalGameDescription(game.Name,
-                                                     game.GameStats,
-                                                     _portHandle.Port,
-                                                     _gameCount,
-                                                     game.EntryKey,
-                                                     game.TotalSlotCount,
-                                                     game.GameType,
-                                                     game.GameState,
-                                                     game.UsedSlotCount,
+            Dim localGame = New LocalGameDescription(name:=game.Name,
+                                                     GameStats:=game.GameStats,
+                                                     hostport:=_portHandle.Port,
+                                                     gameid:=_gameCount,
+                                                     entrykey:=game.EntryKey,
+                                                     totalslotcount:=game.TotalSlotCount,
+                                                     gametype:=game.GameType,
+                                                     state:=game.GameState,
+                                                     usedSlotCount:=game.UsedSlotCount,
                                                      baseage:=game.Age,
                                                      clock:=New SystemClock())
             _games(_gameCount) = New GamePair(game, localGame)
@@ -96,13 +101,17 @@
         Public ReadOnly Property TryGetLocalGameDescription(ByVal gameId As UInteger) As LocalGameDescription
             Get
                 If Not _games.ContainsKey(gameId) Then Return Nothing
-                Return _games(gameId).LocalGame
+                Dim pair = _games(gameId)
+                Contract.Assume(pair IsNot Nothing)
+                Return pair.LocalGame()
             End Get
         End Property
         Public Function TryUpdateGameDescription(ByVal gameId As UInteger, ByVal game As RemoteGameDescription) As Boolean
             Contract.Requires(game IsNot Nothing)
             If Not _games.ContainsKey(gameId) Then Return False
-            _games(gameId).Update(game)
+            Dim pair = _games(gameId)
+            Contract.Assume(pair IsNot Nothing)
+            pair.Update(game)
             Return True
         End Function
         Public Sub RemoveGame(ByVal gameId As UInteger)
@@ -111,8 +120,10 @@
         End Sub
 
         Private Sub Accept(ByVal connector As W3ConnectingPlayer)
+            Contract.Requires(connector IsNot Nothing)
             If Not _games.ContainsKey(connector.GameId) Then Throw New IO.InvalidDataException()
             Dim game = _games(connector.GameId)
+            Contract.Assume(game IsNot Nothing)
             AsyncTcpConnect(game.RemoteGame.Address, game.RemoteGame.Port).CallWhenValueReady(
                 Sub(result, exception)
                     If exception IsNot Nothing Then

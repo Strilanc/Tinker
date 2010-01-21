@@ -64,7 +64,7 @@ Namespace Bnet.Protocol
                 Return 4
             End Get
         End Property
-        'verification disabled due to stupid verifier
+        'verification disabled due to stupid verifier (1.2.3.0118.5)
         <ContractVerification(False)>
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
             If header(0) <> ServerPackets.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")

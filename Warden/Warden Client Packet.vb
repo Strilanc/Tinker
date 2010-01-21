@@ -39,7 +39,7 @@ Namespace Warden
                     New UInt32Jar("cookie").Weaken,
                     New EnumUInt32Jar(Of ClientType)("client type").Weaken,
                     New SizePrefixedDataJar("seed", prefixsize:=2).Weaken,
-                    New StringJar("username").Weaken,
+                    New NullTerminatedStringJar("username").Weaken,
                     New SizePrefixedDataJar("password", prefixsize:=2).Weaken,
                     New RemainingDataJar("unspecified").Weaken)
             Public Shared ReadOnly FullServiceHandleWardenPacket As New TupleJar(WardenPacketId.FullServiceHandleWardenPacket.ToString,

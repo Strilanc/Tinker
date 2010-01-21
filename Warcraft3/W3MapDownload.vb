@@ -14,8 +14,11 @@
             Contract.Invariant(mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(mapChecksumSHA1.Count = 20)
             Contract.Invariant(size > 0)
+            Contract.Invariant(downloadPath.Length > 0)
+            Contract.Invariant(destinationPath.Length > 0)
         End Sub
 
+        <ContractVerification(False)>
         Public Sub New(ByVal path As String,
                        ByVal size As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
@@ -26,20 +29,22 @@
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
 
-            If Not IO.Directory.Exists(My.Settings.mapPath + "HostBot") Then
-                IO.Directory.CreateDirectory(My.Settings.mapPath + "HostBot")
+            If Not IO.Directory.Exists(IO.Path.Combine(My.Settings.mapPath, Application.ProductName)) Then
+                IO.Directory.CreateDirectory(IO.Path.Combine(My.Settings.mapPath, Application.ProductName))
             End If
             Dim filename = path.Split("\"c).Last
             Dim filenameWithoutExtension = IO.Path.GetFileNameWithoutExtension(filename)
             Dim fileExtension = IO.Path.GetExtension(filename)
             Dim n = 1
             Do
-                Me.destinationPath = IO.Path.Combine(My.Settings.mapPath, "HostBot", filenameWithoutExtension +
-                                                                                     If(n = 1, "", " " + n.ToString(CultureInfo.InvariantCulture)) +
-                                                                                     fileExtension)
+                Me.destinationPath = IO.Path.Combine(My.Settings.mapPath,
+                                                     Application.ProductName,
+                                                     filenameWithoutExtension + If(n = 1, "", " {0}".Frmt(n)) + fileExtension)
                 Me.downloadPath = Me.destinationPath + ".dl"
                 n += 1
             Loop While IO.File.Exists(Me.destinationPath) Or IO.File.Exists(Me.downloadPath)
+            Contract.Assume(Me.destinationPath IsNot Nothing)
+            Contract.Assume(Me.destinationPath.Length > 0)
             Me.size = size
             Me.fileChecksumCRC32 = fileChecksumCRC32
             Me.mapChecksumXORO = mapChecksumXORO
@@ -47,7 +52,6 @@
             Me.file = New IO.FileStream(Me.downloadPath, IO.FileMode.OpenOrCreate, IO.FileAccess.Write, IO.FileShare.None)
         End Sub
 
-        'verification disabled due to incorrect BCL stream contracts
         <ContractVerification(False)>
         Public Function ReceiveChunk(ByVal pos As Integer,
                                      ByVal data As IReadableList(Of Byte)) As Boolean

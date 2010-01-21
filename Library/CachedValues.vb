@@ -8,7 +8,7 @@
         Return My.Settings.mapPath.AssumeNotNull
     End Function
 
-    'verification disabled due to stupid verifier
+    'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
     <Extension()> <Pure()>
     Function WC3MajorVersion(ByVal this As IExternalValues) As Byte
@@ -49,6 +49,7 @@ Public Class CachedExternalValues
     End Function
 
     Public ReadOnly Property WC3ExeVersion As IReadableList(Of Byte) Implements IExternalValues.WC3ExeVersion
+        <ContractVerification(False)>
         Get
             Dim result = _exeVersion
             Contract.Assume(result IsNot Nothing)

@@ -51,6 +51,8 @@
             Contract.Invariant(_ageTimer IsNot Nothing)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Public Shared Function FromArguments(ByVal name As InvariantString,
                                              ByVal map As Map,
                                              ByVal stats As GameStats,
@@ -184,6 +186,8 @@
 
         Private ReadOnly _hostPort As UShort
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Public Shared Shadows Function FromArguments(ByVal name As InvariantString,
                                                      ByVal map As Map,
                                                      ByVal stats As GameStats,
@@ -209,6 +213,8 @@
                                             clock:=clock)
         End Function
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Public Sub New(ByVal gameDescription As GameDescription,
                        ByVal port As UShort,
                        ByVal clock As IClock)

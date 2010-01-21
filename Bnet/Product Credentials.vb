@@ -175,7 +175,7 @@
                          CUInt(product).Bytes,
                          publicKey.Bytes,
                          privateKey
-                        }.Fold.SHA1.AsReadableList()
+                        }.Fold.SHA1
 
             Return New ProductCredentials(
                     product:=product,

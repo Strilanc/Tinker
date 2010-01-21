@@ -31,6 +31,8 @@
             _commandMap.Remove(command.Name)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.3.0118.5)
+        <ContractVerification(False)>
         Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
             Select Case argument
                 Case "" 'intro

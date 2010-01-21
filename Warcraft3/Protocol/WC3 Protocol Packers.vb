@@ -28,6 +28,7 @@ Namespace WC3.Protocol
                                  ByVal receivingPIDs As IEnumerable(Of PID),
                                  ByVal senderPID As PID) As Packet
             Contract.Requires(text IsNot Nothing)
+            Contract.Requires(receivingPIDs IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Select Case chatType
                 Case chatType.Game
@@ -90,14 +91,16 @@ Namespace WC3.Protocol
                     {"external address", listenAddress},
                     {"internal address", listenAddress}})
         End Function
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         <Pure()>
-        Public Function MakeOtherPlayerJoined(ByVal player As WC3.Player ) As Packet
+        Public Function MakeOtherPlayerJoined(ByVal player As WC3.Player) As Packet
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return MakeOtherPlayerJoined(player.Name,
                                          player.PID,
                                          player.peerKey,
-                                         New Net.IPEndPoint(player.RemoteEndPoint.Address, player.listenPort))
+                                         New Net.IPEndPoint(player.RemoteEndPoint.Address, player.ListenPort))
         End Function
         <Pure()>
         Public Function MakePing(ByVal salt As UInteger) As Packet
@@ -259,11 +262,11 @@ Namespace WC3.Protocol
                     {"free slots", game.TotalSlotCount - game.UsedSlotCount}})
         End Function
         <Pure()>
-        Public Function MakeLanDescribeGame(ByVal majorVersion As UInteger,
-                                            ByVal game As LocalGameDescription) As Packet
+        Public Function MakeLanGameDetails(ByVal majorVersion As UInteger,
+                                           ByVal game As LocalGameDescription) As Packet
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(Packets.LanDescribeGame, New Dictionary(Of InvariantString, Object) From {
+            Return New Packet(Packets.LanGameDetails, New Dictionary(Of InvariantString, Object) From {
                     {"product id", "W3XP"},
                     {"major version", majorVersion},
                     {"game id", game.GameId},
@@ -285,6 +288,8 @@ Namespace WC3.Protocol
                     {"game id", gameId}})
         End Function
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         <Pure()>
         Public Function MakeKnock(ByVal name As InvariantString,
                                   ByVal listenPort As UShort,

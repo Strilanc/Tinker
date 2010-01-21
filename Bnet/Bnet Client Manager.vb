@@ -96,22 +96,21 @@ Namespace Bnet
             Dim text = CStr(vals("text"))
 
             'Check
+            Dim commandPrefix = My.Settings.commandPrefix.AssumeNotNull
             If user Is Nothing Then
                 Return 'user not allowed
             ElseIf id <> Bnet.Protocol.ChatEventId.Talk And id <> Bnet.Protocol.ChatEventId.Whisper Then
                 Return 'not a message
-            ElseIf text.Substring(0, My.Settings.commandPrefix.AssumeNotNull.Length) <> My.Settings.commandPrefix AndAlso text <> Tinker.Bot.MainBot.TriggerCommandText Then
+            ElseIf text = Tinker.Bot.MainBot.TriggerCommandText Then '?trigger command
+                If user.Name.Length <= 0 Then Throw New InvalidStateException("Empty user name.")
+                _client.QueueSendWhisper(user.Name, "Command prefix: {0}".Frmt(My.Settings.commandPrefix))
+                Return
+            ElseIf Not text.StartsWith(commandPrefix) Then 'not a command
                 Return 'not a command
             End If
 
-            '?Trigger command
-            If text = Tinker.Bot.MainBot.TriggerCommandText Then
-                _client.QueueSendWhisper(user.Name, "Command prefix: {0}".Frmt(My.Settings.commandPrefix))
-                Return
-            End If
-
             'Normal commands
-            Dim commandText = text.Substring(My.Settings.commandPrefix.AssumeNotNull.Length)
+            Dim commandText = text.Substring(commandPrefix.Length)
             Dim commandResult = Me.InvokeCommand(user, commandText)
             commandResult.CallOnValueSuccess(
                 Sub(message) _client.QueueSendWhisper(user.Name, If(message, "Command Succeeded"))

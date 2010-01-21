@@ -389,7 +389,6 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
             _lastEstimateTimer.Reset()
         End Sub
 
-        <ContractVerification(False)>
         Public Sub UpdateProgress(ByVal progress As FiniteDouble)
             Contract.Requires(progress >= 0)
             If Not Busy Then Return
@@ -417,9 +416,10 @@ Public NotInheritable Class TransferScheduler(Of TClientKey)
 
             'Measure max rate
             Dim dp = _progressAtLastUpdate - _progressAtLastStart
-            Dim dt = GetTransferingTime()
-            If dt > 1.Milliseconds And dp > 0 Then
-                Dim r = dp / New FiniteDouble(dt.TotalMilliseconds)
+            Dim dt = New FiniteDouble(GetTransferingTime().TotalMilliseconds)
+            If dt > 1 AndAlso dp > 0 Then
+                Contract.Assume(dt.Value <> 0)
+                Dim r = dp / dt
                 Dim c = New FiniteDouble(If(numMeasurements = 0 OrElse r > maxRateEstimate, 0, 0.9))
                 maxRateEstimate *= c
                 maxRateEstimate += r * (1 - c)

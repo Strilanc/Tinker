@@ -14,11 +14,10 @@ Namespace Bnet.Protocol
             MyBase.New(name)
         End Sub
 
-        'verification disabled due to stupid verifier
-        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As Net.IPEndPoint)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
+            Contract.Assume(value.Address IsNot Nothing)
             Dim addrBytes = value.Address.GetAddressBytes
-            Contract.Assume(addrBytes IsNot Nothing)
             Dim vals = New Dictionary(Of InvariantString, Object) From {
                     {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0, 2)},
                     {"ip", value.Address},
@@ -28,6 +27,8 @@ Namespace Bnet.Protocol
             Return New Pickle(Of TValue)(Name, value, pickle.Data)
         End Function
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of Net.IPEndPoint)
             Dim pickle = DataJar.Parse(data)
             Dim vals = pickle.Value

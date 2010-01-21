@@ -86,7 +86,7 @@ Namespace Components
         <ContractVerification(False)>
         Private Function TryFindComponent(ByVal type As InvariantString,
                                           ByVal name As InvariantString) As IBotComponent
-            'verification disabled due to stupid verifier
+            'verification disabled due to stupid verifier (1.2.30118.5)
             Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Name = name)
             Contract.Ensures(Contract.Result(Of IBotComponent)() Is Nothing OrElse Contract.Result(Of IBotComponent).Type = type)
             Dim result = (From c In _components Where c.Type = type AndAlso c.Name = name).FirstOrDefault
@@ -102,7 +102,7 @@ Namespace Components
         <ContractVerification(False)>
         Private Function FindComponent(ByVal type As InvariantString,
                                        ByVal name As InvariantString) As IBotComponent
-            'verification disabled due to stupid verifier
+            'verification disabled due to stupid verifier (1.2.30118.5)
             Contract.Ensures(Contract.Result(Of IBotComponent)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IBotComponent)().Name = name)
             Contract.Ensures(Contract.Result(Of IBotComponent)().Type = type)
@@ -127,7 +127,7 @@ Namespace Components
         <Pure()>
         <ContractVerification(False)>
         Private Function TryFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As T
-            'verification disabled due to stupid verifier
+            'verification disabled due to stupid verifier (1.2.30118.5)
             Contract.Ensures(Contract.Result(Of T)() Is Nothing OrElse Contract.Result(Of T).Name = name)
             Dim result = (From c In Me.EnumComponents(Of T)() Where c.Name = name).FirstOrDefault
             Contract.Assume(result Is Nothing OrElse result.Name = name)
@@ -140,7 +140,7 @@ Namespace Components
         <Pure()>
         <ContractVerification(False)>
         Private Function FindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As T
-            'verification disabled due to stupid verifier
+            'verification disabled due to stupid verifier (1.2.30118.5)
             Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of T).Name = name)
             Dim result = TryFindComponent(Of T)(name)

@@ -46,6 +46,7 @@
             _pingQueue.Enqueue(record)
             RaiseEvent SendPing(Me, record.Item1)
         End If
+        Contract.Assume(_latency >= 0)
     End Sub
 
     Private Sub ReceivedPong(ByVal salt As UInteger)

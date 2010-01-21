@@ -112,8 +112,8 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub LanDescribeGameTest()
-        JarTest(Packets.LanDescribeGame,
+    Public Sub LanGameDetailsTest()
+        JarTest(Packets.LanGameDetails,
                 data:=New Byte() _
                       {Asc("3"), Asc("r"), Asc("a"), Asc("w"),
                        20, 0, 0, 0,

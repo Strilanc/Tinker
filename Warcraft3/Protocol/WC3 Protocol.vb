@@ -131,7 +131,7 @@ Namespace WC3.Protocol
         '''<summary>Response to LanRefreshGame or LanCreateGame when clients want to know game info.</summary>
         LanRequestGame = &H2F
         '''<summary>Response to LanRequestGame containing detailed game information.</summary>
-        LanDescribeGame = &H30
+        LanGameDetails = &H30
         '''<summary>Broadcast on lan when a game is created.</summary>
         LanCreateGame = &H31
         ''' <summary>
@@ -233,6 +233,8 @@ Namespace WC3.Protocol
         [Private] = 16
     End Enum
 
+    'verification disabled because this class causes the verifier to go OutOfMemory
+    <ContractVerification(False)>
     Public NotInheritable Class Packets
         Private Sub New()
         End Sub
@@ -259,13 +261,14 @@ Namespace WC3.Protocol
                 New ByteJar("player index").Weaken,
                 New EnumUInt32Jar(Of PlayerLeaveType)("leave type").Weaken)
 
+        Public Const MaxPlayerNameLength As Integer = 15
         Public Shared ReadOnly Knock As New SimpleDefinition(PacketId.Knock,
                 New UInt32Jar("game id").Weaken,
                 New UInt32Jar("entry key", showhex:=True).Weaken,
                 New ByteJar("unknown value").Weaken,
                 New UInt16Jar("listen port").Weaken,
                 New UInt32Jar("peer key", showhex:=True).Weaken,
-                New StringJar("name", maximumContentSize:=15).Weaken,
+                New NullTerminatedStringJar("name", maximumContentSize:=MaxPlayerNameLength).Weaken,
                 New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
         Public Shared ReadOnly Greet As New SimpleDefinition(PacketId.Greet,
@@ -274,7 +277,7 @@ Namespace WC3.Protocol
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken)
         Public Shared ReadOnly HostMapInfo As New SimpleDefinition(PacketId.HostMapInfo,
                 New UInt32Jar("map transfer key").Weaken,
-                New StringJar("path").Weaken,
+                New NullTerminatedStringJar("path").Weaken,
                 New UInt32Jar("size").Weaken,
                 New UInt32Jar("crc32", showhex:=True).Weaken,
                 New UInt32Jar("xoro checksum", showhex:=True).Weaken,
@@ -284,7 +287,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly OtherPlayerJoined As New SimpleDefinition(PacketId.OtherPlayerJoined,
                 New UInt32Jar("peer key", showhex:=True).Weaken,
                 New ByteJar("index").Weaken,
-                New StringJar("name", maximumContentSize:=15).Weaken,
+                New NullTerminatedStringJar("name", maximumContentSize:=15).Weaken,
                 New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
@@ -299,12 +302,12 @@ Namespace WC3.Protocol
                     New ByteJar("sending player index").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
-                    New StringJar("message").Weaken))
+                    New NullTerminatedStringJar("message").Weaken))
             jar.AddPackerParser(ChatType.Lobby, New TupleJar(PacketId.Text.ToString,
                     New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
                     New ByteJar("sending player index").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
-                    New StringJar("message").Weaken))
+                    New NullTerminatedStringJar("message").Weaken))
             Return jar
         End Function
 
@@ -334,12 +337,12 @@ Namespace WC3.Protocol
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
-                    New StringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
+                    New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.LobbyChat, New TupleJar(PacketId.NonGameAction.ToString,
                     New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New StringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
+                    New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetTeam, New TupleJar(PacketId.NonGameAction.ToString,
                     New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
@@ -399,13 +402,13 @@ Namespace WC3.Protocol
                 New UInt32Jar("game id").Weaken)
         Public Shared ReadOnly LanDestroyGame As New SimpleDefinition(PacketId.LanDestroyGame,
                 New UInt32Jar("game id").Weaken)
-        Public Shared ReadOnly LanDescribeGame As New SimpleDefinition(PacketId.LanDescribeGame,
+        Public Shared ReadOnly LanGameDetails As New SimpleDefinition(PacketId.LanGameDetails,
                 New Bnet.Protocol.DwordStringJar("product id").Weaken,
                 New UInt32Jar("major version").Weaken,
                 New UInt32Jar("game id").Weaken,
                 New UInt32Jar("entry key", showhex:=True).Weaken,
-                New StringJar("name", True).Weaken,
-                New StringJar("password").Weaken,
+                New NullTerminatedStringJar("name").Weaken,
+                New NullTerminatedStringJar("password").Weaken,
                 New GameStatsJar("statstring").Weaken,
                 New UInt32Jar("num slots").Weaken,
                 New EnumUInt32Jar(Of GameTypes)("game type").Weaken,

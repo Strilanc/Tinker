@@ -1,8 +1,6 @@
 Imports Tinker.Commands
 
 Namespace Bot
-    'verification disabled due to stupid verifier
-    <ContractVerification(False)>
     Public NotInheritable Class BotCommands
         Inherits CommandSet(Of MainBot)
         Public Sub New()
@@ -31,6 +29,7 @@ Namespace Bot
                            Permissions:="root:1")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim typeFilter = argument.TryGetOptionalNamedValue("type")
                 If typeFilter Is Nothing Then
                     Return From components In target.Components.QueueGetAllComponents()
@@ -117,6 +116,7 @@ Namespace Bot
             End Sub
 
             Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim password = argument.NamedValue("password")
                 Return From server In target.QueueGetOrConstructGameServer()
@@ -134,6 +134,7 @@ Namespace Bot
                            Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
                 Dim auto = argument.HasOptionalSwitch("auto")
@@ -156,9 +157,11 @@ Namespace Bot
                            Permissions:="root:3")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 'parse
                 Dim args = argumentHead.Split(":"c)
-                If args.Length <> 2 Then Throw New ArgumentException("Expected widget type:name.")
+                If args.Length <> 2 Then Throw New ArgumentException("Expected a component type:name.")
+                Contract.Assume(args(1) IsNot Nothing)
                 Dim type As InvariantString = args(0)
                 Dim name As InvariantString = args(1)
                 'send
@@ -177,6 +180,7 @@ Namespace Bot
                            Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim profileName As InvariantString = If(argument.TryGetOptionalNamedValue("profile"), "default")
                 Dim clientName As InvariantString = argument.RawValue(0)
 
@@ -199,11 +203,12 @@ Namespace Bot
                            Permissions:="root:5")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 'parse
                 Dim args = argument.RawValue(0).Split(":"c)
                 If args.Length <> 2 Then Throw New ArgumentException("Expected a component argument like: type:name.")
                 Dim type As InvariantString = args(0)
-                Dim name As InvariantString = args(1)
+                Dim name As InvariantString = args(1).AssumeNotNull
                 'dispose
                 Return target.Components.QueueFindComponent(type, name).Select(
                     Function(component)
@@ -221,7 +226,8 @@ Namespace Bot
                            Description:="Loads the named plugin.",
                            Permissions:="root:5")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim profile = (From p In target.Settings.PluginProfiles Where p.name = argument.RawValue(0)).FirstOrDefault
                 If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
                 Dim socket = New Plugins.Socket(profile.name, target, profile.location)
@@ -241,6 +247,7 @@ Namespace Bot
                            Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim profileNames = (From word In argument.Split(" "c) Where word <> "").ToArray
                 If profileNames.Length = 0 Then Throw New ArgumentException("No profiles specified.")
 
@@ -297,6 +304,7 @@ Namespace Bot
                            Permissions:="root:5")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim port = target.PortPool.TryAcquireAnyPort()
                 If port Is Nothing Then Throw New OperationFailedException("No available ports in the pool.")
                 Dim name = argument.RawValue(0)

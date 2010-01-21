@@ -2,8 +2,7 @@
 ''' A collection which supports asynchronously syncing its items with others.
 ''' </summary>
 ''' <remarks>This class is not thread safe (its methods may not be called concurrently).</remarks>
-<ContractVerification(False)>
-Public Class AsyncViewableCollection(Of T) 'verification disabled due to stupid verifier
+Public Class AsyncViewableCollection(Of T)
     Implements ICollection(Of T)
 
     Private ReadOnly outQueue As ICallQueue
@@ -25,6 +24,8 @@ Public Class AsyncViewableCollection(Of T) 'verification disabled due to stupid 
         Me.outQueue = If(outQueue, New TaskedCallQueue())
     End Sub
 
+    'verification disabled due to stupid verifier (1.2.30118.5)
+    <ContractVerification(False)>
     Public Sub Add(ByVal item As T) Implements System.Collections.Generic.ICollection(Of T).Add
         _items.Add(item)
         outQueue.QueueAction(Sub() RaiseEvent Added(Me, item))
@@ -42,9 +43,13 @@ Public Class AsyncViewableCollection(Of T) 'verification disabled due to stupid 
         Return result
     End Function
 
+    'verification disabled due to stupid verifier (1.2.30118.5)
+    <ContractVerification(False)>
     Public Function Contains(ByVal item As T) As Boolean Implements ICollection(Of T).Contains
         Return _items.Contains(item)
     End Function
+    'verification disabled due to stupid verifier (1.2.30118.5)
+    <ContractVerification(False)>
     Public Sub CopyTo(ByVal array() As T, ByVal arrayIndex As Integer) Implements ICollection(Of T).CopyTo
         _items.CopyTo(array, arrayIndex)
     End Sub

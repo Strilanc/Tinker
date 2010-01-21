@@ -31,6 +31,8 @@ Namespace WC3
             Contract.Invariant(_portHandle IsNot Nothing)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Public Sub New(ByVal name As InvariantString,
                        ByVal gameServer As WC3.GameServer,
                        ByVal bot As Bot.MainBot)
@@ -82,6 +84,8 @@ Namespace WC3
                               End Sub)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Private Sub ChangeListenPort(ByVal portHandle As PortPool.PortHandle)
             Contract.Requires(portHandle IsNot Nothing)
             If portHandle.Port = Me._portHandle.Port Then Return
@@ -160,20 +164,16 @@ Namespace WC3
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
 
-            Dim prefix = My.Settings.commandPrefix
-            Contract.Assume(prefix IsNot Nothing)
-            If Not text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) AndAlso text <> Tinker.Bot.MainBot.TriggerCommandText Then
-                Return
-            End If
-
-            '?trigger command
-            If text = Tinker.Bot.MainBot.TriggerCommandText Then
+            Dim prefix = My.Settings.commandPrefix.AssumeNotNull
+            If text = Tinker.Bot.MainBot.TriggerCommandText Then '?trigger command
                 game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(prefix), player)
+                Return
+            ElseIf Not text.StartsWith(prefix) Then 'not a command
                 Return
             End If
 
             'Normal commands
-            Dim commandText = text.Substring(My.Settings.commandPrefix.Length)
+            Dim commandText = text.Substring(prefix.Length)
             Throw New NotImplementedException() 'nothing arg follows
             game.QueueCommandProcessText(Nothing, player, commandText).CallWhenValueReady(
                 Sub(message, messageException)
@@ -197,6 +197,8 @@ Namespace WC3
             Contract.Assume(result > 0)
             Return result
         End Function
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Private Function AsyncAddGameFromArguments(ByVal argument As Commands.CommandArgument,
                                                    ByVal user As BotUser) As IFuture(Of WC3.GameSet)
             Contract.Requires(argument IsNot Nothing)
@@ -247,6 +249,8 @@ Namespace WC3
             Return inQueue.QueueFunc(Function() _portHandle.Port)
         End Function
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Private Function AsyncAddAdminGame(ByVal name As InvariantString, ByVal password As String) As IFuture(Of GameSet)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of GameSet))() IsNot Nothing)

@@ -21,7 +21,7 @@ Namespace WC3
         End Sub
 #End Region
 
-        Public ReadOnly Property GetDownloadPercent() As Byte
+        Public ReadOnly Property AdvertisedDownloadPercent() As Byte
             Get
                 If state <> PlayerState.Lobby Then Return 100
                 Dim pos = mapDownloadPosition
@@ -36,34 +36,35 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return QueueGetLatencyDescription.Select(
                 Function(latencyDesc)
-                    Dim base = Name.Value.Padded(20) +
-                               "pid={0}".Frmt(Me.PID).Padded(6) +
-                               "Host={0}".Frmt(CanHost()).Padded(12) +
-                               "{0}c".Frmt(_numPeerConnections).Padded(5) +
-                               latencyDesc.Padded(12)
+                    Dim contextInfo As IFuture(Of String)
                     Select Case state
                         Case PlayerState.Lobby
-                            Dim dl = GetDownloadPercent().ToString(CultureInfo.InvariantCulture)
-                            Select Case dl
-                                Case "255" : dl = "?"
-                                Case "254" : dl = "fake"
-                                Case Else : dl += "%"
+                            Dim p = AdvertisedDownloadPercent
+                            Dim dlText As String
+                            Select Case p
+                                Case 255 : dlText = "?"
+                                Case 254 : dlText = "fake"
+                                Case Else : dlText = "{0}%".Frmt(p)
                             End Select
-                            Return scheduler.GenerateRateDescription(Me.PID.Index).Select(
-                                Function(rateDescription)
-                                    Return base +
-                                           Padded("DL={0}".Frmt(dl), 9) +
-                                           "EB={0}".Frmt(rateDescription)
-                                End Function)
-                                        Case PlayerState.Loading
-                                            Return (base + "Ready={0}".Frmt(Ready)).Futurized
-                                        Case PlayerState.Playing
-                                            Return (base + "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime)).Futurized
-                                        Case Else
-                                            Throw state.MakeImpossibleValueException
-                                    End Select
-                                End Function
-            ).Defuturized
+                            contextInfo = From rateDescription In scheduler.GenerateRateDescription(Me.PID.Index)
+                                           Select "DL={0}".Frmt(dlText).Padded(9) + "EB={0}".Frmt(rateDescription)
+                        Case PlayerState.Loading
+                            contextInfo = "Ready={0}".Frmt(Ready).Futurized
+                        Case PlayerState.Playing
+                            contextInfo = "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime).Futurized
+                        Case Else
+                            Throw state.MakeImpossibleValueException
+                    End Select
+                    Contract.Assert(contextInfo IsNot Nothing)
+
+                    Return From text In contextInfo
+                           Select Name.Value.Padded(20) +
+                                  "pid={0}".Frmt(Me.PID).Padded(6) +
+                                  "Host={0}".Frmt(CanHost()).Padded(12) +
+                                  "{0}c".Frmt(_numPeerConnections).Padded(5) +
+                                  latencyDesc.Padded(12) +
+                                  text
+                End Function).Defuturized
         End Function
     End Class
 End Namespace

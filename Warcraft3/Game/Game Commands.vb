@@ -198,6 +198,11 @@ Namespace WC3
         Public NotInheritable Class CommandBot
             Inherits Command(Of WC3.Game)
             Private ReadOnly bot As Bot.MainBot
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(bot IsNot Nothing)
+            End Sub
+
             Public Sub New(ByVal bot As Bot.MainBot)
                 MyBase.New(Name:="Bot",
                            Format:="subcommand...",
@@ -206,6 +211,7 @@ Namespace WC3
                 Me.bot = bot
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As WC3.Game, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return Tinker.Bot.MainBotManager.BotCommands.Invoke(bot, user, argument)
             End Function
         End Class

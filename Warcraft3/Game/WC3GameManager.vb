@@ -35,20 +35,17 @@ Namespace WC3
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
 
-            'Check
-            If text.Substring(0, My.Settings.commandPrefix.AssumeNotNull.Length) <> My.Settings.commandPrefix _
-                    AndAlso text <> Tinker.Bot.MainBot.TriggerCommandText Then
-                Return 'not a command
-            End If
-
-            '?Trigger command
-            If text = Tinker.Bot.MainBot.TriggerCommandText Then
+            Dim commandPrefix = My.Settings.commandPrefix.AssumeNotNull
+            If text = Tinker.Bot.MainBot.TriggerCommandText Then '?Trigger command
                 _game.QueueSendMessageTo("Command prefix: {0}".Frmt(My.Settings.commandPrefix), player)
                 Return
+            ElseIf Not text.StartsWith(commandPrefix) Then 'not a command
+                Return
             End If
+            Contract.Assume(text.Length > commandPrefix.Length)
 
             'Normal commands
-            Dim commandText = text.Substring(My.Settings.commandPrefix.AssumeNotNull.Length)
+            Dim commandText = text.Substring(commandPrefix.Length)
             Dim commandResult = _game.QueueCommandProcessText(_bot, player, commandText)
             commandResult.CallOnValueSuccess(
                 Sub(message) _game.QueueSendMessageTo(If(message, "Command Succeeded"), player)

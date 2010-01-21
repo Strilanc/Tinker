@@ -47,6 +47,7 @@ Namespace WC3.Protocol
         End Sub
 
         Private Shared Function MakeW3PacketJar() As ManualSwitchJar
+            Contract.Ensures(Contract.Result(Of ManualSwitchJar)() IsNot Nothing)
             Dim jar = New ManualSwitchJar
 
             'Misc
@@ -85,7 +86,7 @@ Namespace WC3.Protocol
             reg(jar, Packets.LanRefreshGame)
             reg(jar, Packets.LanCreateGame)
             reg(jar, Packets.LanDestroyGame)
-            reg(jar, Packets.LanDescribeGame)
+            reg(jar, Packets.LanGameDetails)
 
             'Peer
             reg(jar, Packets.PeerKnock)
@@ -127,7 +128,7 @@ Namespace WC3.Protocol
             End Get
         End Property
 
-        'verification disabled due to stupid verifier
+        'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
             Contract.Assume(header.Count >= 4)

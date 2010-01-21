@@ -101,7 +101,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeLanDescribeGameTest()
-        MakeLanDescribeGame(20, TestDesc)
+        MakeLanGameDetails(20, TestDesc)
     End Sub
     <TestMethod()>
     Public Sub MakeLanDestroyGameTest()

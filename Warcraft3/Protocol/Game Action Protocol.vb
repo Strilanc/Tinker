@@ -244,6 +244,8 @@ Namespace WC3.Protocol
         End Function
     End Structure
 
+    'verification disabled because this class causes the verifier to go OutOfMemory
+    <ContractVerification(False)>
     Public NotInheritable Class GameActions
         Private Sub New()
         End Sub
@@ -265,7 +267,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly SaveGameFinished As New SimpleDefinition(W3GameActionId.SaveGameFinished,
                     New UInt32Jar("unknown").Weaken)
         Public Shared ReadOnly SaveGameStarted As New SimpleDefinition(W3GameActionId.SaveGameStarted,
-                    New StringJar("filename").Weaken)
+                    New NullTerminatedStringJar("filename").Weaken)
         Public Shared ReadOnly SetGameSpeed As New SimpleDefinition(W3GameActionId.SetGameSpeed,
                     New EnumByteJar(Of GameSpeedSetting)("speed").Weaken)
 
@@ -375,7 +377,7 @@ Namespace WC3.Protocol
                     New EnumByteJar(Of ArrowKeyEvent)("event type").Weaken)
         Public Shared ReadOnly TriggerChatEvent As New SimpleDefinition(W3GameActionId.TriggerChatEvent,
                     New GameObjectIdJar("trigger event").Weaken,
-                    New StringJar("text").Weaken)
+                    New NullTerminatedStringJar("text").Weaken)
         Public Shared ReadOnly TriggerDialogButtonClicked As New SimpleDefinition(W3GameActionId.TriggerDialogButtonClicked,
                     New GameObjectIdJar("dialog").Weaken,
                     New GameObjectIdJar("button").Weaken)
@@ -394,32 +396,32 @@ Namespace WC3.Protocol
                     New UInt32Jar("thread wait count").Weaken)
 
         Public Shared ReadOnly GameCacheSyncInteger As New SimpleDefinition(W3GameActionId.GameCacheSyncInteger,
-                    New StringJar("filename").Weaken,
-                    New StringJar("mission key").Weaken,
-                    New StringJar("key").Weaken,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken,
                     New UInt32Jar("value").Weaken)
         Public Shared ReadOnly GameCacheSyncBoolean As New SimpleDefinition(W3GameActionId.GameCacheSyncBoolean,
-                    New StringJar("filename").Weaken,
-                    New StringJar("mission key").Weaken,
-                    New StringJar("key").Weaken,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken,
                     New UInt32Jar("value").Weaken)
         Public Shared ReadOnly GameCacheSyncReal As New SimpleDefinition(W3GameActionId.GameCacheSyncReal,
-                    New StringJar("filename").Weaken,
-                    New StringJar("mission key").Weaken,
-                    New StringJar("key").Weaken,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken,
                     New Float32Jar("value").Weaken)
         Public Shared ReadOnly GameCacheSyncUnit As New SimpleDefinition(W3GameActionId.GameCacheSyncUnit,
-                    New StringJar("filename").Weaken,
-                    New StringJar("mission key").Weaken,
-                    New StringJar("key").Weaken,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken,
                     New ObjectTypeJar("unit type").Weaken,
                     New RawDataJar("unknown data", Size:=86).Weaken)
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         Public Shared ReadOnly GameCacheSyncString As New SimpleDefinition(W3GameActionId.GameCacheSyncString,
-                    New StringJar("filename").Weaken,
-                    New StringJar("mission key").Weaken,
-                    New StringJar("key").Weaken,
-                    New StringJar("value").Weaken)
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken,
+                    New NullTerminatedStringJar("value").Weaken)
 
         <Pure()>
         Public Shared Function TypeIdString(ByVal value As UInt32) As String

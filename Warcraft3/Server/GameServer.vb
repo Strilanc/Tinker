@@ -118,6 +118,7 @@ Namespace WC3
                 Return
             End If
             Dim entry = _gameSets(player.GameId)
+            Contract.Assume(entry IsNot Nothing)
 
             'Send player to game set
             entry.QueueTryAcceptPlayer(player).CallOnValueSuccess(

@@ -40,8 +40,6 @@ Public MustInherit Class PacketHandler(Of TKey)
         Return handlers.AddHandler(key, handler)
     End Function
 
-    'verification disabled due to stupid verifier
-    <ContractVerification(False)>
     Public Function HandlePacket(ByVal packetData As IReadableList(Of Byte), ByVal source As String) As IFuture
         Contract.Requires(packetData IsNot Nothing)
         Contract.Requires(packetData.Count >= HeaderSize)

@@ -19,6 +19,8 @@
             AddCommand(Me._help)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.3.0118.5)
+        <ContractVerification(False)>
         Public Overrides Function IsArgumentPrivate(ByVal argument As String) As Boolean
             Dim i = argument.IndexOf(" "c)
             If i = -1 Then i = argument.Length

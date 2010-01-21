@@ -3,9 +3,10 @@ Imports System.Numerics
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
 #Region "Strings Extra"
-    <Pure()>
+    'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
-    Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IList(Of String) 'verification disabled due to stupid verifier
+    <Pure()>
+    Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IList(Of String)
         Contract.Requires(body IsNot Nothing)
         Contract.Requires(maxLineLength > 0)
         Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
@@ -69,7 +70,7 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 
-    'verification disabled due to stupid verifier
+    'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
     <Pure()>
     Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
@@ -127,8 +128,6 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 
-    'verification disabled due to stupid verifier
-    <ContractVerification(False)>
     Public Function FindFilesMatching(ByVal fileQuery As String,
                                       ByVal likeQuery As InvariantString,
                                       ByVal directory As InvariantString,
@@ -217,17 +216,20 @@ Public Module PoorlyCategorizedFunctions
     ''' </summary>
     <Pure()> <Extension()>
     Public Function PaddedTo(Of T)(ByVal this As IList(Of T),
-                                   ByVal minimumLength As Integer) As IList(Of T)
+                                   ByVal minimumLength As Integer,
+                                   Optional ByVal paddingValue As T = Nothing) As IList(Of T)
         Contract.Requires(this IsNot Nothing)
         Contract.Requires(minimumLength >= 0)
         Contract.Ensures(Contract.Result(Of IList(Of T))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IList(Of T))().Count = Math.Max(this.Count, minimumLength))
 
-        Dim result(0 To Math.Max(minimumLength, this.Count) - 1) As T
-        For i = 0 To this.Count - 1
-            result(i) = this(i)
-        Next i
-        Contract.Assume(result.Length = Math.Max(this.Count, minimumLength))
+        Dim length = Math.Max(minimumLength, this.Count)
+        Dim result = New List(Of T)(capacity:=length)
+        result.AddRange(this)
+        While result.Count < length
+            result.Add(paddingValue)
+        End While
+        Contract.Assume(result.Count = Math.Max(this.Count, minimumLength))
         Return result
     End Function
 
@@ -246,7 +248,9 @@ Public Module PoorlyCategorizedFunctions
             Contract.Assume(result >= 0)
             Return result
         ElseIf (digits(digits.Length - 1) And &H80) = 0 Then
-            Return New BigInteger(digits)
+            Dim result = New BigInteger(digits)
+            Contract.Assume(result >= 0)
+            Return result
         Else
             Dim result = New BigInteger(Concat(digits, {0}))
             Contract.Assume(result >= 0)
@@ -296,10 +300,11 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Return reader.ReadNullTerminatedData.ParseChrString(nullTerminated:=False)
     End Function
-    <Extension()>
+    'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
+    <Extension()>
     Public Function ReadNullTerminatedString(ByVal reader As IO.BinaryReader,
-                                             ByVal maxLength As Integer) As String 'verification disabled due to stupdid verifier
+                                             ByVal maxLength As Integer) As String
         Contract.Requires(reader IsNot Nothing)
         Contract.Requires(maxLength >= 0)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
@@ -321,15 +326,16 @@ Public Module PoorlyCategorizedFunctions
 
     '''<summary>Determines the SHA-1 hash of a sequence of bytes.</summary>
     <Extension()> <Pure()>
-    Public Function SHA1(ByVal data As IEnumerable(Of Byte)) As Byte()
+    Public Function SHA1(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)
         Contract.Requires(data IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
         Using sha = New System.Security.Cryptography.SHA1Managed()
             Dim hash = sha.ComputeHash(data.ToStream)
             Contract.Assume(hash IsNot Nothing)
-            Contract.Assume(hash.Length = 20)
-            Return hash
+            Dim result = hash.AsReadableList()
+            Contract.Assume(result.Count = 20)
+            Return result
         End Using
     End Function
 

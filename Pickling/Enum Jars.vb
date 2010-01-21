@@ -42,12 +42,11 @@
             Return New Pickle(Of TValue)(Me.Name, value, CUShort(CType(value, Object)).Bytes(byteOrder).AsReadableList(), Function() ValueToString(value))
         End Function
 
-        'verification disabled due to stupid verifier
-        <ContractVerification(False)>
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
             If data.Count < 2 Then Throw New PicklingException("Not enough data")
             Dim datum = data.SubView(0, 2)
             Dim value = CType(CType(datum.ToUInt16(byteOrder), Object), T)
+            Contract.Assume(value IsNot Nothing)
             Return New Pickle(Of T)(Me.Name, value, datum, Function() ValueToString(value))
         End Function
 

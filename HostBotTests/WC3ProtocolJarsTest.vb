@@ -28,10 +28,10 @@ Public Class WC3ProtocolJarsTest
                     })
 
         Dim g = New WC3.Game("test", TestSettings, New ManualClock())
-        Dim s1 = New WC3.Slot(g, 1) : s1.Contents = New WC3.SlotContentsOpen(s1)
-        Dim s2 = New WC3.Slot(g, 2) : s2.Contents = New WC3.SlotContentsClosed(s2)
-        Dim s3 = New WC3.Slot(g, 3) : s3.Contents = New WC3.SlotContentsComputer(s3, Slot.ComputerLevel.Insane)
-        Dim s4 = New WC3.Slot(g, 4) : s4.Contents = New WC3.SlotContentsPlayer(s4, TestPlayer)
+        Dim s1 = New WC3.Slot(1, True) : s1.Contents = New WC3.SlotContentsOpen(s1)
+        Dim s2 = New WC3.Slot(2, True) : s2.Contents = New WC3.SlotContentsClosed(s2)
+        Dim s3 = New WC3.Slot(3, True) : s3.Contents = New WC3.SlotContentsComputer(s3, Slot.ComputerLevel.Insane)
+        Dim s4 = New WC3.Slot(4, True) : s4.Contents = New WC3.SlotContentsPlayer(s4, TestPlayer)
         JarTest(jar,
                 value:=SlotJar.PackSlot(s1, Nothing),
                 data:={0, 255, 0, 0, 0, 0, 96, 1, 100})

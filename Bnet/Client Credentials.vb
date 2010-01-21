@@ -21,8 +21,7 @@ Namespace Bnet
     ''' Stores bnet login credentials for identification and authentication.
     ''' </summary>
     <DebuggerDisplay("{UserName}")>
-    <ContractVerification(False)>
-    Public Class ClientCredentials 'verification disabled due to stupid verifier
+    Public Class ClientCredentials
         Private Shared ReadOnly G As BigInteger = 47
         Private Shared ReadOnly N As BigInteger = BigInteger.Parse("112624315653284427036559548610503669920632123929604336254260115573677366691719",
                                                                    CultureInfo.InvariantCulture)
@@ -46,6 +45,7 @@ Namespace Bnet
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
         ''' <param name="privateKey">The privateKey used for authentication.</param>
+        <ContractVerification(False)>
         Public Sub New(ByVal userName As String,
                        ByVal password As String,
                        ByVal privateKey As BigInteger)
@@ -57,7 +57,6 @@ Namespace Bnet
             Me._password = password
             Me._privateKey = privateKey
             Me._publicKey = BigInteger.ModPow(G, _privateKey, N)
-            Contract.Assume(Me._publicKey >= 0)
         End Sub
         ''' <summary>
         ''' Constructs client credentials using the given username and password, and a generated a public/private key pair.
@@ -81,7 +80,6 @@ Namespace Bnet
         Public ReadOnly Property UserName As String
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of String)() = Me._userName)
                 Return _userName
             End Get
         End Property
@@ -89,7 +87,6 @@ Namespace Bnet
         Public ReadOnly Property PublicKey As BigInteger
             Get
                 Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
-                Contract.Ensures(Contract.Result(Of BigInteger)() = Me._publicKey)
                 Return _publicKey
             End Get
         End Property
@@ -138,6 +135,7 @@ Namespace Bnet
         End Property
 
         '''<summary>Determines credentials for the same client, but with a new key pair.</summary>
+        <ContractVerification(False)>
         Public Function Regenerate(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As ClientCredentials
             Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
@@ -154,9 +152,9 @@ Namespace Bnet
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 40)
 
                 Dim userIdAuthData = "{0}:{1}".Frmt(Me._userName.ToUpperInvariant, Me._password.ToUpperInvariant).ToAscBytes
-                Dim passwordKey = Concat(accountSalt.ToArray, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
+                Dim passwordKey = {accountSalt, userIdAuthData.SHA1}.Fold.SHA1.ToUnsignedBigInteger
                 Dim verifier = BigInteger.ModPow(G, passwordKey, N)
-                Dim serverKey = serverPublicKeyBytes.SHA1.SubArray(0, 4).Reverse.ToUnsignedBigInteger
+                Dim serverKey = serverPublicKeyBytes.SHA1.Take(4).Reverse.ToUnsignedBigInteger
 
                 'Shared value
                 Dim serverPublicKey = serverPublicKeyBytes.ToUnsignedBigInteger
@@ -191,7 +189,7 @@ Namespace Bnet
                         Me.PublicKeyBytes,
                         serverPublicKeyBytes,
                         SharedSecret(accountSalt, serverPublicKeyBytes)
-                       }.Fold.SHA1.AsReadableList
+                       }.Fold.SHA1
             End Get
         End Property
         '''<summary>Determines the expected proof, from the server, that it knew the shared secret.</summary>
@@ -206,7 +204,7 @@ Namespace Bnet
                 Return {Me.PublicKeyBytes,
                         ClientPasswordProof(accountSalt, serverPublicKeyBytes),
                         SharedSecret(accountSalt, serverPublicKeyBytes)
-                       }.Fold.SHA1.AsReadableList
+                       }.Fold.SHA1
             End Get
         End Property
     End Class

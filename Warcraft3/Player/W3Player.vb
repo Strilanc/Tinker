@@ -25,7 +25,6 @@
         Private state As PlayerState = PlayerState.Lobby
         Private ReadOnly _index As PID
         Private ReadOnly testCanHost As IFuture
-        Private Const MAX_NAME_LENGTH As Integer = 15
         Private ReadOnly socket As W3Socket
         Private ReadOnly packetHandler As Protocol.W3PacketHandler
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
@@ -36,7 +35,7 @@
         Private ReadOnly pinger As Pinger
 
         Private ReadOnly _name As InvariantString
-        Public ReadOnly listenPort As UShort
+        Private ReadOnly _listenPort As UShort
         Public ReadOnly peerKey As UInteger
         Public ReadOnly isFake As Boolean
         Private ReadOnly logger As Logger
@@ -53,6 +52,11 @@
         Public ReadOnly Property PID As PID
             Get
                 Return _index
+            End Get
+        End Property
+        Public ReadOnly Property ListenPort As UShort
+            Get
+                Return _listenPort
             End Get
         End Property
 
@@ -86,7 +90,7 @@
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New Protocol.W3PacketHandler(Me.logger)
             Me._index = index
-            If name.Length > MAX_NAME_LENGTH Then Throw New ArgumentException("Player name must be less than 16 characters long.")
+            If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
             Me._name = name
             isFake = True
             LobbyStart()
@@ -116,7 +120,7 @@
 
             Me.socket = connectingPlayer.Socket
             Me._name = connectingPlayer.Name
-            Me.listenPort = connectingPlayer.ListenPort
+            Me._listenPort = connectingPlayer.ListenPort
             Me._index = index
             AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
 
@@ -158,7 +162,7 @@
             )
         End Sub
 
-        'verification disabled due to stupid verifier
+        'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)

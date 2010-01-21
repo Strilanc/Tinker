@@ -26,6 +26,8 @@ Namespace CKL
             Contract.Invariant(_clock IsNot Nothing)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Public Sub New(ByVal name As InvariantString,
                        ByVal listenPort As PortPool.PortHandle,
                        ByVal clock As IClock)
@@ -64,6 +66,7 @@ Namespace CKL
             )
         End Function
 
+        <ContractVerification(False)>
         Private Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
                                          ByVal acceptedClient As Net.Sockets.TcpClient) Handles Accepter.AcceptedConnection
             Contract.Requires(sender IsNot Nothing)

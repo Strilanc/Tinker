@@ -8,8 +8,6 @@ Namespace Bnet.Protocol
             MyBase.New(name)
         End Sub
 
-        'verification disabled due to stupid verifier
-        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As Date)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
             Dim datum = CType(value, Date).ToFileTime.BitwiseToUInt64.Bytes().AsReadableList
             Return New Pickle(Of TValue)(Me.Name, value, datum)

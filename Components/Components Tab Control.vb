@@ -2,6 +2,7 @@ Namespace Components
     ''' <summary>
     ''' A control which shows a set of components as controls within tabs.
     ''' </summary>
+    <ContractVerification(False)>
     Public Class TabControl
         Private ReadOnly _botComponentTabs As Components.TabManager
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))

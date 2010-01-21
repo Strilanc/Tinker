@@ -236,10 +236,7 @@ Namespace Commands
         Public ReadOnly Property TryGetOptionalNamedValue(ByVal name As InvariantString) As String
             Get
                 Contract.Ensures((Contract.Result(Of String)() IsNot Nothing) = HasOptionalNamedValue(name))
-                If Not _optionalNamed.ContainsKey(name) Then Return Nothing
-                Dim result = _optionalNamed(name)
-                Contract.Assume(result IsNot Nothing)
-                Return result
+                Return If(HasOptionalNamedValue(name), OptionalNamedValue(name), Nothing)
             End Get
         End Property
         '''<summary>Returns the value of the given optional named value from the argument.</summary>

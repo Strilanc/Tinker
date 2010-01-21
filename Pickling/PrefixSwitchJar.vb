@@ -9,6 +9,7 @@ Namespace Pickling
         End Sub
 
         Public Sub New(ByVal key As T, ByVal payload As IPickle(Of Object))
+            Contract.Requires(key IsNot Nothing)
             Contract.Requires(payload IsNot Nothing)
             Me._key = key
             Me._payload = payload
@@ -40,19 +41,22 @@ Namespace Pickling
             MyBase.new(name)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PrefixPickle(Of T))
+            If data.Count < 1 Then Throw New PicklingException("Not enough data.")
             Dim index = CByte(data(0))
             Dim vindex = CType(CType(index, Object), T)
+            Contract.Assume(vindex IsNot Nothing)
             If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to " + vindex.ToString())
             Dim payload = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
-            Return New Pickle(Of PrefixPickle(Of T))(Name, payload, data.SubView(0, payload.payload.Data.Count + 1))
+            Return New Pickle(Of PrefixPickle(Of T))(Name, payload, data.SubView(0, payload.Payload.Data.Count + 1))
         End Function
-        'verification disabled due to stupid verifier
-        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As PrefixPickle(Of T))(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Dim index = CByte(CType(value.Key, Object))
             If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.Key.ToString())
-            Return New Pickle(Of TValue)(Name, value, Concat({index}, packers(index).Pack(value.payload.Value).Data.ToArray).AsReadableList)
+            Return New Pickle(Of TValue)(Name, value, Concat({index}, packers(index).Pack(value.Payload.Value).Data.ToArray).AsReadableList)
         End Function
 
         Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of Object))

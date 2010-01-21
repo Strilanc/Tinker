@@ -52,6 +52,7 @@ Namespace WC3
         End Property
 
         '''<summary>Handles new connections.</summary>
+        <ContractVerification(False)>
         Private Sub OnAcceptConnection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
@@ -135,6 +136,8 @@ Namespace WC3
             Contract.Assume(clock IsNot Nothing)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
             If packetData(1) <> Protocol.PacketId.Knock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
@@ -167,6 +170,8 @@ Namespace WC3
             Contract.Assume(clock IsNot Nothing)
         End Sub
 
+        'verification disabled due to stupid verifier (1.2.30118.5)
+        <ContractVerification(False)>
         Protected Overrides Function ProcessConnectingPlayer(ByVal socket As W3Socket, ByVal packetData As IReadableList(Of Byte)) As IPickle
             If packetData(1) <> Protocol.PacketId.PeerKnock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))

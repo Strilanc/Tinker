@@ -2,8 +2,6 @@ Imports Tinker.Bot
 Imports Tinker.Commands
 
 Namespace Bnet
-    'verification disabled due to stupid verifier
-    <ContractVerification(False)>
     Public NotInheritable Class ClientCommands
         Inherits CommandSet(Of Bnet.ClientManager)
 
@@ -48,6 +46,7 @@ Namespace Bnet
                            Permissions:="root:1")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.Bot.InvokeCommand(user, argument)
             End Function
         End Class
@@ -61,6 +60,7 @@ Namespace Bnet
                            Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueDisconnect(expected:=True, reason:="Disconnect Command").EvalOnSuccess(Function() "Disconnected")
             End Function
         End Class
@@ -74,6 +74,7 @@ Namespace Bnet
                            Permissions:="users:2")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim newUser = target.Profile.Users.CreateNewUser(argument.RawValue(0))
                 Return "Created {0}".Frmt(newUser.Name).Futurized
             End Function
@@ -88,6 +89,7 @@ Namespace Bnet
                            Permissions:="users:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If Not target.Profile.Users.ContainsUser(argument.RawValue(0)) Then
                     Throw New ArgumentException("That user does not exist")
                 End If
@@ -111,10 +113,12 @@ Namespace Bnet
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 'Target user
+                Contract.Assume(target IsNot Nothing)
                 If Not target.Profile.Users.ContainsUser(argument.RawValue(0)) Then
                     Throw New ArgumentException("That user does not exist")
                 End If
-                Dim target_user As BotUser = target.Profile.Users(argument.RawValue(0))
+                Dim targetUser = target.Profile.Users(argument.RawValue(0))
+                Contract.Assume(targetUser IsNot Nothing)
 
                 'Level
                 Dim lvl As UInteger
@@ -123,7 +127,7 @@ Namespace Bnet
                 End If
 
                 'Check for demotion in disguise
-                If lvl <= target_user.Permission(argument.RawValue(1)) Then
+                If lvl <= targetUser.Permission(argument.RawValue(1)) Then
                     Throw New ArgumentException("That is not a promotion. Jerk.")
                 End If
 
@@ -132,7 +136,7 @@ Namespace Bnet
                     Throw New ArgumentException("You can't promote users past your own permission levels.")
                 End If
 
-                target_user.Permission(argument.RawValue(1)) = lvl
+                targetUser.Permission(argument.RawValue(1)) = lvl
                 Return "{0} had permission in {1} promoted to {2}".Frmt(argument.RawValue(0), argument.RawValue(1), lvl).Futurized
             End Function
         End Class
@@ -147,10 +151,12 @@ Namespace Bnet
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 'Target user
+                Contract.Assume(target IsNot Nothing)
                 If Not target.Profile.Users.ContainsUser(argument.RawValue(0)) Then
                     Throw New ArgumentException("That user does not exist")
                 End If
                 Dim targetUser = target.Profile.Users(argument.RawValue(0))
+                Contract.Assume(targetUser IsNot Nothing)
 
                 'Level
                 Dim lvl As UInteger
@@ -186,8 +192,11 @@ Namespace Bnet
                 If username Is Nothing Then
                     Throw New ArgumentException("No user specified.")
                 End If
+                Contract.Assume(target IsNot Nothing)
                 If target.Profile.Users.ContainsUser(username) Then
-                    Return target.Profile.Users(username).ToString().Futurized
+                    Dim targetUser = target.Profile.Users(username)
+                    Contract.Assume(targetUser IsNot Nothing)
+                    Return targetUser.ToString.Futurized
                 ElseIf target.Profile.Users.ContainsUser(BotUserSet.UnknownUserKey) Then
                     Return "{0} is an unknown user with the permissions of the user '*unknown'".Frmt(username).Futurized
                 Else
@@ -204,6 +213,7 @@ Namespace Bnet
                            Description:="Causes the client to automatically advertise any games on any server when 'On'.")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Select Case New InvariantString(argument.RawValue(0))
                     Case "On"
                         Return target.QueueSetAutomatic(True).EvalOnSuccess(Function() "Now automatically advertising games.")
@@ -224,6 +234,7 @@ Namespace Bnet
                            Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueLogOn(New Bnet.ClientCredentials(argument.RawValue(0), argument.RawValue(1))).
                               EvalOnSuccess(Function() "Logged in as {0}".Frmt(argument.RawValue(0)))
             End Function
@@ -242,6 +253,7 @@ Namespace Bnet
                                              WC3.GameStats.PartialArgumentHelp}).StringJoin(Environment.NewLine))
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
                 Dim futureGameSet = (From server In futureServer
                                      Select server.QueueAddGameFromArguments(argument, user)
@@ -279,9 +291,11 @@ Namespace Bnet
                            Description:="Forwards commands to an instance in your hosted game. By default game instances are numbered, starting with 0.")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Strilbrary.Threading.IFuture(Of String)
+                If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
                 Dim gameName = argumentHead
 
                 'Find hosted game set, then find named instance, then pass command
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueTryGetUserGameSet(user).Select(
                     Function(gameSet)
                         If gameSet Is Nothing Then
@@ -312,6 +326,7 @@ Namespace Bnet
                            Permissions:="local:1")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueSendPacket(Protocol.MakeQueryGamesList()).EvalOnSuccess(Function() "Sent request.")
             End Function
         End Class
@@ -325,6 +340,8 @@ Namespace Bnet
                 Permissions:="")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
                 Return target.QueueTryGetUserGameSet(user).Select(
                   Function(gameSet)
                       If gameSet Is Nothing Then
@@ -347,6 +364,8 @@ Namespace Bnet
                            Permissions:="")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
                 Return target.QueueTryGetUserGameSet(user).Select(
                     Function(gameSet)
                         If gameSet Is Nothing Then
@@ -366,7 +385,10 @@ Namespace Bnet
                            Permissions:="root:1")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Return target.QueueSendText(argument.RawValue(0)).EvalOnSuccess(Function() "Said {0}".Frmt(argument.RawValue(0)))
+                Contract.Assume(target IsNot Nothing)
+                Dim text = argument.RawValue(0)
+                If text.Length = 0 Then Throw New ArgumentException("Must say something.")
+                Return target.QueueSendText(text).EvalOnSuccess(Function() "Said {0}".Frmt(text))
             End Function
         End Class
 
@@ -379,12 +401,14 @@ Namespace Bnet
                            Permissions:="root:4,games:5")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
+                Dim hostname As InvariantString = If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value)
                 Return target.QueueStartAdvertisingGame(
                     gameDescription:=WC3.LocalGameDescription.FromArguments(
                         name:=argument.NamedValue("name"),
                         map:=map,
-                        stats:=New WC3.GameStats(map, If(user Is Nothing, Application.ProductName, user.Name.Value), argument),
+                        stats:=New WC3.GameStats(map, hostname, argument),
                         clock:=New SystemClock()),
                     isPrivate:=argument.HasOptionalSwitch("Private") OrElse argument.HasOptionalSwitch("p")).EvalOnSuccess(Function() "Started advertising")
             End Function
@@ -399,6 +423,7 @@ Namespace Bnet
                            Permissions:="root:4,games:5")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueStopAdvertisingGame("Advertising stopped manually.").EvalOnSuccess(Function() "Stopped advertising.")
             End Function
         End Class
@@ -412,12 +437,12 @@ Namespace Bnet
                            Permissions:="games:1")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.ClientManager, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Dim username = If(argument.TryGetOptionalNamedValue("player"), If(user Is Nothing, Nothing, user.Name.Value))
-                If username Is Nothing Then
-                    Throw New ArgumentException("No player specified.")
-                End If
+                If user Is Nothing Then Throw New InvalidOperationException("This command is not meant for local usage.")
+                Dim username = If(argument.TryGetOptionalNamedValue("player"), user.Name.Value)
+                If username Is Nothing Then Throw New ArgumentException("No player specified.")
 
                 'Find hosted server, then find player's game, then elevate player
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueTryGetUserGameSet(user).Select(
                     Function(gameSet)
                         If gameSet Is Nothing Then
@@ -449,7 +474,9 @@ Namespace Bnet
                            Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Return target.QueueConnect(argument.RawValue(0)).EvalOnSuccess(Function() "Established connection to {0}".Frmt(argument.RawValue(0)))
+                Contract.Assume(target IsNot Nothing)
+                Dim remoteHost = argument.RawValue(0)
+                Return target.QueueConnect(remoteHost).EvalOnSuccess(Function() "Established connection to {0}".Frmt(remoteHost))
             End Function
         End Class
     End Class

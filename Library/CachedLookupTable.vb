@@ -16,8 +16,6 @@ Public Class CachedLookupTable(Of TKey, TValue)
         _indexMap = New Dictionary(Of TKey, Integer)(capacity:=capacity)
     End Sub
 
-    'verification disabled due to stupid verifier
-    <ContractVerification(False)>
     Public ReadOnly Property HasCharacter(ByVal key As TKey) As Boolean
         Get
             Contract.Requires(key IsNot Nothing)

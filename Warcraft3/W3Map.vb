@@ -169,6 +169,7 @@ Namespace WC3
                 If Not path.StartsWith("Maps\") Then
                     Throw New IO.InvalidDataException("Invalid map path.")
                 End If
+                Contract.Assume(path.Length >= "Maps\".Length)
                 path = path.Substring("Maps\".Length)
                 Contract.Assume(sha1.Count = 20)
                 Contract.Assume(size > 0)
@@ -208,7 +209,7 @@ Namespace WC3
             Me._mapChecksumXORO = mapChecksumXORO
             Dim slots = New List(Of Slot)
             For slotId = 1 To slotCount
-                Dim slot = New Slot(Nothing, CByte(slotId))
+                Dim slot = New Slot(CByte(slotId), Me.IsMelee)
                 slot.color = CType(slotId - 1, Slot.PlayerColor)
                 slot.Contents = New SlotContentsOpen(slot)
                 slots.Add(slot)
@@ -217,7 +218,7 @@ Namespace WC3
             Contract.Assume(Me.Slots.Count = slotCount)
         End Sub
 
-        'contract verification disabled due to stupid verifier
+        'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Public Sub New(ByVal folder As InvariantString,
                        ByVal relativePath As InvariantString,
@@ -247,10 +248,8 @@ Namespace WC3
 #End Region
 
 #Region "Read"
-        <ContractVerification(False)>
         Public Function ReadChunk(ByVal pos As Integer,
                                   Optional ByVal maxLength As Integer = 1442) As IReadableList(Of Byte)
-            'verification disabled due to incorrect stream contracts in BCL
             Contract.Requires(pos >= 0)
             Contract.Requires(maxLength >= 0)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
@@ -509,6 +508,7 @@ Namespace WC3
         End Class
         '''<summary>Reads map information from the "war3map.w3i" file in the map mpq archive.</summary>
         '''<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
+        <ContractVerification(False)>
         Private Shared Function ReadMapInfo(ByVal mapArchive As MPQ.Archive) As ReadMapInfoResult
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
@@ -587,7 +587,7 @@ Namespace WC3
                 Dim slots = New List(Of Slot)(capacity:=numSlotsInFile)
                 Dim slotColorMap = New Dictionary(Of Slot.PlayerColor, Slot)
                 For repeat = 0 To numSlotsInFile - 1
-                    Dim slot = New Slot(Nothing, CByte(slots.Count + 1))
+                    Dim slot = New Slot(CByte(slots.Count + 1), (options Or MapOptions.Melee) <> 0)
                     'color
                     slot.color = CType(br.ReadInt32(), Slot.PlayerColor)
                     If Not slot.color.EnumValueIsDefined Then Throw New IO.InvalidDataException("Unrecognized map slot color.")

@@ -44,8 +44,6 @@ Namespace Bot
                     End Function
                 )
             End Function
-            'verification disabled due to stupid verifier
-            <ContractVerification(False)>
             Private Shared Function DownloadEpicWar(ByVal id As String) As String
                 Dim path As String = Nothing
                 Dim dlPath As String = Nothing
@@ -53,6 +51,7 @@ Namespace Bot
                 Try
                     Dim http As New Net.WebClient()
                     Dim httpFile = http.DownloadString("http://epicwar.com/maps/{0}/".Frmt(id))
+                    Contract.Assume(httpFile IsNot Nothing)
 
                     'Find download link
                     Dim i = httpFile.IndexOf("alt=""Download""", StringComparison.OrdinalIgnoreCase)
@@ -61,6 +60,9 @@ Namespace Bot
                     i += "a href=""".Length
                     Dim j = httpFile.IndexOf(">", i, StringComparison.OrdinalIgnoreCase)
                     If j = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
+                    Contract.Assume(i >= 0)
+                    Contract.Assume(j >= i)
+                    Contract.Assume(j < httpFile.Length)
                     Dim link = "http://epicwar.com{0}".Frmt(httpFile.Substring(i, j - i))
                     Contract.Assume(link.Length > 0)
 
@@ -69,8 +71,12 @@ Namespace Bot
                     If i = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
                     j = httpFile.IndexOf("<", i, StringComparison.OrdinalIgnoreCase)
                     If j = -1 Then Throw New IO.InvalidDataException("Unrecognized page format from epicwar.")
+                    Contract.Assume(i >= 0)
+                    Contract.Assume(j >= i)
+                    Contract.Assume(j < httpFile.Length)
                     Dim filename = httpFile.Substring(i, j - i)
-                    path = My.Settings.mapPath + filename
+                    path = My.Settings.mapPath.AssumeNotNull + filename
+                    Contract.Assume(path.Length > 0)
                     dlPath = "{0}.dl".Frmt(path)
                     Contract.Assume(dlPath.Length > 0)
 

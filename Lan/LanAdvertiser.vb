@@ -87,19 +87,21 @@ Namespace Lan
                 End Sub)
         End Function
 
-        Private Sub AddGame(ByVal game As WC3.LocalGameDescription,
+        Private Sub AddGame(ByVal gameDescription As WC3.LocalGameDescription,
                             Optional ByVal targets As IEnumerable(Of String) = Nothing)
-            Contract.Requires(game IsNot Nothing)
-            If _games.ContainsKey(game.GameId) Then
-                If _games(game.GameId).GameDescription Is game Then Return
-                Throw New InvalidOperationException("There is already a game being advertised with id = {0}.".Frmt(game.GameId))
+            Contract.Requires(gameDescription IsNot Nothing)
+            If _games.ContainsKey(gameDescription.GameId) Then
+                Dim gameSet = _games(gameDescription.GameId)
+                Contract.Assume(gameSet IsNot Nothing)
+                If gameSet.GameDescription Is gameDescription Then Return
+                Throw New InvalidOperationException("There is already a game being advertised with id = {0}.".Frmt(gameDescription.GameId))
             End If
 
-            Dim lanGame = New LanGame(game, If(targets, {_defaultTargetHost}))
-            _games(game.GameId) = lanGame
+            Dim lanGame = New LanGame(gameDescription, If(targets, {_defaultTargetHost}))
+            _games(gameDescription.GameId) = lanGame
             RefreshGame(lanGame)
 
-            _logger.Log("Added game {0}".Frmt(game.Name), LogMessageType.Positive)
+            _logger.Log("Added game {0}".Frmt(gameDescription.Name), LogMessageType.Positive)
             _viewGames.Add(lanGame)
         End Sub
         Public Function QueueAddGame(ByVal gameDescription As WC3.LocalGameDescription,
@@ -145,7 +147,7 @@ Namespace Lan
         End Sub
         Private Sub RefreshGame(ByVal game As LanGame)
             Contract.Requires(game IsNot Nothing)
-            Dim pk = WC3.Protocol.MakeLanDescribeGame(New CachedExternalValues().WC3MajorVersion, game.GameDescription)
+            Dim pk = WC3.Protocol.MakeLanGameDetails(New CachedExternalValues().WC3MajorVersion, game.GameDescription)
             For Each host In game.TargetHosts
                 SendPacket(pk, host, LanTargetPort)
             Next host

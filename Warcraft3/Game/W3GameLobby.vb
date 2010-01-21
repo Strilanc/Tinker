@@ -32,7 +32,7 @@
             For i = 0 To map.slots.Count - 1
                 Dim baseSlot = Map.Slots(i)
                 Contract.Assume(baseSlot IsNot Nothing)
-                Dim slot = New Slot(Me, CByte(i))
+                Dim slot = New Slot(CByte(i), Map.IsMelee)
                 slot.Contents = baseSlot.Contents.Clone(slot)
                 slot.color = baseSlot.color
                 slot.race = baseSlot.race
@@ -46,7 +46,7 @@
             Select Case settings.GameDescription.GameStats.observers
                 Case GameObserverOption.FullObservers, GameObserverOption.Referees
                     For i = Map.NumPlayerSlots To 12 - 1
-                        Dim slot = New Slot(Me, CByte(i))
+                        Dim slot = New Slot(CByte(i), Map.IsMelee)
                         slot.color = CType(slot.ObserverTeamIndex, Slot.PlayerColor)
                         slot.Team = slot.ObserverTeamIndex
                         slot.race = slot.Races.Random
@@ -115,7 +115,7 @@
             If Not settings.IsAutoStarted Then Return False
             If CountFreeSlots() > 0 Then Return False
             If state >= GameState.PreCounting Then Return False
-            If (From player In _players Where Not player.isFake And player.GetDownloadPercent <> 100).Any Then
+            If (From player In _players Where Not player.isFake And player.AdvertisedDownloadPercent <> 100).Any Then
                 Return False
             End If
             ChangeState(GameState.PreCounting)
@@ -137,7 +137,7 @@
         '''<summary>Starts the countdown to launch.</summary>
         Private Function TryStartCountdown() As Boolean
             If state >= GameState.CountingDown Then Return False
-            If (From p In _players Where Not p.isFake AndAlso p.GetDownloadPercent <> 100).Any Then
+            If (From p In _players Where Not p.isFake AndAlso p.AdvertisedDownloadPercent <> 100).Any Then
                 Return False
             End If
 
@@ -224,12 +224,16 @@
 
             If state > GameState.AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
-            ElseIf freeIndexes.Count <= 0 And fakeHostPlayer Is Nothing Then
-                Throw New InvalidOperationException("No space available for fake player.")
+            ElseIf freeIndexes.Count <= 0 Then
+                If fakeHostPlayer IsNot Nothing Then
+                    RemovePlayer(fakeHostPlayer, True, PlayerLeaveType.Disconnect, "Need player index for new fake player")
+                Else
+                    Throw New InvalidOperationException("No space available for fake player.")
+                End If
             End If
+            Contract.Assume(freeIndexes.Count > 0)
 
             'Assign index
-            If freeIndexes.Count = 0 Then RemovePlayer(fakeHostPlayer, True, PlayerLeaveType.Disconnect, "Need player index for new fake player")
             Dim index = freeIndexes(0)
             freeIndexes.Remove(index)
 
@@ -384,8 +388,6 @@
                 Contract.Assume(e IsNot Nothing)
                 Contract.Assume(e.destination > 0)
                 Contract.Assume(e.destination <= 12)
-                Contract.Assume(e.source = LocalTransferClientKey OrElse e.source > 0)
-                Contract.Assume(e.source = LocalTransferClientKey OrElse e.source <= 12)
 
                 Dim dst = TryFindPlayer(New PID(e.destination))
                 If dst Is Nothing Then Continue For
@@ -394,6 +396,8 @@
                     dst.IsGettingMapFromBot = True
                     dst.QueueBufferMap()
                 Else
+                    Contract.Assume(e.source > 0)
+                    Contract.Assume(e.source <= 12)
                     Dim src = TryFindPlayer(New PID(e.source))
                     If src Is Nothing Then Continue For
                     Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(src.Name, dst.Name), LogMessageType.Positive)
@@ -407,8 +411,6 @@
                 Contract.Assume(e IsNot Nothing)
                 Contract.Assume(e.destination > 0)
                 Contract.Assume(e.destination <= 12)
-                Contract.Assume(e.source = LocalTransferClientKey OrElse e.source > 0)
-                Contract.Assume(e.source = LocalTransferClientKey OrElse e.source <= 12)
 
                 Dim dst = TryFindPlayer(New PID(e.destination))
                 If dst Is Nothing Then Continue For
@@ -416,6 +418,8 @@
                     Logger.Log("Stopping map upload to {0}.".Frmt(dst.Name), LogMessageType.Positive)
                     dst.IsGettingMapFromBot = False
                 Else
+                    Contract.Assume(e.source > 0)
+                    Contract.Assume(e.source <= 12)
                     Dim src = TryFindPlayer(New PID(e.source))
                     If src Is Nothing Then Continue For
                     src.QueueSendPacket(Protocol.MakeOtherPlayerJoined(dst))

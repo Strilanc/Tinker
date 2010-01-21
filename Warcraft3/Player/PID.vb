@@ -1,5 +1,5 @@
 ﻿Namespace WC3
-    ''' <summary>Stores a unique-per-game-per-instance player index in [1, 12].</summary>
+    ''' <summary>Stores a unique-per-game-per-instant player index in [1, 12].</summary>
     <DebuggerDisplay("{ToString}")>
     Public Structure PID
         Implements IEquatable(Of PID)
@@ -39,7 +39,7 @@
             If Not TypeOf obj Is PID Then Return False
             Return Me = CType(obj, PID)
         End Function
-        Public Overloads Function Equals(ByVal other As PID) As Boolean Implements System.IEquatable(Of PID).Equals
+        Public Overloads Function Equals(ByVal other As PID) As Boolean Implements IEquatable(Of PID).Equals
             Return Me = other
         End Function
 

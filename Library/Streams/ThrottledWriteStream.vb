@@ -55,8 +55,7 @@ Public NotInheritable Class ThrottledWriteStream
                                 PerformWrites(isWaitCallback:=False)
                             End Sub)
     End Sub
-    <ContractVerification(False)>
-    Private Sub PerformWrites(ByVal isWaitCallback As Boolean) 'verification disabled due to incorrect stream contracts in BCL
+    Private Sub PerformWrites(ByVal isWaitCallback As Boolean)
         If _throttled AndAlso Not isWaitCallback Then Return
         _throttled = False
 
@@ -82,9 +81,11 @@ Public NotInheritable Class ThrottledWriteStream
 
             'Perform write
             Dim data = _queuedWrites.Dequeue()
+            Contract.Assume(data IsNot Nothing)
             _usedCost += _costEstimator(data)
             substream.Write(data, 0, data.Length)
         End While
+        Contract.Assume(_usedCost >= 0)
     End Sub
 
     Public Overrides Function BeginRead(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer, ByVal callback As System.AsyncCallback, ByVal state As Object) As System.IAsyncResult

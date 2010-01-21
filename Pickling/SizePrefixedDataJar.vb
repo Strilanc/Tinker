@@ -17,9 +17,8 @@ Namespace Pickling
             Me._prefixSize = prefixSize
         End Sub
 
-        'verification disabled due to inherited preconditions being lost
-        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As IReadableList(Of Byte))(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Dim prefix = CUInt(value.Count).Bytes().SubArray(0, _prefixSize).AsReadableList
             If prefix.ToUInt32 <> value.Count Then Throw New PicklingException("Data size won't fit in {0}-byte prefix.".Frmt(_prefixSize))
 
@@ -31,6 +30,7 @@ Namespace Pickling
             If data.Count < _prefixSize Then Throw New PicklingException("Not enough data.")
             Dim prefix = data.SubView(0, _prefixSize)
             Dim size = CInt(prefix.ToUInt32)
+            Contract.Assume(size >= 0)
 
             If data.Count < _prefixSize + size Then Throw New PicklingException("Not enough data.")
             Dim datum = data.SubView(0, _prefixSize + size)

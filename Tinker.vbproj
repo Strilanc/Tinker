@@ -198,6 +198,7 @@
     </Compile>
     <Compile Include="Library\CachedLookupTable.vb" />
     <Compile Include="Library\DelegatedDisposable.vb" />
+    <Compile Include="Pickling\Text Jars.vb" />
     <Compile Include="Pickling\SizePrefixedDataJar.vb" />
     <Compile Include="Pickling\RemainingDataJar.vb" />
     <Compile Include="Pickling\PrefixSwitchJar.vb" />
@@ -206,7 +207,6 @@
     <Compile Include="Pickling\RepeatingJar.vb" />
     <Compile Include="Pickling\ListJar.vb" />
     <Compile Include="Pickling\TupleJar.vb" />
-    <Compile Include="Pickling\StringJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
     <Compile Include="Warcraft3\Game\GameLoggerControl.Designer.vb">
       <DependentUpon>GameLoggerControl.vb</DependentUpon>

@@ -31,7 +31,7 @@
 
         Private _gameTickTimer As ITimer
         Private laggingPlayers As New List(Of Player)
-        Private _lagTimer As ITimer
+        Private _lagTimer As ITimer 'nullable
         Private gameDataQueue As New Queue(Of GameTickDatum)
         Private _gameTime As Integer
         Private gameTimeBuffer As Double
@@ -118,7 +118,6 @@
         End Sub
         Private Sub UpdateLagScreen()
             If laggingPlayers.Count > 0 Then
-                Contract.Assume(_lagTimer IsNot Nothing)
                 For Each p In laggingPlayers.ToList
                     Contract.Assume(p IsNot Nothing)
                     If Not _players.Contains(p) Then
@@ -128,6 +127,7 @@
                         Dim p_ = p
                         If IsPlayerVisible(p) OrElse (From q In laggingPlayers
                                                       Where GetVisiblePlayer(q) Is GetVisiblePlayer(p_)).None Then
+                            Contract.Assume(_lagTimer IsNot Nothing)
                             BroadcastPacket(Protocol.MakeRemovePlayerFromLagScreen(
                                 player:=GetVisiblePlayer(p),
                                 lagTimeInMilliseconds:=CUInt(_lagTimer.ElapsedTime.TotalMilliseconds)))

@@ -7,9 +7,8 @@ Namespace Bnet.Protocol
             MyBase.new(name)
         End Sub
 
-        'verification disabled due to stupid verifier
-        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             If value.Length > 4 Then Throw New PicklingException("Value must be at most 4 characters.")
             Dim data = value.ToAscBytes().Reverse.PaddedTo(minimumLength:=4)
             Return New Pickling.Pickle(Of TValue)(Me.Name, value, data.AsReadableList)

@@ -119,6 +119,7 @@ Namespace Bnet
                 ElseIf lines.Current Is Nothing OrElse Not lines.Current Like "?=???" Then
                     Throw New ArgumentException("Invalid operation specified: {0}".Frmt(lines.Current))
                 End If
+                Contract.Assume(lines.Current.Length = 5)
 
                 'Parse and Store
                 result.Add(New Operation(destVarIndex:=variables.CacheIndexOf(lines.Current(0)),
@@ -131,9 +132,7 @@ Namespace Bnet
 
         '''<summary>Selects a seed based on the index string.</summary>
         <Pure()>
-        <ContractVerification(False)>
         Private Function ExtractIndexStringHashSeed(ByVal indexString As String) As UInteger
-            'verification disabled due to stupid verifier
             Contract.Requires(indexString IsNot Nothing)
 
             Dim invIndexString As InvariantString = indexString

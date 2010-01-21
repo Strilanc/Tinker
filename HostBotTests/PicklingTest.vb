@@ -204,16 +204,26 @@ Public Class PicklingTest
     End Sub
 
     <TestMethod()>
-    Public Sub StringJarTest()
-        Dim jar = New StringJar("jar", nullTerminated:=False, expectedSize:=1)
-        JarTest(jar, "1", {Asc("1")})
-        JarTest(jar, "a", {Asc("a")})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
-
-        jar = New StringJar("jar", nullTerminated:=True)
+    Public Sub NullTerminatedStringJarTest()
+        Dim jar = New NullTerminatedStringJar("jar")
         JarTest(jar, "", {0})
         JarTest(jar, "a", {Asc("a"), 0})
         JarTest(jar, "ab", {Asc("a"), Asc("b"), 0})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {Asc("a"), Asc("b")}.AsReadableList))
+        jar = New NullTerminatedStringJar("jar", maximumContentSize:=1)
+        JarTest(jar, "", {0})
+        JarTest(jar, "a", {Asc("a"), 0})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {Asc("a"), Asc("b"), 0}.AsReadableList))
+    End Sub
+    <TestMethod()>
+    Public Sub FixedSizeStringJarTest()
+        Dim jar = New FixedSizeStringJar("jar", size:=1)
+        JarTest(jar, "1", {Asc("1")})
+        JarTest(jar, "a", {Asc("a")})
+        Assert.IsTrue(jar.Parse(New Byte() {Asc("a"), Asc("b")}.AsReadableList).Data.Count = 1)
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
     End Sub
 
     <TestMethod()>

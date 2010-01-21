@@ -30,8 +30,6 @@
                 Return _command.HelpTopics
             End Get
         End Property
-        'verification disabled due to stupid verifier
-        <ContractVerification(False)>
         Protected Overrides Function PerformInvoke(ByVal target As TInput, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
             Dim subTarget = _projection(target)
             Contract.Assume(subTarget IsNot Nothing)

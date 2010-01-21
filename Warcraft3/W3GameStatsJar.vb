@@ -33,9 +33,9 @@ Namespace WC3
                     New UInt16Jar("playable width").Weaken,
                     New UInt16Jar("playable height").Weaken,
                     New UInt32Jar("xoro checksum").Weaken,
-                    New StringJar("relative path").Weaken,
-                    New StringJar("host name").Weaken,
-                    New StringJar("unknown2").Weaken,
+                    New NullTerminatedStringJar("relative path").Weaken,
+                    New NullTerminatedStringJar("host name").Weaken,
+                    New NullTerminatedStringJar("unknown2").Weaken,
                     New RawDataJar("sha1 checksum", Size:=20).Weaken)
 
         Public Sub New(ByVal name As InvariantString)
@@ -104,18 +104,13 @@ Namespace WC3
                                                   Data:=Concat(EncodeStatStringData(rawPickle.Data).ToArray(), {0}).AsReadableList,
                                                   description:=rawPickle.Description)
         End Function
-        'verification disabled due to stupid verifier
-        <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of GameStats)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameStats)
             'StatString is null-terminated
-            Dim n As Integer
-            For n = 0 To data.Count - 1
-                If data(n) = 0 Then
-                    data = data.SubView(0, n + 1)
-                    Exit For
-                End If
-            Next n
-            Dim pickle = DataJar.Parse(DecodeStatStringData(data.SubView(0, n)))
+            Dim p = data.IndexOf(0)
+            If p < 0 Then Throw New PicklingException("No null terminator on game statstring.")
+            Contract.Assume(p < data.Count)
+            Dim datum = data.SubView(0, p + 1)
+            Dim pickle = DataJar.Parse(DecodeStatStringData(datum))
             Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
 
             'Decode settings
@@ -159,26 +154,27 @@ Namespace WC3
             Dim playableHeight = CInt(vals("playable height"))
             Dim xoroChecksum = CUInt(vals("xoro checksum"))
             Dim sha1Checksum = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
-            Dim relativePath = CStr(vals("relative path")).AssumeNotNull
-            Dim hostName = CStr(vals("host name")).AssumeNotNull
+            Dim relativePath As InvariantString = CStr(vals("relative path")).AssumeNotNull
+            Dim hostName As InvariantString = CStr(vals("host name")).AssumeNotNull
             Contract.Assume(sha1Checksum.Count = 20)
+            If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
 
             'Finish
-            Dim value = New GameStats(randomHero,
-                                      randomRace,
-                                      allowFullSharedControl,
-                                      lockTeams,
-                                      teamsTogether,
-                                      observers,
-                                      visibility,
-                                      speed,
-                                      playableWidth,
-                                      playableHeight,
-                                      xoroChecksum,
-                                      sha1Checksum,
-                                      relativePath,
-                                      hostName)
-            Return New Pickling.Pickle(Of GameStats)(value, data, pickle.Description)
+            Dim value = New GameStats(randomHero:=randomHero,
+                                      randomRace:=randomRace,
+                                      allowFullSharedControl:=allowFullSharedControl,
+                                      lockTeams:=lockTeams,
+                                      teamsTogether:=teamsTogether,
+                                      observers:=observers,
+                                      visibility:=visibility,
+                                      speed:=speed,
+                                      playableWidth:=playableWidth,
+                                      playableHeight:=playableHeight,
+                                      mapChecksumXORO:=xoroChecksum,
+                                      mapchecksumsha1:=sha1Checksum,
+                                      advertisedPath:=relativePath,
+                                      hostName:=hostName)
+            Return New Pickling.Pickle(Of GameStats)(value, datum, pickle.Description)
         End Function
 
         Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)

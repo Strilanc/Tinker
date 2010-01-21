@@ -20,9 +20,9 @@ Namespace Bnet.Protocol
                     New RawDataJar("proof", Size:=20).Weaken)
         End Sub
 
-        'verification disabled due to stupid verifier
+        'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Public Overrides Function Pack(Of TValue As ProductCredentials)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+        Public Overrides Function Pack(Of TValue As ProductCredentials)(ByVal value As TValue) As IPickle(Of TValue)
             Dim vals = New Dictionary(Of InvariantString, Object) From {
                     {"length", value.Length},
                     {"product", value.Product},
@@ -33,7 +33,7 @@ Namespace Bnet.Protocol
             Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of ProductCredentials)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ProductCredentials)
             Dim pickle = _dataJar.Parse(data)
             Dim vals = pickle.Value
             Dim proof = CType(vals("proof"), IReadableList(Of Byte)).AssumeNotNull

@@ -23,8 +23,6 @@
             Me._template = New CommandTemplate(template)
         End Sub
 
-        'verification disabled due to stupid verifier
-        <ContractVerification(False)>
         Protected NotOverridable Overloads Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
             Dim arg = New CommandArgument(argument)
             Dim argException = _template.TryFindMismatch(arg)

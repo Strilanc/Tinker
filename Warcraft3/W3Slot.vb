@@ -1,12 +1,12 @@
 ﻿Namespace WC3
     Public NotInheritable Class Slot
         Public ReadOnly index As Byte
-        Public ReadOnly game As Game
         Public color As PlayerColor
         Private _team As Byte
         Public handicap As Byte = 100
         Public race As Races = Races.Random
         Private _contents As SlotContents
+        Private _raceUnlocked As Boolean
         Public locked As Lock
 
         Public Property Contents As SlotContents
@@ -80,8 +80,8 @@
         End Enum
 #End Region
 
-        Public Sub New(ByVal game As Game, ByVal index As Byte)
-            Me.game = game
+        Public Sub New(ByVal index As Byte, ByVal raceUnlocked As Boolean)
+            Me._raceUnlocked = raceUnlocked
             Me.index = index
             Me.Contents = New SlotContentsOpen(Me)
         End Sub
@@ -89,6 +89,11 @@
             Get
                 Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                 Return (index + 1).ToString(CultureInfo.InvariantCulture)
+            End Get
+        End Property
+        Public ReadOnly Property RaceUnlocked As Boolean
+            Get
+                Return _raceUnlocked
             End Get
         End Property
         Public Function Matches(ByVal query As InvariantString) As Match
@@ -101,7 +106,7 @@
             Return Match.None
         End Function
         Public Function Cloned() As Slot
-            Dim slot = New Slot(game, index)
+            Dim slot = New Slot(index, RaceUnlocked)
             slot.color = color
             slot.Team = Team
             slot.handicap = handicap
@@ -381,7 +386,7 @@
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
             Get
-                Return player.GetDownloadPercent
+                Return player.AdvertisedDownloadPercent
             End Get
         End Property
         Public Overrides ReadOnly Property DataState(ByVal receiver As Player) As State
@@ -484,7 +489,7 @@
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
             Get
                 If _players.Contains(receiver) Then
-                    Return receiver.GetDownloadPercent
+                    Return receiver.AdvertisedDownloadPercent
                 Else
                     Return 100
                 End If
