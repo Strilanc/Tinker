@@ -64,11 +64,12 @@ Namespace WC3.Protocol
                     {"reason", reason}})
         End Function
         <Pure()>
-        Public Function MakeHostMapInfo(ByVal map As Map) As Packet
+        Public Function MakeHostMapInfo(ByVal map As Map,
+                                        Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Requires(map IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.HostMapInfo, New Dictionary(Of InvariantString, Object) From {
-                    {"map transfer key", 23},
+                    {"map transfer key", mapTransferKey},
                     {"path", map.AdvertisedPath.ToString},
                     {"size", map.FileSize},
                     {"crc32", map.FileChecksumCRC32},

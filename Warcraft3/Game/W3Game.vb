@@ -103,13 +103,13 @@ Namespace WC3
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
             If finalizing Then Return Nothing
-            Return inQueue.QueueAction(
+            Return outQueue.QueueAction(Sub() inQueue.QueueAction(
                 Sub()
                     ChangeState(GameState.Disposed)
                     For Each player In _players
                         player.Dispose()
                     Next player
-                End Sub)
+                End Sub))
         End Function
 
         Public ReadOnly Property Logger As Logger

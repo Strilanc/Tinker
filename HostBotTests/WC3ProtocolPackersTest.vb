@@ -32,7 +32,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeHostMapInfoTest()
-        MakeHostMapInfo(map:=TestMap)
+        MakeHostMapInfo(map:=TestMap, mapTransferKey:=1)
     End Sub
     <TestMethod()>
     Public Sub MakeOtherPlayerJoinedTest()
