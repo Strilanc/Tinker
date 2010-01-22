@@ -239,7 +239,7 @@ Namespace Bnet.Protocol
         Public Shared ReadOnly UserAuthenticationFinish As New SimplePacketDefinition(PacketId.UserAuthenticationFinish,
                 New EnumUInt32Jar(Of UserAuthenticationFinishResult)("result").Weaken,
                 New RawDataJar("server password proof", Size:=20).Weaken,
-                New NullTerminatedStringJar("custom error info").Weaken)
+                New NullTerminatedStringJar("custom error info", allowMissingNullTerminator:=True).Weaken)
         Public Shared ReadOnly RequiredWork As New SimplePacketDefinition(PacketId.RequiredWork,
                 New NullTerminatedStringJar("filename").Weaken)
 

@@ -2,15 +2,15 @@
 
 Namespace WC3.Protocol
     Public NotInheritable Class GameAction
-        Private Shared ReadOnly ActionJar As PrefixSwitchJar(Of W3GameActionId) = MakeJar()
-        Public ReadOnly id As W3GameActionId
+        Private Shared ReadOnly ActionJar As PrefixSwitchJar(Of GameActionId) = MakeJar()
+        Public ReadOnly id As GameActionId
         Private ReadOnly _payload As IPickle(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of W3GameActionId)))
+        Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of GameActionId)))
             Contract.Requires(payload IsNot Nothing)
             Me._payload = payload.Value.Payload
             Me.id = payload.Value.Key
@@ -23,16 +23,16 @@ Namespace WC3.Protocol
             End Get
         End Property
 
-        Private Shared Sub reg(ByVal jar As PrefixSwitchJar(Of W3GameActionId),
+        Private Shared Sub reg(ByVal jar As PrefixSwitchJar(Of GameActionId),
                                ByVal definition As GameActions.SimpleDefinition)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(definition IsNot Nothing)
             jar.AddPackerParser(definition.id, definition.Weaken)
         End Sub
 
-        Private Shared Function MakeJar() As PrefixSwitchJar(Of W3GameActionId)
-            Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of W3GameActionId))() IsNot Nothing)
-            Dim jar = New PrefixSwitchJar(Of W3GameActionId)("W3GameAction")
+        Private Shared Function MakeJar() As PrefixSwitchJar(Of GameActionId)
+            Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of GameActionId))() IsNot Nothing)
+            Dim jar = New PrefixSwitchJar(Of GameActionId)("W3GameAction")
 
             reg(jar, GameActions.PauseGame)
             reg(jar, GameActions.ResumeGame)
@@ -91,6 +91,11 @@ Namespace WC3.Protocol
             reg(jar, GameActions.GameCacheSyncReal)
             reg(jar, GameActions.GameCacheSyncUnit)
             reg(jar, GameActions.GameCacheSyncString)
+            reg(jar, GameActions.GameCacheSyncEmptyInteger)
+            reg(jar, GameActions.GameCacheSyncEmptyBoolean)
+            reg(jar, GameActions.GameCacheSyncEmptyReal)
+            reg(jar, GameActions.GameCacheSyncEmptyUnit)
+            reg(jar, GameActions.GameCacheSyncEmptyString)
             Return jar
         End Function
 

@@ -3,7 +3,7 @@
 Namespace WC3.Protocol
     '''<summary>Game actions which can be performed by players.</summary>
     '''<original-source> http://www.wc3c.net/tools/specs/W3GActions.txt </original-source>
-    Public Enum W3GameActionId As Byte
+    Public Enum GameActionId As Byte
         PauseGame = &H1
         ResumeGame = &H2
         SetGameSpeed = &H3
@@ -116,11 +116,12 @@ Namespace WC3.Protocol
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         GameCacheSyncString = &H6E
         GameCacheSyncUnit = &H6F
-        '_Unseen0x70 = &H70
-        '_Unseen0x71 = &H71
-        '_Unseen0x72 = &H72
-        '_Unseen0x73 = &H73
-        '_Unseen0x74 = &H74
+        GameCacheSyncEmptyInteger = &H70
+        '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
+        GameCacheSyncEmptyString = &H71
+        GameCacheSyncEmptyBoolean = &H72
+        GameCacheSyncEmptyUnit = &H73
+        GameCacheSyncEmptyReal = &H74
         TriggerArrowKeyEvent = &H75
     End Enum
 
@@ -252,43 +253,43 @@ Namespace WC3.Protocol
 
         Public Class SimpleDefinition
             Inherits TupleJar
-            Public ReadOnly id As W3GameActionId
-            Public Sub New(ByVal id As W3GameActionId, ByVal ParamArray subjars() As IJar(Of Object))
+            Public ReadOnly id As GameActionId
+            Public Sub New(ByVal id As GameActionId, ByVal ParamArray subjars() As IJar(Of Object))
                 MyBase.New(id.ToString, subjars)
                 Contract.Requires(subjars IsNot Nothing)
                 Me.id = id
             End Sub
         End Class
 
-        Public Shared ReadOnly DecreaseGameSpeed As New SimpleDefinition(W3GameActionId.DecreaseGameSpeed)
-        Public Shared ReadOnly IncreaseGameSpeed As New SimpleDefinition(W3GameActionId.IncreaseGameSpeed)
-        Public Shared ReadOnly PauseGame As New SimpleDefinition(W3GameActionId.PauseGame)
-        Public Shared ReadOnly ResumeGame As New SimpleDefinition(W3GameActionId.ResumeGame)
-        Public Shared ReadOnly SaveGameFinished As New SimpleDefinition(W3GameActionId.SaveGameFinished,
+        Public Shared ReadOnly DecreaseGameSpeed As New SimpleDefinition(GameActionId.DecreaseGameSpeed)
+        Public Shared ReadOnly IncreaseGameSpeed As New SimpleDefinition(GameActionId.IncreaseGameSpeed)
+        Public Shared ReadOnly PauseGame As New SimpleDefinition(GameActionId.PauseGame)
+        Public Shared ReadOnly ResumeGame As New SimpleDefinition(GameActionId.ResumeGame)
+        Public Shared ReadOnly SaveGameFinished As New SimpleDefinition(GameActionId.SaveGameFinished,
                     New UInt32Jar("unknown").Weaken)
-        Public Shared ReadOnly SaveGameStarted As New SimpleDefinition(W3GameActionId.SaveGameStarted,
+        Public Shared ReadOnly SaveGameStarted As New SimpleDefinition(GameActionId.SaveGameStarted,
                     New NullTerminatedStringJar("filename").Weaken)
-        Public Shared ReadOnly SetGameSpeed As New SimpleDefinition(W3GameActionId.SetGameSpeed,
+        Public Shared ReadOnly SetGameSpeed As New SimpleDefinition(GameActionId.SetGameSpeed,
                     New EnumByteJar(Of GameSpeedSetting)("speed").Weaken)
 
-        Public Shared ReadOnly SelfOrder As New SimpleDefinition(W3GameActionId.SelfOrder,
+        Public Shared ReadOnly SelfOrder As New SimpleDefinition(GameActionId.SelfOrder,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                     New OrderTypeJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken)
-        Public Shared ReadOnly PointOrder As New SimpleDefinition(W3GameActionId.PointOrder,
+        Public Shared ReadOnly PointOrder As New SimpleDefinition(GameActionId.PointOrder,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                     New OrderTypeJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
                     New Float32Jar("target x").Weaken,
                     New Float32Jar("target y").Weaken)
-        Public Shared ReadOnly ObjectOrder As New SimpleDefinition(W3GameActionId.ObjectOrder,
+        Public Shared ReadOnly ObjectOrder As New SimpleDefinition(GameActionId.ObjectOrder,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                     New OrderTypeJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
                     New Float32Jar("x").Weaken,
                     New Float32Jar("y").Weaken,
                     New GameObjectIdJar("target").Weaken)
-        Public Shared ReadOnly DropOrGiveItem As New SimpleDefinition(W3GameActionId.DropOrGiveItem,
+        Public Shared ReadOnly DropOrGiveItem As New SimpleDefinition(GameActionId.DropOrGiveItem,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                     New OrderTypeJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
@@ -296,7 +297,7 @@ Namespace WC3.Protocol
                     New Float32Jar("y").Weaken,
                     New GameObjectIdJar("receiver").Weaken,
                     New GameObjectIdJar("item").Weaken)
-        Public Shared ReadOnly FogObjectOrder As New SimpleDefinition(W3GameActionId.FogObjectOrder,
+        Public Shared ReadOnly FogObjectOrder As New SimpleDefinition(GameActionId.FogObjectOrder,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                     New OrderTypeJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
@@ -307,121 +308,143 @@ Namespace WC3.Protocol
                     New Float32Jar("actual target x").Weaken,
                     New Float32Jar("actual target y").Weaken)
 
-        Public Shared ReadOnly EnterChooseHeroSkillSubmenu As New SimpleDefinition(W3GameActionId.EnterChooseHeroSkillSubmenu)
-        Public Shared ReadOnly EnterChooseBuildingSubmenu As New SimpleDefinition(W3GameActionId.EnterChooseBuildingSubmenu)
-        Public Shared ReadOnly PressedEscape As New SimpleDefinition(W3GameActionId.PressedEscape)
-        Public Shared ReadOnly CancelHeroRevive As New SimpleDefinition(W3GameActionId.CancelHeroRevive,
+        Public Shared ReadOnly EnterChooseHeroSkillSubmenu As New SimpleDefinition(GameActionId.EnterChooseHeroSkillSubmenu)
+        Public Shared ReadOnly EnterChooseBuildingSubmenu As New SimpleDefinition(GameActionId.EnterChooseBuildingSubmenu)
+        Public Shared ReadOnly PressedEscape As New SimpleDefinition(GameActionId.PressedEscape)
+        Public Shared ReadOnly CancelHeroRevive As New SimpleDefinition(GameActionId.CancelHeroRevive,
                     New GameObjectIdJar("target").Weaken)
-        Public Shared ReadOnly DequeueBuildingOrder As New SimpleDefinition(W3GameActionId.DequeueBuildingOrder,
+        Public Shared ReadOnly DequeueBuildingOrder As New SimpleDefinition(GameActionId.DequeueBuildingOrder,
                     New ByteJar("slot number").Weaken,
                     New ObjectTypeJar("type").Weaken)
-        Public Shared ReadOnly MinimapPing As New SimpleDefinition(W3GameActionId.MinimapPing,
+        Public Shared ReadOnly MinimapPing As New SimpleDefinition(GameActionId.MinimapPing,
                     New Float32Jar("x").Weaken,
                     New Float32Jar("y").Weaken,
                     New RawDataJar("unknown", Size:=4).Weaken)
 
-        Public Shared ReadOnly ChangeAllyOptions As New SimpleDefinition(W3GameActionId.ChangeAllyOptions,
+        Public Shared ReadOnly ChangeAllyOptions As New SimpleDefinition(GameActionId.ChangeAllyOptions,
                     New ByteJar("player slot id").Weaken,
                     New EnumUInt32Jar(Of AllianceTypes)("flags").Weaken)
-        Public Shared ReadOnly TransferResources As New SimpleDefinition(W3GameActionId.TransferResources,
+        Public Shared ReadOnly TransferResources As New SimpleDefinition(GameActionId.TransferResources,
                     New ByteJar("player slot id").Weaken,
                     New UInt32Jar("gold").Weaken,
                     New UInt32Jar("lumber").Weaken)
 
-        Public Shared ReadOnly AssignGroupHotkey As New SimpleDefinition(W3GameActionId.AssignGroupHotkey,
+        Public Shared ReadOnly AssignGroupHotkey As New SimpleDefinition(GameActionId.AssignGroupHotkey,
                     New ByteJar("group index").Weaken,
                     New ListJar(Of GameObjectId)("targets",
                         New GameObjectIdJar("target"), prefixsize:=2).Weaken)
-        Public Shared ReadOnly ChangeSelection As New SimpleDefinition(W3GameActionId.ChangeSelection,
+        Public Shared ReadOnly ChangeSelection As New SimpleDefinition(GameActionId.ChangeSelection,
                     New EnumByteJar(Of SelectionOperation)("operation").Weaken,
                     New ListJar(Of GameObjectId)("targets",
                         New GameObjectIdJar("target"), prefixsize:=2).Weaken)
-        Public Shared ReadOnly PreSubGroupSelection As New SimpleDefinition(W3GameActionId.PreSubGroupSelection)
-        Public Shared ReadOnly SelectGroundItem As New SimpleDefinition(W3GameActionId.SelectGroundItem,
+        Public Shared ReadOnly PreSubGroupSelection As New SimpleDefinition(GameActionId.PreSubGroupSelection)
+        Public Shared ReadOnly SelectGroundItem As New SimpleDefinition(GameActionId.SelectGroundItem,
                     New ByteJar("unknown").Weaken,
                     New GameObjectIdJar("target").Weaken)
-        Public Shared ReadOnly SelectGroupHotkey As New SimpleDefinition(W3GameActionId.SelectGroupHotkey,
+        Public Shared ReadOnly SelectGroupHotkey As New SimpleDefinition(GameActionId.SelectGroupHotkey,
                     New ByteJar("group index").Weaken,
                     New ByteJar("unknown").Weaken)
-        Public Shared ReadOnly SelectSubGroup As New SimpleDefinition(W3GameActionId.SelectSubGroup,
+        Public Shared ReadOnly SelectSubGroup As New SimpleDefinition(GameActionId.SelectSubGroup,
                     New ObjectTypeJar("unit type").Weaken,
                     New GameObjectIdJar("target").Weaken)
 
-        Public Shared ReadOnly CheatDisableTechRequirements As New SimpleDefinition(W3GameActionId.CheatDisableTechRequirements)
-        Public Shared ReadOnly CheatDisableVictoryConditions As New SimpleDefinition(W3GameActionId.CheatDisableVictoryConditions)
-        Public Shared ReadOnly CheatEnableResearch As New SimpleDefinition(W3GameActionId.CheatEnableResearch)
-        Public Shared ReadOnly CheatFastCooldown As New SimpleDefinition(W3GameActionId.CheatFastCooldown)
-        Public Shared ReadOnly CheatFastDeathDecay As New SimpleDefinition(W3GameActionId.CheatFastDeathDecay)
-        Public Shared ReadOnly CheatGodMode As New SimpleDefinition(W3GameActionId.CheatGodMode)
-        Public Shared ReadOnly CheatGold As New SimpleDefinition(W3GameActionId.CheatGold,
+        Public Shared ReadOnly CheatDisableTechRequirements As New SimpleDefinition(GameActionId.CheatDisableTechRequirements)
+        Public Shared ReadOnly CheatDisableVictoryConditions As New SimpleDefinition(GameActionId.CheatDisableVictoryConditions)
+        Public Shared ReadOnly CheatEnableResearch As New SimpleDefinition(GameActionId.CheatEnableResearch)
+        Public Shared ReadOnly CheatFastCooldown As New SimpleDefinition(GameActionId.CheatFastCooldown)
+        Public Shared ReadOnly CheatFastDeathDecay As New SimpleDefinition(GameActionId.CheatFastDeathDecay)
+        Public Shared ReadOnly CheatGodMode As New SimpleDefinition(GameActionId.CheatGodMode)
+        Public Shared ReadOnly CheatGold As New SimpleDefinition(GameActionId.CheatGold,
                     New ByteJar("unknown").Weaken,
                     New UInt32Jar("amount").Weaken)
-        Public Shared ReadOnly CheatGoldAndLumber As New SimpleDefinition(W3GameActionId.CheatGoldAndLumber,
+        Public Shared ReadOnly CheatGoldAndLumber As New SimpleDefinition(GameActionId.CheatGoldAndLumber,
                     New ByteJar("unknown").Weaken,
                     New UInt32Jar("amount").Weaken)
-        Public Shared ReadOnly CheatInstantDefeat As New SimpleDefinition(W3GameActionId.CheatInstantDefeat)
-        Public Shared ReadOnly CheatInstantVictory As New SimpleDefinition(W3GameActionId.CheatInstantVictory)
-        Public Shared ReadOnly CheatLumber As New SimpleDefinition(W3GameActionId.CheatLumber,
+        Public Shared ReadOnly CheatInstantDefeat As New SimpleDefinition(GameActionId.CheatInstantDefeat)
+        Public Shared ReadOnly CheatInstantVictory As New SimpleDefinition(GameActionId.CheatInstantVictory)
+        Public Shared ReadOnly CheatLumber As New SimpleDefinition(GameActionId.CheatLumber,
                     New ByteJar("unknown").Weaken,
                     New UInt32Jar("amount").Weaken)
-        Public Shared ReadOnly CheatNoDefeat As New SimpleDefinition(W3GameActionId.CheatNoDefeat)
-        Public Shared ReadOnly CheatNoFoodLimit As New SimpleDefinition(W3GameActionId.CheatNoFoodLimit)
-        Public Shared ReadOnly CheatRemoveFogOfWar As New SimpleDefinition(W3GameActionId.CheatRemoveFogOfWar)
-        Public Shared ReadOnly CheatResearchUpgrades As New SimpleDefinition(W3GameActionId.CheatResearchUpgrades)
-        Public Shared ReadOnly CheatSetTimeOfDay As New SimpleDefinition(W3GameActionId.CheatSetTimeOfDay,
+        Public Shared ReadOnly CheatNoDefeat As New SimpleDefinition(GameActionId.CheatNoDefeat)
+        Public Shared ReadOnly CheatNoFoodLimit As New SimpleDefinition(GameActionId.CheatNoFoodLimit)
+        Public Shared ReadOnly CheatRemoveFogOfWar As New SimpleDefinition(GameActionId.CheatRemoveFogOfWar)
+        Public Shared ReadOnly CheatResearchUpgrades As New SimpleDefinition(GameActionId.CheatResearchUpgrades)
+        Public Shared ReadOnly CheatSetTimeOfDay As New SimpleDefinition(GameActionId.CheatSetTimeOfDay,
                     New Float32Jar("time").Weaken)
-        Public Shared ReadOnly CheatSpeedConstruction As New SimpleDefinition(W3GameActionId.CheatSpeedConstruction)
-        Public Shared ReadOnly CheatUnlimitedMana As New SimpleDefinition(W3GameActionId.CheatUnlimitedMana)
+        Public Shared ReadOnly CheatSpeedConstruction As New SimpleDefinition(GameActionId.CheatSpeedConstruction)
+        Public Shared ReadOnly CheatUnlimitedMana As New SimpleDefinition(GameActionId.CheatUnlimitedMana)
 
-        Public Shared ReadOnly TriggerArrowKeyEvent As New SimpleDefinition(W3GameActionId.TriggerArrowKeyEvent,
+        Public Shared ReadOnly TriggerArrowKeyEvent As New SimpleDefinition(GameActionId.TriggerArrowKeyEvent,
                     New EnumByteJar(Of ArrowKeyEvent)("event type").Weaken)
-        Public Shared ReadOnly TriggerChatEvent As New SimpleDefinition(W3GameActionId.TriggerChatEvent,
+        Public Shared ReadOnly TriggerChatEvent As New SimpleDefinition(GameActionId.TriggerChatEvent,
                     New GameObjectIdJar("trigger event").Weaken,
                     New NullTerminatedStringJar("text").Weaken)
-        Public Shared ReadOnly TriggerDialogButtonClicked As New SimpleDefinition(W3GameActionId.TriggerDialogButtonClicked,
+        Public Shared ReadOnly TriggerDialogButtonClicked As New SimpleDefinition(GameActionId.TriggerDialogButtonClicked,
                     New GameObjectIdJar("dialog").Weaken,
                     New GameObjectIdJar("button").Weaken)
-        Public Shared ReadOnly TriggerDialogButtonClicked2 As New SimpleDefinition(W3GameActionId.TriggerDialogButtonClicked2,
+        Public Shared ReadOnly TriggerDialogButtonClicked2 As New SimpleDefinition(GameActionId.TriggerDialogButtonClicked2,
                     New GameObjectIdJar("button").Weaken,
                     New GameObjectIdJar("dialog").Weaken)
-        Public Shared ReadOnly TriggerMouseClickedTrackable As New SimpleDefinition(W3GameActionId.TriggerMouseClickedTrackable,
+        Public Shared ReadOnly TriggerMouseClickedTrackable As New SimpleDefinition(GameActionId.TriggerMouseClickedTrackable,
                     New GameObjectIdJar("trackable").Weaken)
-        Public Shared ReadOnly TriggerMouseTouchedTrackable As New SimpleDefinition(W3GameActionId.TriggerMouseTouchedTrackable,
+        Public Shared ReadOnly TriggerMouseTouchedTrackable As New SimpleDefinition(GameActionId.TriggerMouseTouchedTrackable,
                     New GameObjectIdJar("trackable").Weaken)
-        Public Shared ReadOnly TriggerSelectionEvent As New SimpleDefinition(W3GameActionId.TriggerSelectionEvent,
+        Public Shared ReadOnly TriggerSelectionEvent As New SimpleDefinition(GameActionId.TriggerSelectionEvent,
                     New EnumByteJar(Of SelectionOperation)("operation").Weaken,
                     New GameObjectIdJar("target").Weaken)
-        Public Shared ReadOnly TriggerWaitFinished As New SimpleDefinition(W3GameActionId.TriggerWaitFinished,
+        Public Shared ReadOnly TriggerWaitFinished As New SimpleDefinition(GameActionId.TriggerWaitFinished,
                     New GameObjectIdJar("trigger thread").Weaken,
                     New UInt32Jar("thread wait count").Weaken)
 
-        Public Shared ReadOnly GameCacheSyncInteger As New SimpleDefinition(W3GameActionId.GameCacheSyncInteger,
+        Public Shared ReadOnly GameCacheSyncInteger As New SimpleDefinition(GameActionId.GameCacheSyncInteger,
                     New NullTerminatedStringJar("filename").Weaken,
                     New NullTerminatedStringJar("mission key").Weaken,
                     New NullTerminatedStringJar("key").Weaken,
                     New UInt32Jar("value").Weaken)
-        Public Shared ReadOnly GameCacheSyncBoolean As New SimpleDefinition(W3GameActionId.GameCacheSyncBoolean,
+        Public Shared ReadOnly GameCacheSyncBoolean As New SimpleDefinition(GameActionId.GameCacheSyncBoolean,
                     New NullTerminatedStringJar("filename").Weaken,
                     New NullTerminatedStringJar("mission key").Weaken,
                     New NullTerminatedStringJar("key").Weaken,
                     New UInt32Jar("value").Weaken)
-        Public Shared ReadOnly GameCacheSyncReal As New SimpleDefinition(W3GameActionId.GameCacheSyncReal,
+        Public Shared ReadOnly GameCacheSyncReal As New SimpleDefinition(GameActionId.GameCacheSyncReal,
                     New NullTerminatedStringJar("filename").Weaken,
                     New NullTerminatedStringJar("mission key").Weaken,
                     New NullTerminatedStringJar("key").Weaken,
                     New Float32Jar("value").Weaken)
-        Public Shared ReadOnly GameCacheSyncUnit As New SimpleDefinition(W3GameActionId.GameCacheSyncUnit,
+        Public Shared ReadOnly GameCacheSyncUnit As New SimpleDefinition(GameActionId.GameCacheSyncUnit,
                     New NullTerminatedStringJar("filename").Weaken,
                     New NullTerminatedStringJar("mission key").Weaken,
                     New NullTerminatedStringJar("key").Weaken,
                     New ObjectTypeJar("unit type").Weaken,
                     New RawDataJar("unknown data", Size:=86).Weaken)
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
-        Public Shared ReadOnly GameCacheSyncString As New SimpleDefinition(W3GameActionId.GameCacheSyncString,
+        Public Shared ReadOnly GameCacheSyncString As New SimpleDefinition(GameActionId.GameCacheSyncString,
                     New NullTerminatedStringJar("filename").Weaken,
                     New NullTerminatedStringJar("mission key").Weaken,
                     New NullTerminatedStringJar("key").Weaken,
                     New NullTerminatedStringJar("value").Weaken)
+
+        Public Shared ReadOnly GameCacheSyncEmptyInteger As New SimpleDefinition(GameActionId.GameCacheSyncEmptyInteger,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken)
+        Public Shared ReadOnly GameCacheSyncEmptyBoolean As New SimpleDefinition(GameActionId.GameCacheSyncEmptyBoolean,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken)
+        Public Shared ReadOnly GameCacheSyncEmptyReal As New SimpleDefinition(GameActionId.GameCacheSyncEmptyReal,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken)
+        Public Shared ReadOnly GameCacheSyncEmptyUnit As New SimpleDefinition(GameActionId.GameCacheSyncEmptyUnit,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken)
+        '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
+        Public Shared ReadOnly GameCacheSyncEmptyString As New SimpleDefinition(GameActionId.GameCacheSyncEmptyString,
+                    New NullTerminatedStringJar("filename").Weaken,
+                    New NullTerminatedStringJar("mission key").Weaken,
+                    New NullTerminatedStringJar("key").Weaken)
 
         <Pure()>
         Public Shared Function TypeIdString(ByVal value As UInt32) As String

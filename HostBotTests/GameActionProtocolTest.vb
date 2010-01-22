@@ -321,6 +321,67 @@ Public Class GameActionProtocolTest
                     })
     End Sub
     <TestMethod()>
+    Public Sub GameCacheSyncEmptyBooleanTest()
+        JarTest(GameActions.GameCacheSyncEmptyBoolean,
+                data:={116, 101, 115, 116, 0,
+                       101, 115, 116, 0,
+                       116, 101, 115, 0},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"filename", "test"},
+                        {"mission key", "est"},
+                        {"key", "tes"}
+                    })
+    End Sub
+    <TestMethod()>
+    Public Sub GameCacheSyncEmptyIntegerTest()
+        JarTest(GameActions.GameCacheSyncEmptyInteger,
+                data:={116, 101, 115, 116, 0,
+                       101, 115, 116, 0,
+                       116, 101, 115, 0},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"filename", "test"},
+                        {"mission key", "est"},
+                        {"key", "tes"}
+                    })
+    End Sub
+    <TestMethod()>
+    Public Sub GameCacheSyncEmptyRealTest()
+        JarTest(GameActions.GameCacheSyncEmptyReal,
+                data:={116, 101, 115, 116, 0,
+                       101, 115, 116, 0,
+                       116, 101, 115, 0},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"filename", "test"},
+                        {"mission key", "est"},
+                        {"key", "tes"}
+                    })
+    End Sub
+    <TestMethod()>
+    Public Sub GameCacheSyncEmptyStringTest()
+        JarTest(GameActions.GameCacheSyncEmptyString,
+                data:={116, 101, 115, 116, 0,
+                       101, 115, 116, 0,
+                       116, 101, 115, 0},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"filename", "test"},
+                        {"mission key", "est"},
+                        {"key", "tes"}
+                    })
+    End Sub
+    <TestMethod()>
+    Public Sub GameCacheSyncEmptyUnitTest()
+        Dim raw = Enumerable.Repeat(CByte(0), 86).ToArray
+        JarTest(GameActions.GameCacheSyncEmptyUnit,
+                data:={116, 101, 115, 116, 0,
+                       101, 115, 116, 0,
+                       116, 101, 115, 0},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"filename", "test"},
+                        {"mission key", "est"},
+                        {"key", "tes"}
+                    })
+    End Sub
+    <TestMethod()>
     Public Sub IncreaseGameSpeedTest()
         JarTest(GameActions.IncreaseGameSpeed,
                 data:={},

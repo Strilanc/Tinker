@@ -11,11 +11,11 @@ Public Class WC3ProtocolPackersTest
 
     <TestMethod()>
     Public Sub MakeShowLagScreenTest()
-        MakeShowLagScreen({})
+        MakeShowLagScreen({New PID(1)})
     End Sub
     <TestMethod()>
     Public Sub MakeRemovePlayerFromLagScreenTest()
-        MakeRemovePlayerFromLagScreen(TestPlayer, 100)
+        MakeRemovePlayerFromLagScreen(New PID(1), 100)
     End Sub
     <TestMethod()>
     Public Sub MakeTextTest()

@@ -42,7 +42,7 @@ Namespace WC3
             ElseIf Not text.StartsWith(commandPrefix) Then 'not a command
                 Return
             End If
-            Contract.Assume(text.Length > commandPrefix.Length)
+            Contract.Assume(text.Length >= commandPrefix.Length)
 
             'Normal commands
             Dim commandText = text.Substring(commandPrefix.Length)

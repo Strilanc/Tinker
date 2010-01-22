@@ -16,13 +16,7 @@ Namespace WC3
         Private ReadOnly _fullPath As InvariantString
         Public ReadOnly fileAvailable As Boolean
         Private ReadOnly _slots As IReadableList(Of Slot)
-        Public ReadOnly Property Slots As IReadableList(Of Slot)
-            Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() Is _slots)
-                Return _slots
-            End Get
-        End Property
+
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_playableWidth > 0)
             Contract.Invariant(_playableHeight > 0)
@@ -34,6 +28,15 @@ Namespace WC3
             Contract.Invariant(_numPlayerSlots <= 12)
             Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
         End Sub
+
+#Region "Properties"
+        Public ReadOnly Property Slots As IReadableList(Of Slot)
+            Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() Is _slots)
+                Return _slots
+            End Get
+        End Property
         Public ReadOnly Property NumPlayerSlots As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() > 0)
@@ -102,7 +105,6 @@ Namespace WC3
                 Return _playableHeight
             End Get
         End Property
-
         Public Enum SizeClass
             Huge
             Large
@@ -124,25 +126,22 @@ Namespace WC3
         End Property
         Public ReadOnly Property GameType As GameTypes
             Get
-                Dim f = GameTypes.MakerUser
+                Dim result = GameTypes.MakerUser Or If(IsMelee, GameTypes.TypeMelee, GameTypes.TypeScenario)
                 Select Case SizeClassification
                     Case SizeClass.Tiny, SizeClass.Small
-                        f = f Or GameTypes.SizeSmall
+                        result = result Or GameTypes.SizeSmall
                     Case SizeClass.Medium
-                        f = f Or GameTypes.SizeMedium
+                        result = result Or GameTypes.SizeMedium
                     Case SizeClass.Large, SizeClass.Huge
-                        f = f Or GameTypes.SizeLarge
+                        result = result Or GameTypes.SizeLarge
+                    Case Else
+                        Throw SizeClassification.MakeImpossibleValueException()
                 End Select
-                If IsMelee Then
-                    f = f Or GameTypes.TypeMelee
-                Else
-                    f = f Or GameTypes.TypeScenario
-                End If
-                Return f
+                Return result
             End Get
         End Property
+#End Region
 
-#Region "New"
         Public Shared Function FromArgument(ByVal arg As String) As Map
             Contract.Requires(arg IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
@@ -245,7 +244,6 @@ Namespace WC3
             Me._playableHeight = info.playableHeight
             Me._playableWidth = info.playableWidth
         End Sub
-#End Region
 
 #Region "Read"
         Public Function ReadChunk(ByVal pos As Integer,
@@ -402,9 +400,8 @@ Namespace WC3
 
         '''<summary>Finds a string in the war3map.wts file. Returns null if the string is not found.</summary>
         Private Shared Function TryGetMapString(ByVal mapArchive As MPQ.Archive,
-                                                ByVal key As String) As String
+                                                ByVal key As InvariantString) As String
             Contract.Requires(mapArchive IsNot Nothing)
-            Contract.Requires(key IsNot Nothing)
 
             'Open strings file and search for given key
             Using sr = New IO.StreamReader(New IO.BufferedStream(mapArchive.OpenFileByName("war3map.wts")))
@@ -424,7 +421,7 @@ Namespace WC3
             End Using
 
             'Alternate key
-            If key.StartsWith("TRIGSTR_", StringComparison.OrdinalIgnoreCase) Then
+            If key.StartsWith("TRIGSTR_") Then
                 Dim suffix = key.Substring("TRIGSTR_".Length)
                 Dim id As UInteger
                 If UInt32.TryParse(suffix, id) Then
@@ -442,12 +439,11 @@ Namespace WC3
         ''' Returns the key and an error description if an exception occurs.
         ''' </summary>
         Private Shared Function SafeGetMapString(ByVal mapArchive As MPQ.Archive,
-                                                 ByVal nameKey As String) As String
+                                                 ByVal nameKey As InvariantString) As String
             Contract.Requires(mapArchive IsNot Nothing)
-            Contract.Requires(nameKey IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Try
-                Return If(TryGetMapString(mapArchive, nameKey), nameKey)
+                Return If(TryGetMapString(mapArchive, nameKey), nameKey.ToString)
             Catch e As Exception
                 e.RaiseAsUnexpected("Error reading map strings file for {0}".Frmt(nameKey))
                 Return "{0} (error reading strings file: {1})".Frmt(nameKey, e.Message)

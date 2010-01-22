@@ -3,22 +3,21 @@ Imports Tinker.Pickling
 Namespace WC3.Protocol
     Public Module Packers
         <Pure()>
-        Public Function MakeShowLagScreen(ByVal laggers As IEnumerable(Of Player)) As Packet
+        Public Function MakeShowLagScreen(ByVal laggers As IEnumerable(Of PID)) As Packet
             Contract.Requires(laggers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.ShowLagScreen, New Dictionary(Of InvariantString, Object) From {
                     {"laggers", (From p In laggers
                                  Select New Dictionary(Of InvariantString, Object) From {
-                                        {"player index", p.PID},
+                                        {"player index", p.Index},
                                         {"initial milliseconds used", 2000}}).ToList()}})
         End Function
         <Pure()>
-        Public Function MakeRemovePlayerFromLagScreen(ByVal player As Player,
+        Public Function MakeRemovePlayerFromLagScreen(ByVal pid As PID,
                                                       ByVal lagTimeInMilliseconds As UInteger) As Packet
-            Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.RemovePlayerFromLagScreen, New Dictionary(Of InvariantString, Object) From {
-                    {"player index", player.PID.Index},
+                    {"player index", pid.Index},
                     {"marginal milliseconds used", lagTimeInMilliseconds}})
         End Function
         <Pure()>

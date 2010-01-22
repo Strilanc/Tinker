@@ -76,12 +76,26 @@
             e_ThrowPlayerSentData(sender, data)
             gameDataQueue.Enqueue(New GameTickDatum(sender, data))
         End Sub
+        Private _inAsyncLagGame As Boolean
+        Private _asyncWaitTriggered As Boolean
         Public Function QueueReceiveGameAction(ByVal player As Player,
                                                ByVal action As Protocol.GameAction) As ifuture
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(action IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return outQueue.QueueAction(Sub() RaiseEvent PlayerAction(Me, player, action))
+            Return outQueue.QueueAction(Sub()
+                                            Select Case action.id
+                                                Case Protocol.GameActionId.GameCacheSyncInteger
+                                                    Dim vals = CType(action.Payload.Value, Dictionary(Of InvariantString, Object))
+                                                    If CStr(vals("filename")) = "HostBot.AsyncLag" Then
+                                                        Select Case CStr(vals("mission key"))
+                                                            Case "tick" : _inAsyncLagGame = True
+                                                            Case "wait" : _asyncWaitTriggered = True
+                                                        End Select
+                                                    End If
+                                            End Select
+                                            RaiseEvent PlayerAction(Me, player, action)
+                                        End Sub)
         End Function
 
         '''<summary>Drops the players currently lagging.</summary>
@@ -123,24 +137,35 @@
                     If Not _players.Contains(p) Then
                         laggingPlayers.Remove(p)
                     ElseIf p.GetTockTime >= _gameTime OrElse p.isFake Then
+
                         laggingPlayers.Remove(p)
                         Dim p_ = p
                         If IsPlayerVisible(p) OrElse (From q In laggingPlayers
                                                       Where GetVisiblePlayer(q) Is GetVisiblePlayer(p_)).None Then
                             Contract.Assume(_lagTimer IsNot Nothing)
                             BroadcastPacket(Protocol.MakeRemovePlayerFromLagScreen(
-                                player:=GetVisiblePlayer(p),
+                                pid:=GetVisiblePlayer(p).PID,
                                 lagTimeInMilliseconds:=CUInt(_lagTimer.ElapsedTime.TotalMilliseconds)))
                         End If
                     End If
                 Next p
             Else
-                laggingPlayers = (From p In _players
-                                  Where Not p.isFake _
-                                  AndAlso p.GetTockTime < _gameTime - Me.SettingLagLimit
-                                  ).ToList
+                If _inAsyncLagGame Then
+                    If _asyncWaitTriggered Then
+                        laggingPlayers = (From p In _players
+                                          Where Not p.isFake _
+                                          AndAlso p.GetTockTime < _gameTime
+                                          ).ToList
+                        _asyncWaitTriggered = False
+                    End If
+                Else
+                    laggingPlayers = (From p In _players
+                                      Where Not p.isFake _
+                                      AndAlso p.GetTockTime < _gameTime - Me.SettingLagLimit
+                                      ).ToList
+                End If
                 If laggingPlayers.Count > 0 Then
-                    BroadcastPacket(Protocol.MakeShowLagScreen(laggingPlayers), Nothing)
+                    BroadcastPacket(Protocol.MakeShowLagScreen(From p In laggingPlayers Select p.PID), Nothing)
                     _lagTimer = _clock.StartTimer()
                 End If
             End If
