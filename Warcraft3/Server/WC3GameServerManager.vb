@@ -54,6 +54,8 @@ Namespace WC3
             _hooks.Add(New DelegatedDisposable(Sub() RemoveHandler _gameServer.PlayerTalked, AddressOf OnPlayerTalked).Futurized)
 
             BeginAccepting()
+
+            _gameServer.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
         End Sub
 
         Public ReadOnly Property Server As WC3.GameServer

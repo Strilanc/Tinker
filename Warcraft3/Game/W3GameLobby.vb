@@ -432,7 +432,7 @@
         Public Sub LobbyCatchRemovedPlayer(ByVal player As Player, ByVal slot As Slot)
             Contract.Requires(player IsNot Nothing)
 
-            If slot Is Nothing OrElse slot.Contents.PlayerIndex <> player.PID Then
+            If slot Is Nothing OrElse slot.Contents.PlayerIndex Is Nothing Then
                 freeIndexes.Add(player.PID)
             End If
             DownloadScheduler.RemoveClient(player.PID.Index).SetHandled()

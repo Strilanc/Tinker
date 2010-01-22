@@ -129,15 +129,15 @@ Namespace Bot
             Inherits TemplatedCommand(Of MainBot)
             Public Sub New()
                 MyBase.New(Name:="CreateLan",
-                           template:="name -receiver=localhost -auto",
-                           Description:="Creates a lan advertiser. -Auto causes the advertiser to automatically advertise any games hosted by the bot.",
+                           template:="name -receiver=localhost -manual",
+                           Description:="Creates a lan advertiser. -Manual causes the advertiser to not automatically advertise any games hosted by the bot.",
                            Permissions:="root:4")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
-                Dim auto = argument.HasOptionalSwitch("auto")
+                Dim auto = Not argument.HasOptionalSwitch("manual")
 
                 Dim advertiser = New Lan.Advertiser(defaultTargetHost:=If(argument.TryGetOptionalNamedValue("receiver"), "localhost"))
                 Dim manager = New Lan.AdvertiserManager(name, target, advertiser)

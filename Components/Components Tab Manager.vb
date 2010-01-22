@@ -55,6 +55,7 @@
             If component.HasControl Then
                 Dim page = _items(component)
                 Contract.Assume(page IsNot Nothing)
+                component.Control.Dispose()
                 page.Controls.Remove(component.Control)
                 _tabControl.TabPages.Remove(page)
                 page.Dispose()

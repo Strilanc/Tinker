@@ -347,12 +347,12 @@ Public Class LoggerControl
                     Return
                 End If
             Else
-                If filestream IsNot Nothing Then
-                    SyncLock lock
+                SyncLock lock
+                    If filestream IsNot Nothing Then
                         filestream.Dispose()
                         filestream = Nothing
-                    End SyncLock
-                End If
+                    End If
+                End SyncLock
             End If
         End SyncLock
     End Sub

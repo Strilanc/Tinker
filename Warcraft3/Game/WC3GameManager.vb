@@ -30,6 +30,8 @@ Namespace WC3
             Me._control = New W3GameControl(Me)
 
             AddHandler game.PlayerTalked, Sub(sender, player, text) HandleText(player, text)
+
+            game.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
         End Sub
         Private Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
             Contract.Requires(player IsNot Nothing)

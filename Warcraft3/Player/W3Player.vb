@@ -155,24 +155,12 @@
         Private Sub BeginReading()
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=AddressOf ProcessPacket,
+                consumer:=Function(packetData) packetHandler.HandlePacket(packetData, socket.Name),
                 errorHandler:=Sub(exception) Me.QueueDisconnect(expected:=False,
                                                                 leaveType:=PlayerLeaveType.Disconnect,
                                                                 reason:="Error receiving packet: {0}".Frmt(exception.Message))
             )
         End Sub
-
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
-        Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
-            Contract.Requires(packetData IsNot Nothing)
-            Contract.Requires(packetData.Count >= 4)
-            Dim result = packetHandler.HandlePacket(packetData, socket.Name)
-            result.Catch(Sub(exception) QueueDisconnect(expected:=False,
-                                                        leaveType:=PlayerLeaveType.Disconnect,
-                                                        reason:=exception.Message))
-            Return result
-        End Function
 
         '''<summary>Disconnects this player and removes them from the system.</summary>
         Private Sub Disconnect(ByVal expected As Boolean,

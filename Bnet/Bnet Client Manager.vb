@@ -40,6 +40,8 @@ Namespace Bnet
                     id:=Bnet.Protocol.PacketId.ChatEvent,
                     jar:=Bnet.Protocol.ServerPackets.ChatEvent,
                     handler:=Function(pickle) TaskedAction(Sub() OnReceivedChatEvent(pickle.Value))))
+
+            client.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
         End Sub
 
         Public ReadOnly Property Client As Bnet.Client
