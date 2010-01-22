@@ -113,9 +113,9 @@ Namespace WC3.Protocol
         GameCacheSyncInteger = &H6B
         GameCacheSyncReal = &H6C
         GameCacheSyncBoolean = &H6D
+        GameCacheSyncUnit = &H6E
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
-        GameCacheSyncString = &H6E
-        GameCacheSyncUnit = &H6F
+        GameCacheSyncString = &H6F
         GameCacheSyncEmptyInteger = &H70
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         GameCacheSyncEmptyString = &H71
@@ -416,7 +416,29 @@ Namespace WC3.Protocol
                     New NullTerminatedStringJar("mission key").Weaken,
                     New NullTerminatedStringJar("key").Weaken,
                     New ObjectTypeJar("unit type").Weaken,
-                    New RawDataJar("unknown data", Size:=86).Weaken)
+                    New ListJar(Of Dictionary(Of InvariantString, Object))("inventory", prefixSize:=4, subJar:=New TupleJar("item slot",
+                            New ObjectTypeJar("item").Weaken,
+                            New UInt32Jar("charges").Weaken,
+                            New UInt32Jar("unknown").Weaken)).Weaken,
+                    New UInt32Jar("experience").Weaken,
+                    New UInt32Jar("level ups").Weaken,
+                    New UInt32Jar("skill points").Weaken,
+                    New RawDataJar("unknown1", Size:=4).Weaken,
+                    New UInt32Jar("bonus strength").Weaken,
+                    New Float32Jar("unknown2").Weaken,
+                    New UInt32Jar("bonus agility").Weaken,
+                    New RawDataJar("unknown3", Size:=4).Weaken,
+                    New Float32Jar("bonus attack speed").Weaken,
+                    New Float32Jar("unknown4").Weaken,
+                    New UInt32Jar("bonus intelligence").Weaken,
+                    New Float32Jar("unknown5").Weaken,
+                    New ListJar(Of Dictionary(Of InvariantString, Object))("hero skills", prefixSize:=4, subJar:=New TupleJar("skill slot",
+                            New ObjectTypeJar("ability").Weaken,
+                            New UInt32Jar("level").Weaken)).Weaken,
+                    New Float32Jar("health bonus").Weaken,
+                    New RawDataJar("unknown6", Size:=4).Weaken,
+                    New Float32Jar("unknown7").Weaken,
+                    New ListJar(Of IReadableList(Of Byte))("unknown8", prefixsize:=2, subJar:=New RawDataJar("unknown", Size:=8)).Weaken)
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         Public Shared ReadOnly GameCacheSyncString As New SimpleDefinition(GameActionId.GameCacheSyncString,
                     New NullTerminatedStringJar("filename").Weaken,
