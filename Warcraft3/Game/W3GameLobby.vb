@@ -422,8 +422,9 @@
                     Contract.Assume(e.source <= 12)
                     Dim src = TryFindPlayer(New PID(e.source))
                     If src Is Nothing Then Continue For
-                    src.QueueSendPacket(Protocol.MakeOtherPlayerJoined(dst))
+                    src.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dst.PID, PlayerLeaveType.Disconnect))
                     dst.QueueSendPacket(Protocol.MakeOtherPlayerLeft(src.PID, PlayerLeaveType.Disconnect))
+                    src.QueueSendPacket(Protocol.MakeOtherPlayerJoined(dst))
                     dst.QueueSendPacket(Protocol.MakeOtherPlayerJoined(src))
                 End If
             Next e

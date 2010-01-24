@@ -191,6 +191,7 @@ Namespace WC3.Protocol
     End Enum
     Public Enum DownloadState As Byte
         NotDownloading = 1
+        Uploading = 2
         Downloading = 3
     End Enum
     Public Enum RejectReason As UInteger
@@ -251,9 +252,9 @@ Namespace WC3.Protocol
         End Class
 
         Public Shared ReadOnly Ping As New SimpleDefinition(PacketId.Ping,
-                New UInt32Jar("salt").Weaken)
+                New UInt32Jar("salt", showHex:=True).Weaken)
         Public Shared ReadOnly Pong As New SimpleDefinition(PacketId.Pong,
-                New UInt32Jar("salt").Weaken)
+                New UInt32Jar("salt", showHex:=True).Weaken)
 
         Public Shared ReadOnly Leaving As New SimpleDefinition(PacketId.Leaving,
                 New EnumUInt32Jar(Of PlayerLeaveType)("leave type").Weaken)
