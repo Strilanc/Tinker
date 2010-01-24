@@ -64,38 +64,31 @@
             _gameTickTimer = Nothing
         End Sub
 
-        Private Sub e_ThrowPlayerSentData(ByVal player As Player, ByVal data As Byte())
-            outQueue.QueueAction(Sub() RaiseEvent PlayerSentData(Me, player, data))
-        End Sub
 
 #Region "Play"
         '''<summary>Adds data to broadcast to all clients in the next tick</summary>
         Private Sub QueueGameData(ByVal sender As Player, ByVal data() As Byte)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
-            e_ThrowPlayerSentData(sender, data)
-            gameDataQueue.Enqueue(New GameTickDatum(sender, data))
+            outQueue.QueueAction(Sub() RaiseEvent PlayerSentData(Me, sender, data))
+            inQueue.QueueAction(Sub() gameDataQueue.Enqueue(New GameTickDatum(sender, data)))
         End Sub
-        Private _inAsyncLagGame As Boolean
         Private _asyncWaitTriggered As Boolean
         Public Function QueueReceiveGameAction(ByVal player As Player,
                                                ByVal action As Protocol.GameAction) As ifuture
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(action IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return outQueue.QueueAction(Sub()
-                                            Select Case action.id
-                                                Case Protocol.GameActionId.GameCacheSyncInteger
-                                                    Dim vals = CType(action.Payload.Value, Dictionary(Of InvariantString, Object))
-                                                    If CStr(vals("filename")) = "HostBot.AsyncLag" Then
-                                                        Select Case CStr(vals("mission key"))
-                                                            Case "tick" : _inAsyncLagGame = True
-                                                            Case "wait" : _asyncWaitTriggered = True
-                                                        End Select
-                                                    End If
-                                            End Select
-                                            RaiseEvent PlayerAction(Me, player, action)
-                                        End Sub)
+            inQueue.QueueAction(
+                Sub()
+                    If action.id = Protocol.GameActionId.GameCacheSyncInteger Then
+                        Dim vals = CType(action.Payload.Value, Dictionary(Of InvariantString, Object))
+                        If CStr(vals("filename")) = "HostBot.AsyncLag" AndAlso CStr(vals("mission key")) = "wait" Then
+                            _asyncWaitTriggered = True
+                        End If
+                    End If
+                End Sub)
+            Return outQueue.QueueAction(Sub() RaiseEvent PlayerAction(Me, player, action))
         End Function
 
         '''<summary>Drops the players currently lagging.</summary>
@@ -150,20 +143,11 @@
                     End If
                 Next p
             Else
-                If _inAsyncLagGame Then
-                    If _asyncWaitTriggered Then
-                        laggingPlayers = (From p In _players
-                                          Where Not p.isFake _
-                                          AndAlso p.GetTockTime < _gameTime
-                                          ).ToList
-                        _asyncWaitTriggered = False
-                    End If
-                Else
-                    laggingPlayers = (From p In _players
-                                      Where Not p.isFake _
-                                      AndAlso p.GetTockTime < _gameTime - Me.SettingLagLimit
-                                      ).ToList
-                End If
+                laggingPlayers = (From p In _players
+                                  Where Not p.isFake _
+                                  AndAlso p.GetTockTime < _gameTime - If(_asyncWaitTriggered, 0, Me.SettingLagLimit)
+                                  ).ToList
+                _asyncWaitTriggered = False
                 If laggingPlayers.Count > 0 Then
                     BroadcastPacket(Protocol.MakeShowLagScreen(From p In laggingPlayers Select p.PID), Nothing)
                     _lagTimer = _clock.StartTimer()
