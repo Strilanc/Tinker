@@ -345,7 +345,7 @@
             Return New Player() {player}
         End Function
         Public Overrides Function GenerateDescription() As IFuture(Of String)
-            Return If(player.isFake, "(Fake){0}".Frmt(player.name).Futurized, player.Description)
+            Return If(player.isFake, "(Fake){0} pid={1}".Frmt(player.Name, player.PID.Index).Futurized, player.Description)
         End Function
         Public Overrides ReadOnly Property PlayerIndex() As PID?
             Get

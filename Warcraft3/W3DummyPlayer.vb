@@ -87,9 +87,9 @@
                                                              CUInt(vals("crc32")),
                                                              CUInt(vals("xoro checksum")),
                                                              CType(vals("sha1 checksum"), IList(Of Byte)).AsReadableList)
-                                        socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.DownloadState.NotDownloading, 0))
+                                        socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, 0))
                                     Else
-                                        socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.DownloadState.NotDownloading, CUInt(vals("size"))))
+                                        socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, CUInt(vals("size"))))
                                     End If
                                 Case Protocol.PacketId.Ping
                                     socket.SendPacket(Protocol.MakePong(CUInt(vals("salt"))))
@@ -151,10 +151,10 @@
             Contract.Assume(fileData IsNot Nothing)
 
             If dl.ReceiveChunk(position, fileData) Then
-                socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.DownloadState.NotDownloading, dl.size))
+                socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, dl.size))
                 Return True
             Else
-                socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.DownloadState.Downloading, CUInt(dl.file.Position)))
+                socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Downloading, CUInt(dl.file.Position)))
                 Return False
             End If
         End Function

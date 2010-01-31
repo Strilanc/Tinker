@@ -18,7 +18,7 @@ Namespace WC3.Protocol
             If data.Count < 8 Then Throw New PicklingException("Not enough data.")
             Dim datum = data.SubView(0, 8)
             Dim value = New GameObjectId(datum.SubView(0, 4).ToUInt32,
-                                     datum.SubView(4, 4).ToUInt32)
+                                         datum.SubView(4, 4).ToUInt32)
             Return New Pickle(Of GameObjectId)(Me.Name, value, datum)
         End Function
     End Class

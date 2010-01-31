@@ -24,7 +24,7 @@ Public Class WC3ProtocolTest
                        128, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"map transfer key", 1},
-                        {"dl state", DownloadState.Downloading},
+                        {"transfer state", MapTransferState.Downloading},
                         {"total downloaded", 128}
                     })
     End Sub

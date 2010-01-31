@@ -208,6 +208,7 @@
     <Compile Include="Pickling\ListJar.vb" />
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
+    <Compile Include="Warcraft3\Download Manager.vb" />
     <Compile Include="Warcraft3\Game\GameLoggerControl.Designer.vb">
       <DependentUpon>GameLoggerControl.vb</DependentUpon>
     </Compile>
@@ -229,6 +230,7 @@
     <Compile Include="Warcraft3\Protocol\SlotJar.vb" />
     <Compile Include="Warcraft3\Protocol\WC3 Protocol Packers.vb" />
     <Compile Include="Warcraft3\Protocol\WC3 Packet.vb" />
+    <Compile Include="Warcraft3\ReplayReader.vb" />
     <Compile Include="Warcraft3\Server\W3ServerControl.Designer.vb">
       <DependentUpon>W3ServerControl.vb</DependentUpon>
     </Compile>
@@ -506,12 +508,12 @@
   <ItemGroup>
     <PublishFile Include="Docs.txt">
       <Visible>False</Visible>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
       <FileType>File</FileType>
     </PublishFile>
   </ItemGroup>

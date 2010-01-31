@@ -189,8 +189,8 @@ Namespace WC3.Protocol
         Melee = 0
         Forces = 3
     End Enum
-    Public Enum DownloadState As Byte
-        NotDownloading = 1
+    Public Enum MapTransferState As Byte
+        Idle = 1
         Uploading = 2
         Downloading = 3
     End Enum
@@ -433,7 +433,7 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly ClientMapInfo As New SimpleDefinition(PacketId.ClientMapInfo,
                 New UInt32Jar("map transfer key").Weaken,
-                New EnumByteJar(Of DownloadState)("dl state").Weaken,
+                New EnumByteJar(Of MapTransferState)("transfer state").Weaken,
                 New UInt32Jar("total downloaded").Weaken)
         Public Shared ReadOnly SetUploadTarget As New SimpleDefinition(PacketId.SetUploadTarget,
                 New UInt32Jar("map transfer key").Weaken,
@@ -442,6 +442,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly SetDownloadSource As New SimpleDefinition(PacketId.SetDownloadSource,
                 New UInt32Jar("map transfer key").Weaken,
                 New ByteJar("sending player index").Weaken)
+        Public Const MaxFileDataSize As UInt32 = 1442
         Public Shared ReadOnly MapFileData As New SimpleDefinition(PacketId.MapFileData,
                 New ByteJar("receiving player index").Weaken,
                 New ByteJar("sending player index").Weaken,

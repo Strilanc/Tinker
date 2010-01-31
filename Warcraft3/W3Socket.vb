@@ -75,7 +75,7 @@ Namespace WC3
 
                 'Log
                 Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.id, Name), LogMessageType.DataEvent)
-                Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
+                Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.id, Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
 
                 'Send
                 _socket.WritePacket(Concat({Protocol.Packets.PacketPrefix, packet.id, 0, 0},

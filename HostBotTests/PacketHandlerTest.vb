@@ -6,8 +6,11 @@ Imports System.Collections.Generic
 
 <TestClass()>
 Public Class PacketHandlerTest
-    Private Class SimplePacketHandler
+    Private Class TestPacketHandler
         Inherits Tinker.PacketHandler(Of Byte)
+        Public Sub New()
+            MyBase.New("Test", Nothing)
+        End Sub
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As Byte
             If header(0) = 255 Then Throw New InvalidOperationException("Mock Exception")
             Return header(0)
@@ -22,7 +25,7 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub ValueTest()
         Dim flag = 0UI
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(data) TaskedAction(Sub() flag = data.SubView(0, 4).touint32))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList, "test")
@@ -35,7 +38,7 @@ Public Class PacketHandlerTest
     Public Sub SelectTest()
         Dim flag1 = True
         Dim flag2 = False
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(data) TaskedAction(Sub() flag1 = False))
         p.AddHandler(key:=2,
@@ -51,7 +54,7 @@ Public Class PacketHandlerTest
     Public Sub DoubleHandleTest()
         Dim flag1 = False
         Dim flag2 = False
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
         p.AddHandler(key:=1,
@@ -65,7 +68,7 @@ Public Class PacketHandlerTest
 
     <TestMethod()>
     Public Sub HandleFailTest()
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(pickle)
                                   Throw New InvalidOperationException("Mock Exception")
@@ -77,7 +80,7 @@ Public Class PacketHandlerTest
 
     <TestMethod()>
     Public Sub HandleFutureFailTest()
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() Throw New InvalidOperationException("Mock Exception")))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList, "test")
@@ -88,7 +91,7 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub ExtractKeyFailTest()
         Dim flag = True
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag = False))
         Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.AsReadableList, "test")
@@ -99,7 +102,7 @@ Public Class PacketHandlerTest
 
     <TestMethod()>
     Public Sub MissingHandlerTest()
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList, "test")
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
@@ -107,7 +110,7 @@ Public Class PacketHandlerTest
 
     <TestMethod()>
     Public Sub DisposedHandlerTest()
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub()
                                                             End Sub)
@@ -121,7 +124,7 @@ Public Class PacketHandlerTest
     Public Sub SelectNonDisposedHandlerTest()
         Dim flag1 = False
         Dim flag2 = True
-        Dim p = New SimplePacketHandler()
+        Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
         p.AddHandler(key:=1,

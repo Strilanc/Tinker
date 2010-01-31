@@ -117,8 +117,10 @@ Namespace WC3.Protocol
     Public NotInheritable Class W3PacketHandler
         Inherits PacketHandler(Of PacketId)
 
-        Public Sub New(ByVal logger As Logger)
-            MyBase.New(logger)
+        Public Sub New(ByVal sourceName As String,
+                       Optional ByVal logger As Logger = Nothing)
+            MyBase.New(sourceName, logger)
+            Contract.Requires(sourceName IsNot Nothing)
         End Sub
 
         Public Overrides ReadOnly Property HeaderSize As Integer

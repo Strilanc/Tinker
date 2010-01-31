@@ -79,8 +79,8 @@ Namespace WC3
                         Try
                             Dim id = CType(packetData(1), Protocol.PacketId)
                             Dim pickle = ProcessConnectingPlayer(socket, packetData)
-                            logger.Log(Function() "Received {0}".Frmt(id), LogMessageType.DataEvent)
-                            logger.Log(Function() "{0} = {1}".Frmt(id, pickle.Description.Value), LogMessageType.DataParsed)
+                            logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
+                            logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description.Value), LogMessageType.DataParsed)
                         Catch e As Exception
                             socket.Disconnect(expected:=False, reason:=e.Message)
                         End Try

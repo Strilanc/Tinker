@@ -135,6 +135,191 @@ Public Class PicklingTest
     End Sub
 #End Region
 
+#Region "Enum"
+    Private Enum E8 As Byte
+        E0 = 0
+        E3 = 3
+    End Enum
+    <Flags()>
+    Private Enum F8 As Byte
+        F1 = 1 << 1
+        F7 = 1 << 7
+    End Enum
+    <TestMethod()>
+    Public Sub EnumByteJarTest_Value()
+        Dim jar = New EnumByteJar(Of E8)("jar", checkDefined:=False)
+        JarTest(jar, Function(e1, e2) e1 = e2, E8.E0, {0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E8.E3, {3})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
+        jar.Parse(New Byte() {2}.AsReadableList)
+
+        jar = New EnumByteJar(Of E8)("jar", checkDefined:=True)
+        JarTest(jar, Function(e1, e2) e1 = e2, E8.E0, {0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E8.E3, {3})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {2}.AsReadableList))
+    End Sub
+    <TestMethod()>
+    Public Sub EnumByteJarTest_Flags()
+        Dim jar = New EnumByteJar(Of F8)("jar", checkDefined:=False)
+        JarTest(jar, Function(e1, e2) e1 = e2, F8.F1, {2})
+        JarTest(jar, Function(e1, e2) e1 = e2, F8.F7, {128})
+        JarTest(jar, Function(e1, e2) e1 = e2, F8.F1 Or F8.F7, {130})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
+        jar.Parse(New Byte() {1}.AsReadableList)
+        jar.Parse(New Byte() {3}.AsReadableList)
+
+        jar = New EnumByteJar(Of F8)("jar", checkDefined:=True)
+        JarTest(jar, Function(e1, e2) e1 = e2, F8.F1, {2})
+        JarTest(jar, Function(e1, e2) e1 = e2, F8.F7, {128})
+        JarTest(jar, Function(e1, e2) e1 = e2, F8.F1 Or F8.F7, {130})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3}.AsReadableList))
+    End Sub
+    Private Enum E16 As UInt16
+        E0 = 0
+        E3 = 3
+        EM = UInt16.MaxValue
+    End Enum
+    <Flags()>
+    Private Enum F16 As UInt16
+        F1 = 1 << 1
+        F7 = 1 << 7
+        FM = 1US << 15
+    End Enum
+    <TestMethod()>
+    Public Sub EnumUInt16JarTest_Value()
+        Dim jar = New EnumUInt16Jar(Of E16)("jar", checkDefined:=False)
+        JarTest(jar, Function(e1, e2) e1 = e2, E16.E0, {0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E16.E3, {3, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E16.EM, {&HFF, &HFF})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsReadableList))
+        jar.Parse(New Byte() {2, 0}.AsReadableList)
+
+        jar = New EnumUInt16Jar(Of E16)("jar", checkDefined:=True)
+        JarTest(jar, Function(e1, e2) e1 = e2, E16.E0, {0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E16.E3, {3, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E16.EM, {&HFF, &HFF})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {2, 0}.AsReadableList))
+    End Sub
+    <TestMethod()>
+    Public Sub EnumUInt16JarTest_Flags()
+        Dim jar = New EnumUInt16Jar(Of F16)("jar", checkDefined:=False)
+        JarTest(jar, Function(e1, e2) e1 = e2, F16.F1, {2, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F16.F7, {128, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F16.F1 Or F16.F7, {130, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F16.FM, {0, &H80})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsReadableList))
+        jar.Parse(New Byte() {1, 0}.AsReadableList)
+        jar.Parse(New Byte() {3, 0}.AsReadableList)
+
+        jar = New EnumUInt16Jar(Of F16)("jar", checkDefined:=True)
+        JarTest(jar, Function(e1, e2) e1 = e2, F16.F1, {2, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F16.F7, {128, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F16.F1 Or F16.F7, {130, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F16.FM, {0, &H80})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 0}.AsReadableList))
+    End Sub
+    Private Enum E32 As UInt32
+        E0 = 0
+        E3 = 3
+        EM = UInt32.MaxValue
+    End Enum
+    <Flags()>
+    Private Enum F32 As UInt32
+        F1 = 1 << 1
+        F7 = 1 << 7
+        FM = 1UI << 31
+    End Enum
+    <TestMethod()>
+    Public Sub EnumUInt32JarTest_Value()
+        Dim jar = New EnumUInt32Jar(Of E32)("jar", checkDefined:=False)
+        JarTest(jar, Function(e1, e2) e1 = e2, E32.E0, {0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E32.E3, {3, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E32.EM, {&HFF, &HFF, &HFF, &HFF})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0}.AsReadableList))
+        jar.Parse(New Byte() {2, 0, 0, 0}.AsReadableList)
+
+        jar = New EnumUInt32Jar(Of E32)("jar", checkDefined:=True)
+        JarTest(jar, Function(e1, e2) e1 = e2, E32.E0, {0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E32.E3, {3, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E32.EM, {&HFF, &HFF, &HFF, &HFF})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {2, 0, 0, 0}.AsReadableList))
+    End Sub
+    <TestMethod()>
+    Public Sub EnumUInt32JarTest_Flags()
+        Dim jar = New EnumUInt32Jar(Of F32)("jar", checkDefined:=False)
+        JarTest(jar, Function(e1, e2) e1 = e2, F32.F1, {2, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F32.F7, {128, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F32.F1 Or F32.F7, {130, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F32.FM, {0, 0, 0, &H80})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
+        jar.Parse(New Byte() {1, 0, 0, 0}.AsReadableList)
+        jar.Parse(New Byte() {3, 0, 0, 0}.AsReadableList)
+
+        jar = New EnumUInt32Jar(Of F32)("jar", checkDefined:=True)
+        JarTest(jar, Function(e1, e2) e1 = e2, F32.F1, {2, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F32.F7, {128, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F32.F1 Or F32.F7, {130, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F32.FM, {0, 0, 0, &H80})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0, 0, 0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 0, 0, 0}.AsReadableList))
+    End Sub
+    Private Enum E64 As UInt64
+        E0 = 0
+        E3 = 3
+        EM = UInt64.MaxValue
+    End Enum
+    <Flags()>
+    Private Enum F64 As UInt64
+        F1 = 1 << 1
+        F7 = 1 << 7
+        FM = 1UL << 63
+    End Enum
+    <TestMethod()>
+    Public Sub EnumUInt64JarTest_Value()
+        Dim jar = New EnumUInt64Jar(Of E64)("jar", checkDefined:=False)
+        JarTest(jar, Function(e1, e2) e1 = e2, E64.E0, {0, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E64.E3, {3, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E64.EM, {&HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0, 0, 0, 0, 0}.AsReadableList))
+        jar.Parse(New Byte() {2, 0, 0, 0, 0, 0, 0, 0}.AsReadableList)
+
+        jar = New EnumUInt64Jar(Of E64)("jar", checkDefined:=True)
+        JarTest(jar, Function(e1, e2) e1 = e2, E64.E0, {0, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E64.E3, {3, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, E64.EM, {&HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0, 0, 0, 0, 0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {2, 0, 0, 0, 0, 0, 0, 0}.AsReadableList))
+    End Sub
+    <TestMethod()>
+    Public Sub EnumUInt64JarTest_Flags()
+        Dim jar = New EnumUInt64Jar(Of F64)("jar", checkDefined:=False)
+        JarTest(jar, Function(e1, e2) e1 = e2, F64.F1, {2, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F64.F7, {128, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F64.F1 Or F64.F7, {130, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F64.FM, {0, 0, 0, 0, 0, 0, 0, &H80})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0, 0, 0, 0, 0}.AsReadableList))
+        jar.Parse(New Byte() {1, 0, 0, 0, 0, 0, 0, 0}.AsReadableList)
+        jar.Parse(New Byte() {3, 0, 0, 0, 0, 0, 0, 0}.AsReadableList)
+
+        jar = New EnumUInt64Jar(Of F64)("jar", checkDefined:=True)
+        JarTest(jar, Function(e1, e2) e1 = e2, F64.F1, {2, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F64.F7, {128, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F64.F1 Or F64.F7, {130, 0, 0, 0, 0, 0, 0, 0})
+        JarTest(jar, Function(e1, e2) e1 = e2, F64.FM, {0, 0, 0, 0, 0, 0, 0, &H80})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0, 0, 0, 0, 0, 0, 0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0, 0, 0, 0, 0, 0, 0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 0, 0, 0, 0, 0, 0, 0}.AsReadableList))
+    End Sub
+#End Region
+
     <TestMethod()>
     Public Sub RawDataJarTest()
         Dim jar = New RawDataJar("jar", size:=0)

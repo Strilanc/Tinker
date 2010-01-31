@@ -231,19 +231,21 @@ Public Class GameActionProtocolTest
                        BitConverter.GetBytes(CSng(5.0))).Concat(
                        BitConverter.GetBytes(CSng(6.0))).Concat({
                        &HED, &HFE, 0, 0,
-                       1, 2, 3, 4, 5, 6, 7, 8, 9}).Concat(
+                       1, 0, 0, 0, 0, 0, 0, 0,
+                       2}).Concat(
                        BitConverter.GetBytes(CSng(7.0))).Concat(
                        BitConverter.GetBytes(CSng(8.0))).ToArray,
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"flags", OrderTypes.Queue},
                         {"order", OrderId.Smart},
                         {"unknown", New GameObjectId(2, 3)},
-                        {"fog target x", CSng(5.0)},
-                        {"fog target y", CSng(6.0)},
-                        {"fog target type", &HFEED},
-                        {"unknown2", New Byte() {1, 2, 3, 4, 5, 6, 7, 8, 9}.AsReadableList},
-                        {"actual target x", CSng(7.0)},
-                        {"actual target y", CSng(8.0)}
+                        {"x", CSng(5.0)},
+                        {"y", CSng(6.0)},
+                        {"target type", &HFEED},
+                        {"target flags", 1},
+                        {"target owner", 2},
+                        {"target x", CSng(7.0)},
+                        {"target y", CSng(8.0)}
                     })
     End Sub
     <TestMethod()>
@@ -376,27 +378,30 @@ Public Class GameActionProtocolTest
                         {"experience", 2700},
                         {"level ups", 6},
                         {"skill points", 2},
-                        {"unknown1", New Byte() {7, 0, 1, 0}.AsReadableList},
-                        {"bonus strength", 18},
-                        {"unknown2", CSng(2.0)},
-                        {"bonus agility", 23},
-                        {"unknown3", New Byte() {0, 0, 0, 0}.AsReadableList},
+                        {"proper name index", 7},
+                        {"unknown1", 1},
+                        {"base strength", 18},
+                        {"bonus strength per level", CSng(2.0)},
+                        {"base agility", 23},
+                        {"bonus move speed", CSng(0.0)},
                         {"bonus attack speed", CSng(0.68)},
-                        {"unknown4", CSng(1.75000012)},
-                        {"bonus intelligence", 16},
-                        {"unknown5", CSng(2.25)},
+                        {"bonus agility per level", CSng(1.75000012)},
+                        {"base intelligence", 16},
+                        {"bonus intelligence per level", CSng(2.25)},
                         {"hero skills", New List(Of Dictionary(Of InvariantString, Object)) From {
                             New Dictionary(Of InvariantString, Object) From {{"ability", "AOwk".ToAscBytes.Reverse.ToUInt32}, {"level", 2}},
                             New Dictionary(Of InvariantString, Object) From {{"ability", "AOcr".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
                             New Dictionary(Of InvariantString, Object) From {{"ability", "AOmi".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
                             New Dictionary(Of InvariantString, Object) From {{"ability", "AOww".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
                             New Dictionary(Of InvariantString, Object) From {{"ability", 0}, {"level", 0}}}},
-                        {"health bonus", CSng(0)},
-                        {"unknown6", New Byte() {0, 0, 0, 0}.AsReadableList},
-                        {"unknown7", CSng(1800)},
-                        {"unknown8", New List(Of IReadableList(Of Byte)) From {
-                            New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsReadableList,
-                            New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsReadableList}}
+                        {"bonus health", CSng(0)},
+                        {"bonus mana", CSng(0)},
+                        {"sight radius (day)", CSng(1800)},
+                        {"unknown2", 2},
+                        {"unknown3", New Byte() {0, 0, 0, 0}.AsReadableList},
+                        {"unknown4", New Byte() {0, 0, 0, 0}.AsReadableList},
+                        {"unknown5", New Byte() {0, 0, 0, 0}.AsReadableList},
+                        {"hotkey flags", 0}
                     })
     End Sub
     <TestMethod()>
@@ -471,11 +476,11 @@ Public Class GameActionProtocolTest
         JarTest(GameActions.MinimapPing,
                 data:=BitConverter.GetBytes(CSng(5)).Concat(
                       BitConverter.GetBytes(CSng(6))).Concat(
-                      {1, 2, 3, 4}).ToArray,
+                      BitConverter.GetBytes(CSng(7))).ToArray,
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"x", CSng(5.0)},
                         {"y", CSng(6.0)},
-                        {"unknown", New Byte() {1, 2, 3, 4}.AsReadableList}
+                        {"duration", CSng(7.0)}
                     })
     End Sub
     <TestMethod()>

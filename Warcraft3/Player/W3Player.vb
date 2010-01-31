@@ -30,8 +30,8 @@
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
         Private _numPeerConnections As Integer
+        Private _downloadManager As DownloadManager
         Private ReadOnly settings As GameSettings
-        Private ReadOnly scheduler As TransferScheduler(Of Byte)
         Private ReadOnly pinger As Pinger
 
         Private ReadOnly _name As InvariantString
@@ -44,12 +44,12 @@
         Public numAdminTries As Integer
         Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
 
-        Public ReadOnly Property Name As InvariantString
+        Public ReadOnly Property Name As InvariantString Implements IPlayerDownloadAspect.Name
             Get
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property PID As PID
+        Public ReadOnly Property PID As PID Implements IPlayerDownloadAspect.PID
             Get
                 Return _index
             End Get
@@ -73,22 +73,18 @@
             Contract.Invariant(numAdminTries >= 0)
             Contract.Invariant(settings IsNot Nothing)
             Contract.Invariant(socket IsNot Nothing)
-            Contract.Invariant(scheduler IsNot Nothing)
             Contract.Invariant(totalTockTime >= 0)
-            Contract.Invariant(mapDownloadPosition >= 0)
         End Sub
 
         '''<summary>Creates a fake player.</summary>
         Public Sub New(ByVal index As PID,
                        ByVal settings As GameSettings,
-                       ByVal scheduler As TransferScheduler(Of Byte),
                        ByVal name As InvariantString,
                        Optional ByVal logger As Logger = Nothing)
 
             Me.settings = settings
-            Me.scheduler = scheduler
             Me.logger = If(logger, New Logger)
-            Me.packetHandler = New Protocol.W3PacketHandler(Me.logger)
+            Me.packetHandler = New Protocol.W3PacketHandler(name, Me.logger)
             Me._index = index
             If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
             Me._name = name
@@ -103,26 +99,26 @@
         '''<summary>Creates a real player.</summary>
         Public Sub New(ByVal index As PID,
                        ByVal settings As GameSettings,
-                       ByVal scheduler As TransferScheduler(Of Byte),
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        ByVal clock As IClock,
+                       ByVal downloadManager As DownloadManager,
                        Optional ByVal logger As Logger = Nothing)
             'Contract.Requires(game IsNot Nothing)
             'Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Assume(connectingPlayer IsNot Nothing)
 
             Me.settings = settings
-            Me.scheduler = scheduler
             Me.logger = If(logger, New Logger)
-            Me.packetHandler = New Protocol.W3PacketHandler(Me.logger)
+            Me.packetHandler = New Protocol.W3PacketHandler(connectingPlayer.Name, Me.logger)
             connectingPlayer.Socket.Logger = Me.logger
             Me.peerKey = connectingPlayer.PeerKey
 
+            Me._downloadManager = downloadManager
             Me.socket = connectingPlayer.Socket
             Me._name = connectingPlayer.Name
             Me._listenPort = connectingPlayer.ListenPort
             Me._index = index
-            AddHandler socket.Disconnected, AddressOf CatchSocketDisconnected
+            AddHandler socket.Disconnected, AddressOf OnSocketDisconnected
 
             AddQueuedPacketHandler(Protocol.PacketId.Pong,
                                    Protocol.Packets.Pong,
@@ -141,7 +137,7 @@
             BeginReading()
 
             'Test hosting
-            Me.testCanHost = AsyncTcpConnect(socket.RemoteEndPoint.Address, listenPort)
+            Me.testCanHost = AsyncTcpConnect(socket.RemoteEndPoint.Address, ListenPort)
             Me.testCanHost.SetHandled()
 
             'Pings
@@ -173,14 +169,26 @@
             If pinger IsNot Nothing Then pinger.Dispose()
             RaiseEvent Disconnected(Me, expected, leaveType, reason)
         End Sub
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture
+            Contract.Requires(reason IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() Disconnect(expected, leaveType, reason))
+        End Function
 
         Private Sub SendPacket(ByVal pk As Protocol.Packet)
             Contract.Requires(pk IsNot Nothing)
             If Me.isFake Then Return
             socket.SendPacket(pk)
         End Sub
+        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture Implements IPlayerDownloadAspect.QueueSendPacket
+            Contract.Requires(packet IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Dim result = inQueue.QueueAction(Sub() SendPacket(packet))
+            result.SetHandled()
+            Return result
+        End Function
 
-        Private Sub CatchSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
+        Private Sub OnSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
             inQueue.QueueAction(Sub() Disconnect(expected, PlayerLeaveType.Disconnect, reason))
         End Sub
 
@@ -204,34 +212,21 @@
                 Return socket.RemoteEndPoint
             End Get
         End Property
-        Public Function QueueGetLatency() As IFuture(Of FiniteDouble)
-            Contract.Ensures(Contract.Result(Of IFuture(Of FiniteDouble))() IsNot Nothing)
+        Public Function QueueGetLatency() As IFuture(Of Double)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Double))() IsNot Nothing)
             If pinger Is Nothing Then
-                Return New FiniteDouble().Futurized
+                Return 0.0.Futurized
             Else
                 Return pinger.QueueGetLatency
             End If
         End Function
-        Public ReadOnly Property QueueGetLatencyDescription As IFuture(Of String)
-            Get
-                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-                Dim futureLatency = QueueGetLatency()
-                Dim futureTransferState = scheduler.GetClientState(Me.PID.Index)
-                Return New IFuture() {futureLatency, futureTransferState}.Defuturized.EvalOnSuccess(
-                    Function()
-                        Dim downloadState = futureTransferState.Value
-                        Dim r = futureLatency.Value
-                        Select Case downloadState
-                            Case ClientTransferState.None : Return "-"
-                            Case ClientTransferState.Downloading : Return "(dl)"
-                            Case ClientTransferState.Uploading : Return "(ul)"
-                            Case ClientTransferState.Idle : Return If(r = 0, "?", "{0:0}ms".Frmt(r.Value))
-                            Case ClientTransferState.Ready : Return If(r = 0, "?", "{0:0}ms".Frmt(r.Value))
-                            Case Else : Throw downloadState.MakeImpossibleValueException()
-                        End Select
-                    End Function)
-            End Get
-        End Property
+        Public Function QueueGetLatencyDescription() As IFuture(Of String)
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+            Return (From latency In QueueGetLatency()
+                    Select latencyDesc = If(latency = 0, "?", "{0:0}ms".Frmt(latency))
+                    Select _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc)
+                   ).Defuturized
+        End Function
         Public ReadOnly Property NumPeerConnections() As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
@@ -239,17 +234,6 @@
                 Return _numPeerConnections
             End Get
         End Property
-
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture
-            Contract.Requires(reason IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() Disconnect(expected, leaveType, reason))
-        End Function
-        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture
-            Contract.Requires(packet IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SendPacket(packet))
-        End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
             If finalizing Then Return Nothing

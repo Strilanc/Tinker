@@ -151,13 +151,20 @@ Namespace Bnet.Protocol
     End Enum
     Public Enum ProgramAuthenticationFinishResult As UInteger
         Passed = 0
+
         OldVersion = &H101
         InvalidVersion = &H102
         FutureVersion = &H103
-        InvalidCDKey = &H200
-        UsedCDKey = &H201
-        BannedCDKey = &H202
-        WrongProduct = &H203
+
+        InvalidCDKeyROC = &H200
+        UsedCDKeyROC = &H201
+        BannedCDKeyROC = &H202
+        WrongProductROC = &H203
+
+        InvalidCDKeyTFT = &H210
+        UsedCDKeyTFT = &H211
+        BannedCDKeyTFT = &H212
+        WrongProductTFT = &H213
     End Enum
     Public Enum ChatEventId
         ShowUser = &H1
@@ -304,7 +311,7 @@ Namespace Bnet.Protocol
                 New IPAddressJar("internal ip").Weaken,
                 New UInt32Jar("time zone offset").Weaken,
                 New UInt32Jar("location id").Weaken,
-                New EnumUInt32Jar(Of MPQ.LanguageId)("language id").Weaken,
+                New EnumUInt32Jar(Of MPQ.LanguageId)("language id", checkDefined:=False).Weaken,
                 New NullTerminatedStringJar("country abrev").Weaken,
                 New NullTerminatedStringJar("country name").Weaken)
         Public Shared ReadOnly ProgramAuthenticationFinish As New SimplePacketDefinition(PacketId.ProgramAuthenticationFinish,

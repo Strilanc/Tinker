@@ -138,6 +138,7 @@ Namespace WC3.Protocol
         Construct = 1 << 2
         Group = 1 << 3
         NoFormation = 1 << 4
+        unknown_f5 = 1 << 5 'seen in farseer summon wolf
         SubGroup = 1 << 6
         AutoCastOn = 1 << 8
     End Enum
@@ -301,12 +302,13 @@ Namespace WC3.Protocol
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
                     New OrderTypeJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
-                    New Float32Jar("fog target x").Weaken,
-                    New Float32Jar("fog target y").Weaken,
-                    New ObjectTypeJar("fog target type").Weaken,
-                    New RawDataJar("unknown2", Size:=9).Weaken,
-                    New Float32Jar("actual target x").Weaken,
-                    New Float32Jar("actual target y").Weaken)
+                    New Float32Jar("x").Weaken,
+                    New Float32Jar("y").Weaken,
+                    New ObjectTypeJar("target type").Weaken,
+                    New UInt64Jar("target flags", showhex:=True).Weaken,
+                    New ByteJar("target owner").Weaken,
+                    New Float32Jar("target x").Weaken,
+                    New Float32Jar("target y").Weaken)
 
         Public Shared ReadOnly EnterChooseHeroSkillSubmenu As New SimpleDefinition(GameActionId.EnterChooseHeroSkillSubmenu)
         Public Shared ReadOnly EnterChooseBuildingSubmenu As New SimpleDefinition(GameActionId.EnterChooseBuildingSubmenu)
@@ -319,7 +321,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly MinimapPing As New SimpleDefinition(GameActionId.MinimapPing,
                     New Float32Jar("x").Weaken,
                     New Float32Jar("y").Weaken,
-                    New RawDataJar("unknown", Size:=4).Weaken)
+                    New Float32Jar("duration").Weaken)
 
         Public Shared ReadOnly ChangeAllyOptions As New SimpleDefinition(GameActionId.ChangeAllyOptions,
                     New ByteJar("player slot id").Weaken,
@@ -332,11 +334,10 @@ Namespace WC3.Protocol
         Public Shared ReadOnly AssignGroupHotkey As New SimpleDefinition(GameActionId.AssignGroupHotkey,
                     New ByteJar("group index").Weaken,
                     New ListJar(Of GameObjectId)("targets",
-                        New GameObjectIdJar("target"), prefixsize:=2).Weaken)
+                        New GameObjectIdJar("target"), prefixSize:=2).Weaken)
         Public Shared ReadOnly ChangeSelection As New SimpleDefinition(GameActionId.ChangeSelection,
                     New EnumByteJar(Of SelectionOperation)("operation").Weaken,
-                    New ListJar(Of GameObjectId)("targets",
-                        New GameObjectIdJar("target"), prefixsize:=2).Weaken)
+                    New ListJar(Of GameObjectId)("targets", prefixSize:=2, subjar:=New GameObjectIdJar("target")).Weaken)
         Public Shared ReadOnly PreSubGroupSelection As New SimpleDefinition(GameActionId.PreSubGroupSelection)
         Public Shared ReadOnly SelectGroundItem As New SimpleDefinition(GameActionId.SelectGroundItem,
                     New ByteJar("unknown").Weaken,
@@ -423,22 +424,27 @@ Namespace WC3.Protocol
                     New UInt32Jar("experience").Weaken,
                     New UInt32Jar("level ups").Weaken,
                     New UInt32Jar("skill points").Weaken,
-                    New RawDataJar("unknown1", Size:=4).Weaken,
-                    New UInt32Jar("bonus strength").Weaken,
-                    New Float32Jar("unknown2").Weaken,
-                    New UInt32Jar("bonus agility").Weaken,
-                    New RawDataJar("unknown3", Size:=4).Weaken,
+                    New UInt16Jar("proper name index").Weaken,
+                    New UInt16Jar("unknown1").Weaken,
+                    New UInt32Jar("base strength").Weaken,
+                    New Float32Jar("bonus strength per level").Weaken,
+                    New UInt32Jar("base agility").Weaken,
+                    New Float32Jar("bonus move speed").Weaken,
                     New Float32Jar("bonus attack speed").Weaken,
-                    New Float32Jar("unknown4").Weaken,
-                    New UInt32Jar("bonus intelligence").Weaken,
-                    New Float32Jar("unknown5").Weaken,
+                    New Float32Jar("bonus agility per level").Weaken,
+                    New UInt32Jar("base intelligence").Weaken,
+                    New Float32Jar("bonus intelligence per level").Weaken,
                     New ListJar(Of Dictionary(Of InvariantString, Object))("hero skills", prefixSize:=4, subJar:=New TupleJar("skill slot",
                             New ObjectTypeJar("ability").Weaken,
                             New UInt32Jar("level").Weaken)).Weaken,
-                    New Float32Jar("health bonus").Weaken,
-                    New RawDataJar("unknown6", Size:=4).Weaken,
-                    New Float32Jar("unknown7").Weaken,
-                    New ListJar(Of IReadableList(Of Byte))("unknown8", prefixsize:=2, subJar:=New RawDataJar("unknown", Size:=8)).Weaken)
+                    New Float32Jar("bonus health").Weaken,
+                    New Float32Jar("bonus mana").Weaken,
+                    New Float32Jar("sight radius (day)").Weaken,
+                    New UInt32Jar("unknown2").Weaken,
+                    New RawDataJar("unknown3", Size:=4).Weaken,
+                    New RawDataJar("unknown4", Size:=4).Weaken,
+                    New RawDataJar("unknown5", Size:=4).Weaken,
+                    New UInt16Jar("hotkey flags", showhex:=True).Weaken)
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         Public Shared ReadOnly GameCacheSyncString As New SimpleDefinition(GameActionId.GameCacheSyncString,
                     New NullTerminatedStringJar("filename").Weaken,

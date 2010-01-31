@@ -35,14 +35,8 @@ Friend Module SharedTestObjects
             Map:=TestMap,
             GameDescription:=TestDesc,
             argument:=TestArgument)
-    Friend ReadOnly TestTransferScheduler As New TransferScheduler(Of Byte)(
-            typicalRate:=1,
-            typicalSwitchTime:=1.Milliseconds,
-            fileSize:=1,
-            clock:=New ManualClock)
     Friend ReadOnly TestPlayer As New Player(
         index:=New PID(1),
         settings:=TestSettings,
-        scheduler:=TestTransferScheduler,
         name:="test")
 End Module

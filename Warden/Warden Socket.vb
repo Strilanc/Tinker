@@ -62,7 +62,7 @@
                     'Parse, log, return
                     Dim pk = ServerPacket.FromData(packetData.SubView(3))
                     _logger.Log(Function() "Received {0} from {1}".Frmt(pk.Id, _socket.Name), LogMessageType.DataEvent)
-                    _logger.Log(pk.ToString, LogMessageType.DataParsed)
+                    _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(pk.Id, _socket.Name, pk), LogMessageType.DataParsed)
                     Return pk
                 End Function)
         End Function
@@ -93,7 +93,7 @@
 
             Try
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
-                _logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
+                _logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
                 _socket.WritePacket(Concat(Of Byte)({0, 0, BNLSPacketId.Warden, packet.Id}, packet.Payload.Data.ToArray))
 
             Catch e As Exception

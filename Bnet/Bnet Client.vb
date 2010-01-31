@@ -109,7 +109,7 @@ Namespace Bnet
             Me.inQueue = New TaskedCallQueue
 
             'Start packet machinery
-            Me._packetHandler = New Protocol.BnetPacketHandler(Me._logger)
+            Me._packetHandler = New Protocol.BnetPacketHandler("BNET", Me._logger)
 
             AddQueuedPacketHandler(Protocol.ServerPackets.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
             AddQueuedPacketHandler(Protocol.ServerPackets.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
@@ -611,7 +611,7 @@ Namespace Bnet
 
             Try
                 Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
-                Logger.Log(packet.Payload.Description, LogMessageType.DataParsed)
+                Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
 
                 _socket.WritePacket(Concat({Protocol.ClientPackets.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
             Catch e As Exception
@@ -726,116 +726,89 @@ Namespace Bnet
 
         Private Sub ReceiveProgramAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
-            If _state <> ClientState.WaitingForProgramAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationFinish, _state))
-            End If
+            Try
+                Dim vals = value.Value
+                Dim result = CType(CUInt(vals("result")), Protocol.ProgramAuthenticationFinishResult)
+                If _state <> ClientState.WaitingForProgramAuthenticationFinish Then
+                    Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationFinish, _state))
+                ElseIf result <> Protocol.ProgramAuthenticationFinishResult.Passed Then
+                    Throw New IO.InvalidDataException("Program authentication failed with error: {0} {1}.".Frmt(result, vals("info")))
+                End If
 
-            Dim result = CType(CUInt(vals("result")), Protocol.ProgramAuthenticationFinishResult)
-            Dim errmsg As String
-            Select Case result
-                Case Protocol.ProgramAuthenticationFinishResult.Passed
-                    ChangeState(ClientState.EnterUserCredentials)
-                    _futureConnected.TrySetSucceeded()
-                    _allowRetryConnect = True
-                    Return
-
-                Case Protocol.ProgramAuthenticationFinishResult.OldVersion
-                    errmsg = "Out of date version"
-                Case Protocol.ProgramAuthenticationFinishResult.InvalidVersion
-                    errmsg = "Invalid version"
-                Case Protocol.ProgramAuthenticationFinishResult.FutureVersion
-                    errmsg = "Future version (need to downgrade apparently)"
-                Case Protocol.ProgramAuthenticationFinishResult.InvalidCDKey
-                    errmsg = "Invalid CD key"
-                Case Protocol.ProgramAuthenticationFinishResult.UsedCDKey
-                    errmsg = "CD key in use by:"
-                Case Protocol.ProgramAuthenticationFinishResult.BannedCDKey
-                    errmsg = "CD key banned!"
-                Case Protocol.ProgramAuthenticationFinishResult.WrongProduct
-                    errmsg = "Wrong product."
-                Case Else
-                    errmsg = "Unknown authentication failure id: {0}.".Frmt(result)
-            End Select
-
-            _futureConnected.TrySetFailed(New IO.IOException("Failed to connect: {0} {1}".Frmt(errmsg, vals("info"))))
-            Throw New IO.InvalidDataException(errmsg)
+                ChangeState(ClientState.EnterUserCredentials)
+                _futureConnected.TrySetSucceeded()
+                _allowRetryConnect = True
+            Catch ex As Exception
+                _futureConnected.TrySetFailed(ex)
+                Throw
+            End Try
         End Sub
 
         Private Sub ReceiveUserAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
+            Try
+                Dim vals = value.Value
+                Dim result = CType(vals("result"), Protocol.UserAuthenticationBeginResult)
+                If _state <> ClientState.WaitingForUserAuthenticationBegin Then
+                    Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.UserAuthenticationBegin))
+                ElseIf result <> Protocol.UserAuthenticationBeginResult.Passed Then
+                    Throw New IO.InvalidDataException("User authentication failed with error: {0}".Frmt(result))
+                End If
 
-            If _state <> ClientState.WaitingForUserAuthenticationBegin Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.UserAuthenticationBegin))
-            End If
+                Dim accountPasswordSalt = CType(vals("account password salt"), IReadableList(Of Byte)).AssumeNotNull
+                Dim serverPublicKey = CType(vals("server public key"), IReadableList(Of Byte)).AssumeNotNull
 
-            Dim result = CType(vals("result"), Protocol.UserAuthenticationBeginResult)
-            If result <> Protocol.UserAuthenticationBeginResult.Passed Then
-                Dim errmsg As String
-                Select Case result
-                    Case Protocol.UserAuthenticationBeginResult.BadUserName
-                        errmsg = "Username doesn't exist."
-                    Case Protocol.UserAuthenticationBeginResult.UpgradeAccount
-                        errmsg = "Account requires upgrade."
-                    Case Else
-                        errmsg = "Unrecognized login problem: " + result.ToString()
-                End Select
-                _futureLoggedIn.TrySetFailed(New IO.IOException("Failed to login: " + errmsg))
-                Throw New IO.InvalidDataException(errmsg)
-            End If
+                If Me._userCredentials Is Nothing Then Throw New InvalidStateException("Received AccountLogOnBegin before credentials specified.")
+                Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
+                Dim serverProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
 
-            Dim accountPasswordSalt = CType(vals("account password salt"), IReadableList(Of Byte)).AssumeNotNull
-            Dim serverPublicKey = CType(vals("server public key"), IReadableList(Of Byte)).AssumeNotNull
-
-            If Me._userCredentials Is Nothing Then Throw New InvalidStateException("Received AccountLogOnBegin before credentials specified.")
-            Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
-            Dim serverProof = Me._userCredentials.ServerPasswordProof(accountPasswordSalt, serverPublicKey)
-
-            Me._expectedServerPasswordProof = serverProof
-            ChangeState(ClientState.WaitingForUserAuthenticationFinish)
-            SendPacket(Protocol.MakeAccountLogOnFinish(clientProof))
+                Me._expectedServerPasswordProof = serverProof
+                ChangeState(ClientState.WaitingForUserAuthenticationFinish)
+                SendPacket(Protocol.MakeAccountLogOnFinish(clientProof))
+            Catch ex As Exception
+                _futureLoggedIn.TrySetFailed(ex)
+                _futureConnected.TrySetFailed(ex)
+                Throw
+            End Try
         End Sub
 
         Private Sub ReceiveUserAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
-            If _state <> ClientState.WaitingForUserAuthenticationFinish Then
-                Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.UserAuthenticationFinish, _state))
-            End If
+            Try
+                Dim vals = value.Value
+                Dim result = CType(vals("result"), Protocol.UserAuthenticationFinishResult)
+                Dim serverProof = CType(vals("server password proof"), IReadableList(Of Byte)).AssumeNotNull
 
-            Dim result = CType(vals("result"), Protocol.UserAuthenticationFinishResult)
-            If result <> Protocol.UserAuthenticationFinishResult.Passed Then
-                Dim errmsg As String
-                Select Case result
-                    Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
-                        errmsg = "Incorrect password. (note: this can happen due to a bnet bug, try again)"
-                    Case Protocol.UserAuthenticationFinishResult.NeedEmail
-                        errmsg = "No email address associated with account"
-                    Case Protocol.UserAuthenticationFinishResult.CustomError
-                        errmsg = "Logon error: {0}".Frmt(CStr(vals("custom error info")))
-                    Case Else
-                        errmsg = "Unrecognized logon error: {0}".Frmt(result)
-                End Select
-                _futureLoggedIn.TrySetFailed(New IO.IOException("Failed to logon: {0}".Frmt(errmsg)))
-                Throw New IO.InvalidDataException(errmsg)
-            End If
+                'validate
+                If _state <> ClientState.WaitingForUserAuthenticationFinish Then
+                    Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.UserAuthenticationFinish, _state))
+                ElseIf result <> Protocol.UserAuthenticationFinishResult.Passed Then
+                    Dim errorInfo = ""
+                    Select Case result
+                        Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
+                            errorInfo = "(Note: This can happen due to a bnet bug. You might want to try again.):"
+                        Case Protocol.UserAuthenticationFinishResult.CustomError
+                            errorInfo = "({0})".Frmt(vals("custom error info"))
+                    End Select
+                    Throw New IO.InvalidDataException("User authentication failed with error: {0} {1}".Frmt(result, errorInfo))
+                ElseIf _expectedServerPasswordProof Is Nothing Then
+                    Throw New InvalidStateException("Received {0} before the server password proof was knowable.".Frmt(Protocol.PacketId.UserAuthenticationFinish))
+                ElseIf Not _expectedServerPasswordProof.SequenceEqual(serverProof) Then
+                    Throw New IO.InvalidDataException("The server's password proof was incorrect.")
+                End If
 
-            'validate
-            Dim serverProof = CType(vals("server password proof"), IReadableList(Of Byte)).AssumeNotNull
-            If Me._expectedServerPasswordProof Is Nothing Then Throw New InvalidStateException("Received AccountLogOnFinish before server password proof computed.")
-            If Not Me._expectedServerPasswordProof.SequenceEqual(serverProof) Then
-                _futureLoggedIn.TrySetFailed(New IO.InvalidDataException("Failed to logon: Server didn't give correct password proof"))
-                Throw New IO.InvalidDataException("Server didn't give correct password proof.")
-            End If
+                ChangeState(ClientState.WaitingForEnterChat)
+                Logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
+                _futureLoggedIn.TrySetSucceeded()
 
-            ChangeState(ClientState.WaitingForEnterChat)
-            Logger.Log("Logged on with username {0}.".Frmt(Me._userCredentials.UserName), LogMessageType.Typical)
-            _futureLoggedIn.TrySetSucceeded()
-
-            'respond
-            SetReportedListenPort(6112)
-            SendPacket(Protocol.MakeEnterChat())
+                'respond
+                SetReportedListenPort(6112)
+                SendPacket(Protocol.MakeEnterChat())
+            Catch ex As Exception
+                _futureLoggedIn.TrySetFailed(ex)
+                _futureConnected.TrySetFailed(ex)
+                Throw
+            End Try
         End Sub
 
         Private Sub ReceiveEnterChat(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))

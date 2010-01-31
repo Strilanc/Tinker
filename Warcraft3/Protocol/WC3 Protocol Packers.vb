@@ -91,17 +91,6 @@ Namespace WC3.Protocol
                     {"external address", listenAddress},
                     {"internal address", listenAddress}})
         End Function
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
-        <Pure()>
-        Public Function MakeOtherPlayerJoined(ByVal player As WC3.Player) As Packet
-            Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return MakeOtherPlayerJoined(player.Name,
-                                         player.PID,
-                                         player.peerKey,
-                                         New Net.IPEndPoint(player.RemoteEndPoint.Address, player.ListenPort))
-        End Function
         <Pure()>
         Public Function MakePing(ByVal salt As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
@@ -181,21 +170,18 @@ Namespace WC3.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeMapFileData(ByVal receiverIndex As PID,
-                                        ByVal filePosition As Integer,
+        Public Function MakeMapFileData(ByVal filePosition As UInt32,
                                         ByVal fileData As IReadableList(Of Byte),
-                                        Optional ByVal senderIndex As PID? = Nothing,
+                                        ByVal receiverIndex As PID,
+                                        ByVal senderIndex As PID,
                                         Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Requires(filePosition >= 0)
             Contract.Requires(fileData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            If senderIndex Is Nothing Then
-                senderIndex = New PID(If(receiverIndex.Index = 1, CByte(2), CByte(1)))
-            End If
 
             Return New Packet(Packets.MapFileData, New Dictionary(Of InvariantString, Object) From {
                     {"receiving player index", receiverIndex.Index},
-                    {"sending player index", senderIndex.Value.Index},
+                    {"sending player index", senderIndex.Index},
                     {"map transfer key", mapTransferKey},
                     {"file position", filePosition},
                     {"crc32", fileData.CRC32},
@@ -220,13 +206,13 @@ Namespace WC3.Protocol
                     {"sending player index", senderIndex.Index}})
         End Function
         <Pure()>
-        Public Function MakeClientMapInfo(ByVal state As DownloadState,
+        Public Function MakeClientMapInfo(ByVal transferState As MapTransferState,
                                           ByVal totalDownloaded As UInteger,
                                           Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.ClientMapInfo, New Dictionary(Of InvariantString, Object) From {
                     {"map transfer key", mapTransferKey},
-                    {"dl state", state},
+                    {"transfer state", transferState},
                     {"total downloaded", totalDownloaded}})
         End Function
         <Pure()>

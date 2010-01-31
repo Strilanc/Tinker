@@ -246,18 +246,18 @@ Namespace WC3
         End Sub
 
 #Region "Read"
-        Public Function ReadChunk(ByVal pos As Integer,
-                                  Optional ByVal maxLength As Integer = 1442) As IReadableList(Of Byte)
+        Public Function ReadChunk(ByVal pos As Int64, ByVal size As UInt32) As IReadableList(Of Byte)
             Contract.Requires(pos >= 0)
-            Contract.Requires(maxLength >= 0)
+            Contract.Requires(size >= 0)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count <= size)
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
             If Not fileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
 
-            Dim buffer(0 To maxLength - 1) As Byte
+            Dim buffer(0 To CInt(size - 1)) As Byte
             Using f = New IO.FileStream(FullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
                 f.Seek(pos, IO.SeekOrigin.Begin)
-                Dim n = f.Read(buffer, 0, maxLength)
+                Dim n = f.Read(buffer, 0, CInt(size))
                 If n < buffer.Length Then ReDim Preserve buffer(0 To n - 1)
                 Return buffer.AsReadableList
             End Using

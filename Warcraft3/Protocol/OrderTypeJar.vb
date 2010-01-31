@@ -5,7 +5,7 @@ Namespace WC3.Protocol
         Inherits EnumUInt32Jar(Of OrderId)
 
         Public Sub New(ByVal name As InvariantString)
-            MyBase.New(name)
+            MyBase.New(name, checkDefined:=False)
         End Sub
 
         Protected Overrides Function ValueToString(ByVal value As OrderId) As String

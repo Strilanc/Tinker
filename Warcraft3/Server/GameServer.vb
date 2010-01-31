@@ -91,8 +91,8 @@ Namespace WC3
                     Dim oldSocketName = socket.Name
                     _logger.Log(Function() "{0} self-identified as {1} and wants to join game with id = {2}".Frmt(oldSocketName, player.Name, player.GameId), LogMessageType.Positive)
                     socket.Name = player.Name
-                    _logger.Log(Function() "Received {0}".Frmt(Protocol.PacketId.Knock), LogMessageType.DataEvent)
-                    _logger.Log(Function() "{0}: {1}".Frmt(Protocol.PacketId.Knock, pickle.Description.Value), LogMessageType.DataParsed)
+                    _logger.Log(Function() "Received {0} from {1}".Frmt(Protocol.PacketId.Knock, oldSocketName), LogMessageType.DataEvent)
+                    _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(Protocol.PacketId.Knock, oldSocketName, pickle.Description.Value), LogMessageType.DataParsed)
                     inQueue.QueueAction(Sub() OnPlayerIntroduction(player))
                 End Sub
             ).Catch(

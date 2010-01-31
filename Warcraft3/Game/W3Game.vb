@@ -25,6 +25,7 @@ Namespace WC3
 
     Partial Public NotInheritable Class Game
         Inherits FutureDisposable
+        Implements IGameDownloadAspect
 
         Public Shared ReadOnly GameGuestCommandsLobby As New WC3.InstanceGuestSetupCommands
         Public Shared ReadOnly GameGuestCommandsGamePlay As New WC3.InstanceGuestPlayCommands
@@ -69,8 +70,7 @@ Namespace WC3
             Contract.Invariant(visibleReadyPlayers IsNot Nothing)
             Contract.Invariant(visibleUnreadyPlayers IsNot Nothing)
             Contract.Invariant(fakeTickTimer IsNot Nothing)
-            Contract.Invariant(downloadTimer IsNot Nothing)
-            Contract.Invariant(_downloadScheduler IsNot Nothing)
+            Contract.Invariant(_downloadManager IsNot Nothing)
             Contract.Invariant(_gameTime >= 0)
             Contract.Invariant(laggingPlayers IsNot Nothing)
             Contract.Invariant(gameDataQueue IsNot Nothing)
@@ -112,13 +112,12 @@ Namespace WC3
                 End Sub))
         End Function
 
-        Public ReadOnly Property Logger As Logger
+        Public ReadOnly Property Logger As Logger Implements IGameDownloadAspect.Logger
             Get
-                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
                 Return _logger
             End Get
         End Property
-        Public ReadOnly Property Map As Map
+        Public ReadOnly Property Map As Map Implements IGameDownloadAspect.Map
             Get
                 Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
                 Return _map
@@ -529,7 +528,7 @@ Namespace WC3
 #End Region
 
         Private Function CreatePlayersAsyncView(ByVal adder As Action(Of Game, Player),
-                                                 ByVal remover As Action(Of Game, Player)) As IDisposable
+                                                ByVal remover As Action(Of Game, Player)) As IDisposable
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
@@ -537,10 +536,15 @@ Namespace WC3
                                       remover:=Sub(sender, item) remover(Me, item))
         End Function
         Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of Game, Player),
-                                                     ByVal remover As Action(Of Game, Player)) As IFuture(Of IDisposable)
+                                                    ByVal remover As Action(Of Game, Player)) As IFuture(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() CreatePlayersAsyncView(adder, remover))
+        End Function
+        Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of IGameDownloadAspect, IPlayerDownloadAspect),
+                                                    ByVal remover As Action(Of IGameDownloadAspect, IPlayerDownloadAspect)) As IFuture(Of IDisposable) _
+                                                    Implements IGameDownloadAspect.QueueCreatePlayersAsyncView
             Return inQueue.QueueFunc(Function() CreatePlayersAsyncView(adder, remover))
         End Function
     End Class

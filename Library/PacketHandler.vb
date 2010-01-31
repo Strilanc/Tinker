@@ -4,6 +4,7 @@
 Public MustInherit Class PacketHandler(Of TKey)
     Private ReadOnly handlers As New KeyedEvent(Of TKey, IReadableList(Of Byte))
     Private ReadOnly logger As Logger
+    Private ReadOnly sourceName As String
 
     Public MustOverride ReadOnly Property HeaderSize As Integer
     Protected MustOverride Function ExtractKey(ByVal header As IReadableList(Of Byte)) As TKey
@@ -11,10 +12,14 @@ Public MustInherit Class PacketHandler(Of TKey)
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(handlers IsNot Nothing)
         Contract.Invariant(logger IsNot Nothing)
+        Contract.Invariant(sourceName IsNot Nothing)
     End Sub
 
-    Protected Sub New(Optional ByVal logger As Logger = Nothing)
+    Protected Sub New(ByVal sourceName As String,
+                      Optional ByVal logger As Logger = Nothing)
+        Contract.Requires(sourceName IsNot Nothing)
         Me.logger = If(logger, New Logger)
+        Me.sourceName = sourceName
     End Sub
 
     Public Sub AddLogger(ByVal key As TKey,
@@ -25,7 +30,7 @@ Public MustInherit Class PacketHandler(Of TKey)
                                    Dim pickle = jar.Parse(data)
                                    If pickle.Data.Count < data.Count Then Throw New PicklingException("Data left over after parsing.")
                                    If pickle.Data.Count > data.Count Then Throw New PicklingException("Pickle contains more data than was parsed.")
-                                   logger.Log(Function() pickle.Description.Value, LogMessageType.DataParsed)
+                                   logger.Log(Function() "Received {0} from {1}: {2}".Frmt(key, sourceName, pickle.Description.Value), LogMessageType.DataParsed)
                                    Dim result = New FutureAction()
                                    result.SetSucceeded()
                                    Return result
@@ -67,6 +72,10 @@ Public MustInherit Class PacketHandler(Of TKey)
     <ContractClassFor(GetType(PacketHandler(Of )))>
     MustInherit Class ContractClass
         Inherits PacketHandler(Of TKey)
+
+        Protected Sub New()
+            MyBase.New(Nothing, Nothing)
+        End Sub
 
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As TKey
             Contract.Requires(header IsNot Nothing)

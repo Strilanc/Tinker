@@ -1,7 +1,7 @@
 ﻿Public NotInheritable Class Pinger
     Implements IDisposable
 
-    Private _latency As FiniteDouble
+    Private _latency As Double
     Private ReadOnly _timeoutCount As Integer
     Private ReadOnly _pingQueue As New Queue(Of Tuple(Of UInt32, ITimer))
     Private ReadOnly _rng As New Random()
@@ -33,8 +33,8 @@
         Contract.Assume(_latency >= 0)
     End Sub
 
-    Public Function QueueGetLatency() As IFuture(Of FiniteDouble)
-        Contract.Ensures(Contract.Result(Of IFuture(Of FiniteDouble))() IsNot Nothing)
+    Public Function QueueGetLatency() As IFuture(Of Double)
+        Contract.Ensures(Contract.Result(Of IFuture(Of Double))() IsNot Nothing)
         Return inQueue.QueueFunc(Function() _latency)
     End Function
 
@@ -62,9 +62,9 @@
         End If
 
         'Measure
-        Dim lambda = New FiniteDouble(0.5)
+        Dim lambda = 0.5
         _latency *= 1 - lambda
-        _latency += lambda * New FiniteDouble(stored.Item2.ElapsedTime.TotalMilliseconds)
+        _latency += lambda * stored.Item2.ElapsedTime.TotalMilliseconds
         If _latency <= 0 Then _latency = Double.Epsilon
         Contract.Assume(_latency >= 0)
     End Sub

@@ -36,7 +36,6 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeOtherPlayerJoinedTest()
-        MakeOtherPlayerJoined(TestPlayer)
         MakeOtherPlayerJoined("test", New PID(1), 1, New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
     End Sub
     <TestMethod()>
@@ -73,7 +72,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeMapFileDataTest()
-        MakeMapFileData(New PID(1), 5, New Byte() {}.AsReadableList)
+        MakeMapFileData(5, New Byte() {}.AsReadableList, New PID(1), New PID(2))
     End Sub
     <TestMethod()>
     Public Sub MakeSetUploadTargetTest()
@@ -85,7 +84,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeClientMapInfoTest()
-        MakeClientMapInfo(DownloadState.Downloading, 0)
+        MakeClientMapInfo(WC3.Protocol.MapTransferState.Downloading, totalDownloaded:=100, mapTransferKey:=1)
     End Sub
     <TestMethod()>
     Public Sub MakeMapFileDataReceivedTest()

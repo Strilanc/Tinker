@@ -87,7 +87,6 @@
     <Compile Include="HelpCommandTest.vb" />
     <Compile Include="PacketStreamTest.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
-    <Compile Include="TransferSchedulerTest.vb" />
     <Compile Include="Utilities\Common.vb" />
     <Compile Include="Utilities\StreamTester.vb" />
     <Compile Include="Utilities\TestStream.vb" />

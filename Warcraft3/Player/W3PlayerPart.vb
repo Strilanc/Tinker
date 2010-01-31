@@ -3,7 +3,7 @@ Imports Tinker.Pickling
 Namespace WC3
     Partial Public NotInheritable Class Player
         Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of InvariantString, Object))
-#Region "Networking"
+
         Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
@@ -19,16 +19,13 @@ Namespace WC3
             Dim leaveType = CType(vals("leave type"), PlayerLeaveType)
             Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
         End Sub
-#End Region
 
         Public ReadOnly Property AdvertisedDownloadPercent() As Byte
             Get
                 If state <> PlayerState.Lobby Then Return 100
-                Dim pos = mapDownloadPosition
                 If isFake Then Return 254 'Not a real player, show "|CF"
-                If pos = -1 Then Return 255 'Not known yet, show "?"
-                If pos >= settings.Map.FileSize Then Return 100 'No DL, show nothing
-                Return CByte((100 * pos) \ settings.Map.FileSize) 'DL running, show % done
+                If _reportedDownloadPosition Is Nothing Then Return 255
+                Return CByte(_reportedDownloadPosition \ _downloadManager.FileSize)
             End Get
         End Property
 
@@ -46,8 +43,9 @@ Namespace WC3
                                 Case 254 : dlText = "fake"
                                 Case Else : dlText = "{0}%".Frmt(p)
                             End Select
-                            contextInfo = From rateDescription In scheduler.GenerateRateDescription(Me.PID.Index)
-                                           Select "DL={0}".Frmt(dlText).Padded(9) + "EB={0}".Frmt(rateDescription)
+                            contextInfo = From rateDescription In _downloadManager.QueueGetClientBandwidthDescription(Me)
+                                          Select "DL={0}".Frmt(dlText).Padded(9) + _
+                                                 "EB={0}".Frmt(rateDescription)
                         Case PlayerState.Loading
                             contextInfo = "Ready={0}".Frmt(Ready).Futurized
                         Case PlayerState.Playing
