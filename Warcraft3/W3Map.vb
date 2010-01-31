@@ -2,59 +2,162 @@ Imports Tinker.Pickling
 
 Namespace WC3
     Public NotInheritable Class Map
-        Private ReadOnly _name As InvariantString
-        Private ReadOnly _playableWidth As Integer
-        Private ReadOnly _playableHeight As Integer
-        Private ReadOnly _isMelee As Boolean
-        Private ReadOnly _numPlayerSlots As Integer
+        Private ReadOnly _streamFactory As Func(Of IO.Stream)
+        Private ReadOnly _advertisedPath As InvariantString
         Private ReadOnly _fileSize As UInteger
         Private ReadOnly _fileChecksumCRC32 As UInt32
-        Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Private ReadOnly _mapChecksumXORO As UInt32
-        Private ReadOnly _folder As InvariantString
-        Private ReadOnly _advertisedPath As InvariantString
-        Private ReadOnly _fullPath As InvariantString
-        Public ReadOnly fileAvailable As Boolean
+        Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Private ReadOnly _slots As IReadableList(Of Slot)
+        Private ReadOnly _playableWidth As UInteger
+        Private ReadOnly _playableHeight As UInteger
+        Private ReadOnly _isMelee As Boolean
+        Private ReadOnly _name As InvariantString
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_playableWidth > 0)
-            Contract.Invariant(_playableHeight > 0)
+            Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
             Contract.Invariant(_fileSize > 0)
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(_mapChecksumSHA1.Count = 20)
             Contract.Invariant(_slots IsNot Nothing)
-            Contract.Invariant(_numPlayerSlots > 0)
-            Contract.Invariant(_numPlayerSlots <= 12)
-            Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
+            Contract.Invariant(_slots.Count > 0)
+            Contract.Invariant(_slots.Count <= 12)
+            Contract.Invariant(_playableWidth > 0)
+            Contract.Invariant(_playableHeight > 0)
         End Sub
 
+        Public Sub New(ByVal streamFactory As Func(Of IO.Stream),
+                       ByVal advertisedPath As InvariantString,
+                       ByVal fileSize As UInteger,
+                       ByVal fileChecksumCRC32 As UInt32,
+                       ByVal mapChecksumXORO As UInt32,
+                       ByVal mapChecksumSHA1 As IReadableList(Of Byte),
+                       ByVal slots As IReadableList(Of Slot),
+                       ByVal playableWidth As UInteger,
+                       ByVal playableHeight As UInteger,
+                       ByVal isMelee As Boolean,
+                       ByVal name As InvariantString)
+            Contract.Requires(advertisedPath.StartsWith("Maps\"))
+            Contract.Requires(fileSize > 0)
+            Contract.Requires(mapChecksumSHA1 IsNot Nothing)
+            Contract.Requires(mapChecksumSHA1.Count = 20)
+            Contract.Requires(slots IsNot Nothing)
+            Contract.Requires(slots.Count > 0)
+            Contract.Requires(slots.Count <= 12)
+            Contract.Requires(playableWidth > 0)
+            Contract.Requires(playableHeight > 0)
+
+            Me._streamFactory = _streamFactory
+            Me._advertisedPath = advertisedPath
+            Me._fileSize = fileSize
+            Me._fileChecksumCRC32 = fileChecksumCRC32
+            Me._mapChecksumXORO = mapChecksumXORO
+            Me._mapChecksumSHA1 = mapChecksumSHA1
+            Me._slots = slots
+            Me._playableWidth = playableHeight
+            Me._playableHeight = playableWidth
+            Me._isMelee = isMelee
+            Me._name = name
+        End Sub
+
+        Public Shared Function FromFile(ByVal filePath As InvariantString,
+                                        ByVal wc3MapFolder As InvariantString,
+                                        ByVal wc3PatchMPQFolder As InvariantString) As Map
+            Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
+            Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+            Using f = factory()
+                Dim mapArchive = New MPQ.Archive(factory)
+                Dim war3PatchArchive = OpenWar3PatchArchive(wc3PatchMPQFolder)
+                Dim info = ReadMapInfo(mapArchive)
+
+                Dim basePath As InvariantString = wc3MapFolder.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
+                Dim path As InvariantString = filePath.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
+                If Not basePath.EndsWith(IO.Path.DirectorySeparatorChar) Then basePath += IO.Path.DirectorySeparatorChar
+                If path.StartsWith(basePath) Then
+                    path = path.Substring(basePath.Length)
+                Else
+                    path = path.ToString.Split(IO.Path.DirectorySeparatorChar).Last
+                End If
+
+                Return New Map(streamFactory:=factory,
+                               AdvertisedPath:="Maps\" + path.ToString.Replace(IO.Path.DirectorySeparatorChar, "\"),
+                               FileSize:=CUInt(f.Length),
+                               FileChecksumCRC32:=f.ToEnumerator.CRC32,
+                               MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive).AsReadableList,
+                               MapChecksumXORO:=CUInt(ComputeMapXoro(mapArchive, war3PatchArchive)),
+                               Slots:=info.slots,
+                               PlayableWidth:=info.playableWidth,
+                               PlayableHeight:=info.playableHeight,
+                               IsMelee:=info.isMelee,
+                               Name:=info.name)
+            End Using
+        End Function
+
+        Public Shared Function FromArgument(ByVal arg As String) As Map
+            Contract.Requires(arg IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
+            If arg.Length <= 0 Then
+                Throw New ArgumentException("Empty argument.")
+            ElseIf arg(0) = "-"c Then
+                Throw New ArgumentException("Map argument begins with '-', is probably an option. (did you forget an argument?)")
+            ElseIf arg.StartsWith("0x", StringComparison.OrdinalIgnoreCase) Then 'Map specified by HostMapInfo packet data
+                'Parse
+                If arg Like "0x*[!0-9a-fA-F]" OrElse arg.Length Mod 2 <> 0 Then
+                    Throw New ArgumentException("Invalid map meta data. [0x prefix should be followed by hex HostMapInfo packet data].")
+                End If
+                Dim hexData = (From i In Enumerable.Range(1, arg.Length \ 2 - 1)
+                               Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
+                               ).ToArray
+                Dim vals = Protocol.Packets.HostMapInfo.Parse(hexData.AsReadableList).Value
+
+                'Extract values
+                Dim path As InvariantString = CStr(vals("path")).AssumeNotNull
+                Dim size = CUInt(vals("size"))
+                Dim crc32 = CUInt(vals("crc32"))
+                Dim xoro = CUInt(vals("xoro checksum"))
+                Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
+                Dim slot1 = New Slot(index:=1, raceunlocked:=False)
+                Dim slot2 = New Slot(index:=2, raceunlocked:=False)
+                Dim slot3 = New Slot(index:=3, raceunlocked:=False)
+                slot1.color = Slot.PlayerColor.Red
+                slot2.color = Slot.PlayerColor.Blue
+                slot3.color = Slot.PlayerColor.Teal
+                slot1.Contents = New SlotContentsOpen(slot1)
+                slot2.Contents = New SlotContentsOpen(slot2)
+                slot3.Contents = New SlotContentsComputer(slot3, Slot.ComputerLevel.Normal)
+                Contract.Assume(sha1.Count = 20)
+                If Not path.StartsWith("Maps\") Then Throw New IO.InvalidDataException("Invalid map path.")
+                If size <= 0 Then Throw New IO.InvalidDataException("Invalid file size.")
+
+                Return New Map(streamFactory:=Nothing,
+                               AdvertisedPath:=path,
+                               FileSize:=size,
+                               FileChecksumCRC32:=crc32,
+                               MapChecksumXORO:=xoro,
+                               MapChecksumSHA1:=sha1,
+                               Slots:={slot1, slot2, slot3}.AsReadableList,
+                               PlayableWidth:=256,
+                               PlayableHeight:=256,
+                               IsMelee:=True,
+                               Name:=path)
+            Else 'Map specified by path
+                Return Map.FromFile(filePath:=IO.Path.Combine(My.Settings.mapPath, FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", My.Settings.mapPath.AssumeNotNull)),
+                                    wc3MapFolder:=My.Settings.mapPath.AssumeNotNull,
+                                    wc3PatchMPQFolder:=My.Settings.war3path.AssumeNotNull)
+            End If
+        End Function
+
 #Region "Properties"
-        Public ReadOnly Property Slots As IReadableList(Of Slot)
+        Public ReadOnly Property AdvertisedPath As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() Is _slots)
-                Return _slots
-            End Get
-        End Property
-        Public ReadOnly Property NumPlayerSlots As Integer
-            Get
-                Contract.Ensures(Contract.Result(Of Integer)() > 0)
-                Contract.Ensures(Contract.Result(Of Integer)() <= 12)
-                Return _numPlayerSlots
+                Contract.Ensures(Contract.Result(Of InvariantString)().StartsWith("Maps\"))
+                Return _advertisedPath
             End Get
         End Property
         Public ReadOnly Property FileSize As UInteger
             Get
                 Contract.Ensures(Contract.Result(Of UInteger)() > 0)
                 Return _fileSize
-            End Get
-        End Property
-        Public ReadOnly Property MapChecksumSHA1 As IReadableList(Of Byte)
-            Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
-                Return _mapChecksumSHA1
             End Get
         End Property
         Public ReadOnly Property FileChecksumCRC32 As UInt32
@@ -67,25 +170,31 @@ Namespace WC3
                 Return _mapChecksumXORO
             End Get
         End Property
-        Public ReadOnly Property Folder As InvariantString
+        Public ReadOnly Property MapChecksumSHA1 As IReadableList(Of Byte)
             Get
-                Return _folder
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+                Return _mapChecksumSHA1
             End Get
         End Property
-        Public ReadOnly Property AdvertisedPath As InvariantString
+        Public ReadOnly Property Slots As IReadableList(Of Slot)
             Get
-                Contract.Ensures(Contract.Result(Of InvariantString)().StartsWith("Maps\"))
-                Return _advertisedPath
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count > 0)
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count <= 12)
+                Return _slots
             End Get
         End Property
-        Public ReadOnly Property FullPath As InvariantString
+        Public ReadOnly Property PlayableWidth As UInteger
             Get
-                Return _fullPath
+                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
+                Return _playableWidth
             End Get
         End Property
-        Public ReadOnly Property Name As InvariantString
+        Public ReadOnly Property PlayableHeight As UInteger
             Get
-                Return _name
+                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
+                Return _playableHeight
             End Get
         End Property
         Public ReadOnly Property IsMelee As Boolean
@@ -93,18 +202,12 @@ Namespace WC3
                 Return _isMelee
             End Get
         End Property
-        Public ReadOnly Property PlayableWidth As Integer
+        Public ReadOnly Property Name As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of Integer)() > 0)
-                Return _playableWidth
+                Return _name
             End Get
         End Property
-        Public ReadOnly Property PlayableHeight As Integer
-            Get
-                Contract.Ensures(Contract.Result(Of Integer)() > 0)
-                Return _playableHeight
-            End Get
-        End Property
+
         Public Enum SizeClass
             Huge
             Large
@@ -140,110 +243,12 @@ Namespace WC3
                 Return result
             End Get
         End Property
+        Public ReadOnly Property FileAvailable As Boolean
+            Get
+                Return _streamFactory IsNot Nothing
+            End Get
+        End Property
 #End Region
-
-        Public Shared Function FromArgument(ByVal arg As String) As Map
-            Contract.Requires(arg IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
-            If arg.Length <= 0 Then
-                Throw New ArgumentException("Empty argument.")
-            ElseIf arg(0) = "-"c Then
-                Throw New ArgumentException("Map argument begins with '-', is probably an option. (did you forget an argument?)")
-            ElseIf arg.StartsWith("0x", StringComparison.OrdinalIgnoreCase) Then 'Map specified by HostMapInfo packet data
-                'Parse
-                If arg Like "0x*[!0-9a-fA-F]" OrElse arg.Length Mod 2 <> 0 Then
-                    Throw New ArgumentException("Invalid map meta data. [0x prefix should be followed by hex HostMapInfo packet data].")
-                End If
-                Dim hexData = (From i In Enumerable.Range(1, arg.Length \ 2 - 1)
-                               Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
-                               ).ToArray
-                Dim vals = Protocol.Packets.HostMapInfo.Parse(hexData.AsReadableList).Value
-
-                'Extract values
-                Dim path As InvariantString = CStr(vals("path")).AssumeNotNull
-                Dim size = CUInt(vals("size"))
-                Dim crc32 = CUInt(vals("crc32"))
-                Dim xoro = CUInt(vals("xoro checksum"))
-                Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
-                If Not path.StartsWith("Maps\") Then
-                    Throw New IO.InvalidDataException("Invalid map path.")
-                End If
-                Contract.Assume(path.Length >= "Maps\".Length)
-                path = path.Substring("Maps\".Length)
-                Contract.Assume(sha1.Count = 20)
-                Contract.Assume(size > 0)
-
-                Return New Map(My.Settings.mapPath.AssumeNotNull, path, size, crc32, sha1, xoro, slotCount:=3)
-            Else 'Map specified by path
-                Return New Map(My.Settings.mapPath.AssumeNotNull,
-                               FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", My.Settings.mapPath.AssumeNotNull),
-                               My.Settings.war3path.AssumeNotNull)
-            End If
-        End Function
-        Public Sub New(ByVal folder As InvariantString,
-                       ByVal relativePath As InvariantString,
-                       ByVal fileSize As UInteger,
-                       ByVal fileChecksumCRC32 As UInt32,
-                       ByVal mapChecksumSHA1 As IReadableList(Of Byte),
-                       ByVal mapChecksumXORO As UInt32,
-                       ByVal slotCount As Integer)
-            Contract.Requires(mapChecksumSHA1 IsNot Nothing)
-            Contract.Requires(mapChecksumSHA1.Count = 20)
-            Contract.Requires(slotCount > 0)
-            Contract.Requires(slotCount <= 12)
-            Contract.Requires(fileSize > 0)
-            Contract.Ensures(Me.Slots.Count = slotCount)
-
-            Me._fullPath = IO.Path.Combine(folder, relativePath.ToString.Replace("\", IO.Path.DirectorySeparatorChar))
-            Me._advertisedPath = "Maps\" + relativePath
-            Me._folder = folder
-            Me._playableHeight = 256
-            Me._playableWidth = 256
-            Me._isMelee = True
-            Me._name = relativePath.ToString.Split("\"c).Last.AssumeNotNull
-            Me._numPlayerSlots = slotCount
-            Me._fileSize = fileSize
-            Me._fileChecksumCRC32 = fileChecksumCRC32
-            Me._mapChecksumSHA1 = mapChecksumSHA1
-            Me._mapChecksumXORO = mapChecksumXORO
-            Dim slots = New List(Of Slot)
-            For slotId = 1 To slotCount
-                Dim slot = New Slot(CByte(slotId), Me.IsMelee)
-                slot.color = CType(slotId - 1, Slot.PlayerColor)
-                slot.Contents = New SlotContentsOpen(slot)
-                slots.Add(slot)
-            Next slotId
-            Me._slots = slots.AsReadableList
-            Contract.Assume(Me.Slots.Count = slotCount)
-        End Sub
-
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
-        Public Sub New(ByVal folder As InvariantString,
-                       ByVal relativePath As InvariantString,
-                       ByVal wc3PatchMPQFolder As InvariantString)
-            Me.fileAvailable = True
-            Me._advertisedPath = IO.Path.Combine("Maps", relativePath).Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar).
-                                                                       Replace(IO.Path.DirectorySeparatorChar, "\")
-            Me._fullPath = IO.Path.Combine(folder, relativePath.ToString.Replace("\", IO.Path.DirectorySeparatorChar))
-            Me._folder = folder
-            Using f = New IO.FileStream(FullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.ReadWrite)
-                Me._fileSize = CUInt(f.Length)
-                Me._fileChecksumCRC32 = f.ToEnumerator.CRC32
-            End Using
-            Dim mapArchive = New MPQ.Archive(FullPath)
-            Dim war3PatchArchive = OpenWar3PatchArchive(wc3PatchMPQFolder)
-            Me._mapChecksumSHA1 = ComputeMapSha1Checksum(mapArchive, war3PatchArchive).AsReadableList
-            Me._mapChecksumXORO = CUInt(ComputeMapXoro(mapArchive, war3PatchArchive))
-
-            Dim info = ReadMapInfo(mapArchive)
-            Me._slots = info.slots.AsReadableList
-            Me._isMelee = info.isMelee
-            Me._numPlayerSlots = info.slots.Count
-            Me._name = info.name
-            Me._playableHeight = info.playableHeight
-            Me._playableWidth = info.playableWidth
-        End Sub
 
 #Region "Read"
         Public Function ReadChunk(ByVal pos As Int64, ByVal size As UInt32) As IReadableList(Of Byte)
@@ -252,10 +257,10 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count <= size)
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
-            If Not fileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
+            If Not FileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
 
             Dim buffer(0 To CInt(size - 1)) As Byte
-            Using f = New IO.FileStream(FullPath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+            Using f = _streamFactory()
                 f.Seek(pos, IO.SeekOrigin.Begin)
                 Dim n = f.Read(buffer, 0, CInt(size))
                 If n < buffer.Length Then ReDim Preserve buffer(0 To n - 1)
@@ -471,10 +476,10 @@ Namespace WC3
             TFT = 25
         End Enum
         Private Class ReadMapInfoResult
-            Public ReadOnly playableWidth As Integer
-            Public ReadOnly playableHeight As Integer
+            Public ReadOnly playableWidth As UInteger
+            Public ReadOnly playableHeight As UInteger
             Public ReadOnly isMelee As Boolean
-            Public ReadOnly slots As List(Of Slot)
+            Public ReadOnly slots As IReadableList(Of Slot)
             Public ReadOnly name As InvariantString
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -486,10 +491,10 @@ Namespace WC3
             End Sub
 
             Public Sub New(ByVal name As InvariantString,
-                           ByVal playableWidth As Integer,
-                           ByVal playableHeight As Integer,
+                           ByVal playableWidth As UInteger,
+                           ByVal playableHeight As UInteger,
                            ByVal isMelee As Boolean,
-                           ByVal slots As List(Of Slot))
+                           ByVal slots As IReadableList(Of Slot))
                 Contract.Requires(playableWidth > 0)
                 Contract.Requires(playableHeight > 0)
                 Contract.Requires(slots IsNot Nothing)
@@ -530,8 +535,8 @@ Namespace WC3
                     br.ReadInt32() 'camera bounds complements
                 Next repeat
 
-                Dim playableWidth = br.ReadInt32() 'map playable area width
-                Dim playableHeight = br.ReadInt32() 'map playable area height
+                Dim playableWidth = br.ReadUInt32() 'map playable area width
+                Dim playableHeight = br.ReadUInt32() 'map playable area height
                 If playableWidth <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable width.")
                 If playableHeight <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable height.")
                 Dim options = CType(br.ReadInt32(), MapOptions) 'flags
@@ -651,7 +656,7 @@ Namespace WC3
                         slots(i).race = Slot.Races.Random
                     Next i
                 End If
-                Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, isMelee, slots)
+                Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, isMelee, slots.AsReadableList)
             End Using
         End Function
 #End Region

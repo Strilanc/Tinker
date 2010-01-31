@@ -31,8 +31,8 @@
         Private ReadOnly _observers As GameObserverOption
         Private ReadOnly _visibility As GameVisibilityOption
         Private ReadOnly _speed As GameSpeedOption
-        Private ReadOnly _playableWidth As Integer
-        Private ReadOnly _playableHeight As Integer
+        Private ReadOnly _playableWidth As UInteger
+        Private ReadOnly _playableHeight As UInteger
         Private ReadOnly _mapChecksumXORO As UInt32
         Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Private ReadOnly _advertisedPath As InvariantString
@@ -42,6 +42,8 @@
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(_mapChecksumSHA1.Count = 20)
             Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
+            Contract.Invariant(_playableWidth > 0)
+            Contract.Invariant(_playableHeight > 0)
         End Sub
 
 #Region "Properties"
@@ -103,13 +105,15 @@
                 Return _speed
             End Get
         End Property
-        Public ReadOnly Property PlayableWidth As Integer
+        Public ReadOnly Property PlayableWidth As UInteger
             Get
+                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
                 Return _playableWidth
             End Get
         End Property
-        Public ReadOnly Property PlayableHeight As Integer
+        Public ReadOnly Property PlayableHeight As UInteger
             Get
+                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
                 Return _playableHeight
             End Get
         End Property
@@ -131,8 +135,8 @@
                        ByVal observers As GameObserverOption,
                        ByVal visibility As GameVisibilityOption,
                        ByVal speed As GameSpeedOption,
-                       ByVal playableWidth As Integer,
-                       ByVal playableHeight As Integer,
+                       ByVal playableWidth As UInteger,
+                       ByVal playableHeight As UInteger,
                        ByVal mapChecksumXORO As UInt32,
                        ByVal mapChecksumSHA1 As IReadableList(Of Byte),
                        ByVal advertisedPath As InvariantString,

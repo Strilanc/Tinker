@@ -61,7 +61,7 @@
             Contract.Requires(stats IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameDescription)() IsNot Nothing)
-            Dim totalSlotCount = map.NumPlayerSlots
+            Dim totalSlotCount = map.Slots.Count
             If stats.Observers = GameObserverOption.FullObservers OrElse stats.Observers = GameObserverOption.Referees Then
                 totalSlotCount = 12
             End If
@@ -196,7 +196,7 @@
             Contract.Requires(stats IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of LocalGameDescription)() IsNot Nothing)
-            Dim totalSlotCount = map.NumPlayerSlots
+            Dim totalSlotCount = map.Slots.Count
             If stats.Observers = GameObserverOption.FullObservers OrElse stats.Observers = GameObserverOption.Referees Then
                 totalSlotCount = 12
             End If

@@ -7,13 +7,17 @@ Imports Tinker.Bnet.Protocol
 
 Friend Module SharedTestObjects
     Friend ReadOnly TestMap As New Map(
-        folder:="Test:\Maps",
-        relativePath:="test",
-        fileChecksumCRC32:=1,
+        streamFactory:=Nothing,
+        advertisedPath:="Maps\test.w3x",
         filesize:=1,
+        fileChecksumCRC32:=1,
         mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
         mapChecksumXORO:=1,
-        slotCount:=2)
+        ismelee:=False,
+        name:="Test Map",
+        playableWidth:=256,
+        playableHeight:=256,
+        slots:={New Slot(1, False), New Slot(2, False)}.AsReadableList)
     Friend ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")
     Friend ReadOnly TestStats As New GameStats(
             Map:=TestMap,

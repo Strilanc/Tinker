@@ -212,7 +212,7 @@ Namespace WC3
             Contract.Assume(hostName IsNot Nothing)
             Dim gameStats = New WC3.GameStats(map, hostName, argument)
 
-            Dim totalSlotCount = map.NumPlayerSlots
+            Dim totalSlotCount = map.Slots.Count
             Select Case gameStats.observers
                 Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
                     totalSlotCount = 12
@@ -258,16 +258,25 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of GameSet))() IsNot Nothing)
 
             Dim sha1Checksum = (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList
+            Dim slot1 = New Slot(index:=1, raceunlocked:=False)
+            Dim slot2 = New Slot(index:=2, raceunlocked:=False)
+            slot1.color = Slot.PlayerColor.Red
+            slot2.color = Slot.PlayerColor.Blue
+            slot1.Contents = New SlotContentsOpen(slot1)
+            slot2.Contents = New SlotContentsComputer(slot2, Slot.ComputerLevel.Normal)
             Contract.Assume(sha1Checksum.Count = 20)
-            Dim map = New WC3.Map(folder:="Maps\",
-                                  relativepath:="AdminGame.w3x",
-                                  filesize:=1,
+            Dim map = New WC3.Map(streamFactory:=Nothing,
+                                  advertisedPath:="Maps\AdminGame.w3x",
+                                  fileSize:=1,
                                   fileChecksumCRC32:=&H12345678UI,
                                   mapChecksumSHA1:=sha1Checksum,
                                   mapChecksumXORO:=&H2357BDUI,
-                                  slotCount:=2)
-            Contract.Assume(map.Slots(1) IsNot Nothing)
-            map.Slots(1).Contents = New WC3.SlotContentsComputer(map.Slots(1), WC3.Slot.ComputerLevel.Normal)
+                                  ismelee:=True,
+                                  name:="Admin Game",
+                                  playableWidth:=256,
+                                  playableHeight:=56,
+                                  slots:={slot1, slot2}.AsReadableList)
+
             Dim hostName = Application.ProductName
             Contract.Assume(hostName IsNot Nothing)
             Dim gameDescription = New WC3.LocalGameDescription(
@@ -275,7 +284,7 @@ Namespace WC3
                                           GameStats:=New WC3.GameStats(map, hostName, New Commands.CommandArgument("")),
                                           gameid:=AllocateGameId(),
                                           entryKey:=0,
-                                          totalSlotCount:=map.NumPlayerSlots,
+                                          totalSlotCount:=map.Slots.Count,
                                           gameType:=map.GameType,
                                           state:=0,
                                           usedSlotCount:=0,

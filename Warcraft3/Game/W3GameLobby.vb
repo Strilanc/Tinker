@@ -37,7 +37,7 @@
             'create observer slots
             Select Case settings.GameDescription.GameStats.observers
                 Case GameObserverOption.FullObservers, GameObserverOption.Referees
-                    For i = Map.NumPlayerSlots To 12 - 1
+                    For i = Map.Slots.Count To 12 - 1
                         Dim slot = New Slot(CByte(i), Map.IsMelee)
                         slot.color = CType(slot.ObserverTeamIndex, Slot.PlayerColor)
                         slot.Team = slot.ObserverTeamIndex
@@ -51,8 +51,8 @@
             If settings.useMultiObs Then
                 Contract.Assume(slots.Count = 12)
                 Contract.Assume(freeIndexes.Count > 0)
-                If Map.NumPlayerSlots <= 10 Then
-                    For i = Map.NumPlayerSlots To 10 - 1
+                If Map.Slots.Count <= 10 Then
+                    For i = Map.Slots.Count To 10 - 1
                         Contract.Assume(slots(i) IsNot Nothing)
                         slots(i).Contents = New SlotContentsClosed(slots(i))
                     Next i
@@ -703,7 +703,7 @@
                     Case Else
                         Return '[obs not enabled; invalid value]
                 End Select
-            ElseIf Map.IsMelee And newTeam >= Map.NumPlayerSlots Then
+            ElseIf Map.IsMelee And newTeam >= Map.Slots.Count Then
                 Return '[invalid team]
             End If
 

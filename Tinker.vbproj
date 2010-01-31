@@ -322,7 +322,6 @@
     </Compile>
     <Compile Include="Warcraft3\W3DummyPlayer.vb" />
     <Compile Include="Lan\LanAdvertiser.vb" />
-    <Compile Include="Warcraft3\TransferScheduler.vb" />
     <Compile Include="Bot\Bot Commands.vb" />
     <Compile Include="Bnet\Bnet Client Commands.vb" />
     <Compile Include="Warcraft3\Game\Game Commands.vb" />
@@ -508,12 +507,12 @@
   <ItemGroup>
     <PublishFile Include="Docs.txt">
       <Visible>False</Visible>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
       <FileType>File</FileType>
     </PublishFile>
   </ItemGroup>

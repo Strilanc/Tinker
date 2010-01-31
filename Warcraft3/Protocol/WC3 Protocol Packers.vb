@@ -122,7 +122,7 @@ Namespace WC3.Protocol
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim reportedPlayerSlots = map.NumPlayerSlots
+            Dim reportedPlayerSlots = map.Slots.Count
             If hideSlots Then
                 'reporting the wrong number of slots causes wc3 not to show them
                 reportedPlayerSlots = If(reportedPlayerSlots = 12, 11, 12)

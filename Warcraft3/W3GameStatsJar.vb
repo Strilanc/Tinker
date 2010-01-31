@@ -150,8 +150,8 @@ Namespace WC3
             End If
 
             'Decode rest
-            Dim playableWidth = CInt(vals("playable width"))
-            Dim playableHeight = CInt(vals("playable height"))
+            Dim playableWidth = CUInt(vals("playable width"))
+            Dim playableHeight = CUInt(vals("playable height"))
             Dim xoroChecksum = CUInt(vals("xoro checksum"))
             Dim sha1Checksum = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
             Dim relativePath As InvariantString = CStr(vals("relative path")).AssumeNotNull

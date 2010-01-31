@@ -66,7 +66,7 @@
                 'Finished Download
                 file.Close()
                 file = Nothing
-                Dim map = New Map(My.Settings.mapPath, downloadPath.Substring(My.Settings.mapPath.Length), My.Settings.war3path)
+                Dim map = WC3.Map.FromFile(downloadPath, My.Settings.mapPath, My.Settings.war3path)
                 If Not map.MapChecksumSHA1.SequenceEqual(mapChecksumSHA1) Then Throw New IO.InvalidDataException("Completed map doesn't match reported SHA1 checksum.")
                 If map.MapChecksumXORO <> mapChecksumXORO Then Throw New IO.InvalidDataException("Completed map doesn't match reported XORO checksum.")
                 If map.FileChecksumCRC32 <> fileChecksumCRC32 Then Throw New IO.InvalidDataException("Completed map doesn't match reported CRC32 checksum.")
