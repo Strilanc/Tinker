@@ -87,13 +87,13 @@ Namespace WC3
     Public Class DownloadManager
         Inherits FutureDisposable
 
-        Private Shared ReadOnly FreezePeriod As TimeSpan = 5.Seconds
-        Private Shared ReadOnly MinSwitchPeriod As TimeSpan = 5.Seconds
-        Private Shared ReadOnly SwitchPenaltyPeriod As TimeSpan = 1.Seconds
-        Private Shared ReadOnly SwitchPenaltyFactor As Double = 1.2
-        Private Shared ReadOnly TypicalBandwidthPerSecond As Double = 1024
-        Private Shared ReadOnly MaxBufferedMapSize As Integer = 64000
-        Private Shared ReadOnly UpdatePeriod As TimeSpan = 1.Seconds
+        Public Shared ReadOnly FreezePeriod As TimeSpan = 5.Seconds
+        Public Shared ReadOnly MinSwitchPeriod As TimeSpan = 5.Seconds
+        Public Shared ReadOnly SwitchPenaltyPeriod As TimeSpan = 1.Seconds
+        Public Shared ReadOnly SwitchPenaltyFactor As Double = 1.2
+        Public Shared ReadOnly TypicalBandwidthPerSecond As Double = 1024
+        Public Shared ReadOnly MaxBufferedMapSize As Integer = 64000
+        Public Shared ReadOnly UpdatePeriod As TimeSpan = 1.Seconds
 
         Private Class Transfer
             Implements IDisposable
@@ -144,7 +144,7 @@ Namespace WC3
             Public ReadOnly Property Uploader As TransferClient
                 Get
                     Contract.Ensures(Contract.Result(Of TransferClient)() IsNot Nothing)
-                    Return _downloader
+                    Return _uploader
                 End Get
             End Property
             Public ReadOnly Property Duration As TimeSpan
@@ -196,6 +196,7 @@ Namespace WC3
             End Sub
         End Class
 
+        <DebuggerDisplay("{ToString}")>
         Private Class TransferClient
             Inherits FutureDisposable
 
@@ -356,11 +357,13 @@ Namespace WC3
                                             uploader:=uploader,
                                             startingPosition:=downloader.ReportedPosition,
                                             Clock:=downloader._clock,
-                                            filesize:=downloader._map.FileSize)
+                                            FileSize:=downloader._map.FileSize)
                 downloader._transfer = transfer
                 uploader._transfer = transfer
                 downloader._expectedState = Protocol.MapTransferState.Downloading
                 uploader._expectedState = Protocol.MapTransferState.Uploading
+                downloader._lastTransferPartner = uploader
+                uploader._lastTransferPartner = downloader
             End Sub
             Public Sub ClearTransfer()
                 Contract.Requires(Me.Transfer IsNot Nothing)
@@ -377,6 +380,10 @@ Namespace WC3
                         Select hook.CallOnValueSuccess(Sub(value) value.Dispose())
                        ).Defuturized
             End Function
+
+            Public Overrides Function ToString() As String
+                Return If(_player IsNot Nothing, "Player: {0}".Frmt(_player.Name), "Host")
+            End Function
         End Class
 
         Private ReadOnly _game As IGameDownloadAspect
@@ -384,7 +391,7 @@ Namespace WC3
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
         Private ReadOnly _allowDownloads As Boolean
         Private ReadOnly _allowUploads As Boolean
-        Private ReadOnly _playerClients As Dictionary(Of IPlayerDownloadAspect, TransferClient)
+        Private ReadOnly _playerClients As New Dictionary(Of IPlayerDownloadAspect, TransferClient)
         Private ReadOnly _defaultClient As TransferClient
         Private ReadOnly _clock As IClock
 
@@ -405,6 +412,8 @@ Namespace WC3
             Me._allowUploads = allowUploads
             If _allowUploads Then
                 _defaultClient = New TransferClient(Nothing, game.Map, clock, {})
+                _defaultClient.HasReported = True
+                _defaultClient.ReportedPosition = game.Map.FileSize
             End If
 
             _hooks.Add(game.QueueCreatePlayersAsyncView(
@@ -420,6 +429,18 @@ Namespace WC3
                 Return _playerClients.Values.Concat(If(_defaultClient Is Nothing, {}, {_defaultClient}))
             End Get
         End Property
+
+        Private Sub SendMapFileData(ByVal client As TransferClient, ByVal reportedPosition As UInt32)
+            Contract.Requires(client IsNot Nothing)
+            Contract.Requires(client.Transfer IsNot Nothing)
+            Contract.Requires(client.Transfer.Uploader Is _defaultClient)
+            Dim transfer = client.Transfer
+            transfer.LastSentPosition = Math.Max(transfer.LastSentPosition, reportedPosition)
+            While transfer.LastSentPosition < reportedPosition + MaxBufferedMapSize AndAlso transfer.LastSentPosition < FileSize
+                _game.QueueSendMapPiece(client.Player, transfer.LastSentPosition)
+                transfer.LastSentPosition += Protocol.Packets.MaxFileDataSize
+            End While
+        End Sub
 
 #Region "Public View"
         Private ReadOnly Property ClientLatencyDescription(ByVal player As IPlayerDownloadAspect, ByVal latencyDescription As String) As String
@@ -497,6 +518,7 @@ Namespace WC3
                 }
 
             _playerClients(player) = New TransferClient(player, _game.Map, _clock, playerHooks)
+            If _defaultClient IsNot Nothing Then _playerClients(player).Links.Add(_defaultClient)
         End Sub
         Private Sub OnGameRemovedPlayer(ByVal player As IPlayerDownloadAspect)
             Contract.Requires(player IsNot Nothing)
@@ -513,7 +535,7 @@ Namespace WC3
             Dim vals = pickle.Value
             Return inQueue.QueueAction(Sub() OnReceiveClientMapInfo(player:=player,
                                                                     state:=CType(vals("transfer state"), Protocol.MapTransferState),
-                                                                    position:=CUInt(vals("position"))))
+                                                                    position:=CUInt(vals("total downloaded"))))
         End Function
         Private Function QueueOnReceiveMapFileDataReceived(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object))) As ifuture
             Contract.Requires(player IsNot Nothing)
@@ -557,12 +579,9 @@ Namespace WC3
                 Throw New IO.InvalidDataException("Moved download position backwards from {0} to {1}.".Frmt(client.ReportedPosition, position))
             End If
 
-            If transfer Is Nothing Then Throw New IO.InvalidDataException
-            If transfer.Uploader IsNot _defaultClient Then Throw New IO.InvalidDataException
-            While transfer.LastSentPosition < position + MaxBufferedMapSize
-                _game.QueueSendMapPiece(player, transfer.LastSentPosition)
-                transfer.LastSentPosition += Protocol.Packets.MaxFileDataSize
-            End While
+            If transfer IsNot Nothing AndAlso transfer.Uploader Is _defaultClient Then
+                SendMapFileData(client, position)
+            End If
         End Sub
         Private Sub OnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal state As Protocol.MapTransferState, ByVal position As UInt32)
             Contract.Requires(player IsNot Nothing)
@@ -649,6 +668,32 @@ Namespace WC3
 
         '''<summary>Starts and stops transfers, trying to minimize the total transfer time.</summary>
         Private Sub OnTick()
+            'Start new transfers
+            For Each downloader In From client In AllClients
+                                   Where client.HasReported
+                                   Where Not client.ReportedHasFile
+                                   Where client.Transfer Is Nothing
+                                   Where client.IsSteady
+                Dim bestAvailableUploader = downloader.FindBestAvailableUploader()
+                If bestAvailableUploader Is Nothing Then Continue For
+
+                Dim dler = downloader.Player
+                Dim uler = bestAvailableUploader.Player
+                TransferClient.StartTransfer(downloader, bestAvailableUploader)
+
+                If uler IsNot Nothing Then
+                    uler.QueueSendPacket(Protocol.MakeSetUploadTarget(dler.PID, downloader.ReportedPosition))
+                    dler.QueueSendPacket(Protocol.MakeSetDownloadSource(uler.PID))
+                End If
+
+                If uler Is Nothing Then
+                    _game.Logger.Log("Initiating map upload to {0}.".Frmt(dler.Name), LogMessageType.Positive)
+                    SendMapFileData(downloader, downloader.ReportedPosition)
+                Else
+                    _game.Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
+                End If
+            Next downloader
+
             'Find and cancel one frozen or improvable transfer, if there are any
             Dim cancellation = If(TryFindFrozenTransfer(), TryFindImprovableTransfer())
             If cancellation IsNot Nothing Then
@@ -670,31 +715,6 @@ Namespace WC3
                     _game.Logger.Log("Cancelled peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
                 End If
             End If
-
-            'Start new transfers
-            For Each downloader In From client In AllClients
-                                   Where client.HasReported
-                                   Where Not client.ReportedHasFile
-                                   Where client.Transfer Is Nothing
-                                   Where client.IsSteady
-                Dim bestAvailableUploader = downloader.FindBestAvailableUploader()
-                If bestAvailableUploader Is Nothing Then Continue For
-
-                Dim dler = downloader.Player
-                Dim uler = bestAvailableUploader.Player
-                TransferClient.StartTransfer(downloader, bestAvailableUploader)
-
-                If uler IsNot Nothing Then
-                    uler.QueueSendPacket(Protocol.MakeSetUploadTarget(dler.PID, downloader.ReportedPosition))
-                    dler.QueueSendPacket(Protocol.MakeSetDownloadSource(uler.PID))
-                End If
-
-                If uler Is Nothing Then
-                    _game.Logger.Log("Initiating map upload to {0}.".Frmt(dler.Name), LogMessageType.Positive)
-                Else
-                    _game.Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
-                End If
-            Next downloader
         End Sub
 #End Region
 

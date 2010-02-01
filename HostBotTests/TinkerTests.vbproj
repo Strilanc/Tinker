@@ -69,6 +69,7 @@
     <Compile Include="BnetClientTest.vb" />
     <Compile Include="BnetProtocolTest.vb" />
     <Compile Include="BnetProtocolJarsTest.vb" />
+    <Compile Include="DownloadManagerTest.vb" />
     <Compile Include="WC3ProtocolJarsTest.vb" />
     <Compile Include="Utilities\SharedTestObjects.vb" />
     <Compile Include="WC3ProtocolPackersTest.vb" />

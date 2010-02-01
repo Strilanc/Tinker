@@ -28,7 +28,7 @@ Public Class PacketHandlerTest
         Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(data) TaskedAction(Sub() flag = data.SubView(0, 4).touint32))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(flag = &H78563412)
         Assert.IsTrue(result.State = FutureState.Succeeded)
@@ -43,7 +43,7 @@ Public Class PacketHandlerTest
                      handler:=Function(data) TaskedAction(Sub() flag1 = False))
         p.AddHandler(key:=2,
                      handler:=Function(data) TaskedAction(Sub() flag2 = True))
-        Dim result = p.HandlePacket(New Byte() {2, &H12, &H34, &H56, &H78}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {2, &H12, &H34, &H56, &H78}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
@@ -59,7 +59,7 @@ Public Class PacketHandlerTest
                      handler:=Function(pickle) TaskedAction(Sub() flag1 = True))
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag2 = True))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
@@ -73,7 +73,7 @@ Public Class PacketHandlerTest
                      handler:=Function(pickle)
                                   Throw New InvalidOperationException("Mock Exception")
                               End Function)
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
     End Sub
@@ -83,7 +83,7 @@ Public Class PacketHandlerTest
         Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() Throw New InvalidOperationException("Mock Exception")))
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
     End Sub
@@ -94,7 +94,7 @@ Public Class PacketHandlerTest
         Dim p = New TestPacketHandler()
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag = False))
-        Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
         Assert.IsTrue(flag)
@@ -103,7 +103,7 @@ Public Class PacketHandlerTest
     <TestMethod()>
     Public Sub MissingHandlerTest()
         Dim p = New TestPacketHandler()
-        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
     End Sub
@@ -115,7 +115,7 @@ Public Class PacketHandlerTest
                      handler:=Function(pickle) TaskedAction(Sub()
                                                             End Sub)
                      ).Dispose()
-        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(result.State = FutureState.Failed)
     End Sub
@@ -130,7 +130,7 @@ Public Class PacketHandlerTest
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag2 = False)
                      ).Dispose()
-        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList, "test")
+        Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
         BlockOnFuture(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)

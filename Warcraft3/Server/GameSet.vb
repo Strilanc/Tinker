@@ -63,7 +63,7 @@
             Dim result = New FutureFunction(Of Game)()
 
             Dim futureSelectGame = _games.FutureSelect(
-                filterFunction:=Function(game) game.QueueTryAddPlayer(player).EvalWhenValueReady(
+                filterFunction:=Function(game) game.QueueAddPlayer(player).EvalWhenValueReady(
                                         Function(addedPlayer, playerException) addedPlayer IsNot Nothing
                                     ))
 

@@ -134,7 +134,6 @@
             AddQueuedPacketHandler(Protocol.Packets.MapFileDataProblem, AddressOf IgnorePacket)
 
             LobbyStart()
-            BeginReading()
 
             'Test hosting
             Me.testCanHost = AsyncTcpConnect(socket.RemoteEndPoint.Address, ListenPort)
@@ -147,11 +146,14 @@
                                                                    leaveType:=PlayerLeaveType.Disconnect,
                                                                    reason:="Stopped responding to pings.")
         End Sub
+        Public Sub Start()
+            BeginReading()
+        End Sub
 
         Private Sub BeginReading()
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=Function(packetData) packetHandler.HandlePacket(packetData, socket.Name),
+                consumer:=Function(packetData) packetHandler.HandlePacket(packetData),
                 errorHandler:=Sub(exception) Me.QueueDisconnect(expected:=False,
                                                                 leaveType:=PlayerLeaveType.Disconnect,
                                                                 reason:="Error receiving packet: {0}".Frmt(exception.Message))

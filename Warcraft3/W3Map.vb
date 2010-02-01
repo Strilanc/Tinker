@@ -1,5 +1,3 @@
-Imports Tinker.Pickling
-
 Namespace WC3
     Public NotInheritable Class Map
         Private ReadOnly _streamFactory As Func(Of IO.Stream)

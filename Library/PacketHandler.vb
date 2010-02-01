@@ -45,17 +45,16 @@ Public MustInherit Class PacketHandler(Of TKey)
         Return handlers.AddHandler(key, handler)
     End Function
 
-    Public Function HandlePacket(ByVal packetData As IReadableList(Of Byte), ByVal source As String) As IFuture
+    Public Function HandlePacket(ByVal packetData As IReadableList(Of Byte)) As IFuture
         Contract.Requires(packetData IsNot Nothing)
         Contract.Requires(packetData.Count >= HeaderSize)
-        Contract.Requires(source IsNot Nothing)
         Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
 
         Try
             Dim head = packetData.SubView(0, HeaderSize)
             Dim body = packetData.SubView(HeaderSize)
             Dim key = ExtractKey(head)
-            logger.Log(Function() "Received {0} from {1}".Frmt(key, source), LogMessageType.DataEvent)
+            logger.Log(Function() "Received {0} from {1}".Frmt(key, sourceName), LogMessageType.DataEvent)
 
             Dim result = handlers.Raise(key, body)
             If result.Count = 0 Then

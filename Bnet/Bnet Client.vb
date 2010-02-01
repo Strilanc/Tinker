@@ -379,7 +379,7 @@ Namespace Bnet
         Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
             Contract.Requires(packetData IsNot Nothing)
             Contract.Requires(packetData.Count >= 4)
-            Dim result = Me._packetHandler.HandlePacket(packetData, _socket.Name)
+            Dim result = Me._packetHandler.HandlePacket(packetData)
             result.Catch(Sub(exception) QueueDisconnect(expected:=False,
                                                         reason:="Error handling packet {0}: {1}.".Frmt(CType(packetData(1), Protocol.PacketId), exception.Message)))
             Return result

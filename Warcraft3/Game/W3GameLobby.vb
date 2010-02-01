@@ -346,9 +346,10 @@
             AddHandler newPlayer.StateUpdated, Sub() inQueue.QueueAction(AddressOf ChangedLobbyState)
             AddHandler newPlayer.ReceivedNonGameAction, AddressOf QueueReceiveNonGameAction
 
+            outQueue.QueueAction(Sub() newPlayer.Start()) '[out-queued to allow listeners time to add handlers]
             Return newPlayer
         End Function
-        Public Function QueueTryAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
+        Public Function QueueAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
             Contract.Requires(newPlayer IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AddPlayer(newPlayer))
