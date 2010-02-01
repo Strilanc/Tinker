@@ -545,13 +545,12 @@ Namespace WC3
             Return inQueue.QueueAction(Sub() OnReceiveMapFileDataReceived(player:=player,
                                                                           position:=CUInt(vals("total downloaded"))))
         End Function
-        Private Function QueueOnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object))) As ifuture
+        Private Function QueueOnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of UInt16)) As ifuture
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Dim vals = pickle.Value
             Return inQueue.QueueAction(Sub() OnReceivePeerConnectionInfo(player:=player,
-                                                                         flags:=CUInt(vals("player bitflags"))))
+                                                                         flags:=pickle.Value))
         End Function
 
         Private Sub OnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal flags As UInt32)

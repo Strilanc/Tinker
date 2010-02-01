@@ -1,4 +1,5 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+Namespace WC3
     Public NotInheritable Class W3ConnectingPlayer
         Private ReadOnly _name As InvariantString
         Private ReadOnly _peerKey As UInteger
@@ -13,6 +14,25 @@
             Contract.Invariant(_socket IsNot Nothing)
         End Sub
 
+        Public Sub New(ByVal name As InvariantString,
+                       ByVal gameId As UInteger,
+                       ByVal entryKey As UInteger,
+                       ByVal peerKey As UInteger,
+                       ByVal listenPort As UShort,
+                       ByVal remoteEndPoint As Net.IPEndPoint,
+                       ByVal socket As W3Socket)
+            Contract.Requires(remoteEndPoint IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
+            Me._name = name
+            Me._peerKey = peerKey
+            Me._listenPort = listenPort
+            Me._remoteEndPoint = remoteEndPoint
+            Me._socket = socket
+            Me._gameId = gameId
+            Me._entryKey = entryKey
+        End Sub
+
+#Region "Properties"
         Public ReadOnly Property Name As InvariantString
             Get
                 Return _name
@@ -50,24 +70,7 @@
                 Return _socket
             End Get
         End Property
-
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal gameId As UInteger,
-                       ByVal entryKey As UInteger,
-                       ByVal peerKey As UInteger,
-                       ByVal listenPort As UShort,
-                       ByVal remoteEndPoint As Net.IPEndPoint,
-                       ByVal socket As W3Socket)
-            Contract.Requires(remoteEndPoint IsNot Nothing)
-            Contract.Requires(socket IsNot Nothing)
-            Me._name = name
-            Me._peerKey = peerKey
-            Me._listenPort = listenPort
-            Me._remoteEndPoint = remoteEndPoint
-            Me._socket = socket
-            Me._gameId = gameId
-            Me._entryKey = entryKey
-        End Sub
+#End Region
     End Class
 
     Public NotInheritable Class W3ConnectingPeer
@@ -93,49 +96,60 @@
         Public ReadOnly ip As Net.IPAddress
         Public ReadOnly peerKey As UInteger
         Private WithEvents _socket As W3Socket
-        Public Event ReceivedPacket(ByVal sender As W3Peer, ByVal packet As Protocol.Packet)
+        Private ReadOnly _packetHandler As Protocol.W3PacketHandler
         Public Event Disconnected(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
-        Public ReadOnly Property PID As PID
-            Get
-                Return _pid
-            End Get
-        End Property
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_packetHandler IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal pid As PID,
                        ByVal listenPort As UShort,
                        ByVal ip As Net.IPAddress,
-                       ByVal peerKey As UInt32)
+                       ByVal peerKey As UInt32,
+                       Optional ByVal logger As Logger = Nothing)
             Contract.Assume(ip IsNot Nothing)
             Me.name = name
+            Me._packetHandler = New Protocol.W3PacketHandler(Me.name, logger)
             Me._pid = pid
             Me.listenPort = listenPort
             Me.ip = ip
             Me.peerKey = peerKey
         End Sub
 
+        Public ReadOnly Property PID As PID
+            Get
+                Return _pid
+            End Get
+        End Property
         Public ReadOnly Property Socket As W3Socket
             Get
                 Return _socket
             End Get
         End Property
+
         Public Sub SetSocket(ByVal socket As W3Socket)
             Me._socket = socket
             If socket Is Nothing Then Return
             AsyncProduceConsumeUntilError2(
                 producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=Sub(packetData)
-                              RaiseEvent ReceivedPacket(Me, Protocol.Packet.FromData(CType(packetData(1), Protocol.PacketId), packetData.SubView(4)))
-                          End Sub,
+                consumer:=AddressOf _packetHandler.HandlePacket,
                 errorHandler:=Sub(exception)
                                   'ignore
                               End Sub)
         End Sub
 
-        Private Sub socket_Disconnected(ByVal sender As WC3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
+        Public Function AddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
+                                               ByVal jar As IJar(Of T),
+                                               ByVal handler As Func(Of IPickle(Of T), ifuture)) As IDisposable
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return _packetHandler.AddHandler(id, Function(data) handler(jar.Parse(data)))
+        End Function
+
+        Private Sub OnDisconnected(ByVal sender As WC3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected
             RaiseEvent Disconnected(Me, expected, reason)
         End Sub
     End Class

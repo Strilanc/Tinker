@@ -124,12 +124,14 @@
                                    Protocol.Packets.Pong,
                                    handler:=Function(pickle)
                                                 outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
-                                                Return pinger.QueueReceivedPong(CUInt(pickle.Value("salt")))
+                                                Return pinger.QueueReceivedPong(pickle.Value)
                                             End Function)
             AddQueuedPacketHandler(Protocol.PacketId.NonGameAction,
                                    Protocol.Packets.NonGameAction,
                                    handler:=AddressOf ReceiveNonGameAction)
-            AddQueuedPacketHandler(Protocol.Packets.Leaving, AddressOf ReceiveLeaving)
+            AddQueuedPacketHandler(Protocol.PacketId.Leaving,
+                                   Protocol.Packets.Leaving,
+                                   handler:=AddressOf ReceiveLeaving)
             AddQueuedPacketHandler(Protocol.Packets.MapFileDataReceived, AddressOf IgnorePacket)
             AddQueuedPacketHandler(Protocol.Packets.MapFileDataProblem, AddressOf IgnorePacket)
 

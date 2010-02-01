@@ -148,9 +148,7 @@ Public Class WC3ProtocolTest
     Public Sub LanDestroyGameTest()
         JarTest(Packets.LanDestroyGame,
                 data:={20, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"game id", 20}
-                    })
+                value:=20)
     End Sub
     <TestMethod()>
     Public Sub LanRefreshGameTest()
@@ -180,9 +178,8 @@ Public Class WC3ProtocolTest
     Public Sub LeavingTest()
         JarTest(Packets.Leaving,
                 data:={7, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"leave type", PlayerLeaveType.Lose}
-                    })
+                value:=PlayerLeaveType.Lose,
+                equater:=Function(e1, e2) e1 = e2)
     End Sub
     <TestMethod()>
     Public Sub LobbyStateTest()
@@ -251,9 +248,7 @@ Public Class WC3ProtocolTest
     Public Sub NewHostTest()
         JarTest(Packets.NewHost,
                 data:={1},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"player index", 1}
-                    })
+                value:=1)
     End Sub
     <TestMethod()>
     Public Sub NonGameActionTest()
@@ -358,17 +353,13 @@ Public Class WC3ProtocolTest
     Public Sub OtherPlayerReadyTest()
         JarTest(Packets.OtherPlayerReady,
                 data:={3},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"player index", 3}
-                    })
+                value:=3)
     End Sub
     <TestMethod()>
     Public Sub PeerConnectionInfoTest()
         JarTest(Packets.PeerConnectionInfo,
                 data:={7, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"player bitflags", 7}
-                    })
+                value:=7)
     End Sub
     <TestMethod()>
     Public Sub PeerKnockTest()
@@ -402,25 +393,19 @@ Public Class WC3ProtocolTest
     Public Sub PeerPongTest()
         JarTest(Packets.PeerPong,
                 data:={&HEF, &HBE, &HAD, &HDE},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"salt", &HDEADBEEFUI}
-                    })
+                value:=&HDEADBEEFUI)
     End Sub
     <TestMethod()>
     Public Sub PingTest()
         JarTest(Packets.Ping,
                 data:={&HEF, &HBE, &HAD, &HDE},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"salt", &HDEADBEEFUI}
-                    })
+                value:=&HDEADBEEFUI)
     End Sub
     <TestMethod()>
     Public Sub PongTest()
         JarTest(Packets.Pong,
                 data:={&HEF, &HBE, &HAD, &HDE},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"salt", &HDEADBEEFUI}
-                    })
+                value:=&HDEADBEEFUI)
     End Sub
     <TestMethod()>
     Public Sub ReadyTest()
@@ -432,9 +417,8 @@ Public Class WC3ProtocolTest
     Public Sub RejectEntryTest()
         JarTest(Packets.RejectEntry,
                 data:={27, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"reason", RejectReason.IncorrectPassword}
-                    })
+                value:=RejectReason.IncorrectPassword,
+                equater:=Function(e1, e2) e1 = e2)
     End Sub
     <TestMethod()>
     Public Sub RemovePlayerFromLagScreenTest()
@@ -544,7 +528,8 @@ Public Class WC3ProtocolTest
         JarTest(Packets.Tock,
                 data:={1, 2, 3, 4, 5},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"game state checksum", New Byte() {1, 2, 3, 4, 5}.AsReadableList}
+                        {"unknown", 1},
+                        {"game state checksum", &H5040302UI}
                     })
     End Sub
 End Class

@@ -145,7 +145,7 @@ Public NotInheritable Class PacketSocket
                 If dataException IsNot Nothing Then
                     Disconnect(expected:=False, reason:=dataException.ToString)
                 Else
-                    Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)
+                    Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
                 End If
             End Sub)
         Return result
@@ -154,13 +154,13 @@ Public NotInheritable Class PacketSocket
     Public Sub WritePacket(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
         packetStreamer.WritePacket(data) '[modifies size bytes, do not move after log statement]
-        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)
+        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
     End Sub
 
     Public Sub WriteRawData(ByVal data() As Byte)
         Contract.Requires(data IsNot Nothing)
         _stream.Write(data, 0, data.Length)
-        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.AssumeNotNull.ToHexString), LogMessageType.DataRaw)
+        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
     End Sub
 
     Public ReadOnly Property SubStream As IO.Stream

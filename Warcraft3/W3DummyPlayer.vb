@@ -1,4 +1,6 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+
+Namespace WC3
     Public Enum DummyPlayerMode
         DownloadMap
         EnterGame
@@ -9,7 +11,7 @@
     Public NotInheritable Class W3DummyPlayer
         Private ReadOnly name As String
         Private ReadOnly listenPort As UShort
-        Private ReadOnly ref As ICallQueue
+        Private ReadOnly inQueue As ICallQueue
         Private ReadOnly otherPlayers As New List(Of W3Peer)
         Private ReadOnly logger As Logger
         Private WithEvents socket As W3Socket
@@ -19,12 +21,16 @@
         Private dl As MapDownload
         Private poolPort As PortPool.PortHandle
         Private mode As DummyPlayerMode
+        Private ReadOnly _playerHooks As New Dictionary(Of W3Peer, List(Of IDisposable))
+        Private ReadOnly _packetHandler As Protocol.W3PacketHandler
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(ref IsNot Nothing)
+            Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(name IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(otherPlayers IsNot Nothing)
+            Contract.Invariant(_playerHooks IsNot Nothing)
+            Contract.Invariant(_packetHandler IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -42,19 +48,28 @@
             Me.name = name
             Me.mode = mode
             Me.listenPort = listenPort
-            Me.ref = New TaskedCallQueue
+            Me.inQueue = New TaskedCallQueue
             Me.logger = If(logger, New Logger)
             If listenPort <> 0 Then accepter.Accepter.OpenPort(listenPort)
         End Sub
 
 #Region "Networking"
+        Private Function AddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
+                                                ByVal jar As IJar(Of T),
+                                                ByVal handler As Func(Of IPickle(Of T), ifuture)) As IDisposable
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return _packetHandler.AddHandler(id, Function(data) handler(jar.Parse(data)))
+        End Function
+
         Public Function QueueConnect(ByVal hostName As String, ByVal port As UShort) As IFuture
             Contract.Requires(hostName IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return ref.QueueAction(Sub()
-                                       Contract.Assume(hostName IsNot Nothing)
-                                       Connect(hostName, port)
-                                   End Sub)
+            Return inQueue.QueueAction(Sub()
+                                           Contract.Assume(hostName IsNot Nothing)
+                                           Connect(hostName, port)
+                                       End Sub)
         End Function
         Private Sub Connect(ByVal hostName As String, ByVal port As UShort)
             Contract.Requires(hostName IsNot Nothing)
@@ -68,78 +83,112 @@
                                                    logger:=Me.logger,
                                                    clock:=New SystemClock))
 
+            AddPacketHandler(id:=Protocol.PacketId.Greet,
+                             jar:=Protocol.Packets.Greet,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveGreet(pickle)))
+            AddPacketHandler(id:=Protocol.PacketId.HostMapInfo,
+                             jar:=Protocol.Packets.HostMapInfo,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveHostMapInfo(pickle)))
+            AddPacketHandler(id:=Protocol.PacketId.Ping,
+                             jar:=Protocol.Packets.Ping,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceivePing(pickle)))
+            AddPacketHandler(id:=Protocol.PacketId.HostMapInfo,
+                             jar:=Protocol.Packets.HostMapInfo,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveHostMapInfo(pickle)))
+            AddPacketHandler(id:=Protocol.PacketId.OtherPlayerJoined,
+                             jar:=Protocol.Packets.OtherPlayerJoined,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveOtherPlayerJoined(pickle)))
+            AddPacketHandler(id:=Protocol.PacketId.OtherPlayerLeft,
+                             jar:=Protocol.Packets.OtherPlayerLeft,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveOtherPlayerLeft(pickle)))
+            AddPacketHandler(id:=Protocol.PacketId.StartLoading,
+                             jar:=Protocol.Packets.StartLoading,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveStartLoading(pickle)))
+            AddPacketHandler(id:=Protocol.PacketId.Tick,
+                             jar:=Protocol.Packets.Tick,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveTick(pickle)))
+            AddPacketHandler(id:=Protocol.PacketId.MapFileData,
+                             jar:=Protocol.Packets.MapFileData,
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveMapFileData(pickle)))
+
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=Function(packetData) ref.QueueAction(
-                    Sub()
-                        Dim packet = WC3.Protocol.Packet.FromData(CType(packetData(1), Protocol.PacketId), packetData.SubView(4))
-                        Dim id = packet.id
-                        Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
-                        Contract.Assume(vals IsNot Nothing)
-                        Try
-                            Select Case id
-                                Case Protocol.PacketId.Greet
-                                    index = New PID(CByte(vals("player index")))
-                                Case Protocol.PacketId.HostMapInfo
-                                    If mode = DummyPlayerMode.DownloadMap Then
-                                        dl = New MapDownload(CStr(vals("path")),
-                                                             CUInt(vals("size")),
-                                                             CUInt(vals("crc32")),
-                                                             CUInt(vals("xoro checksum")),
-                                                             CType(vals("sha1 checksum"), IList(Of Byte)).AsReadableList)
-                                        socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, 0))
-                                    Else
-                                        socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, CUInt(vals("size"))))
-                                    End If
-                                Case Protocol.PacketId.Ping
-                                    socket.SendPacket(Protocol.MakePong(CUInt(vals("salt"))))
-                                Case Protocol.PacketId.OtherPlayerJoined
-                                    Dim ext_addr = CType(vals("external address"), Dictionary(Of InvariantString, Object))
-                                    Dim player = New W3Peer(CStr(vals("name")),
-                                                            New PID(CByte(vals("index"))),
-                                                            CUShort(ext_addr("port")),
-                                                            New Net.IPAddress(CType(ext_addr("ip"), Byte())),
-                                                            CUInt(vals("peer key")))
-                                    otherPlayers.Add(player)
-                                    AddHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
-                                    AddHandler player.Disconnected, AddressOf OnPeerDisconnect
-                                Case Protocol.PacketId.OtherPlayerLeft
-                                    Dim player = (From p In otherPlayers Where p.PID.Index = CByte(vals("player index"))).FirstOrDefault
-                                    If player IsNot Nothing Then
-                                        otherPlayers.Remove(player)
-                                        RemoveHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
-                                        RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect
-                                    End If
-                                Case Protocol.PacketId.StartLoading
-                                    If mode = DummyPlayerMode.DownloadMap Then
-                                        Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
-                                    ElseIf mode = DummyPlayerMode.EnterGame Then
-                                        Call New SystemClock().AsyncWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(Protocol.MakeReady()))
-                                    End If
-                                Case Protocol.PacketId.Tick
-                                    If CUShort(vals("time span")) > 0 Then
-                                        socket.SendPacket(Protocol.MakeTock())
-                                    End If
-                                Case Protocol.PacketId.MapFileData
-                                    Dim pos = CUInt(dl.file.Position)
-                                    If ReceiveDLMapChunk(vals) Then
-                                        Disconnect(expected:=True, reason:="Download finished.")
-                                    Else
-                                        socket.SendPacket(Protocol.MakeMapFileDataReceived(New PID(1), Me.index, pos))
-                                    End If
-                            End Select
-                        Catch e As Exception
-                            Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".Frmt(id, name, e)
-                            logger.Log(msg, LogMessageType.Problem)
-                            e.RaiseAsUnexpected(msg)
-                        End Try
-                    End Sub),
+                consumer:=AddressOf _packetHandler.HandlePacket,
                 errorHandler:=Sub(exception)
                                   'ignore
                               End Sub
             )
 
             socket.SendPacket(Protocol.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
+        End Sub
+        Private Sub OnReceiveGreet(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            index = New PID(CByte(pickle.Value("player index")))
+        End Sub
+        Private Sub OnReceiveHostMapInfo(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            If mode = DummyPlayerMode.DownloadMap Then
+                dl = New MapDownload(CStr(pickle.Value("path")),
+                                     CUInt(pickle.Value("size")),
+                                     CUInt(pickle.Value("crc32")),
+                                     CUInt(pickle.Value("xoro checksum")),
+                                     CType(pickle.Value("sha1 checksum"), IReadableList(Of Byte)))
+                socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, 0))
+            Else
+                socket.SendPacket(Protocol.MakeClientMapInfo(Protocol.MapTransferState.Idle, CUInt(pickle.Value("size"))))
+            End If
+        End Sub
+        Private Sub OnReceivePing(ByVal pickle As IPickle(Of UInt32))
+            socket.SendPacket(Protocol.MakePong(pickle.Value))
+        End Sub
+        Private Sub OnReceiveOtherPlayerJoined(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            Dim ext_addr = CType(pickle.Value("external address"), Dictionary(Of InvariantString, Object))
+            Dim player = New W3Peer(CStr(pickle.Value("name")),
+                                    New PID(CByte(pickle.Value("index"))),
+                                    CUShort(ext_addr("port")),
+                                    New Net.IPAddress(CType(ext_addr("ip"), Byte())),
+                                    CUInt(pickle.Value("peer key")))
+            otherPlayers.Add(player)
+            Dim hooks = New List(Of IDisposable)
+            hooks.Add(player.AddPacketHandler(
+                            id:=Protocol.PacketId.PeerPing,
+                            jar:=Protocol.Packets.PeerPing,
+                            handler:=Function(value) inQueue.QueueAction(Sub() OnPeerReceivePeerPing(player, value))))
+            hooks.Add(player.AddPacketHandler(
+                            id:=Protocol.PacketId.MapFileData,
+                            jar:=Protocol.Packets.MapFileData,
+                            handler:=Function(value) inQueue.QueueAction(Sub() OnPeerReceiveMapFileData(player, value))))
+            AddHandler player.Disconnected, AddressOf OnPeerDisconnect
+            hooks.Add(New DelegatedDisposable(Sub() RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect))
+            _playerHooks(player) = hooks
+        End Sub
+        Private Sub OnReceiveOtherPlayerLeft(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            Dim player = (From p In otherPlayers Where p.PID.Index = CByte(pickle.Value("player index"))).FirstOrDefault
+            If player IsNot Nothing Then
+                otherPlayers.Remove(player)
+                For Each e In _playerHooks(player)
+                    e.Dispose()
+                Next e
+                _playerHooks.Remove(player)
+            End If
+        End Sub
+        Private Sub OnReceiveStartLoading(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            If mode = DummyPlayerMode.DownloadMap Then
+                Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
+            ElseIf mode = DummyPlayerMode.EnterGame Then
+                Call New SystemClock().AsyncWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(Protocol.MakeReady()))
+            End If
+        End Sub
+        Private Sub OnReceiveTick(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            If CUShort(pickle.Value("time span")) > 0 Then
+                socket.SendPacket(Protocol.MakeTock(0, 0))
+            End If
+        End Sub
+        Private Sub OnReceiveMapFileData(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            Dim pos = CUInt(dl.file.Position)
+            If ReceiveDLMapChunk(pickle.Value) Then
+                Disconnect(expected:=True, reason:="Download finished.")
+            Else
+                socket.SendPacket(Protocol.MakeMapFileDataReceived(New PID(1), Me.index, pos))
+            End If
         End Sub
 
         Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of InvariantString, Object)) As Boolean
@@ -162,11 +211,11 @@
             socket.SendPacket(Protocol.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.PID))
         End Sub
 
-        Private Sub c_Disconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
-            ref.QueueAction(Sub()
-                                Contract.Assume(reason IsNot Nothing)
-                                Disconnect(expected, reason)
-                            End Sub)
+        Private Sub OnDisconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
+            inQueue.QueueAction(Sub()
+                                    Contract.Assume(reason IsNot Nothing)
+                                    Disconnect(expected, reason)
+                                End Sub)
         End Sub
         Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
@@ -176,8 +225,10 @@
                 If player.Socket IsNot Nothing Then
                     player.Socket.Disconnect(expected, reason)
                     player.SetSocket(Nothing)
-                    RemoveHandler player.ReceivedPacket, AddressOf OnPeerReceivePacket
-                    RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect
+                    For Each e In _playerHooks(player)
+                        e.Dispose()
+                    Next e
+                    _playerHooks.Remove(player)
                 End If
             Next player
             otherPlayers.Clear()
@@ -189,9 +240,9 @@
 #End Region
 
 #Region "Peer Networking"
-        Private Sub c_PeerConnection(ByVal sender As W3PeerConnectionAccepter,
+        Private Sub OnPeerConnection(ByVal sender As W3PeerConnectionAccepter,
                                      ByVal acceptedPlayer As W3ConnectingPeer) Handles accepter.Connection
-            ref.QueueAction(
+            inQueue.QueueAction(
                 Sub()
                     Dim player = (From p In otherPlayers Where p.PID = acceptedPlayer.pid).FirstOrDefault
                     Dim socket = acceptedPlayer.socket
@@ -210,7 +261,7 @@
         End Sub
 
         Private Sub OnPeerDisconnect(ByVal sender As W3Peer, ByVal expected As Boolean, ByVal reason As String)
-            ref.QueueAction(
+            inQueue.QueueAction(
                 Sub()
                     logger.Log("{0}'s peer connection has closed ({1}).".Frmt(sender.name, reason), LogMessageType.Negative)
                     sender.SetSocket(Nothing)
@@ -219,32 +270,25 @@
             )
         End Sub
 
-        Private Sub OnPeerReceivePacket(ByVal sender As W3Peer,
-                                        ByVal packet As Protocol.Packet)
-            ref.QueueAction(
-                Sub()
-                    Try
-                        Select Case packet.id
-                            Case Protocol.PacketId.PeerPing
-                                Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
-                                sender.Socket.SendPacket(Protocol.MakePeerPing(CUInt(vals("salt")), 1))
-                                sender.Socket.SendPacket(Protocol.MakePeerPong(CUInt(vals("salt"))))
-                            Case Protocol.PacketId.MapFileData
-                                Dim vals = CType(packet.Payload.Value, Dictionary(Of InvariantString, Object))
-                                Dim pos = CUInt(dl.file.Position)
-                                If ReceiveDLMapChunk(vals) Then
-                                    Disconnect(expected:=True, reason:="Download finished.")
-                                Else
-                                    sender.Socket.SendPacket(Protocol.MakeMapFileDataReceived(sender.PID, Me.index, pos))
-                                End If
-                        End Select
-                    Catch e As Exception
-                        Dim msg = "(Ignored) Error handling packet of type {0} from {1}: {2}".Frmt(packet.id, name, e)
-                        logger.Log(msg, LogMessageType.Problem)
-                        e.RaiseAsUnexpected(msg)
-                    End Try
-                End Sub
-            )
+        Private Sub OnPeerReceivePeerPing(ByVal sender As W3Peer,
+                                          ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            Contract.Requires(sender IsNot Nothing)
+            Contract.Requires(pickle IsNot Nothing)
+            Dim vals = pickle.Value
+            sender.Socket.SendPacket(Protocol.MakePeerPing(CUInt(vals("salt")), 1))
+            sender.Socket.SendPacket(Protocol.MakePeerPong(CUInt(vals("salt"))))
+        End Sub
+        Private Sub OnPeerReceiveMapFileData(ByVal sender As W3Peer,
+                                             ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+            Contract.Requires(sender IsNot Nothing)
+            Contract.Requires(pickle IsNot Nothing)
+            Dim vals = pickle.Value
+            Dim pos = CUInt(dl.file.Position)
+            If ReceiveDLMapChunk(vals) Then
+                Disconnect(expected:=True, reason:="Download finished.")
+            Else
+                sender.Socket.SendPacket(Protocol.MakeMapFileDataReceived(sender.PID, Me.index, pos))
+            End If
         End Sub
 #End Region
     End Class

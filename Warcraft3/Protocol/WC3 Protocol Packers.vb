@@ -60,8 +60,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeReject(ByVal reason As RejectReason) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(Packets.RejectEntry, New Dictionary(Of InvariantString, Object) From {
-                    {"reason", reason}})
+            Return Packet.FromValue(PacketId.RejectEntry, Packets.RejectEntry, reason)
         End Function
         <Pure()>
         Public Function MakeHostMapInfo(ByVal map As Map,
@@ -94,15 +93,13 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakePing(ByVal salt As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(Packets.Ping, New Dictionary(Of InvariantString, Object) From {
-                    {"salt", salt}})
+            Return Packet.FromValue(PacketId.Ping, Packets.Ping, salt)
         End Function
 
         <Pure()>
         Public Function MakeOtherPlayerReady(ByVal pid As PID) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(Packets.OtherPlayerReady, New Dictionary(Of InvariantString, Object) From {
-                    {"player index", pid.Index}})
+            Return Packet.FromValue(PacketId.OtherPlayerReady, Packets.OtherPlayerReady, pid.Index)
         End Function
         <Pure()>
         Public Function MakeOtherPlayerLeft(ByVal pid As PID,
@@ -270,8 +267,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeLanDestroyGame(ByVal gameId As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(Packets.LanDestroyGame, New Dictionary(Of InvariantString, Object) From {
-                    {"game id", gameId}})
+            Return Packet.FromValue(PacketId.LanDestroyGame, Packets.LanDestroyGame, gameId)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -306,26 +302,22 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakePong(ByVal salt As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(Packets.Pong, New Dictionary(Of InvariantString, Object) From {
-                    {"salt", salt}})
+            Return Packet.FromValue(PacketId.Pong, Packets.Pong, salt)
         End Function
         <Pure()>
-        Public Function MakeTock(Optional ByVal checksum As IReadableList(Of Byte) = Nothing) As Packet
+        Public Function MakeTock(ByVal unknown As Byte,
+                                 ByVal checksum As UInt32) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            If checksum Is Nothing Then checksum = New Byte() {0, 0, 0, 0, 0}.AsReadableList
-            If checksum.Count <> 5 Then Throw New ArgumentException("Checksum length must be 5.")
             Return New Packet(Packets.Tock, New Dictionary(Of InvariantString, Object) From {
+                    {"unknown", unknown},
                     {"game state checksum", checksum}})
         End Function
         <Pure()>
         Public Function MakePeerConnectionInfo(ByVal pids As IEnumerable(Of PID)) As Packet
             Contract.Requires(pids IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim bitFlags = From pid In pids Select CUShort(1) << (pid.Index - 1)
-            Dim dword = bitFlags.ReduceUsing(Function(flag1, flag2) flag1 Or flag2)
-
-            Return New Packet(Packets.PeerConnectionInfo, New Dictionary(Of InvariantString, Object) From {
-                    {"player bitflags", dword}})
+            Dim bitFlags = (From pid In pids Select CUShort(1) << (pid.Index - 1)).ReduceUsing(Function(flag1, flag2) flag1 Or flag2)
+            Return Packet.FromValue(PacketId.PeerConnectionInfo, Packets.PeerConnectionInfo, bitFlags)
         End Function
 
         <Pure()>
@@ -352,8 +344,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakePeerPong(ByVal salt As UInt32) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(Packets.PeerPong, New Dictionary(Of InvariantString, Object) From {
-                    {"salt", salt}})
+            Return Packet.FromValue(PacketId.PeerPong, Packets.PeerPong, salt)
         End Function
     End Module
 End Namespace

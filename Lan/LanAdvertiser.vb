@@ -160,9 +160,9 @@ Namespace Lan
                 data = Concat({WC3.Protocol.Packets.PacketPrefix, pk.id}, CUShort(data.Length + 4).Bytes(), data)
 
                 'Log
+                _logger.Log(Function() "Sending to {0}: {1}".Frmt(pk.id, data.ToHexString), LogMessageType.DataRaw)
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, targetHost), LogMessageType.DataEvent)
                 _logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(pk.id, targetHost, pk.Payload.Description.Value), LogMessageType.DataParsed)
-                _logger.Log(Function() "{0}: {1}".Frmt(pk.id, data.ToHexString), LogMessageType.DataRaw)
 
                 'Send
                 _socket.Send(data, data.Length, targetHost, targetPort)

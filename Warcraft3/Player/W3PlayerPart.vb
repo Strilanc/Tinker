@@ -13,10 +13,9 @@ Namespace WC3
         Private Sub IgnorePacket(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
         End Sub
 
-        Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of PlayerLeaveType))
             Contract.Requires(pickle IsNot Nothing)
-            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
-            Dim leaveType = CType(vals("leave type"), PlayerLeaveType)
+            Dim leaveType = pickle.Value
             Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
         End Sub
 
@@ -25,7 +24,7 @@ Namespace WC3
                 If state <> PlayerState.Lobby Then Return 100
                 If isFake Then Return 254 'Not a real player, show "|CF"
                 If _reportedDownloadPosition Is Nothing Then Return 255
-                Return CByte(_reportedDownloadPosition \ _downloadManager.FileSize)
+                Return CByte((_reportedDownloadPosition * 100UL) \ _downloadManager.FileSize)
             End Get
         End Property
 

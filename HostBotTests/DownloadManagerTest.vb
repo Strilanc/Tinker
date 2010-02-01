@@ -165,6 +165,7 @@ Public Class DownloadManagerTest
         BlockOnFuture(game.AddPlayer(player))
 
         player.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
+        clock.Advance(DownloadManager.UpdatePeriod)
         player.ExpectNoPacket()
     End Sub
 

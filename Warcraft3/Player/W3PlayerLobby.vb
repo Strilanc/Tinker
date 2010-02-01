@@ -53,22 +53,22 @@ Namespace WC3
 
         Private Sub LobbyStart()
             state = PlayerState.Lobby
-            AddQueuedPacketHandler(Protocol.Packets.PeerConnectionInfo, AddressOf OnReceivePeerConnectionInfo)
+            AddQueuedPacketHandler(Protocol.PacketId.PeerConnectionInfo,
+                                   Protocol.Packets.PeerConnectionInfo,
+                                   handler:=AddressOf OnReceivePeerConnectionInfo)
             AddQueuedPacketHandler(Protocol.Packets.ClientMapInfo, AddressOf OnReceiveClientMapInfo)
         End Sub
 
-        Private Sub OnReceivePeerConnectionInfo(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Contract.Requires(pickle IsNot Nothing)
-            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
-            Dim dword = CUInt(vals("player bitflags"))
+        Private Sub OnReceivePeerConnectionInfo(ByVal flags As IPickle(Of UInt16))
+            Contract.Requires(flags IsNot Nothing)
             _numPeerConnections = (From i In enumerable.Range(0, 12)
-                                   Where ((dword >> i) And &H1) <> 0).Count
+                                   Where ((flags.Value >> i) And &H1) <> 0).Count
             Contract.Assume(_numPeerConnections <= 12)
             RaiseEvent SuperficialStateUpdated(Me)
         End Sub
         Private Sub OnReceiveClientMapInfo(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(pickle IsNot Nothing)
-            _reportedDownloadPosition = CUInt(pickle.Value("position"))
+            _reportedDownloadPosition = CUInt(pickle.Value("total downloaded"))
             outQueue.QueueAction(Sub() RaiseEvent StateUpdated(Me))
         End Sub
     End Class

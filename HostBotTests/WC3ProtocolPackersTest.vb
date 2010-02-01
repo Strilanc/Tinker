@@ -120,7 +120,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeTockTest()
-        MakeTock(New Byte() {1, 2, 3, 4, 5}.AsReadableList)
+        MakeTock(0, 0)
     End Sub
     <TestMethod()>
     Public Sub MakePeerConnectionInfoTest()
