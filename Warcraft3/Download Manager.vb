@@ -8,6 +8,7 @@ Namespace WC3
         Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect, ByVal position As UInt32) As IFuture
         ReadOnly Property Logger As Logger
         ReadOnly Property Map As Map
+        ReadOnly Property StartPlayerHoldPoint As HoldPoint(Of IPlayerDownloadAspect)
 
         <ContractClassFor(GetType(IGameDownloadAspect))>
         Class ContractClass
@@ -37,11 +38,18 @@ Namespace WC3
                     Throw New NotSupportedException
                 End Get
             End Property
+            Public ReadOnly Property StartPlayerHoldPoint As HoldPoint(Of IPlayerDownloadAspect) Implements IGameDownloadAspect.StartPlayerHoldPoint
+                Get
+                    Contract.Ensures(Contract.Result(Of HoldPoint(Of IPlayerDownloadAspect))() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+            End Property
         End Class
     End Interface
 
     <ContractClass(GetType(IPlayerDownloadAspect.ContractClass))>
     Public Interface IPlayerDownloadAspect
+        Inherits IFutureDisposable
         ReadOnly Property Name As InvariantString
         ReadOnly Property PID As PID
         Function QueueAddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
@@ -51,7 +59,7 @@ Namespace WC3
         Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture
 
         <ContractClassFor(GetType(IPlayerDownloadAspect))>
-        Class ContractClass
+        Shadows Class ContractClass
             Implements IPlayerDownloadAspect
             Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
                 Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
@@ -81,6 +89,14 @@ Namespace WC3
                 Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
+            Public ReadOnly Property FutureDisposed As Strilbrary.Threading.IFuture Implements Strilbrary.Threading.IFutureDisposable.FutureDisposed
+                Get
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public Sub Dispose() Implements IDisposable.Dispose
+                Throw New NotSupportedException
+            End Sub
         End Class
     End Interface
 
@@ -416,11 +432,11 @@ Namespace WC3
                 _defaultClient.ReportedPosition = game.Map.FileSize
             End If
 
-            _hooks.Add(game.QueueCreatePlayersAsyncView(
-                                adder:=Sub(sender, player) inQueue.QueueAction(Sub() OnGameAddedPlayer(player)),
-                                remover:=Sub(sender, player) inQueue.QueueAction(Sub() OnGameRemovedPlayer(player))))
-
             _hooks.Add(clock.AsyncRepeat(UpdatePeriod, Sub() inQueue.QueueAction(AddressOf OnTick)).Futurized)
+
+            _hooks.Add(game.StartPlayerHoldPoint.IncludeFutureHandler(
+                            Function(arg) inQueue.QueueFunc(
+                                    Function() OnGameStartPlayerHold(arg)).Defuturized).Futurized)
         End Sub
 
         '''<summary>Enumates the player clients as well as the default client.</summary>
@@ -502,7 +518,7 @@ Namespace WC3
 #End Region
 
 #Region "Game-Triggered"
-        Private Sub OnGameAddedPlayer(ByVal player As IPlayerDownloadAspect)
+        Private Function OnGameStartPlayerHold(ByVal player As IPlayerDownloadAspect) As IFuture
             Contract.Requires(player IsNot Nothing)
 
             Dim playerHooks = New List(Of IFuture(Of IDisposable))() From {
@@ -519,12 +535,15 @@ Namespace WC3
 
             _playerClients(player) = New TransferClient(player, _game.Map, _clock, playerHooks)
             If _defaultClient IsNot Nothing Then _playerClients(player).Links.Add(_defaultClient)
-        End Sub
-        Private Sub OnGameRemovedPlayer(ByVal player As IPlayerDownloadAspect)
-            Contract.Requires(player IsNot Nothing)
-            _playerClients(player).Dispose()
-            _playerClients.Remove(player)
-        End Sub
+
+            player.FutureDisposed.QueueCallOnSuccess(inQueue,
+                Sub()
+                    _playerClients(player).Dispose()
+                    _playerClients.Remove(player)
+                End Sub)
+
+            Return playerHooks.Defuturized
+        End Function
 #End Region
 
 #Region "Communication-Triggered"

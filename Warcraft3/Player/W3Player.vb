@@ -148,8 +148,8 @@
                                                                    leaveType:=PlayerLeaveType.Disconnect,
                                                                    reason:="Stopped responding to pings.")
         End Sub
-        Public Sub Start()
-            BeginReading()
+        Public Sub QueueStart()
+            inQueue.QueueAction(Sub() BeginReading())
         End Sub
 
         Private Sub BeginReading()

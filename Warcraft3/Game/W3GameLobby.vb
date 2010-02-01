@@ -1,5 +1,6 @@
 ﻿Namespace WC3
     Partial Public NotInheritable Class Game
+        Private ReadOnly _startPlayerHoldPoint As New HoldPoint(Of IPlayerDownloadAspect)()
         Private _downloadManager As DownloadManager
         Private ReadOnly freeIndexes As New List(Of PID)
         Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds, clock:=New SystemClock())
@@ -21,21 +22,21 @@
         End Sub
         Private Sub InitCreateSlots()
             'create player slots
-            For i = 0 To map.slots.Count - 1
+            For i = 0 To Map.Slots.Count - 1
                 Dim baseSlot = Map.Slots(i)
                 Contract.Assume(baseSlot IsNot Nothing)
                 Dim slot = New Slot(CByte(i), Map.IsMelee)
                 slot.Contents = baseSlot.Contents.Clone(slot)
                 slot.color = baseSlot.color
                 slot.race = baseSlot.race
-                slot.team = baseSlot.team
-                slot.locked = settings.defaultSlotLockState
+                slot.Team = baseSlot.Team
+                slot.locked = settings.DefaultSlotLockState
                 slots.Add(slot)
                 freeIndexes.Add(New PID(CByte(i + 1)))
             Next i
 
             'create observer slots
-            Select Case settings.GameDescription.GameStats.observers
+            Select Case settings.GameDescription.GameStats.Observers
                 Case GameObserverOption.FullObservers, GameObserverOption.Referees
                     For i = Map.Slots.Count To 12 - 1
                         Dim slot = New Slot(CByte(i), Map.IsMelee)
@@ -48,7 +49,7 @@
             End Select
         End Sub
         Private Sub InitProcessArguments()
-            If settings.useMultiObs Then
+            If settings.UseMultiObs Then
                 Contract.Assume(slots.Count = 12)
                 Contract.Assume(freeIndexes.Count > 0)
                 If Map.Slots.Count <= 10 Then
@@ -65,7 +66,7 @@
                 End If
             End If
             TrySetTeamSizes(settings.TeamSizes)
-            For Each reservation In settings.reservations
+            For Each reservation In settings.Reservations
                 ReserveSlot(reservation)
             Next reservation
             If settings.ObserverCount > 0 Then
@@ -238,8 +239,8 @@
             Return newPlayer
         End Function
         Private Function TryRestoreFakeHost() As Player
-            If fakeHostPlayer IsNot Nothing Then  Return Nothing
-            If state > GameState.AcceptingPlayers Then  Return Nothing
+            If fakeHostPlayer IsNot Nothing Then Return Nothing
+            If state > GameState.AcceptingPlayers Then Return Nothing
 
             Dim name = My.Settings.ingame_name
             Contract.Assume(name IsNot Nothing)
@@ -251,6 +252,12 @@
             End Try
         End Function
 
+        Public ReadOnly Property StartPlayerHoldPoint As HoldPoint(Of IPlayerDownloadAspect) Implements IGameDownloadAspect.StartPlayerHoldPoint
+            Get
+                Contract.Ensures(Contract.Result(Of HoldPoint(Of IPlayerDownloadAspect))() IsNot Nothing)
+                Return _startPlayerHoldPoint
+            End Get
+        End Property
         Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
@@ -346,7 +353,7 @@
             AddHandler newPlayer.StateUpdated, Sub() inQueue.QueueAction(AddressOf ChangedLobbyState)
             AddHandler newPlayer.ReceivedNonGameAction, AddressOf QueueReceiveNonGameAction
 
-            outQueue.QueueAction(Sub() newPlayer.Start()) '[out-queued to allow listeners time to add handlers]
+            _startPlayerHoldPoint.Hold(newPlayer).CallWhenReady(Sub() newPlayer.QueueStart()).SetHandled()
             Return newPlayer
         End Function
         Public Function QueueAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
@@ -698,7 +705,7 @@
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If state >= GameState.Loading Then Return '[too late]
             If newTeam = slot.ObserverTeamIndex Then
-                Select Case settings.GameDescription.GameStats.observers
+                Select Case settings.GameDescription.GameStats.Observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
                         '[fine; continue]
                     Case Else

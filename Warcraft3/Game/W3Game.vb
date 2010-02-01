@@ -76,6 +76,7 @@ Namespace WC3
             Contract.Invariant(gameDataQueue IsNot Nothing)
             Contract.Invariant(updateEventThrottle IsNot Nothing)
             Contract.Invariant(slotStateUpdateThrottle IsNot Nothing)
+            Contract.Invariant(_startPlayerHoldPoint IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,

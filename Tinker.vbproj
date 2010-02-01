@@ -197,6 +197,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Library\CachedLookupTable.vb" />
+    <Compile Include="Library\HoldPoint.vb" />
     <Compile Include="Library\DelegatedDisposable.vb" />
     <Compile Include="Pickling\Text Jars.vb" />
     <Compile Include="Pickling\SizePrefixedDataJar.vb" />
@@ -288,7 +289,7 @@
     <Compile Include="Warcraft3\Server\GameSet.vb" />
     <Compile Include="Warcraft3\Server\GameSettings.vb" />
     <Compile Include="Warcraft3\W3GameStatsJar.vb" />
-    <Compile Include="Warcraft3\KeyedEvent.vb" />
+    <Compile Include="Library\KeyedEvent.vb" />
     <Compile Include="Warcraft3\Pinger.vb" />
     <Compile Include="Warcraft3\Protocol\GameAction.vb" />
     <Compile Include="Warcraft3\W3GameDescription.vb" />

@@ -16,6 +16,7 @@ Public Class DownloadManagerTest
         Implements IGameDownloadAspect
         Public Shared ReadOnly HostPid As New PID(1)
         Private Shared ReadOnly _data As Byte() = Enumerable.Repeat(CByte(1), 5000).ToArray
+        Private ReadOnly _startPlayerHoldPoint As New HoldPoint(Of IPlayerDownloadAspect)()
         Private Shared ReadOnly SharedMap As New Map(
             streamFactory:=Function() New IO.MemoryStream(_data, writable:=False),
             advertisedPath:="TestMap",
@@ -41,6 +42,11 @@ Public Class DownloadManagerTest
                 Return SharedMap
             End Get
         End Property
+        Public ReadOnly Property StartPlayerHoldPoint As HoldPoint(Of IPlayerDownloadAspect) Implements IGameDownloadAspect.StartPlayerHoldPoint
+            Get
+                Return _startPlayerHoldPoint
+            End Get
+        End Property
         Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of IGameDownloadAspect, IPlayerDownloadAspect),
                                                     ByVal remover As Action(Of IGameDownloadAspect, IPlayerDownloadAspect)) As IFuture(Of IDisposable) _
                                                     Implements IGameDownloadAspect.QueueCreatePlayersAsyncView
@@ -59,8 +65,7 @@ Public Class DownloadManagerTest
         Public Function AddPlayer(ByVal player As TestPlayer) As ifuture
             SyncLock Me
                 _players.Add(player)
-                Return outQueue.QueueAction(Sub()
-                                            End Sub)
+                Return _startPlayerHoldPoint.Hold(player)
             End SyncLock
         End Function
         Public Sub RemovePlayer(ByVal player As TestPlayer)
@@ -70,6 +75,7 @@ Public Class DownloadManagerTest
         End Sub
     End Class
     Private Class TestPlayer
+        Inherits FutureDisposable
         Implements IPlayerDownloadAspect
         Private ReadOnly _failFuture As New FutureAction()
         Private ReadOnly _pid As PID
@@ -77,16 +83,20 @@ Public Class DownloadManagerTest
         Private ReadOnly _lock As New System.Threading.ManualResetEvent(initialState:=False)
         Private ReadOnly _handler As New W3PacketHandler("TestSource")
         Private ReadOnly _logger As Logger
-        Public Sub New(ByVal pid As PID, ByVal logger As Logger)
+        Private ReadOnly _name As InvariantString
+        Public Sub New(ByVal pid As PID,
+                       ByVal logger As Logger,
+                       Optional ByVal name As InvariantString? = Nothing)
             Me._pid = pid
             Me._logger = logger
+            Me._name = If(name Is Nothing, "TestPlayer{0}".Frmt(pid.Index), name.Value.ToString)
         End Sub
         Public Function MakePacketOtherPlayerJoined() As Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Return MakeOtherPlayerJoined(Name, PID, 0, New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
         End Function
         Public ReadOnly Property Name As InvariantString Implements IPlayerDownloadAspect.Name
             Get
-                Return "TestPlayer{0}".Frmt(PID.Index)
+                Return _name
             End Get
         End Property
         Public ReadOnly Property PID As PID Implements IPlayerDownloadAspect.PID
@@ -113,13 +123,15 @@ Public Class DownloadManagerTest
             End SyncLock
         End Function
 
-        Public Sub InjectReceivedPacket(ByVal packet As Packet)
+        Public Function InjectReceivedPacket(ByVal packet As Packet) As IFuture
             SyncLock Me
-                _handler.HandlePacket(New Byte() {Packets.PacketPrefix, packet.id}.Concat(
-                                      CUShort(packet.Payload.Data.Count + 4).Bytes).Concat(
-                                      packet.Payload.Data).ToArray.AsReadableList).Catch(Sub(ex) _failFuture.SetFailed(ex))
+                Return _handler.HandlePacket(
+                        New Byte() {Packets.PacketPrefix, packet.id}.Concat(
+                                    CUShort(packet.Payload.Data.Count + 4).Bytes).Concat(
+                                    packet.Payload.Data).ToArray.AsReadableList
+                ).Catch(Sub(ex) _failFuture.SetFailed(ex))
             End SyncLock
-        End Sub
+        End Function
         Public Function TryInterceptSentPacket(Optional ByVal timeoutMilliseconds As Integer = 10000) As Packet
             SyncLock Me
                 If _pq.Count > 0 Then Return _pq.Dequeue
@@ -131,7 +143,7 @@ Public Class DownloadManagerTest
             End SyncLock
             Return Nothing
         End Function
-        Public Sub ExpectNoPacket(Optional ByVal timeoutMilliseconds As Integer = 50)
+        Public Sub ExpectNoPacket(Optional ByVal timeoutMilliseconds As Integer = 10)
             Dim packet = TryInterceptSentPacket(timeoutMilliseconds)
             If packet IsNot Nothing Then
                 Throw New IO.InvalidDataException("Unexpected packet.")
@@ -140,8 +152,11 @@ Public Class DownloadManagerTest
         Public Sub ExpectSentPacket(ByVal expected As Packet, Optional ByVal timeoutMilliseconds As Integer = 10000)
             Dim received = TryInterceptSentPacket(timeoutMilliseconds)
             If received Is Nothing Then Throw New IO.IOException("No sent packet intercepted.")
-            If expected.id <> received.id Then Throw New IO.InvalidDataException("Incorrect packet type.")
-            If Not expected.Payload.Data.SequenceEqual(received.Payload.Data) Then Throw New IO.InvalidDataException("Incorrect packet data.")
+            If expected.id <> received.id Then
+                Throw New IO.InvalidDataException("Incorrect packet type: received {0} instead of {1}.".Frmt(received.id, expected.id))
+            ElseIf Not expected.Payload.Data.SequenceEqual(received.Payload.Data) Then
+                Throw New IO.InvalidDataException("Incorrect packet contents: received {0} instead of {1}.".Frmt(received.Payload.Description.Value, expected.Payload.Description.Value))
+            End If
         End Sub
         Public ReadOnly Property FailFuture As IFuture
             Get
@@ -277,35 +292,39 @@ Public Class DownloadManagerTest
         Dim game = New TestGame()
         Dim clock = New ManualClock()
         Dim dm = New DownloadManager(clock, game, allowDownloads:=True, allowUploads:=False)
-        Dim uler1 = New TestPlayer(New PID(2), game.Logger)
-        Dim dler = New TestPlayer(New PID(3), game.Logger)
-        Dim uler2 = New TestPlayer(New PID(4), game.Logger)
-        BlockOnFuture(game.AddPlayer(dler))
-        BlockOnFuture(game.AddPlayer(uler1))
-        BlockOnFuture(game.AddPlayer(uler2))
+        Dim dler = New TestPlayer(New PID(2), game.Logger, "dler")
+        Dim uler1 = New TestPlayer(New PID(3), game.Logger, "uler1")
+        Dim uler2 = New TestPlayer(New PID(4), game.Logger, "uler2")
 
+        'Start initial transfer
+        WaitUntilFutureSucceeds(game.AddPlayer(dler))
+        WaitUntilFutureSucceeds(game.AddPlayer(uler1))
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler1.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        uler2.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.PID, uler2.PID}))
-        uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID}))
-        uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID}))
+        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.PID}))
+        WaitUntilFutureSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID})))
         uler1.ExpectNoPacket()
-        uler2.ExpectNoPacket()
         dler.ExpectNoPacket()
         clock.Advance(DownloadManager.UpdatePeriod)
 
+        'Check for transfer
         dler.ExpectSentPacket(MakeSetDownloadSource(uler1.PID))
         uler1.ExpectSentPacket(MakeSetUploadTarget(dler.PID, 0))
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
-        uler2.ExpectNoPacket()
+
+        'Cancel and start new transfer
+        WaitUntilFutureSucceeds(game.AddPlayer(uler2))
+        uler2.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
+        uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID}))
+        WaitUntilFutureSucceeds(dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.PID, uler2.PID})))
         clock.Advance(DownloadManager.FreezePeriod)
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
         uler2.ExpectNoPacket()
         clock.Advance(DownloadManager.UpdatePeriod)
 
+        'Check for cancellation
         dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.PID, PlayerLeaveType.Disconnect))
         uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.PID, PlayerLeaveType.Disconnect))
         dler.ExpectSentPacket(uler1.MakePacketOtherPlayerJoined())
@@ -313,8 +332,9 @@ Public Class DownloadManagerTest
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
         uler2.ExpectNoPacket()
-
         clock.Advance(DownloadManager.UpdatePeriod)
+
+        'Check for new transfer
         dler.ExpectSentPacket(MakeSetDownloadSource(uler2.PID))
         uler2.ExpectSentPacket(MakeSetUploadTarget(dler.PID, 0))
         dler.ExpectNoPacket()

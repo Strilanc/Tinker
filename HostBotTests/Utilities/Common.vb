@@ -33,6 +33,10 @@ Friend Module TestingCommon
         If future.State <> FutureState.Unknown Then waitHandle.Set()
         Return waitHandle.WaitOne(timeout)
     End Function
+    Public Sub WaitUntilFutureSucceeds(ByVal future As IFuture)
+        Assert.IsTrue(BlockOnFuture(future))
+        Assert.IsTrue(future.State = FutureState.Succeeded)
+    End Sub
 
     Friend Sub JarTest(Of T)(ByVal jar As IJar(Of T),
                              ByVal equater As Func(Of T, T, Boolean),
