@@ -200,14 +200,12 @@ Public Class DownloadManagerTest
                                                   Enumerable.Repeat(CByte(1), Packets.MaxFileDataSize).ToArray.AsReadableList,
                                                   dler.PID,
                                                   TestGame.HostPid))
-            dler.InjectMapDataReceived(p, New PID(1))
             dler.InjectClientMapInfo(MapTransferState.Idle, p)
         Next p
         dler.ExpectSentPacket(MakeMapFileData(game.Map.FileSize.FloorMultiple(Packets.MaxFileDataSize),
                                                 Enumerable.Repeat(CByte(1), CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToArray.AsReadableList,
                                                 dler.PID,
                                                 TestGame.HostPid))
-        dler.InjectMapDataReceived(game.Map.FileSize, TestGame.HostPid)
         dler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         dler.ExpectNoPacket()
 

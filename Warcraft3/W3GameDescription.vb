@@ -34,7 +34,7 @@
         Private ReadOnly _gameStats As GameStats
         Private ReadOnly _gameId As UInt32
         Private ReadOnly _entryKey As UInteger
-        Private ReadOnly _ageTimer As ITimer
+        Private ReadOnly _ageClock As IClock
         Private ReadOnly _baseAge As TimeSpan
         Private ReadOnly _gameType As GameTypes
         Private ReadOnly _state As Bnet.Protocol.GameStates
@@ -48,7 +48,7 @@
             Contract.Invariant(_usedSlotCount >= 0)
             Contract.Invariant(_usedSlotCount <= _totalSlotCount)
             Contract.Invariant(_gameStats IsNot Nothing)
-            Contract.Invariant(_ageTimer IsNot Nothing)
+            Contract.Invariant(_ageClock IsNot Nothing)
         End Sub
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -99,7 +99,7 @@
             Me._gameType = gameType
             Me._gameId = gameId
             Me._entryKey = entryKey
-            Me._ageTimer = clock.StartTimer
+            Me._ageClock = clock.AfterReset
             Me._baseAge = baseAge
             Me._totalSlotCount = totalSlotCount
             Me._usedSlotCount = usedSlotCount
@@ -131,7 +131,7 @@
         End Property
         Public ReadOnly Property Age As TimeSpan
             Get
-                Return _ageTimer.ElapsedTime + _baseAge
+                Return _ageClock.ElapsedTime + _baseAge
             End Get
         End Property
         Public ReadOnly Property GameId As UInteger

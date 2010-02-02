@@ -3,7 +3,7 @@
 
     Private _latency As Double
     Private ReadOnly _timeoutCount As Integer
-    Private ReadOnly _pingQueue As New Queue(Of Tuple(Of UInt32, ITimer))
+    Private ReadOnly _pingQueue As New Queue(Of Tuple(Of UInt32, IClock))
     Private ReadOnly _rng As New Random()
     Private ReadOnly inQueue As New TaskedCallQueue()
     Private ReadOnly _clock As IClock
@@ -42,7 +42,7 @@
         If _pingQueue.Count >= _timeoutCount Then
             RaiseEvent Timeout(Me)
         Else
-            Dim record = New Tuple(Of UInt32, ITimer)(CUInt(_rng.Next()), _clock.StartTimer)
+            Dim record = New Tuple(Of UInt32, IClock)(CUInt(_rng.Next()), _clock.AfterReset())
             _pingQueue.Enqueue(record)
             RaiseEvent SendPing(Me, record.Item1)
         End If

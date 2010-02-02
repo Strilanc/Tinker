@@ -3,13 +3,12 @@ Public NotInheritable Class ThrottledWriteStream
     Inherits WrappedStream
 
     Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
-    Private ReadOnly _clock As IClock
-    Private ReadOnly _timer As ITimer
     Private ReadOnly _queuedWrites As New Queue(Of Byte())
     Private ReadOnly _costEstimator As Func(Of Byte(), Integer)
     Private ReadOnly _costLimit As Double
     Private ReadOnly _recoveryRatePerMillisecond As Double
 
+    Private _timer As RelativeClock
     Private _availableSlack As Double
     Private _usedCost As Double
     Private _throttled As Boolean
@@ -22,7 +21,6 @@ Public NotInheritable Class ThrottledWriteStream
         Contract.Invariant(_usedCost >= 0)
         Contract.Invariant(_costLimit >= 0)
         Contract.Invariant(_recoveryRatePerMillisecond > 0)
-        Contract.Invariant(_clock IsNot Nothing)
         Contract.Invariant(_timer IsNot Nothing)
     End Sub
 
@@ -40,8 +38,7 @@ Public NotInheritable Class ThrottledWriteStream
         Contract.Requires(costLimit >= 0)
         Contract.Requires(costRecoveredPerMillisecond > 0)
 
-        Me._clock = clock
-        Me._timer = clock.StartTimer
+        Me._timer = clock.AfterReset
         Me._availableSlack = initialSlack
         Me._costEstimator = costEstimator
         Me._costLimit = costLimit
@@ -61,7 +58,8 @@ Public NotInheritable Class ThrottledWriteStream
 
         While _queuedWrites.Count > 0
             'Recover over time
-            Dim dt = _timer.Reset()
+            _timer = _timer.AfterReset
+            Dim dt = _timer.StartingTimeOnParentClock
             _usedCost -= dt.TotalMilliseconds * _recoveryRatePerMillisecond
             If _usedCost < 0 Then _usedCost = 0
             'Recover using slack
@@ -74,7 +72,7 @@ Public NotInheritable Class ThrottledWriteStream
             'Wait if necessary
             If _usedCost > _costLimit Then
                 Dim delay = New TimeSpan(ticks:=CLng((_usedCost - _costLimit) / _recoveryRatePerMillisecond * TimeSpan.TicksPerMillisecond))
-                _clock.AsyncWait(delay).QueueCallOnSuccess(inQueue, Sub() PerformWrites(isWaitCallback:=True))
+                _timer.AsyncWait(delay).QueueCallOnSuccess(inQueue, Sub() PerformWrites(isWaitCallback:=True))
                 _throttled = True
                 Return
             End If

@@ -6,24 +6,22 @@ Public NotInheritable Class DeadManSwitch
     Private ReadOnly _period As TimeSpan
     Private _isArmed As Boolean
     Private _wasReset As Boolean
-    Private _timer As ITimer
-    Private ReadOnly _clock As IClock
+    Private _timer As RelativeClock
     Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
 
     Public Event Triggered(ByVal sender As DeadManSwitch)
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(_period.Ticks > 0)
-        Contract.Invariant(_clock IsNot Nothing)
+        Contract.Invariant(_timer IsNot Nothing)
         Contract.Invariant(inQueue IsNot Nothing)
-        Contract.Invariant(Not _isArmed OrElse _timer IsNot Nothing)
     End Sub
 
     Public Sub New(ByVal period As TimeSpan, ByVal clock As IClock)
         Contract.Assume(period.Ticks > 0)
         Contract.Assume(clock IsNot Nothing)
         Me._period = period
-        Me._clock = clock
+        Me._timer = clock.AfterReset
     End Sub
 
     ''' <summary>
@@ -35,7 +33,7 @@ Public NotInheritable Class DeadManSwitch
             Sub()
                 If _isArmed Then Return
                 _isArmed = True
-                _timer = _clock.StartTimer
+                _timer = _timer.AfterReset
                 _wasReset = True
                 OnTimeout()
             End Sub)
@@ -47,7 +45,7 @@ Public NotInheritable Class DeadManSwitch
     Public Function Reset() As IFuture
         Return inQueue.QueueAction(
             Sub()
-                _timer.Reset()
+                _timer = _timer.AfterReset
                 _wasReset = True
             End Sub)
     End Function
@@ -63,15 +61,14 @@ Public NotInheritable Class DeadManSwitch
     End Function
 
     Private Sub OnTimeout()
-        If _timer Is Nothing Then Throw New InvalidStateException("OnTimeout called without running timer.")
         If Not _isArmed Then Return
 
         If _wasReset Then
             _wasReset = False
-            Dim dt = _timer.Reset()
-            _clock.AsyncWait(_period - dt).QueueCallWhenReady(inQueue, Sub() OnTimeout())
+            _timer = _timer.AfterReset
+            Dim dt = _timer.StartingTimeOnParentClock
+            _timer.AsyncWait(_period - dt).QueueCallWhenReady(inQueue, Sub() OnTimeout())
         Else
-            _timer = Nothing
             _isArmed = False
             RaiseEvent Triggered(Me)
         End If
@@ -79,7 +76,12 @@ Public NotInheritable Class DeadManSwitch
 
     Public Overrides Function ToString() As String
         If _isArmed Then
-            Return "Armed: {0} of {1}".Frmt(_period - _timer.ElapsedTime, _period)
+            Dim t = _timer.ElapsedTime
+            If t >= _period Then
+                Return "Probably Firing: {0}".Frmt(_period)
+            Else
+                Return "Armed: {0} of {1}".Frmt(_period - _timer.ElapsedTime, _period)
+            End If
         Else
             Return "Disarmed: {0}".Frmt(_period)
         End If

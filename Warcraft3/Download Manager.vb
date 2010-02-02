@@ -117,9 +117,9 @@ Namespace WC3
             Private ReadOnly _fileSize As UInt32
             Private ReadOnly _downloader As TransferClient
             Private ReadOnly _uploader As TransferClient
-            Private ReadOnly _durationTimer As ITimer
-            Private ReadOnly _lastActivityTimer As ITimer
             Private ReadOnly _startingPosition As UInt32
+            Private _durationTimer As RelativeClock
+            Private _lastActivityTimer As RelativeClock
             Private _totalProgress As UInt32
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -144,8 +144,8 @@ Namespace WC3
                 Me._downloader = downloader
                 Me._uploader = uploader
                 Me._fileSize = filesize
-                Me._durationTimer = clock.StartTimer()
-                Me._lastActivityTimer = clock.StartTimer()
+                Me._durationTimer = clock.AfterReset()
+                Me._lastActivityTimer = clock.AfterReset()
                 Me._startingPosition = startingPosition
             End Sub
 
@@ -207,7 +207,7 @@ Namespace WC3
 
             Public Sub Advance(ByVal progress As UInt32)
                 _totalProgress += progress
-                _lastActivityTimer.Reset()
+                _lastActivityTimer = _lastActivityTimer.AfterReset()
             End Sub
 
             Public Sub Dispose() Implements IDisposable.Dispose
