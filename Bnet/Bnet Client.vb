@@ -371,19 +371,14 @@ Namespace Bnet
             Contract.Requires(Me._state > ClientState.InitiatingConnection)
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf _socket.AsyncReadPacket,
-                consumer:=AddressOf ProcessPacket,
-                errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
-                                                             reason:="Error receiving packet: {0}.".Frmt(exception.Message))
+                consumer:=AddressOf _packetHandler.HandlePacket,
+                errorHandler:=Sub(exception)
+                                  exception.RaiseAsUnexpected("Receiving packet")
+                                  QueueDisconnect(expected:=False,
+                                                  reason:="Error receiving packet: {0}.".Frmt(exception.Message))
+                              End Sub
             )
         End Sub
-        Private Function ProcessPacket(ByVal packetData As IReadableList(Of Byte)) As ifuture
-            Contract.Requires(packetData IsNot Nothing)
-            Contract.Requires(packetData.Count >= 4)
-            Dim result = Me._packetHandler.HandlePacket(packetData)
-            result.Catch(Sub(exception) QueueDisconnect(expected:=False,
-                                                        reason:="Error handling packet {0}: {1}.".Frmt(CType(packetData(1), Protocol.PacketId), exception.Message)))
-            Return result
-        End Function
 
         Private Function BeginLogOn(ByVal credentials As ClientCredentials) As IFuture
             Contract.Requires(credentials IsNot Nothing)

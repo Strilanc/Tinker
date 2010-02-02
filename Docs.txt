@@ -7,7 +7,7 @@ implements the IBotComponent interface, and the Model/whatever does all the nitt
 bot class has no special knowledge of any component, the Controllers have no internal knowledge of their View, and the Models
 have no knowledge of their Controller, View, or the main bot.
 ----------------
-Concurrency via Futures:
+Concurrency via Futures and Call Queues:
 
 Many classes are synchronized using message passing, not locks. Internally these classes use an inQueue (sometimes named 'ref') to
 queue requests, and an outQueue (sometimes named 'eref') to queue outgoing events. Any 'public' function which is not thread-safe

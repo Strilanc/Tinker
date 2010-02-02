@@ -2,6 +2,7 @@
 Public Class ExceptionForm
     Private _exceptions As New List(Of Tuple(Of String, Exception))()
     Private inQueue As ICallQueue = New InvokedCallQueue(Me)
+    Private ReadOnly _addThrottle As New Throttle(1.Seconds, New SystemClock())
 
     Public Sub New()
         InitializeComponent()
@@ -29,7 +30,7 @@ Public Class ExceptionForm
                 btnUpdate.Visible = True
                 lblBuffering.Visible = True
             Else
-                UpdateExceptionText()
+                _addThrottle.SetActionToRun(Sub() inQueue.QueueAction(Sub() UpdateExceptionText()))
             End If
         End If
         RaiseEvent ExceptionCountChanged(Me)

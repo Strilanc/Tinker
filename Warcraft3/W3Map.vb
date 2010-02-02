@@ -45,7 +45,7 @@ Namespace WC3
             Contract.Requires(playableWidth > 0)
             Contract.Requires(playableHeight > 0)
 
-            Me._streamFactory = _streamFactory
+            Me._streamFactory = streamFactory
             Me._advertisedPath = advertisedPath
             Me._fileSize = fileSize
             Me._fileChecksumCRC32 = fileChecksumCRC32

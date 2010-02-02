@@ -156,9 +156,12 @@
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Function(packetData) packetHandler.HandlePacket(packetData),
-                errorHandler:=Sub(exception) Me.QueueDisconnect(expected:=False,
-                                                                leaveType:=PlayerLeaveType.Disconnect,
-                                                                reason:="Error receiving packet: {0}".Frmt(exception.Message))
+                errorHandler:=Sub(exception)
+                                  exception.RaiseAsUnexpected("Receiving packet")
+                                  QueueDisconnect(expected:=False,
+                                                  leaveType:=PlayerLeaveType.Disconnect,
+                                                  reason:="Error receiving packet: {0}.".Frmt(exception.Message))
+                              End Sub
             )
         End Sub
 
@@ -172,6 +175,7 @@
             End If
             If pinger IsNot Nothing Then pinger.Dispose()
             RaiseEvent Disconnected(Me, expected, leaveType, reason)
+            Me.Dispose()
         End Sub
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture
             Contract.Requires(reason IsNot Nothing)

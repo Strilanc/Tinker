@@ -81,21 +81,16 @@ Namespace WC3
                 _socket.WritePacket(Concat({Protocol.Packets.PacketPrefix, packet.id, 0, 0},
                                             packet.Payload.Data.ToArray))
 
-            Catch e As Pickling.PicklingException
-                Dim msg = "Error packing {0} for {1}: {2}".Frmt(packet.id, Name, e)
-                Logger.Log(msg, LogMessageType.Problem)
-                Throw
-
             Catch e As Exception
                 If Not (TypeOf e Is SocketException OrElse
                         TypeOf e Is ObjectDisposedException OrElse
+                        TypeOf e Is InvalidOperationException OrElse
                         TypeOf e Is IO.InvalidDataException OrElse
                         TypeOf e Is IO.IOException) Then
                     e.RaiseAsUnexpected("Error sending {0} to {1}.".Frmt(packet.id, Name))
                 End If
                 Dim msg = "Error sending {0} to {1}: {2}".Frmt(packet.id, Name, e)
                 _socket.Disconnect(expected:=False, reason:=msg)
-                Throw
             End Try
         End Sub
 
