@@ -98,7 +98,7 @@
 
             Catch e As Exception
                 e.RaiseAsUnexpected("Sending {0} to {1}".Frmt(packet.Id, _socket.Name))
-                _socket.Disconnect(expected:=False, reason:="Error sending {0} for {1}: {2}".Frmt(packet.Id, _socket.Name, e))
+                _socket.QueueDisconnect(expected:=False, reason:="Error sending {0} for {1}: {2}".Frmt(packet.Id, _socket.Name, e))
                 Throw
             End Try
         End Sub
@@ -110,9 +110,7 @@
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
             If finalizing Then Return Nothing
-            Return inQueue.QueueAction(Sub()
-                                           _socket.Disconnect(expected:=True, reason:="Disposed")
-                                       End Sub)
+            Return inQueue.QueueAction(Sub() _socket.QueueDisconnect(expected:=True, reason:="Disposed"))
         End Function
     End Class
 End Namespace

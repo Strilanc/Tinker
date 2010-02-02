@@ -193,6 +193,7 @@ Namespace WC3.Protocol
         Idle = 1
         Uploading = 2
         Downloading = 3
+        Unknown4 = 4
     End Enum
     Public Enum RejectReason As UInteger
         GameNotFound = 0

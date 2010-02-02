@@ -156,13 +156,9 @@
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Function(packetData) packetHandler.HandlePacket(packetData),
-                errorHandler:=Sub(exception)
-                                  exception.RaiseAsUnexpected("Receiving packet")
-                                  QueueDisconnect(expected:=False,
-                                                  leaveType:=PlayerLeaveType.Disconnect,
-                                                  reason:="Error receiving packet: {0}.".Frmt(exception.Message))
-                              End Sub
-            )
+                errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
+                                                             leaveType:=PlayerLeaveType.Disconnect,
+                                                             reason:="Error receiving packet: {0}.".Frmt(exception.Message)))
         End Sub
 
         '''<summary>Disconnects this player and removes them from the system.</summary>

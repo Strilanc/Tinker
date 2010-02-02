@@ -372,12 +372,8 @@ Namespace Bnet
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf _socket.AsyncReadPacket,
                 consumer:=AddressOf _packetHandler.HandlePacket,
-                errorHandler:=Sub(exception)
-                                  exception.RaiseAsUnexpected("Receiving packet")
-                                  QueueDisconnect(expected:=False,
-                                                  reason:="Error receiving packet: {0}.".Frmt(exception.Message))
-                              End Sub
-            )
+                errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
+                                                             reason:="Error receiving packet: {0}.".Frmt(exception.Message)))
         End Sub
 
         Private Function BeginLogOn(ByVal credentials As ClientCredentials) As IFuture
@@ -414,7 +410,7 @@ Namespace Bnet
         Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
             If _socket IsNot Nothing Then
-                _socket.Disconnect(expected, reason)
+                _socket.QueueDisconnect(expected, reason)
                 RemoveHandler _socket.Disconnected, AddressOf OnSocketDisconnected
                 _socket = Nothing
             ElseIf _state = ClientState.Disconnected Then

@@ -119,17 +119,19 @@ Public NotInheritable Class PacketSocket
         End Get
     End Property
 
-    Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
+    Private Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
         Contract.Requires(reason IsNot Nothing)
-        inQueue.QueueAction(
-            Sub()
-                If Not _isConnected Then Return
-                _isConnected = False
-                If deadManSwitch IsNot Nothing Then deadManSwitch.Disarm()
-                _stream.Close()
-                outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
-            End Sub)
+        If Not _isConnected Then Return
+        _isConnected = False
+        If deadManSwitch IsNot Nothing Then deadManSwitch.Disarm()
+        _stream.Close()
+        outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
     End Sub
+    Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As ifuture
+        Contract.Requires(reason IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Return inQueue.QueueAction(Sub() Disconnect(expected, reason))
+    End Function
     Private Sub DeadManSwitch_Triggered(ByVal sender As DeadManSwitch) Handles deadManSwitch.Triggered
         Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
@@ -139,15 +141,17 @@ Public NotInheritable Class PacketSocket
         'Read
         Dim result = packetStreamer.AsyncReadPacket()
         'Handle
-        result.CallWhenValueReady(
-            Sub(data, dataException)
+        result.QueueCallOnValueSuccess(inQueue,
+            Sub(data)
                 If deadManSwitch IsNot Nothing Then deadManSwitch.Reset()
-                If dataException IsNot Nothing Then
-                    Disconnect(expected:=False, reason:=dataException.ToString)
-                Else
-                    Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
-                End If
-            End Sub)
+                Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
+            End Sub
+        ).QueueCatch(inQueue,
+            Sub(ex)
+                If _isConnected Then ex.RaiseAsUnexpected("Receiving packet")
+                Disconnect(expected:=False, reason:=ex.Message)
+            End Sub
+        )
         Return result
     End Function
 

@@ -37,7 +37,7 @@
             'Process response
             Dim futureKeys = futureReadPacket.Select(
                 Function(packetData)
-                    futureSocket.Value.Disconnect(expected:=True, reason:="Received response")
+                    futureSocket.Value.QueueDisconnect(expected:=True, reason:="Received response")
 
                     'Read header
                     Contract.Assume(packetData.Count >= 4)

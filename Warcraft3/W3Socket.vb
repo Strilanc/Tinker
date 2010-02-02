@@ -61,7 +61,7 @@ Namespace WC3
         End Sub
         Public Sub Disconnect(ByVal expected As Boolean, ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
-            _socket.Disconnect(expected, reason)
+            _socket.QueueDisconnect(expected, reason)
         End Sub
 
         Public Sub SendPacket(ByVal packet As Protocol.Packet)
@@ -90,7 +90,7 @@ Namespace WC3
                     e.RaiseAsUnexpected("Error sending {0} to {1}.".Frmt(packet.id, Name))
                 End If
                 Dim msg = "Error sending {0} to {1}: {2}".Frmt(packet.id, Name, e)
-                _socket.Disconnect(expected:=False, reason:=msg)
+                _socket.QueueDisconnect(expected:=False, reason:=msg)
             End Try
         End Sub
 

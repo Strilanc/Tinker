@@ -580,7 +580,7 @@ Namespace WC3
             Dim client = _playerClients(player)
             client.Links.Clear()
             If _defaultClient IsNot Nothing Then client.Links.Add(_defaultClient)
-            client.Links.AddRange(From peer In AllClients
+            client.Links.AddRange(From peer In _playerClients.Values
                                   Where peer IsNot client
                                   Let pidFlag = 1UI << (peer.Player.PID.Index - 1)
                                   Where (flags And pidFlag) <> 0
