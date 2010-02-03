@@ -104,11 +104,11 @@ Namespace WC3
         Inherits FutureDisposable
 
         Public Shared ReadOnly ForceSteadyPeriod As TimeSpan = 5.Seconds
-        Public Shared ReadOnly FreezePeriod As TimeSpan = 5.Seconds
-        Public Shared ReadOnly MinSwitchPeriod As TimeSpan = 5.Seconds
-        Public Shared ReadOnly SwitchPenaltyPeriod As TimeSpan = 1.Seconds
+        Public Shared ReadOnly FreezePeriod As TimeSpan = 10.Seconds
+        Public Shared ReadOnly MinSwitchPeriod As TimeSpan = 10.Seconds
+        Public Shared ReadOnly SwitchPenaltyPeriod As TimeSpan = 5.Seconds
         Public Shared ReadOnly SwitchPenaltyFactor As Double = 1.2
-        Public Shared ReadOnly TypicalBandwidthPerSecond As Double = 32000
+        Public Shared ReadOnly DefaultBandwidthPerSecond As Double = 32000
         Public Shared ReadOnly MaxBufferedMapSize As Integer = Protocol.Packets.MaxFileDataSize * 8
         Public Shared ReadOnly UpdatePeriod As TimeSpan = 1.Seconds
 
@@ -197,8 +197,9 @@ Namespace WC3
             Public ReadOnly Property BandwidthPerSecond As Double
                 Get
                     Dim dt = Duration.TotalSeconds
-                    If dt < 1 Then Return TypicalBandwidthPerSecond
-                    Return _totalProgress / dt
+                    If dt < 1 Then Return DefaultBandwidthPerSecond
+                    Dim expansionFactor = 1 + 1 / (1 + Duration.TotalSeconds)
+                    Return expansionFactor * _totalProgress / dt
                 End Get
             End Property
 
@@ -372,11 +373,11 @@ Namespace WC3
             End Property
             Public ReadOnly Property EstimatedBandwidthPerSecond As Double
                 Get
-                    If Not HasReported Then Return TypicalBandwidthPerSecond
+                    If Not HasReported Then Return DefaultBandwidthPerSecond
 
                     Dim dt = TotalMeasurementTime.TotalSeconds
                     Dim dp = TotalProgress
-                    If dt < 1 Then Return TypicalBandwidthPerSecond
+                    If dt < 1 Then Return DefaultBandwidthPerSecond
                     Dim expansionFactor = 1 + 1 / (1 + _numTransfers)
                     Return dp / dt * expansionFactor
                 End Get
@@ -539,8 +540,10 @@ Namespace WC3
                     If client.IsSteady Then Return latencyDescription
                     Return If(client.ReportedHasFile, "(ul>>)", "(dl>>)")
                 Else
-                    If client.Transfer.Uploader Is _defaultClient Then Return "(DL)"
-                    If client.IsSteady Then Return If(client.ReportedHasFile, "(ul)", "(dl)")
+                    If client.Transfer.Uploader Is _defaultClient Then Return "(dl:H)"
+                    If client.IsSteady Then Return If(client.ReportedHasFile,
+                                                      "(ul:{0})".Frmt(client.Transfer.Downloader.Player.PID),
+                                                      "(dl:{0})".Frmt(client.Transfer.Uploader.Player.PID))
                     Return If(client.ReportedHasFile, "(>>ul)", "(>>dl)")
                 End If
             End Get
@@ -606,9 +609,6 @@ Namespace WC3
 
             player.FutureDisposed.QueueCallOnSuccess(inQueue,
                 Sub()
-                    If client.Transfer IsNot Nothing Then
-                        _game.Logger.Log("Transfer from {0} to {1} broken by {2} leaving.".Frmt(client.Transfer.Uploader, client.Transfer.Downloader, player.Name), LogMessageType.Negative)
-                    End If
                     client.Dispose()
                     _playerClients.Remove(player)
                 End Sub)
@@ -792,10 +792,11 @@ Namespace WC3
                     uler.QueueSendPacket(dler.MakePacketOtherPlayerJoined())
                 End If
 
+                Dim reason = If(cancellation.TimeSinceLastActivity > FreezePeriod, "frozen", "slow")
                 If uler Is Nothing Then
-                    _game.Logger.Log("Cancelled map upload to {0}.".Frmt(dler.Name), LogMessageType.Positive)
+                    _game.Logger.Log("Cancelled {0} map upload to {1}.".Frmt(reason, dler.Name), LogMessageType.Negative)
                 Else
-                    _game.Logger.Log("Cancelled peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
+                    _game.Logger.Log("Cancelled {0} peer map transfer from {1} to {2}.".Frmt(reason, uler.Name, dler.Name), LogMessageType.Negative)
                 End If
             End If
         End Sub
