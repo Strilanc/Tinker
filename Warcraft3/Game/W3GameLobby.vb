@@ -20,6 +20,7 @@
             InitProcessArguments()
             inQueue.QueueAction(Sub() TryRestoreFakeHost())
         End Sub
+        <ContractVerification(False)>
         Private Sub InitCreateSlots()
             'create player slots
             For i = 0 To Map.Slots.Count - 1
@@ -368,6 +369,7 @@
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Dim sender = If(fakeHostPlayer, (From p In _players Where p IsNot player).First)
+            Contract.Assume(sender IsNot Nothing)
             Dim filedata = settings.Map.ReadChunk(position, Protocol.Packets.MaxFileDataSize)
             Dim pk = Protocol.MakeMapFileData(position, filedata, player.PID, sender.PID)
             Return player.QueueSendPacket(pk)

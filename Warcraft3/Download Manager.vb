@@ -103,6 +103,7 @@ Namespace WC3
     Public Class DownloadManager
         Inherits FutureDisposable
 
+        Public Shared ReadOnly ForceSteadyPeriod As TimeSpan = 5.Seconds
         Public Shared ReadOnly FreezePeriod As TimeSpan = 5.Seconds
         Public Shared ReadOnly MinSwitchPeriod As TimeSpan = 5.Seconds
         Public Shared ReadOnly SwitchPenaltyPeriod As TimeSpan = 1.Seconds
@@ -130,6 +131,7 @@ Namespace WC3
                 Contract.Invariant(_startingPosition <= _fileSize)
             End Sub
 
+            <ContractVerification(False)>
             Public Sub New(ByVal downloader As TransferClient,
                            ByVal uploader As TransferClient,
                            ByVal startingPosition As UInt32,
@@ -138,6 +140,7 @@ Namespace WC3
                 Contract.Requires(downloader IsNot Nothing)
                 Contract.Requires(uploader IsNot Nothing)
                 Contract.Requires(clock IsNot Nothing)
+                Contract.Requires(startingPosition <= filesize)
                 Contract.Ensures(Me.Downloader Is downloader)
                 Contract.Ensures(Me.Uploader Is uploader)
                 Contract.Ensures(Me.StartingPosition = startingPosition)
@@ -210,6 +213,7 @@ Namespace WC3
                 _lastActivityTimer = _lastActivityTimer.Restarted()
             End Sub
 
+            <ContractVerification(False)>
             Public Sub Dispose() Implements IDisposable.Dispose
                 If Downloader.Transfer Is Me Then Downloader.ClearTransfer()
                 If Uploader.Transfer Is Me Then Uploader.ClearTransfer()
@@ -226,7 +230,6 @@ Namespace WC3
             Private _lastTransferPartner As TransferClient
 
             Public Property LastSendPosition As UInt32
-            Public Property ReportedPosition As UInt32
             Private _hasReported As Boolean
             Private _reportedState As Protocol.MapTransferState = Protocol.MapTransferState.Idle
             Private _expectedState As Protocol.MapTransferState = Protocol.MapTransferState.Idle
@@ -237,12 +240,16 @@ Namespace WC3
             Private _transferStartPosition As UInt32
             Private ReadOnly _links As New List(Of TransferClient)
             Private ReadOnly _hooks As IReadableList(Of IFuture(Of IDisposable))
+            Private _lastActivityTimer As RelativeClock
+            Private _reportedPosition As UInt32
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_map IsNot Nothing)
                 Contract.Invariant(_links IsNot Nothing)
                 Contract.Invariant(_clock IsNot Nothing)
                 Contract.Invariant(_hooks IsNot Nothing)
+                Contract.Invariant(_transfer Is Nothing OrElse HasReported)
+                Contract.Invariant(_lastActivityTimer IsNot Nothing)
             End Sub
 
             Public Sub New(ByVal player As IPlayerDownloadAspect,
@@ -252,10 +259,12 @@ Namespace WC3
                 Contract.Requires(map IsNot Nothing)
                 Contract.Requires(clock IsNot Nothing)
                 Contract.Requires(hooks IsNot Nothing)
+                Contract.Ensures(Not Me.HasReported)
                 Me._map = map
                 Me._player = player
                 Me._clock = clock
                 Me._hooks = hooks.ToArray.AsReadableList
+                Me._lastActivityTimer = _clock.Restarted
             End Sub
 
 #Region "Naive Properties"
@@ -282,7 +291,7 @@ Namespace WC3
             End Property
             Public ReadOnly Property Links As List(Of TransferClient)
                 Get
-                    Contract.Ensures(Contract.Result(Of IEnumerable(Of TransferClient))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of List(Of TransferClient))() IsNot Nothing)
                     Return _links
                 End Get
             End Property
@@ -293,6 +302,11 @@ Namespace WC3
             End Property
 #End Region
 
+            Public ReadOnly Property TimeSinceLastActivity As TimeSpan
+                Get
+                    Return _lastActivityTimer.ElapsedTime
+                End Get
+            End Property
             Public ReadOnly Property LocalState As Protocol.MapTransferState
                 Get
                     If _transfer Is Nothing Then Return Protocol.MapTransferState.Idle
@@ -327,17 +341,32 @@ Namespace WC3
                     _hasReported = value
                 End Set
             End Property
+            <ContractVerification(False)>
             Public Property ReportedState As Protocol.MapTransferState
                 Get
                     Contract.Requires(HasReported)
                     Return _reportedState
                 End Get
+                <ContractVerification(False)>
                 Set(ByVal value As Protocol.MapTransferState)
+                    Contract.Requires(HasReported)
                     _reportedState = value
+                End Set
+            End Property
+            Public Property ReportedPosition As UInt32
+                Get
+                    Contract.Requires(HasReported)
+                    Return _reportedPosition
+                End Get
+                <ContractVerification(False)>
+                Set(ByVal value As UInt32)
+                    Contract.Requires(HasReported)
+                    _reportedPosition = value
                 End Set
             End Property
             Public ReadOnly Property IsSteady As Boolean
                 Get
+                    If TimeSinceLastActivity >= ForceSteadyPeriod Then Return True
                     If _lastTransferPartner IsNot Nothing AndAlso _lastTransferPartner.Player Is Nothing Then Return True
                     Return HasReported AndAlso ExpectedState = ReportedState
                 End Get
@@ -353,7 +382,12 @@ Namespace WC3
                     Return dp / dt * expansionFactor
                 End Get
             End Property
+            <ContractVerification(False)>
             Public Function FindBestAvailableUploader() As TransferClient
+                Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().HasReported)
+                Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().Transfer Is Nothing)
+                Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().ReportedHasFile)
+                Contract.Ensures(Contract.Result(Of TransferClient)() Is Nothing OrElse Contract.Result(Of TransferClient)().IsSteady)
                 Dim availableUploaders = From client In Links
                                          Where client.HasReported
                                          Where client.ReportedHasFile
@@ -366,16 +400,24 @@ Namespace WC3
                                       Where sign <> 0).FirstOrDefault)
             End Function
 
-            Public Shared Sub StartTransfer(ByVal downloader As TransferClient, ByVal uploader As TransferClient)
-                Contract.Requires(downloader IsNot Nothing AndAlso uploader IsNot Nothing)
-                Contract.Requires(downloader.HasReported AndAlso uploader.HasReported)
-                Contract.Requires(uploader.ReportedHasFile AndAlso Not downloader.ReportedHasFile)
-                Contract.Requires(downloader.Transfer Is Nothing AndAlso uploader.Transfer Is Nothing)
-                Contract.Requires(downloader.IsSteady AndAlso uploader.IsSteady)
+            <ContractVerification(False)>
+            Public Shared Function StartTransfer(ByVal downloader As TransferClient, ByVal uploader As TransferClient) As Transfer
+                Contract.Requires(downloader IsNot Nothing)
+                Contract.Requires(uploader IsNot Nothing)
+                Contract.Requires(downloader.HasReported)
+                Contract.Requires(uploader.HasReported)
+                Contract.Requires(Not downloader.ReportedHasFile)
+                Contract.Requires(uploader.ReportedHasFile)
+                Contract.Requires(downloader.Transfer Is Nothing)
+                Contract.Requires(uploader.Transfer Is Nothing)
+                Contract.Requires(downloader.IsSteady)
+                Contract.Requires(uploader.IsSteady)
 
-                Contract.Ensures(downloader.Transfer IsNot Nothing)
-                Contract.Ensures(uploader.Transfer Is downloader.Transfer)
-                Contract.Ensures(downloader.Transfer.Downloader Is downloader AndAlso downloader.Transfer.Uploader Is uploader)
+                Contract.Ensures(Contract.Result(Of Transfer)() IsNot Nothing)
+                Contract.Ensures(downloader.Transfer Is Contract.Result(Of Transfer)())
+                Contract.Ensures(uploader.Transfer Is Contract.Result(Of Transfer)())
+                Contract.Ensures(Contract.Result(Of Transfer)().Downloader Is downloader)
+                Contract.Ensures(Contract.Result(Of Transfer)().Uploader Is uploader)
 
                 Dim transfer = New Transfer(downloader:=downloader,
                                             uploader:=uploader,
@@ -391,18 +433,28 @@ Namespace WC3
                 uploader._transfer = transfer
                 uploader._expectedState = Protocol.MapTransferState.Uploading
                 uploader._lastTransferPartner = downloader
-            End Sub
+
+                Return transfer
+            End Function
             Public Sub ClearTransfer()
                 Contract.Requires(Me.Transfer IsNot Nothing)
                 Contract.Ensures(Me.Transfer Is Nothing)
+                Contract.Assume(_transfer IsNot Nothing)
                 _totalPastProgress += _transfer.TotalProgress
                 _expectedState = Protocol.MapTransferState.Idle
                 _transfer = Nothing
             End Sub
 
+            <ContractVerification(False)>
+            Public Sub MarkActivity()
+                _lastActivityTimer = _lastActivityTimer.Restarted
+            End Sub
+
             Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
-                If _transfer IsNot Nothing Then _transfer.Dispose()
-                Contract.Assert(_transfer Is Nothing)
+                If _transfer IsNot Nothing Then
+                    _transfer.Dispose()
+                    _transfer = Nothing
+                End If
                 Return (From hook In _hooks
                         Select hook.CallOnValueSuccess(Sub(value) value.Dispose())
                        ).Defuturized
@@ -425,6 +477,9 @@ Namespace WC3
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_playerClients IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
+            Contract.Invariant(_game IsNot Nothing)
+            Contract.Invariant(_hooks IsNot Nothing)
+            Contract.Invariant(inQueue IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal clock As IClock,
@@ -461,6 +516,7 @@ Namespace WC3
             Contract.Requires(client IsNot Nothing)
             Contract.Requires(client.Transfer IsNot Nothing)
             Contract.Requires(client.Transfer.Uploader Is _defaultClient)
+            Contract.Assume(client.Player IsNot Nothing)
             client.LastSendPosition = Math.Max(client.LastSendPosition, reportedPosition)
             While client.LastSendPosition < reportedPosition + MaxBufferedMapSize AndAlso client.LastSendPosition < FileSize
                 _game.QueueSendMapPiece(client.Player, client.LastSendPosition)
@@ -477,6 +533,7 @@ Namespace WC3
 
                 If Not _playerClients.ContainsKey(player) Then Return latencyDescription
                 Dim client = _playerClients(player)
+                Contract.Assume(client IsNot Nothing)
 
                 If Not client.HasReported Then Return latencyDescription
                 If client.Transfer Is Nothing Then
@@ -503,6 +560,7 @@ Namespace WC3
 
                 If Not _playerClients.ContainsKey(player) Then Return "?"
                 Dim client = _playerClients(player)
+                Contract.Assume(client IsNot Nothing)
                 If client.TotalMeasurementTime < 3.Seconds Then Return "?"
 
                 Dim d = client.EstimatedBandwidthPerSecond
@@ -542,13 +600,13 @@ Namespace WC3
                                                  handler:=Function(pickle) QueueOnReceivePeerConnectionInfo(player, pickle))
                 }
 
-            _playerClients(player) = New TransferClient(player, _game.Map, _clock, playerHooks)
-            If _defaultClient IsNot Nothing Then _playerClients(player).Links.Add(_defaultClient)
+
+            Dim client = New TransferClient(player, _game.Map, _clock, playerHooks)
+            _playerClients(player) = client
+            If _defaultClient IsNot Nothing Then client.Links.Add(_defaultClient)
 
             player.FutureDisposed.QueueCallOnSuccess(inQueue,
                 Sub()
-                    Contract.Assume(_playerClients.ContainsKey(player))
-                    Dim client = _playerClients(player)
                     If client.Transfer IsNot Nothing Then
                         _game.Logger.Log("Transfer from {0} to {1} broken by {2} leaving.".Frmt(client.Transfer.Uploader, client.Transfer.Downloader, player.Name), LogMessageType.Negative)
                     End If
@@ -583,6 +641,7 @@ Namespace WC3
             If Not _playerClients.ContainsKey(player) Then Return
 
             Dim client = _playerClients(player)
+            Contract.Assume(client IsNot Nothing)
             client.Links.Clear()
             If _defaultClient IsNot Nothing Then client.Links.Add(_defaultClient)
             client.Links.AddRange(From peer In _playerClients.Values
@@ -596,9 +655,11 @@ Namespace WC3
             If Not _playerClients.ContainsKey(player) Then Return
 
             Dim client = _playerClients(player)
+            Contract.Assume(client IsNot Nothing)
+            client.MarkActivity()
             If position > _game.Map.FileSize Then
                 Throw New IO.InvalidDataException("Moved download position past end of file at {0} to {1}.".Frmt(_game.Map.FileSize, position))
-            ElseIf position < client.ReportedPosition Then
+            ElseIf client.HasReported AndAlso position < client.ReportedPosition Then
                 Throw New IO.InvalidDataException("Moved download position backwards from {0} to {1}.".Frmt(client.ReportedPosition, position))
             ElseIf Not client.HasReported AndAlso state <> Protocol.MapTransferState.Idle Then
                 Throw New IO.InvalidDataException("Invalid initial download transfer state.")
@@ -624,7 +685,6 @@ Namespace WC3
                         _game.Logger.Log("{0} finished downloading the map from {1}.".Frmt(player.Name, client.Transfer.Uploader), LogMessageType.Positive)
                         Contract.Assume(client Is client.Transfer.Downloader)
                         client.Transfer.Dispose()
-                        Contract.Assume(client.Transfer Is Nothing)
                     Else
                         _game.Logger.Log("{0} finished downloading the map.".Frmt(player.Name), LogMessageType.Positive)
                     End If
@@ -666,6 +726,7 @@ Namespace WC3
                                  Select t = client.Transfer
                                  Where t.Duration > MinSwitchPeriod
                                  Where t.ExpectedDurationRemaining > MinSwitchPeriod
+                Contract.Assume(transfer IsNot Nothing)
                 Dim downloader = transfer.Downloader
                 Dim remainingData = _game.Map.FileSize - transfer.ReportedPosition
                 Dim curExpectedCost = transfer.ExpectedDurationRemaining.TotalSeconds
@@ -694,15 +755,20 @@ Namespace WC3
                                    Where Not client.ReportedHasFile
                                    Where client.Transfer Is Nothing
                                    Where client.IsSteady
+                Contract.Assume(downloader IsNot Nothing)
                 Dim bestAvailableUploader = downloader.FindBestAvailableUploader()
                 If bestAvailableUploader Is Nothing Then Continue For
 
                 Dim dler = downloader.Player
+                Contract.Assume(dler IsNot Nothing)
                 Dim uler = bestAvailableUploader.Player
+                Contract.Assume(downloader.HasReported)
+                Contract.Assume(downloader.Transfer Is Nothing)
                 TransferClient.StartTransfer(downloader, bestAvailableUploader)
 
                 If uler Is Nothing Then
                     _game.Logger.Log("Initiating map upload to {0}.".Frmt(dler.Name), LogMessageType.Positive)
+                    Contract.Assume(downloader.Transfer.Uploader Is _defaultClient)
                     SendMapFileData(downloader, downloader.ReportedPosition)
                 Else
                     _game.Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
@@ -716,6 +782,7 @@ Namespace WC3
             If cancellation IsNot Nothing Then
                 Dim dler = cancellation.Downloader.Player
                 Dim uler = cancellation.Uploader.Player
+                Contract.Assume(dler IsNot Nothing)
                 cancellation.Dispose()
 
                 'Force-cancel the transfer by making the uploader and downloader each think the other rejoined

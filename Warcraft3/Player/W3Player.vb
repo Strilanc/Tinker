@@ -185,8 +185,6 @@
             socket.SendPacket(pk)
         End Sub
         Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture Implements IPlayerDownloadAspect.QueueSendPacket
-            Contract.Requires(packet IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Dim result = inQueue.QueueAction(Sub() SendPacket(packet))
             result.SetHandled()
             Return result

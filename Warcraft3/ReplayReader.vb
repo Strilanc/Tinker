@@ -51,7 +51,9 @@
 
         Public Function MakeDataStream() As IO.Stream
             Contract.Ensures(Contract.Result(Of IO.Stream)() IsNot Nothing)
-            Return New ReplayDataReader(_streamFactory(), _blockCount, _firstBlockOffset)
+            Dim stream = _streamFactory()
+            If stream Is Nothing Then Throw New InvalidStateException("Invalid stream factory.")
+            Return New ReplayDataReader(stream, _blockCount, _firstBlockOffset)
         End Function
     End Class
 

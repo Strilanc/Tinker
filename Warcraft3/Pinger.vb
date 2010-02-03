@@ -30,7 +30,6 @@
         Me._timeoutCount = timeoutCount
         Me._clock = clock
         Me._ticker = clock.AsyncRepeat(period, Sub() inQueue.QueueAction(AddressOf OnTick))
-        Contract.Assume(_latency >= 0)
     End Sub
 
     Public Function QueueGetLatency() As IFuture(Of Double)
@@ -46,7 +45,6 @@
             _pingQueue.Enqueue(record)
             RaiseEvent SendPing(Me, record.Item1)
         End If
-        Contract.Assume(_latency >= 0)
     End Sub
 
     Private Sub ReceivedPong(ByVal salt As UInteger)
@@ -66,7 +64,6 @@
         _latency *= 1 - lambda
         _latency += lambda * stored.Item2.ElapsedTime.TotalMilliseconds
         If _latency <= 0 Then _latency = Double.Epsilon
-        Contract.Assume(_latency >= 0)
     End Sub
     Public Function QueueReceivedPong(ByVal salt As UInteger) As IFuture
         Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)

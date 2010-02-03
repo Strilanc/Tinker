@@ -139,8 +139,9 @@ Namespace WC3
                                IsMelee:=True,
                                Name:=path)
             Else 'Map specified by path
-                Return Map.FromFile(filePath:=IO.Path.Combine(My.Settings.mapPath, FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", My.Settings.mapPath.AssumeNotNull)),
-                                    wc3MapFolder:=My.Settings.mapPath.AssumeNotNull,
+                Dim mapPath = My.Settings.mapPath.AssumeNotNull
+                Return Map.FromFile(filePath:=IO.Path.Combine(mapPath, FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", mapPath)),
+                                    wc3MapFolder:=mapPath,
                                     wc3PatchMPQFolder:=My.Settings.war3path.AssumeNotNull)
             End If
         End Function
@@ -256,13 +257,17 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count <= size)
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
             If Not FileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
+            Contract.Assume(_streamFactory IsNot Nothing)
 
             Dim buffer(0 To CInt(size - 1)) As Byte
             Using f = _streamFactory()
+                If f Is Nothing Then Throw New InvalidStateException("Invalid steam factory.")
                 f.Seek(pos, IO.SeekOrigin.Begin)
                 Dim n = f.Read(buffer, 0, CInt(size))
                 If n < buffer.Length Then ReDim Preserve buffer(0 To n - 1)
-                Return buffer.AsReadableList
+                Dim result = buffer.AsReadableList
+                Contract.Assume(result.Count <= size)
+                Return result
             End Using
         End Function
 
@@ -425,6 +430,7 @@ Namespace WC3
 
             'Alternate key
             If key.StartsWith("TRIGSTR_") Then
+                Contract.Assume(key.Length >= "TRIGSTR_".Length)
                 Dim suffix = key.Substring("TRIGSTR_".Length)
                 Dim id As UInteger
                 If UInt32.TryParse(suffix, id) Then

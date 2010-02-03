@@ -22,7 +22,7 @@ Namespace WC3
         Public ReadOnly Property AdvertisedDownloadPercent() As Byte
             Get
                 If state <> PlayerState.Lobby Then Return 100
-                If isFake Then Return 254 'Not a real player, show "|CF"
+                If isFake OrElse _downloadManager Is Nothing Then Return 254 'Not a real player, show "|CF"
                 If _reportedDownloadPosition Is Nothing Then Return 255
                 Return CByte((_reportedDownloadPosition * 100UL) \ _downloadManager.FileSize)
             End Get
