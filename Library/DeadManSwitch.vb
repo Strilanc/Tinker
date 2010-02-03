@@ -21,7 +21,7 @@ Public NotInheritable Class DeadManSwitch
         Contract.Assume(period.Ticks > 0)
         Contract.Assume(clock IsNot Nothing)
         Me._period = period
-        Me._timer = clock.AfterReset
+        Me._timer = clock.Restarted
     End Sub
 
     ''' <summary>
@@ -33,7 +33,7 @@ Public NotInheritable Class DeadManSwitch
             Sub()
                 If _isArmed Then Return
                 _isArmed = True
-                _timer = _timer.AfterReset
+                _timer = _timer.Restarted
                 _wasReset = True
                 OnTimeout()
             End Sub)
@@ -45,7 +45,7 @@ Public NotInheritable Class DeadManSwitch
     Public Function Reset() As IFuture
         Return inQueue.QueueAction(
             Sub()
-                _timer = _timer.AfterReset
+                _timer = _timer.Restarted
                 _wasReset = True
             End Sub)
     End Function
@@ -65,7 +65,7 @@ Public NotInheritable Class DeadManSwitch
 
         If _wasReset Then
             _wasReset = False
-            _timer = _timer.AfterReset
+            _timer = _timer.Restarted
             Dim dt = _timer.StartingTimeOnParentClock
             _timer.AsyncWait(_period - dt).QueueCallWhenReady(inQueue, Sub() OnTimeout())
         Else

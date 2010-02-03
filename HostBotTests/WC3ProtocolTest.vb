@@ -493,7 +493,7 @@ Public Class WC3ProtocolTest
                        1, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"receiving player indexes", New List(Of Byte) From {2, 3}},
+                        {"receiving players", New List(Of Byte) From {2, 3}},
                         {"sending player index", 1},
                         {"type", ChatType.Game},
                         {"receiver type", ChatReceiverType.Allies},
@@ -505,7 +505,7 @@ Public Class WC3ProtocolTest
                        16,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"receiving player indexes", New List(Of Byte) From {2, 3}},
+                        {"receiving players", New List(Of Byte) From {2, 3}},
                         {"sending player index", 1},
                         {"type", ChatType.Lobby},
                         {"message", "test"}

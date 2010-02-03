@@ -228,7 +228,9 @@
             Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Return (From latency In QueueGetLatency()
                     Select latencyDesc = If(latency = 0, "?", "{0:0}ms".Frmt(latency))
-                    Select _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc)
+                    Select If(_downloadManager Is Nothing,
+                              latencyDesc.Futurized,
+                              _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc))
                    ).Defuturized
         End Function
         Public ReadOnly Property NumPeerConnections() As Integer

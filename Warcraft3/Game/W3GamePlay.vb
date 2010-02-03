@@ -57,7 +57,7 @@
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartPlaying()
             Next player
-            _gameTickTimer = _clock.AfterReset()
+            _gameTickTimer = _clock.Restarted()
             inQueue.QueueAction(AddressOf OnTick)
         End Sub
         Private Sub GameplayStop()
@@ -103,7 +103,7 @@
         Private Sub OnTick()
             If _gameTickTimer Is Nothing Then Return 'ended
 
-            _gameTickTimer = _gameTickTimer.AfterReset()
+            _gameTickTimer = _gameTickTimer.Restarted()
             Dim dt = _gameTickTimer.StartingTimeOnParentClock.TotalMilliseconds * Me.SettingSpeedFactor
             Dim dgt = CUShort(Me.SettingTickPeriod * Me.SettingSpeedFactor)
 
@@ -151,7 +151,7 @@
                 _asyncWaitTriggered = False
                 If laggingPlayers.Count > 0 Then
                     BroadcastPacket(Protocol.MakeShowLagScreen(From p In laggingPlayers Select p.PID), Nothing)
-                    _lagTimer = _clock.AfterReset()
+                    _lagTimer = _clock.Restarted()
                 End If
             End If
         End Sub

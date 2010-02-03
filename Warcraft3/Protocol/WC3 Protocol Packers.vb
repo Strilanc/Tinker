@@ -32,14 +32,14 @@ Namespace WC3.Protocol
             Select Case chatType
                 Case chatType.Game
                     Return Packet.FromValue(PacketId.Text, Packets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"receiving player indexes", (From p In receivingPIDs Select p.Index).ToList},
+                            {"receiving players", (From p In receivingPIDs Select p.Index).ToList},
                             {"sending player index", senderPID.Index},
                             {"type", chatType},
                             {"message", text},
                             {"receiver type", receiverType}})
                 Case chatType.Lobby
                     Return Packet.FromValue(PacketId.Text, Packets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"receiving player indexes", (From p In receivingPIDs Select p.Index).ToList},
+                            {"receiving players", (From p In receivingPIDs Select p.Index).ToList},
                             {"sending player index", senderPID.Index},
                             {"type", chatType},
                             {"message", text}})

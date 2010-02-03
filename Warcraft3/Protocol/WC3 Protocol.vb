@@ -296,13 +296,13 @@ Namespace WC3.Protocol
                     valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
                     dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType))
             jar.AddPackerParser(ChatType.Game, New TupleJar(PacketId.Text.ToString,
-                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
+                    New ListJar(Of Byte)("receiving players", New ByteJar("pid"), useSingleLineDescription:=True).Weaken,
                     New ByteJar("sending player index").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             jar.AddPackerParser(ChatType.Lobby, New TupleJar(PacketId.Text.ToString,
-                    New ListJar(Of Byte)("receiving player indexes", New ByteJar("player index")).Weaken,
+                    New ListJar(Of Byte)("receiving players", New ByteJar("pid"), useSingleLineDescription:=True).Weaken,
                     New ByteJar("sending player index").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New NullTerminatedStringJar("message").Weaken))
@@ -364,7 +364,7 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly ShowLagScreen As New SimpleDefinition(PacketId.ShowLagScreen,
                 New ListJar(Of Dictionary(Of InvariantString, Object))("laggers",
-                    New TupleJar("lagger",
+                    New TupleJar("lagger", True,
                         New ByteJar("player index").Weaken,
                         New UInt32Jar("initial milliseconds used").Weaken)).Weaken)
         Public Shared ReadOnly RemovePlayerFromLagScreen As New SimpleDefinition(PacketId.RemovePlayerFromLagScreen,

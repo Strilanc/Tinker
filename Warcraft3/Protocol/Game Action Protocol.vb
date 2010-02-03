@@ -333,11 +333,10 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly AssignGroupHotkey As New SimpleDefinition(GameActionId.AssignGroupHotkey,
                     New ByteJar("group index").Weaken,
-                    New ListJar(Of GameObjectId)("targets",
-                        New GameObjectIdJar("target"), prefixSize:=2).Weaken)
+                    New ListJar(Of GameObjectId)("targets", prefixSize:=2, subJar:=New GameObjectIdJar("target"), useSingleLineDescription:=True).Weaken)
         Public Shared ReadOnly ChangeSelection As New SimpleDefinition(GameActionId.ChangeSelection,
                     New EnumByteJar(Of SelectionOperation)("operation").Weaken,
-                    New ListJar(Of GameObjectId)("targets", prefixSize:=2, subjar:=New GameObjectIdJar("target")).Weaken)
+                    New ListJar(Of GameObjectId)("targets", prefixSize:=2, subjar:=New GameObjectIdJar("target"), useSingleLineDescription:=True).Weaken)
         Public Shared ReadOnly PreSubGroupSelection As New SimpleDefinition(GameActionId.PreSubGroupSelection)
         Public Shared ReadOnly SelectGroundItem As New SimpleDefinition(GameActionId.SelectGroundItem,
                     New ByteJar("unknown").Weaken,
@@ -417,7 +416,7 @@ Namespace WC3.Protocol
                     New NullTerminatedStringJar("mission key").Weaken,
                     New NullTerminatedStringJar("key").Weaken,
                     New ObjectTypeJar("unit type").Weaken,
-                    New ListJar(Of Dictionary(Of InvariantString, Object))("inventory", prefixSize:=4, subJar:=New TupleJar("item slot",
+                    New ListJar(Of Dictionary(Of InvariantString, Object))("inventory", prefixSize:=4, subJar:=New TupleJar("item slot", True,
                             New ObjectTypeJar("item").Weaken,
                             New UInt32Jar("charges").Weaken,
                             New UInt32Jar("unknown").Weaken)).Weaken,
@@ -434,7 +433,7 @@ Namespace WC3.Protocol
                     New Float32Jar("bonus agility per level").Weaken,
                     New UInt32Jar("base intelligence").Weaken,
                     New Float32Jar("bonus intelligence per level").Weaken,
-                    New ListJar(Of Dictionary(Of InvariantString, Object))("hero skills", prefixSize:=4, subJar:=New TupleJar("skill slot",
+                    New ListJar(Of Dictionary(Of InvariantString, Object))("hero skills", prefixSize:=4, subJar:=New TupleJar("skill slot", True,
                             New ObjectTypeJar("ability").Weaken,
                             New UInt32Jar("level").Weaken)).Weaken,
                     New Float32Jar("bonus health").Weaken,

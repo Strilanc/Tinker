@@ -107,7 +107,7 @@ Namespace WC3
         Public Shared ReadOnly MinSwitchPeriod As TimeSpan = 5.Seconds
         Public Shared ReadOnly SwitchPenaltyPeriod As TimeSpan = 1.Seconds
         Public Shared ReadOnly SwitchPenaltyFactor As Double = 1.2
-        Public Shared ReadOnly TypicalBandwidthPerSecond As Double = 1024
+        Public Shared ReadOnly TypicalBandwidthPerSecond As Double = 32000
         Public Shared ReadOnly MaxBufferedMapSize As Integer = Protocol.Packets.MaxFileDataSize * 8
         Public Shared ReadOnly UpdatePeriod As TimeSpan = 1.Seconds
 
@@ -144,8 +144,8 @@ Namespace WC3
                 Me._downloader = downloader
                 Me._uploader = uploader
                 Me._fileSize = filesize
-                Me._durationTimer = clock.AfterReset()
-                Me._lastActivityTimer = clock.AfterReset()
+                Me._durationTimer = clock.Restarted()
+                Me._lastActivityTimer = clock.Restarted()
                 Me._startingPosition = startingPosition
             End Sub
 
@@ -207,7 +207,7 @@ Namespace WC3
 
             Public Sub Advance(ByVal progress As UInt32)
                 _totalProgress += progress
-                _lastActivityTimer = _lastActivityTimer.AfterReset()
+                _lastActivityTimer = _lastActivityTimer.Restarted()
             End Sub
 
             Public Sub Dispose() Implements IDisposable.Dispose
@@ -481,11 +481,11 @@ Namespace WC3
                 If Not client.HasReported Then Return latencyDescription
                 If client.Transfer Is Nothing Then
                     If client.IsSteady Then Return latencyDescription
-                    Return If(client.ReportedHasFile, "(..ul)", "(..dl)")
+                    Return If(client.ReportedHasFile, "(ul>>)", "(dl>>)")
                 Else
                     If client.Transfer.Uploader Is _defaultClient Then Return "(DL)"
                     If client.IsSteady Then Return If(client.ReportedHasFile, "(ul)", "(dl)")
-                    Return If(client.ReportedHasFile, "(ul..)", "(dl..)")
+                    Return If(client.ReportedHasFile, "(>>ul)", "(>>dl)")
                 End If
             End Get
         End Property
@@ -547,7 +547,12 @@ Namespace WC3
 
             player.FutureDisposed.QueueCallOnSuccess(inQueue,
                 Sub()
-                    _playerClients(player).Dispose()
+                    Contract.Assume(_playerClients.ContainsKey(player))
+                    Dim client = _playerClients(player)
+                    If client.Transfer IsNot Nothing Then
+                        _game.Logger.Log("Transfer from {0} to {1} broken by {2} leaving.".Frmt(client.Transfer.Uploader, client.Transfer.Downloader, player.Name), LogMessageType.Negative)
+                    End If
+                    client.Dispose()
                     _playerClients.Remove(player)
                 End Sub)
 
@@ -613,9 +618,15 @@ Namespace WC3
             Else
                 If client.Transfer IsNot Nothing Then
                     client.Transfer.Advance(position - client.ReportedPosition)
-                    If state = Protocol.MapTransferState.Idle Then
+                End If
+                If client.ReportedPosition < _game.Map.FileSize AndAlso position = _game.Map.FileSize Then
+                    If client.Transfer IsNot Nothing Then
+                        _game.Logger.Log("{0} finished downloading the map from {1}.".Frmt(player.Name, client.Transfer.Uploader), LogMessageType.Positive)
+                        Contract.Assume(client Is client.Transfer.Downloader)
                         client.Transfer.Dispose()
                         Contract.Assume(client.Transfer Is Nothing)
+                    Else
+                        _game.Logger.Log("{0} finished downloading the map.".Frmt(player.Name), LogMessageType.Positive)
                     End If
                 End If
 
@@ -690,16 +701,13 @@ Namespace WC3
                 Dim uler = bestAvailableUploader.Player
                 TransferClient.StartTransfer(downloader, bestAvailableUploader)
 
-                If uler IsNot Nothing Then
-                    uler.QueueSendPacket(Protocol.MakeSetUploadTarget(dler.PID, downloader.ReportedPosition))
-                    dler.QueueSendPacket(Protocol.MakeSetDownloadSource(uler.PID))
-                End If
-
                 If uler Is Nothing Then
                     _game.Logger.Log("Initiating map upload to {0}.".Frmt(dler.Name), LogMessageType.Positive)
                     SendMapFileData(downloader, downloader.ReportedPosition)
                 Else
                     _game.Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
+                    uler.QueueSendPacket(Protocol.MakeSetUploadTarget(dler.PID, downloader.ReportedPosition))
+                    dler.QueueSendPacket(Protocol.MakeSetDownloadSource(uler.PID))
                 End If
             Next downloader
 

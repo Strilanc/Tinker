@@ -99,7 +99,7 @@
             Me._gameType = gameType
             Me._gameId = gameId
             Me._entryKey = entryKey
-            Me._ageClock = clock.AfterReset
+            Me._ageClock = clock.Restarted
             Me._baseAge = baseAge
             Me._totalSlotCount = totalSlotCount
             Me._usedSlotCount = usedSlotCount

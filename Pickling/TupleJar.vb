@@ -2,16 +2,25 @@ Namespace Pickling
     '''<summary>Pickles tuples of values as dictionaries keyed by jar name.</summary>
     Public Class TupleJar
         Inherits BaseJar(Of Dictionary(Of InvariantString, Object))
+
         Private ReadOnly _subJars As IList(Of IJar(Of Object))
+        Private ReadOnly _useSingleLineDescription As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_subJars IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString, ByVal ParamArray subJars() As IJar(Of Object))
+        Public Sub New(ByVal name As InvariantString,
+                       ByVal useSingleLineDescription As Boolean,
+                       ByVal ParamArray subJars() As IJar(Of Object))
             MyBase.New(name)
             Contract.Requires(subJars IsNot Nothing)
             Me._subJars = subJars
+            Me._useSingleLineDescription = useSingleLineDescription
+        End Sub
+        Public Sub New(ByVal name As InvariantString, ByVal ParamArray subJars() As IJar(Of Object))
+            Me.New(name, False, subJars)
+            Contract.Requires(subJars IsNot Nothing)
         End Sub
 
         Public Overrides Function Pack(Of TValue As Dictionary(Of InvariantString, Object))(ByVal value As TValue) As IPickle(Of TValue)
@@ -26,7 +35,10 @@ Namespace Pickling
                 Contract.Assume(value(subJar.Name) IsNot Nothing)
                 pickles.Add(subJar.Pack(value(subJar.Name)))
             Next subJar
-            Return New Pickle(Of TValue)(Me.Name, value, Concat(From p In pickles Select p.Data.ToArray).AsReadableList(), Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New Pickle(Of TValue)(Me.Name,
+                                         value,
+                                         Concat(From p In pickles Select p.Data.ToArray).AsReadableList(),
+                                         Function() Pickle(Of Object).MakeListDescription(pickles, _useSingleLineDescription))
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
@@ -49,7 +61,10 @@ Namespace Pickling
             Next j
 
             Dim datum = data.SubView(0, curOffset)
-            Return New Pickle(Of Dictionary(Of InvariantString, Object))(Me.Name, vals, datum, Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New Pickle(Of Dictionary(Of InvariantString, Object))(Me.Name,
+                                                                         vals,
+                                                                         datum,
+                                                                         Function() Pickle(Of Object).MakeListDescription(pickles, _useSingleLineDescription))
         End Function
     End Class
 End Namespace

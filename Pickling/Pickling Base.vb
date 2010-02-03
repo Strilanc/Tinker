@@ -113,10 +113,16 @@
             Contract.Ensures(Me.Data Is data)
         End Sub
 
-        Public Shared Function MakeListDescription(ByVal pickles As IEnumerable(Of IPickle(Of T))) As String
+        Public Shared Function MakeListDescription(ByVal pickles As IEnumerable(Of IPickle(Of T)),
+                                                   Optional ByVal useSingleLineDescription As Boolean = False) As String
             Contract.Requires(pickles IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-            Return {"{", (From e In pickles Select e.Description.Value).StringJoin(Environment.NewLine).Indent("    "), "}"}.StringJoin(Environment.NewLine)
+            Dim descriptions = From e In pickles Select e.Description.Value
+            If useSingleLineDescription Then
+                Return descriptions.StringJoin("; ")
+            Else
+                Return {"{", descriptions.StringJoin(Environment.NewLine).Indent("    "), "}"}.StringJoin(Environment.NewLine)
+            End If
         End Function
 
         Public ReadOnly Property Description As Lazy(Of String) Implements IPickle(Of T).Description

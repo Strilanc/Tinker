@@ -38,7 +38,7 @@ Public NotInheritable Class ThrottledWriteStream
         Contract.Requires(costLimit >= 0)
         Contract.Requires(costRecoveredPerMillisecond > 0)
 
-        Me._timer = clock.AfterReset
+        Me._timer = clock.Restarted
         Me._availableSlack = initialSlack
         Me._costEstimator = costEstimator
         Me._costLimit = costLimit
@@ -58,7 +58,7 @@ Public NotInheritable Class ThrottledWriteStream
 
         While _queuedWrites.Count > 0
             'Recover over time
-            _timer = _timer.AfterReset
+            _timer = _timer.Restarted
             Dim dt = _timer.StartingTimeOnParentClock
             _usedCost -= dt.TotalMilliseconds * _recoveryRatePerMillisecond
             If _usedCost < 0 Then _usedCost = 0

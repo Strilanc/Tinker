@@ -42,7 +42,7 @@
         If _pingQueue.Count >= _timeoutCount Then
             RaiseEvent Timeout(Me)
         Else
-            Dim record = New Tuple(Of UInt32, IClock)(CUInt(_rng.Next()), _clock.AfterReset())
+            Dim record = New Tuple(Of UInt32, IClock)(CUInt(_rng.Next()), _clock.Restarted())
             _pingQueue.Enqueue(record)
             RaiseEvent SendPing(Me, record.Item1)
         End If

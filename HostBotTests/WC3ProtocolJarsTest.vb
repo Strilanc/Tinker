@@ -16,14 +16,14 @@ Public Class WC3ProtocolJarsTest
         JarTest(jar,
                 data:={1, 255, 0, 0, 1, 2, 2, 1, 100},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"player index", 1},
-                        {"dl percent", 255},
-                        {"slot state", SlotContents.State.Open},
-                        {"is computer", 0},
-                        {"team index", 1},
+                        {"pid", 1},
+                        {"dl", 255},
+                        {"state", SlotContents.State.Open},
+                        {"cpu", 0},
+                        {"team", 1},
                         {"color", Slot.PlayerColor.Teal},
                         {"race", Slot.Races.Orc},
-                        {"computer difficulty", Slot.ComputerLevel.Normal},
+                        {"difficulty", Slot.ComputerLevel.Normal},
                         {"handicap", 100}
                     })
 

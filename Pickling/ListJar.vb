@@ -4,6 +4,7 @@ Namespace Pickling
         Inherits BaseJar(Of IList(Of T))
         Private ReadOnly _subJar As IJar(Of T)
         Private ReadOnly _prefixSize As Integer
+        Private ReadOnly _useSingleLineDescription As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_prefixSize > 0)
@@ -13,6 +14,7 @@ Namespace Pickling
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal subJar As IJar(Of T),
+                       Optional ByVal useSingleLineDescription As Boolean = False,
                        Optional ByVal prefixSize As Integer = 1)
             MyBase.New(name)
             Contract.Requires(subJar IsNot Nothing)
@@ -20,13 +22,14 @@ Namespace Pickling
             If prefixSize > 8 Then Throw New ArgumentOutOfRangeException("prefixSize", "prefixSize must be less than or equal to 8.")
             Me._subJar = subJar
             Me._prefixSize = prefixSize
+            Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
         Public Overrides Function Pack(Of TValue As IList(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             Dim pickles = (From e In value Select CType(_subJar.Pack(e), IPickle(Of T))).ToList()
             Dim data = Concat(CULng(value.Count).Bytes.SubArray(0, _prefixSize), Concat(From p In pickles Select p.Data.ToArray))
-            Return New Pickle(Of TValue)(Me.Name, value, data.AsReadableList(), Function() Pickle(Of T).MakeListDescription(pickles))
+            Return New Pickle(Of TValue)(Me.Name, value, data.AsReadableList(), Function() Pickle(Of T).MakeListDescription(pickles, _useSingleLineDescription))
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IList(Of T))
@@ -50,7 +53,10 @@ Namespace Pickling
                 If curOffset > data.Count Then Throw New InvalidStateException("Subjar '{0}' reported taking more data than was available.".Frmt(_subJar.Name))
             Next repeat
 
-            Return New Pickle(Of IList(Of T))(Me.Name, vals, data.SubView(0, curOffset), Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New Pickle(Of IList(Of T))(Me.Name,
+                                              vals,
+                                              data.SubView(0, curOffset),
+                                              Function() Pickle(Of Object).MakeListDescription(pickles, _useSingleLineDescription))
         End Function
     End Class
 End Namespace
