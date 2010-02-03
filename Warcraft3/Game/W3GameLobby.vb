@@ -282,7 +282,7 @@
 
             'Assign index
             Dim pid As PID
-            If bestMatch = SlotContents.WantPlayerPriority.Reserved Then
+            If bestMatch = SlotContents.WantPlayerPriority.ReservationForPlayer Then
                 'the player has a reserved slot and index
                 pid = bestSlot.Contents.PlayerIndex.Value
                 For Each player In bestSlot.Contents.EnumPlayers

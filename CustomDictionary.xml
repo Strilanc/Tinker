@@ -25,6 +25,9 @@
       <Word>Advex</Word>
       <Word>Starcraft</Word>
       <Word>Cooldown</Word>
+      <Word>pid</Word>
+      <Word>Pinger</Word>
+      <Word>vals</Word>
     </Recognized>
     <Unrecognized>
       <Word>Nongame</Word>
@@ -44,6 +47,7 @@
       <Acronym>CRC</Acronym>
       <Acronym>HCL</Acronym>
       <Acronym>SHA</Acronym>
+      <Acronym>PID</Acronym>
     </CasingExceptions>
   </Acronyms>
 </Dictionary>

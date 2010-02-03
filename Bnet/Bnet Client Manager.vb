@@ -107,7 +107,7 @@ Namespace Bnet
                 If user.Name.Length <= 0 Then Throw New InvalidStateException("Empty user name.")
                 _client.QueueSendWhisper(user.Name, "Command prefix: {0}".Frmt(My.Settings.commandPrefix))
                 Return
-            ElseIf Not text.StartsWith(commandPrefix) Then 'not a command
+            ElseIf Not text.StartsWith(commandPrefix, StringComparison.OrdinalIgnoreCase) Then 'not a command
                 Return 'not a command
             End If
 

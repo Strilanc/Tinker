@@ -41,7 +41,7 @@ Namespace WC3
             If text = Tinker.Bot.MainBot.TriggerCommandText Then '?Trigger command
                 _game.QueueSendMessageTo("Command prefix: {0}".Frmt(My.Settings.commandPrefix), player)
                 Return
-            ElseIf Not text.StartsWith(commandPrefix) Then 'not a command
+            ElseIf Not text.StartsWith(commandPrefix, StringComparison.OrdinalIgnoreCase) Then 'not a command
                 Return
             End If
 

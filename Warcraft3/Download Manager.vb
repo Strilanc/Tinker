@@ -237,7 +237,6 @@ Namespace WC3
             Private _totalPastTransferTime As TimeSpan
             Private _numTransfers As Integer = 0
             Private ReadOnly _clock As IClock
-            Private _transferStartPosition As UInt32
             Private ReadOnly _links As New List(Of TransferClient)
             Private ReadOnly _hooks As IReadableList(Of IFuture(Of IDisposable))
             Private _lastActivityTimer As RelativeClock

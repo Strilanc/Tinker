@@ -231,9 +231,9 @@ Namespace WC3.Protocol
         Public Overrides Function GetHashCode() As Integer
             Return CounterId.GetHashCode
         End Function
-        Public Overrides Function Equals(ByVal other As Object) As Boolean
-            If Not TypeOf other Is GameObjectId Then Return False
-            Return Me.Equals(CType(other, GameObjectId))
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            If Not TypeOf obj Is GameObjectId Then Return False
+            Return Me.Equals(CType(obj, GameObjectId))
         End Function
         Public Overloads Function Equals(ByVal other As GameObjectId) As Boolean Implements IEquatable(Of GameObjectId).Equals
             Return Me.AllocatedId = other.AllocatedId AndAlso Me.CounterId = other.CounterId
@@ -255,9 +255,9 @@ Namespace WC3.Protocol
         Public Class SimpleDefinition
             Inherits TupleJar
             Public ReadOnly id As GameActionId
-            Public Sub New(ByVal id As GameActionId, ByVal ParamArray subjars() As IJar(Of Object))
-                MyBase.New(id.ToString, subjars)
-                Contract.Requires(subjars IsNot Nothing)
+            Public Sub New(ByVal id As GameActionId, ByVal ParamArray subJars() As IJar(Of Object))
+                MyBase.New(id.ToString, subJars)
+                Contract.Requires(subJars IsNot Nothing)
                 Me.id = id
             End Sub
         End Class

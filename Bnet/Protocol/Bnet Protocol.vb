@@ -216,9 +216,9 @@ Namespace Bnet.Protocol
     Public Class SimplePacketDefinition
         Inherits TupleJar
         Public ReadOnly id As PacketId
-        Public Sub New(ByVal id As PacketId, ByVal ParamArray subjars() As IJar(Of Object))
-            MyBase.New(id.ToString, subjars)
-            Contract.Requires(subjars IsNot Nothing)
+        Public Sub New(ByVal id As PacketId, ByVal ParamArray subJars() As IJar(Of Object))
+            MyBase.New(id.ToString, subJars)
+            Contract.Requires(subJars IsNot Nothing)
             Me.id = id
         End Sub
     End Class

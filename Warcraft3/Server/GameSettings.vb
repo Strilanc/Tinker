@@ -39,7 +39,7 @@
         Private ReadOnly _isAdminGame As Boolean
         Private ReadOnly _allowDownloads As Boolean
         Private ReadOnly _allowUpload As Boolean
-        Private ReadOnly _numInstances As Integer
+        Private ReadOnly _initialInstanceCount As Integer
         Private ReadOnly _isAutoStarted As Boolean
         Private ReadOnly _adminPassword As String
         Private ReadOnly _teamSizes As IReadableList(Of Integer) = New Integer() {}.AsReadableList
@@ -67,7 +67,7 @@
             Contract.Invariant(_greeting IsNot Nothing)
             Contract.Invariant(_observerReservations IsNot Nothing)
             Contract.Invariant(_observerCount >= 0)
-            Contract.Invariant(_numInstances >= 0)
+            Contract.Invariant(_initialInstanceCount >= 0)
         End Sub
 
         Public Sub New(ByVal map As Map,
@@ -124,9 +124,9 @@
             _reservations = reserverations.AsReadableList
             'Instance count
             If argument.TryGetOptionalNamedValue("Inst") Is Nothing Then
-                Me._numInstances = 1
+                Me._initialInstanceCount = 1
             Else
-                If Not Integer.TryParse(argument.TryGetOptionalNamedValue("Inst"), Me._numInstances) OrElse Me._numInstances < 0 Then
+                If Not Integer.TryParse(argument.TryGetOptionalNamedValue("Inst"), Me._initialInstanceCount) OrElse Me._initialInstanceCount < 0 Then
                     Throw New ArgumentException("Invalid number of instances.")
                 End If
             End If
@@ -173,17 +173,17 @@
                 Return _allowUpload
             End Get
         End Property
-        Public ReadOnly Property NumInstances As Integer
+        Public ReadOnly Property InitialInstanceCount As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
                 Contract.Ensures(Contract.Result(Of Integer)() > 0 OrElse UseInstanceOnDemand)
-                Return _numInstances
+                Return _initialInstanceCount
             End Get
         End Property
         Public ReadOnly Property UseInstanceOnDemand As Boolean
             Get
-                Contract.Ensures(Contract.Result(Of Boolean)() = (_numInstances = 0))
-                Return _numInstances = 0
+                Contract.Ensures(Contract.Result(Of Boolean)() = (_initialInstanceCount = 0))
+                Return _initialInstanceCount = 0
             End Get
         End Property
         Public ReadOnly Property IsAutoStarted As Boolean

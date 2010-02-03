@@ -22,7 +22,7 @@ Namespace Bnet.Protocol
 
         Public Overrides Function Pack(Of TValue As ULong)(ByVal value As TValue) As IPickle(Of TValue)
             Dim u = CULng(value)
-            Dim digits As IList(Of Byte) = CULng(value).ToString("x{0}".Frmt(numDigits)).ToAscBytes
+            Dim digits As IList(Of Byte) = CULng(value).ToString("x{0}".Frmt(numDigits), CultureInfo.InvariantCulture).ToAscBytes
             Contract.Assume(digits.Count >= numDigits)
             If digits.Count > numDigits Then Throw New PicklingException("Value {0} is too large to fit into {1} hex digits.".Frmt(value, numDigits))
 

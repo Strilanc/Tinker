@@ -3,7 +3,7 @@
         Inherits FutureDisposable
 
         Public Event ReceivedWardenData(ByVal sender As Warden.Socket, ByVal wardenData As IReadableList(Of Byte))
-        Public Event Failed(ByVal sender As Warden.Socket, ByVal e As Exception)
+        Public Event Failed(ByVal sender As Warden.Socket, ByVal exception As Exception)
         Public Event Disconnected(ByVal sender As Warden.Socket, ByVal expected As Boolean, ByVal reason As String)
 
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue

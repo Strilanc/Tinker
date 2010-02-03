@@ -207,7 +207,7 @@
             Filled = 0
             Closed = 1
             Open = 2
-            Reserved = 3
+            ReservationForPlayer = 3
         End Enum
         Public Overridable Function WantPlayer(ByVal name As InvariantString?) As WantPlayerPriority
             Return WantPlayerPriority.Filled
@@ -356,7 +356,7 @@
             If player IsNot Nothing AndAlso name IsNot Nothing AndAlso
                                             player.isFake AndAlso
                                             player.Name = name.Value Then
-                Return WantPlayerPriority.Reserved
+                Return WantPlayerPriority.ReservationForPlayer
             Else
                 Return WantPlayerPriority.Filled
             End If

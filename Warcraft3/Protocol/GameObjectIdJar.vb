@@ -8,10 +8,10 @@ Namespace WC3.Protocol
             MyBase.New(name)
         End Sub
 
-        Public Overrides Function Pack(Of R As GameObjectId)(ByVal value As R) As IPickle(Of R)
+        Public Overrides Function Pack(Of TValue As GameObjectId)(ByVal value As TValue) As IPickle(Of TValue)
             Dim valued As GameObjectId = value
             Dim data = Concat(valued.AllocatedId.Bytes, valued.CounterId.Bytes).AsReadableList
-            Return New Pickle(Of R)(Me.Name, value, data)
+            Return New Pickle(Of TValue)(Me.Name, value, data)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameObjectId)

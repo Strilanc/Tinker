@@ -114,9 +114,9 @@
             Contract.Invariant(_blockStream IsNot Nothing OrElse _blockRemainingBytes = 0)
         End Sub
 
-        Public Sub New(ByVal substream As IO.Stream, ByVal blockCount As UInt32, ByVal firstBlockOffset As UInt32)
-            MyBase.New(substream)
-            Contract.Requires(substream IsNot Nothing)
+        Public Sub New(ByVal subStream As IO.Stream, ByVal blockCount As UInt32, ByVal firstBlockOffset As UInt32)
+            MyBase.New(subStream)
+            Contract.Requires(subStream IsNot Nothing)
             Me._nextBlockOffset = firstBlockOffset
             Me._blocksRemaining = blockCount
         End Sub

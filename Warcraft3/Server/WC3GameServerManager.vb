@@ -170,7 +170,7 @@ Namespace WC3
             If text = Tinker.Bot.MainBot.TriggerCommandText Then '?trigger command
                 game.QueueSendMessageTo("Command prefix is '{0}'".Frmt(prefix), player)
                 Return
-            ElseIf Not text.StartsWith(prefix) Then 'not a command
+            ElseIf Not text.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) Then 'not a command
                 Return
             End If
 
@@ -298,7 +298,7 @@ Namespace WC3
 
             Return _gameServer.QueueAddGameSet(gameSettings)
         End Function
-        Public Function QueueAddAminGame(ByVal name As InvariantString, ByVal password As String) As IFuture(Of GameSet)
+        Public Function QueueAddAdminGame(ByVal name As InvariantString, ByVal password As String) As IFuture(Of GameSet)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Defuturized

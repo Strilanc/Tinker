@@ -120,7 +120,7 @@ Namespace Bot
                 Dim name = argument.RawValue(0)
                 Dim password = argument.NamedValue("password")
                 Return From server In target.QueueGetOrConstructGameServer()
-                       Select server.QueueAddAminGame(name, password)
+                       Select server.QueueAddAdminGame(name, password)
                        Select "Added admin game to server. Use Lan Advertiser on auto to advertise it."
             End Function
         End Class

@@ -3,7 +3,7 @@
         Inherits FutureDisposable
 
         Public Event ReceivedWardenData(ByVal sender As Warden.Client, ByVal wardenData As IReadableList(Of Byte))
-        Public Event Failed(ByVal sender As Warden.Client, ByVal e As Exception)
+        Public Event Failed(ByVal sender As Warden.Client, ByVal exception As Exception)
         Public Event Disconnected(ByVal sender As Warden.Client, ByVal expected As Boolean, ByVal reason As String)
 
         Private ReadOnly _socket As IFuture(Of Warden.Socket)
