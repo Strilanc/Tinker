@@ -57,6 +57,7 @@ Namespace WC3
                                              ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable)
         Function MakePacketOtherPlayerJoined() As Protocol.Packet
         Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture
+        Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture
 
         <ContractClassFor(GetType(IPlayerDownloadAspect))>
         Shadows Class ContractClass
@@ -97,6 +98,11 @@ Namespace WC3
             Public Sub Dispose() Implements IDisposable.Dispose
                 Throw New NotSupportedException
             End Sub
+            Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
+                Contract.Requires(reason IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
         End Class
     End Interface
 
@@ -673,7 +679,10 @@ Namespace WC3
                 client.ReportedPosition = position
                 client.ReportedState = state
                 If Not _allowDownloads AndAlso Not client.ReportedHasFile Then
-                    Throw New IO.InvalidDataException("Downloads not allowed.")
+                    client.Player.QueueDisconnect(expected:=True,
+                                                  leaveType:=PlayerLeaveType.Disconnect,
+                                                  reason:="Downloads not allowed.")
+                    Return
                 End If
             Else
                 If client.Transfer IsNot Nothing Then

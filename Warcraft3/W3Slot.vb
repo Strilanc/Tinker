@@ -329,46 +329,46 @@
 
     Public Class SlotContentsPlayer
         Inherits SlotContents
-        Protected ReadOnly player As Player
+        Protected ReadOnly _player As Player
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(player IsNot Nothing)
+            Contract.Invariant(_player IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal parent As Slot, ByVal player As Player)
             MyBase.New(parent)
             Contract.Requires(parent IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
-            Me.player = player
+            Me._player = player
         End Sub
         Public Overrides Function EnumPlayers() As IEnumerable(Of Player)
-            Return New Player() {player}
+            Return New Player() {_player}
         End Function
         Public Overrides Function GenerateDescription() As IFuture(Of String)
-            Return If(player.isFake, "(Fake){0} pid={1}".Frmt(player.Name, player.PID.Index).Futurized, player.Description)
+            Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.PID.Index).Futurized, _player.Description)
         End Function
         Public Overrides ReadOnly Property PlayerIndex() As PID?
             Get
-                Return player.PID
+                Return _player.PID
             End Get
         End Property
         Public Overrides Function WantPlayer(ByVal name As InvariantString?) As SlotContents.WantPlayerPriority
-            If player IsNot Nothing AndAlso name IsNot Nothing AndAlso
-                                            player.isFake AndAlso
-                                            player.Name = name.Value Then
+            If _player IsNot Nothing AndAlso name IsNot Nothing AndAlso
+                                            _player.isFake AndAlso
+                                            _player.Name = name.Value Then
                 Return WantPlayerPriority.ReservationForPlayer
             Else
                 Return WantPlayerPriority.Filled
             End If
         End Function
         Public Overrides Function Clone(ByVal parent As Slot) As SlotContents
-            Return New SlotContentsPlayer(parent, player)
+            Return New SlotContentsPlayer(parent, _player)
         End Function
         Public Overrides Function Matches(ByVal query As InvariantString) As Boolean
-            Return query = player.Name
+            Return query = _player.Name
         End Function
-        Public Overrides Function RemovePlayer(ByVal targetPlayer As Player) As SlotContents
-            If Me.player Is targetPlayer Then
+        Public Overrides Function RemovePlayer(ByVal player As Player) As SlotContents
+            If Me._player Is player Then
                 Return New SlotContentsOpen(Parent)
             Else
                 Throw New InvalidOperationException()
@@ -381,12 +381,12 @@
         End Property
         Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As PID?
             Get
-                Return player.PID
+                Return _player.PID
             End Get
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
             Get
-                Return player.AdvertisedDownloadPercent
+                Return _player.AdvertisedDownloadPercent
             End Get
         End Property
         Public Overrides ReadOnly Property DataState(ByVal receiver As Player) As State
@@ -422,7 +422,7 @@
             Return MyBase.GenerateDescription.Select(Function(desc) "[Covering {0}] {1}".Frmt(coveredSlot.color, desc))
         End Function
         Public Overrides Function Clone(ByVal parent As Slot) As SlotContents
-            Return New SlotContentsCovering(parent, coveredSlot, player)
+            Return New SlotContentsCovering(parent, coveredSlot, _player)
         End Function
         Public Overrides Function RemovePlayer(ByVal player As Player) As SlotContents
             Throw New InvalidOperationException()

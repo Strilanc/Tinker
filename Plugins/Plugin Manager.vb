@@ -5,7 +5,7 @@ Namespace Plugins
         Inherits FutureDisposable
         Implements IBotComponent
 
-        Public Shared ReadOnly TypeName As String = "Plugin"
+        Private Const TypeName As String = "Plugin"
 
         Private ReadOnly _socket As Plugins.Socket
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))

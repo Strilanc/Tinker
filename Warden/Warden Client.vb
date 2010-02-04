@@ -43,8 +43,8 @@
                                                                 localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
                                                                 remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                                                 timeout:=5.Minutes,
-                                                                numBytesBeforeSize:=0,
-                                                                numSizeBytes:=2,
+                                                                headerBytesBeforeSizeCount:=0,
+                                                                headerValueSizeByteCount:=2,
                                                                 logger:=logger,
                                                                 Name:="BNLS",
                                                                 clock:=_clock)

@@ -138,7 +138,7 @@ Namespace WC3.Protocol
         Construct = 1 << 2
         Group = 1 << 3
         NoFormation = 1 << 4
-        unknown_f5 = 1 << 5 'seen in farseer summon wolf
+        Unknown5 = 1 << 5 'seen in farseer summon wolf
         SubGroup = 1 << 6
         AutoCastOn = 1 << 8
     End Enum
@@ -238,6 +238,13 @@ Namespace WC3.Protocol
         Public Overloads Function Equals(ByVal other As GameObjectId) As Boolean Implements IEquatable(Of GameObjectId).Equals
             Return Me.AllocatedId = other.AllocatedId AndAlso Me.CounterId = other.CounterId
         End Function
+
+        Public Shared Operator =(ByVal value1 As GameObjectId, ByVal value2 As GameObjectId) As Boolean
+            Return value1.equals(value2)
+        End Operator
+        Public Shared Operator <>(ByVal value1 As GameObjectId, ByVal value2 As GameObjectId) As Boolean
+            Return Not value1 = value2
+        End Operator
 
         Public Overrides Function ToString() As String
             If AllocatedId = UInt32.MaxValue AndAlso CounterId = UInt32.MaxValue Then Return "[none]"

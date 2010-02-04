@@ -31,7 +31,6 @@
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
         Private _numPeerConnections As Integer
         Private _downloadManager As DownloadManager
-        Private ReadOnly settings As GameSettings
         Private ReadOnly pinger As Pinger
 
         Private ReadOnly _name As InvariantString
@@ -41,7 +40,7 @@
         Private ReadOnly logger As Logger
 
         Public hasVotedToStart As Boolean
-        Public numAdminTries As Integer
+        Public adminAttemptCount As Integer
         Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
 
         Public ReadOnly Property Name As InvariantString Implements IPlayerDownloadAspect.Name
@@ -70,19 +69,16 @@
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(socket Is Nothing = isFake)
             Contract.Invariant(testCanHost IsNot Nothing)
-            Contract.Invariant(numAdminTries >= 0)
-            Contract.Invariant(settings IsNot Nothing)
+            Contract.Invariant(adminAttemptCount >= 0)
             Contract.Invariant(socket IsNot Nothing)
             Contract.Invariant(totalTockTime >= 0)
         End Sub
 
         '''<summary>Creates a fake player.</summary>
         Public Sub New(ByVal index As PID,
-                       ByVal settings As GameSettings,
                        ByVal name As InvariantString,
                        Optional ByVal logger As Logger = Nothing)
 
-            Me.settings = settings
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New Protocol.W3PacketHandler(name, Me.logger)
             Me._index = index
@@ -98,7 +94,6 @@
 
         '''<summary>Creates a real player.</summary>
         Public Sub New(ByVal index As PID,
-                       ByVal settings As GameSettings,
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        ByVal clock As IClock,
                        ByVal downloadManager As DownloadManager,
@@ -107,7 +102,6 @@
             'Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Assume(connectingPlayer IsNot Nothing)
 
-            Me.settings = settings
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New Protocol.W3PacketHandler(connectingPlayer.Name, Me.logger)
             connectingPlayer.Socket.Logger = Me.logger
@@ -173,9 +167,7 @@
             RaiseEvent Disconnected(Me, expected, leaveType, reason)
             Me.Dispose()
         End Sub
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture
-            Contract.Requires(reason IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
             Return inQueue.QueueAction(Sub() Disconnect(expected, leaveType, reason))
         End Function
 
@@ -231,7 +223,7 @@
                               _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc))
                    ).Defuturized
         End Function
-        Public ReadOnly Property NumPeerConnections() As Integer
+        Public ReadOnly Property PeerConnectionCount() As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
                 Contract.Ensures(Contract.Result(Of Integer)() <= 12)

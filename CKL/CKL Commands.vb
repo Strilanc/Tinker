@@ -17,7 +17,7 @@ Namespace CKL
                       Dim name = argument.RawValue(0).AssumeNotNull
                       Dim rocKey = argument.NamedValue("roc").AssumeNotNull
                       Dim tftKey = argument.NamedValue("tft").AssumeNotNull
-                      Return target.AddKey(name, rocKey, tftKey).EvalOnSuccess(Function() "Key '{0}' added.".Frmt(name))
+                      Return target.QueueAddKey(name, rocKey, tftKey).EvalOnSuccess(Function() "Key '{0}' added.".Frmt(name))
                   End Function)
 
         Private Shared ReadOnly RemoveKey As New DelegatedTemplatedCommand(Of CKL.Server)(
@@ -26,7 +26,7 @@ Namespace CKL
             Description:="Removes a lendable key pair.",
             func:=Function(target, user, argument)
                       Dim name = argument.RawValue(0).AssumeNotNull
-                      Return target.RemoveKey(name).EvalOnSuccess(Function() "Key '{0}' removed.".Frmt(name))
+                      Return target.QueueRemoveKey(name).EvalOnSuccess(Function() "Key '{0}' removed.".Frmt(name))
                   End Function)
     End Class
 End Namespace

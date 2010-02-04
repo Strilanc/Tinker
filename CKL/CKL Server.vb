@@ -39,7 +39,7 @@ Namespace CKL
             Me.Accepter.OpenPort(listenPort.Port)
         End Sub
 
-        Public Function AddKey(ByVal keyName As InvariantString, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As IFuture
+        Public Function QueueAddKey(ByVal keyName As InvariantString, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As IFuture
             Contract.Requires(cdKeyROC IsNot Nothing)
             Contract.Requires(cdKeyTFT IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
@@ -48,14 +48,12 @@ Namespace CKL
                     If (From k In keys Where k.Name = keyName).Any Then
                         Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(keyName))
                     End If
-                    If cdKeyROC.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Not a ROC cd key.", "cdKeyROC")
-                    If cdKeyTFT.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("Not a TFT cd key.", "cdKeyTFT")
                     Dim key = New CKL.KeyEntry(keyName, cdKeyROC, cdKeyTFT)
                     keys.Add(key)
                 End Sub
             )
         End Function
-        Public Function RemoveKey(ByVal keyName As InvariantString) As IFuture
+        Public Function QueueRemoveKey(ByVal keyName As InvariantString) As IFuture
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return inQueue.QueueAction(
                 Sub()

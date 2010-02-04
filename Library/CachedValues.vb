@@ -58,8 +58,8 @@ Public Class CachedExternalValues
         End Get
     End Property
 
-    Public Function GenerateRevisionCheck(ByVal folder As String, ByVal seedString As String, ByVal challengeString As String) As UInteger Implements IExternalValues.GenerateRevisionCheck
-        Return Bnet.GenerateRevisionCheck(folder, seedString, challengeString)
+    Public Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInteger Implements IExternalValues.GenerateRevisionCheck
+        Return Bnet.GenerateRevisionCheck(folder, challengeSeed, challengeInstructions)
     End Function
 
     Public ReadOnly Property WC3FileSize As UInteger Implements IExternalValues.WC3FileSize
@@ -80,16 +80,16 @@ Public Interface IExternalValues
     ReadOnly Property WC3ExeVersion As IReadableList(Of Byte)
     ReadOnly Property WC3FileSize As UInt32
     ReadOnly Property WC3LastModifiedTime As Date
-    Function GenerateRevisionCheck(ByVal folder As String, ByVal seedString As String, ByVal challengeString As String) As UInt32
+    Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInt32
 
     <ContractClassFor(GetType(IExternalValues))>
     Class ContractClass
         Implements IExternalValues
 
-        Public Function GenerateRevisionCheck(ByVal folder As String, ByVal seedString As String, ByVal challengeString As String) As UInteger Implements IExternalValues.GenerateRevisionCheck
+        Public Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInteger Implements IExternalValues.GenerateRevisionCheck
             Contract.Requires(folder IsNot Nothing)
-            Contract.Requires(seedString IsNot Nothing)
-            Contract.Requires(challengeString IsNot Nothing)
+            Contract.Requires(challengeSeed IsNot Nothing)
+            Contract.Requires(challengeInstructions IsNot Nothing)
             Throw New NotSupportedException
         End Function
 

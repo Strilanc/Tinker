@@ -37,8 +37,8 @@ Namespace Bnet.Protocol
                 New UInt32Jar("elapsed seconds").Weaken,
                 New NullTerminatedStringJar("game name").Weaken,
                 New NullTerminatedStringJar("game password").Weaken,
-                New TextHexValueJar("num free slots", numdigits:=1).Weaken,
-                New TextHexValueJar("game id", numdigits:=8).Weaken,
+                New TextHexValueJar("num free slots", digitCount:=1).Weaken,
+                New TextHexValueJar("game id", digitCount:=8).Weaken,
                 New WC3.GameStatsJar("game statstring").Weaken)
 
         Public Sub New()

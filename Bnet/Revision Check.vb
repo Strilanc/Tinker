@@ -132,17 +132,17 @@ Namespace Bnet
 
         '''<summary>Selects a seed based on the index string.</summary>
         <Pure()>
-        Private Function ExtractIndexStringHashSeed(ByVal indexString As String) As UInteger
-            Contract.Requires(indexString IsNot Nothing)
+        Private Function ExtractIndexStringHashSeed(ByVal challengeSeed As String) As UInteger
+            Contract.Requires(challengeSeed IsNot Nothing)
 
-            Dim invIndexString As InvariantString = indexString
+            Dim invIndexString As InvariantString = challengeSeed
             If Not invIndexString Like "ver-ix86-#.mpq" AndAlso Not invIndexString Like "ix86ver#.mpq" Then
-                Throw New ArgumentException("Unrecognized Index String: {0}".Frmt(indexString), "indexString")
+                Throw New ArgumentException("Unrecognized Index String: {0}".Frmt(challengeSeed), "challengeSeed")
             End If
-            Contract.Assume(indexString.Length >= 5)
+            Contract.Assume(challengeSeed.Length >= 5)
 
-            Dim index = Byte.Parse(indexString(indexString.Length - 5), CultureInfo.InvariantCulture)
-            If index >= IndexStringSeeds.Length Then Throw New ArgumentOutOfRangeException("indexString", "Extracted index is larger than the hash seed table.")
+            Dim index = Byte.Parse(challengeSeed(challengeSeed.Length - 5), CultureInfo.InvariantCulture)
+            If index >= IndexStringSeeds.Length Then Throw New ArgumentOutOfRangeException("challengeSeed", "Extracted index is larger than the hash seed table.")
             Return IndexStringSeeds(index)
         End Function
 
@@ -150,18 +150,18 @@ Namespace Bnet
         ''' Determines the revision check value used when connecting to bnet.
         ''' </summary>
         ''' <param name="folder">The folder containing the hash files: War3.exe, Storm.dll, Game.dll.</param>
-        ''' <param name="seedString">Seeds the initial hash state.</param>
-        ''' <param name="challengeString">Specifies initial hash state as well how the hash state is updated.</param>
+        ''' <param name="challengeSeed">Seeds the initial hash state.</param>
+        ''' <param name="challengeInstructions">Specifies initial hash state as well how the hash state is updated.</param>
         ''' <remarks>Example input: A=443747131 B=3328179921 C=1040998290 4 A=A^S B=B-C C=C^A A=A+B</remarks>
         Public Function GenerateRevisionCheck(ByVal folder As String,
-                                              ByVal seedString As String,
-                                              ByVal challengeString As String) As UInteger
+                                              ByVal challengeSeed As String,
+                                              ByVal challengeInstructions As String) As UInteger
             Contract.Requires(folder IsNot Nothing)
-            Contract.Requires(seedString IsNot Nothing)
-            Contract.Requires(challengeString IsNot Nothing)
+            Contract.Requires(challengeSeed IsNot Nothing)
+            Contract.Requires(challengeInstructions IsNot Nothing)
 
             'Parse
-            Dim lines = challengeString.Split(" "c).AsEnumerable.GetEnumerator()
+            Dim lines = challengeInstructions.Split(" "c).AsEnumerable.GetEnumerator()
             Dim variables = ReadVariablesFrom(lines)
             Dim operations = ReadOperationsFrom(lines, variables)
             If lines.MoveNext Then Throw New ArgumentException("More revision check instructions than expected.")
@@ -171,7 +171,7 @@ Namespace Bnet
             Dim indexS = variables.CacheIndexOf("S"c)
 
             'Seed variable A [the point of this? obfuscation I guess]
-            variables.ValueAt(indexA) = variables.ValueAt(indexA) Xor ExtractIndexStringHashSeed(seedString)
+            variables.ValueAt(indexA) = variables.ValueAt(indexA) Xor ExtractIndexStringHashSeed(challengeSeed)
 
             'Init tail buffer [used to extend file data to a multiple of 1024]
             Dim tailBuffer(0 To 1024 - 1) As Byte

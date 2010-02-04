@@ -103,7 +103,7 @@ Namespace WC3
                              handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveOtherPlayerLeft(pickle)))
             AddPacketHandler(id:=Protocol.PacketId.StartLoading,
                              jar:=Protocol.Packets.StartLoading,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveStartLoading(pickle)))
+                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveStartLoading()))
             AddPacketHandler(id:=Protocol.PacketId.Tick,
                              jar:=Protocol.Packets.Tick,
                              handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveTick(pickle)))
@@ -170,7 +170,7 @@ Namespace WC3
                 _playerHooks.Remove(player)
             End If
         End Sub
-        Private Sub OnReceiveStartLoading(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub OnReceiveStartLoading()
             If mode = DummyPlayerMode.DownloadMap Then
                 Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
             ElseIf mode = DummyPlayerMode.EnterGame Then
@@ -254,7 +254,7 @@ Namespace WC3
                         logger.Log("{0} is a peer connection from {1}.".Frmt(socket.Name, player.name), LogMessageType.Positive)
                         socket.Name = player.name
                         player.SetSocket(socket)
-                        socket.SendPacket(Protocol.MakePeerKnock(player.peerKey, Me.index, 0))
+                        socket.SendPacket(Protocol.MakePeerKnock(player.peerKey, Me.index, {}))
                     End If
                 End Sub
             )
@@ -275,7 +275,7 @@ Namespace WC3
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = pickle.Value
-            sender.Socket.SendPacket(Protocol.MakePeerPing(CUInt(vals("salt")), 1))
+            sender.Socket.SendPacket(Protocol.MakePeerPing(CUInt(vals("salt")), {New PID(1)}))
             sender.Socket.SendPacket(Protocol.MakePeerPong(CUInt(vals("salt"))))
         End Sub
         Private Sub OnPeerReceiveMapFileData(ByVal sender As W3Peer,

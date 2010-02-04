@@ -78,6 +78,7 @@ Public Class DownloadManagerTest
         Inherits FutureDisposable
         Implements IPlayerDownloadAspect
         Private ReadOnly _failFuture As New FutureAction()
+        Private ReadOnly _discFuture As New FutureAction()
         Private ReadOnly _pid As PID
         Private ReadOnly _pq As New Queue(Of Packet)()
         Private ReadOnly _lock As New System.Threading.ManualResetEvent(initialState:=False)
@@ -90,6 +91,8 @@ Public Class DownloadManagerTest
             Me._pid = pid
             Me._logger = logger
             Me._name = If(name Is Nothing, "TestPlayer{0}".Frmt(pid.Index), name.Value.ToString)
+            _failFuture.SetHandled()
+            _discFuture.SetHandled()
         End Sub
         Public Function MakePacketOtherPlayerJoined() As Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Return MakeOtherPlayerJoined(Name, PID, 0, New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
@@ -163,11 +166,21 @@ Public Class DownloadManagerTest
                 Return _failFuture
             End Get
         End Property
+        Public ReadOnly Property DiscFuture As IFuture
+            Get
+                Return _discFuture
+            End Get
+        End Property
         Public Function InjectClientMapInfo(ByVal state As MapTransferState, ByVal position As UInt32) As ifuture
             Return InjectReceivedPacket(MakeClientMapInfo(state, position))
         End Function
         Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PID) As ifuture
             Return InjectReceivedPacket(MakeMapFileDataReceived(senderPid, PID, position))
+        End Function
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
+            _logger.Log("{0} Disconnected: {1}, {2}".Frmt(Me.Name, leaveType, reason), LogMessageType.Negative)
+            _discFuture.TrySetSucceeded()
+            Return _discFuture
         End Function
     End Class
 

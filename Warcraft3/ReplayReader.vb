@@ -66,7 +66,7 @@
         Tick = &H1F
         ChatMessage = &H20
         GameStateChecksum = &H22
-        Unknown_0x23 = &H23
+        Unknown0x23 = &H23
         TournamentForcedCountdown = &H2F
     End Enum
 
@@ -102,7 +102,7 @@
         End Function
     End Class
 
-    Public Class ReplayDataReader
+    Public NotInheritable Class ReplayDataReader
         Inherits WrappedReadOnlyStream
         Private _blocksRemaining As UInt32
         Private _nextBlockOffset As UInt32
@@ -303,7 +303,7 @@
                                                                                         {"checksum", br.ReadUInt32()}
                                                                                    })
 
-                                                    Case ReplayEntryId.Unknown_0x23
+                                                    Case ReplayEntryId.Unknown0x23
                                                         Return New ReplayEntry(blockId,
                                                                                New Dictionary(Of InvariantString, Object) From {
                                                                                         {"unknown1", br.ReadUInt32()},

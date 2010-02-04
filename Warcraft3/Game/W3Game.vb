@@ -27,10 +27,10 @@ Namespace WC3
         Inherits FutureDisposable
         Implements IGameDownloadAspect
 
-        Public Shared ReadOnly GameGuestCommandsLobby As New WC3.InstanceGuestSetupCommands
-        Public Shared ReadOnly GameGuestCommandsGamePlay As New WC3.InstanceGuestPlayCommands
-        Public Shared ReadOnly GameCommandsGamePlay As New WC3.InstancePlayCommands
-        Public Shared ReadOnly GameCommandsLobby As New WC3.InstanceSetupCommands
+        Public Shared ReadOnly GuestLobbyCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestLobbyCommands()
+        Public Shared ReadOnly GuestInGameCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestInGameCommands()
+        Public Shared ReadOnly HostInGameCommands As Commands.CommandSet(Of Game) = GameCommands.MakeHostInGameCommands()
+        Public Shared ReadOnly HostLobbyCommands As Commands.CommandSet(Of Game) = GameCommands.MakeHostLobbyCommands()
 
         Private ReadOnly _clock As IClock
         Private ReadOnly _map As Map
@@ -147,17 +147,17 @@ Namespace WC3
             Dim user = If(player Is Nothing, Nothing, New BotUser(player.Name))
             If player IsNot adminPlayer AndAlso player IsNot Nothing Then
                 If state < GameState.Loading Then
-                    Return Game.GameGuestCommandsLobby.Invoke(Me, user, argument)
+                    Return Game.GuestLobbyCommands.Invoke(Me, user, argument)
                 Else
-                    Return Game.GameGuestCommandsGamePlay.Invoke(Me, user, argument)
+                    Return Game.GuestInGameCommands.Invoke(Me, user, argument)
                 End If
             ElseIf settings.IsAdminGame Then
-                Return New WC3.InstanceAdminCommands(bot).Invoke(Me, Nothing, argument)
+                Return GameCommands.MakeBotAdminCommands(bot).Invoke(Me, Nothing, argument)
             Else
                 If state < GameState.Loading Then
-                    Return Game.GameCommandsLobby.Invoke(Me, user, argument)
+                    Return Game.HostLobbyCommands.Invoke(Me, user, argument)
                 Else
-                    Return Game.GameCommandsGamePlay.Invoke(Me, user, argument)
+                    Return Game.HostInGameCommands.Invoke(Me, user, argument)
                 End If
             End If
         End Function
@@ -441,8 +441,8 @@ Namespace WC3
             If player Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
             If adminPlayer IsNot Nothing Then Throw New InvalidOperationException("A player is already the admin.")
             If password IsNot Nothing Then
-                player.numAdminTries += 1
-                If player.numAdminTries > 5 Then Throw New InvalidOperationException("Too many tries.")
+                player.adminAttemptCount += 1
+                If player.adminAttemptCount > 5 Then Throw New InvalidOperationException("Too many tries.")
                 If password <> settings.AdminPassword Then
                     Throw New InvalidOperationException("Incorrect password.")
                 End If

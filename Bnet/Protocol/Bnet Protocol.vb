@@ -353,8 +353,8 @@ Namespace Bnet.Protocol
                 New UInt32Jar("is ladder").Weaken,
                 New NullTerminatedStringJar("name").Weaken,
                 New NullTerminatedStringJar("password").Weaken,
-                New TextHexValueJar("num free slots", numdigits:=1).Weaken,
-                New TextHexValueJar("game id", numdigits:=8).Weaken,
+                New TextHexValueJar("num free slots", digitCount:=1).Weaken,
+                New TextHexValueJar("game id", digitCount:=8).Weaken,
                 New WC3.GameStatsJar("statstring").Weaken)
         Public Shared ReadOnly CloseGame3 As New SimplePacketDefinition(PacketId.CloseGame3)
         Public Shared ReadOnly JoinChannel As New SimplePacketDefinition(PacketId.JoinChannel,

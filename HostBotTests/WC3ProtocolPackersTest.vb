@@ -128,11 +128,11 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakePeerKnockTest()
-        MakePeerKnock(20, New PID(1), 7)
+        MakePeerKnock(20, New PID(1), {New PID(1), New PID(3)})
     End Sub
     <TestMethod()>
     Public Sub MakePeerPingTest()
-        MakePeerPing(42, 7)
+        MakePeerPing(42, {New PID(1), New PID(3)})
     End Sub
     <TestMethod()>
     Public Sub MakePeerPongTest()

@@ -6,8 +6,8 @@ Public NotInheritable Class PacketSocket
     Private ReadOnly packetStreamer As PacketStreamer
     Private ReadOnly _remoteEndPoint As IPEndPoint
     Private ReadOnly _localEndPoint As IPEndPoint
-    Private _logger As Logger
-    Private _name As InvariantString
+    Public Property Name As InvariantString
+    Public Property Logger As Logger
 
     Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
     Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue()
@@ -16,25 +16,6 @@ Public NotInheritable Class PacketSocket
     Public ReadOnly bufferSize As Integer
     Public Event Disconnected(ByVal sender As PacketSocket, ByVal expected As Boolean, ByVal reason As String)
     Private WithEvents deadManSwitch As DeadManSwitch
-
-    Public Property Name As InvariantString
-        Get
-            Return Me._name
-        End Get
-        Set(ByVal value As InvariantString)
-            Me._name = value
-        End Set
-    End Property
-    Public Property Logger As Logger
-        Get
-            Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
-            Return Me._logger
-        End Get
-        Set(ByVal value As Logger)
-            Contract.Requires(value IsNot Nothing)
-            Me._logger = value
-        End Set
-    End Property
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(inQueue IsNot Nothing)
@@ -49,7 +30,7 @@ Public NotInheritable Class PacketSocket
         Contract.Invariant(_remoteEndPoint.Address IsNot Nothing)
         Contract.Invariant(_remoteEndPoint.Port >= UInt16.MinValue)
         Contract.Invariant(_remoteEndPoint.Port <= UInt16.MaxValue)
-        Contract.Invariant(_logger IsNot Nothing)
+        Contract.Invariant(Logger IsNot Nothing)
     End Sub
 
     Public Sub New(ByVal stream As IO.Stream,
@@ -59,8 +40,8 @@ Public NotInheritable Class PacketSocket
                    Optional ByVal timeout As TimeSpan? = Nothing,
                    Optional ByVal logger As Logger = Nothing,
                    Optional ByVal bufferSize As Integer = DefaultBufferSize,
-                   Optional ByVal numBytesBeforeSize As Integer = 2,
-                   Optional ByVal numSizeBytes As Integer = 2,
+                   Optional ByVal headerBytesBeforeSizeCount As Integer = 2,
+                   Optional ByVal headerValueSizeByteCount As Integer = 2,
                    Optional ByVal name As InvariantString? = Nothing)
         Contract.Assume(clock IsNot Nothing)
         Contract.Assume(stream IsNot Nothing)
@@ -72,9 +53,9 @@ Public NotInheritable Class PacketSocket
         Contract.Assume(localEndPoint.Port <= UInt16.MaxValue)
         Contract.Assume(remoteEndPoint.Port >= UInt16.MinValue)
         Contract.Assume(remoteEndPoint.Port <= UInt16.MaxValue)
-        Contract.Assume(numBytesBeforeSize >= 0)
-        Contract.Assume(numSizeBytes > 0)
-        Contract.Assume(bufferSize >= numBytesBeforeSize + numSizeBytes)
+        Contract.Assume(headerBytesBeforeSizeCount >= 0)
+        Contract.Assume(headerValueSizeByteCount > 0)
+        Contract.Assume(bufferSize >= headerBytesBeforeSizeCount + headerValueSizeByteCount)
         Contract.Assume(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
 
         Me._stream = stream
@@ -84,7 +65,7 @@ Public NotInheritable Class PacketSocket
             Me.deadManSwitch.Arm()
         End If
         Me._logger = If(logger, New Logger)
-        Me.packetStreamer = New PacketStreamer(Me._stream, numBytesBeforeSize, numSizeBytes, maxPacketSize:=bufferSize)
+        Me.packetStreamer = New PacketStreamer(Me._stream, headerBytesBeforeSizeCount, headerValueSizeByteCount, maxPacketSize:=bufferSize)
         Me._isConnected = True
         Me._remoteEndPoint = remoteEndPoint
         Me._localEndPoint = localEndPoint
@@ -98,6 +79,33 @@ Public NotInheritable Class PacketSocket
         End If
         Me._name = If(name, New InvariantString(Me.RemoteEndPoint.ToString))
     End Sub
+    Public Shared Function AsyncConnect(ByVal remoteHost As String,
+                                        ByVal remotePort As UShort,
+                                        ByVal clock As IClock,
+                                        Optional ByVal timeout As TimeSpan? = Nothing,
+                                        Optional ByVal logger As Logger = Nothing,
+                                        Optional ByVal bufferSize As Integer = DefaultBufferSize,
+                                        Optional ByVal headerBytesBeforeSizeCount As Integer = 2,
+                                        Optional ByVal headerValueSizeByteCount As Integer = 2,
+                                        Optional ByVal name As InvariantString? = Nothing) As IFuture(Of PacketSocket)
+        Contract.Requires(remoteHost IsNot Nothing)
+        Contract.Requires(clock IsNot Nothing)
+        Contract.Requires(headerBytesBeforeSizeCount >= 0)
+        Contract.Requires(headerValueSizeByteCount > 0)
+        Contract.Requires(bufferSize >= headerBytesBeforeSizeCount + headerValueSizeByteCount)
+        Contract.Requires(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
+        Return From socket In AsyncTcpConnect(remoteHost, remotePort)
+               Select New PacketSocket(socket.GetStream,
+                                       CType(socket.Client.LocalEndPoint, Net.IPEndPoint),
+                                       CType(socket.Client.RemoteEndPoint, Net.IPEndPoint),
+                                       clock,
+                                       timeout,
+                                       logger,
+                                       bufferSize,
+                                       headerBytesBeforeSizeCount,
+                                       headerValueSizeByteCount,
+                                       name)
+    End Function
 
     Public ReadOnly Property RemoteEndPoint As IPEndPoint
         Get
@@ -111,6 +119,12 @@ Public NotInheritable Class PacketSocket
             Contract.Ensures(Contract.Result(Of IPEndPoint)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPEndPoint)().Address IsNot Nothing)
             Return _localEndPoint
+        End Get
+    End Property
+    Public ReadOnly Property SubStream As IO.Stream
+        Get
+            Contract.Ensures(Contract.Result(Of IO.Stream)() IsNot Nothing)
+            Return _stream
         End Get
     End Property
     Public ReadOnly Property IsConnected() As Boolean
@@ -166,11 +180,4 @@ Public NotInheritable Class PacketSocket
         _stream.Write(data, 0, data.Length)
         Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
     End Sub
-
-    Public ReadOnly Property SubStream As IO.Stream
-        Get
-            Contract.Ensures(Contract.Result(Of IO.Stream)() IsNot Nothing)
-            Return _stream
-        End Get
-    End Property
 End Class

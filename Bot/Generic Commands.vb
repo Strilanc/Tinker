@@ -5,7 +5,7 @@ Namespace Bot
         Private Sub New()
         End Sub
 
-        Public NotInheritable Class CRecacheIP(Of T)
+        Public NotInheritable Class CommandRecacheIP(Of T)
             Inherits TemplatedCommand(Of T)
             Public Sub New()
                 MyBase.New(Name:="RecacheIP",
@@ -19,7 +19,7 @@ Namespace Bot
             End Function
         End Class
 
-        Public NotInheritable Class CDownloadMap(Of T)
+        Public NotInheritable Class CommandDownloadMap(Of T)
             Inherits TemplatedCommand(Of T)
             Public Sub New()
                 MyBase.New(Name:="DownloadMap",
@@ -105,7 +105,7 @@ Namespace Bot
             End Function
         End Class
 
-        Public NotInheritable Class CFindMaps(Of T)
+        Public NotInheritable Class CommandFindMaps(Of T)
             Inherits Command(Of T)
             Public Sub New()
                 MyBase.New(Name:="FindMaps",

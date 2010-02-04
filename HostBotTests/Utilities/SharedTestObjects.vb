@@ -41,6 +41,5 @@ Friend Module SharedTestObjects
             argument:=TestArgument)
     Friend ReadOnly TestPlayer As New Player(
         index:=New PID(1),
-        settings:=TestSettings,
         name:="test")
 End Module

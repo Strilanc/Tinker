@@ -18,24 +18,16 @@
                                        serverCDKeySalt.Bytes)
 
             'Connect to CKL server and send request
-            Dim futureSocket = AsyncTcpConnect(remoteHost, remotePort).Select(
-                Function(tcpClient)
-                    Dim socket = New PacketSocket(stream:=tcpClient.GetStream,
-                                                  localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                                  remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                                                  timeout:=10.Seconds,
-                                                  clock:=clock)
+            Dim futureSocket = PacketSocket.AsyncConnect(remoteHost, remotePort, clock, timeout:=10.Seconds)
+            Dim futureResponse = futureSocket.Select(
+                Function(socket)
                     socket.WritePacket(requestPacket)
-                    Return socket
-                End Function)
-
-            'Read response
-            Dim futureReadPacket = futureSocket.Select(
-                Function(socket) socket.AsyncReadPacket()
+                    Return socket.AsyncReadPacket()
+                End Function
             ).Defuturized
 
             'Process response
-            Dim futureKeys = futureReadPacket.Select(
+            Dim futureKeys = futureResponse.Select(
                 Function(packetData)
                     futureSocket.Value.QueueDisconnect(expected:=True, reason:="Received response")
 

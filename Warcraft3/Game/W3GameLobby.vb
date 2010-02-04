@@ -220,7 +220,7 @@
             freeIndexes.Remove(index)
 
             'Make player
-            Dim newPlayer = New Player(index, settings, name, Logger)
+            Dim newPlayer = New Player(index, name, Logger)
             If newSlot IsNot Nothing Then
                 newSlot.Contents = New SlotContentsPlayer(newSlot, newPlayer)
             End If
@@ -311,7 +311,7 @@
             freeIndexes.Remove(pid)
 
             'Create player object
-            Dim newPlayer = New Player(pid, settings, connectingPlayer, _clock, _downloadManager, Logger)
+            Dim newPlayer = New Player(pid, connectingPlayer, _clock, _downloadManager, Logger)
             bestSlot.Contents = bestSlot.Contents.TakePlayer(newPlayer)
             _players.Add(newPlayer)
 

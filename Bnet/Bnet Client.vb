@@ -674,8 +674,8 @@ Namespace Bnet
             Try
                 revisionCheckResponse = _externalProvider.GenerateRevisionCheck(
                     folder:=My.Settings.war3path,
-                    seedString:=revisionCheckSeedString,
-                    challengeString:=revisionCheckChallenge)
+                    challengeSeed:=revisionCheckSeedString,
+                    challengeInstructions:=revisionCheckChallenge)
             Catch ex As ArgumentException
                 If revisionCheckChallenge = "" Then
                     Throw New IO.InvalidDataException("Received an invalid revision check challenge from bnet. Try connecting again.")
