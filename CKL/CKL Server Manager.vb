@@ -23,7 +23,7 @@ Namespace CKL
             Me._control = New GenericBotComponentControl(Me)
         End Sub
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
             _server.Stop()
             _control.AsyncInvokedAction(Sub() _control.Dispose())
             Return Nothing
@@ -40,7 +40,7 @@ Namespace CKL
                 Return True
             End Get
         End Property
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Strilbrary.Threading.IFuture(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
             Return Commands.Invoke(_server, user, argument)
         End Function
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
@@ -48,7 +48,7 @@ Namespace CKL
         End Function
         Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger
             Get
-                Return New Logger
+                Return _server.Logger
             End Get
         End Property
         Public ReadOnly Property Name As InvariantString Implements IBotComponent.Name

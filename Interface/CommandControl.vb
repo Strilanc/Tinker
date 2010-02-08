@@ -15,6 +15,8 @@ Public Class CommandControl
     Private Sub txtCommand_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtCommand.KeyDown
         Select Case e.KeyCode
             Case Keys.Enter
+                e.Handled = True
+                e.SuppressKeyPress = True
                 If txtCommand.Text = "" Then Return
                 RaiseEvent IssuedCommand(Me, txtCommand.Text)
 
@@ -22,7 +24,6 @@ Public Class CommandControl
                 _history(_historyPointer - 1) = txtCommand.Text
                 _history.Add("")
                 txtCommand.Text = ""
-                e.Handled = True
             Case Keys.Up
                 _history(_historyPointer) = txtCommand.Text
                 _historyPointer = (_historyPointer - 1).Between(0, _history.Count - 1)

@@ -91,18 +91,19 @@
         End SyncLock
     End Function
 
+    <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class PortHandle
         Inherits FutureDisposable
-        Private ReadOnly pool As PortPool
+        Private ReadOnly _pool As PortPool
         Private ReadOnly _port As UShort
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(pool IsNot Nothing)
+            Contract.Invariant(_pool IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal pool As PortPool, ByVal port As UShort)
             Contract.Requires(pool IsNot Nothing)
-            Me.pool = pool
+            Me._pool = pool
             Me._port = port
         End Sub
 
@@ -114,15 +115,19 @@
         End Property
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
-            SyncLock pool.lock
-                Contract.Assume(pool.OutPorts.Contains(_port))
-                Contract.Assume(Not pool.InPorts.Contains(_port))
-                pool.OutPorts.Remove(_port)
-                If pool.PortPool.Contains(_port) Then
-                    pool.InPorts.Add(_port)
+            SyncLock _pool.lock
+                Contract.Assume(_pool.OutPorts.Contains(_port))
+                Contract.Assume(Not _pool.InPorts.Contains(_port))
+                _pool.OutPorts.Remove(_port)
+                If _pool.PortPool.Contains(_port) Then
+                    _pool.InPorts.Add(_port)
                 End If
             End SyncLock
             Return Nothing
+        End Function
+
+        Public Overrides Function ToString() As String
+            Return _port.ToString(CultureInfo.InvariantCulture) + If(FutureDisposed.State <> FutureState.Unknown, " (disposed)", "")
         End Function
     End Class
 End Class

@@ -263,6 +263,7 @@ Namespace WC3
                 Return From players In target.QueueGetPlayers()
                        From latencies In (From player In players Select player.QueueGetLatencyDescription).ToList.Defuturized
                        Select "Estimated RTT: {0}".Frmt((From i In Enumerable.Range(0, players.Count)
+                                                         Where Not players(i).isFake
                                                          Select "{0}={1}".Frmt(players(i).Name, latencies(i))
                                                         ).StringJoin(" "))
             End Function

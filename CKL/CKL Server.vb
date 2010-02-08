@@ -10,19 +10,19 @@ Namespace CKL
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
 
         Public ReadOnly name As InvariantString
-        Private WithEvents Accepter As New ConnectionAccepter()
-        Private ReadOnly logger As New Logger()
-        Private ReadOnly keys As New AsyncViewableCollection(Of CKL.KeyEntry)(outQueue:=outQueue)
-        Private keyIndex As Integer
-        Private ReadOnly portHandle As PortPool.PortHandle
+        Private WithEvents _accepter As New ConnectionAccepter()
+        Private ReadOnly _logger As New Logger()
+        Private ReadOnly _keys As New AsyncViewableCollection(Of CKL.KeyEntry)(outQueue:=outQueue)
+        Private ReadOnly _portHandle As PortPool.PortHandle
         Private ReadOnly _clock As IClock
+        Private _keyIndex As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(Accepter IsNot Nothing)
-            Contract.Invariant(logger IsNot Nothing)
-            Contract.Invariant(keys IsNot Nothing)
+            Contract.Invariant(_accepter IsNot Nothing)
+            Contract.Invariant(_logger IsNot Nothing)
+            Contract.Invariant(_keys IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
-            Contract.Invariant(portHandle IsNot Nothing)
+            Contract.Invariant(_portHandle IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
         End Sub
 
@@ -35,9 +35,16 @@ Namespace CKL
             Contract.Assume(clock IsNot Nothing)
             Me.name = name
             Me._clock = clock
-            Me.portHandle = listenPort
-            Me.Accepter.OpenPort(listenPort.Port)
+            Me._portHandle = listenPort
+            Me._accepter.OpenPort(listenPort.Port)
         End Sub
+
+        Public ReadOnly Property Logger As Logger
+            Get
+                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
+                Return _logger
+            End Get
+        End Property
 
         Public Function QueueAddKey(ByVal keyName As InvariantString, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As IFuture
             Contract.Requires(cdKeyROC IsNot Nothing)
@@ -45,11 +52,11 @@ Namespace CKL
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return inQueue.QueueAction(
                 Sub()
-                    If (From k In keys Where k.Name = keyName).Any Then
+                    If (From k In _keys Where k.Name = keyName).Any Then
                         Throw New InvalidOperationException("A key with the name '{0}' already exists.".Frmt(keyName))
                     End If
                     Dim key = New CKL.KeyEntry(keyName, cdKeyROC, cdKeyTFT)
-                    keys.Add(key)
+                    _keys.Add(key)
                 End Sub
             )
         End Function
@@ -57,16 +64,16 @@ Namespace CKL
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
             Return inQueue.QueueAction(
                 Sub()
-                    Dim key = (From k In keys Where k.Name = keyName).FirstOrDefault
+                    Dim key = (From k In _keys Where k.Name = keyName).FirstOrDefault
                     If key Is Nothing Then Throw New InvalidOperationException("No key found with the name '{0}'.".Frmt(keyName))
-                    keys.Remove(key)
+                    _keys.Remove(key)
                 End Sub
             )
         End Function
 
         <ContractVerification(False)>
         Private Sub OnAcceptedConnection(ByVal sender As ConnectionAccepter,
-                                         ByVal acceptedClient As Net.Sockets.TcpClient) Handles Accepter.AcceptedConnection
+                                         ByVal acceptedClient As Net.Sockets.TcpClient) Handles _accepter.AcceptedConnection
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(acceptedClient IsNot Nothing)
             Contract.Assume(acceptedClient.Client IsNot Nothing)
@@ -94,19 +101,19 @@ Namespace CKL
                                 Case CKLPacketId.[Error]
                                     'ignore
                                 Case CKLPacketId.Keys
-                                    If keys.Count <= 0 Then
+                                    If _keys.Count <= 0 Then
                                         errorMessage = "No keys to lend."
                                     ElseIf data.Count <> 8 Then
                                         errorMessage = "Invalid length. Require client token [4] + server token [4]."
                                     Else
-                                        If keyIndex >= keys.Count Then keyIndex = 0
-                                        Dim credentials = keys(keyIndex).GenerateCredentials(clientToken:=data.SubView(0, 4).ToUInt32,
+                                        If _keyIndex >= _keys.Count Then _keyIndex = 0
+                                        Dim credentials = _keys(_keyIndex).GenerateCredentials(clientToken:=data.SubView(0, 4).ToUInt32,
                                                                                              serverToken:=data.SubView(4, 4).ToUInt32)
                                         responseData = {jar.Pack(credentials.AuthenticationROC).Data,
                                                         jar.Pack(credentials.AuthenticationTFT).Data
                                                        }.Fold.ToArray
-                                        logger.Log("Provided key '{0}' to {1}".Frmt(keys(keyIndex).Name, socket.Name), LogMessageType.Positive)
-                                        keyIndex += 1
+                                        logger.Log("Provided key '{0}' to {1}".Frmt(_keys(_keyIndex).Name, socket.Name), LogMessageType.Positive)
+                                        _keyIndex += 1
                                     End If
                                 Case Else
                                     errorMessage = "Invalid packet id."
@@ -126,8 +133,8 @@ Namespace CKL
         End Sub
 
         Public Sub [Stop]()
-            Accepter.CloseAllPorts()
-            If portHandle IsNot Nothing Then portHandle.Dispose()
+            _accepter.CloseAllPorts()
+            If _portHandle IsNot Nothing Then _portHandle.Dispose()
         End Sub
     End Class
 End Namespace
