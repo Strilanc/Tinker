@@ -27,6 +27,8 @@ Public Class DownloadManagerTest
             playableWidth:=256,
             playableHeight:=256,
             isMelee:=True,
+            usesCustomForces:=False,
+            usesFixedPlayerSettings:=False,
             name:="Test",
             slots:={New Slot(1, False)}.AsReadableList)
         Private ReadOnly outQueue As New TaskedCallQueue()

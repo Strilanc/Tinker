@@ -11,6 +11,8 @@ Namespace WC3
         Private ReadOnly _playableHeight As UInteger
         Private ReadOnly _isMelee As Boolean
         Private ReadOnly _name As InvariantString
+        Private ReadOnly _usesFixedPlayerSettings As Boolean
+        Private ReadOnly _usesCustomForces As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
@@ -34,6 +36,8 @@ Namespace WC3
                        ByVal playableWidth As UInteger,
                        ByVal playableHeight As UInteger,
                        ByVal isMelee As Boolean,
+                       ByVal usesCustomForces As Boolean,
+                       ByVal usesFixedPlayerSettings As Boolean,
                        ByVal name As InvariantString)
             Contract.Requires(advertisedPath.StartsWith("Maps\"))
             Contract.Requires(fileSize > 0)
@@ -55,6 +59,8 @@ Namespace WC3
             Me._playableWidth = playableHeight
             Me._playableHeight = playableWidth
             Me._isMelee = isMelee
+            Me._usesCustomForces = usesCustomForces
+            Me._usesFixedPlayerSettings = usesFixedPlayerSettings
             Me._name = name
         End Sub
 
@@ -86,7 +92,9 @@ Namespace WC3
                                Slots:=info.slots,
                                PlayableWidth:=info.playableWidth,
                                PlayableHeight:=info.playableHeight,
-                               IsMelee:=info.isMelee,
+                               IsMelee:=CBool(info.options And MapOptions.Melee),
+                               UsesCustomForces:=CBool(info.options And MapOptions.CustomForces),
+                               UsesFixedPlayerSettings:=CBool(info.options And MapOptions.FixedPlayerSettings),
                                Name:=info.name)
             End Using
         End Function
@@ -137,6 +145,8 @@ Namespace WC3
                                PlayableWidth:=256,
                                PlayableHeight:=256,
                                IsMelee:=True,
+                               UsesCustomForces:=False,
+                               UsesFixedPlayerSettings:=False,
                                Name:=path)
             Else 'Map specified by path
                 Dim mapPath = My.Settings.mapPath.AssumeNotNull
@@ -199,6 +209,16 @@ Namespace WC3
         Public ReadOnly Property IsMelee As Boolean
             Get
                 Return _isMelee
+            End Get
+        End Property
+        Public ReadOnly Property UsesFixedPlayerSettings As Boolean
+            Get
+                Return _usesFixedPlayerSettings
+            End Get
+        End Property
+        Public ReadOnly Property UsesCustomForces As Boolean
+            Get
+                Return _usesCustomForces
             End Get
         End Property
         Public ReadOnly Property Name As InvariantString
@@ -466,7 +486,7 @@ Namespace WC3
             Melee = 1 << 2
 
             RevealTerrain = 1 << 4
-            FixedForces = 1 << 5
+            FixedPlayerSettings = 1 << 5
             CustomForces = 1 << 6
             CustomTechTree = 1 << 7
             CustomAbilities = 1 << 8
@@ -482,7 +502,7 @@ Namespace WC3
         Private Class ReadMapInfoResult
             Public ReadOnly playableWidth As UInteger
             Public ReadOnly playableHeight As UInteger
-            Public ReadOnly isMelee As Boolean
+            Public ReadOnly options As MapOptions
             Public ReadOnly slots As IReadableList(Of Slot)
             Public ReadOnly name As InvariantString
 
@@ -497,7 +517,7 @@ Namespace WC3
             Public Sub New(ByVal name As InvariantString,
                            ByVal playableWidth As UInteger,
                            ByVal playableHeight As UInteger,
-                           ByVal isMelee As Boolean,
+                           ByVal options As MapOptions,
                            ByVal slots As IReadableList(Of Slot))
                 Contract.Requires(playableWidth > 0)
                 Contract.Requires(playableHeight > 0)
@@ -506,7 +526,7 @@ Namespace WC3
                 Contract.Requires(slots.Count <= 12)
                 Me.playableHeight = playableHeight
                 Me.playableWidth = playableWidth
-                Me.isMelee = isMelee
+                Me.options = options
                 Me.slots = slots
                 Me.name = name
             End Sub
@@ -524,14 +544,14 @@ Namespace WC3
                     Throw New IO.InvalidDataException("Unrecognized war3map.w3i format.")
                 End If
 
-                stream.ReadUInt32() 'number of saves (map version)
-                stream.ReadUInt32() 'editor version (little endian)
+                Dim saveCount = stream.ReadUInt32()
+                Dim editorVersion = stream.ReadExact(4)
 
                 Dim mapName = SafeGetMapString(mapArchive, nameKey:=stream.ReadNullTerminatedString()) 'map description key
 
-                stream.ReadNullTerminatedString() 'map author
-                stream.ReadNullTerminatedString() 'map description
-                stream.ReadNullTerminatedString() 'players recommended
+                Dim mapAuthor = stream.ReadNullTerminatedString()
+                Dim mapDescription = stream.ReadNullTerminatedString()
+                Dim recommendedPlayers = stream.ReadNullTerminatedString()
                 For repeat = 1 To 8
                     stream.ReadSingle()  '"Camera Bounds" as defined in the JASS file
                 Next repeat
@@ -545,43 +565,37 @@ Namespace WC3
                 If playableHeight <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable height.")
                 Dim options = CType(stream.ReadUInt32(), MapOptions) 'flags
 
-                stream.ReadByte() 'map main ground type
+                Dim mainGoundType = stream.ReadByte()
                 If fileFormat = MapInfoFormatVersion.ROC Then
-                    stream.ReadUInt32() 'Campaign background number (-1 = none)
+                    Dim campaignBackgroundIndex = stream.ReadUInt32() 'UInt32.MaxValue = none
                 End If
                 If fileFormat = MapInfoFormatVersion.TFT Then
-                    stream.ReadUInt32() 'Loading screen background number which is its index in the preset list (-1 = none or custom imported file)
-                    stream.ReadNullTerminatedString() 'path of custom loading screen model (empty string if none or preset)
+                    Dim loadScreenBackgroundIndex = stream.ReadUInt32() 'UInt32.MaxValue = none or custom imported file
+                    Dim loadScreenModel = stream.ReadNullTerminatedString()
                 End If
-                stream.ReadNullTerminatedString() 'Map loading screen text
-                stream.ReadNullTerminatedString() 'Map loading screen title
-                stream.ReadNullTerminatedString() 'Map loading screen subtitle
+                Dim loadScreenText = stream.ReadNullTerminatedString()
+                Dim loadScreenTitle = stream.ReadNullTerminatedString()
+                Dim loadScreenSubtitle = stream.ReadNullTerminatedString()
                 If fileFormat = MapInfoFormatVersion.ROC Then
-                    stream.ReadUInt32() 'Map loading screen number (-1 = none)
+                    Dim mapLoadScreenIndex = stream.ReadUInt32() 'UInt32.MaxValue = none
                 End If
                 If fileFormat = MapInfoFormatVersion.TFT Then
-                    stream.ReadUInt32() 'used game data set (index in the preset list, 0 = standard)
-                    stream.ReadNullTerminatedString() 'Prologue screen path
+                    Dim usedGameDataSetIndex = stream.ReadUInt32() '0 = standard
+                    Dim prologueScreenPath = stream.ReadNullTerminatedString()
                 End If
-                stream.ReadNullTerminatedString() 'Prologue screen text
-                stream.ReadNullTerminatedString() 'Prologue screen title
-                stream.ReadNullTerminatedString() 'Prologue screen subtitle
+                Dim prologueScreenText = stream.ReadNullTerminatedString()
+                Dim prologueScreenTitle = stream.ReadNullTerminatedString()
+                Dim prologueScreenSubtitle = stream.ReadNullTerminatedString()
                 If fileFormat = MapInfoFormatVersion.TFT Then
-                    stream.ReadUInt32() 'uses terrain fog (0 = not used, greater 0 = index of terrain fog style dropdown box)
-                    stream.ReadSingle() 'fog start z height
-                    stream.ReadSingle() 'fog end z height
-                    stream.ReadSingle() 'fog density
-                    stream.ReadByte() 'fog red value
-                    stream.ReadByte() 'fog green value
-                    stream.ReadByte() 'fog blue value
-                    stream.ReadByte() 'fog alpha value
-                    stream.ReadUInt32() 'global weather id (0 = none, else it's set to the 4-letter-id of the desired weather found in TerrainArt\Weather.slk)
-                    stream.ReadNullTerminatedString() 'custom sound environment (set to the desired sound label)
-                    stream.ReadByte() 'tileset id of the used custom light environment
-                    stream.ReadByte() 'custom water tinting red value
-                    stream.ReadByte() 'custom water tinting green value
-                    stream.ReadByte() 'custom water tinting blue value
-                    stream.ReadByte() 'custom water tinting alpha value
+                    Dim terrainFogType = stream.ReadUInt32() '0 = not used
+                    Dim fogStartZ = stream.ReadSingle()
+                    Dim fogEndZ = stream.ReadSingle()
+                    Dim fogDensity = stream.ReadSingle()
+                    Dim fogRGBA = stream.ReadExact(4)
+                    Dim globalWeatherType = stream.ReadUInt32() '0 = none, else 4-letter-id
+                    Dim customSoundEnvironmentPath = stream.ReadNullTerminatedString()
+                    Dim customLightEnvironmentTilesetId = stream.ReadByte()
+                    Dim waterTintRGBA = stream.ReadExact(4)
                 End If
 
                 'Player Slots
@@ -592,35 +606,40 @@ Namespace WC3
                 Dim slots = New List(Of Slot)(capacity:=CInt(numSlotsInFile))
                 Dim slotColorMap = New Dictionary(Of Slot.PlayerColor, Slot)
                 For repeat = 0 To numSlotsInFile - 1
-                    Dim slot = New Slot(CByte(slots.Count + 1), (options Or MapOptions.Melee) <> 0)
+                    Dim slot = New Slot(CByte(slots.Count + 1), raceUnlocked:=Not CBool(options And MapOptions.FixedPlayerSettings))
                     'color
                     slot.color = CType(stream.ReadUInt32(), Slot.PlayerColor)
                     If Not slot.color.EnumValueIsDefined Then Throw New IO.InvalidDataException("Unrecognized map slot color.")
                     'type
-                    Select Case stream.ReadUInt32() '0=?, 1=available, 2=cpu, 3=unused
+                    Dim typeData = stream.ReadUInt32()
+                    Select Case typeData
                         Case 1 : slot.Contents = New SlotContentsOpen(slot)
                         Case 2 : slot.Contents = New SlotContentsComputer(slot, slot.ComputerLevel.Normal)
                         Case 3 : slot = Nothing
                         Case Else
-                            Throw New IO.InvalidDataException("Unrecognized map slot type.")
+                            Throw New IO.InvalidDataException("Unrecognized map slot type data: {0}.".Frmt(typeData))
                     End Select
                     'race
+                    Dim raceData = stream.ReadUInt32()
                     Dim race = slot.Races.Random
-                    Select Case stream.ReadUInt32()
+                    Select Case raceData
+                        Case 0 'selectable
+                            race = slot.Races.Random
+                            slot.RaceUnlocked = True
                         Case 1 : race = slot.Races.Human
                         Case 2 : race = slot.Races.Orc
                         Case 3 : race = slot.Races.Undead
                         Case 4 : race = slot.Races.NightElf
                         Case Else
-                            Throw New IO.InvalidDataException("Unrecognized map slot race.")
+                            Throw New IO.InvalidDataException("Unrecognized map slot race data: {0}.".Frmt(raceData))
                     End Select
                     'player
-                    stream.ReadUInt32() 'fixed start position
-                    stream.ReadNullTerminatedString() 'slot player name
-                    stream.ReadSingle() 'start position x
-                    stream.ReadSingle() 'start position y
-                    stream.ReadUInt32() 'ally low priorities
-                    stream.ReadUInt32() 'ally high priorities
+                    Dim fixedStartPosition = stream.ReadUInt32()
+                    Dim slotPlayerName = stream.ReadNullTerminatedString()
+                    Dim startPositionX = stream.ReadSingle()
+                    Dim startPositionY = stream.ReadSingle()
+                    Dim allyPrioritiesLow = stream.ReadUInt32()
+                    Dim allyPrioritiesHigh = stream.ReadUInt32()
 
                     If slot IsNot Nothing Then
                         slots.Add(slot)
@@ -638,9 +657,9 @@ Namespace WC3
                     Throw New IO.InvalidDataException("Invalid number of forces.")
                 End If
                 For teamIndex = CByte(0) To CByte(numForces - 1)
-                    stream.ReadUInt32() 'force flags
-                    Dim memberBitField = stream.ReadUInt32() 'force members
-                    stream.ReadNullTerminatedString() 'force name
+                    Dim forceFlags = stream.ReadUInt32()
+                    Dim memberBitField = stream.ReadUInt32()
+                    Dim forceName = stream.ReadNullTerminatedString()
 
                     For Each color In EnumValues(Of Slot.PlayerColor)()
                         If Not CBool((memberBitField >> CInt(color)) And &H1) Then Continue For
@@ -652,15 +671,14 @@ Namespace WC3
 
                 '... more data in the file but it isn't needed ...
 
-                Dim isMelee = CBool(options And MapOptions.Melee)
-                If isMelee Then
+                If CBool(options And MapOptions.Melee) Then
                     For i = 0 To slots.Count - 1
                         Contract.Assume(slots(i) IsNot Nothing)
                         slots(i).Team = CByte(i)
                         slots(i).race = Slot.Races.Random
                     Next i
                 End If
-                Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, isMelee, slots.AsReadableList)
+                Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, options, slots.AsReadableList)
             End Using
         End Function
 #End Region

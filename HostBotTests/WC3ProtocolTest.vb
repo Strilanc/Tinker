@@ -193,8 +193,8 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"state size", 7},
                         {"slots", New List(Of Dictionary(Of InvariantString, Object))()},
-                        {"time", 13},
-                        {"layout style", LobbyLayoutStyle.Forces},
+                        {"random seed", 13},
+                        {"layout style", LobbyLayoutStyle.FixedPlayerSettings},
                         {"num player slots", 12}
                     })
     End Sub

@@ -105,6 +105,18 @@ Namespace WC3.Replay
             Return stream.ReadPickle(New WC3.Protocol.SlotJar("slot")).Value
         End Function
 
+        Private Shared Function ReadHeaderPlayerRecords(ByVal stream As IRandomReadableStream) As IReadableList(Of Object)
+            Dim result = New List(Of Object)
+            Do
+                Dim b = stream.ReadByte() '0 = host, &H16 = other, else keep going
+                If b <> 0 AndAlso b <> &H16 Then Exit Do
+                Dim player = ReadPlayerRecord(stream)
+                Dim unknown4 = stream.ReadUInt32()
+                result.Add(Tuple(b, player, unknown4))
+            Loop
+            Return result.AsReadableList
+        End Function
+
         Private Shared Sub ReadDataHeader(ByVal stream As IRandomReadableStream)
             Contract.Requires(stream IsNot Nothing)
             Dim unknown1 = stream.ReadByte()
@@ -112,24 +124,13 @@ Namespace WC3.Replay
             Dim host = ReadPlayerRecord(stream)
             Dim gameName = stream.ReadNullTerminatedString(64)
             Dim unknown3 = stream.ReadByte()
-            Dim statString = stream.ReadNullTerminatedString(256)
+            Dim gameStats = stream.ReadPickle(New WC3.GameStatsJar("game stats"))
             Dim numPlayers = stream.ReadUInt32()
             If numPlayers < 1 OrElse numPlayers > 12 Then Throw New IO.InvalidDataException("Invalid number of players.")
             Dim gameType = stream.ReadUInt32()
             Dim lang = stream.ReadUInt32()
-            Do
-                Dim b = stream.ReadByte() '0 = host, &H16 = other, else keep going
-                If b <> 0 AndAlso b <> &H16 Then Exit Do
-                Dim player = ReadPlayerRecord(stream)
-                Dim unknown4 = stream.ReadUInt32()
-            Loop
-            Dim unknown5 = stream.ReadUInt16() 'byte count?
-            Dim slotCount = stream.ReadByte()
-            Contract.Assume(slotCount >= 0)
-            Dim slots = (From i In Enumerable.Range(0, slotCount) Select ReadSlotRecord(stream)).ToList
-            Dim randomSeed = stream.ReadUInt32()
-            Dim selectMode = stream.ReadByte() '0 = team/race select, 1 = team not select, 3 = team+race not select, 4 = race fixed rand, &HCC = auto match
-            Dim startSpotCount = stream.ReadByte()
+            Dim players = ReadHeaderPlayerRecords(stream)
+            Dim lobbyState = stream.ReadPickle(WC3.Protocol.Packets.LobbyState)
         End Sub
 
         Public ReadOnly Property Entries() As IEnumerable(Of ReplayEntry)

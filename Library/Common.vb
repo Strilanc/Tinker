@@ -269,6 +269,17 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 
+    <Pure()>
+    Public Function Tuple(Of T1, T2)(ByVal arg1 As T1, ByVal arg2 As T2) As Tuple(Of T1, T2)
+        Contract.Ensures(Contract.Result(Of Tuple(Of T1, T2))() IsNot Nothing)
+        Return New Tuple(Of T1, T2)(arg1, arg2)
+    End Function
+    <Pure()>
+    Public Function Tuple(Of T1, T2, T3)(ByVal arg1 As T1, ByVal arg2 As T2, ByVal arg3 As T3) As Tuple(Of T1, T2, T3)
+        Contract.Ensures(Contract.Result(Of Tuple(Of T1, T2))() IsNot Nothing)
+        Return New Tuple(Of T1, T2, T3)(arg1, arg2, arg3)
+    End Function
+
     <Pure()> <Extension()>
     Public Function AssumeNotNull(Of T)(ByVal arg As T) As T
         Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)

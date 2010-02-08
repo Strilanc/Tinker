@@ -91,10 +91,13 @@
                 Return (index + 1).ToString(CultureInfo.InvariantCulture)
             End Get
         End Property
-        Public ReadOnly Property RaceUnlocked As Boolean
+        Public Property RaceUnlocked As Boolean
             Get
                 Return _raceUnlocked
             End Get
+            Set(ByVal value As Boolean)
+                _raceUnlocked = value
+            End Set
         End Property
         Public Function Matches(ByVal query As InvariantString) As Match
             '[checked in decreasing order of importance]

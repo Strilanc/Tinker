@@ -39,6 +39,7 @@ Namespace WC3
             result.AddCommand(New CommandLock)
             result.AddCommand(New CommandOpen)
             result.AddCommand(New CommandPing)
+            result.AddCommand(New CommandRace)
             result.AddCommand(New CommandReserve)
             result.AddCommand(New CommandSet)
             result.AddCommand(New CommandSetTeam)
@@ -125,11 +126,10 @@ Namespace WC3
             Public Sub New()
                 MyBase.New(Name:="Color",
                            template:="slot value",
-                           Description:="Sets the color of a slot. Only works in melee games.")
+                           Description:="Sets the color of a slot. Not allowed when the map uses Fixed Player Settings.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                If Not target.Map.IsMelee Then Throw New InvalidOperationException("A slot's color is fixed in a custom game.")
                 Dim arg_slot = argument.RawValue(0)
                 Dim arg_color = argument.RawValue(1)
                 Dim ret_color As WC3.Slot.PlayerColor
@@ -282,6 +282,26 @@ Namespace WC3
             End Function
         End Class
 
+        Private NotInheritable Class CommandRace
+            Inherits TemplatedCommand(Of Game)
+            Public Sub New()
+                MyBase.New(Name:="Race",
+                           template:="slot race",
+                           Description:="Sets the race of a slot. Not allowed when the map uses Fixed Player Settings and the slot race is not Selectable.")
+            End Sub
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
+                Dim arg_slot = argument.RawValue(0)
+                Dim argRace = argument.RawValue(1)
+                Dim ret_race As WC3.Slot.Races
+                If EnumTryParse(Of WC3.Slot.Races)(argRace, True, ret_race) Then
+                    Return target.QueueSetSlotRace(arg_slot, ret_race).EvalOnSuccess(Function() "Set Race")
+                Else
+                    Throw New InvalidOperationException("Unrecognized race: '{0}'.".Frmt(argRace))
+                End If
+            End Function
+        End Class
+
         Private NotInheritable Class CommandReserve
             Inherits TemplatedCommand(Of Game)
             Public Sub New()
@@ -340,7 +360,6 @@ Namespace WC3
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                If Not target.Map.IsMelee Then Throw New InvalidOperationException("A slot's team is fixed in a custom game.")
                 Dim arg_slot = argument.RawValue(0)
                 Dim arg_team = argument.RawValue(1)
                 Dim val_team As Byte

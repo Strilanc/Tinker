@@ -5,7 +5,15 @@
         Private _stream As IO.Stream
         Private _writer As IO.BinaryWriter
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_stream IsNot Nothing)
+            Contract.Invariant(_writer IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal stream As IO.Stream)
+            Contract.Requires(stream IsNot Nothing)
+            Me._stream = stream
+            Me._writer = New IO.BinaryWriter(stream)
             Throw New NotImplementedException
         End Sub
 

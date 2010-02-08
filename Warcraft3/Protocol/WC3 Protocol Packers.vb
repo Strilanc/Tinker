@@ -124,16 +124,20 @@ Namespace WC3.Protocol
                 'reporting the wrong number of slots causes wc3 not to show them
                 reportedPlayerSlots = If(reportedPlayerSlots = 12, 11, 12)
             End If
-            Dim layoutStyle = If(map.IsMelee,
+            Dim layoutStyle = If(Not map.UsesCustomForces,
                                  LobbyLayoutStyle.Melee,
-                                 LobbyLayoutStyle.Forces)
+                                 If(map.UsesFixedPlayerSettings,
+                                    LobbyLayoutStyle.FixedPlayerSettings,
+                                    LobbyLayoutStyle.FixedForces))
+
+            If map.UsesCustomForces Then layoutStyle = If(map.UsesFixedPlayerSettings, LobbyLayoutStyle.FixedPlayerSettings, LobbyLayoutStyle.FixedForces)
             Dim packedSlots = (From slot In slots
                                Select SlotJar.PackSlot(slot, receiver)
                               ).ToList()
             Return New Packet(Packets.LobbyState, New Dictionary(Of InvariantString, Object) From {
                     {"state size", CUShort(slots.Count() * 9 + 7)},
                     {"slots", packedSlots},
-                    {"time", CUInt(time)},
+                    {"random seed", CUInt(time)},
                     {"layout style", layoutStyle},
                     {"num player slots", reportedPlayerSlots}})
         End Function

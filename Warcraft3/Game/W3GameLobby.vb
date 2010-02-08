@@ -26,11 +26,7 @@
             For i = 0 To Map.Slots.Count - 1
                 Dim baseSlot = Map.Slots(i)
                 Contract.Assume(baseSlot IsNot Nothing)
-                Dim slot = New Slot(CByte(i), Map.IsMelee)
-                slot.Contents = baseSlot.Contents.Clone(slot)
-                slot.color = baseSlot.color
-                slot.race = baseSlot.race
-                slot.Team = baseSlot.Team
+                Dim slot = baseSlot.Cloned()
                 slot.locked = settings.DefaultSlotLockState
                 slots.Add(slot)
                 freeIndexes.Add(New PID(CByte(i + 1)))
@@ -40,7 +36,7 @@
             Select Case settings.GameDescription.GameStats.Observers
                 Case GameObserverOption.FullObservers, GameObserverOption.Referees
                     For i = Map.Slots.Count To 12 - 1
-                        Dim slot = New Slot(CByte(i), Map.IsMelee)
+                        Dim slot = New Slot(CByte(i), raceUnlocked:=False)
                         slot.color = CType(slot.ObserverTeamIndex, Slot.PlayerColor)
                         slot.Team = slot.ObserverTeamIndex
                         slot.race = slot.Races.Random
@@ -571,7 +567,9 @@
 #End Region
 #Region "Slot States"
         Private Sub SetSlotColor(ByVal slotQuery As InvariantString, ByVal color As Slot.PlayerColor)
-            If state > GameState.CountingDown Then
+            If Map.UsesFixedPlayerSettings Then
+                Throw New InvalidOperationException("The map says that slot's color is locked.")
+            ElseIf state > GameState.CountingDown Then
                 Throw New InvalidOperationException("Can't change slot settings after launch.")
             End If
 
@@ -588,7 +586,10 @@
         End Function
 
         Private Sub SetSlotRace(ByVal slotQuery As InvariantString, ByVal race As Slot.Races)
-            ModifySlotContents(slotQuery, Sub(slot) slot.race = race)
+            ModifySlotContents(slotQuery, Sub(slot)
+                                              If Not slot.RaceUnlocked Then Throw New InvalidOperationException("The map says that slot's race is locked.")
+                                              slot.race = race
+                                          End Sub)
         End Sub
         Public Function QueueSetSlotRace(ByVal slotQuery As InvariantString, ByVal newRace As Slot.Races) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
@@ -596,7 +597,10 @@
         End Function
 
         Private Sub SetSlotTeam(ByVal slotQuery As InvariantString, ByVal team As Byte)
-            ModifySlotContents(slotQuery, Sub(slot) slot.Team = team)
+            ModifySlotContents(slotQuery, Sub(slot)
+                                              If Map.UsesCustomForces Then Throw New InvalidOperationException("The map says that slot's team is locked.")
+                                              slot.Team = team
+                                          End Sub)
         End Sub
         Public Function QueueSetSlotTeam(ByVal slotQuery As InvariantString, ByVal newTeam As Byte) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
@@ -650,7 +654,7 @@
             For Each otherSlot In slots.ToList()
                 Contract.Assume(otherSlot IsNot Nothing)
                 If otherSlot.color = newColor Then
-                    If Not Map.IsMelee Then Return
+                    If Map.UsesFixedPlayerSettings Then Return
                     If Not otherSlot.Contents.ContentType = SlotContentType.Empty Then Return
                     otherSlot.color = slot.color
                     Exit For
@@ -713,12 +717,10 @@
                     Case Else
                         Return '[obs not enabled; invalid value]
                 End Select
-            ElseIf Map.IsMelee And newTeam >= Map.Slots.Count Then
-                Return '[invalid team]
             End If
 
             'Perform
-            If Map.IsMelee Then
+            If Not Map.UsesCustomForces Then
                 'set slot to target team
                 slot.Team = newTeam
             Else

@@ -187,7 +187,9 @@ Namespace WC3.Protocol
 
     Public Enum LobbyLayoutStyle
         Melee = 0
-        Forces = 3
+        FixedForces = 1
+        FixedPlayerSettings = 3
+        AutoMatch = &HCC
     End Enum
     Public Enum MapTransferState As Byte
         Idle = 1
@@ -316,7 +318,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly LobbyState As New SimpleDefinition(PacketId.LobbyState,
                 New UInt16Jar("state size").Weaken,
                 New ListJar(Of Dictionary(Of InvariantString, Object))("slots", New SlotJar("slot")).Weaken,
-                New UInt32Jar("time").Weaken,
+                New UInt32Jar("random seed").Weaken,
                 New EnumByteJar(Of LobbyLayoutStyle)("layout style").Weaken,
                 New ByteJar("num player slots").Weaken)
         Public Shared ReadOnly PeerConnectionInfo As New UInt16Jar("player bitflags", showhex:=True)

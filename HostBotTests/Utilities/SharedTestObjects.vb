@@ -14,6 +14,8 @@ Friend Module SharedTestObjects
         mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
         mapChecksumXORO:=1,
         ismelee:=False,
+        usesCustomForces:=True,
+        usesFixedPlayerSettings:=True,
         name:="Test Map",
         playableWidth:=256,
         playableHeight:=256,
