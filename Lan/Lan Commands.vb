@@ -28,6 +28,7 @@ Namespace Lan
                            Description:="Causes the advertiser to automatically advertise all games on any server when 'On'.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Select Case New InvariantString(argument.RawValue(0))
                     Case "On"
                         Return target.QueueSetAutomatic(True).EvalOnSuccess(Function() "Now automatically advertising games.")
@@ -47,9 +48,10 @@ Namespace Lan
                            Description:="Adds a game to be advertised, but doesn't create a new server to go with it.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim name = argument.NamedValue("name")
                 Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
-                Dim gameStats = New WC3.GameStats(map, If(user Is Nothing, Application.ProductName, user.Name.Value), argument)
+                Dim gameStats = New WC3.GameStats(map, If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value), argument)
                 Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, gameStats, clock:=New SystemClock())
 
                 Return target.QueueAddGame(gameDescription).EvalOnSuccess(Function() "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath))
@@ -64,6 +66,7 @@ Namespace Lan
                            Description:="Removes a game being advertised.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim id As UInteger
                 If Not UInteger.TryParse(argument.RawValue(0), id) Then
                     Throw New InvalidOperationException("Invalid game id.")
@@ -91,6 +94,7 @@ Namespace Lan
                            extraHelp:=Fold({WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp}).StringJoin(Environment.NewLine))
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
                 Dim futureGameSet = (From server In futureServer
                                      Select server.QueueAddGameFromArguments(argument, user)

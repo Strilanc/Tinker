@@ -548,6 +548,8 @@ Namespace WC3
                     Return If(client.ReportedHasFile, "(ul>>)", "(dl>>)")
                 Else
                     If client.Transfer.Uploader Is _defaultClient Then Return "(dl:H)"
+                    Contract.Assume(client.Transfer.Downloader.Player IsNot Nothing)
+                    Contract.Assume(client.Transfer.Uploader.Player IsNot Nothing)
                     If client.IsSteady Then Return If(client.ReportedHasFile,
                                                       "(ul:{0})".Frmt(client.Transfer.Downloader.Player.PID),
                                                       "(dl:{0})".Frmt(client.Transfer.Uploader.Player.PID))

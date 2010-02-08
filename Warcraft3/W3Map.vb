@@ -518,86 +518,86 @@ Namespace WC3
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
 
-            Using br = New IO.BinaryReader(New IO.BufferedStream(mapArchive.OpenFileByName("war3map.w3i")))
-                Dim fileFormat = CType(br.ReadInt32(), MapInfoFormatVersion)
+            Using stream = mapArchive.OpenFileByName("war3map.w3i").AsReadableStream
+                Dim fileFormat = CType(stream.ReadUInt32(), MapInfoFormatVersion)
                 If Not fileFormat.EnumValueIsDefined Then
                     Throw New IO.InvalidDataException("Unrecognized war3map.w3i format.")
                 End If
 
-                br.ReadInt32() 'number of saves (map version)
-                br.ReadInt32() 'editor version (little endian)
+                stream.ReadUInt32() 'number of saves (map version)
+                stream.ReadUInt32() 'editor version (little endian)
 
-                Dim mapName = SafeGetMapString(mapArchive, nameKey:=br.ReadNullTerminatedString()) 'map description key
+                Dim mapName = SafeGetMapString(mapArchive, nameKey:=stream.ReadNullTerminatedString()) 'map description key
 
-                br.ReadNullTerminatedString() 'map author
-                br.ReadNullTerminatedString() 'map description
-                br.ReadNullTerminatedString() 'players recommended
+                stream.ReadNullTerminatedString() 'map author
+                stream.ReadNullTerminatedString() 'map description
+                stream.ReadNullTerminatedString() 'players recommended
                 For repeat = 1 To 8
-                    br.ReadSingle()  '"Camera Bounds" as defined in the JASS file
+                    stream.ReadSingle()  '"Camera Bounds" as defined in the JASS file
                 Next repeat
                 For repeat = 1 To 4
-                    br.ReadInt32() 'camera bounds complements
+                    stream.ReadUInt32() 'camera bounds complements
                 Next repeat
 
-                Dim playableWidth = br.ReadUInt32() 'map playable area width
-                Dim playableHeight = br.ReadUInt32() 'map playable area height
+                Dim playableWidth = stream.ReadUInt32() 'map playable area width
+                Dim playableHeight = stream.ReadUInt32() 'map playable area height
                 If playableWidth <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable width.")
                 If playableHeight <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable height.")
-                Dim options = CType(br.ReadInt32(), MapOptions) 'flags
+                Dim options = CType(stream.ReadUInt32(), MapOptions) 'flags
 
-                br.ReadByte() 'map main ground type
+                stream.ReadByte() 'map main ground type
                 If fileFormat = MapInfoFormatVersion.ROC Then
-                    br.ReadInt32() 'Campaign background number (-1 = none)
+                    stream.ReadUInt32() 'Campaign background number (-1 = none)
                 End If
                 If fileFormat = MapInfoFormatVersion.TFT Then
-                    br.ReadInt32() 'Loading screen background number which is its index in the preset list (-1 = none or custom imported file)
-                    br.ReadNullTerminatedString() 'path of custom loading screen model (empty string if none or preset)
+                    stream.ReadUInt32() 'Loading screen background number which is its index in the preset list (-1 = none or custom imported file)
+                    stream.ReadNullTerminatedString() 'path of custom loading screen model (empty string if none or preset)
                 End If
-                br.ReadNullTerminatedString() 'Map loading screen text
-                br.ReadNullTerminatedString() 'Map loading screen title
-                br.ReadNullTerminatedString() 'Map loading screen subtitle
+                stream.ReadNullTerminatedString() 'Map loading screen text
+                stream.ReadNullTerminatedString() 'Map loading screen title
+                stream.ReadNullTerminatedString() 'Map loading screen subtitle
                 If fileFormat = MapInfoFormatVersion.ROC Then
-                    br.ReadInt32() 'Map loading screen number (-1 = none)
+                    stream.ReadUInt32() 'Map loading screen number (-1 = none)
                 End If
                 If fileFormat = MapInfoFormatVersion.TFT Then
-                    br.ReadInt32() 'used game data set (index in the preset list, 0 = standard)
-                    br.ReadNullTerminatedString() 'Prologue screen path
+                    stream.ReadUInt32() 'used game data set (index in the preset list, 0 = standard)
+                    stream.ReadNullTerminatedString() 'Prologue screen path
                 End If
-                br.ReadNullTerminatedString() 'Prologue screen text
-                br.ReadNullTerminatedString() 'Prologue screen title
-                br.ReadNullTerminatedString() 'Prologue screen subtitle
+                stream.ReadNullTerminatedString() 'Prologue screen text
+                stream.ReadNullTerminatedString() 'Prologue screen title
+                stream.ReadNullTerminatedString() 'Prologue screen subtitle
                 If fileFormat = MapInfoFormatVersion.TFT Then
-                    br.ReadInt32() 'uses terrain fog (0 = not used, greater 0 = index of terrain fog style dropdown box)
-                    br.ReadSingle() 'fog start z height
-                    br.ReadSingle() 'fog end z height
-                    br.ReadSingle() 'fog density
-                    br.ReadByte() 'fog red value
-                    br.ReadByte() 'fog green value
-                    br.ReadByte() 'fog blue value
-                    br.ReadByte() 'fog alpha value
-                    br.ReadInt32() 'global weather id (0 = none, else it's set to the 4-letter-id of the desired weather found in TerrainArt\Weather.slk)
-                    br.ReadNullTerminatedString() 'custom sound environment (set to the desired sound label)
-                    br.ReadByte() 'tileset id of the used custom light environment
-                    br.ReadByte() 'custom water tinting red value
-                    br.ReadByte() 'custom water tinting green value
-                    br.ReadByte() 'custom water tinting blue value
-                    br.ReadByte() 'custom water tinting alpha value
+                    stream.ReadUInt32() 'uses terrain fog (0 = not used, greater 0 = index of terrain fog style dropdown box)
+                    stream.ReadSingle() 'fog start z height
+                    stream.ReadSingle() 'fog end z height
+                    stream.ReadSingle() 'fog density
+                    stream.ReadByte() 'fog red value
+                    stream.ReadByte() 'fog green value
+                    stream.ReadByte() 'fog blue value
+                    stream.ReadByte() 'fog alpha value
+                    stream.ReadUInt32() 'global weather id (0 = none, else it's set to the 4-letter-id of the desired weather found in TerrainArt\Weather.slk)
+                    stream.ReadNullTerminatedString() 'custom sound environment (set to the desired sound label)
+                    stream.ReadByte() 'tileset id of the used custom light environment
+                    stream.ReadByte() 'custom water tinting red value
+                    stream.ReadByte() 'custom water tinting green value
+                    stream.ReadByte() 'custom water tinting blue value
+                    stream.ReadByte() 'custom water tinting alpha value
                 End If
 
                 'Player Slots
-                Dim numSlotsInFile = br.ReadInt32()
+                Dim numSlotsInFile = stream.ReadUInt32()
                 If numSlotsInFile <= 0 OrElse numSlotsInFile > 12 Then
                     Throw New IO.InvalidDataException("Invalid number of slots.")
                 End If
-                Dim slots = New List(Of Slot)(capacity:=numSlotsInFile)
+                Dim slots = New List(Of Slot)(capacity:=CInt(numSlotsInFile))
                 Dim slotColorMap = New Dictionary(Of Slot.PlayerColor, Slot)
                 For repeat = 0 To numSlotsInFile - 1
                     Dim slot = New Slot(CByte(slots.Count + 1), (options Or MapOptions.Melee) <> 0)
                     'color
-                    slot.color = CType(br.ReadInt32(), Slot.PlayerColor)
+                    slot.color = CType(stream.ReadUInt32(), Slot.PlayerColor)
                     If Not slot.color.EnumValueIsDefined Then Throw New IO.InvalidDataException("Unrecognized map slot color.")
                     'type
-                    Select Case br.ReadInt32() '0=?, 1=available, 2=cpu, 3=unused
+                    Select Case stream.ReadUInt32() '0=?, 1=available, 2=cpu, 3=unused
                         Case 1 : slot.Contents = New SlotContentsOpen(slot)
                         Case 2 : slot.Contents = New SlotContentsComputer(slot, slot.ComputerLevel.Normal)
                         Case 3 : slot = Nothing
@@ -606,7 +606,7 @@ Namespace WC3
                     End Select
                     'race
                     Dim race = slot.Races.Random
-                    Select Case br.ReadInt32()
+                    Select Case stream.ReadUInt32()
                         Case 1 : race = slot.Races.Human
                         Case 2 : race = slot.Races.Orc
                         Case 3 : race = slot.Races.Undead
@@ -615,12 +615,12 @@ Namespace WC3
                             Throw New IO.InvalidDataException("Unrecognized map slot race.")
                     End Select
                     'player
-                    br.ReadInt32() 'fixed start position
-                    br.ReadNullTerminatedString() 'slot player name
-                    br.ReadSingle() 'start position x
-                    br.ReadSingle() 'start position y
-                    br.ReadInt32() 'ally low priorities
-                    br.ReadInt32() 'ally high priorities
+                    stream.ReadUInt32() 'fixed start position
+                    stream.ReadNullTerminatedString() 'slot player name
+                    stream.ReadSingle() 'start position x
+                    stream.ReadSingle() 'start position y
+                    stream.ReadUInt32() 'ally low priorities
+                    stream.ReadUInt32() 'ally high priorities
 
                     If slot IsNot Nothing Then
                         slots.Add(slot)
@@ -633,14 +633,14 @@ Namespace WC3
                 Contract.Assert(slots.Count <= 12)
 
                 'Forces
-                Dim numForces = br.ReadInt32()
+                Dim numForces = stream.ReadUInt32()
                 If numForces <= 0 OrElse numForces > 12 Then
                     Throw New IO.InvalidDataException("Invalid number of forces.")
                 End If
                 For teamIndex = CByte(0) To CByte(numForces - 1)
-                    br.ReadInt32() 'force flags
-                    Dim memberBitField = br.ReadUInt32() 'force members
-                    br.ReadNullTerminatedString() 'force name
+                    stream.ReadUInt32() 'force flags
+                    Dim memberBitField = stream.ReadUInt32() 'force members
+                    stream.ReadNullTerminatedString() 'force name
 
                     For Each color In EnumValues(Of Slot.PlayerColor)()
                         If Not CBool((memberBitField >> CInt(color)) And &H1) Then Continue For

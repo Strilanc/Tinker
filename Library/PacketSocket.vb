@@ -94,6 +94,7 @@ Public NotInheritable Class PacketSocket
         Contract.Requires(headerValueSizeByteCount > 0)
         Contract.Requires(bufferSize >= headerBytesBeforeSizeCount + headerValueSizeByteCount)
         Contract.Requires(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
+        Contract.Ensures(Contract.Result(Of IFuture(Of PacketSocket))() IsNot Nothing)
         Return From socket In AsyncTcpConnect(remoteHost, remotePort)
                Select New PacketSocket(socket.GetStream,
                                        CType(socket.Client.LocalEndPoint, Net.IPEndPoint),

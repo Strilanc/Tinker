@@ -107,6 +107,7 @@ Namespace Lan
         Public Function QueueAddGame(ByVal gameDescription As WC3.LocalGameDescription,
                                      Optional ByVal targetHosts As IEnumerable(Of String) = Nothing) As IFuture
             Contract.Requires(gameDescription IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() AddGame(gameDescription, targetHosts))
         End Function
 
@@ -127,6 +128,7 @@ Namespace Lan
             Return True
         End Function
         Public Function QueueRemoveGame(ByVal id As UInt32) As IFuture(Of Boolean)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Boolean))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() RemoveGame(id))
         End Function
 

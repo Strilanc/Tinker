@@ -67,6 +67,7 @@ Namespace WC3
                            Description:="Kicks a player from the game.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueBoot(argument.RawValue(0)).EvalOnSuccess(Function() "Booted")
             End Function
         End Class
@@ -100,6 +101,7 @@ Namespace WC3
                            Description:="Closes this game instance.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 target.Dispose()
                 Return target.FutureDisposed.EvalOnSuccess(Function() "Cancelled")
             End Function
@@ -113,6 +115,7 @@ Namespace WC3
                            Description:="Closes a slot.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueCloseSlot(argument.RawValue(0)).EvalOnSuccess(Function() "Closed")
             End Function
         End Class
@@ -125,6 +128,7 @@ Namespace WC3
                            Description:="Sets the color of a slot. Only works in melee games.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If Not target.Map.IsMelee Then Throw New InvalidOperationException("A slot's color is fixed in a custom game.")
                 Dim arg_slot = argument.RawValue(0)
                 Dim arg_color = argument.RawValue(1)
@@ -145,6 +149,7 @@ Namespace WC3
                            Description:="Places a computer in a slot, unless it contains a player.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim arg_slot = argument.RawValue(0)
                 Dim arg_difficulty = If(argument.RawValueCount >= 2, argument.RawValue(1), WC3.Slot.ComputerLevel.Normal.ToString)
                 Dim ret_difficulty As WC3.Slot.ComputerLevel
@@ -164,6 +169,7 @@ Namespace WC3
                            Description:="Causes the bot to disconnect from the game. The game might continue if one of the players can host.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 target.Dispose()
                 Return target.FutureDisposed.EvalOnSuccess(Function() "Disconnected")
             End Function
@@ -177,6 +183,7 @@ Namespace WC3
                            Description:="Gives access to admin or host commands.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
                 Return target.QueueElevatePlayer(user.Name, argument.RawValue(0)).EvalOnSuccess(Function() "Elevated")
             End Function
@@ -190,6 +197,7 @@ Namespace WC3
                            Description:="Returns the current value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim val As Object
                 Dim argSetting As InvariantString = argument.RawValue(0)
                 Select Case argSetting
@@ -210,6 +218,7 @@ Namespace WC3
                            Description:="Sets the handicap of a slot.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim argSlot = argument.RawValue(0)
                 Dim argHandicap = argument.RawValue(1)
                 Dim newHandicap As Byte
@@ -231,11 +240,12 @@ Namespace WC3
                            Description:="Prevents players from leaving a slot or from changing slot properties (if -full). Omit the slot argument to affect all slots.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim lockType = If(argument.HasOptionalSwitch("full"), WC3.Slot.Lock.Frozen, WC3.Slot.Lock.Sticky)
                 If argument.RawValueCount = 0 Then
                     Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Locked slots")
                 Else
-                    Return target.QueueSetSlotLocked(argument.TryGetRawValue(0), lockType).EvalOnSuccess(Function() "Locked slot")
+                    Return target.QueueSetSlotLocked(argument.RawValue(0), lockType).EvalOnSuccess(Function() "Locked slot")
                 End If
             End Function
         End Class
@@ -248,6 +258,7 @@ Namespace WC3
                            Description:="Opens a slot.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueOpenSlot(argument.RawValue(0)).EvalOnSuccess(Function() "Opened")
             End Function
         End Class
@@ -259,7 +270,9 @@ Namespace WC3
                            template:="",
                            Description:="Returns estimated network round trip times for each player.")
             End Sub
+            <ContractVerification(False)>
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return From players In target.QueueGetPlayers()
                        From latencies In (From player In players Select player.QueueGetLatencyDescription).ToList.Defuturized
                        Select "Estimated RTT: {0}".Frmt((From i In Enumerable.Range(0, players.Count)
@@ -277,6 +290,7 @@ Namespace WC3
                            Description:="Reserves a slot for a player.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim slotQueryString = argument.TryGetOptionalNamedValue("slot")
                 Dim slotQuery = If(slotQueryString Is Nothing, Nothing, New InvariantString?(slotQueryString))
@@ -294,6 +308,7 @@ Namespace WC3
                            Description:="Sets the value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim val_us As UShort
                 Dim vald As Double
                 Dim isShort = UShort.TryParse(argument.RawValue(1), val_us)
@@ -324,6 +339,7 @@ Namespace WC3
                            Description:="Sets a slot's team. Only works in melee games.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If Not target.Map.IsMelee Then Throw New InvalidOperationException("A slot's team is fixed in a custom game.")
                 Dim arg_slot = argument.RawValue(0)
                 Dim arg_team = argument.RawValue(1)
@@ -343,6 +359,7 @@ Namespace WC3
                            Description:="Sets up the number of slots on each team (eg. 'SetupTeams 2v2' will leave two open slots on each team).")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueTrySetTeamSizes(TeamVersusStringToTeamSizes(argument.RawValue(0))).EvalOnSuccess(Function() "Set Teams")
             End Function
         End Class
@@ -355,6 +372,7 @@ Namespace WC3
                            Description:="Starts the launch countdown.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueStartCountdown().EvalOnSuccess(Function() "Started Countdown")
             End Function
         End Class
@@ -367,6 +385,7 @@ Namespace WC3
                            Description:="Swaps the contents of two slots.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Return target.QueueSwapSlotContents(argument.RawValue(0), argument.RawValue(1)).EvalOnSuccess(Function() "Swapped Slots")
             End Function
         End Class
@@ -379,11 +398,12 @@ Namespace WC3
                            Description:="Allows players to move from a slot and change its properties. Omit the slot argument to affect all slots.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 Dim lockType = WC3.Slot.Lock.Unlocked
                 If argument.RawValueCount = 0 Then
                     Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Unlocked slots")
                 Else
-                    Return target.QueueSetSlotLocked(argument.TryGetRawValue(0), lockType).EvalOnSuccess(Function() "Unlocked slot")
+                    Return target.QueueSetSlotLocked(argument.RawValue(0), lockType).EvalOnSuccess(Function() "Unlocked slot")
                 End If
             End Function
         End Class
@@ -396,6 +416,7 @@ Namespace WC3
                            Description:="Places or cancels a vote to prematurely start an autostarted game. Requires at least 2 players and at least a 2/3 majority.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+                Contract.Assume(target IsNot Nothing)
                 If user Is Nothing Then Throw New InvalidOperationException("User not specified.")
                 Return target.QueueSetPlayerVoteToStart(user.Name,
                                                         wantsToStart:=Not argument.HasOptionalSwitch("cancel")

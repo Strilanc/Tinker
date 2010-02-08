@@ -14,16 +14,21 @@ Namespace WC3.Replay
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_stream IsNot Nothing)
                 Contract.Invariant(_offset >= 0)
+                Contract.Invariant(_offset <= _stream.Length)
             End Sub
 
             Public Sub New(ByVal stream As IRandomReadableStream,
                            ByVal offset As Long,
                            ByVal takeOwnershipOfStream As Boolean)
+                Contract.Requires(stream IsNot Nothing)
+                Contract.Requires(offset >= 0)
+                Contract.Requires(offset <= stream.Length)
                 Me._stream = stream
                 Me._offset = offset
                 Me._takeOwnershipofStream = takeOwnershipOfStream
             End Sub
 
+            <ContractVerification(False)>
             Public Function Contains(ByVal item As Byte) As Boolean Implements IReadableCollection(Of Byte).Contains
                 Return (From e In Me Where item = e).Any
             End Function
@@ -34,6 +39,7 @@ Namespace WC3.Replay
                 End Get
             End Property
 
+            <ContractVerification(False)>
             Public Function IndexOf(ByVal item As Byte) As Integer Implements IReadableList(Of Byte).IndexOf
                 Return (From i In Enumerable.Range(0, Count)
                         Where Me(i) = item
@@ -41,10 +47,11 @@ Namespace WC3.Replay
                         ).FirstOrDefault - 1
             End Function
             Default Public ReadOnly Property Item(ByVal index As Integer) As Byte Implements IReadableList(Of Byte).Item
+                <ContractVerification(False)>
                 Get
                     If Me.FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.FullName)
                     _stream.Position = _offset + index
-                    Return _stream.Read(maxCount:=1)(0)
+                    Return _stream.ReadExact(exactCount:=1)(0)
                 End Get
             End Property
 
@@ -71,6 +78,7 @@ Namespace WC3.Replay
         End Class
 
         <Extension()>
+        <ContractVerification(False)>
         Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IJar(Of T)) As IPickle(Of T)
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(jar IsNot Nothing)
@@ -89,6 +97,7 @@ Namespace WC3.Replay
         End Function
 
         <Extension()>
+        <ContractVerification(False)>
         Public Function WritePickle(Of T)(ByVal stream As IO.Stream, ByVal jar As IPackJar(Of T), ByVal value As T) As IPickle(Of T)
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(jar IsNot Nothing)

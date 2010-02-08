@@ -9,28 +9,65 @@
         Private Const BlockHeaderSize As Integer = 8
 
         Private Structure BlockInfo
-            Public ReadOnly BlockPosition As Long
-            Public ReadOnly BlockLength As Long
-            Public ReadOnly DataPosition As Long
-            Public ReadOnly DataLength As Long
+            Private ReadOnly _blockPosition As Long
+            Private ReadOnly _blockLength As Long
+            Private ReadOnly _dataPosition As Long
+            Private ReadOnly _dataLength As Long
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(_blockPosition >= 0)
+                Contract.Invariant(_blockLength > 0)
+                Contract.Invariant(_dataPosition >= 0)
+                Contract.Invariant(_dataLength > 0)
+            End Sub
 
             Public Sub New(ByVal blockPosition As Long,
                            ByVal blockLength As Long,
                            ByVal dataPosition As Long,
                            ByVal dataLength As Long)
-                Me.BlockPosition = blockPosition
-                Me.BlockLength = blockLength
-                Me.DataPosition = dataPosition
-                Me.DataLength = dataLength
+                Contract.Requires(blockPosition >= 0)
+                Contract.Requires(blockLength > 0)
+                Contract.Requires(dataPosition >= 0)
+                Contract.Requires(dataLength > 0)
+                Me._blockPosition = blockPosition
+                Me._blockLength = blockLength
+                Me._dataPosition = dataPosition
+                Me._dataLength = dataLength
             End Sub
 
+            Public ReadOnly Property BlockPosition As Long
+                Get
+                    Contract.Ensures(Contract.Result(Of Long)() >= 0)
+                    Return _blockPosition
+                End Get
+            End Property
+            Public ReadOnly Property BlockLength As Long
+                Get
+                    Contract.Ensures(Contract.Result(Of Long)() > 0)
+                    Return _blockLength
+                End Get
+            End Property
+            Public ReadOnly Property DataPosition As Long
+                Get
+                    Contract.Ensures(Contract.Result(Of Long)() >= 0)
+                    Return _dataPosition
+                End Get
+            End Property
+            Public ReadOnly Property DataLength As Long
+                Get
+                    Contract.Ensures(Contract.Result(Of Long)() > 0)
+                    Return _dataLength
+                End Get
+            End Property
             Public ReadOnly Property NextBlockPosition As Long
                 Get
+                    Contract.Ensures(Contract.Result(Of Long)() = BlockPosition + BlockLength)
                     Return BlockPosition + BlockLength
                 End Get
             End Property
             Public ReadOnly Property NextDataPosition As Long
                 Get
+                    Contract.Ensures(Contract.Result(Of Long)() = DataPosition + DataLength)
                     Return DataPosition + DataLength
                 End Get
             End Property
@@ -49,11 +86,13 @@
             Contract.Invariant(_stream IsNot Nothing)
             Contract.Invariant(_blockInfoTable IsNot Nothing)
             Contract.Invariant(_blockInfoTable.Count <= _blockCount)
+            Contract.Invariant(_length >= 0)
+            Contract.Invariant(_position >= 0)
             Contract.Invariant(_position <= _length)
             Contract.Invariant(_loadedBlockIndex >= 0)
-            Contract.Invariant(_loadedBlockIndex < _blockInfoTable.Count)
-            Contract.Invariant(_loadedBlockData Is Nothing OrElse _position >= _blockInfoTable(_loadedBlockIndex).DataPosition)
-            Contract.Invariant(_loadedBlockData Is Nothing OrElse _position <= _blockInfoTable(_loadedBlockIndex).NextDataPosition)
+            'Contract.Invariant(_loadedBlockData Is Nothing OrElse _loadedBlockIndex < _blockInfoTable.Count)
+            'Contract.Invariant(_loadedBlockData Is Nothing OrElse _position >= _blockInfoTable(_loadedBlockIndex).DataPosition)
+            'Contract.Invariant(_loadedBlockData Is Nothing OrElse _position <= _blockInfoTable(_loadedBlockIndex).NextDataPosition)
         End Sub
 
         Public Sub New(ByVal subStream As IRandomReadableStream,
@@ -76,14 +115,15 @@
         ''' </summary>
         ''' <param name="blockPosition">The starting position of the block, as determined by the previous block's end.</param>
         ''' <param name="dataPosition">The logical starting position of the data stored in the block.</param>
+        <ContractVerification(False)>
         Private Sub LoadNextBlockInfo(ByVal blockPosition As Long, ByVal dataPosition As Long)
             Contract.Requires(_blockInfoTable.Count < _blockCount)
             Contract.Ensures(_blockInfoTable.Count = Contract.OldValue(_blockInfoTable.Count) + 1)
             'Read block header
             _stream.Position = blockPosition
-            Dim compressedDataSize = _stream.AsStream.ReadUInt16()
-            Dim decompressedDataSize = _stream.AsStream.ReadUInt16()
-            Dim checksum = _stream.AsStream.ReadUInt32()
+            Dim compressedDataSize = _stream.ReadUInt16()
+            Dim decompressedDataSize = _stream.ReadUInt16()
+            Dim checksum = _stream.ReadUInt32()
             'Remember
             Dim block = New BlockInfo(blockPosition:=blockPosition,
                                       blockLength:=BlockHeaderSize + compressedDataSize,
@@ -113,6 +153,7 @@
         ''' <summary>
         ''' Determines the block data for the given block, filling the block info table as necessary.
         ''' </summary>
+        <ContractVerification(False)>
         Private Function ReadBlockData(ByVal blockIndex As Integer) As IReadableList(Of Byte)
             Contract.Requires(blockIndex >= 0)
             Contract.Requires(blockIndex < _blockCount)
@@ -122,13 +163,17 @@
             Dim block = ReadBlockInfo(blockIndex)
             _stream.Position = block.BlockPosition + BlockHeaderSize
             'Retrieve
-            Return New ZLibStream(_stream.AsStream, IO.Compression.CompressionMode.Decompress).ReadBytesExact(length:=CInt(block.DataLength)).AsReadableList
+            Dim dataStream = New ZLibStream(_stream.AsStream, IO.Compression.CompressionMode.Decompress)
+            Contract.Assume(dataStream.CanRead)
+            Return dataStream.ReadBytesExact(length:=CInt(block.DataLength)).AsReadableList
         End Function
 
         '''<summary>Determines the block which contains the given position.</summary>
         Private Function FindBlockIndexAt(ByVal position As Long) As Integer
             Contract.Requires(position >= 0)
             Contract.Requires(position < _length)
+            Contract.Ensures(Contract.Result(Of Integer)() >= 0)
+            Contract.Ensures(Contract.Result(Of Integer)() < _blockCount)
 
             'Optimistic local check
             For i = _loadedBlockIndex - 1 To _loadedBlockIndex + 1
@@ -169,6 +214,7 @@
             End If
 
             While result.Count < maxCount AndAlso _position < _length
+                Contract.Assume(_loadedBlockIndex < _blockInfoTable.Count)
                 Dim blockInfo = _blockInfoTable(_loadedBlockIndex)
 
                 'Advance to next block as necessary
@@ -178,6 +224,7 @@
                     _loadedBlockIndex += 1
                     Contract.Assume(_loadedBlockIndex < _blockCount)
                     blockInfo = ReadBlockInfo(_loadedBlockIndex)
+                    Contract.Assume(_loadedBlockIndex < _blockInfoTable.Count)
                     _loadedBlockData = ReadBlockData(_loadedBlockIndex)
                 End If
                 Contract.Assume(_position >= blockInfo.DataPosition)
@@ -185,12 +232,14 @@
 
                 'Append block data to result
                 Dim relativePosition = CInt(_position - blockInfo.DataPosition)
+                Contract.Assume(relativePosition < _loadedBlockData.Count)
                 Dim remainingBlockData = _loadedBlockData.SubView(relativePosition)
-                Dim n = Math.Min(maxCount - result.Count, remainingBlockData.Count)
-                result.AddRange(remainingBlockData.SubView(0, n))
+                Dim n = Math.Min(Math.Min(maxCount - result.Count, remainingBlockData.Count), _length - _position)
+                result.AddRange(remainingBlockData.SubView(0, CInt(n)))
                 _position += n
             End While
 
+            Contract.Assume(result.Count <= maxCount)
             Return result.AsReadableList
         End Function
 
@@ -202,13 +251,17 @@
 
         Public Property Position As Long Implements ISeekableStream.Position
             Get
+                Contract.Assume(_position <= Length)
                 Return _position
             End Get
+            <ContractVerification(False)>
             Set(ByVal value As Long)
-                Dim newBlockIndex = FindBlockIndexAt(value)
-                If _loadedBlockData Is Nothing OrElse _loadedBlockIndex <> newBlockIndex Then
-                    _loadedBlockData = ReadBlockData(newBlockIndex)
-                    _loadedBlockIndex = newBlockIndex
+                If value < _length Then
+                    Dim newBlockIndex = FindBlockIndexAt(value)
+                    If _loadedBlockData Is Nothing OrElse _loadedBlockIndex <> newBlockIndex Then
+                        _loadedBlockData = ReadBlockData(newBlockIndex)
+                        _loadedBlockIndex = newBlockIndex
+                    End If
                 End If
                 _position = value
             End Set

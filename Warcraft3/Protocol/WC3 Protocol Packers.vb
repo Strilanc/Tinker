@@ -324,6 +324,7 @@ Namespace WC3.Protocol
         Public Function MakePeerKnock(ByVal receiverPeerKey As UInteger,
                                       ByVal senderId As PID,
                                       ByVal connectedPeers As IEnumerable(Of PID)) As Packet
+            Contract.Requires(connectedPeers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Dim peerFlags = (From pid In connectedPeers Select CUShort(1) << (pid.Index - 1)).ReduceUsing(Function(flag1, flag2) flag1 Or flag2)
             Return New Packet(Packets.PeerKnock, New Dictionary(Of InvariantString, Object) From {
@@ -336,6 +337,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakePeerPing(ByVal salt As UInt32,
                                      ByVal senderConnectedPeers As IEnumerable(Of PID)) As Packet
+            Contract.Requires(senderConnectedPeers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Dim peerFlags = (From pid In senderConnectedPeers Select CUShort(1) << (pid.Index - 1)).ReduceUsing(Function(flag1, flag2) flag1 Or flag2)
             Return New Packet(Packets.PeerPing, New Dictionary(Of InvariantString, Object) From {

@@ -283,19 +283,20 @@ Public Module PoorlyCategorizedFunctions
         bw.Write(data.ToAscBytes(True))
     End Sub
     <Extension()>
-    Public Function ReadNullTerminatedData(ByVal reader As IO.BinaryReader) As IList(Of Byte)
+    <ContractVerification(False)>
+    Public Function ReadNullTerminatedData(ByVal reader As IReadableStream) As IReadableList(Of Byte)
         Contract.Requires(reader IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
-        Dim data = New List(Of Byte)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+        Dim result = New List(Of Byte)
         Do
             Dim b = reader.ReadByte()
             If b = 0 Then Exit Do
-            data.Add(b)
+            result.Add(b)
         Loop
-        Return data
+        Return result.AsReadableList
     End Function
     <Extension()>
-    Public Function ReadNullTerminatedString(ByVal reader As IO.BinaryReader) As String
+    Public Function ReadNullTerminatedString(ByVal reader As IReadableStream) As String
         Contract.Requires(reader IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Return reader.ReadNullTerminatedData.ParseChrString(nullTerminated:=False)
@@ -303,7 +304,7 @@ Public Module PoorlyCategorizedFunctions
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
     <Extension()>
-    Public Function ReadNullTerminatedString(ByVal reader As IO.BinaryReader,
+    Public Function ReadNullTerminatedString(ByVal reader As IReadableStream,
                                              ByVal maxLength As Integer) As String
         Contract.Requires(reader IsNot Nothing)
         Contract.Requires(maxLength >= 0)
@@ -322,6 +323,12 @@ Public Module PoorlyCategorizedFunctions
                 Throw New IO.InvalidDataException("Null-terminated string exceeded maximum length.")
             End If
         Loop
+    End Function
+
+    <Extension()>
+    Public Function ReadSingle(ByVal stream As IReadableStream) As Single
+        Contract.Requires(stream IsNot Nothing)
+        Return BitConverter.ToSingle(stream.ReadExact(4).ToArray, 0)
     End Function
 
     '''<summary>Determines the SHA-1 hash of a sequence of bytes.</summary>

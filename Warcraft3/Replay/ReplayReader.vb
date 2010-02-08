@@ -7,13 +7,13 @@ Namespace WC3.Replay
         Private ReadOnly _blockCount As UInt32
         Private ReadOnly _firstBlockOffset As UInt32
         Private ReadOnly _dataSize As UInt32
-        Private ReadOnly _streamFactory As Func(Of IO.Stream)
+        Private ReadOnly _streamFactory As Func(Of IRandomReadableStream)
 
         <ContractInvariantMethod()> Private Shadows Sub ObjectInvariant()
             Contract.Invariant(_streamFactory IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal streamFactory As Func(Of IO.Stream),
+        Public Sub New(ByVal streamFactory As Func(Of IRandomReadableStream),
                        ByVal blockCount As UInt32,
                        ByVal version As UInt32,
                        ByVal gameTimeLength As UInt32,
@@ -31,38 +31,40 @@ Namespace WC3.Replay
         Public Shared Function FromFile(ByVal path As String) As ReplayReader
             Contract.Requires(path IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayReader)() IsNot Nothing)
-            Return ReplayReader.FromStreamFactory(Function() New IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read))
+            Return ReplayReader.FromStreamFactory(Function() New IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream)
         End Function
-        Public Shared Function FromStreamFactory(ByVal streamFactory As Func(Of IO.Stream)) As ReplayReader
+        <ContractVerification(False)>
+        Public Shared Function FromStreamFactory(ByVal streamFactory As Func(Of IRandomReadableStream)) As ReplayReader
             Contract.Requires(streamFactory IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayReader)() IsNot Nothing)
 
-            Using br = New IO.BinaryReader(streamFactory())
+            Using stream = streamFactory()
+                If stream Is Nothing Then Throw New InvalidStateException("Invalid streamFactory")
                 'Read header values
-                Dim magic = br.ReadNullTerminatedString(maxLength:=28)
-                Dim headerSize = br.ReadUInt32()
-                Dim compressedSize = br.ReadUInt32()
-                Dim headerVersion = br.ReadUInt32()
-                Dim decompressedSize = br.ReadUInt32()
-                Dim blockCount = br.ReadUInt32()
-                Dim productId = br.ReadBytes(4).ParseChrString(nullTerminated:=False)
-                Dim gameVersion = br.ReadUInt32()
-                Dim gameVersion2 = br.ReadUInt16()
-                Dim flags = br.ReadUInt16()
-                Dim lengthInMilliseconds = br.ReadUInt32()
-                Dim headerCRC32 = br.ReadUInt32()
-                Contract.Assume(br.BaseStream.Position = Prots.HeaderSize)
-
-                'Re-read to compute checksum
-                br.BaseStream.Seek(0, IO.SeekOrigin.Begin)
-                Dim actualChecksum = br.ReadBytes(CInt(headerSize - 4)).Concat({0, 0, 0, 0}).CRC32
+                Dim magic = stream.ReadNullTerminatedString(maxLength:=28)
+                Dim headerSize = stream.ReadUInt32()
+                Dim compressedSize = stream.ReadUInt32()
+                Dim headerVersion = stream.ReadUInt32()
+                Dim decompressedSize = stream.ReadUInt32()
+                Dim blockCount = stream.ReadUInt32()
+                Dim productId = stream.ReadExact(4).ParseChrString(nullTerminated:=False)
+                Dim gameVersion = stream.ReadUInt32()
+                Dim gameVersion2 = stream.ReadUInt16()
+                Dim flags = stream.ReadUInt16()
+                Dim lengthInMilliseconds = stream.ReadUInt32()
+                Dim headerCRC32 = stream.ReadUInt32()
+                Contract.Assume(stream.Position = Prots.HeaderSize)
 
                 'Check header values
                 If magic <> Prots.HeaderMagicValue Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect magic value).")
                 If productId <> "PX3W" Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect product id).")
-                If actualChecksum <> headerCRC32 Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect checksum).")
                 If headerSize <> Prots.HeaderSize Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
                 If headerVersion <> Prots.HeaderVersion Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
+
+                'Check header checksum
+                stream.Position = 0
+                Dim actualChecksum = stream.ReadExact(CInt(headerSize - 4)).Concat({0, 0, 0, 0}).CRC32
+                If actualChecksum <> headerCRC32 Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect checksum).")
 
                 Return New ReplayReader(streamFactory:=streamFactory,
                                         blockCount:=blockCount,
@@ -86,10 +88,10 @@ Namespace WC3.Replay
         End Property
 
         Public Function MakeDataStream() As IRandomReadableStream
-            Contract.Ensures(Contract.Result(Of IO.Stream)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IRandomReadableStream)() IsNot Nothing)
             Dim stream = _streamFactory()
             If stream Is Nothing Then Throw New InvalidStateException("Invalid stream factory.")
-            Return New ReplayDataReader(stream.AsRandomReadableStream, _blockCount, _firstBlockOffset, _dataSize)
+            Return New ReplayDataReader(stream, _blockCount, _firstBlockOffset, _dataSize)
         End Function
 
         Private Shared Function ReadPlayerRecord(ByVal stream As IRandomReadableStream) As Dictionary(Of InvariantString, Object)
@@ -103,30 +105,31 @@ Namespace WC3.Replay
             Return stream.ReadPickle(New WC3.Protocol.SlotJar("slot")).Value
         End Function
 
-        Private Shared Sub ReadDataHeader(ByVal br As IO.BinaryReader)
-            Contract.Requires(br IsNot Nothing)
-            Dim unknown1 = br.ReadByte()
-            Dim unknown2 = br.ReadUInt32()
-            Dim host = ReadPlayerRecord(br.BaseStream.AsRandomReadableStream)
-            Dim gameName = br.ReadNullTerminatedString(64)
-            Dim unknown3 = br.ReadByte()
-            Dim statString = br.ReadNullTerminatedString(256)
-            Dim numPlayers = br.ReadUInt32()
+        Private Shared Sub ReadDataHeader(ByVal stream As IRandomReadableStream)
+            Contract.Requires(stream IsNot Nothing)
+            Dim unknown1 = stream.ReadByte()
+            Dim unknown2 = stream.ReadUInt32()
+            Dim host = ReadPlayerRecord(stream)
+            Dim gameName = stream.ReadNullTerminatedString(64)
+            Dim unknown3 = stream.ReadByte()
+            Dim statString = stream.ReadNullTerminatedString(256)
+            Dim numPlayers = stream.ReadUInt32()
             If numPlayers < 1 OrElse numPlayers > 12 Then Throw New IO.InvalidDataException("Invalid number of players.")
-            Dim gameType = br.ReadUInt32()
-            Dim lang = br.ReadUInt32()
+            Dim gameType = stream.ReadUInt32()
+            Dim lang = stream.ReadUInt32()
             Do
-                Dim b = br.ReadByte() '0 = host, &H16 = other, else keep going
+                Dim b = stream.ReadByte() '0 = host, &H16 = other, else keep going
                 If b <> 0 AndAlso b <> &H16 Then Exit Do
-                Dim player = ReadPlayerRecord(br.BaseStream.AsRandomReadableStream)
-                Dim unknown4 = br.ReadUInt32()
+                Dim player = ReadPlayerRecord(stream)
+                Dim unknown4 = stream.ReadUInt32()
             Loop
-            Dim unknown5 = br.ReadUInt16() 'byte count?
-            Dim slotCount = br.ReadByte()
-            Dim slots = (From i In Enumerable.Range(0, slotCount) Select ReadSlotRecord(br.BaseStream.AsRandomReadableStream)).ToList
-            Dim randomSeed = br.ReadUInt32()
-            Dim selectMode = br.ReadByte() '0 = team/race select, 1 = team not select, 3 = team+race not select, 4 = race fixed rand, &HCC = auto match
-            Dim startSpotCount = br.ReadByte()
+            Dim unknown5 = stream.ReadUInt16() 'byte count?
+            Dim slotCount = stream.ReadByte()
+            Contract.Assume(slotCount >= 0)
+            Dim slots = (From i In Enumerable.Range(0, slotCount) Select ReadSlotRecord(stream)).ToList
+            Dim randomSeed = stream.ReadUInt32()
+            Dim selectMode = stream.ReadByte() '0 = team/race select, 1 = team not select, 3 = team+race not select, 4 = race fixed rand, &HCC = auto match
+            Dim startSpotCount = stream.ReadByte()
         End Sub
 
         Public ReadOnly Property Entries() As IEnumerable(Of ReplayEntry)
@@ -138,9 +141,8 @@ Namespace WC3.Replay
         Private Function EnumerateReplayEntries() As IEnumerator(Of ReplayEntry)
             Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
             Dim stream = MakeDataStream()
-            Dim br = New IO.BinaryReader(stream.AsStream)
             Try
-                ReadDataHeader(br)
+                ReadDataHeader(stream)
 
                 Dim blockTypes = New Dictionary(Of ReplayEntryId, IJar(Of Object))()
                 blockTypes(ReplayEntryId.PlayerLeft) = Prots.ReplayEntryPlayerLeft.Weaken
@@ -158,33 +160,35 @@ Namespace WC3.Replay
                     Function(controller)
                         Try
                             If stream.Position = stream.Length Then Return controller.Break
-                            Dim blockId = CType(br.ReadByte(), ReplayEntryId)
+                            Dim blockId = CType(stream.ReadByte(), ReplayEntryId)
                             If blockTypes.ContainsKey(blockId) Then
                                 Return New ReplayEntry(blockId, stream.ReadPickle(blockTypes(blockId)))
                             ElseIf blockId = ReplayEntryId.EndOfReplay Then
-                                br.Dispose()
+                                stream.Dispose()
                                 Return controller.Break()
                             ElseIf blockId = ReplayEntryId.Tick Then
-                                Return controller.Sequence(EnumerateTickActionBlocks(br, byref_time:=time))
+                                Return controller.Sequence(EnumerateTickActionBlocks(stream, byref_time:=time))
                             Else
                                 Throw New IO.InvalidDataException("Unrecognized {0}: {1}".Frmt(GetType(ReplayEntryId), blockId))
                             End If
                         Catch e As Exception
-                            br.Dispose()
+                            stream.Dispose()
                             Throw
                         End Try
                     End Function,
-                    disposer:=AddressOf br.Dispose)
+                    disposer:=AddressOf stream.Dispose)
             Catch e As Exception
-                br.Dispose()
+                stream.Dispose()
                 Throw
             End Try
         End Function
-        Private Function EnumerateTickActionBlocks(ByVal br As IO.BinaryReader, ByRef byref_time As UInt32) As IEnumerator(Of ReplayEntry)
-            Dim blockSizeLeft = br.ReadUInt16()
+        Private Function EnumerateTickActionBlocks(ByVal stream As IRandomReadableStream, ByRef byref_time As UInt32) As IEnumerator(Of ReplayEntry)
+            Contract.Requires(stream IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
+            Dim blockSizeLeft = stream.ReadUInt16()
 
             'time
-            Dim dt = br.ReadUInt16()
+            Dim dt = stream.ReadUInt16()
             Dim t = byref_time
             byref_time += dt
             blockSizeLeft -= 2US
@@ -193,14 +197,14 @@ Namespace WC3.Replay
             Return New Enumerator(Of ReplayEntry)(
                 Function(controller)
                     If blockSizeLeft <= 0 Then Return controller.Break()
-                    Dim pid = br.ReadByte()
+                    Dim pid = stream.ReadByte()
 
-                    Dim subActionSize = br.ReadUInt16()
+                    Dim subActionSize = stream.ReadUInt16()
                     If subActionSize = 0 Then Throw New IO.InvalidDataException("Invalid Action Block Size")
                     blockSizeLeft -= subActionSize + 3US
                     If blockSizeLeft < 0 Then Throw New IO.InvalidDataException("Inconsistent Time Block and Action Block Sizes.")
 
-                    Return New ReplayEntry(ReplayEntryId.Tick, New ReplayGameAction(pid, t, br.ReadBytes(subActionSize).AsReadableList))
+                    Return New ReplayEntry(ReplayEntryId.Tick, New ReplayGameAction(pid, t, stream.ReadExact(subActionSize)))
                 End Function)
         End Function
     End Class
