@@ -4,9 +4,9 @@ Namespace WC3.Replay
     Public Enum ReplayEntryId As Byte
         EndOfReplay = &H0
         PlayerLeft = &H17
-        StartBlock1 = &H1A
-        StartBlock2 = &H1B
-        StartBlock3 = &H1C
+        LoadStarted1 = &H1A
+        LoadStarted2 = &H1B
+        GameStarted = &H1C
         Tick = &H1F
         ChatMessage = &H20
         GameStateChecksum = &H22
@@ -50,13 +50,14 @@ Namespace WC3.Replay
     ''' Represents a player action at a particular time.
     ''' </summary>
     Public Class ReplayGameAction
+
         Public ReadOnly time As UInteger
         Public ReadOnly pid As Byte
-        Public ReadOnly data As IReadableList(Of Byte)
-        Public Sub New(ByVal pid As Byte, ByVal time As UInteger, ByVal data As IReadableList(Of Byte))
+        Public ReadOnly actions As IReadableList(Of WC3.Protocol.GameAction)
+        Public Sub New(ByVal pid As Byte, ByVal time As UInteger, ByVal actions As IReadableList(Of WC3.Protocol.GameAction))
             Me.pid = pid
             Me.time = time
-            Me.data = data
+            Me.actions = actions
         End Sub
     End Class
 
@@ -64,22 +65,25 @@ Namespace WC3.Replay
         Public Const HeaderMagicValue As String = "Warcraft III recorded game" + Microsoft.VisualBasic.Chr(&H1A)
         Public Shared ReadOnly HeaderSize As UInt32 = CUInt(HeaderMagicValue.Length + 1 + 10 * 4)
         Public Const HeaderVersion As UInt32 = 1
+        Public Const BlockHeaderSize As Integer = 8
 
         Public Shared ReadOnly PlayerRecord As New TupleJar("player",
                 New ByteJar("pid").Weaken,
                 New NullTerminatedStringJar("name", maximumContentSize:=15).Weaken,
                 New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken)
 
+        Public Shared ReadOnly GameActions As New RepeatingJar(Of WC3.Protocol.GameAction)("actions", New WC3.Protocol.W3GameActionJar("action"))
+
         Public Shared ReadOnly ReplayEntryPlayerLeft As New TupleJar(ReplayEntryId.PlayerLeft.ToString,
                 New UInt32Jar("reason").Weaken,
                 New ByteJar("pid").Weaken,
                 New UInt32Jar("result").Weaken,
                 New UInt32Jar("unknown").Weaken)
-        Public Shared ReadOnly ReplayEntryStartBlock1 As New TupleJar(ReplayEntryId.StartBlock1.ToString,
+        Public Shared ReadOnly ReplayEntryLoadStarted1 As New TupleJar(ReplayEntryId.LoadStarted1.ToString,
                 New UInt32Jar("value").Weaken)
-        Public Shared ReadOnly ReplayEntryStartBlock2 As New TupleJar(ReplayEntryId.StartBlock2.ToString,
+        Public Shared ReadOnly ReplayEntryLoadStarted2 As New TupleJar(ReplayEntryId.LoadStarted2.ToString,
                 New UInt32Jar("value").Weaken)
-        Public Shared ReadOnly ReplayEntryStartBlock3 As New TupleJar(ReplayEntryId.StartBlock3.ToString,
+        Public Shared ReadOnly ReplayEntryGameStarted As New TupleJar(ReplayEntryId.GameStarted.ToString,
                 New UInt32Jar("value").Weaken)
         Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
         Private Shared Function MakeTextJar() As IJar(Of Dictionary(Of InvariantString, Object))

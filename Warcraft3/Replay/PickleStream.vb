@@ -50,8 +50,7 @@ Namespace WC3.Replay
                 <ContractVerification(False)>
                 Get
                     If Me.FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.FullName)
-                    _stream.Position = _offset + index
-                    Return _stream.ReadExact(exactCount:=1)(0)
+                    Return _stream.ReadExactAt(position:=_offset + index, exactCount:=1)(0)
                 End Get
             End Property
 
@@ -84,27 +83,31 @@ Namespace WC3.Replay
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of IPickle(Of T)).Data.Count)
-            Dim oldPosition = stream.Position
-            Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
-                '[first parse: learn needed data]
-                Dim result = jar.Parse(view)
-                '[second parse: work with copied data, to avoid accessing the disposed StreamAsList later]
-                result = jar.Parse(result.Data.ToArray.AsReadableList)
-                'Place position after used data, as if it had been read normally
-                stream.Position = oldPosition + result.Data.Count
-                Return result
-            End Using
+            Try
+                Dim oldPosition = stream.Position
+                Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
+                    '[first parse: learn needed data]
+                    Dim result = jar.Parse(view)
+                    '[second parse: work with copied data, to avoid accessing the disposed StreamAsList later]
+                    result = jar.Parse(result.Data.ToArray.AsReadableList)
+                    'Place position after used data, as if it had been read normally
+                    stream.Position = oldPosition + result.Data.Count
+                    Return result
+                End Using
+            Catch ex As PicklingException
+                Throw New IO.InvalidDataException(ex.Message, ex)
+            End Try
         End Function
 
         <Extension()>
         <ContractVerification(False)>
-        Public Function WritePickle(Of T)(ByVal stream As IO.Stream, ByVal jar As IPackJar(Of T), ByVal value As T) As IPickle(Of T)
+        Public Function WritePickle(Of T)(ByVal stream As IWritableStream, ByVal jar As IPackJar(Of T), ByVal value As T) As IPickle(Of T)
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Dim result = jar.Pack(value)
-            stream.Write(result.Data.ToArray, 0, result.Data.Count)
+            stream.Write(result.Data)
             Return result
         End Function
     End Module

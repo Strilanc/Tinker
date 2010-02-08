@@ -112,7 +112,7 @@ Namespace Bnet.Protocol
                                            Optional ByVal listCount As Integer = 20) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(ClientPackets.QueryGamesList, New Dictionary(Of InvariantString, Object) From {
-                    {"filter", WC3.GameTypes.MaskFilterable},
+                    {"filter", WC3.Protocol.GameTypes.MaskFilterable},
                     {"filter mask", 0},
                     {"unknown0", 0},
                     {"list count", listCount},

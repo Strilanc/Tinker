@@ -6,13 +6,12 @@
         Inherits FutureDisposable
         Implements IRandomReadableStream
 
-        Private Const BlockHeaderSize As Integer = 8
-
         Private Structure BlockInfo
             Private ReadOnly _blockPosition As Long
             Private ReadOnly _blockLength As Long
             Private ReadOnly _dataPosition As Long
             Private ReadOnly _dataLength As Long
+            Private ReadOnly _checksum As UInt32
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_blockPosition >= 0)
@@ -24,7 +23,8 @@
             Public Sub New(ByVal blockPosition As Long,
                            ByVal blockLength As Long,
                            ByVal dataPosition As Long,
-                           ByVal dataLength As Long)
+                           ByVal dataLength As Long,
+                           ByVal checksum As UInt32)
                 Contract.Requires(blockPosition >= 0)
                 Contract.Requires(blockLength > 0)
                 Contract.Requires(dataPosition >= 0)
@@ -33,6 +33,7 @@
                 Me._blockLength = blockLength
                 Me._dataPosition = dataPosition
                 Me._dataLength = dataLength
+                Me._checksum = checksum
             End Sub
 
             Public ReadOnly Property BlockPosition As Long
@@ -57,6 +58,11 @@
                 Get
                     Contract.Ensures(Contract.Result(Of Long)() > 0)
                     Return _dataLength
+                End Get
+            End Property
+            Public ReadOnly Property Checksum As UInt32
+                Get
+                    Return _checksum
                 End Get
             End Property
             Public ReadOnly Property NextBlockPosition As Long
@@ -126,9 +132,10 @@
             Dim checksum = _stream.ReadUInt32()
             'Remember
             Dim block = New BlockInfo(blockPosition:=blockPosition,
-                                      blockLength:=BlockHeaderSize + compressedDataSize,
+                                      blockLength:=Prots.BlockHeaderSize + compressedDataSize,
                                       dataPosition:=dataPosition,
-                                      dataLength:=decompressedDataSize)
+                                      dataLength:=decompressedDataSize,
+                                      checksum:=checksum)
             _blockInfoTable.Add(block)
             If _blockInfoTable.Count = _blockCount AndAlso block.NextDataPosition < _length Then
                 Throw New IO.InvalidDataException("Less data than indicated by header.")
@@ -159,13 +166,23 @@
             Contract.Requires(blockIndex < _blockCount)
             Contract.Ensures(_blockInfoTable.Count > blockIndex)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-            'Locate
-            Dim block = ReadBlockInfo(blockIndex)
-            _stream.Position = block.BlockPosition + BlockHeaderSize
+
+            Dim blockInfo = ReadBlockInfo(blockIndex)
+            'Checksum
+            Dim headerCRC32 = _stream.ReadExactAt(position:=blockInfo.BlockPosition,
+                                                  exactCount:=4
+                                                  ).Concat({0, 0, 0, 0}).CRC32
+            Dim bodyCRC32 = _stream.ReadExactAt(position:=blockInfo.BlockPosition + Prots.BlockHeaderSize,
+                                                exactCount:=CInt(blockInfo.BlockLength - Prots.BlockHeaderSize)
+                                                ).CRC32
+            Dim checksum = ((bodyCRC32 Xor (bodyCRC32 << 16)) And &HFFFF0000UI) Or
+                           ((headerCRC32 Xor (headerCRC32 >> 16)) And &HFFFFUI)
+            If checksum <> blockInfo.Checksum Then Throw New IO.InvalidDataException("Block data didn't match checksum.")
             'Retrieve
+            _stream.Position = blockInfo.BlockPosition + Prots.BlockHeaderSize
             Dim dataStream = New ZLibStream(_stream.AsStream, IO.Compression.CompressionMode.Decompress)
             Contract.Assume(dataStream.CanRead)
-            Return dataStream.ReadBytesExact(length:=CInt(block.DataLength)).AsReadableList
+            Return dataStream.ReadBytesExact(length:=CInt(blockInfo.DataLength)).AsReadableList
         End Function
 
         '''<summary>Determines the block which contains the given position.</summary>

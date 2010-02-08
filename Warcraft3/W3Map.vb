@@ -246,16 +246,16 @@ Namespace WC3
                 End Select
             End Get
         End Property
-        Public ReadOnly Property GameType As GameTypes
+        Public ReadOnly Property GameType As Protocol.GameTypes
             Get
-                Dim result = GameTypes.MakerUser Or If(IsMelee, GameTypes.TypeMelee, GameTypes.TypeScenario)
+                Dim result = Protocol.GameTypes.MakerUser Or If(IsMelee, Protocol.GameTypes.TypeMelee, Protocol.GameTypes.TypeScenario)
                 Select Case SizeClassification
                     Case SizeClass.Tiny, SizeClass.Small
-                        result = result Or GameTypes.SizeSmall
+                        result = result Or Protocol.GameTypes.SizeSmall
                     Case SizeClass.Medium
-                        result = result Or GameTypes.SizeMedium
+                        result = result Or Protocol.GameTypes.SizeMedium
                     Case SizeClass.Large, SizeClass.Huge
-                        result = result Or GameTypes.SizeLarge
+                        result = result Or Protocol.GameTypes.SizeLarge
                     Case Else
                         Throw SizeClassification.MakeImpossibleValueException()
                 End Select

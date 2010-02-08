@@ -288,10 +288,34 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()>
-    Public Sub WriteNullTerminatedString(ByVal bw As IO.BinaryWriter, ByVal data As String)
+    Public Sub WriteAt(ByVal stream As IRandomWritableStream, ByVal position As Long, ByVal data As IReadableList(Of Byte))
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Requires(data IsNot Nothing)
+        Contract.Requires(position >= 0)
+        Contract.Requires(position <= stream.Length)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+        Contract.Ensures(stream.Position = position + data.count)
+        stream.Position = position
+        stream.Write(data)
+    End Sub
+
+    <Extension()>
+    Public Function ReadExactAt(ByVal stream As IRandomReadableStream, ByVal position As Long, ByVal exactCount As Integer) As IReadableList(Of Byte)
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Requires(position >= 0)
+        Contract.Requires(exactCount > 0)
+        Contract.Requires(position + exactCount <= stream.Length)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = exactCount)
+        Contract.Ensures(stream.Position = position + exactCount)
+        stream.Position = position
+        Return stream.ReadExact(exactCount)
+    End Function
+    <Extension()>
+    Public Sub WriteNullTerminatedString(ByVal bw As IWritableStream, ByVal data As String)
         Contract.Requires(bw IsNot Nothing)
         Contract.Requires(data IsNot Nothing)
-        bw.Write(data.ToAscBytes(True))
+        bw.Write(data.ToAscBytes(True).AsReadableList)
     End Sub
     <Extension()>
     <ContractVerification(False)>

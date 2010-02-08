@@ -30,7 +30,7 @@ Namespace Bnet.Protocol
         Inherits BaseParseJar(Of QueryGamesListResponse)
 
         Private Shared ReadOnly gameDataJar As New TupleJar("game",
-                New EnumUInt32Jar(Of WC3.GameTypes)("game type").Weaken,
+                New EnumUInt32Jar(Of WC3.Protocol.GameTypes)("game type").Weaken,
                 New UInt32Jar("language id").Weaken,
                 New IPEndPointJar("host address").Weaken,
                 New EnumUInt32Jar(Of GameStates)("game state").Weaken,
@@ -71,7 +71,7 @@ Namespace Bnet.Protocol
                                                             gameid:=CUInt(vals("game id")),
                                                             entryKey:=0,
                                                             totalSlotCount:=totalSlots,
-                                                            gameType:=CType(vals("game type"), WC3.GameTypes),
+                                                            gameType:=CType(vals("game type"), WC3.Protocol.GameTypes),
                                                             state:=CType(vals("game state"), GameStates),
                                                             usedSlotCount:=usedSlots,
                                                             baseAge:=CUInt(vals("elapsed seconds")).Seconds,

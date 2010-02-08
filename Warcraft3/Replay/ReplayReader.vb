@@ -58,12 +58,11 @@ Namespace WC3.Replay
                 'Check header values
                 If magic <> Prots.HeaderMagicValue Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect magic value).")
                 If productId <> "PX3W" Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect product id).")
-                If headerSize <> Prots.HeaderSize Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
                 If headerVersion <> Prots.HeaderVersion Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
+                If headerSize <> Prots.HeaderSize Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect header size).")
 
                 'Check header checksum
-                stream.Position = 0
-                Dim actualChecksum = stream.ReadExact(CInt(headerSize - 4)).Concat({0, 0, 0, 0}).CRC32
+                Dim actualChecksum = stream.ReadExactAt(position:=0, exactCount:=CInt(headerSize - 4)).Concat({0, 0, 0, 0}).CRC32
                 If actualChecksum <> headerCRC32 Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect checksum).")
 
                 Return New ReplayReader(streamFactory:=streamFactory,
@@ -122,12 +121,12 @@ Namespace WC3.Replay
             Dim unknown1 = stream.ReadByte()
             Dim unknown2 = stream.ReadUInt32()
             Dim host = ReadPlayerRecord(stream)
-            Dim gameName = stream.ReadNullTerminatedString(64)
+            Dim gameName = stream.ReadNullTerminatedString(maxLength:=64)
             Dim unknown3 = stream.ReadByte()
             Dim gameStats = stream.ReadPickle(New WC3.GameStatsJar("game stats"))
             Dim numPlayers = stream.ReadUInt32()
             If numPlayers < 1 OrElse numPlayers > 12 Then Throw New IO.InvalidDataException("Invalid number of players.")
-            Dim gameType = stream.ReadUInt32()
+            Dim gameType = CType(stream.ReadUInt32(), WC3.Protocol.GameTypes)
             Dim lang = stream.ReadUInt32()
             Dim players = ReadHeaderPlayerRecords(stream)
             Dim lobbyState = stream.ReadPickle(WC3.Protocol.Packets.LobbyState)
@@ -147,9 +146,9 @@ Namespace WC3.Replay
 
                 Dim blockTypes = New Dictionary(Of ReplayEntryId, IJar(Of Object))()
                 blockTypes(ReplayEntryId.PlayerLeft) = Prots.ReplayEntryPlayerLeft.Weaken
-                blockTypes(ReplayEntryId.StartBlock1) = Prots.ReplayEntryStartBlock1.Weaken
-                blockTypes(ReplayEntryId.StartBlock2) = Prots.ReplayEntryStartBlock2.Weaken
-                blockTypes(ReplayEntryId.StartBlock3) = Prots.ReplayEntryStartBlock3.Weaken
+                blockTypes(ReplayEntryId.LoadStarted1) = Prots.ReplayEntryLoadStarted1.Weaken
+                blockTypes(ReplayEntryId.LoadStarted2) = Prots.ReplayEntryLoadStarted2.Weaken
+                blockTypes(ReplayEntryId.GameStarted) = Prots.ReplayEntryGameStarted.Weaken
                 blockTypes(ReplayEntryId.GameStateChecksum) = Prots.ReplayEntryGameStateChecksum.Weaken
                 blockTypes(ReplayEntryId.TournamentForcedCountdown) = Prots.ReplayEntryTournamentForcedCountdown.Weaken
                 blockTypes(ReplayEntryId.Unknown0x23) = Prots.ReplayEntryUnknown0x23.Weaken
@@ -187,25 +186,24 @@ Namespace WC3.Replay
             Contract.Requires(stream IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
             Dim blockSizeLeft = stream.ReadUInt16()
-
-            'time
             Dim dt = stream.ReadUInt16()
-            Dim t = byref_time
             byref_time += dt
+            Dim t = byref_time
             blockSizeLeft -= 2US
 
-            'actions
+            'enumerate actions
             Return New Enumerator(Of ReplayEntry)(
                 Function(controller)
                     If blockSizeLeft <= 0 Then Return controller.Break()
                     Dim pid = stream.ReadByte()
 
                     Dim subActionSize = stream.ReadUInt16()
-                    If subActionSize = 0 Then Throw New IO.InvalidDataException("Invalid Action Block Size")
+                    If subActionSize + 3US > blockSizeLeft Then Throw New IO.InvalidDataException("Inconsistent Time Block and Action Block Sizes.")
                     blockSizeLeft -= subActionSize + 3US
-                    If blockSizeLeft < 0 Then Throw New IO.InvalidDataException("Inconsistent Time Block and Action Block Sizes.")
 
-                    Return New ReplayEntry(ReplayEntryId.Tick, New ReplayGameAction(pid, t, stream.ReadExact(subActionSize)))
+                    Dim actionData = stream.ReadExact(subActionSize)
+                    Dim actions = Prots.GameActions.Parse(actionData).Value
+                    Return New ReplayEntry(ReplayEntryId.Tick, New ReplayGameAction(pid, t, actions))
                 End Function)
         End Function
     End Class

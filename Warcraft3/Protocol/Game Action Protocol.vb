@@ -248,8 +248,7 @@ Namespace WC3.Protocol
 
         Public Overrides Function ToString() As String
             If AllocatedId = UInt32.MaxValue AndAlso CounterId = UInt32.MaxValue Then Return "[none]"
-            If AllocatedId = CounterId Then Return "preplaced id = {0}".Frmt(AllocatedId)
-            Return "allocated id = {0}, counter id = {1}".Frmt(AllocatedId, CounterId)
+            Return "allocated id: {0}, counter id: {1}".Frmt(AllocatedId, CounterId)
         End Function
     End Structure
 

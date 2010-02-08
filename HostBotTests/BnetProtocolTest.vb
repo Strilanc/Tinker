@@ -6,6 +6,7 @@ Imports System.Collections.Generic
 Imports Tinker.Bnet.Protocol
 Imports Tinker.Bnet
 Imports Tinker.WC3
+Imports Tinker
 
 <TestClass()>
 Public Class BnetProtocolTest
@@ -32,7 +33,7 @@ Public Class BnetProtocolTest
         Assert.IsTrue(ClientPackets.CreateGame3.Pack(New Dictionary(Of InvariantString, Object)() From {
                     {"game state", GameStates.Full},
                     {"seconds since creation", 25},
-                    {"game type", Tinker.WC3.GameTypes.PrivateGame},
+                    {"game type", Tinker.WC3.Protocol.GameTypes.PrivateGame},
                     {"unknown1=1023", 1023},
                     {"is ladder", 0},
                     {"name", "test"},
@@ -173,8 +174,8 @@ Public Class BnetProtocolTest
     <TestMethod()>
     Public Sub ClientQueryGamesListTest()
         Assert.IsTrue(ClientPackets.QueryGamesList.Pack(New Dictionary(Of InvariantString, Object)() From {
-                    {"filter", GameTypes.PrivateGame},
-                    {"filter mask", GameTypes.SizeLarge},
+                    {"filter", WC3.Protocol.GameTypes.PrivateGame},
+                    {"filter mask", WC3.Protocol.GameTypes.SizeLarge},
                     {"unknown0", 0},
                     {"list count", 20},
                     {"game name", "test"},

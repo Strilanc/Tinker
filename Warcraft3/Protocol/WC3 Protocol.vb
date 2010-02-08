@@ -185,6 +185,34 @@ Namespace WC3.Protocol
         Pong = &H46
     End Enum
 
+    <Flags()>
+    Public Enum GameTypes As UInteger
+        CreateGameUnknown0 = 1 << 0 'this bit always seems to be set by wc3
+
+        '''<summary>Setting this bit causes wc3 to check the map and disc if it is not signed by Blizzard</summary>
+        AuthenticatedMakerBlizzard = 1 << 3
+        OfficialMeleeGame = 1 << 5
+
+        PrivateGame = 1 << 11
+
+        MakerUser = 1 << 13
+        MakerBlizzard = 1 << 14
+        TypeMelee = 1 << 15
+        TypeScenario = 1 << 16
+        SizeSmall = 1 << 17
+        SizeMedium = 1 << 18
+        SizeLarge = 1 << 19
+        ObsFull = 1 << 20
+        ObsOnDeath = 1 << 21
+        ObsNone = 1 << 22
+
+        MaskObs = ObsFull Or ObsOnDeath Or ObsNone
+        MaskMaker = MakerBlizzard Or MakerUser
+        MaskType = TypeMelee Or TypeScenario
+        MaskSize = SizeLarge Or SizeMedium Or SizeSmall
+
+        MaskFilterable = MaskObs Or MaskMaker Or MaskType Or MaskSize
+    End Enum
     Public Enum LobbyLayoutStyle
         Melee = 0
         FixedForces = 1

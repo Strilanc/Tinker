@@ -1,32 +1,4 @@
 ﻿Namespace WC3
-    <Flags()>
-    Public Enum GameTypes As UInteger
-        CreateGameUnknown0 = 1 << 0 'this bit always seems to be set by wc3
-
-        '''<summary>Setting this bit causes wc3 to check the map and disc if it is not signed by Blizzard</summary>
-        AuthenticatedMakerBlizzard = 1 << 3
-
-        PrivateGame = 1 << 11
-
-        MakerUser = 1 << 13
-        MakerBlizzard = 1 << 14
-        TypeMelee = 1 << 15
-        TypeScenario = 1 << 16
-        SizeSmall = 1 << 17
-        SizeMedium = 1 << 18
-        SizeLarge = 1 << 19
-        ObsFull = 1 << 20
-        ObsOnDeath = 1 << 21
-        ObsNone = 1 << 22
-
-        MaskObs = ObsFull Or ObsOnDeath Or ObsNone
-        MaskMaker = MakerBlizzard Or MakerUser
-        MaskType = TypeMelee Or TypeScenario
-        MaskSize = SizeLarge Or SizeMedium Or SizeSmall
-
-        MaskFilterable = MaskObs Or MaskMaker Or MaskType Or MaskSize
-    End Enum
-
     Public Class GameDescription
         Implements IEquatable(Of GameDescription)
 
@@ -36,7 +8,7 @@
         Private ReadOnly _entryKey As UInteger
         Private ReadOnly _ageClock As IClock
         Private ReadOnly _baseAge As TimeSpan
-        Private ReadOnly _gameType As GameTypes
+        Private ReadOnly _gameType As Protocol.GameTypes
         Private ReadOnly _state As Bnet.Protocol.GameStates
         Private ReadOnly _totalSlotCount As Integer
         Private ReadOnly _usedSlotCount As Integer
@@ -81,7 +53,7 @@
                        ByVal gameId As UInt32,
                        ByVal entryKey As UInteger,
                        ByVal totalSlotCount As Integer,
-                       ByVal gameType As GameTypes,
+                       ByVal gameType As Protocol.GameTypes,
                        ByVal state As Bnet.Protocol.GameStates,
                        ByVal usedSlotCount As Integer,
                        ByVal clock As IClock,
@@ -117,7 +89,7 @@
                 Return _gameStats
             End Get
         End Property
-        Public ReadOnly Property GameType As GameTypes
+        Public ReadOnly Property GameType As Protocol.GameTypes
             Get
                 Return _gameType
             End Get
@@ -238,7 +210,7 @@
                        ByVal gameId As UInt32,
                        ByVal entryKey As UInteger,
                        ByVal totalSlotCount As Integer,
-                       ByVal gameType As GameTypes,
+                       ByVal gameType As Protocol.GameTypes,
                        ByVal state As Bnet.Protocol.GameStates,
                        ByVal usedSlotCount As Integer,
                        ByVal clock As IClock,
@@ -291,7 +263,7 @@
                        ByVal gameId As UInt32,
                        ByVal entryKey As UInteger,
                        ByVal totalSlotCount As Integer,
-                       ByVal gameType As GameTypes,
+                       ByVal gameType As Protocol.GameTypes,
                        ByVal state As Bnet.Protocol.GameStates,
                        ByVal usedSlotCount As Integer,
                        ByVal clock As IClock,

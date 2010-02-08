@@ -521,21 +521,21 @@ Namespace Bnet
             'If in_progress Then gameState = gameState Or BnetPacket.GameStateFlags.InProgress
             'If Not empty Then game_state_flags = game_state_flags Or FLAG_NOT_EMPTY [causes problems: why?]
 
-            Dim gameType = WC3.GameTypes.CreateGameUnknown0 Or Me._advertisedGameDescription.GameType
+            Dim gameType = WC3.Protocol.GameTypes.CreateGameUnknown0 Or Me._advertisedGameDescription.GameType
             If _advertisedPrivate Then
                 gameState = gameState Or Protocol.GameStates.Private
-                gameType = gameType Or WC3.GameTypes.PrivateGame
+                gameType = gameType Or WC3.Protocol.GameTypes.PrivateGame
             Else
                 gameState = gameState And Not Protocol.GameStates.Private
-                gameType = gameType And Not WC3.GameTypes.PrivateGame
+                gameType = gameType And Not WC3.Protocol.GameTypes.PrivateGame
             End If
             Select Case Me._advertisedGameDescription.GameStats.Observers
                 Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
-                    gameType = gameType Or WC3.GameTypes.ObsFull
+                    gameType = gameType Or WC3.Protocol.GameTypes.ObsFull
                 Case WC3.GameObserverOption.ObsOnDefeat
-                    gameType = gameType Or WC3.GameTypes.ObsOnDeath
+                    gameType = gameType Or WC3.Protocol.GameTypes.ObsOnDeath
                 Case WC3.GameObserverOption.NoObservers
-                    gameType = gameType Or WC3.GameTypes.ObsNone
+                    gameType = gameType Or WC3.Protocol.GameTypes.ObsNone
             End Select
 
             Me._advertisedGameDescription = New WC3.LocalGameDescription(

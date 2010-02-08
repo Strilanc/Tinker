@@ -35,7 +35,7 @@ Public Class WC3ProtocolTest
                 data:={32, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"crc32", 32},
-                        {"actions", New List(Of GameAction)()}
+                        {"actions", New List(Of GameAction)().AsReadableList}
                     })
     End Sub
     <TestMethod()>

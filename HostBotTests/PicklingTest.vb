@@ -379,11 +379,11 @@ Public Class PicklingTest
     <TestMethod()>
     Public Sub RepeatingJarTest()
         Dim jar = New RepeatingJar(Of UInt16)("jar", New UInt16Jar("jar"))
-        Dim equater As Func(Of IList(Of UInt16), IList(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
-        JarTest(jar, equater, {}, {}, appendSafe:=False)
-        JarTest(jar, equater, {0}, {0, 0}, appendSafe:=False)
-        JarTest(jar, equater, {1}, {1, 0}, appendSafe:=False)
-        JarTest(jar, equater, {1, 2, UInt16.MaxValue}, {1, 0, 2, 0, &HFF, &HFF}, appendSafe:=False)
+        Dim equater As Func(Of IReadableList(Of UInt16), IReadableList(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
+        JarTest(jar, equater, New UInt16() {}.AsReadableList, {}, appendSafe:=False)
+        JarTest(jar, equater, New UInt16() {0}.AsReadableList, {0, 0}, appendSafe:=False)
+        JarTest(jar, equater, New UInt16() {1}.AsReadableList, {1, 0}, appendSafe:=False)
+        JarTest(jar, equater, New UInt16() {1, 2, UInt16.MaxValue}.AsReadableList, {1, 0, 2, 0, &HFF, &HFF}, appendSafe:=False)
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsReadableList))
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3}.AsReadableList))
     End Sub
