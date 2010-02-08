@@ -209,6 +209,10 @@
     <Compile Include="Pickling\ListJar.vb" />
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
+    <Compile Include="Warcraft3\Replay\PickleStream.vb" />
+    <Compile Include="Warcraft3\Replay\ReplayDataReader.vb" />
+    <Compile Include="Warcraft3\Replay\Replay Protocol.vb" />
+    <Compile Include="Warcraft3\Replay\ReplayWriter.vb" />
     <Compile Include="Warcraft3\Download Manager.vb" />
     <Compile Include="Warcraft3\Game\GameLoggerControl.Designer.vb">
       <DependentUpon>GameLoggerControl.vb</DependentUpon>
@@ -231,7 +235,7 @@
     <Compile Include="Warcraft3\Protocol\SlotJar.vb" />
     <Compile Include="Warcraft3\Protocol\WC3 Protocol Packers.vb" />
     <Compile Include="Warcraft3\Protocol\WC3 Packet.vb" />
-    <Compile Include="Warcraft3\ReplayReader.vb" />
+    <Compile Include="Warcraft3\Replay\ReplayReader.vb" />
     <Compile Include="Warcraft3\Server\W3ServerControl.Designer.vb">
       <DependentUpon>W3ServerControl.vb</DependentUpon>
     </Compile>
