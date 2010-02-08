@@ -3,7 +3,10 @@
 Namespace WC3.Replay
     Public Enum ReplayEntryId As Byte
         EndOfReplay = &H0
+        StartOfReplay = &H10
+        PlayerJoined = &H16
         PlayerLeft = &H17
+        LobbyState = &H19
         LoadStarted1 = &H1A
         LoadStarted2 = &H1B
         GameStarted = &H1C
@@ -67,13 +70,22 @@ Namespace WC3.Replay
         Public Const HeaderVersion As UInt32 = 1
         Public Const BlockHeaderSize As Integer = 8
 
-        Public Shared ReadOnly PlayerRecord As New TupleJar("player",
+        Public Shared ReadOnly ReplayEntryStartOfReplay As New TupleJar(ReplayEntryId.StartOfReplay.ToString,
+                New UInt32Jar("unknown1").Weaken,
+                New ByteJar("host pid").Weaken,
+                New NullTerminatedStringJar("host name", maximumContentSize:=15).Weaken,
+                New SizePrefixedDataJar("host peer data", prefixSize:=1).Weaken,
+                New NullTerminatedStringJar("game name").Weaken,
+                New ByteJar("unknown3").Weaken,
+                New GameStatsJar("game stats").Weaken,
+                New UInt32Jar("player count").Weaken,
+                New EnumUInt32Jar(Of Protocol.GameTypes)("game type").Weaken,
+                New UInt32Jar("language").Weaken)
+        Public Shared ReadOnly ReplayEntryPlayerJoined As New TupleJar(ReplayEntryId.PlayerJoined.ToString,
                 New ByteJar("pid").Weaken,
                 New NullTerminatedStringJar("name", maximumContentSize:=15).Weaken,
-                New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken)
-
-        Public Shared ReadOnly GameActions As New RepeatingJar(Of WC3.Protocol.GameAction)("actions", New WC3.Protocol.W3GameActionJar("action"))
-
+                New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken,
+                New UInt32Jar("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryPlayerLeft As New TupleJar(ReplayEntryId.PlayerLeft.ToString,
                 New UInt32Jar("reason").Weaken,
                 New ByteJar("pid").Weaken,
@@ -115,5 +127,8 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryTournamentForcedCountdown As New TupleJar(ReplayEntryId.TournamentForcedCountdown.ToString,
                 New UInt32Jar("counter state").Weaken,
                 New UInt32Jar("counter time").Weaken)
+        Public Shared ReadOnly ReplayEntryLobbyState As TupleJar = WC3.Protocol.Packets.LobbyState
+
+        Public Shared ReadOnly GameActions As New RepeatingJar(Of WC3.Protocol.GameAction)("actions", New WC3.Protocol.W3GameActionJar("action"))
     End Class
 End Namespace

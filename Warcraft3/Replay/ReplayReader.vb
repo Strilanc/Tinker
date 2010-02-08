@@ -93,66 +93,29 @@ Namespace WC3.Replay
             Return New ReplayDataReader(stream, _blockCount, _firstBlockOffset, _dataSize)
         End Function
 
-        Private Shared Function ReadPlayerRecord(ByVal stream As IRandomReadableStream) As Dictionary(Of InvariantString, Object)
-            Contract.Requires(stream IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, Object))() IsNot Nothing)
-            Return stream.ReadPickle(Prots.PlayerRecord).Value
-        End Function
-        Private Shared Function ReadSlotRecord(ByVal stream As IRandomReadableStream) As Dictionary(Of InvariantString, Object)
-            Contract.Requires(stream IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, Object))() IsNot Nothing)
-            Return stream.ReadPickle(New WC3.Protocol.SlotJar("slot")).Value
-        End Function
-
-        Private Shared Function ReadHeaderPlayerRecords(ByVal stream As IRandomReadableStream) As IReadableList(Of Object)
-            Dim result = New List(Of Object)
-            Do
-                Dim b = stream.ReadByte() '0 = host, &H16 = other, else keep going
-                If b <> 0 AndAlso b <> &H16 Then Exit Do
-                Dim player = ReadPlayerRecord(stream)
-                Dim unknown4 = stream.ReadUInt32()
-                result.Add(Tuple(b, player, unknown4))
-            Loop
-            Return result.AsReadableList
-        End Function
-
-        Private Shared Sub ReadDataHeader(ByVal stream As IRandomReadableStream)
-            Contract.Requires(stream IsNot Nothing)
-            Dim unknown1 = stream.ReadByte()
-            Dim unknown2 = stream.ReadUInt32()
-            Dim host = ReadPlayerRecord(stream)
-            Dim gameName = stream.ReadNullTerminatedString(maxLength:=64)
-            Dim unknown3 = stream.ReadByte()
-            Dim gameStats = stream.ReadPickle(New WC3.GameStatsJar("game stats"))
-            Dim numPlayers = stream.ReadUInt32()
-            If numPlayers < 1 OrElse numPlayers > 12 Then Throw New IO.InvalidDataException("Invalid number of players.")
-            Dim gameType = CType(stream.ReadUInt32(), WC3.Protocol.GameTypes)
-            Dim lang = stream.ReadUInt32()
-            Dim players = ReadHeaderPlayerRecords(stream)
-            Dim lobbyState = stream.ReadPickle(WC3.Protocol.Packets.LobbyState)
-        End Sub
-
         Public ReadOnly Property Entries() As IEnumerable(Of ReplayEntry)
             Get
                 Contract.Ensures(Contract.Result(Of IEnumerable(Of ReplayEntry))() IsNot Nothing)
-                Return New Enumerable(Of ReplayEntry)(Function() EnumerateReplayEntries())
+                Return New Enumerable(Of ReplayEntry)(Function() EnumerateEntries())
             End Get
         End Property
-        Private Function EnumerateReplayEntries() As IEnumerator(Of ReplayEntry)
+        Private Function EnumerateEntries() As IEnumerator(Of ReplayEntry)
             Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
             Dim stream = MakeDataStream()
             Try
-                ReadDataHeader(stream)
-
-                Dim blockTypes = New Dictionary(Of ReplayEntryId, IJar(Of Object))()
-                blockTypes(ReplayEntryId.PlayerLeft) = Prots.ReplayEntryPlayerLeft.Weaken
-                blockTypes(ReplayEntryId.LoadStarted1) = Prots.ReplayEntryLoadStarted1.Weaken
-                blockTypes(ReplayEntryId.LoadStarted2) = Prots.ReplayEntryLoadStarted2.Weaken
-                blockTypes(ReplayEntryId.GameStarted) = Prots.ReplayEntryGameStarted.Weaken
-                blockTypes(ReplayEntryId.GameStateChecksum) = Prots.ReplayEntryGameStateChecksum.Weaken
-                blockTypes(ReplayEntryId.TournamentForcedCountdown) = Prots.ReplayEntryTournamentForcedCountdown.Weaken
-                blockTypes(ReplayEntryId.Unknown0x23) = Prots.ReplayEntryUnknown0x23.Weaken
-                blockTypes(ReplayEntryId.ChatMessage) = Prots.ReplayEntryChatMessage.Weaken
+                Dim simpleBlockJars = New Dictionary(Of ReplayEntryId, IJar(Of Object))() From {
+                        {ReplayEntryId.ChatMessage, Prots.ReplayEntryChatMessage.Weaken},
+                        {ReplayEntryId.GameStarted, Prots.ReplayEntryGameStarted.Weaken},
+                        {ReplayEntryId.GameStateChecksum, Prots.ReplayEntryGameStateChecksum.Weaken},
+                        {ReplayEntryId.LoadStarted1, Prots.ReplayEntryLoadStarted1.Weaken},
+                        {ReplayEntryId.LoadStarted2, Prots.ReplayEntryLoadStarted2.Weaken},
+                        {ReplayEntryId.LobbyState, Prots.ReplayEntryLobbyState.Weaken},
+                        {ReplayEntryId.PlayerJoined, Prots.ReplayEntryPlayerJoined.Weaken},
+                        {ReplayEntryId.PlayerLeft, Prots.ReplayEntryPlayerLeft.Weaken},
+                        {ReplayEntryId.StartOfReplay, Prots.ReplayEntryStartOfReplay.Weaken},
+                        {ReplayEntryId.TournamentForcedCountdown, Prots.ReplayEntryTournamentForcedCountdown.Weaken},
+                        {ReplayEntryId.Unknown0x23, Prots.ReplayEntryUnknown0x23.Weaken}
+                    }
 
                 'Enumerate Blocks
                 Dim time = 0UI
@@ -161,8 +124,8 @@ Namespace WC3.Replay
                         Try
                             If stream.Position = stream.Length Then Return controller.Break
                             Dim blockId = CType(stream.ReadByte(), ReplayEntryId)
-                            If blockTypes.ContainsKey(blockId) Then
-                                Return New ReplayEntry(blockId, stream.ReadPickle(blockTypes(blockId)))
+                            If simpleBlockJars.ContainsKey(blockId) Then
+                                Return New ReplayEntry(blockId, stream.ReadPickle(simpleBlockJars(blockId)))
                             ElseIf blockId = ReplayEntryId.EndOfReplay Then
                                 stream.Dispose()
                                 Return controller.Break()
