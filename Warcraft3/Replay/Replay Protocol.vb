@@ -48,18 +48,6 @@ Namespace WC3.Replay
         End Function
     End Class
 
-    ''' <summary>
-    ''' Represents a player action at a particular time.
-    ''' </summary>
-    Public Class ReplayGameAction
-        Public ReadOnly pid As Byte
-        Public ReadOnly actions As IReadableList(Of WC3.Protocol.GameAction)
-        Public Sub New(ByVal pid As Byte, ByVal actions As IReadableList(Of WC3.Protocol.GameAction))
-            Me.pid = pid
-            Me.actions = actions
-        End Sub
-    End Class
-
     Public Class Prots
         Public Const HeaderMagicValue As String = "Warcraft III recorded game" + Microsoft.VisualBasic.Chr(&H1A)
         Public Shared ReadOnly HeaderSize As UInt32 = CUInt(HeaderMagicValue.Length + 1 + 10 * 4)
@@ -126,9 +114,7 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState
         Public Shared ReadOnly ReplayEntryTick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(ReplayEntryId.Tick.ToString,
                 New UInt16Jar("time span").Weaken,
-                New TupleJar("player action set",
-                        New ByteJar("pid").Weaken,
-                        New Protocol.W3GameActionJar("action").Repeated(name:="actions").DataSizePrefixed(prefixSize:=2).Weaken
-                    ).Repeated(name:="player action sets").Weaken).DataSizePrefixed(prefixSize:=2)
+                New Protocol.PlayerActionSetJar("player action set").Repeated("player action sets").Weaken
+            ).DataSizePrefixed(prefixSize:=2)
     End Class
 End Namespace

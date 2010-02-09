@@ -513,14 +513,30 @@ Public Class WC3ProtocolTest
     <TestMethod()>
     Public Sub TickTest()
         JarTest(Packets.Tick,
-                requireAllData:=False,
                 appendSafe:=False,
                 data:={250, 0,
-                       1, 2, 3, 4},
+                       1,
+                            6, 0,
+                            39,
+                            2,
+                            100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250},
-                        {"subpacket", New Byte() {1, 2, 3, 4}.AsReadableList}
+                        {"player action sets", {New PlayerActionSet(New PID(1),
+                                           {GameAction.FromValue(GameActionId.CheatGold,
+                                                                 GameActions.CheatGold,
+                                                                 New Dictionary(Of InvariantString, Object) From {
+                                                                     {"amount", 100},
+                                                                     {"unknown", 2}})
+                                            }.AsReadableList)
+                                     }.AsReadableList}
                     })
+        JarTest(Packets.Tick,
+                appendSafe:=False,
+                data:={100, 0},
+                value:=New Dictionary(Of InvariantString, Object) From {
+                        {"time span", 100},
+                        {"player action sets", New PlayerActionSet() {}.AsReadableList}})
     End Sub
     <TestMethod()>
     Public Sub TockTest()

@@ -199,6 +199,7 @@
     <Compile Include="Library\CachedLookupTable.vb" />
     <Compile Include="Library\HoldPoint.vb" />
     <Compile Include="Library\DelegatedDisposable.vb" />
+    <Compile Include="Pickling\OptionalJar.vb" />
     <Compile Include="Pickling\DataSizePrefixedJar.vb" />
     <Compile Include="Pickling\Text Jars.vb" />
     <Compile Include="Pickling\RemainingDataJar.vb" />
@@ -212,6 +213,7 @@
     <Compile Include="Warcraft3\Replay\PickleStream.vb" />
     <Compile Include="Warcraft3\Replay\ReplayDataReader.vb" />
     <Compile Include="Warcraft3\Replay\Replay Protocol.vb" />
+    <Compile Include="Warcraft3\Replay\ReplayManager.vb" />
     <Compile Include="Warcraft3\Replay\ReplayWriter.vb" />
     <Compile Include="Warcraft3\Download Manager.vb" />
     <Compile Include="Warcraft3\Game\GameLoggerControl.Designer.vb">
@@ -512,12 +514,12 @@
   <ItemGroup>
     <PublishFile Include="Docs.txt">
       <Visible>False</Visible>
-      <PublishState>Exclude</PublishState>
-      <IncludeHash>True</IncludeHash>
       <Group>
       </Group>
       <TargetPath>
       </TargetPath>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
       <FileType>File</FileType>
     </PublishFile>
   </ItemGroup>

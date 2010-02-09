@@ -1,5 +1,6 @@
 ﻿Imports Strilbrary.Collections
 Imports Strilbrary.Time
+Imports Strilbrary.Values
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
 Imports Tinker.WC3
@@ -72,7 +73,14 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeTickTest()
-        MakeTick(250)
+        MakeTick(250, {New PlayerActionSet(New PID(1),
+                                           {GameAction.FromValue(GameActionId.CheatGold,
+                                                                 GameActions.CheatGold,
+                                                                 New Dictionary(Of InvariantString, Object) From {
+                                                                     {"amount", 100},
+                                                                     {"unknown", 0}})
+                                            }.AsReadableList)
+                       }.AsReadableList)
     End Sub
     <TestMethod()>
     Public Sub MakeMapFileDataTest()

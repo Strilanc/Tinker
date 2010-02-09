@@ -7,6 +7,8 @@
         Private numFakeTicks As Integer
         Private fakeTickTimer As Timers.Timer
 
+        Public Event Launched(ByVal sender As Game, ByVal usingLoadInGame As Boolean)
+
         Private Sub LoadScreenNew()
             fakeTickTimer = New Timers.Timer(30.Seconds.TotalMilliseconds)
             AddHandler fakeTickTimer.Elapsed, Sub() OnFakeTick()
@@ -35,7 +37,8 @@
                 BroadcastPacket(Protocol.MakeOtherPlayerReady(player.PID), Nothing)
             Next player
 
-            If settings.useLoadInGame Then
+            If settings.UseLoadInGame Then
+                outQueue.QueueAction(Sub() RaiseEvent Launched(Me, usingloadInGame:=True))
                 fakeTickTimer.Start()
             End If
         End Sub
@@ -58,6 +61,9 @@
             'start gameplay
             Me.LoadScreenStop()
             GameplayStart()
+            If Not settings.UseLoadInGame Then
+                outQueue.QueueAction(Sub() RaiseEvent Launched(Me, usingloadInGame:=False))
+            End If
             Return True
         End Function
 

@@ -13,6 +13,7 @@
                 "-NoUL",
                 "-NoDL",
                 "-Permanent -perm",
+                "-replay",
                 "-reserve -reserve=<name1 name2 ...> -r -r=<name1 name2 ...>",
                 "-teams=#v#... -t=#v#...",
                 "-private -p"
@@ -28,6 +29,7 @@
                 "NoUL=-NoUL: Turns off uploads from the bot, but still allows players to download from each other.",
                 "NoDL=-NoDL: Boots players who don't already have the map.",
                 "Permanent=-Permanent, -Perm: Automatically recreate closed instances and automatically sets the game to private/public as new instances are available.",
+                "Replay=-replay: Causes the bot to save a replay of the game.",
                 "Reserve=-Reserve, -r, -Reserve=<user1 user2 ...>, -r=<user1 user2 ...>: Reserves the slots for players or yourself.",
                 "Teams=-Teams=#v#..., -t=#v#...: Sets the initial number of open slots for each team.",
                 "Private=-Private, -p: Creates a private game instead of a public game."
@@ -55,6 +57,7 @@
         Private ReadOnly _useMultiObs As Boolean
         Private ReadOnly _greeting As String
         Private ReadOnly _isPrivate As Boolean
+        Private ReadOnly _shouldRecordReplay As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_map IsNot Nothing)
@@ -97,6 +100,7 @@
             End If
             Dim teamString = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
             Me._isPrivate = argument.HasOptionalSwitch("p") OrElse argument.HasOptionalSwitch("private")
+            Me._shouldRecordReplay = argument.HasOptionalSwitch("replay")
             If teamString IsNot Nothing Then
                 Me._teamSizes = TeamVersusStringToTeamSizes(teamString).AsReadableList
             End If
@@ -261,6 +265,11 @@
             Get
                 Contract.Ensures(Contract.Result(Of IReadableList(Of InvariantString))() IsNot Nothing)
                 Return _observerReservations
+            End Get
+        End Property
+        Public ReadOnly Property ShouldRecordReplay As Boolean
+            Get
+                Return _shouldRecordReplay
             End Get
         End Property
 #End Region

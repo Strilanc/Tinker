@@ -222,7 +222,7 @@ Namespace WC3.Replay
                                         {"receiver type", receiver},
                                         {"message", message}})
         End Sub
-        Public Sub AddTick(ByVal duration As UInt16, ByVal actions As IEnumerable(Of ReplayGameAction))
+        Public Sub AddTick(ByVal duration As UInt16, ByVal actions As IReadableList(Of Protocol.PlayerActionSet))
             Contract.Requires(actions IsNot Nothing)
             _duration += duration
 
@@ -231,12 +231,7 @@ Namespace WC3.Replay
                 Prots.ReplayEntryTick,
                 New Dictionary(Of InvariantString, Object) From {
                         {"time span", duration},
-                        {"player action sets", (From action In actions
-                                                Select New Dictionary(Of InvariantString, Object) From {
-                                                        {"pid", action.pid},
-                                                        {"actions", action.actions}
-                                                    }).ToArray.AsReadableList}
-                    })
+                        {"player action sets", actions}})
         End Sub
 
         <ContractVerification(False)>

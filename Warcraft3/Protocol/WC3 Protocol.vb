@@ -410,15 +410,15 @@ Namespace WC3.Protocol
                 New ByteJar("player index").Weaken,
                 New UInt32Jar("marginal milliseconds used").Weaken)
         Public Shared ReadOnly RequestDropLaggers As New SimpleDefinition(PacketId.RequestDropLaggers)
-        Public Shared ReadOnly Tick As New SimpleDefinition(PacketId.Tick,
+        Public Shared ReadOnly Tick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(PacketId.Tick.ToString,
                 New UInt16Jar("time span").Weaken,
-                New RemainingDataJar("subpacket").Weaken)
+                New PlayerActionSetJar("player action set").Repeated("player action sets").Weaken)
         Public Shared ReadOnly Tock As New SimpleDefinition(PacketId.Tock,
                 New ByteJar("unknown").Weaken,
                 New UInt32Jar("game state checksum", showhex:=True).Weaken)
         Public Shared ReadOnly GameAction As New SimpleDefinition(PacketId.GameAction,
                 New UInt32Jar("crc32").Weaken,
-                New W3GameActionJar("action").Repeated(name:="actions").Weaken)
+                New GameActionJar("action").Repeated(name:="actions").Weaken)
         Public Shared ReadOnly NewHost As New ByteJar("player index")
         Public Shared ReadOnly ClientConfirmHostLeaving As New SimpleDefinition(PacketId.ClientConfirmHostLeaving)
         Public Shared ReadOnly HostConfirmHostLeaving As New SimpleDefinition(PacketId.HostConfirmHostLeaving)

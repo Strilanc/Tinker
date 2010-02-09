@@ -779,7 +779,7 @@ Namespace Bnet
                         Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
                             errorInfo = "(Note: This can happen due to a bnet bug. You might want to try again.):"
                         Case Protocol.UserAuthenticationFinishResult.CustomError
-                            errorInfo = "({0})".Frmt(vals("custom error info"))
+                            errorInfo = "({0})".Frmt(CType(vals("custom error info"), Tuple(Of Boolean, String)).Item2)
                     End Select
                     Throw New IO.InvalidDataException("User authentication failed with error: {0} {1}".Frmt(result, errorInfo))
                 ElseIf _expectedServerPasswordProof Is Nothing Then

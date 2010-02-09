@@ -34,19 +34,16 @@ Namespace Pickling
     Public Class NullTerminatedStringJar
         Inherits BaseJar(Of String)
         Private ReadOnly _maximumContentSize As Integer
-        Private ReadOnly _allowMissingNullTerminator As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_maximumContentSize >= 0)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
-                       Optional ByVal allowMissingNullTerminator As Boolean = False,
                        Optional ByVal maximumContentSize As Integer = 0)
             MyBase.New(name)
             Contract.Requires(maximumContentSize >= 0)
             Me._maximumContentSize = maximumContentSize
-            Me._allowMissingNullTerminator = allowMissingNullTerminator
         End Sub
 
         Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
@@ -58,13 +55,7 @@ Namespace Pickling
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
             Dim p = data.IndexOf(0)
-            If p < 0 Then
-                If _allowMissingNullTerminator Then
-                    p = data.Count - 1
-                Else
-                    Throw New PicklingException("Data ended before null terminator found for string {0}".Frmt(Name))
-                End If
-            End If
+            If p < 0 Then Throw New PicklingException("Data ended before null terminator found for string {0}".Frmt(Name))
             Contract.Assume(p < data.Count)
             Dim datum = data.SubView(0, p + 1)
             Dim value = datum.ParseChrString(nullTerminated:=True)

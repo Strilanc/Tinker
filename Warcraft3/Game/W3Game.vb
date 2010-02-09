@@ -45,11 +45,10 @@ Namespace WC3
         Private adminPlayer As Player
         Private ReadOnly _players As New AsyncViewableCollection(Of Player)(outQueue:=outQueue)
         Private ReadOnly pidVisiblityMap As New Dictionary(Of PID, PID)()
-        Private ReadOnly settings As GameSettings
+        Private ReadOnly _settings As GameSettings
 
-        Public Event PlayerAction(ByVal sender As Game, ByVal player As Player, ByVal action As Protocol.GameAction)
         Public Event Updated(ByVal sender As Game, ByVal slots As List(Of Slot))
-        Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String)
+        Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivers As Protocol.ChatReceiverType?)
         Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String)
         Public Event ChangedState(ByVal sender As Game, ByVal oldState As GameState, ByVal newState As GameState)
 
@@ -63,7 +62,7 @@ Namespace WC3
             Contract.Invariant(_players IsNot Nothing)
             Contract.Invariant(pidVisiblityMap IsNot Nothing)
 
-            Contract.Invariant(settings IsNot Nothing)
+            Contract.Invariant(_settings IsNot Nothing)
             Contract.Invariant(freeIndexes IsNot Nothing)
             Contract.Invariant(readyPlayers IsNot Nothing)
             Contract.Invariant(unreadyPlayers IsNot Nothing)
@@ -88,7 +87,7 @@ Namespace WC3
             'Contract.Requires(name IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
 
-            Me.settings = settings
+            Me._settings = settings
             Me._map = settings.Map
             Me._clock = clock
             Me._name = name
@@ -107,6 +106,7 @@ Namespace WC3
             Return outQueue.QueueAction(Sub() inQueue.QueueAction(
                 Sub()
                     ChangeState(GameState.Disposed)
+                    If _downloadManager IsNot Nothing Then _downloadManager.Dispose()
                     For Each player In _players
                         player.Dispose()
                     Next player
@@ -127,6 +127,12 @@ Namespace WC3
         Public ReadOnly Property Name As InvariantString
             Get
                 Return _name
+            End Get
+        End Property
+        Public ReadOnly Property Settings As GameSettings
+            Get
+                Contract.Ensures(Contract.Result(Of GameSettings)() IsNot Nothing)
+                Return _settings
             End Get
         End Property
 
@@ -268,7 +274,7 @@ Namespace WC3
             For Each line In SplitText(body:=message, maxLineLength:=Protocol.Packets.MaxChatTextLength - prefix.Length)
                 player.QueueSendPacket(Protocol.MakeText(text:=prefix + line,
                                                          chatType:=chatType,
-                                                         receiverType:=Protocol.ChatReceiverType.Private,
+                                                         receivers:=Protocol.ChatReceiverType.Private,
                                                          receivingPIDs:=(From p In _players Select p.PID),
                                                          senderPID:=sender.PID))
             Next line
@@ -287,7 +293,7 @@ Namespace WC3
         Private Sub ReceiveChat(ByVal sender As Player,
                                 ByVal text As String,
                                 ByVal type As Protocol.ChatType,
-                                ByVal receiverType As Protocol.ChatReceiverType,
+                                ByVal receivers As Protocol.ChatReceiverType?,
                                 ByVal requestedReceiverIndexes As IReadableList(Of PID))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
@@ -295,7 +301,7 @@ Namespace WC3
 
             'Log
             Logger.Log("{0}: {1}".Frmt(sender.Name, text), LogMessageType.Typical)
-            outQueue.QueueAction(Sub() RaiseEvent PlayerTalked(Me, sender, text))
+            outQueue.QueueAction(Sub() RaiseEvent PlayerTalked(Me, sender, text, receivers))
 
             'Forward to requested players
             'visible sender
@@ -304,7 +310,7 @@ Namespace WC3
                 text = visibleSender.Name + ": " + text
             End If
             'packet
-            Dim pk = Protocol.MakeText(text, type, receiverType, requestedReceiverIndexes, visibleSender.PID)
+            Dim pk = Protocol.MakeText(text, type, receivers, requestedReceiverIndexes, visibleSender.PID)
             'receivers
             For Each receiver In _players
                 Contract.Assume(receiver IsNot Nothing)

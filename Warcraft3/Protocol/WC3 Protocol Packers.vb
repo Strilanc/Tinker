@@ -23,7 +23,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeText(ByVal text As String,
                                  ByVal chatType As ChatType,
-                                 ByVal receiverType As ChatReceiverType,
+                                 ByVal receivers As ChatReceiverType?,
                                  ByVal receivingPIDs As IEnumerable(Of PID),
                                  ByVal senderPID As PID) As Packet
             Contract.Requires(text IsNot Nothing)
@@ -36,7 +36,7 @@ Namespace WC3.Protocol
                             {"sending player index", senderPID.Index},
                             {"type", chatType},
                             {"message", text},
-                            {"receiver type", receiverType}})
+                            {"receiver type", receivers.Value}})
                 Case chatType.Lobby
                     Return Packet.FromValue(PacketId.Text, Packets.Text, New Dictionary(Of InvariantString, Object) From {
                             {"receiving players", (From p In receivingPIDs Select p.Index).ToList},
@@ -149,17 +149,13 @@ Namespace WC3.Protocol
             Return New Packet(Packets.HostConfirmHostLeaving, New Dictionary(Of InvariantString, Object))
         End Function
         <Pure()>
-        Public Function MakeTick(Optional ByVal delta As UShort = 250,
-                                 Optional ByVal tickData As Byte() = Nothing) As Packet
+        Public Function MakeTick(ByVal timeSpan As UShort,
+                                 Optional ByVal actions As IReadableList(Of PlayerActionSet) = Nothing) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            tickData = If(tickData, {})
-            If tickData.Length > 0 Then
-                tickData = Concat(tickData.CRC32.Bytes.SubArray(0, 2), tickData)
-            End If
-
-            Return New Packet(Packets.Tick, New Dictionary(Of InvariantString, Object) From {
-                    {"subpacket", tickData.AsReadableList},
-                    {"time span", delta}})
+            Return Packet.FromValue(PacketId.Tick, Packets.Tick, New Dictionary(Of InvariantString, Object) From {
+                    {"time span", timeSpan},
+                    {"player action sets", If(actions, New PlayerActionSet() {}.AsReadableList)}
+                })
         End Function
 
         <Pure()>

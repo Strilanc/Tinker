@@ -435,7 +435,7 @@ Public Class BnetProtocolTest
         Assert.IsTrue(DictionaryEqual(New Dictionary(Of InvariantString, Object)() From {
                     {"result", UserAuthenticationFinishResult.Passed},
                     {"server password proof", proof},
-                    {"custom error info", "test"}
+                    {"custom error info", Tuple(True, "test")}
                 }, ServerPackets.UserAuthenticationFinish.Parse(New Byte() _
                     {0, 0, 0, 0}.Concat(
                     proof).Concat(

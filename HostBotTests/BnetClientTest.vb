@@ -147,7 +147,7 @@ Public Class BnetClientTest
             body:=Protocol.ServerPackets.UserAuthenticationFinish.Pack(New Dictionary(Of InvariantString, Object) From {
                     {"result", Protocol.UserAuthenticationFinishResult.Passed},
                     {"server password proof", credentials.ServerPasswordProof(accountSalt, serverPublicKey)},
-                    {"custom error info", ""}
+                    {"custom error info", Tuple(False, CStr(Nothing))}
                 }).Data)
 
         'clan info (S->C)

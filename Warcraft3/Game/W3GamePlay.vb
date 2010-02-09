@@ -1,45 +1,17 @@
 ﻿Namespace WC3
     Partial Class Game
-        Private NotInheritable Class GameTickDatum
-            Private ReadOnly _source As Player
-            Private ReadOnly _data As Byte()
-            Public ReadOnly Property Source As Player
-                Get
-                    Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
-                    Return _source
-                End Get
-            End Property
-            Public ReadOnly Property Data As Byte()
-                Get
-                    Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-                    Return _data
-                End Get
-            End Property
-
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(_source IsNot Nothing)
-                Contract.Invariant(_data IsNot Nothing)
-            End Sub
-
-            Public Sub New(ByVal source As Player, ByVal data As Byte())
-                Contract.Requires(source IsNot Nothing)
-                Contract.Requires(data IsNot Nothing)
-                Me._source = source
-                Me._data = data
-            End Sub
-        End Class
-
         Private _gameTickTimer As RelativeClock
         Private laggingPlayers As New List(Of Player)
         Private _lagTimer As RelativeClock 'nullable
-        Private gameDataQueue As New Queue(Of GameTickDatum)
+        Private ReadOnly gameDataQueue As New Queue(Of Tuple(Of Player, IReadableList(Of Protocol.GameAction)))
         Private _gameTime As Integer
         Private gameTimeBuffer As Double
         Public Property SettingSpeedFactor As Double
         Public Property SettingTickPeriod As Double
         Public Property SettingLagLimit As Double
 
-        Public Event PlayerSentData(ByVal game As Game, ByVal player As Player, ByVal data As Byte())
+        Public Event ReceivedPlayerActions(ByVal sender As Game, ByVal player As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
+        Public Event Tick(ByVal sender As Game, ByVal timeSpan As UShort, ByVal actionSets As IReadableList(Of Tuple(Of Player, Protocol.PlayerActionSet)))
 
         Private Sub GamePlayNew()
             Dim gsf As Double = My.Settings.game_speed_factor
@@ -65,31 +37,20 @@
         End Sub
 
 
-#Region "Play"
-        '''<summary>Adds data to broadcast to all clients in the next tick</summary>
-        Private Sub QueueGameData(ByVal sender As Player, ByVal data() As Byte)
-            Contract.Requires(sender IsNot Nothing)
-            Contract.Requires(data IsNot Nothing)
-            outQueue.QueueAction(Sub() RaiseEvent PlayerSentData(Me, sender, data))
-            inQueue.QueueAction(Sub() gameDataQueue.Enqueue(New GameTickDatum(sender, data)))
-        End Sub
         Private _asyncWaitTriggered As Boolean
-        Public Function QueueReceiveGameAction(ByVal player As Player,
-                                               ByVal action As Protocol.GameAction) As ifuture
-            Contract.Requires(player IsNot Nothing)
-            Contract.Requires(action IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            inQueue.QueueAction(
-                Sub()
-                    If action.id = Protocol.GameActionId.GameCacheSyncInteger Then
-                        Dim vals = CType(action.Payload.Value, Dictionary(Of InvariantString, Object))
-                        If CStr(vals("filename")) = "HostBot.AsyncLag" AndAlso CStr(vals("mission key")) = "wait" Then
-                            _asyncWaitTriggered = True
-                        End If
-                    End If
-                End Sub)
-            Return outQueue.QueueAction(Sub() RaiseEvent PlayerAction(Me, player, action))
-        End Function
+        Private Sub OnReceiveGameActions(ByVal sender As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
+            Contract.Requires(sender IsNot Nothing)
+            Contract.Requires(actions IsNot Nothing)
+            gameDataQueue.Enqueue(Tuple(sender, actions))
+            outQueue.QueueAction(Sub() RaiseEvent ReceivedPlayerActions(Me, sender, actions))
+
+            '[async lag -wait command detection]
+            If (From action In actions Where action.id = Protocol.GameActionId.GameCacheSyncInteger
+                                       Select vals = CType(action.Payload.Value, Dictionary(Of InvariantString, Object))
+                                       Where CStr(vals("filename")) = "HostBot.AsyncLag" AndAlso CStr(vals("mission key")) = "wait").Any Then
+                _asyncWaitTriggered = True
+            End If
+        End Sub
 
         '''<summary>Drops the players currently lagging.</summary>
         Private Sub DropLagger()
@@ -158,51 +119,41 @@
         Private Sub SendQueuedGameData(ByVal record As TickRecord)
             Contract.Requires(record IsNot Nothing)
             'Include all the data we can fit in a packet
-            Dim dataLength = 0
-            Dim dataList = New List(Of Byte())(capacity:=gameDataQueue.Count)
-            Dim outgoingData = New List(Of GameTickDatum)(capacity:=gameDataQueue.Count)
+            Dim totalDataLength = 0
+            Dim outgoingActions = New List(Of Tuple(Of Player, Protocol.PlayerActionSet))(capacity:=gameDataQueue.Count)
             While gameDataQueue.Count > 0
+                'peek
                 Dim e = gameDataQueue.Peek()
                 Contract.Assume(e IsNot Nothing)
-                If dataLength + e.Data.Length >= PacketSocket.DefaultBufferSize - 20 Then '[20 includes headers and a small safety margin]
+                Contract.Assume(e.Item1 IsNot Nothing)
+                Contract.Assume(e.Item2 IsNot Nothing)
+                Dim actionDataLength = (From action In e.Item2 Select action.Payload.Data.Count).Aggregate(Function(e1, e2) e1 + e2)
+                If totalDataLength + actionDataLength >= PacketSocket.DefaultBufferSize - 20 Then '[20 includes headers and a small safety margin]
                     Exit While
                 End If
 
                 gameDataQueue.Dequeue()
-                outgoingData.Add(e)
-
-                'append client data to broadcast game data
-                Dim data = Concat({GetVisiblePlayer(e.Source).PID.Index},
-                                   CUShort(e.Data.Length).Bytes,
-                                   e.Data)
-                dataList.Add(data)
-                dataLength += data.Length
+                outgoingActions.Add(Tuple(e.Item1, New Protocol.PlayerActionSet(GetVisiblePlayer(e.Item1).PID, e.Item2)))
+                totalDataLength += actionDataLength
             End While
 
             'Send data
-            Dim normalData = Concat(dataList)
-            For Each receiver In _players
-                Contract.Assume(receiver IsNot Nothing)
-                If IsPlayerVisible(receiver) Then
-                    receiver.QueueSendTick(record, normalData)
+            For Each player In _players
+                Contract.Assume(player IsNot Nothing)
+                If IsPlayerVisible(player) Then
+                    player.QueueSendTick(record, (From e In outgoingActions Select e.Item2).ToArray.AsReadableList)
                 Else
-                    receiver.QueueSendTick(record, CreateTickDataForInvisiblePlayer(receiver, outgoingData))
+                    Dim player_ = player
+                    player.QueueSendTick(record, (From e In outgoingActions
+                                                  Let pid = If(e.Item1 Is player_, player_, GetVisiblePlayer(e.Item1)).PID
+                                                  Select New Protocol.PlayerActionSet(pid, e.Item2.Actions)
+                                                  ).ToList.AsReadableList)
                 End If
-            Next receiver
-        End Sub
-        <Pure()>
-        Private Function CreateTickDataForInvisiblePlayer(ByVal receiver As Player,
-                                                          ByVal data As IEnumerable(Of GameTickDatum)) As Byte()
-            Contract.Requires(receiver IsNot Nothing)
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-            Return Concat((From e In data Select Concat({If(e.Source Is receiver, receiver, GetVisiblePlayer(e.Source)).PID.Index},
-                                                        CUShort(e.Data.Length).Bytes,
-                                                        e.Data)))
-        End Function
-#End Region
+            Next player
 
-#Region "Interface"
+            outQueue.QueueAction(Sub() RaiseEvent Tick(Me, record.length, outgoingActions.AsReadableList))
+        End Sub
+
         Public ReadOnly Property GameTime() As Integer
             Get
                 Contract.Ensures(Contract.Result(Of Integer)() >= 0)
@@ -213,17 +164,5 @@
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(AddressOf DropLagger)
         End Function
-        Public Function QueueSendGameData(ByVal sender As Player,
-                                          ByVal data() As Byte) As IFuture
-            Contract.Requires(sender IsNot Nothing)
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Ifuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub()
-                                           Contract.Assume(sender IsNot Nothing)
-                                           Contract.Assume(data IsNot Nothing)
-                                           QueueGameData(sender, data)
-                                       End Sub)
-        End Function
-#End Region
     End Class
 End Namespace

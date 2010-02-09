@@ -1,6 +1,7 @@
 ﻿Imports Tinker.Pickling
 
 Namespace WC3.Protocol
+    <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class GameAction
         Private Shared ReadOnly ActionJar As PrefixSwitchJar(Of GameActionId) = MakeJar()
         Public ReadOnly id As GameActionId
@@ -10,11 +11,24 @@ Namespace WC3.Protocol
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of GameActionId)))
+        Private Sub New(ByVal id As GameActionId, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
-            Me._payload = payload.Value.Payload
-            Me.id = payload.Value.Key
+            Me.id = id
+            Me._payload = payload
         End Sub
+        Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of GameActionId)))
+            Me.New(payload.Value.Key, payload.Value.Payload)
+            Contract.Requires(payload IsNot Nothing)
+        End Sub
+
+        Public Shared Function FromValue(Of T)(ByVal id As GameActionId,
+                                               ByVal jar As IPackJar(Of T),
+                                               ByVal value As T) As GameAction
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
+            Return New GameAction(id, jar.Weaken.Pack(CType(value, Object)))
+        End Function
 
         Public ReadOnly Property Payload As IPickle(Of Object)
             Get
@@ -106,11 +120,11 @@ Namespace WC3.Protocol
         End Function
 
         Public Overrides Function ToString() As String
-            Return "{0} = {1}".Frmt(id, Payload.Description.Value())
+            Return "{0}: {1}".Frmt(id, Payload.Description.Value())
         End Function
     End Class
 
-    Public NotInheritable Class W3GameActionJar
+    Public NotInheritable Class GameActionJar
         Inherits BaseJar(Of GameAction)
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
@@ -127,6 +141,78 @@ Namespace WC3.Protocol
             Dim val = GameAction.FromData(data)
             Dim datum = data.SubView(0, val.Payload.Data.Count + 1) 'include the id
             Return New Pickle(Of GameAction)(Name, val, datum)
+        End Function
+    End Class
+
+    Public Class PlayerActionSet
+        Implements IEquatable(Of PlayerActionSet)
+
+        Private ReadOnly _pid As PID
+        Private ReadOnly _actions As IReadableList(Of GameAction)
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_actions IsNot Nothing)
+        End Sub
+        Public Sub New(ByVal pid As PID, ByVal actions As IReadableList(Of GameAction))
+            Me._pid = pid
+            Me._actions = actions
+        End Sub
+        Public ReadOnly Property PID As PID
+            Get
+                Return _pid
+            End Get
+        End Property
+        Public ReadOnly Property Actions As IReadableList(Of GameAction)
+            Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of GameAction))() IsNot Nothing)
+                Return _actions
+            End Get
+        End Property
+
+        Public Overrides Function GetHashCode() As Integer
+            Return PID.GetHashCode
+        End Function
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Dim other = TryCast(obj, PlayerActionSet)
+            If other Is Nothing Then Return False
+            Return Me.Equals(other)
+        End Function
+        Public Overloads Function Equals(ByVal other As PlayerActionSet) As Boolean Implements System.IEquatable(Of PlayerActionSet).Equals
+            If Me.PID <> other.PID Then Return False
+            If Me.Actions.Count <> other.Actions.Count Then Return False
+            If (From i In Enumerable.Range(0, Me.Actions.Count)
+                Where Not Me.Actions(i).Payload.Data.SequenceEqual(other.Actions(i).Payload.Data)).Any Then Return False
+            Return True
+        End Function
+    End Class
+    Public Class PlayerActionSetJar
+        Inherits BaseJar(Of PlayerActionSet)
+
+        Private ReadOnly _dataJar As IJar(Of Dictionary(Of InvariantString, Object))
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_dataJar IsNot Nothing)
+        End Sub
+
+        Public Sub New(ByVal name As InvariantString)
+            MyBase.New(name)
+            _dataJar = New TupleJar("player action set",
+                    New ByteJar("pid").Weaken,
+                    New GameActionJar("action").Repeated(name:="actions").DataSizePrefixed(prefixSize:=2).Weaken)
+        End Sub
+
+        Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
+            Dim pickle = _dataJar.Pack(New Dictionary(Of InvariantString, Object) From {
+                                            {"pid", value.PID.Index},
+                                            {"actions", value.Actions}
+                                       })
+            Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
+        End Function
+
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
+            Dim pickle = _dataJar.Parse(data)
+            Dim value = New PlayerActionSet(New PID(CByte(pickle.Value("pid"))),
+                                            CType(pickle.Value("actions"), IReadableList(Of GameAction)))
+            Return New Pickle(Of PlayerActionSet)(value, pickle.Data, pickle.Description)
         End Function
     End Class
 End Namespace

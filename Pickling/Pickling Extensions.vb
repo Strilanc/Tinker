@@ -89,18 +89,24 @@
         End Class
 
         <Extension()> <Pure()>
-        Public Function Repeated(Of T)(ByVal jar As IJar(Of T), ByVal name As InvariantString) As IJar(Of IReadableList(Of T))
+        Public Function Repeated(Of T)(ByVal jar As IJar(Of T), ByVal name As InvariantString) As RepeatingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IJar(Of IReadableList(Of T)))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of RepeatingJar(Of T))() IsNot Nothing)
             Return New RepeatingJar(Of T)(name:=name, subJar:=jar)
         End Function
         <Extension()> <Pure()>
-        Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T), ByVal prefixSize As Integer) As IJar(Of T)
+        Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T), ByVal prefixSize As Integer) As DataSizePrefixedJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
             Contract.Requires(prefixSize <= 8)
-            Contract.Ensures(Contract.Result(Of IJar(Of T))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of DataSizePrefixedJar(Of T))() IsNot Nothing)
             Return New DataSizePrefixedJar(Of T)(subjar:=jar, prefixSize:=prefixSize)
+        End Function
+        <Extension()> <Pure()>
+        Public Function [Optional](Of T)(ByVal jar As IJar(Of T)) As OptionalJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of OptionalJar(Of T))() IsNot Nothing)
+            Return New OptionalJar(Of T)(jar)
         End Function
     End Module
 End Namespace

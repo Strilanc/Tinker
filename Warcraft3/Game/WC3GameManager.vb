@@ -29,7 +29,7 @@ Namespace WC3
             Me._game = game
             Me._control = New W3GameControl(Me)
 
-            AddHandler game.PlayerTalked, Sub(sender, player, text) HandleText(player, text)
+            AddHandler game.PlayerTalked, Sub(sender, player, text, receivers) HandleText(player, text)
 
             game.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
         End Sub

@@ -168,7 +168,12 @@
                 Contract.Assume(useableSlots(i) IsNot Nothing)
                 useableSlots(i).handicap = encodedHandicaps(i)
             Next i
-            SendLobbyState()
+            Dim randomSeed As ModInt32 = Environment.TickCount()
+            SendLobbyState(randomSeed)
+
+            If settings.ShouldRecordReplay Then
+                Replay.ReplayManager.StartRecordingFrom(Me, _players.ToList, slots.ToList, randomSeed)
+            End If
 
             ChangeState(GameState.Loading)
             _downloadManager.Dispose()
@@ -342,8 +347,7 @@
             End If
 
             AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() QueueDropLagger()
-            AddHandler newPlayer.ReceivedGameAction, AddressOf QueueReceiveGameAction
-            AddHandler newPlayer.ReceivedGameData, AddressOf QueueGameData
+            AddHandler newPlayer.ReceivedGameActions, Sub(sender, actions) inQueue.QueueAction(Sub() OnReceiveGameActions(sender, actions))
             AddHandler newPlayer.Disconnected, AddressOf QueueRemovePlayer
             AddHandler newPlayer.ReceivedReady, AddressOf QueueReceiveReady
             AddHandler newPlayer.SuperficialStateUpdated, Sub() QueueThrowUpdated()
@@ -393,12 +397,11 @@
             ThrowUpdated()
 
             'Don't let update rate to clients become too high
-            slotStateUpdateThrottle.SetActionToRun(Sub() inQueue.QueueAction(AddressOf SendLobbyState))
+            slotStateUpdateThrottle.SetActionToRun(Sub() inQueue.QueueAction(Sub() SendLobbyState(Environment.TickCount)))
         End Sub
-        Private Sub SendLobbyState()
+        Private Sub SendLobbyState(ByVal randomSeed As ModInt32)
             If state >= GameState.Loading Then Return
 
-            Dim randomSeed As ModInt32 = Environment.TickCount()
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueSendPacket(Protocol.MakeLobbyState(player, Map, slots, randomSeed, settings.IsAdminGame))
