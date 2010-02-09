@@ -4,15 +4,6 @@
         Test = 0
         Pass = 1
     End Enum
-    Public Enum PlayerLeaveType As Byte
-        Disconnect = 1
-        Lose = 7
-        MeleeLose = 8
-        Win = 9
-        Draw = 10
-        Observer = 11
-        Lobby = 13
-    End Enum
     Public Enum PlayerState
         Lobby
         Loading
@@ -42,7 +33,7 @@
 
         Public hasVotedToStart As Boolean
         Public adminAttemptCount As Integer
-        Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
+        Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_numPeerConnections >= 0)
@@ -90,7 +81,7 @@
 
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New Protocol.W3PacketHandler(connectingPlayer.Name, Me.logger)
-            connectingPlayer.Socket.Logger = Me.logger
+            'connectingPlayer.Socket.Logger = Me.logger
             Me.peerKey = connectingPlayer.PeerKey
             Me._peerData = connectingPlayer.PeerData
 
@@ -99,6 +90,7 @@
             Me._name = connectingPlayer.Name
             Me._listenPort = connectingPlayer.ListenPort
             Me._index = index
+            Return
             AddHandler socket.Disconnected, AddressOf OnSocketDisconnected
 
             AddQueuedPacketHandler(Protocol.PacketId.Pong,
@@ -126,7 +118,7 @@
             pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
             AddHandler pinger.SendPing, Sub(sender, salt) QueueSendPacket(Protocol.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) QueueDisconnect(expected:=False,
-                                                                   leaveType:=PlayerLeaveType.Disconnect,
+                                                                   leaveType:=Protocol.PlayerLeaveType.Disconnect,
                                                                    reason:="Stopped responding to pings.")
         End Sub
 
@@ -162,13 +154,13 @@
                 producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Function(packetData) packetHandler.HandlePacket(packetData),
                 errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
-                                                             leaveType:=PlayerLeaveType.Disconnect,
+                                                             leaveType:=Protocol.PlayerLeaveType.Disconnect,
                                                              reason:="Error receiving packet: {0}.".Frmt(exception.Message)))
         End Sub
 
         '''<summary>Disconnects this player and removes them from the system.</summary>
         Private Sub Disconnect(ByVal expected As Boolean,
-                               ByVal leaveType As PlayerLeaveType,
+                               ByVal leaveType As Protocol.PlayerLeaveType,
                                ByVal reason As String)
             Contract.Requires(reason IsNot Nothing)
             If Not Me.isFake Then
@@ -178,7 +170,7 @@
             RaiseEvent Disconnected(Me, expected, leaveType, reason)
             Me.Dispose()
         End Sub
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
             Return inQueue.QueueAction(Sub() Disconnect(expected, leaveType, reason))
         End Function
 
@@ -194,7 +186,7 @@
         End Function
 
         Private Sub OnSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
-            inQueue.QueueAction(Sub() Disconnect(expected, PlayerLeaveType.Disconnect, reason))
+            inQueue.QueueAction(Sub() Disconnect(expected, Protocol.PlayerLeaveType.Disconnect, reason))
         End Sub
 
         Public ReadOnly Property CanHost() As HostTestResult
@@ -244,7 +236,7 @@
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
             If finalizing Then Return Nothing
-            Return QueueDisconnect(expected:=True, leaveType:=PlayerLeaveType.Disconnect, reason:="Disposed")
+            Return QueueDisconnect(expected:=True, leaveType:=Protocol.PlayerLeaveType.Disconnect, reason:="Disposed")
         End Function
     End Class
 End Namespace

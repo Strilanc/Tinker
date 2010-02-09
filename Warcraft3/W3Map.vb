@@ -226,6 +226,13 @@ Namespace WC3
                 Return _name
             End Get
         End Property
+        Public ReadOnly Property LayoutStyle As Protocol.LobbyLayoutStyle
+            Get
+                If Not UsesCustomForces Then Return Protocol.LobbyLayoutStyle.Melee
+                If Not UsesFixedPlayerSettings Then Return Protocol.LobbyLayoutStyle.CustomForces
+                Return Protocol.LobbyLayoutStyle.FixedPlayerSettings
+            End Get
+        End Property
 
         Public Enum SizeClass
             Huge

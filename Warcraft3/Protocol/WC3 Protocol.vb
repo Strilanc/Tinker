@@ -213,9 +213,18 @@ Namespace WC3.Protocol
 
         MaskFilterable = MaskObs Or MaskMaker Or MaskType Or MaskSize
     End Enum
+    Public Enum PlayerLeaveType As Byte
+        Disconnect = 1
+        Lose = 7
+        MeleeLose = 8
+        Win = 9
+        Draw = 10
+        Observer = 11
+        Lobby = 13
+    End Enum
     Public Enum LobbyLayoutStyle
         Melee = 0
-        FixedForces = 1
+        CustomForces = 1
         FixedPlayerSettings = 3
         AutoMatch = &HCC
     End Enum
@@ -343,12 +352,12 @@ Namespace WC3.Protocol
         Public Shared ReadOnly StartLoading As New SimpleDefinition(PacketId.StartLoading)
         Public Shared ReadOnly StartCountdown As New SimpleDefinition(PacketId.StartCountdown)
         Public Shared ReadOnly Ready As New SimpleDefinition(PacketId.Ready)
-        Public Shared ReadOnly LobbyState As New SimpleDefinition(PacketId.LobbyState,
-                New UInt16Jar("state size").Weaken,
+        Public Shared ReadOnly LobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(PacketId.LobbyState.ToString,
                 New ListJar(Of Dictionary(Of InvariantString, Object))("slots", New SlotJar("slot")).Weaken,
                 New UInt32Jar("random seed").Weaken,
                 New EnumByteJar(Of LobbyLayoutStyle)("layout style").Weaken,
-                New ByteJar("num player slots").Weaken)
+                New ByteJar("num player slots").Weaken
+            ).DataSizePrefixed(prefixSize:=2)
         Public Shared ReadOnly PeerConnectionInfo As New UInt16Jar("player bitflags", showhex:=True)
 
         Public Const MaxChatTextLength As Integer = 220

@@ -13,7 +13,7 @@ Namespace WC3
         Private Sub IgnorePacket(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
         End Sub
 
-        Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of PlayerLeaveType))
+        Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Protocol.PlayerLeaveType))
             Contract.Requires(pickle IsNot Nothing)
             Dim leaveType = pickle.Value
             Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))

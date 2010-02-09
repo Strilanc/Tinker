@@ -85,14 +85,14 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryPlayerLeft As New TupleJar(ReplayEntryId.PlayerLeft.ToString,
                 New UInt32Jar("reason").Weaken,
                 New ByteJar("pid").Weaken,
-                New UInt32Jar("result").Weaken,
+                New EnumUInt32Jar(Of Protocol.PlayerLeaveType)("result").Weaken,
                 New UInt32Jar("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryLoadStarted1 As New TupleJar(ReplayEntryId.LoadStarted1.ToString,
-                New UInt32Jar("value").Weaken)
+                New UInt32Jar("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryLoadStarted2 As New TupleJar(ReplayEntryId.LoadStarted2.ToString,
-                New UInt32Jar("value").Weaken)
+                New UInt32Jar("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryGameStarted As New TupleJar(ReplayEntryId.GameStarted.ToString,
-                New UInt32Jar("value").Weaken)
+                New UInt32Jar("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
         Private Shared Function MakeTextJar() As IJar(Of Dictionary(Of InvariantString, Object))
             Dim jar = New InteriorSwitchJar(Of WC3.Protocol.ChatType, Dictionary(Of InvariantString, Object))(
@@ -123,7 +123,7 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryTournamentForcedCountdown As New TupleJar(ReplayEntryId.TournamentForcedCountdown.ToString,
                 New UInt32Jar("counter state").Weaken,
                 New UInt32Jar("counter time").Weaken)
-        Public Shared ReadOnly ReplayEntryLobbyState As TupleJar = WC3.Protocol.Packets.LobbyState
+        Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState
         Public Shared ReadOnly ReplayEntryTick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(ReplayEntryId.Tick.ToString,
                 New UInt16Jar("time span").Weaken,
                 New TupleJar("player action set",

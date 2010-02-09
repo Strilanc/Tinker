@@ -70,7 +70,7 @@ Namespace WC3
             Contract.Requires(pickle IsNot Nothing)
             If tickQueue.Count <= 0 Then
                 logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(Name), LogMessageType.Problem)
-                Disconnect(True, PlayerLeaveType.Disconnect, "overticked")
+                Disconnect(True, Protocol.PlayerLeaveType.Disconnect, "overticked")
                 Return
             End If
 

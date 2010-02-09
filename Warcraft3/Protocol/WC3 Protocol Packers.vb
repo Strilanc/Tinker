@@ -115,7 +115,7 @@ Namespace WC3.Protocol
         Public Function MakeLobbyState(ByVal receiver As Player,
                                        ByVal map As Map,
                                        ByVal slots As List(Of Slot),
-                                       ByVal time As ModInt32,
+                                       ByVal randomSeed As ModInt32,
                                        Optional ByVal hideSlots As Boolean = False) As Packet
             Contract.Requires(receiver IsNot Nothing)
             Contract.Requires(map IsNot Nothing)
@@ -126,21 +126,11 @@ Namespace WC3.Protocol
                 'reporting the wrong number of slots causes wc3 not to show them
                 reportedPlayerSlots = If(reportedPlayerSlots = 12, 11, 12)
             End If
-            Dim layoutStyle = If(Not map.UsesCustomForces,
-                                 LobbyLayoutStyle.Melee,
-                                 If(map.UsesFixedPlayerSettings,
-                                    LobbyLayoutStyle.FixedPlayerSettings,
-                                    LobbyLayoutStyle.FixedForces))
 
-            If map.UsesCustomForces Then layoutStyle = If(map.UsesFixedPlayerSettings, LobbyLayoutStyle.FixedPlayerSettings, LobbyLayoutStyle.FixedForces)
-            Dim packedSlots = (From slot In slots
-                               Select SlotJar.PackSlot(slot, receiver)
-                              ).ToList()
-            Return New Packet(Packets.LobbyState, New Dictionary(Of InvariantString, Object) From {
-                    {"state size", CUShort(slots.Count() * 9 + 7)},
-                    {"slots", packedSlots},
-                    {"random seed", CUInt(time)},
-                    {"layout style", layoutStyle},
+            Return Packet.FromValue(PacketId.LobbyState, Packets.LobbyState, New Dictionary(Of InvariantString, Object) From {
+                    {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToList},
+                    {"random seed", CUInt(randomSeed)},
+                    {"layout style", map.LayoutStyle},
                     {"num player slots", reportedPlayerSlots}})
         End Function
         <Pure()>

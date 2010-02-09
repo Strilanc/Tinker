@@ -57,7 +57,7 @@ Namespace WC3
                                              ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable)
         Function MakePacketOtherPlayerJoined() As Protocol.Packet
         Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture
-        Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture
+        Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String) As IFuture
 
         <ContractClassFor(GetType(IPlayerDownloadAspect))>
         Shadows Class ContractClass
@@ -98,7 +98,7 @@ Namespace WC3
             Public Sub Dispose() Implements IDisposable.Dispose
                 Throw New NotSupportedException
             End Sub
-            Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
+            Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
                 Contract.Requires(reason IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
                 Throw New NotSupportedException
@@ -683,7 +683,7 @@ Namespace WC3
                 client.ReportedState = state
                 If Not _allowDownloads AndAlso Not client.ReportedHasFile Then
                     client.Player.QueueDisconnect(expected:=True,
-                                                  leaveType:=PlayerLeaveType.Disconnect,
+                                                  leaveType:=Protocol.PlayerLeaveType.Disconnect,
                                                   reason:="Downloads not allowed.")
                     Return
                 End If
@@ -798,8 +798,8 @@ Namespace WC3
 
                 'Force-cancel the transfer by making the uploader and downloader each think the other rejoined
                 If uler IsNot Nothing Then
-                    dler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(uler.PID, PlayerLeaveType.Disconnect))
-                    uler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dler.PID, PlayerLeaveType.Disconnect))
+                    dler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(uler.PID, Protocol.PlayerLeaveType.Disconnect))
+                    uler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dler.PID, Protocol.PlayerLeaveType.Disconnect))
                     dler.QueueSendPacket(uler.MakePacketOtherPlayerJoined())
                     uler.QueueSendPacket(dler.MakePacketOtherPlayerJoined())
                 End If

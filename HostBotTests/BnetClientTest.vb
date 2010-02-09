@@ -33,6 +33,12 @@ Public Class BnetClientTest
                 Return Now()
             End Get
         End Property
+
+        Public ReadOnly Property WC3BuildNumber As UInt16 Implements Tinker.IExternalValues.WC3BuildNumber
+            Get
+                Return 1
+            End Get
+        End Property
     End Class
 
     <TestMethod()>
