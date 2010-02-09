@@ -268,7 +268,10 @@ Public Module PoorlyCategorizedFunctions
         End If
         Return result
     End Function
-
+    <Extension()>
+    Public Sub Write(ByVal stream As IWritableStream, ByVal value As Byte)
+        stream.Write(New Byte() {value}.AsReadableList)
+    End Sub
     <Pure()>
     Public Function Tuple(Of T1, T2)(ByVal arg1 As T1, ByVal arg2 As T2) As Tuple(Of T1, T2)
         Contract.Ensures(Contract.Result(Of Tuple(Of T1, T2))() IsNot Nothing)
@@ -294,7 +297,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(position >= 0)
         Contract.Requires(position <= stream.Length)
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-        Contract.Ensures(stream.Position = position + data.count)
+        Contract.Ensures(stream.Position = position + data.Count)
         stream.Position = position
         stream.Write(data)
     End Sub

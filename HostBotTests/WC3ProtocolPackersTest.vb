@@ -36,7 +36,11 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeOtherPlayerJoinedTest()
-        MakeOtherPlayerJoined("test", New PID(1), 1, New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
+        MakeOtherPlayerJoined("test",
+                              New PID(1),
+                              1,
+                              New Byte() {0}.AsReadableList,
+                              New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
     End Sub
     <TestMethod()>
     Public Sub MakePingTest()

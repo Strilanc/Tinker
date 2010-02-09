@@ -97,7 +97,11 @@ Public Class DownloadManagerTest
             _discFuture.SetHandled()
         End Sub
         Public Function MakePacketOtherPlayerJoined() As Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
-            Return MakeOtherPlayerJoined(Name, PID, 0, New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
+            Return MakeOtherPlayerJoined(Name,
+                                         PID,
+                                         0,
+                                         New Byte() {0}.AsReadableList,
+                                         New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
         End Function
         Public ReadOnly Property Name As InvariantString Implements IPlayerDownloadAspect.Name
             Get

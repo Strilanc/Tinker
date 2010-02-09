@@ -51,7 +51,7 @@ Public Class BnetProtocolTest
                      97, 0,
                      &H33,
                      &H31, &H32, &H30, &H30, &H30, &H30, &H30, &H30
-                    }.Concat(New GameStatsJar("test").Pack(TestStats).Data)
+                    }.Concat(New WC3.Protocol.GameStatsJar("test").Pack(TestStats).Data)
                 ))
     End Sub
     <TestMethod()>
@@ -387,7 +387,7 @@ Public Class BnetProtocolTest
                      0,
                      67,
                      65, &H32, &H30, &H30, &H30, &H30, &H30, &H30
-                     }.Concat(New GameStatsJar("test").Pack(TestStats).Data
+                     }.Concat(New WC3.Protocol.GameStatsJar("test").Pack(TestStats).Data
                 ).ToArray.AsReadableList
         Dim value = ServerPackets.QueryGamesList.Parse(New Byte() _
                     {2, 0, 0, 0}.

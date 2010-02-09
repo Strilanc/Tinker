@@ -39,7 +39,7 @@ Namespace Bnet.Protocol
                 New NullTerminatedStringJar("game password").Weaken,
                 New TextHexValueJar("num free slots", digitCount:=1).Weaken,
                 New TextHexValueJar("game id", digitCount:=8).Weaken,
-                New WC3.GameStatsJar("game statstring").Weaken)
+                New WC3.Protocol.GameStatsJar("game statstring").Weaken)
 
         Public Sub New()
             MyBase.new(PacketId.QueryGamesList.ToString)

@@ -79,14 +79,16 @@ Namespace WC3.Protocol
         Public Function MakeOtherPlayerJoined(ByVal name As InvariantString,
                                               ByVal pid As PID,
                                               ByVal peerKey As UInt32,
+                                              ByVal peerData As IReadableList(Of Byte),
                                               ByVal listenAddress As Net.IPEndPoint) As Packet
             Contract.Requires(listenAddress IsNot Nothing)
+            Contract.Requires(peerData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return New Packet(Packets.OtherPlayerJoined, New Dictionary(Of InvariantString, Object) From {
                     {"peer key", peerKey},
                     {"index", pid.Index},
                     {"name", name.ToString},
-                    {"peer data", New Byte() {0}.AsReadableList},
+                    {"peer data", peerData},
                     {"external address", listenAddress},
                     {"internal address", listenAddress}})
         End Function

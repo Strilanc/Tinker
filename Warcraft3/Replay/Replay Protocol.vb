@@ -72,8 +72,8 @@ Namespace WC3.Replay
                 New NullTerminatedStringJar("host name", maximumContentSize:=15).Weaken,
                 New RemainingDataJar("host peer data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New NullTerminatedStringJar("game name").Weaken,
-                New ByteJar("unknown3").Weaken,
-                New GameStatsJar("game stats").Weaken,
+                New ByteJar("unknown2").Weaken,
+                New Protocol.GameStatsJar("game stats").Weaken,
                 New UInt32Jar("player count").Weaken,
                 New EnumUInt32Jar(Of Protocol.GameTypes)("game type").Weaken,
                 New UInt32Jar("language").Weaken)

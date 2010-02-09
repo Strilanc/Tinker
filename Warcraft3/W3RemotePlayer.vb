@@ -3,6 +3,7 @@ Namespace WC3
     Public NotInheritable Class W3ConnectingPlayer
         Private ReadOnly _name As InvariantString
         Private ReadOnly _peerKey As UInteger
+        Private ReadOnly _peerData As IReadableList(Of Byte)
         Private ReadOnly _entryKey As UInteger
         Private ReadOnly _gameId As UInteger
         Private ReadOnly _listenPort As UShort
@@ -12,19 +13,23 @@ Namespace WC3
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_remoteEndPoint IsNot Nothing)
             Contract.Invariant(_socket IsNot Nothing)
+            Contract.Invariant(_peerData IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal gameId As UInteger,
                        ByVal entryKey As UInteger,
                        ByVal peerKey As UInteger,
+                       ByVal peerData As IReadableList(Of Byte),
                        ByVal listenPort As UShort,
                        ByVal remoteEndPoint As Net.IPEndPoint,
                        ByVal socket As W3Socket)
+            Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(remoteEndPoint IsNot Nothing)
             Contract.Requires(socket IsNot Nothing)
             Me._name = name
             Me._peerKey = peerKey
+            Me._peerData = peerData
             Me._listenPort = listenPort
             Me._remoteEndPoint = remoteEndPoint
             Me._socket = socket
@@ -41,6 +46,12 @@ Namespace WC3
         Public ReadOnly Property PeerKey As UInteger
             Get
                 Return _peerKey
+            End Get
+        End Property
+        Public ReadOnly Property PeerData As IReadableList(Of Byte)
+            Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Return _peerData
             End Get
         End Property
         Public ReadOnly Property EntryKey As UInteger

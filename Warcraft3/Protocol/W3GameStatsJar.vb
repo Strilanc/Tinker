@@ -1,6 +1,6 @@
 ﻿Imports Tinker.Pickling
 
-Namespace WC3
+Namespace WC3.Protocol
     Public NotInheritable Class GameStatsJar
         Inherits BaseJar(Of GameStats)
 
@@ -27,7 +27,7 @@ Namespace WC3
             ObserversReferees = 1 << 30
         End Enum
 
-        Private Shared ReadOnly DataJar As New TupleJar("data",
+        Private Shared ReadOnly DataJar As New TupleJar("game stats",
                     New EnumUInt32Jar(Of GameSettings)("settings").Weaken,
                     New ByteJar("unknown1").Weaken,
                     New UInt16Jar("playable width").Weaken,
@@ -47,7 +47,7 @@ Namespace WC3
 
             'Encode settings
             Dim settings As GameSettings
-            Select Case value.speed
+            Select Case value.Speed
                 Case GameSpeedOption.Slow
                     'no flags set
                 Case GameSpeedOption.Medium
@@ -55,9 +55,9 @@ Namespace WC3
                 Case GameSpeedOption.Fast
                     settings = settings Or GameSettings.SpeedFast
                 Case Else
-                    Throw value.speed.MakeImpossibleValueException()
+                    Throw value.Speed.MakeImpossibleValueException()
             End Select
-            Select Case value.observers
+            Select Case value.Observers
                 Case GameObserverOption.FullObservers
                     settings = settings Or GameSettings.ObserversFull
                 Case GameObserverOption.NoObservers
@@ -67,9 +67,9 @@ Namespace WC3
                 Case GameObserverOption.Referees
                     settings = settings Or GameSettings.ObserversReferees
                 Case Else
-                    Throw value.observers.MakeImpossibleValueException()
+                    Throw value.Observers.MakeImpossibleValueException()
             End Select
-            Select Case value.visibility
+            Select Case value.Visibility
                 Case GameVisibilityOption.AlwaysVisible
                     settings = settings Or GameSettings.VisibilityAlwaysVisible
                 Case GameVisibilityOption.Explored
@@ -79,21 +79,21 @@ Namespace WC3
                 Case GameVisibilityOption.MapDefault
                     settings = settings Or GameSettings.VisibilityDefault
                 Case Else
-                    Throw value.visibility.MakeImpossibleValueException()
+                    Throw value.Visibility.MakeImpossibleValueException()
             End Select
-            If value.teamsTogether Then settings = settings Or GameSettings.OptionTeamsTogether
-            If value.lockTeams Then settings = settings Or GameSettings.OptionLockTeams
-            If value.lockTeams Then settings = settings Or GameSettings.OptionLockTeams2
-            If value.randomHero Then settings = settings Or GameSettings.OptionRandomHero
-            If value.randomRace Then settings = settings Or GameSettings.OptionRandomRace
-            If value.allowFullSharedControl Then settings = settings Or GameSettings.OptionAllowFullSharedControl
+            If value.TeamsTogether Then settings = settings Or GameSettings.OptionTeamsTogether
+            If value.LockTeams Then settings = settings Or GameSettings.OptionLockTeams
+            If value.LockTeams Then settings = settings Or GameSettings.OptionLockTeams2
+            If value.RandomHero Then settings = settings Or GameSettings.OptionRandomHero
+            If value.RandomRace Then settings = settings Or GameSettings.OptionRandomRace
+            If value.AllowFullSharedControl Then settings = settings Or GameSettings.OptionAllowFullSharedControl
 
             'Pack
             Dim rawPickle = DataJar.Pack(New Dictionary(Of InvariantString, Object) From {
-                    {"playable width", value.playableWidth},
-                    {"playable height", value.playableHeight},
+                    {"playable width", value.PlayableWidth},
+                    {"playable height", value.PlayableHeight},
                     {"settings", settings},
-                    {"xoro checksum", value.mapChecksumXORO},
+                    {"xoro checksum", value.MapChecksumXORO},
                     {"sha1 checksum", value.MapChecksumSHA1},
                     {"relative path", value.AdvertisedPath.ToString},
                     {"host name", value.HostName.ToString},

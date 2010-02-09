@@ -355,7 +355,7 @@ Namespace Bnet.Protocol
                 New NullTerminatedStringJar("password").Weaken,
                 New TextHexValueJar("num free slots", digitCount:=1).Weaken,
                 New TextHexValueJar("game id", digitCount:=8).Weaken,
-                New WC3.GameStatsJar("statstring").Weaken)
+                New WC3.Protocol.GameStatsJar("statstring").Weaken)
         Public Shared ReadOnly CloseGame3 As New SimplePacketDefinition(PacketId.CloseGame3)
         Public Shared ReadOnly JoinChannel As New SimplePacketDefinition(PacketId.JoinChannel,
                 New EnumUInt32Jar(Of JoinChannelType)("join type").Weaken,

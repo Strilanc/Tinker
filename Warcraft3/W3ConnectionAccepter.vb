@@ -149,6 +149,7 @@ Namespace WC3
                                                 CUInt(vals("game id")),
                                                 CUInt(vals("entry key")),
                                                 CUInt(vals("peer key")),
+                                                CType(vals("peer data"), IReadableList(Of Byte)).AssumeNotNull,
                                                 CUShort(vals("listen port")),
                                                 CType(vals("internal address"), Net.IPEndPoint).AssumeNotNull,
                                                 socket)

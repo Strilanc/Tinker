@@ -2,8 +2,6 @@
 
 Namespace WC3.Replay
     Public Class ReplayReader
-        Private ReadOnly _version As UInt32
-        Private ReadOnly _gameTimeLength As UInt32
         Private ReadOnly _blockCount As UInt32
         Private ReadOnly _firstBlockOffset As UInt32
         Private ReadOnly _dataSize As UInt32
@@ -15,14 +13,10 @@ Namespace WC3.Replay
 
         Public Sub New(ByVal streamFactory As Func(Of IRandomReadableStream),
                        ByVal blockCount As UInt32,
-                       ByVal version As UInt32,
-                       ByVal gameTimeLength As UInt32,
                        ByVal firstBlockOffset As UInt32,
                        ByVal dataDecompressedSize As UInt32)
             Contract.Requires(streamFactory IsNot Nothing)
             Me._streamFactory = streamFactory
-            Me._version = version
-            Me._gameTimeLength = gameTimeLength
             Me._firstBlockOffset = firstBlockOffset
             Me._dataSize = dataDecompressedSize
             Me._blockCount = blockCount
@@ -48,8 +42,8 @@ Namespace WC3.Replay
                 Dim decompressedSize = stream.ReadUInt32()
                 Dim blockCount = stream.ReadUInt32()
                 Dim productId = stream.ReadExact(4).ParseChrString(nullTerminated:=False)
-                Dim gameVersion = stream.ReadUInt32()
-                Dim gameVersion2 = stream.ReadUInt16()
+                Dim wc3Version = stream.ReadUInt32()
+                Dim wc3BuildNumber = stream.ReadUInt16()
                 Dim flags = stream.ReadUInt16()
                 Dim lengthInMilliseconds = stream.ReadUInt32()
                 Dim headerCRC32 = stream.ReadUInt32()
@@ -67,24 +61,10 @@ Namespace WC3.Replay
 
                 Return New ReplayReader(streamFactory:=streamFactory,
                                         blockCount:=blockCount,
-                                        Version:=gameVersion,
-                                        GameTimeLength:=lengthInMilliseconds,
                                         firstBlockOffset:=headerSize,
                                         dataDecompressedSize:=decompressedSize)
             End Using
         End Function
-
-        Public ReadOnly Property GameTimeLength As TimeSpan
-            Get
-                Contract.Ensures(Contract.Result(Of TimeSpan)().Ticks >= 0)
-                Return _gameTimeLength.Milliseconds
-            End Get
-        End Property
-        Public ReadOnly Property Version As UInt32
-            Get
-                Return _version
-            End Get
-        End Property
 
         Public Function MakeDataStream() As IRandomReadableStream
             Contract.Ensures(Contract.Result(Of IRandomReadableStream)() IsNot Nothing)

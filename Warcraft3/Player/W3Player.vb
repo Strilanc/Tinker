@@ -36,28 +36,13 @@
         Private ReadOnly _name As InvariantString
         Private ReadOnly _listenPort As UShort
         Public ReadOnly peerKey As UInteger
+        Private ReadOnly _peerData As IReadableList(Of Byte)
         Public ReadOnly isFake As Boolean
         Private ReadOnly logger As Logger
 
         Public hasVotedToStart As Boolean
         Public adminAttemptCount As Integer
         Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String)
-
-        Public ReadOnly Property Name As InvariantString Implements IPlayerDownloadAspect.Name
-            Get
-                Return _name
-            End Get
-        End Property
-        Public ReadOnly Property PID As PID Implements IPlayerDownloadAspect.PID
-            Get
-                Return _index
-            End Get
-        End Property
-        Public ReadOnly Property ListenPort As UShort
-            Get
-                Return _listenPort
-            End Get
-        End Property
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_numPeerConnections >= 0)
@@ -66,6 +51,7 @@
             Contract.Invariant(packetHandler IsNot Nothing)
             Contract.Invariant(logger IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
+            Contract.Invariant(_peerData IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(socket Is Nothing = isFake)
             Contract.Invariant(testCanHost IsNot Nothing)
@@ -78,10 +64,10 @@
         Public Sub New(ByVal index As PID,
                        ByVal name As InvariantString,
                        Optional ByVal logger As Logger = Nothing)
-
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New Protocol.W3PacketHandler(name, Me.logger)
             Me._index = index
+            Me._peerData = New Byte() {0}.AsReadableList
             If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
             Me._name = name
             isFake = True
@@ -106,6 +92,7 @@
             Me.packetHandler = New Protocol.W3PacketHandler(connectingPlayer.Name, Me.logger)
             connectingPlayer.Socket.Logger = Me.logger
             Me.peerKey = connectingPlayer.PeerKey
+            Me._peerData = connectingPlayer.PeerData
 
             Me._downloadManager = downloadManager
             Me.socket = connectingPlayer.Socket
@@ -142,6 +129,30 @@
                                                                    leaveType:=PlayerLeaveType.Disconnect,
                                                                    reason:="Stopped responding to pings.")
         End Sub
+
+        Public ReadOnly Property Name As InvariantString Implements IPlayerDownloadAspect.Name
+            Get
+                Return _name
+            End Get
+        End Property
+        Public ReadOnly Property PID As PID Implements IPlayerDownloadAspect.PID
+            Get
+                Return _index
+            End Get
+        End Property
+        Public ReadOnly Property ListenPort As UShort
+            Get
+                Return _listenPort
+            End Get
+        End Property
+        Public ReadOnly Property PeerData As IReadableList(Of Byte)
+            Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+                Return _peerData
+            End Get
+        End Property
+
+
         Public Sub QueueStart()
             inQueue.QueueAction(Sub() BeginReading())
         End Sub
