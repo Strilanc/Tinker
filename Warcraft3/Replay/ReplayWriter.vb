@@ -21,6 +21,7 @@ Namespace WC3.Replay
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_stream IsNot Nothing)
+            Contract.Invariant(_startPosition >= 0)
             Contract.Invariant(_blockDataBuffer IsNot Nothing)
             Contract.Invariant(_dataCompressor IsNot Nothing)
             Contract.Invariant(_blockSizeRemaining >= 0)
@@ -106,6 +107,7 @@ Namespace WC3.Replay
                                         {"unknown", 1}})
         End Sub
 
+        <ContractVerification(False)>
         Private Sub StartBlock()
             _blockSizeRemaining = BlockSize
             _blockDataBuffer.SetLength(0)
@@ -124,6 +126,7 @@ Namespace WC3.Replay
 
             'Get compressed data
             _blockDataBuffer.Position = 0
+            Contract.Assume(_blockDataBuffer.CanRead)
             Dim compressedBlockData = _blockDataBuffer.ReadRemaining().AsReadableList
             Dim compressedLength = CUShort(compressedBlockData.Count)
 
@@ -147,6 +150,7 @@ Namespace WC3.Replay
         End Sub
 
         Private Sub WriteData(ByVal data As IReadableList(Of Byte))
+            Contract.Requires(data IsNot Nothing)
             If Me.FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
 
             While data.Count >= _blockSizeRemaining
@@ -161,12 +165,15 @@ Namespace WC3.Replay
                 _dataCompressor.Write(data)
                 _blockSizeRemaining -= data.Count
             End If
+            Contract.Assume(_blockSizeRemaining >= 0)
         End Sub
         Private Sub WriteReplayEntryPickle(Of T)(ByVal id As ReplayEntryId,
-                                 ByVal jar As IJar(Of T),
-                                 ByVal vals As T)
+                                                 ByVal jar As IJar(Of T),
+                                                 ByVal value As T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
             WriteData(New Byte() {id}.AsReadableList)
-            WriteData(jar.Pack(vals).Data)
+            WriteData(jar.Pack(value).Data)
         End Sub
 
         Public Sub AddGameStarted()
@@ -232,6 +239,7 @@ Namespace WC3.Replay
                     })
         End Sub
 
+        <ContractVerification(False)>
         Private Function GenerateHeader() As IReadableList(Of Byte)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = Prots.HeaderSize)
@@ -258,6 +266,7 @@ Namespace WC3.Replay
             End Using
         End Function
 
+        <ContractVerification(False)>
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
             EndBlock()
             _stream.WriteAt(position:=_startPosition, data:=GenerateHeader())

@@ -5,6 +5,7 @@
 
         Private Sub New()
         End Sub
+        <ContractVerification(False)>
         Public Shared Function AsyncBorrowCredentials(ByVal remoteHost As String,
                                                       ByVal remotePort As UShort,
                                                       ByVal clientCDKeySalt As UInt32,

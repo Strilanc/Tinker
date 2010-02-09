@@ -270,6 +270,7 @@ Public Module PoorlyCategorizedFunctions
     End Function
     <Extension()>
     Public Sub Write(ByVal stream As IWritableStream, ByVal value As Byte)
+        Contract.Requires(stream IsNot Nothing)
         stream.Write(New Byte() {value}.AsReadableList)
     End Sub
     <Pure()>
@@ -279,7 +280,7 @@ Public Module PoorlyCategorizedFunctions
     End Function
     <Pure()>
     Public Function Tuple(Of T1, T2, T3)(ByVal arg1 As T1, ByVal arg2 As T2, ByVal arg3 As T3) As Tuple(Of T1, T2, T3)
-        Contract.Ensures(Contract.Result(Of Tuple(Of T1, T2))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Tuple(Of T1, T2, T3))() IsNot Nothing)
         Return New Tuple(Of T1, T2, T3)(arg1, arg2, arg3)
     End Function
 
@@ -291,18 +292,19 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()>
+    <ContractVerification(False)>
     Public Sub WriteAt(ByVal stream As IRandomWritableStream, ByVal position As Long, ByVal data As IReadableList(Of Byte))
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(data IsNot Nothing)
         Contract.Requires(position >= 0)
         Contract.Requires(position <= stream.Length)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
         Contract.Ensures(stream.Position = position + data.Count)
         stream.Position = position
         stream.Write(data)
     End Sub
 
     <Extension()>
+    <ContractVerification(False)>
     Public Function ReadExactAt(ByVal stream As IRandomReadableStream, ByVal position As Long, ByVal exactCount As Integer) As IReadableList(Of Byte)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(position >= 0)

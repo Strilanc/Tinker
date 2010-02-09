@@ -81,7 +81,7 @@
 
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New Protocol.W3PacketHandler(connectingPlayer.Name, Me.logger)
-            'connectingPlayer.Socket.Logger = Me.logger
+            connectingPlayer.Socket.Logger = Me.logger
             Me.peerKey = connectingPlayer.PeerKey
             Me._peerData = connectingPlayer.PeerData
 
@@ -90,7 +90,6 @@
             Me._name = connectingPlayer.Name
             Me._listenPort = connectingPlayer.ListenPort
             Me._index = index
-            Return
             AddHandler socket.Disconnected, AddressOf OnSocketDisconnected
 
             AddQueuedPacketHandler(Protocol.PacketId.Pong,

@@ -23,7 +23,6 @@ Namespace Pickling
         End Sub
 
         Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
             Dim pickle = _subJar.Pack(value)
             Dim sizeBytes = CULng(pickle.Data.Count).Bytes.Take(_prefixSize)
             If sizeBytes.Take(_prefixSize).ToUInt64 <> pickle.Data.Count Then Throw New PicklingException("Unable to fit byte count into size prefix.")
@@ -31,6 +30,7 @@ Namespace Pickling
             Return New Pickle(Of TValue)(value, data, pickle.Description)
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
             Dim dataSize = data.SubView(0, _prefixSize).ToUInt64
