@@ -221,6 +221,18 @@ Namespace My
                 Me("DefaultGameGreet") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("6059")>  _
+        Public Property ReplayBuildNumber() As UShort
+            Get
+                Return CType(Me("ReplayBuildNumber"),UShort)
+            End Get
+            Set
+                Me("ReplayBuildNumber") = value
+            End Set
+        End Property
     End Class
 End Namespace
 

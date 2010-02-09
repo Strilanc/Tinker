@@ -22,7 +22,6 @@ Public Class CachedExternalValues
 
     Private Shared _cached As Boolean = False
     Private Shared _exeVersion As IReadableList(Of Byte)
-    Private Shared _buildNumber As UInt16
     Private Shared _exeLastModifiedTime As Date
     Private Shared _exeSize As UInt32
 
@@ -44,7 +43,6 @@ Public Class CachedExternalValues
                        Select CByte(e And &HFF)).Reverse.ToArray.AsReadableList
         Contract.Assume(_exeVersion.Count = 4)
         _exeLastModifiedTime = fileInfo.LastWriteTime
-        _buildNumber = CUShort(versionInfo.ProductPrivatePart)
         _exeSize = CUInt(fileInfo.Length)
         _cached = True
         Return True
@@ -64,11 +62,6 @@ Public Class CachedExternalValues
         Return Bnet.GenerateRevisionCheck(folder, challengeSeed, challengeInstructions)
     End Function
 
-    Public ReadOnly Property WC3BuildNumber As UInt16 Implements IExternalValues.WC3BuildNumber
-        Get
-            Return _buildNumber
-        End Get
-    End Property
     Public ReadOnly Property WC3FileSize As UInteger Implements IExternalValues.WC3FileSize
         Get
             Return _exeSize
@@ -87,7 +80,6 @@ Public Interface IExternalValues
     ReadOnly Property WC3ExeVersion As IReadableList(Of Byte)
     ReadOnly Property WC3FileSize As UInt32
     ReadOnly Property WC3LastModifiedTime As Date
-    ReadOnly Property WC3BuildNumber As UInt16
     Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInt32
 
     <ContractClassFor(GetType(IExternalValues))>
@@ -116,12 +108,6 @@ Public Interface IExternalValues
         End Property
 
         Public ReadOnly Property WC3LastModifiedTime As Date Implements IExternalValues.WC3LastModifiedTime
-            Get
-                Throw New NotSupportedException
-            End Get
-        End Property
-
-        Public ReadOnly Property WC3BuildNumber As UInt16 Implements IExternalValues.WC3BuildNumber
             Get
                 Throw New NotSupportedException
             End Get

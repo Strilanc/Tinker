@@ -154,8 +154,7 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(PacketId.Tick, Packets.Tick, New Dictionary(Of InvariantString, Object) From {
                     {"time span", timeSpan},
-                    {"player action sets", If(actions, New PlayerActionSet() {}.AsReadableList)}
-                })
+                    {"player action sets", Tuple(actions IsNot Nothing, actions)}})
         End Function
 
         <Pure()>

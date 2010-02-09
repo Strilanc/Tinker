@@ -120,7 +120,7 @@ Friend Module TestingCommon
         If TypeOf v Is Numerics.BigInteger Then Return CType(v, Numerics.BigInteger)
         Return Nothing
     End Function
-    Private Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
+    Public Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
         Dim n1 = TryCastToBigInteger(v1)
         Dim n2 = TryCastToBigInteger(v2)
         If n1 IsNot Nothing AndAlso n2 IsNot Nothing Then

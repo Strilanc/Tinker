@@ -373,7 +373,7 @@ Namespace Bnet
                 producer:=AddressOf _socket.AsyncReadPacket,
                 consumer:=AddressOf _packetHandler.HandlePacket,
                 errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
-                                                             reason:="Error receiving packet: {0}.".Frmt(exception.Message)))
+                                                             reason:="Error receiving packet: {0}".Frmt(exception.Message)))
         End Sub
 
         Private Function BeginLogOn(ByVal credentials As ClientCredentials) As IFuture

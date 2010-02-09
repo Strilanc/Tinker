@@ -5,6 +5,7 @@ Namespace WC3.Replay
         Private ReadOnly _blockCount As UInt32
         Private ReadOnly _firstBlockOffset As UInt32
         Private ReadOnly _dataSize As UInt32
+        Private ReadOnly _buildNumber As UInt16
         Private ReadOnly _streamFactory As Func(Of IRandomReadableStream)
 
         <ContractInvariantMethod()> Private Shadows Sub ObjectInvariant()
@@ -14,12 +15,14 @@ Namespace WC3.Replay
         Public Sub New(ByVal streamFactory As Func(Of IRandomReadableStream),
                        ByVal blockCount As UInt32,
                        ByVal firstBlockOffset As UInt32,
-                       ByVal dataDecompressedSize As UInt32)
+                       ByVal dataDecompressedSize As UInt32,
+                       ByVal buildNumber As UInt16)
             Contract.Requires(streamFactory IsNot Nothing)
             Me._streamFactory = streamFactory
             Me._firstBlockOffset = firstBlockOffset
             Me._dataSize = dataDecompressedSize
             Me._blockCount = blockCount
+            Me._buildNumber = buildNumber
         End Sub
 
         Public Shared Function FromFile(ByVal path As String) As ReplayReader
@@ -43,7 +46,7 @@ Namespace WC3.Replay
                 Dim blockCount = stream.ReadUInt32()
                 Dim productId = stream.ReadExact(4).ParseChrString(nullTerminated:=False)
                 Dim wc3Version = stream.ReadUInt32()
-                Dim wc3BuildNumber = stream.ReadUInt16()
+                Dim wc3ReplayBuildNumber = stream.ReadUInt16()
                 Dim flags = stream.ReadUInt16()
                 Dim lengthInMilliseconds = stream.ReadUInt32()
                 Dim headerCRC32 = stream.ReadUInt32()
@@ -62,9 +65,16 @@ Namespace WC3.Replay
                 Return New ReplayReader(streamFactory:=streamFactory,
                                         blockCount:=blockCount,
                                         firstBlockOffset:=headerSize,
-                                        dataDecompressedSize:=decompressedSize)
+                                        dataDecompressedSize:=decompressedSize,
+                                        buildNumber:=wc3ReplayBuildNumber)
             End Using
         End Function
+
+        Public ReadOnly Property BuildNumber As UInt16
+            Get
+                Return _buildNumber
+            End Get
+        End Property
 
         Public Function MakeDataStream() As IRandomReadableStream
             Contract.Ensures(Contract.Result(Of IRandomReadableStream)() IsNot Nothing)

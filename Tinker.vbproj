@@ -199,6 +199,7 @@
     <Compile Include="Library\CachedLookupTable.vb" />
     <Compile Include="Library\HoldPoint.vb" />
     <Compile Include="Library\DelegatedDisposable.vb" />
+    <Compile Include="Pickling\ChecksumPrefixedJar.vb" />
     <Compile Include="Pickling\OptionalJar.vb" />
     <Compile Include="Pickling\DataSizePrefixedJar.vb" />
     <Compile Include="Pickling\Text Jars.vb" />

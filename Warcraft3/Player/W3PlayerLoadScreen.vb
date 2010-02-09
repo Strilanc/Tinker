@@ -8,7 +8,7 @@ Namespace WC3
             state = PlayerState.Loading
             SendPacket(Protocol.MakeStartLoading())
             AddQueuedPacketHandler(Protocol.Packets.Ready, AddressOf ReceiveReady)
-            AddQueuedPacketHandler(Protocol.Packets.GameAction, AddressOf ReceiveGameAction)
+            AddQueuedPacketHandler(Protocol.PacketId.GameAction, Protocol.Packets.GameAction, AddressOf ReceiveGameAction)
         End Sub
 
         Public Event ReceivedReady(ByVal sender As Player)

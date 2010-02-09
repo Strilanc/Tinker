@@ -108,5 +108,12 @@
             Contract.Ensures(Contract.Result(Of OptionalJar(Of T))() IsNot Nothing)
             Return New OptionalJar(Of T)(jar)
         End Function
+        <Extension()> <Pure()>
+        Public Function CRC32ChecksumPrefixed(Of T)(ByVal jar As IJar(Of T), Optional ByVal usedByteCount As Integer = 4) As ChecksumPrefixedJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(usedByteCount > 0)
+            Contract.Requires(usedByteCount <= 4)
+            Return New ChecksumPrefixedJar(Of T)(jar, usedByteCount, Function(data) data.CRC32.Bytes.Take(usedByteCount).ToArray.AsReadableList)
+        End Function
     End Module
 End Namespace

@@ -62,10 +62,9 @@ Namespace WC3
             RaiseEvent ReceivedRequestDropLaggers(Me)
         End Sub
 
-        Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of IReadableList(Of Protocol.GameAction)))
             Contract.Requires(pickle IsNot Nothing)
-            Dim actions = CType(pickle.Value("actions"), IReadableList(Of Protocol.GameAction)).AssumeNotNull
-            outQueue.QueueAction(Sub() RaiseEvent ReceivedGameActions(Me, actions))
+            outQueue.QueueAction(Sub() RaiseEvent ReceivedGameActions(Me, pickle.Value))
         End Sub
         Private Sub ReceiveTock(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Contract.Requires(pickle IsNot Nothing)

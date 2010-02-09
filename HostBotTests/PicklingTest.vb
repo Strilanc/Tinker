@@ -433,4 +433,13 @@ Public Class PicklingTest
         JarTest(jar2, equater2, Tuple(True, "A"), {Asc("A"), 0})
         ExpectException(Of PicklingException)(Sub() jar2.Parse(New Byte() {92}.AsReadableList))
     End Sub
+
+    <TestMethod()>
+    Public Sub ChecksumPrefixedJarTest()
+        Dim jar = New ChecksumPrefixedJar(Of Byte)(New ByteJar("test"), checksumSize:=1, checksumFunction:=Function(a) {a(0) Xor CByte(1)}.AsReadableList)
+        JarTest(jar, 5, {4, 5})
+        JarTest(jar, 3, {2, 3})
+        JarTest(jar, 2, {3, 2})
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 3}.AsReadableList))
+    End Sub
 End Class

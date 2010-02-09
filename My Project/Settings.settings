@@ -44,5 +44,8 @@
     <Setting Name="DefaultGameGreet" Type="System.String" Scope="User">
       <Value Profile="(Default)">Hosted by Tinker</Value>
     </Setting>
+    <Setting Name="ReplayBuildNumber" Type="System.UInt16" Scope="User">
+      <Value Profile="(Default)">6059</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

@@ -35,6 +35,7 @@ Partial Class SettingsForm
         Me.txtGreeting = New System.Windows.Forms.TextBox()
         Me.tabsSettings = New System.Windows.Forms.TabControl()
         Me.tabGlobalSettings = New System.Windows.Forms.TabPage()
+        Me.lblWar3FolderPathError = New System.Windows.Forms.Label()
         Me.lblGreeting = New System.Windows.Forms.Label()
         Me.lblBnlsServer = New System.Windows.Forms.Label()
         Me.lblPortPool = New System.Windows.Forms.Label()
@@ -61,7 +62,10 @@ Partial Class SettingsForm
         Me.btnSave = New System.Windows.Forms.Button()
         Me.btnUserHelp = New System.Windows.Forms.Button()
         Me.OpenFileDialog = New System.Windows.Forms.OpenFileDialog()
-        Me.lblWar3FolderPathError = New System.Windows.Forms.Label()
+        Me.numReplayBuildNumber = New System.Windows.Forms.NumericUpDown()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.btnLoadReplayBuildNumber = New System.Windows.Forms.Button()
+        Me.lblReplayBuildNumber = New System.Windows.Forms.Label()
         Me.tabsSettings.SuspendLayout()
         Me.tabGlobalSettings.SuspendLayout()
         Me.tabPlugins.SuspendLayout()
@@ -208,6 +212,10 @@ Partial Class SettingsForm
         'tabGlobalSettings
         '
         Me.tabGlobalSettings.AutoScroll = True
+        Me.tabGlobalSettings.Controls.Add(Me.lblReplayBuildNumber)
+        Me.tabGlobalSettings.Controls.Add(Me.btnLoadReplayBuildNumber)
+        Me.tabGlobalSettings.Controls.Add(Me.numReplayBuildNumber)
+        Me.tabGlobalSettings.Controls.Add(Me.Label4)
         Me.tabGlobalSettings.Controls.Add(Me.lblWar3FolderPathError)
         Me.tabGlobalSettings.Controls.Add(Me.lblGreeting)
         Me.tabGlobalSettings.Controls.Add(Me.txtGreeting)
@@ -235,6 +243,18 @@ Partial Class SettingsForm
         Me.tabGlobalSettings.TabIndex = 3
         Me.tabGlobalSettings.Text = "Global"
         Me.tabGlobalSettings.UseVisualStyleBackColor = True
+        '
+        'lblWar3FolderPathError
+        '
+        Me.lblWar3FolderPathError.AutoSize = True
+        Me.lblWar3FolderPathError.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblWar3FolderPathError.ForeColor = System.Drawing.Color.Red
+        Me.lblWar3FolderPathError.Location = New System.Drawing.Point(386, 42)
+        Me.lblWar3FolderPathError.Name = "lblWar3FolderPathError"
+        Me.lblWar3FolderPathError.Size = New System.Drawing.Size(66, 13)
+        Me.lblWar3FolderPathError.TabIndex = 64
+        Me.lblWar3FolderPathError.Text = "Not Found"
+        Me.lblWar3FolderPathError.Visible = False
         '
         'lblGreeting
         '
@@ -478,17 +498,46 @@ Partial Class SettingsForm
         '
         Me.OpenFileDialog.Title = "Select Plugin"
         '
-        'lblWar3FolderPathError
+        'numReplayBuildNumber
         '
-        Me.lblWar3FolderPathError.AutoSize = True
-        Me.lblWar3FolderPathError.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblWar3FolderPathError.ForeColor = System.Drawing.Color.Red
-        Me.lblWar3FolderPathError.Location = New System.Drawing.Point(386, 42)
-        Me.lblWar3FolderPathError.Name = "lblWar3FolderPathError"
-        Me.lblWar3FolderPathError.Size = New System.Drawing.Size(66, 13)
-        Me.lblWar3FolderPathError.TabIndex = 64
-        Me.lblWar3FolderPathError.Text = "Not Found"
-        Me.lblWar3FolderPathError.Visible = False
+        Me.numReplayBuildNumber.Location = New System.Drawing.Point(232, 215)
+        Me.numReplayBuildNumber.Maximum = New Decimal(New Integer() {65535, 0, 0, 0})
+        Me.numReplayBuildNumber.Name = "numReplayBuildNumber"
+        Me.numReplayBuildNumber.Size = New System.Drawing.Size(119, 20)
+        Me.numReplayBuildNumber.TabIndex = 65
+        Me.tipNormal.SetToolTip(Me.numReplayBuildNumber, "The build number used in replay files." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Used by warcraft to determine if the repl" & _
+                "ay is compatible with the current version.")
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(229, 199)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(106, 13)
+        Me.Label4.TabIndex = 66
+        Me.Label4.Text = "Replay Build Number"
+        '
+        'btnLoadReplayBuildNumber
+        '
+        Me.btnLoadReplayBuildNumber.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnLoadReplayBuildNumber.Location = New System.Drawing.Point(355, 213)
+        Me.btnLoadReplayBuildNumber.Name = "btnLoadReplayBuildNumber"
+        Me.btnLoadReplayBuildNumber.Size = New System.Drawing.Size(97, 21)
+        Me.btnLoadReplayBuildNumber.TabIndex = 67
+        Me.btnLoadReplayBuildNumber.Text = "From Replay ..."
+        Me.btnLoadReplayBuildNumber.UseVisualStyleBackColor = True
+        '
+        'lblReplayBuildNumber
+        '
+        Me.lblReplayBuildNumber.AutoSize = True
+        Me.lblReplayBuildNumber.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblReplayBuildNumber.ForeColor = System.Drawing.Color.Red
+        Me.lblReplayBuildNumber.Location = New System.Drawing.Point(352, 198)
+        Me.lblReplayBuildNumber.Name = "lblReplayBuildNumber"
+        Me.lblReplayBuildNumber.Size = New System.Drawing.Size(64, 13)
+        Me.lblReplayBuildNumber.TabIndex = 68
+        Me.lblReplayBuildNumber.Text = "Default: #"
+        Me.lblReplayBuildNumber.Visible = False
         '
         'SettingsForm
         '
@@ -556,4 +605,8 @@ Partial Class SettingsForm
     Friend WithEvents lblGreeting As System.Windows.Forms.Label
     Friend WithEvents txtGreeting As System.Windows.Forms.TextBox
     Friend WithEvents lblWar3FolderPathError As System.Windows.Forms.Label
+    Friend WithEvents btnLoadReplayBuildNumber As System.Windows.Forms.Button
+    Friend WithEvents numReplayBuildNumber As System.Windows.Forms.NumericUpDown
+    Friend WithEvents Label4 As System.Windows.Forms.Label
+    Friend WithEvents lblReplayBuildNumber As System.Windows.Forms.Label
 End Class

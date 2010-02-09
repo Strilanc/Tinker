@@ -48,7 +48,7 @@
             Dim folder = GetDataFolderPath("Replays")
             Dim baseFilename = "{0} - {1}".Frmt(game.Settings.GameDescription.Name, DateTime.Now().ToString("MMM d, yyyy"))
             Dim filename = IO.Path.Combine(folder, baseFilename + ".w3g")
-            Dim i = 0
+            Dim i = 1
             While IO.File.Exists(filename)
                 i += 1
                 filename = IO.Path.Combine(folder, baseFilename + " - {0}.w3g".Frmt(i))
@@ -57,7 +57,7 @@
             'Start
             Dim writer = New Replay.ReplayWriter(stream:=New IO.FileStream(filename, IO.FileMode.CreateNew, IO.FileAccess.Write, IO.FileShare.None).AsRandomWritableStream,
                                                  wc3Version:=New CachedExternalValues().WC3MajorVersion,
-                                                 wc3BuildNumber:=New CachedExternalValues().WC3BuildNumber,
+                                                 wc3BuildNumber:=My.Settings.ReplayBuildNumber,
                                                  host:=players.First,
                                                  players:=players.Skip(1),
                                                  gameDesc:=game.Settings.GameDescription,

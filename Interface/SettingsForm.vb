@@ -58,6 +58,7 @@ Public Class SettingsForm
         txtInitialPlugins.Text = My.Settings.initial_plugins
         txtBnlsServer.Text = My.Settings.bnls
         txtGreeting.Text = My.Settings.DefaultGameGreet
+        numReplayBuildNumber.Value = My.Settings.ReplayBuildNumber
     End Sub
 
     Public Shared Function ParsePortList(ByVal text As String, ByRef refText As String) As IEnumerable(Of UShort)
@@ -191,6 +192,7 @@ Public Class SettingsForm
         My.Settings.port_pool = portPoolText
         My.Settings.bnls = txtBnlsServer.Text
         My.Settings.DefaultGameGreet = txtGreeting.Text
+        My.Settings.ReplayBuildNumber = CUShort(numReplayBuildNumber.Value)
 
         My.Settings.Save()
         Me.wantSave = True
@@ -233,45 +235,76 @@ Public Class SettingsForm
     End Sub
 
     Private Sub btnImportPlugin_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnImportPlugin.Click
-        With OpenFileDialog
-            If Not IO.Directory.Exists(IO.Path.Combine(Application.StartupPath, "Plugins")) Then
-                IO.Directory.CreateDirectory(IO.Path.Combine(Application.StartupPath, "Plugins"))
-            End If
+        If Not IO.Directory.Exists(IO.Path.Combine(Application.StartupPath, "Plugins")) Then
+            IO.Directory.CreateDirectory(IO.Path.Combine(Application.StartupPath, "Plugins"))
+        End If
 
-            .InitialDirectory = My.Settings.last_plugin_dir
-            .Filter = "DLL Files (*.dll)|*.dll"
-            Dim result = .ShowDialog()
-            If result = Windows.Forms.DialogResult.OK Then
-                Try
-                    Dim path = .FileName
-                    My.Settings.last_plugin_dir = IO.Path.GetDirectoryName(path)
-                    Dim pluginName As InvariantString = IO.Path.GetFileNameWithoutExtension(path)
-                    If pluginName.EndsWith("plugin") Then
-                        pluginName = pluginName.Substring(0, pluginName.Length - "plugin".Length)
+        OpenFileDialog.InitialDirectory = My.Settings.last_plugin_dir
+        OpenFileDialog.Filter = "DLL Files (*.dll)|*.dll"
+        If OpenFileDialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
+            Try
+                Dim path = OpenFileDialog.FileName
+                My.Settings.last_plugin_dir = IO.Path.GetDirectoryName(path)
+                Dim pluginName As InvariantString = IO.Path.GetFileNameWithoutExtension(path)
+                If pluginName.EndsWith("plugin") Then
+                    pluginName = pluginName.Substring(0, pluginName.Length - "plugin".Length)
+                End If
+                Dim rel_path = IO.Path.Combine("Plugins", IO.Path.GetFileName(path))
+                Dim newPath = IO.Path.Combine(Application.StartupPath, rel_path)
+                If newPath = path Then
+                    gridPlugins.Rows.Add(pluginName, rel_path, "")
+                ElseIf IO.File.Exists(newPath) Then
+                    If MessageBox.Show("There is already a plugin with that filename in the plugins folder. Do you want to replace it?", "Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = Windows.Forms.DialogResult.No Then
+                        Return
                     End If
-                    Dim rel_path = IO.Path.Combine("Plugins", IO.Path.GetFileName(path))
-                    Dim newPath = IO.Path.Combine(Application.StartupPath, rel_path)
-                    If newPath = path Then
-                        gridPlugins.Rows.Add(pluginName, rel_path, "")
-                    ElseIf IO.File.Exists(newPath) Then
-                        If MessageBox.Show("There is already a plugin with that filename in the plugins folder. Do you want to replace it?", "Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = Windows.Forms.DialogResult.No Then
-                            Return
-                        End If
-                        IO.File.Delete(newPath)
-                        IO.File.Copy(path, newPath)
-                    Else
-                        IO.File.Copy(path, newPath)
-                        gridPlugins.Rows.Add(pluginName, rel_path, "")
-                    End If
-                Catch ex As Exception
-                    ex.RaiseAsUnexpected("Importing plugin from settings form.")
-                    MessageBox.Show("Error importing plugin: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
-                End Try
-            End If
-        End With
+                    IO.File.Delete(newPath)
+                    IO.File.Copy(path, newPath)
+                Else
+                    IO.File.Copy(path, newPath)
+                    gridPlugins.Rows.Add(pluginName, rel_path, "")
+                End If
+            Catch ex As Exception
+                ex.RaiseAsUnexpected("Importing plugin from settings form.")
+                MessageBox.Show("Error importing plugin: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            End Try
+        End If
     End Sub
 
     Private Sub txtProgramPath_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles txtProgramPath.TextChanged
         lblWar3FolderPathError.Visible = Not CachedExternalValues.Recache(txtProgramPath.Text)
+    End Sub
+
+    Private Sub btnLoadReplayBuildNumber_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnLoadReplayBuildNumber.Click
+        Try
+            OpenFileDialog.InitialDirectory = IO.Path.Combine(My.Settings.war3path, "Replay")
+            OpenFileDialog.Filter = "Replays (*.w3g)|*.w3g"
+            If OpenFileDialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
+                Dim buildNumber = WC3.Replay.ReplayReader.FromFile(OpenFileDialog.FileName).BuildNumber
+                If numReplayBuildNumber.Value = buildNumber Then
+                    MessageBox.Show("That replay's build number matches the current setting: {0}".Frmt(buildNumber),
+                                    "Notice",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Information)
+                Else
+                    MessageBox.Show("Replay build number updated from {0} to {1}".Frmt(numReplayBuildNumber.Value, buildNumber),
+                                    "Notice",
+                                    MessageBoxButtons.OK,
+                                    MessageBoxIcon.Information)
+                    numReplayBuildNumber.Value = buildNumber
+                End If
+            End If
+        Catch ex As IO.IOException
+            ex.RaiseAsUnexpected("Reading replay build number.")
+            MessageBox.Show("Error reading replay: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+        End Try
+    End Sub
+
+    Private Sub numReplayBuildNumber_ValueChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles numReplayBuildNumber.ValueChanged
+        If My.MySettings.Default.ReplayBuildNumber > numReplayBuildNumber.Value Then
+            lblReplayBuildNumber.Text = "Default: {0}".Frmt(My.MySettings.Default.ReplayBuildNumber)
+            lblReplayBuildNumber.Visible = True
+        Else
+            lblReplayBuildNumber.Visible = False
+        End If
     End Sub
 End Class

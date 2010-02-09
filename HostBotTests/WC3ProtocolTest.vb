@@ -4,6 +4,7 @@ Imports Strilbrary.Time
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
 Imports Tinker.Pickling
+Imports Tinker
 Imports Tinker.WC3
 Imports Tinker.WC3.Protocol
 Imports TinkerTests.PicklingTest
@@ -31,12 +32,10 @@ Public Class WC3ProtocolTest
     <TestMethod()>
     Public Sub GameActionTest()
         JarTest(Packets.GameAction,
+                equater:=Function(e1, e2) ObjectEqual(e1, e2),
                 appendSafe:=False,
-                data:={32, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"crc32", 32},
-                        {"actions", New List(Of GameAction)().AsReadableList}
-                    })
+                data:={0, 0, 0, 0},
+                value:=New List(Of GameAction)().AsReadableList)
     End Sub
     <TestMethod()>
     Public Sub GreetTest()
@@ -514,29 +513,40 @@ Public Class WC3ProtocolTest
     Public Sub TickTest()
         JarTest(Packets.Tick,
                 appendSafe:=False,
+                equater:=Function(e1 As Dictionary(Of InvariantString, Object), e2 As Dictionary(Of InvariantString, Object))
+                             If e1.Count <> 2 Then Return False
+                             If e2.Count <> 2 Then Return False
+                             If Not ObjectEqual(e1("time span"), e2("time span")) Then Return False
+                             Dim a1 = CType(e1("player action sets"), Tuple(Of Boolean, IReadableList(Of PlayerActionSet)))
+                             Dim a2 = CType(e2("player action sets"), Tuple(Of Boolean, IReadableList(Of PlayerActionSet)))
+                             If Not ObjectEqual(a1.Item1, a2.Item1) Then Return False
+                             If Not ObjectEqual(a1.Item2, a2.Item2) Then Return False
+                             Return True
+                         End Function,
                 data:={250, 0,
-                       1,
-                            6, 0,
-                            39,
-                            2,
-                            100, 0, 0, 0},
+                       208, 15,
+                            1,
+                                6, 0,
+                                39,
+                                2,
+                                100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250},
-                        {"player action sets", {New PlayerActionSet(New PID(1),
+                        {"player action sets", Tuple(True, {New PlayerActionSet(New PID(1),
                                            {GameAction.FromValue(GameActionId.CheatGold,
                                                                  GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
                                                                      {"amount", 100},
                                                                      {"unknown", 2}})
                                             }.AsReadableList)
-                                     }.AsReadableList}
+                                     }.AsReadableList)}
                     })
         JarTest(Packets.Tick,
                 appendSafe:=False,
                 data:={100, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 100},
-                        {"player action sets", New PlayerActionSet() {}.AsReadableList}})
+                        {"player action sets", Tuple(False, CType(Nothing, IReadableList(Of PlayerActionSet)))}})
     End Sub
     <TestMethod()>
     Public Sub TockTest()
