@@ -101,9 +101,8 @@ Namespace WC3.Replay
         End Property
         Private Function EnumerateEntries() As IEnumerator(Of ReplayEntry)
             Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
-            Dim stream = MakeDataStream()
-            Try
-                Dim simpleBlockJars = New Dictionary(Of ReplayEntryId, IJar(Of Object))() From {
+
+            Dim blockJars = New Dictionary(Of ReplayEntryId, IJar(Of Object))() From {
                         {ReplayEntryId.ChatMessage, Prots.ReplayEntryChatMessage.Weaken},
                         {ReplayEntryId.GameStarted, Prots.ReplayEntryGameStarted.Weaken},
                         {ReplayEntryId.GameStateChecksum, Prots.ReplayEntryGameStateChecksum.Weaken},
@@ -113,61 +112,22 @@ Namespace WC3.Replay
                         {ReplayEntryId.PlayerJoined, Prots.ReplayEntryPlayerJoined.Weaken},
                         {ReplayEntryId.PlayerLeft, Prots.ReplayEntryPlayerLeft.Weaken},
                         {ReplayEntryId.StartOfReplay, Prots.ReplayEntryStartOfReplay.Weaken},
+                        {ReplayEntryId.Tick, Prots.ReplayEntryTick.Weaken},
                         {ReplayEntryId.TournamentForcedCountdown, Prots.ReplayEntryTournamentForcedCountdown.Weaken},
                         {ReplayEntryId.Unknown0x23, Prots.ReplayEntryUnknown0x23.Weaken}
                     }
 
-                'Enumerate Blocks
-                Dim time = 0UI
-                Return New Enumerator(Of ReplayEntry)(
-                    Function(controller)
-                        Try
-                            If stream.Position = stream.Length Then Return controller.Break
-                            Dim blockId = CType(stream.ReadByte(), ReplayEntryId)
-                            If simpleBlockJars.ContainsKey(blockId) Then
-                                Return New ReplayEntry(blockId, stream.ReadPickle(simpleBlockJars(blockId)))
-                            ElseIf blockId = ReplayEntryId.EndOfReplay Then
-                                stream.Dispose()
-                                Return controller.Break()
-                            ElseIf blockId = ReplayEntryId.Tick Then
-                                Return controller.Sequence(EnumerateTickActionBlocks(stream, byref_time:=time))
-                            Else
-                                Throw New IO.InvalidDataException("Unrecognized {0}: {1}".Frmt(GetType(ReplayEntryId), blockId))
-                            End If
-                        Catch e As Exception
-                            stream.Dispose()
-                            Throw
-                        End Try
-                    End Function,
-                    disposer:=AddressOf stream.Dispose)
-            Catch e As Exception
-                stream.Dispose()
-                Throw
-            End Try
-        End Function
-        Private Function EnumerateTickActionBlocks(ByVal stream As IRandomReadableStream, ByRef byref_time As UInt32) As IEnumerator(Of ReplayEntry)
-            Contract.Requires(stream IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
-            Dim blockSizeLeft = stream.ReadUInt16()
-            Dim dt = stream.ReadUInt16()
-            byref_time += dt
-            Dim t = byref_time
-            blockSizeLeft -= 2US
-
-            'enumerate actions
+            Dim stream = MakeDataStream()
             Return New Enumerator(Of ReplayEntry)(
                 Function(controller)
-                    If blockSizeLeft <= 0 Then Return controller.Break()
-                    Dim pid = stream.ReadByte()
-
-                    Dim subActionSize = stream.ReadUInt16()
-                    If subActionSize + 3US > blockSizeLeft Then Throw New IO.InvalidDataException("Inconsistent Time Block and Action Block Sizes.")
-                    blockSizeLeft -= subActionSize + 3US
-
-                    Dim actionData = stream.ReadExact(subActionSize)
-                    Dim actions = Prots.GameActions.Parse(actionData).Value
-                    Return New ReplayEntry(ReplayEntryId.Tick, New ReplayGameAction(pid, t, actions))
-                End Function)
+                    If stream.Position >= stream.Length Then Return controller.Break
+                    Dim blockId = CType(stream.ReadByte(), ReplayEntryId)
+                    If Not blockJars.ContainsKey(blockId) Then
+                        Throw New IO.InvalidDataException("Unrecognized {0}: {1}".Frmt(GetType(ReplayEntryId), blockId))
+                    End If
+                    Return New ReplayEntry(blockId, stream.ReadPickle(blockJars(blockId)))
+                End Function,
+                disposer:=AddressOf stream.Dispose)
         End Function
     End Class
 End Namespace

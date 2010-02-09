@@ -332,22 +332,6 @@ Public Class PicklingTest
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0}.AsReadableList))
     End Sub
     <TestMethod()>
-    Public Sub SizePrefixedDataJarTest()
-        Dim jar = New SizePrefixedDataJar("jar", prefixSize:=1)
-        Dim equater As Func(Of IReadableList(Of Byte), IReadableList(Of Byte), Boolean) = Function(x, y) x.SequenceEqual(y)
-        JarTest(jar, equater, New Byte() {}.AsReadableList, {0})
-        JarTest(jar, equater, New Byte() {1, 2, 9}.AsReadableList, {3, 1, 2, 9})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsReadableList))
-
-        jar = New SizePrefixedDataJar("jar", prefixSize:=3)
-        JarTest(jar, equater, New Byte() {}.AsReadableList, {0, 0, 0})
-        JarTest(jar, equater, New Byte() {1, 2, 3}.AsReadableList, {3, 0, 0, 1, 2, 3})
-        JarTest(jar, equater, New Byte() {7, 6, 5, 4}.AsReadableList, {4, 0, 0, 7, 6, 5, 4})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsReadableList))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0, 0}.AsReadableList))
-    End Sub
-    <TestMethod()>
     Public Sub RemainingDataJarTest()
         Dim jar = New RemainingDataJar("jar")
         Dim equater As Func(Of IReadableList(Of Byte), IReadableList(Of Byte), Boolean) = Function(x, y) x.SequenceEqual(y)
@@ -414,18 +398,24 @@ Public Class PicklingTest
     <TestMethod()>
     Public Sub TupleJarTest()
         Dim jar = New TupleJar("jar", New UInt32Jar("32").Weaken, New UInt16Jar("16").Weaken)
-        Dim equater As Func(Of Dictionary(Of InvariantString, Object), Dictionary(Of InvariantString, Object), Boolean)
-        equater = Function(x, y)
-                      For Each key In x.Keys.Concat(y.Keys).Distinct()
-                          If Not x.ContainsKey(key) OrElse Not y.ContainsKey(key) Then Return False
-                          If Not x(key).Equals(y(key)) Then Return False
-                      Next key
-                      Return True
-                  End Function
+        Dim equater = Function(d1 As Dictionary(Of InvariantString, Object), d2 As Dictionary(Of InvariantString, Object)) DictionaryEqual(d1, d2)
         JarTest(jar, equater, New Dictionary(Of InvariantString, Object)() From {{"32", 0UI}, {"16", 0US}}, {0, 0, 0, 0, 0, 0})
         JarTest(jar, equater, New Dictionary(Of InvariantString, Object)() From {{"32", UInt32.MaxValue}, {"16", 0US}}, {&HFF, &HFF, &HFF, &HFF, 0, 0})
         JarTest(jar, equater, New Dictionary(Of InvariantString, Object)() From {{"32", 0UI}, {"16", UInt16.MaxValue}}, {0, 0, 0, 0, &HFF, &HFF})
         JarTest(jar, equater, New Dictionary(Of InvariantString, Object)() From {{"32", 1UI}, {"16", 2US}}, {1, 0, 0, 0, 2, 0})
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3, 4, 5}.AsReadableList))
+    End Sub
+
+    <TestMethod()>
+    Public Sub DataSizePrefixedJarTest()
+        Dim jar = New DataSizePrefixedJar(Of Byte)(New ByteJar("test"), prefixSize:=2)
+        JarTest(jar, 5, {1, 0, 5})
+        JarTest(jar, 3, {1, 0, 3})
+
+        Dim jar2 = New DataSizePrefixedJar(Of String)(New NullTerminatedStringJar("test"), prefixSize:=1)
+        JarTest(jar2, "", {1, 0})
+        JarTest(jar2, "A", {2, Asc("A"), 0})
+        JarTest(jar2, New String("A"c, 254), New Byte() {255}.Concat(Enumerable.Repeat(CByte(Asc("A")), 254)).Concat({0}).ToList)
+        ExpectException(Of PicklingException)(Sub() jar2.Pack(New String("A"c, 255)))
     End Sub
 End Class

@@ -14,7 +14,7 @@ Namespace Bnet.Protocol
             Return New Pickle(Of TValue)(Name, value, data.AsReadableList)
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of System.Net.IPAddress)
-            If data.Count < 4 Then Throw New PicklingException("Not enough data.")
+            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 4)
             Dim value = New Net.IPAddress(datum.ToArray)
             Return New Pickle(Of Net.IPAddress)(Name, value, datum)

@@ -298,10 +298,10 @@ Namespace WC3.Protocol
                 New UInt16Jar("listen port").Weaken,
                 New UInt32Jar("peer key", showhex:=True).Weaken,
                 New NullTerminatedStringJar("name", maximumContentSize:=MaxPlayerNameLength).Weaken,
-                New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken,
+                New RemainingDataJar("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
         Public Shared ReadOnly Greet As New SimpleDefinition(PacketId.Greet,
-                New SizePrefixedDataJar("slot data", prefixSize:=2).Weaken,
+                New RemainingDataJar("slot data").DataSizePrefixed(prefixSize:=2).Weaken,
                 New ByteJar("player index").Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken)
         Public Shared ReadOnly HostMapInfo As New SimpleDefinition(PacketId.HostMapInfo,
@@ -316,7 +316,7 @@ Namespace WC3.Protocol
                 New UInt32Jar("peer key", showhex:=True).Weaken,
                 New ByteJar("index").Weaken,
                 New NullTerminatedStringJar("name", maximumContentSize:=15).Weaken,
-                New SizePrefixedDataJar("peer data", prefixSize:=1).Weaken,
+                New RemainingDataJar("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
         Public Shared ReadOnly Text As IJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
@@ -359,33 +359,33 @@ Namespace WC3.Protocol
                     Function(val) CType(val("command type"), NonGameAction),
                     Function(data) CType(data(data(0) + 2), NonGameAction))
             commandJar.AddPackerParser(Protocol.NonGameAction.GameChat, New TupleJar(PacketId.NonGameAction.ToString,
-                    New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
+                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
                     New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.LobbyChat, New TupleJar(PacketId.NonGameAction.ToString,
-                    New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
+                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetTeam, New TupleJar(PacketId.NonGameAction.ToString,
-                    New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
+                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New ByteJar("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetHandicap, New TupleJar(PacketId.NonGameAction.ToString,
-                    New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
+                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New ByteJar("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetRace, New TupleJar(PacketId.NonGameAction.ToString,
-                    New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
+                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New EnumByteJar(Of Slot.Races)("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetColor, New TupleJar(PacketId.NonGameAction.ToString,
-                    New SizePrefixedDataJar("receiving player indexes", prefixSize:=1).Weaken,
+                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New EnumByteJar(Of Slot.PlayerColor)("new value").Weaken))
@@ -409,7 +409,7 @@ Namespace WC3.Protocol
                 New UInt32Jar("game state checksum", showhex:=True).Weaken)
         Public Shared ReadOnly GameAction As New SimpleDefinition(PacketId.GameAction,
                 New UInt32Jar("crc32").Weaken,
-                New RepeatingJar(Of GameAction)("actions", New W3GameActionJar("action")).Weaken)
+                New W3GameActionJar("action").Repeated(name:="actions").Weaken)
         Public Shared ReadOnly NewHost As New ByteJar("player index")
         Public Shared ReadOnly ClientConfirmHostLeaving As New SimpleDefinition(PacketId.ClientConfirmHostLeaving)
         Public Shared ReadOnly HostConfirmHostLeaving As New SimpleDefinition(PacketId.HostConfirmHostLeaving)

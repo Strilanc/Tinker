@@ -38,13 +38,13 @@ Namespace Warden
             Public Shared ReadOnly FullServerConnect As New TupleJar(WardenPacketId.FullServiceConnect.ToString,
                     New UInt32Jar("cookie").Weaken,
                     New EnumUInt32Jar(Of ClientType)("client type").Weaken,
-                    New SizePrefixedDataJar("seed", prefixsize:=2).Weaken,
+                    New RemainingDataJar("seed").DataSizePrefixed(prefixSize:=2).Weaken,
                     New NullTerminatedStringJar("username").Weaken,
-                    New SizePrefixedDataJar("password", prefixsize:=2).Weaken,
+                    New RemainingDataJar("password").DataSizePrefixed(prefixSize:=2).Weaken,
                     New RemainingDataJar("unspecified").Weaken)
             Public Shared ReadOnly FullServiceHandleWardenPacket As New TupleJar(WardenPacketId.FullServiceHandleWardenPacket.ToString,
                     New UInt32Jar("cookie").Weaken,
-                    New SizePrefixedDataJar("raw warden packet data", prefixsize:=2).Weaken,
+                    New RemainingDataJar("raw warden packet data").DataSizePrefixed(prefixSize:=2).Weaken,
                     New RemainingDataJar("unspecified").Weaken)
         End Class
 

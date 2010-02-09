@@ -7,7 +7,7 @@ Namespace Warden
                     New EnumByteJar(Of WardenPacketId)("type").Weaken,
                     New UInt32Jar("cookie").Weaken,
                     New ByteJar("result").Weaken,
-                    New SizePrefixedDataJar("data", prefixSize:=2).Weaken,
+                    New RemainingDataJar("data").DataSizePrefixed(prefixSize:=2).Weaken,
                     New RemainingDataJar("unspecified").Weaken)
 
         Private ReadOnly _id As WardenPacketId

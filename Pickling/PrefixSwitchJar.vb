@@ -44,7 +44,7 @@ Namespace Pickling
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PrefixPickle(Of T))
-            If data.Count < 1 Then Throw New PicklingException("Not enough data.")
+            If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
             Dim index = CByte(data(0))
             Dim vindex = CType(CType(index, Object), T)
             Contract.Assume(vindex IsNot Nothing)

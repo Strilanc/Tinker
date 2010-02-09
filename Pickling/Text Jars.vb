@@ -23,7 +23,7 @@ Namespace Pickling
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
-            If data.Count < _size Then Throw New PicklingException("Not enough data.")
+            If data.Count < _size Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.Take(_size).ToArray.AsReadableList
             Dim value = datum.ParseChrString(nullTerminated:=False)
             Return New Pickle(Of String)(Me.Name, value, datum, Function() """{0}""".Frmt(value))

@@ -87,5 +87,20 @@
                 Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
             End Function
         End Class
+
+        <Extension()> <Pure()>
+        Public Function Repeated(Of T)(ByVal jar As IJar(Of T), ByVal name As InvariantString) As IJar(Of IReadableList(Of T))
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IJar(Of IReadableList(Of T)))() IsNot Nothing)
+            Return New RepeatingJar(Of T)(name:=name, subJar:=jar)
+        End Function
+        <Extension()> <Pure()>
+        Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T), ByVal prefixSize As Integer) As IJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(prefixSize > 0)
+            Contract.Requires(prefixSize <= 8)
+            Contract.Ensures(Contract.Result(Of IJar(Of T))() IsNot Nothing)
+            Return New DataSizePrefixedJar(Of T)(subjar:=jar, prefixSize:=prefixSize)
+        End Function
     End Module
 End Namespace

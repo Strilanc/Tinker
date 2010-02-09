@@ -39,7 +39,7 @@ Namespace Bnet.Protocol
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ULong)
-            If data.Count < digitCount Then Throw New PicklingException("Not enough data")
+            If data.Count < digitCount Then Throw New PicklingNotEnoughDataException()
             data = data.SubView(0, digitCount)
             Dim value = data.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder)
             Return New Pickle(Of ULong)(Me.Name, value, data)

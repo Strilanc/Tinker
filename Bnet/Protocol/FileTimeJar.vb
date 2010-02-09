@@ -14,7 +14,7 @@ Namespace Bnet.Protocol
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of Date)
-            If data.Count < 8 Then Throw New PicklingException("Not enough data.")
+            If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 8)
             Dim value = Date.FromFileTime(datum.ToUInt64.BitwiseToInt64)
             Return New Pickle(Of Date)(Me.Name, value, datum)

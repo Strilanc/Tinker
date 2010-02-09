@@ -1,10 +1,19 @@
 ﻿Namespace Pickling
     <Serializable()>
-    Public NotInheritable Class PicklingException
+    Public Class PicklingException
         Inherits Exception
         Public Sub New(Optional ByVal message As String = Nothing,
                        Optional ByVal innerException As Exception = Nothing)
             MyBase.New(message, innerException)
+        End Sub
+    End Class
+
+    <Serializable()>
+    Public Class PicklingNotEnoughDataException
+        Inherits PicklingException
+        Public Sub New(Optional ByVal message As String = Nothing,
+                       Optional ByVal innerException As Exception = Nothing)
+            MyBase.New(If(message, "Not enough data."), innerException)
         End Sub
     End Class
 

@@ -21,7 +21,7 @@ Namespace Pickling
             Return New Pickle(Of TValue)(Me.Name, value, data, Function() "[{0}]".Frmt(value.ToHexString))
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of Byte))
-            If data.Count < _size Then Throw New PicklingException("Not enough data to parse array. Data ended before size prefix could be read.")
+            If data.Count < _size Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, _size)
             Dim value = datum
             Return New Pickle(Of IReadableList(Of Byte))(Me.Name, value, datum, Function() "[{0}]".Frmt(value.ToHexString))

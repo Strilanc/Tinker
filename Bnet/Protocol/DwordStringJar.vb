@@ -15,7 +15,7 @@ Namespace Bnet.Protocol
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
-            If data.Count < 4 Then Throw New PicklingException("Not enough data")
+            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 4)
             Dim value As String = datum.ParseChrString(nullTerminated:=True).Reverse.ToArray
             Return New Pickling.Pickle(Of String)(Me.Name, value, datum)

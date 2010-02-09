@@ -15,7 +15,7 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Byte)
-            If data.Count < 1 Then Throw New PicklingException("Not enough data")
+            If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 1)
             Dim value = datum(0)
             Return New Pickle(Of Byte)(Me.Name, value, datum, Function() ValueToString(value))
@@ -49,7 +49,7 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt16)
-            If data.Count < 2 Then Throw New PicklingException("Not enough data")
+            If data.Count < 2 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 2)
             Dim value = datum.ToUInt16(byteOrder)
             Return New Pickle(Of UInt16)(Me.Name, value, datum, Function() ValueToString(value))
@@ -83,7 +83,7 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
-            If data.Count < 4 Then Throw New PicklingException("Not enough data")
+            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 4)
             Dim value = datum.ToUInt32(byteOrder)
             Return New Pickle(Of UInt32)(Me.Name, value, datum, Function() ValueToString(value))
@@ -118,7 +118,7 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt64)
-            If data.Count < 8 Then Throw New PicklingException("Not enough data")
+            If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 8)
             Dim value = datum.ToUInt64(byteOrder)
             Return New Pickle(Of UInt64)(Me.Name, value, datum, Function() ValueToString(value))
@@ -147,7 +147,7 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Single)
-            If data.Count < 4 Then Throw New PicklingException("Not enough data.")
+            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 4)
             Dim value = BitConverter.ToSingle(datum.ToArray, 0)
             Return New Pickle(Of Single)(Name, value, datum, Function() ValueToString(value))
@@ -172,7 +172,7 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Double)
-            If data.Count < 8 Then Throw New PicklingException("Not enough data.")
+            If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 8)
             Dim value = BitConverter.ToDouble(datum.ToArray, 0)
             Return New Pickle(Of Double)(Name, value, datum, Function() ValueToString(value))

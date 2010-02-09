@@ -15,7 +15,7 @@ Namespace WC3.Protocol
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameObjectId)
-            If data.Count < 8 Then Throw New PicklingException("Not enough data.")
+            If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 8)
             Dim value = New GameObjectId(datum.SubView(0, 4).ToUInt32,
                                          datum.SubView(4, 4).ToUInt32)
