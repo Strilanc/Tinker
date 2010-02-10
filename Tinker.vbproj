@@ -351,8 +351,8 @@
     <Compile Include="Pickling\Pickling Interfaces.vb" />
     <Compile Include="Pickling\ManualSwitchJar.vb" />
     <Compile Include="Pickling\Numeric Jars.vb" />
-    <Compile Include="Library\Streams\PacketStream.vb" />
-    <Compile Include="Library\Streams\ThrottledWriteStream.vb" />
+    <Compile Include="Library\PacketStream.vb" />
+    <Compile Include="Library\ThrottledWriteStream.vb" />
     <Compile Include="Plugins\Plugin Socket.vb" />
     <Compile Include="CKL\CKL Server.vb" />
     <Compile Include="Warcraft3\Protocol\WC3 Protocol.vb" />

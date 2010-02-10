@@ -554,11 +554,11 @@ Namespace WC3
                 Dim saveCount = stream.ReadUInt32()
                 Dim editorVersion = stream.ReadExact(4)
 
-                Dim mapName = SafeGetMapString(mapArchive, nameKey:=stream.ReadNullTerminatedString()) 'map description key
+                Dim mapName = SafeGetMapString(mapArchive, nameKey:=stream.ReadNullTerminatedString(maxLength:=256)) 'map description key
 
-                Dim mapAuthor = stream.ReadNullTerminatedString()
-                Dim mapDescription = stream.ReadNullTerminatedString()
-                Dim recommendedPlayers = stream.ReadNullTerminatedString()
+                Dim mapAuthor = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim mapDescription = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim recommendedPlayers = stream.ReadNullTerminatedString(maxLength:=256)
                 For repeat = 1 To 8
                     stream.ReadSingle()  '"Camera Bounds" as defined in the JASS file
                 Next repeat
@@ -578,21 +578,21 @@ Namespace WC3
                 End If
                 If fileFormat = MapInfoFormatVersion.TFT Then
                     Dim loadScreenBackgroundIndex = stream.ReadUInt32() 'UInt32.MaxValue = none or custom imported file
-                    Dim loadScreenModel = stream.ReadNullTerminatedString()
+                    Dim loadScreenModel = stream.ReadNullTerminatedString(maxLength:=256)
                 End If
-                Dim loadScreenText = stream.ReadNullTerminatedString()
-                Dim loadScreenTitle = stream.ReadNullTerminatedString()
-                Dim loadScreenSubtitle = stream.ReadNullTerminatedString()
+                Dim loadScreenText = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim loadScreenTitle = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim loadScreenSubtitle = stream.ReadNullTerminatedString(maxLength:=256)
                 If fileFormat = MapInfoFormatVersion.ROC Then
                     Dim mapLoadScreenIndex = stream.ReadUInt32() 'UInt32.MaxValue = none
                 End If
                 If fileFormat = MapInfoFormatVersion.TFT Then
                     Dim usedGameDataSetIndex = stream.ReadUInt32() '0 = standard
-                    Dim prologueScreenPath = stream.ReadNullTerminatedString()
+                    Dim prologueScreenPath = stream.ReadNullTerminatedString(maxLength:=256)
                 End If
-                Dim prologueScreenText = stream.ReadNullTerminatedString()
-                Dim prologueScreenTitle = stream.ReadNullTerminatedString()
-                Dim prologueScreenSubtitle = stream.ReadNullTerminatedString()
+                Dim prologueScreenText = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim prologueScreenTitle = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim prologueScreenSubtitle = stream.ReadNullTerminatedString(maxLength:=256)
                 If fileFormat = MapInfoFormatVersion.TFT Then
                     Dim terrainFogType = stream.ReadUInt32() '0 = not used
                     Dim fogStartZ = stream.ReadSingle()
@@ -600,7 +600,7 @@ Namespace WC3
                     Dim fogDensity = stream.ReadSingle()
                     Dim fogRGBA = stream.ReadExact(4)
                     Dim globalWeatherType = stream.ReadUInt32() '0 = none, else 4-letter-id
-                    Dim customSoundEnvironmentPath = stream.ReadNullTerminatedString()
+                    Dim customSoundEnvironmentPath = stream.ReadNullTerminatedString(maxLength:=256)
                     Dim customLightEnvironmentTilesetId = stream.ReadByte()
                     Dim waterTintRGBA = stream.ReadExact(4)
                 End If
@@ -642,7 +642,7 @@ Namespace WC3
                     End Select
                     'player
                     Dim fixedStartPosition = stream.ReadUInt32()
-                    Dim slotPlayerName = stream.ReadNullTerminatedString()
+                    Dim slotPlayerName = stream.ReadNullTerminatedString(maxLength:=256)
                     Dim startPositionX = stream.ReadSingle()
                     Dim startPositionY = stream.ReadSingle()
                     Dim allyPrioritiesLow = stream.ReadUInt32()
@@ -666,7 +666,7 @@ Namespace WC3
                 For teamIndex = CByte(0) To CByte(numForces - 1)
                     Dim forceFlags = stream.ReadUInt32()
                     Dim memberBitField = stream.ReadUInt32()
-                    Dim forceName = stream.ReadNullTerminatedString()
+                    Dim forceName = stream.ReadNullTerminatedString(maxLength:=256)
 
                     For Each color In EnumValues(Of Slot.PlayerColor)()
                         If Not CBool((memberBitField >> CInt(color)) And &H1) Then Continue For
