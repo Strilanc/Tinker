@@ -153,6 +153,7 @@ Namespace WC3.Protocol
             Contract.Invariant(_actions IsNot Nothing)
         End Sub
         Public Sub New(ByVal pid As PID, ByVal actions As IReadableList(Of GameAction))
+            Contract.Requires(actions IsNot Nothing)
             Me._pid = pid
             Me._actions = actions
         End Sub
@@ -177,6 +178,7 @@ Namespace WC3.Protocol
             Return Me.Equals(other)
         End Function
         Public Overloads Function Equals(ByVal other As PlayerActionSet) As Boolean Implements System.IEquatable(Of PlayerActionSet).Equals
+            If other Is Nothing Then Return False
             If Me.PID <> other.PID Then Return False
             If Me.Actions.Count <> other.Actions.Count Then Return False
             If (From i In Enumerable.Range(0, Me.Actions.Count)
@@ -201,6 +203,7 @@ Namespace WC3.Protocol
         End Sub
 
         Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Dim pickle = _dataJar.Pack(New Dictionary(Of InvariantString, Object) From {
                                             {"pid", value.PID.Index},
                                             {"actions", value.Actions}
@@ -210,8 +213,10 @@ Namespace WC3.Protocol
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
             Dim pickle = _dataJar.Parse(data)
-            Dim value = New PlayerActionSet(New PID(CByte(pickle.Value("pid"))),
-                                            CType(pickle.Value("actions"), IReadableList(Of GameAction)))
+            Dim pid = CByte(pickle.Value("pid"))
+            Dim actions = CType(pickle.Value("actions"), IReadableList(Of GameAction)).AssumeNotNull
+            If pid < 1 OrElse pid > 12 Then Throw New IO.InvalidDataException("Invalid pid.")
+            Dim value = New PlayerActionSet(New PID(pid), actions)
             Return New Pickle(Of PlayerActionSet)(value, pickle.Data, pickle.Description)
         End Function
     End Class

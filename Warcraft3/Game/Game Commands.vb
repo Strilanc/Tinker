@@ -154,7 +154,7 @@ Namespace WC3
                 Dim arg_difficulty = If(argument.RawValueCount >= 2, argument.RawValue(1), WC3.Slot.ComputerLevel.Normal.ToString)
                 Dim ret_difficulty As WC3.Slot.ComputerLevel
                 If arg_difficulty.EnumTryParse(ignoreCase:=True, result:=ret_difficulty) Then
-                    Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).EvalOnSuccess(Function() "Set Computer Wc3.Slot")
+                    Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).EvalOnSuccess(Function() "Set {0} to Computer ({1})".Frmt(arg_slot, arg_difficulty))
                 Else
                     Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(arg_difficulty))
                 End If

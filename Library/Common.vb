@@ -165,6 +165,8 @@ Public Module PoorlyCategorizedFunctions
         Return matches
     End Function
     Public Function GetDataFolderPath(ByVal subfolder As String) As String
+        Contract.Requires(subfolder IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         Dim path = IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                                    Application.ProductName,
                                    subfolder)

@@ -31,6 +31,7 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Select Case chatType
                 Case chatType.Game
+                    Contract.Assume(receivers.HasValue)
                     Return Packet.FromValue(PacketId.Text, Packets.Text, New Dictionary(Of InvariantString, Object) From {
                             {"receiving players", (From p In receivingPIDs Select p.Index).ToList},
                             {"sending player index", senderPID.Index},

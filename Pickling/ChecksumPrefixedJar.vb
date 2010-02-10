@@ -19,6 +19,7 @@ Namespace Pickling
             MyBase.New(subJar.Name)
             Contract.Requires(checksumSize > 0)
             Contract.Requires(subJar IsNot Nothing)
+            Contract.Requires(checksumFunction IsNot Nothing)
             Me._subJar = subJar
             Me._checksumSize = checksumSize
             Me._checksumFunction = checksumFunction
@@ -27,6 +28,7 @@ Namespace Pickling
         Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
             Dim pickle = _subJar.Pack(value)
             Dim checksum = _checksumFunction(pickle.Data)
+            Contract.Assume(checksum IsNot Nothing)
             Contract.Assume(checksum.Count = _checksumSize)
             Dim data = checksum.Concat(pickle.Data).ToArray.AsReadableList
             Return New Pickle(Of TValue)(value, data, pickle.Description)

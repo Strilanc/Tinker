@@ -116,6 +116,7 @@
                 End If
             End If
         End Sub
+        <ContractVerification(False)>
         Private Sub SendQueuedGameData(ByVal record As TickRecord)
             Contract.Requires(record IsNot Nothing)
             'Include all the data we can fit in a packet

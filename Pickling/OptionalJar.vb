@@ -15,7 +15,9 @@ Namespace Pickling
         End Sub
 
         Public Overrides Function Pack(Of TValue As Tuple(Of Boolean, T))(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             If value.Item1 Then
+                Contract.Assume(value.Item2 IsNot Nothing)
                 Dim pickle = _subJar.Pack(value.Item2)
                 Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
             Else

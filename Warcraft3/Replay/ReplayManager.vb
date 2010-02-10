@@ -18,6 +18,8 @@
         End Sub
 
         Private Sub Wire(ByVal game As Game)
+            Contract.Requires(game IsNot Nothing)
+
             Dim tickHandler As Game.TickEventHandler =
                     Sub(sender, duration, actions) inQueue.QueueAction(Sub() OnTick(duration, actions))
             Dim chatHandler As Game.PlayerTalkedEventHandler =
@@ -27,38 +29,56 @@
             Dim launchHandler As Game.LaunchedEventHandler =
                     Sub(sender, usingLoadInGame) inQueue.QueueAction(Sub() _writer.AddGameStarted())
 
-            AddHandler Game.Tick, tickHandler
-            AddHandler Game.PlayerTalked, chatHandler
-            AddHandler Game.PlayerLeft, leaveHandler
-            AddHandler Game.Launched, launchHandler
+            AddHandler game.Tick, tickHandler
+            AddHandler game.PlayerTalked, chatHandler
+            AddHandler game.PlayerLeft, leaveHandler
+            AddHandler game.Launched, launchHandler
 
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Game.Tick, tickHandler))
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Game.PlayerTalked, chatHandler))
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Game.PlayerLeft, leaveHandler))
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Game.Launched, launchHandler))
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.Tick, tickHandler))
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.PlayerTalked, chatHandler))
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.PlayerLeft, leaveHandler))
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.Launched, launchHandler))
 
-            Game.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
+            game.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
         End Sub
 
-        Public Shared Function StartRecordingFrom(ByVal game As Game,
+        Public Shared Function StartRecordingFrom(ByVal defaultFilename As String,
+                                                  ByVal game As Game,
                                                   ByVal players As IEnumerable(Of Player),
                                                   ByVal slots As IEnumerable(Of Slot),
                                                   ByVal randomSeed As UInt32) As ReplayManager
+            Contract.Requires(game IsNot Nothing)
+            Contract.Requires(players IsNot Nothing)
+            Contract.Requires(slots IsNot Nothing)
+
             'Choose location
             Dim folder = GetDataFolderPath("Replays")
-            Dim baseFilename = "{0} - {1}".Frmt(game.Settings.GameDescription.Name, DateTime.Now().ToString("MMM d, yyyy"))
-            Dim filename = IO.Path.Combine(folder, baseFilename + ".w3g")
+            If defaultFilename Is Nothing Then
+                defaultFilename = "{0} @ {1}, {2}".Frmt(game.Settings.GameDescription.Name,
+                                                        game.Map.Name,
+                                                        (From p In players Select New String(CType(p.Name, Char()).Take(5).ToArray)).StringJoin(" "))
+            End If
+
+            'Strip invalid characters
+            defaultFilename = New String((From c In defaultFilename
+                                          Select If(IO.Path.GetInvalidFileNameChars.Contains(c), "."c, c)).ToArray)
+
+            'Append a number if necessary
+            Dim filename = IO.Path.Combine(folder, defaultFilename + ".w3g")
             Dim i = 1
             While IO.File.Exists(filename)
                 i += 1
-                filename = IO.Path.Combine(folder, baseFilename + " - {0}.w3g".Frmt(i))
+                filename = IO.Path.Combine(folder, defaultFilename + " - {0}.w3g".Frmt(i))
             End While
 
             'Start
-            Dim writer = New Replay.ReplayWriter(stream:=New IO.FileStream(filename, IO.FileMode.CreateNew, IO.FileAccess.Write, IO.FileShare.None).AsRandomWritableStream,
+            Dim file = New IO.FileStream(filename, IO.FileMode.CreateNew, IO.FileAccess.Write, IO.FileShare.None)
+            Contract.Assume(file.CanWrite)
+            Contract.Assume(file.CanSeek)
+            Dim writer = New Replay.ReplayWriter(stream:=file.AsRandomWritableStream,
                                                  wc3Version:=New CachedExternalValues().WC3MajorVersion,
                                                  wc3BuildNumber:=My.Settings.ReplayBuildNumber,
-                                                 host:=players.First,
+                                                 host:=players.First.AssumeNotNull,
                                                  players:=players.Skip(1),
                                                  gameDesc:=game.Settings.GameDescription,
                                                  Map:=game.Map,
@@ -89,6 +109,7 @@
         End Sub
         Private Sub Onleave(ByVal leaver As Player,
                             ByVal result As Protocol.PlayerLeaveType)
+            Contract.Requires(leaver IsNot Nothing)
             _writer.AddPlayerLeft(0, leaver.PID, result, 0)
         End Sub
 
