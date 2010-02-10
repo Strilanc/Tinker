@@ -211,7 +211,7 @@
     <Compile Include="Pickling\ListJar.vb" />
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
-    <Compile Include="Warcraft3\Replay\PickleStream.vb" />
+    <Compile Include="Library\Stream Extensions.vb" />
     <Compile Include="Warcraft3\Replay\ReplayDataReader.vb" />
     <Compile Include="Warcraft3\Replay\Replay Protocol.vb" />
     <Compile Include="Warcraft3\Replay\ReplayManager.vb" />
