@@ -58,7 +58,7 @@
         Private ReadOnly _greeting As String
         Private ReadOnly _isPrivate As Boolean
         Private ReadOnly _shouldRecordReplay As Boolean
-        Private ReadOnly _replayDefaultFilename As String
+        Private ReadOnly _replayDefaultFileName As String
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_map IsNot Nothing)
@@ -101,7 +101,7 @@
             End If
             Dim teamString = If(argument.TryGetOptionalNamedValue("Teams"), argument.TryGetOptionalNamedValue("t"))
             Me._isPrivate = argument.HasOptionalSwitch("p") OrElse argument.HasOptionalSwitch("private")
-            Me._replayDefaultFilename = argument.TryGetOptionalNamedValue("replay")
+            Me._replayDefaultFileName = argument.TryGetOptionalNamedValue("replay")
             Me._shouldRecordReplay = argument.HasOptionalSwitch("replay") OrElse argument.HasOptionalNamedValue("replay")
             If teamString IsNot Nothing Then
                 Me._teamSizes = TeamVersusStringToTeamSizes(teamString).AsReadableList
@@ -274,9 +274,9 @@
                 Return _shouldRecordReplay
             End Get
         End Property
-        Public ReadOnly Property DefaultReplayFilename As String
+        Public ReadOnly Property DefaultReplayFileName As String
             Get
-                Return _replayDefaultFilename
+                Return _replayDefaultFileName
             End Get
         End Property
 #End Region

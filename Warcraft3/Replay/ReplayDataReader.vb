@@ -132,7 +132,7 @@
             Dim checksum = _stream.ReadUInt32()
             'Remember
             Dim block = New BlockInfo(blockPosition:=blockPosition,
-                                      blockLength:=Prots.BlockHeaderSize + compressedDataSize,
+                                      blockLength:=Format.BlockHeaderSize + compressedDataSize,
                                       dataPosition:=dataPosition,
                                       dataLength:=decompressedDataSize,
                                       checksum:=checksum)
@@ -172,14 +172,14 @@
             Dim headerCRC32 = _stream.ReadExactAt(position:=blockInfo.BlockPosition,
                                                   exactCount:=4
                                                   ).Concat({0, 0, 0, 0}).CRC32
-            Dim bodyCRC32 = _stream.ReadExactAt(position:=blockInfo.BlockPosition + Prots.BlockHeaderSize,
-                                                exactCount:=CInt(blockInfo.BlockLength - Prots.BlockHeaderSize)
+            Dim bodyCRC32 = _stream.ReadExactAt(position:=blockInfo.BlockPosition + Format.BlockHeaderSize,
+                                                exactCount:=CInt(blockInfo.BlockLength - Format.BlockHeaderSize)
                                                 ).CRC32
             Dim checksum = ((bodyCRC32 Xor (bodyCRC32 << 16)) And &HFFFF0000UI) Or
                            ((headerCRC32 Xor (headerCRC32 >> 16)) And &HFFFFUI)
             If checksum <> blockInfo.Checksum Then Throw New IO.InvalidDataException("Block data didn't match checksum.")
             'Retrieve
-            _stream.Position = blockInfo.BlockPosition + Prots.BlockHeaderSize
+            _stream.Position = blockInfo.BlockPosition + Format.BlockHeaderSize
             Dim dataStream = New ZLibStream(_stream.AsStream, IO.Compression.CompressionMode.Decompress)
             Contract.Assume(dataStream.CanRead)
             Return dataStream.ReadBytesExact(length:=CInt(blockInfo.DataLength)).AsReadableList

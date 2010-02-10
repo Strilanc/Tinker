@@ -48,7 +48,10 @@ Namespace WC3.Replay
         End Function
     End Class
 
-    Public Class Prots
+    Public Class Format
+        Private Sub New()
+        End Sub
+
         Public Const HeaderMagicValue As String = "Warcraft III recorded game" + Microsoft.VisualBasic.Chr(&H1A)
         Public Shared ReadOnly HeaderSize As UInt32 = CUInt(HeaderMagicValue.Length + 1 + 10 * 4)
         Public Const HeaderVersion As UInt32 = 1

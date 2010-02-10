@@ -50,13 +50,13 @@ Namespace WC3.Replay
                 Dim flags = stream.ReadUInt16()
                 Dim lengthInMilliseconds = stream.ReadUInt32()
                 Dim headerCRC32 = stream.ReadUInt32()
-                Contract.Assume(stream.Position = Prots.HeaderSize)
+                Contract.Assume(stream.Position = Format.HeaderSize)
 
                 'Check header values
-                If magic <> Prots.HeaderMagicValue Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect magic value).")
+                If magic <> Format.HeaderMagicValue Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect magic value).")
                 If productId <> "PX3W" Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect product id).")
-                If headerVersion <> Prots.HeaderVersion Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
-                If headerSize <> Prots.HeaderSize Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect header size).")
+                If headerVersion <> Format.HeaderVersion Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
+                If headerSize <> Format.HeaderSize Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect header size).")
 
                 'Check header checksum
                 Dim actualChecksum = stream.ReadExactAt(position:=0, exactCount:=CInt(headerSize - 4)).Concat({0, 0, 0, 0}).CRC32
@@ -93,18 +93,18 @@ Namespace WC3.Replay
             Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
 
             Dim blockJars = New Dictionary(Of ReplayEntryId, IJar(Of Object))() From {
-                        {ReplayEntryId.ChatMessage, Prots.ReplayEntryChatMessage.Weaken},
-                        {ReplayEntryId.GameStarted, Prots.ReplayEntryGameStarted.Weaken},
-                        {ReplayEntryId.GameStateChecksum, Prots.ReplayEntryGameStateChecksum.Weaken},
-                        {ReplayEntryId.LoadStarted1, Prots.ReplayEntryLoadStarted1.Weaken},
-                        {ReplayEntryId.LoadStarted2, Prots.ReplayEntryLoadStarted2.Weaken},
-                        {ReplayEntryId.LobbyState, Prots.ReplayEntryLobbyState.Weaken},
-                        {ReplayEntryId.PlayerJoined, Prots.ReplayEntryPlayerJoined.Weaken},
-                        {ReplayEntryId.PlayerLeft, Prots.ReplayEntryPlayerLeft.Weaken},
-                        {ReplayEntryId.StartOfReplay, Prots.ReplayEntryStartOfReplay.Weaken},
-                        {ReplayEntryId.Tick, Prots.ReplayEntryTick.Weaken},
-                        {ReplayEntryId.TournamentForcedCountdown, Prots.ReplayEntryTournamentForcedCountdown.Weaken},
-                        {ReplayEntryId.Unknown0x23, Prots.ReplayEntryUnknown0x23.Weaken}
+                        {ReplayEntryId.ChatMessage, Format.ReplayEntryChatMessage.Weaken},
+                        {ReplayEntryId.GameStarted, Format.ReplayEntryGameStarted.Weaken},
+                        {ReplayEntryId.GameStateChecksum, Format.ReplayEntryGameStateChecksum.Weaken},
+                        {ReplayEntryId.LoadStarted1, Format.ReplayEntryLoadStarted1.Weaken},
+                        {ReplayEntryId.LoadStarted2, Format.ReplayEntryLoadStarted2.Weaken},
+                        {ReplayEntryId.LobbyState, Format.ReplayEntryLobbyState.Weaken},
+                        {ReplayEntryId.PlayerJoined, Format.ReplayEntryPlayerJoined.Weaken},
+                        {ReplayEntryId.PlayerLeft, Format.ReplayEntryPlayerLeft.Weaken},
+                        {ReplayEntryId.StartOfReplay, Format.ReplayEntryStartOfReplay.Weaken},
+                        {ReplayEntryId.Tick, Format.ReplayEntryTick.Weaken},
+                        {ReplayEntryId.TournamentForcedCountdown, Format.ReplayEntryTournamentForcedCountdown.Weaken},
+                        {ReplayEntryId.Unknown0x23, Format.ReplayEntryUnknown0x23.Weaken}
                     }
 
             Dim stream = MakeDataStream()

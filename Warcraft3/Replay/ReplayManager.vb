@@ -42,7 +42,7 @@
             game.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
         End Sub
 
-        Public Shared Function StartRecordingFrom(ByVal defaultFilename As String,
+        Public Shared Function StartRecordingFrom(ByVal defaultFileName As String,
                                                   ByVal game As Game,
                                                   ByVal players As IEnumerable(Of Player),
                                                   ByVal slots As IEnumerable(Of Slot),
@@ -53,22 +53,22 @@
 
             'Choose location
             Dim folder = GetDataFolderPath("Replays")
-            If defaultFilename Is Nothing Then
-                defaultFilename = "{0} @ {1}, {2}".Frmt(game.Settings.GameDescription.Name,
+            If defaultFileName Is Nothing Then
+                defaultFileName = "{0} @ {1}, {2}".Frmt(game.Settings.GameDescription.Name,
                                                         game.Map.Name,
                                                         (From p In players Select New String(CType(p.Name, Char()).Take(5).ToArray)).StringJoin(" "))
             End If
 
             'Strip invalid characters
-            defaultFilename = New String((From c In defaultFilename
+            defaultFileName = New String((From c In defaultFileName
                                           Select If(IO.Path.GetInvalidFileNameChars.Contains(c), "."c, c)).ToArray)
 
             'Append a number if necessary
-            Dim filename = IO.Path.Combine(folder, defaultFilename + ".w3g")
+            Dim filename = IO.Path.Combine(folder, defaultFileName + ".w3g")
             Dim i = 1
             While IO.File.Exists(filename)
                 i += 1
-                filename = IO.Path.Combine(folder, defaultFilename + " - {0}.w3g".Frmt(i))
+                filename = IO.Path.Combine(folder, defaultFileName + " - {0}.w3g".Frmt(i))
             End While
 
             'Start

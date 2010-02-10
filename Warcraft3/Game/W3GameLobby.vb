@@ -172,7 +172,7 @@
             SendLobbyState(randomSeed)
 
             If settings.ShouldRecordReplay Then
-                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFilename, Me, _players.ToList, slots.ToList, randomSeed)
+                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _players.ToList, slots.ToList, randomSeed)
             End If
 
             ChangeState(GameState.Loading)

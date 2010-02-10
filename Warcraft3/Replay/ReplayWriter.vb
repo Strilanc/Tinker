@@ -62,11 +62,11 @@ Namespace WC3.Replay
             Contract.Requires(players IsNot Nothing)
             Contract.Requires(gameDesc IsNot Nothing)
 
-            _stream.WriteAt(_startPosition, Enumerable.Repeat(CByte(0), CInt(Prots.HeaderSize)).ToArray.AsReadableList)
+            _stream.WriteAt(_startPosition, Enumerable.Repeat(CByte(0), CInt(Format.HeaderSize)).ToArray.AsReadableList)
             StartBlock()
 
             WriteReplayEntryPickle(ReplayEntryId.StartOfReplay,
-                                   Prots.ReplayEntryStartOfReplay,
+                                   Format.ReplayEntryStartOfReplay,
                                    New Dictionary(Of InvariantString, Object) From {
                                            {"unknown1", 1},
                                            {"host pid", host.PID.Index},
@@ -81,7 +81,7 @@ Namespace WC3.Replay
 
             For Each player In players
                 WriteReplayEntryPickle(ReplayEntryId.PlayerJoined,
-                                       Prots.ReplayEntryPlayerJoined,
+                                       Format.ReplayEntryPlayerJoined,
                                        New Dictionary(Of InvariantString, Object) From {
                                                {"pid", player.PID.Index},
                                                {"name", player.Name.ToString},
@@ -90,7 +90,7 @@ Namespace WC3.Replay
             Next player
 
             WriteReplayEntryPickle(ReplayEntryId.LobbyState,
-                                   Prots.ReplayEntryLobbyState,
+                                   Format.ReplayEntryLobbyState,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"slots", (From slot In slots Select Protocol.SlotJar.PackSlot(slot, Nothing)).ToList},
                                         {"random seed", randomSeed},
@@ -98,11 +98,11 @@ Namespace WC3.Replay
                                         {"num player slots", map.Slots.Count}})
 
             WriteReplayEntryPickle(ReplayEntryId.LoadStarted1,
-                                   Prots.ReplayEntryLoadStarted1,
+                                   Format.ReplayEntryLoadStarted1,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"unknown", 1}})
             WriteReplayEntryPickle(ReplayEntryId.LoadStarted2,
-                                   Prots.ReplayEntryLoadStarted2,
+                                   Format.ReplayEntryLoadStarted2,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"unknown", 1}})
         End Sub
@@ -144,7 +144,7 @@ Namespace WC3.Replay
             _stream.Write(blockDecompressedLength)
             _stream.Write(checksum)
             _stream.Write(compressedBlockData)
-            _compressedSize += compressedLength + CUInt(Prots.BlockHeaderSize)
+            _compressedSize += compressedLength + CUInt(Format.BlockHeaderSize)
             _decompressedSize += usableDecompressedLength
             _blockCount += 1UI
         End Sub
@@ -178,7 +178,7 @@ Namespace WC3.Replay
 
         Public Sub AddGameStarted()
             WriteReplayEntryPickle(ReplayEntryId.GameStarted,
-                                   Prots.ReplayEntryGameStarted,
+                                   Format.ReplayEntryGameStarted,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"unknown", 1}})
         End Sub
@@ -187,7 +187,7 @@ Namespace WC3.Replay
                                  ByVal result As UInt32,
                                  ByVal unknown As UInt32)
             WriteReplayEntryPickle(ReplayEntryId.PlayerLeft,
-                                   Prots.ReplayEntryPlayerLeft,
+                                   Format.ReplayEntryPlayerLeft,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"reason", reason},
                                         {"pid", pid.Index},
@@ -196,7 +196,7 @@ Namespace WC3.Replay
         End Sub
         Public Sub AddGameStateChecksum(ByVal checksum As UInt32)
             WriteReplayEntryPickle(ReplayEntryId.GameStateChecksum,
-                                   Prots.ReplayEntryGameStateChecksum,
+                                   Format.ReplayEntryGameStateChecksum,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"unknown", 4},
                                         {"checksum", checksum}})
@@ -204,7 +204,7 @@ Namespace WC3.Replay
         Public Sub AddLobbyChatMessage(ByVal pid As PID, ByVal message As String)
             Contract.Requires(message IsNot Nothing)
             WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
-                                   Prots.ReplayEntryChatMessage,
+                                   Format.ReplayEntryChatMessage,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"pid", pid.Index},
                                         {"size", 1 + message.Length + 1},
@@ -214,7 +214,7 @@ Namespace WC3.Replay
         Public Sub AddGameChatMessage(ByVal pid As PID, ByVal message As String, ByVal receiver As WC3.Protocol.ChatReceiverType)
             Contract.Requires(message IsNot Nothing)
             WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
-                                   Prots.ReplayEntryChatMessage,
+                                   Format.ReplayEntryChatMessage,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"pid", pid.Index},
                                         {"size", 1 + 4 + message.Length + 1},
@@ -228,7 +228,7 @@ Namespace WC3.Replay
 
             WriteReplayEntryPickle(
                 ReplayEntryId.Tick,
-                Prots.ReplayEntryTick,
+                Format.ReplayEntryTick,
                 New Dictionary(Of InvariantString, Object) From {
                         {"time span", duration},
                         {"player action sets", actions}})
@@ -237,13 +237,13 @@ Namespace WC3.Replay
         <ContractVerification(False)>
         Private Function GenerateHeader() As IReadableList(Of Byte)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = Prots.HeaderSize)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = Format.HeaderSize)
 
             Using header = New IO.MemoryStream().AsRandomAccessStream
-                header.WriteNullTerminatedString(Prots.HeaderMagicValue)
-                header.Write(Prots.HeaderSize)
+                header.WriteNullTerminatedString(Format.HeaderMagicValue)
+                header.Write(Format.HeaderSize)
                 header.Write(_compressedSize)
-                header.Write(Prots.HeaderVersion)
+                header.Write(Format.HeaderVersion)
                 header.Write(_decompressedSize)
                 header.Write(_blockCount)
                 header.Write("PX3W".ToAscBytes.AsReadableList)
@@ -253,9 +253,9 @@ Namespace WC3.Replay
                 header.Write(_duration)
 
                 'checksum
-                Contract.Assume(header.Length = Prots.HeaderSize - 4)
+                Contract.Assume(header.Length = Format.HeaderSize - 4)
                 header.Write(header.ReadExactAt(0, CInt(header.Length)).Concat({0, 0, 0, 0}).CRC32)
-                Contract.Assume(header.Length = Prots.HeaderSize)
+                Contract.Assume(header.Length = Format.HeaderSize)
 
                 Return header.ReadExactAt(0, CInt(header.Length))
             End Using

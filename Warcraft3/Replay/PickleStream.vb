@@ -78,7 +78,7 @@ Namespace WC3.Replay
 
         <Extension()>
         <ContractVerification(False)>
-        Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IJar(Of T)) As IPickle(Of T)
+        Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IParseJar(Of T)) As IPickle(Of T)
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)

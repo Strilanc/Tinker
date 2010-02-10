@@ -63,14 +63,14 @@ Namespace Bnet
         ''' </summary>
         ''' <param name="username">The client's username.</param>
         ''' <param name="password">The client's password.</param>
-        ''' <param name="rng">
+        ''' <param name="randomNumberGenerator">
         ''' An optional random number generator to generate the private key.
         ''' A System.Cryptography.RNGCryptoServiceProvider is created and used if this argument is omitted.
         ''' </param>
         Public Sub New(ByVal userName As String,
                        ByVal password As String,
-                       Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing)
-            Me.New(userName, password, GeneratePrivateKey(rng))
+                       Optional ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator = Nothing)
+            Me.New(userName, password, GeneratePrivateKey(randomNumberGenerator))
             Contract.Requires(userName IsNot Nothing)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Me.UserName = userName)
@@ -136,10 +136,10 @@ Namespace Bnet
 
         '''<summary>Determines credentials for the same client, but with a new key pair.</summary>
         <ContractVerification(False)>
-        Public Function Regenerate(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As ClientCredentials
+        Public Function Regenerate(Optional ByVal randomNumberGenerator As Cryptography.RandomNumberGenerator = Nothing) As ClientCredentials
             Contract.Ensures(Contract.Result(Of ClientCredentials)() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ClientCredentials)().UserName = Me.UserName)
-            Return New ClientCredentials(Me.UserName, Me._password, rng)
+            Return New ClientCredentials(Me.UserName, Me._password, randomNumberGenerator)
         End Function
 
         '''<summary>Determines the shared secret value, which can be computed by both the client and server, using the client-side data.</summary>

@@ -60,7 +60,7 @@ Namespace WC3
         Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String) As IFuture
 
         <ContractClassFor(GetType(IPlayerDownloadAspect))>
-        Shadows Class ContractClass
+        NotInheritable Shadows Class ContractClass
             Implements IPlayerDownloadAspect
             Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
                 Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
@@ -96,7 +96,6 @@ Namespace WC3
                 End Get
             End Property
             Public Sub Dispose() Implements IDisposable.Dispose
-                Throw New NotSupportedException
             End Sub
             Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
                 Contract.Requires(reason IsNot Nothing)
@@ -685,7 +684,6 @@ Namespace WC3
                     client.Player.QueueDisconnect(expected:=True,
                                                   leaveType:=Protocol.PlayerLeaveType.Disconnect,
                                                   reason:="Downloads not allowed.")
-                    Return
                 End If
             Else
                 If client.Transfer IsNot Nothing Then
