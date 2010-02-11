@@ -16,8 +16,8 @@ Namespace Pickling
                        ByVal prefixSize As Integer)
             MyBase.New(subJar.Name)
             Contract.Requires(prefixSize > 0)
-            Contract.Requires(prefixSize <= 8)
             Contract.Requires(subJar IsNot Nothing)
+            If prefixSize > 8 Then Throw New ArgumentOutOfRangeException("prefixSize", "prefixSize must be less than or equal to 8.")
             Me._subJar = subJar
             Me._prefixSize = prefixSize
         End Sub

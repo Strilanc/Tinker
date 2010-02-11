@@ -116,13 +116,23 @@ Namespace Bnet
             End Select
         End Sub
 
-        Private Sub txtTalk_KeyPress(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyPressEventArgs) Handles txtTalk.KeyPress
-            If e.KeyChar <> Microsoft.VisualBasic.ChrW(Keys.Enter) Then Return
+        Private Sub txtTalk_KeyDown(ByVal sender As Object, ByVal e As System.Windows.Forms.KeyEventArgs) Handles txtTalk.KeyDown
+            If e.KeyCode <> Keys.Enter Then Return
+            If e.Shift Then Return
             If txtTalk.Text = "" Then Return
             If _client Is Nothing Then Return
             e.Handled = True
-            _client.QueueSendText(txtTalk.Text)
-            logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, txtTalk.Text), Color.DarkBlue)
+            e.SuppressKeyPress = True
+            _client.QueueSendText(txtTalk.Text).CallOnSuccess(
+                Sub()
+                    logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, txtTalk.Text), Color.DarkBlue)
+                End Sub
+            ).Catch(
+                Sub(ex)
+                    logClient.LogMessage("Error sending text: {0}".Frmt(ex.Message), Color.Red)
+                    ex.RaiseAsUnexpected("Sending bnet client text.")
+                End Sub
+            )
             txtTalk.Text = ""
         End Sub
 

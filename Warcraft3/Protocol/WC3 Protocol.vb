@@ -335,13 +335,13 @@ Namespace WC3.Protocol
                     valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
                     dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType))
             jar.AddPackerParser(ChatType.Game, New TupleJar(PacketId.Text.ToString,
-                    New ListJar(Of Byte)("receiving players", New ByteJar("pid"), useSingleLineDescription:=True).Weaken,
+                    New ByteJar("pid").RepeatedWithCountPrefix("receiving players", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New ByteJar("sending player index").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             jar.AddPackerParser(ChatType.Lobby, New TupleJar(PacketId.Text.ToString,
-                    New ListJar(Of Byte)("receiving players", New ByteJar("pid"), useSingleLineDescription:=True).Weaken,
+                    New ByteJar("pid").RepeatedWithCountPrefix("receiving players", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New ByteJar("sending player index").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New NullTerminatedStringJar("message").Weaken))
@@ -353,7 +353,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly StartCountdown As New SimpleDefinition(PacketId.StartCountdown)
         Public Shared ReadOnly Ready As New SimpleDefinition(PacketId.Ready)
         Public Shared ReadOnly LobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(PacketId.LobbyState.ToString,
-                New ListJar(Of Dictionary(Of InvariantString, Object))("slots", New SlotJar("slot")).Weaken,
+                New SlotJar("slot").RepeatedWithCountPrefix("slots", prefixSize:=1).Weaken,
                 New UInt32Jar("random seed").Weaken,
                 New EnumByteJar(Of LobbyLayoutStyle)("layout style").Weaken,
                 New ByteJar("num player slots").Weaken
@@ -402,17 +402,17 @@ Namespace WC3.Protocol
         End Function
 
         Public Shared ReadOnly ShowLagScreen As New SimpleDefinition(PacketId.ShowLagScreen,
-                New ListJar(Of Dictionary(Of InvariantString, Object))("laggers",
-                    New TupleJar("lagger", True,
+                New TupleJar("lagger", True,
                         New ByteJar("player index").Weaken,
-                        New UInt32Jar("initial milliseconds used").Weaken)).Weaken)
+                        New UInt32Jar("initial milliseconds used").Weaken
+                    ).RepeatedWithCountPrefix("laggers", prefixSize:=1).Weaken)
         Public Shared ReadOnly RemovePlayerFromLagScreen As New SimpleDefinition(PacketId.RemovePlayerFromLagScreen,
                 New ByteJar("player index").Weaken,
                 New UInt32Jar("marginal milliseconds used").Weaken)
         Public Shared ReadOnly RequestDropLaggers As New SimpleDefinition(PacketId.RequestDropLaggers)
         Public Shared ReadOnly Tick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(PacketId.Tick.ToString,
                 New UInt16Jar("time span").Weaken,
-                New PlayerActionSetJar("player action set").Repeated("player action sets").CRC32ChecksumPrefixed(usedByteCount:=2).Optional.Weaken)
+                New PlayerActionSetJar("player action set").Repeated("player action sets").CRC32ChecksumPrefixed(prefixSize:=2).Optional.Weaken)
         Public Shared ReadOnly Tock As New SimpleDefinition(PacketId.Tock,
                 New ByteJar("unknown").Weaken,
                 New UInt32Jar("game state checksum", showhex:=True).Weaken)

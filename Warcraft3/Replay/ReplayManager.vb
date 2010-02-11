@@ -1,4 +1,7 @@
 ﻿Namespace WC3.Replay
+    ''' <summary>
+    ''' Wires a Game to a ReplayWriter.
+    ''' </summary>
     Public Class ReplayManager
         Inherits FutureDisposable
 

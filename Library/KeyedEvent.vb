@@ -27,6 +27,7 @@
                                        End Sub)
     End Function
 
+    <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")>
     Public Function Raise(ByVal key As TKey,
                           ByVal value As TArg) As IList(Of IFuture)
         Contract.Requires(key IsNot Nothing)

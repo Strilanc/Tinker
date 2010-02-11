@@ -47,10 +47,8 @@ Public Class ClientForm
                 Using r = New IO.BinaryReader(New IO.MemoryStream(serializedData.ToAscBytes))
                     _bot.Settings.ReadFrom(r)
                 End Using
-            Catch ex As IO.IOException
-                _bot.Settings.UpdateProfiles({New Bot.ClientProfile("Default")}, {})
-                ex.RaiseAsUnexpected("Error loading profiles.")
-            Catch ex As IO.InvalidDataException
+            Catch ex As Exception When TypeOf ex Is IO.IOException OrElse
+                                       TypeOf ex Is IO.InvalidDataException
                 _bot.Settings.UpdateProfiles({New Bot.ClientProfile("Default")}, {})
                 ex.RaiseAsUnexpected("Error loading profiles.")
             End Try

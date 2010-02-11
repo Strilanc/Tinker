@@ -75,16 +75,16 @@ Namespace WC3
                 Dim info = ReadMapInfo(mapArchive)
 
                 Dim basePath As InvariantString = wc3MapFolder.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
-                Dim path As InvariantString = filePath.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
+                Dim relPath As InvariantString = filePath.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
                 If Not basePath.EndsWith(IO.Path.DirectorySeparatorChar) Then basePath += IO.Path.DirectorySeparatorChar
-                If path.StartsWith(basePath) Then
-                    path = path.Substring(basePath.Length)
+                If relPath.StartsWith(basePath) Then
+                    relPath = relPath.Substring(basePath.Length)
                 Else
-                    path = path.ToString.Split(IO.Path.DirectorySeparatorChar).Last
+                    relPath = IO.Path.GetFileName(relPath)
                 End If
 
                 Return New Map(streamFactory:=factory,
-                               AdvertisedPath:="Maps\" + path.ToString.Replace(IO.Path.DirectorySeparatorChar, "\"),
+                               AdvertisedPath:="Maps\" + relPath.ToString.Replace(IO.Path.DirectorySeparatorChar, "\"),
                                FileSize:=CUInt(f.Length),
                                FileChecksumCRC32:=f.ToEnumerator.CRC32,
                                MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive).AsReadableList,
@@ -104,8 +104,6 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
             If arg.Length <= 0 Then
                 Throw New ArgumentException("Empty argument.")
-            ElseIf arg(0) = "-"c Then
-                Throw New ArgumentException("Map argument begins with '-', is probably an option. (did you forget an argument?)")
             ElseIf arg.StartsWith("0x", StringComparison.OrdinalIgnoreCase) Then 'Map specified by HostMapInfo packet data
                 'Parse
                 If arg Like "0x*[!0-9a-fA-F]" OrElse arg.Length Mod 2 <> 0 Then
@@ -540,6 +538,7 @@ Namespace WC3
         End Class
         '''<summary>Reads map information from the "war3map.w3i" file in the map mpq archive.</summary>
         '''<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
+        <CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1809:AvoidExcessiveLocals", justification:="Most aren't used. Useful during debugging.")>
         <ContractVerification(False)>
         Private Shared Function ReadMapInfo(ByVal mapArchive As MPQ.Archive) As ReadMapInfoResult
             Contract.Requires(mapArchive IsNot Nothing)
@@ -566,11 +565,11 @@ Namespace WC3
                     stream.ReadUInt32() 'camera bounds complements
                 Next repeat
 
-                Dim playableWidth = stream.ReadUInt32() 'map playable area width
-                Dim playableHeight = stream.ReadUInt32() 'map playable area height
+                Dim playableWidth = stream.ReadUInt32()
+                Dim playableHeight = stream.ReadUInt32()
                 If playableWidth <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable width.")
                 If playableHeight <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable height.")
-                Dim options = CType(stream.ReadUInt32(), MapOptions) 'flags
+                Dim options = CType(stream.ReadUInt32(), MapOptions)
 
                 Dim mainGoundType = stream.ReadByte()
                 If fileFormat = MapInfoFormatVersion.ROC Then
@@ -580,7 +579,7 @@ Namespace WC3
                     Dim loadScreenBackgroundIndex = stream.ReadUInt32() 'UInt32.MaxValue = none or custom imported file
                     Dim loadScreenModel = stream.ReadNullTerminatedString(maxLength:=256)
                 End If
-                Dim loadScreenText = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim loadScreenText = stream.ReadNullTerminatedString(maxLength:=4096)
                 Dim loadScreenTitle = stream.ReadNullTerminatedString(maxLength:=256)
                 Dim loadScreenSubtitle = stream.ReadNullTerminatedString(maxLength:=256)
                 If fileFormat = MapInfoFormatVersion.ROC Then
@@ -590,7 +589,7 @@ Namespace WC3
                     Dim usedGameDataSetIndex = stream.ReadUInt32() '0 = standard
                     Dim prologueScreenPath = stream.ReadNullTerminatedString(maxLength:=256)
                 End If
-                Dim prologueScreenText = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim prologueScreenText = stream.ReadNullTerminatedString(maxLength:=4096)
                 Dim prologueScreenTitle = stream.ReadNullTerminatedString(maxLength:=256)
                 Dim prologueScreenSubtitle = stream.ReadNullTerminatedString(maxLength:=256)
                 If fileFormat = MapInfoFormatVersion.TFT Then

@@ -14,8 +14,8 @@ Namespace Pickling
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal subJar As IJar(Of T),
-                       Optional ByVal useSingleLineDescription As Boolean = False,
-                       Optional ByVal prefixSize As Integer = 1)
+                       ByVal prefixSize As Integer,
+                       Optional ByVal useSingleLineDescription As Boolean = False)
             MyBase.New(name)
             Contract.Requires(subJar IsNot Nothing)
             Contract.Requires(prefixSize > 0)

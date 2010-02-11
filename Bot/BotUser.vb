@@ -255,7 +255,7 @@ Public NotInheritable Class BotUserSet
         If Not ContainsUser(name) Then Throw New InvalidOperationException("That user doesn't exist")
         _userMap.Remove(name)
     End Sub
-    <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1043:UseIntegralOrStringArgumentForIndexers")>
+    <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1043:UseIntegralOrStringArgumentForIndexers")>
     Default Public ReadOnly Property User(ByVal name As InvariantString) As BotUser
         Get
             If _userMap.ContainsKey(name) Then

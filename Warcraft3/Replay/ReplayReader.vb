@@ -66,7 +66,7 @@ Namespace WC3.Replay
                                         blockCount:=blockCount,
                                         firstBlockOffset:=headerSize,
                                         dataDecompressedSize:=decompressedSize,
-                                        buildNumber:=wc3ReplayBuildNumber)
+                                        BuildNumber:=wc3ReplayBuildNumber)
             End Using
         End Function
 
@@ -76,6 +76,7 @@ Namespace WC3.Replay
             End Get
         End Property
 
+        '''<summary>Creates an IRandomReadableStream to access the replay's compressed data.</summary>
         Public Function MakeDataStream() As IRandomReadableStream
             Contract.Ensures(Contract.Result(Of IRandomReadableStream)() IsNot Nothing)
             Dim stream = _streamFactory()
@@ -92,19 +93,19 @@ Namespace WC3.Replay
         Private Function EnumerateEntries() As IEnumerator(Of ReplayEntry)
             Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
 
-            Dim blockJars = New Dictionary(Of ReplayEntryId, IJar(Of Object))() From {
-                        {ReplayEntryId.ChatMessage, Format.ReplayEntryChatMessage.Weaken},
-                        {ReplayEntryId.GameStarted, Format.ReplayEntryGameStarted.Weaken},
-                        {ReplayEntryId.GameStateChecksum, Format.ReplayEntryGameStateChecksum.Weaken},
-                        {ReplayEntryId.LoadStarted1, Format.ReplayEntryLoadStarted1.Weaken},
-                        {ReplayEntryId.LoadStarted2, Format.ReplayEntryLoadStarted2.Weaken},
-                        {ReplayEntryId.LobbyState, Format.ReplayEntryLobbyState.Weaken},
-                        {ReplayEntryId.PlayerJoined, Format.ReplayEntryPlayerJoined.Weaken},
-                        {ReplayEntryId.PlayerLeft, Format.ReplayEntryPlayerLeft.Weaken},
-                        {ReplayEntryId.StartOfReplay, Format.ReplayEntryStartOfReplay.Weaken},
-                        {ReplayEntryId.Tick, Format.ReplayEntryTick.Weaken},
-                        {ReplayEntryId.TournamentForcedCountdown, Format.ReplayEntryTournamentForcedCountdown.Weaken},
-                        {ReplayEntryId.Unknown0x23, Format.ReplayEntryUnknown0x23.Weaken}
+            Dim blockJars = New Dictionary(Of ReplayEntryId, IParseJar(Of Object))() From {
+                        {ReplayEntryId.ChatMessage, Format.ReplayEntryChatMessage},
+                        {ReplayEntryId.GameStarted, Format.ReplayEntryGameStarted},
+                        {ReplayEntryId.GameStateChecksum, Format.ReplayEntryGameStateChecksum},
+                        {ReplayEntryId.LoadStarted1, Format.ReplayEntryLoadStarted1},
+                        {ReplayEntryId.LoadStarted2, Format.ReplayEntryLoadStarted2},
+                        {ReplayEntryId.LobbyState, Format.ReplayEntryLobbyState},
+                        {ReplayEntryId.PlayerJoined, Format.ReplayEntryPlayerJoined},
+                        {ReplayEntryId.PlayerLeft, Format.ReplayEntryPlayerLeft},
+                        {ReplayEntryId.StartOfReplay, Format.ReplayEntryStartOfReplay},
+                        {ReplayEntryId.Tick, Format.ReplayEntryTick},
+                        {ReplayEntryId.TournamentForcedCountdown, Format.ReplayEntryTournamentForcedCountdown},
+                        {ReplayEntryId.Unknown0x23, Format.ReplayEntryUnknown0x23}
                     }
 
             Dim stream = MakeDataStream()

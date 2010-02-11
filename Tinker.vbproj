@@ -213,7 +213,7 @@
     <Compile Include="Pickling\Pickling Extensions.vb" />
     <Compile Include="Library\Stream Extensions.vb" />
     <Compile Include="Warcraft3\Replay\ReplayDataReader.vb" />
-    <Compile Include="Warcraft3\Replay\Replay Protocol.vb" />
+    <Compile Include="Warcraft3\Replay\Replay Format.vb" />
     <Compile Include="Warcraft3\Replay\ReplayManager.vb" />
     <Compile Include="Warcraft3\Replay\ReplayWriter.vb" />
     <Compile Include="Warcraft3\Download Manager.vb" />
@@ -510,7 +510,6 @@
     <Content Include="Docs.txt" />
     <None Include="Resources\Tinker.ico" />
     <None Include="HostBot_TemporaryKey.pfx" />
-    <None Include="Resources\HostBotIcon.ico" />
   </ItemGroup>
   <ItemGroup>
     <PublishFile Include="Docs.txt">

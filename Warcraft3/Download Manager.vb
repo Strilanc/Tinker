@@ -336,15 +336,10 @@ Namespace WC3
                     Return ReportedPosition = Map.FileSize
                 End Get
             End Property
-            Public Property HasReported As Boolean
+            Public ReadOnly Property HasReported As Boolean
                 Get
                     Return _hasReported
                 End Get
-                Set(ByVal value As Boolean)
-                    Contract.Requires(Not HasReported)
-                    Contract.Requires(value)
-                    _hasReported = value
-                End Set
             End Property
             <ContractVerification(False)>
             Public Property ReportedState As Protocol.MapTransferState
@@ -452,8 +447,10 @@ Namespace WC3
             End Sub
 
             <ContractVerification(False)>
-            Public Sub MarkActivity()
+            Public Sub MarkReported()
+                Contract.Ensures(HasReported)
                 _lastActivityTimer = _lastActivityTimer.Restarted
+                _hasReported = True
             End Sub
 
             Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
@@ -500,7 +497,7 @@ Namespace WC3
             Me._allowUploads = allowUploads
             If _allowUploads Then
                 _defaultClient = New TransferClient(Nothing, game.Map, clock, {})
-                _defaultClient.HasReported = True
+                _defaultClient.MarkReported()
                 _defaultClient.ReportedPosition = game.Map.FileSize
             End If
 
@@ -657,53 +654,70 @@ Namespace WC3
                                   Where (flags And pidFlag) <> 0
                                   Select peer)
         End Sub
+
         Private Sub OnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal state As Protocol.MapTransferState, ByVal position As UInt32)
             Contract.Requires(player IsNot Nothing)
             If Not _playerClients.ContainsKey(player) Then Return
 
             Dim client = _playerClients(player)
             Contract.Assume(client IsNot Nothing)
-            client.MarkActivity()
+            Contract.Assume(client.Player IsNot Nothing)
+
             If position > _game.Map.FileSize Then
                 Throw New IO.InvalidDataException("Moved download position past end of file at {0} to {1}.".Frmt(_game.Map.FileSize, position))
-            ElseIf client.HasReported AndAlso position < client.ReportedPosition Then
-                Throw New IO.InvalidDataException("Moved download position backwards from {0} to {1}.".Frmt(client.ReportedPosition, position))
-            ElseIf Not client.HasReported AndAlso state <> Protocol.MapTransferState.Idle Then
-                Throw New IO.InvalidDataException("Invalid initial download transfer state.")
-            ElseIf client.HasReported AndAlso client.ReportedHasFile AndAlso state = Protocol.MapTransferState.Downloading Then
-                Throw New IO.InvalidDataException("Non-downloader reported status as downloading.")
-            ElseIf (Not client.HasReported OrElse Not client.ReportedHasFile) AndAlso state = Protocol.MapTransferState.Uploading Then
-                Throw New IO.InvalidDataException("Non-uploader reported status as uploading.")
             End If
 
             If Not client.HasReported Then
-                client.HasReported = True
-                client.ReportedPosition = position
-                client.ReportedState = state
-                If Not _allowDownloads AndAlso Not client.ReportedHasFile Then
-                    client.Player.QueueDisconnect(expected:=True,
-                                                  leaveType:=Protocol.PlayerLeaveType.Disconnect,
-                                                  reason:="Downloads not allowed.")
-                End If
+                OnFirstMapInfo(client, state, position)
             Else
+                OnTypicalMapInfo(client, state, position)
+            End If
+
+            client.MarkReported()
+            client.ReportedPosition = position
+            client.ReportedState = state
+
+            If client.Transfer IsNot Nothing AndAlso client.Transfer.Uploader Is _defaultClient Then
+                SendMapFileData(client, position)
+            End If
+        End Sub
+        Private Sub OnFirstMapInfo(ByVal client As TransferClient, ByVal state As Protocol.MapTransferState, ByVal position As UInt32)
+            Contract.Requires(client IsNot Nothing)
+            Contract.Requires(client.Player IsNot Nothing)
+            Contract.Requires(Not client.HasReported)
+
+            If state <> Protocol.MapTransferState.Idle Then
+                Throw New IO.InvalidDataException("Invalid initial download transfer state.")
+            End If
+
+            If Not _allowDownloads AndAlso position < _game.Map.FileSize Then
+                client.Player.QueueDisconnect(expected:=True,
+                                              leaveType:=Protocol.PlayerLeaveType.Disconnect,
+                                              reason:="Downloads not allowed.")
+            End If
+        End Sub
+        Private Sub OnTypicalMapInfo(ByVal client As TransferClient, ByVal state As Protocol.MapTransferState, ByVal position As UInt32)
+            Contract.Requires(client IsNot Nothing)
+            Contract.Requires(client.Player IsNot Nothing)
+            Contract.Requires(client.HasReported)
+
+            If position < client.ReportedPosition Then
+                Throw New IO.InvalidDataException("Moved download position backwards from {0} to {1}.".Frmt(client.ReportedPosition, position))
+            ElseIf client.ReportedHasFile AndAlso state = Protocol.MapTransferState.Downloading Then
+                Throw New IO.InvalidDataException("Non-downloader reported status as downloading.")
+            ElseIf Not client.ReportedHasFile AndAlso state = Protocol.MapTransferState.Uploading Then
+                Throw New IO.InvalidDataException("Non-uploader reported status as uploading.")
+            End If
+
+            If client.Transfer IsNot Nothing Then
+                client.Transfer.Advance(position - client.ReportedPosition)
+            End If
+            If client.ReportedPosition < _game.Map.FileSize AndAlso position = _game.Map.FileSize Then
                 If client.Transfer IsNot Nothing Then
-                    client.Transfer.Advance(position - client.ReportedPosition)
-                End If
-                If client.ReportedPosition < _game.Map.FileSize AndAlso position = _game.Map.FileSize Then
-                    If client.Transfer IsNot Nothing Then
-                        _game.Logger.Log("{0} finished downloading the map from {1}.".Frmt(player.Name, client.Transfer.Uploader), LogMessageType.Positive)
-                        Contract.Assume(client Is client.Transfer.Downloader)
-                        client.Transfer.Dispose()
-                    Else
-                        _game.Logger.Log("{0} finished downloading the map.".Frmt(player.Name), LogMessageType.Positive)
-                    End If
-                End If
-
-                client.ReportedPosition = position
-                client.ReportedState = state
-
-                If client.Transfer IsNot Nothing AndAlso client.Transfer.Uploader Is _defaultClient Then
-                    SendMapFileData(client, position)
+                    _game.Logger.Log("{0} finished downloading the map from {1}.".Frmt(client.Player.Name, client.Transfer.Uploader), LogMessageType.Positive)
+                    client.Transfer.Dispose() '[nulls client.Transfer]
+                Else
+                    _game.Logger.Log("{0} finished downloading the map.".Frmt(client.Player.Name), LogMessageType.Positive)
                 End If
             End If
         End Sub

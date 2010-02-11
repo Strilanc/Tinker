@@ -41,9 +41,11 @@ Namespace Bnet
             '
             Me.txtTalk.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
                         Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-            Me.txtTalk.Location = New System.Drawing.Point(0, 369)
+            Me.txtTalk.Location = New System.Drawing.Point(0, 332)
+            Me.txtTalk.Multiline = True
             Me.txtTalk.Name = "txtTalk"
-            Me.txtTalk.Size = New System.Drawing.Size(528, 20)
+            Me.txtTalk.ScrollBars = System.Windows.Forms.ScrollBars.Vertical
+            Me.txtTalk.Size = New System.Drawing.Size(528, 57)
             Me.txtTalk.TabIndex = 1
             '
             'logClient
@@ -53,7 +55,7 @@ Namespace Bnet
                         Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
             Me.logClient.Location = New System.Drawing.Point(0, 0)
             Me.logClient.Name = "logClient"
-            Me.logClient.Size = New System.Drawing.Size(528, 363)
+            Me.logClient.Size = New System.Drawing.Size(528, 326)
             Me.logClient.TabIndex = 0
             '
             'comClient

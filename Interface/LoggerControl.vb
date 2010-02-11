@@ -156,9 +156,10 @@ Public Class LoggerControl
 
             Try
                 filestream = New IO.FileStream(IO.Path.Combine(folder, _logFilename), IO.FileMode.Append, IO.FileAccess.Write, IO.FileShare.Read)
-            Catch e As Exception
-                Dim msg = "Error opening file for log {0}: {1}".Frmt(_logFilename, e.Message)
-                e.RaiseAsUnexpected(msg)
+            Catch ex As Exception When TypeOf ex Is IO.IOException OrElse
+                                       TypeOf ex Is Security.SecurityException
+                Dim msg = "Error opening file for log {0}: {1}".Frmt(_logFilename, ex.Message)
+                ex.RaiseAsUnexpected(msg)
                 LogMessage(msg, Color.Red)
                 Return False
             End Try

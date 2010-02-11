@@ -265,7 +265,7 @@ Public Class SettingsForm
                 End If
             Catch ex As Exception
                 ex.RaiseAsUnexpected("Importing plugin from settings form.")
-                MessageBox.Show("Error importing plugin: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBox.Show("Error importing plugin: {0}".Frmt(ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End If
     End Sub

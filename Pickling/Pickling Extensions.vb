@@ -98,9 +98,18 @@
         Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T), ByVal prefixSize As Integer) As DataSizePrefixedJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
-            Contract.Requires(prefixSize <= 8)
             Contract.Ensures(Contract.Result(Of DataSizePrefixedJar(Of T))() IsNot Nothing)
             Return New DataSizePrefixedJar(Of T)(subjar:=jar, prefixSize:=prefixSize)
+        End Function
+        <Extension()> <Pure()>
+        Public Function RepeatedWithCountPrefix(Of T)(ByVal jar As IJar(Of T),
+                                                      ByVal name As InvariantString,
+                                                      ByVal prefixSize As Integer,
+                                                      Optional ByVal useSingleLineDescription As Boolean = False) As ListJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(prefixSize > 0)
+            Contract.Ensures(Contract.Result(Of ListJar(Of T))() IsNot Nothing)
+            Return New ListJar(Of T)(name, jar, prefixSize, useSingleLineDescription)
         End Function
         <Extension()> <Pure()>
         Public Function [Optional](Of T)(ByVal jar As IJar(Of T)) As OptionalJar(Of T)
@@ -108,12 +117,15 @@
             Contract.Ensures(Contract.Result(Of OptionalJar(Of T))() IsNot Nothing)
             Return New OptionalJar(Of T)(jar)
         End Function
+        '''<summary>Prefixes serialized data with a crc32 checksum.</summary>
+        '''<param name="prefixSize">Determines how many bytes of the crc32 are used (starting at index 0) (min 1, max 4).</param>
         <Extension()> <Pure()>
-        Public Function CRC32ChecksumPrefixed(Of T)(ByVal jar As IJar(Of T), Optional ByVal usedByteCount As Integer = 4) As ChecksumPrefixedJar(Of T)
+        Public Function CRC32ChecksumPrefixed(Of T)(ByVal jar As IJar(Of T),
+                                                    Optional ByVal prefixSize As Integer = 4) As ChecksumPrefixedJar(Of T)
             Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(usedByteCount > 0)
-            Contract.Requires(usedByteCount <= 4)
-            Return New ChecksumPrefixedJar(Of T)(jar, usedByteCount, Function(data) data.CRC32.Bytes.Take(usedByteCount).ToArray.AsReadableList)
+            Contract.Requires(prefixSize > 0)
+            Contract.Requires(prefixSize <= 4)
+            Return New ChecksumPrefixedJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToArray.AsReadableList)
         End Function
     End Module
 End Namespace

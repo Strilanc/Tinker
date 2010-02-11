@@ -28,6 +28,5 @@
                 e.RaiseAsUnexpected("UIInvokeCommand for {0}:{1}".Frmt(component.Type, component.Name))
             End Try
         End Sub
-
     End Module
 End Namespace

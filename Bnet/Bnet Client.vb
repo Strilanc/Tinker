@@ -477,26 +477,11 @@ Namespace Bnet
                     ChangeState(ClientState.CreatingGame)
                     Try
                         AdvertiseGame(useFull:=False, refreshing:=False)
-                    Catch e As Exception
+                    Catch ex As Exception
                         _futureAdvertisedGame.TrySetFailed(New OperationFailedException("Failed to send data."))
                         ChangeState(ClientState.Channel)
                         Throw
                     End Try
-
-                    'outQueue.QueueAction(Sub() RaiseEvent AddedGame(Me, gameDescription, server))
-                    'If server IsNot Nothing Then
-                    'server.QueueAddAdvertiser(Me).SetHandled()
-                    'DisposeLink.CreateOneWayLink(New AdvertisingDisposeNotifier(Me), server.CreateAdvertisingDependency)
-                    ''server.QueueOpenPort(Me.listenPort).QueueCallWhenReady(inQueue,
-                    ''Sub(listenException)
-                    ''If listenException IsNot Nothing Then
-                    ''_futureCreatedGame.TrySetFailed(listenException)
-                    ''Contract.Assume(listenException.Message IsNot Nothing)
-                    ''StopAdvertisingGame(reason:=listenException.Message)
-                    ''End If
-                    ''End Sub
-                    '').MarkAnyExceptionAsHandled()
-                    'End If
                     Return _futureAdvertisedGame
                 Case Else
                     Throw _state.MakeImpossibleValueException
@@ -572,7 +557,6 @@ Namespace Bnet
                     EnterChannel(_lastChannel)
                     _advertisedGameDescription = Nothing
                     _futureAdvertisedGame.TrySetFailed(New OperationFailedException("Advertising cancelled: {0}.".Frmt(reason)))
-                    'outQueue.QueueAction(Sub() RaiseEvent RemovedGame(Me, _advertisedGameDescription, reason))
 
                 Case Else
                     Throw New InvalidOperationException("Wasn't advertising any games.")
