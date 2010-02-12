@@ -13,6 +13,9 @@
 'You should have received a copy of the GNU General Public License
 'along with this program.  If not, see http://www.gnu.org/licenses/
 
+Imports System.Linq.Expressions
+Imports System.Reflection
+
 Namespace Bnet
     ''' <summary>
     ''' A challenge/response hash function used by Blizzard to determine if a client has valid game files.
@@ -20,20 +23,15 @@ Namespace Bnet
     ''' </summary>
     Public Module RevisionCheck
 #Region "Data"
+        Private Const SeedVar As Char = "A"c
+        Private Const ResultVar As Char = "C"c
+        Private Const InputVar As Char = "S"c
+
         '''<summary>The files fed into the hashing process.</summary>
         Private ReadOnly HashFiles As String() = {
                 "War3.exe",
                 "Storm.dll",
                 "Game.dll"
-            }
-        '''<summary>The operations usable by the hashing process.</summary>
-        Private ReadOnly Operations As New Dictionary(Of Char, Func(Of ModInt32, ModInt32, ModInt32)) From {
-                {"+"c, Function(a, b) a + b},
-                {"-"c, Function(a, b) a - b},
-                {"*"c, Function(a, b) a * b},
-                {"&"c, Function(a, b) a And b},
-                {"^"c, Function(a, b) a Xor b},
-                {"|"c, Function(a, b) a Or b}
             }
         '''<summary>The values which the index string chooses from to XOR into variable A's initial value.</summary>
         Private ReadOnly IndexStringSeeds As UInteger() = {
@@ -48,91 +46,9 @@ Namespace Bnet
             }
 #End Region
 
-        '''<summary>A parsed hashing operation.</summary>
-        <ContractVerification(False)>
-        Private Structure Operation 'verification disabled to allow skipping some checks
-            Private ReadOnly _leftVarIndex As Integer
-            Private ReadOnly _rightVarIndex As Integer
-            Private ReadOnly _destVarIndex As Integer
-            Private ReadOnly _operation As Func(Of ModInt32, ModInt32, ModInt32)
-
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(_operation IsNot Nothing)
-            End Sub
-
-            Public Sub New(ByVal leftVarIndex As Integer,
-                           ByVal rightVarIndex As Integer,
-                           ByVal destVarIndex As Integer,
-                           ByVal [operator] As Char)
-                Me._leftVarIndex = leftVarIndex
-                Me._rightVarIndex = rightVarIndex
-                Me._destVarIndex = destVarIndex
-                Me._operation = Operations([operator])
-                Contract.Assume(_operation IsNot Nothing)
-            End Sub
-
-            Public Sub ApplyTo(ByVal vars As CachedLookupTable(Of Char, ModInt32))
-                Contract.Requires(vars IsNot Nothing)
-                vars.ValueAt(_destVarIndex) = _operation(vars.ValueAt(_leftVarIndex), vars.ValueAt(_rightVarIndex))
-            End Sub
-        End Structure
-
-        '''<summary>Extracts the initial variable values from the challenge.</summary>
-        Private Function ReadVariablesFrom(ByVal lines As IEnumerator(Of String)) As CachedLookupTable(Of Char, ModInt32)
-            Contract.Requires(lines IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of CachedLookupTable(Of Char, ModInt32))() IsNot Nothing)
-
-            Dim variables = New CachedLookupTable(Of Char, ModInt32)(capacity:=4)
-            Do 'Read until a non-variable declaration line is met
-                If Not lines.MoveNext Then Throw New ArgumentException("Instructions ended prematurely.")
-                If lines.Current Is Nothing OrElse Not lines.Current Like "?=*" Then Exit Do
-                Contract.Assume(lines.Current.Length >= 2)
-
-                'Parse declaration
-                Dim u As UInteger
-                If Not UInteger.TryParse(lines.Current.Substring(2), u) Then
-                    Throw New ArgumentException("Invalid variable initialization line: {0}".Frmt(lines.Current))
-                End If
-                variables.ValueAt(variables.CacheIndexOf(lines.Current(0))) = u
-            Loop
-            Return variables
-        End Function
-
-        '''<summary>Extracts the hash operations from the challenge.</summary>
-        Private Function ReadOperationsFrom(ByVal lines As IEnumerator(Of String),
-                                            ByVal variables As CachedLookupTable(Of Char, ModInt32)) As IEnumerable(Of Operation)
-            Contract.Requires(lines IsNot Nothing)
-            Contract.Requires(variables IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IEnumerable(Of Operation))() IsNot Nothing)
-
-            'Read Operation Count [already loaded from reading variables; no need for MoveNext]
-            Dim numOps As Byte 'number of operations
-            If Not Byte.TryParse(lines.Current, numOps) Then
-                Throw New ArgumentException("Revision check instructions did not include a valid operation count: ""{0}""".Frmt(lines.Current))
-            End If
-
-            'Read Operations
-            Dim result = New List(Of Operation)(capacity:=numOps)
-            For i = 0 To numOps - 1
-                If Not lines.MoveNext Then
-                    Throw New ArgumentException("Instructions included less operations than the {0} specified.".Frmt(numOps))
-                ElseIf lines.Current Is Nothing OrElse Not lines.Current Like "?=???" Then
-                    Throw New ArgumentException("Invalid operation specified: {0}".Frmt(lines.Current))
-                End If
-                Contract.Assume(lines.Current.Length = 5)
-
-                'Parse and Store
-                result.Add(New Operation(destVarIndex:=variables.CacheIndexOf(lines.Current(0)),
-                                         leftVarIndex:=variables.CacheIndexOf(lines.Current(2)),
-                                         [operator]:=lines.Current(3),
-                                         rightVarIndex:=variables.CacheIndexOf(lines.Current(4))))
-            Next i
-            Return result
-        End Function
-
         '''<summary>Selects a seed based on the index string.</summary>
         <Pure()>
-        Private Function ExtractIndexStringHashSeed(ByVal challengeSeed As String) As UInteger
+        Private Function ParseChallengeSeed(ByVal challengeSeed As String) As UInt32
             Contract.Requires(challengeSeed IsNot Nothing)
 
             Dim invIndexString As InvariantString = challengeSeed
@@ -144,6 +60,143 @@ Namespace Bnet
             Dim index = Byte.Parse(challengeSeed(challengeSeed.Length - 5), CultureInfo.InvariantCulture)
             If index >= IndexStringSeeds.Length Then Throw New ArgumentOutOfRangeException("challengeSeed", "Extracted index is larger than the hash seed table.")
             Return IndexStringSeeds(index)
+        End Function
+
+        ''' <summary>
+        ''' Fills a buffer with data from a stream.
+        ''' Any remaining space in the buffer is filled with generated data.
+        ''' </summary>
+        Private Function PaddedRead(ByVal stream As IO.Stream, ByVal buffer As Byte()) As Boolean
+            Contract.Requires(stream IsNot Nothing)
+            Contract.Requires(buffer IsNot Nothing)
+            Dim n = stream.Read(buffer, 0, buffer.Length)
+            If n = 0 Then Return False
+            For i = 0 To buffer.Length - n - 1
+                buffer(i + n) = CByte(&HFF - (i And &HFF))
+            Next i
+            Return True
+        End Function
+
+        Private Function ParseOperation(ByVal varLeft As Expression,
+                                        ByVal [operator] As Char,
+                                        ByVal varRight As Expression) As BinaryExpression
+            Select Case [operator]
+                Case "+"c : Return Expression.Add(varLeft, varRight)
+                Case "-"c : Return Expression.Subtract(varLeft, varRight)
+                Case "*"c : Return Expression.Multiply(varLeft, varRight)
+                Case "&"c : Return Expression.And(varLeft, varRight)
+                Case "|"c : Return Expression.Or(varLeft, varRight)
+                Case "^"c : Return Expression.ExclusiveOr(varLeft, varRight)
+                Case Else : Throw New IO.InvalidDataException("Unrecognized revision check operator: '{0}'.".Frmt([operator]))
+            End Select
+        End Function
+        Private Function ParseStatements(ByVal statements As IEnumerable(Of String),
+                                         ByVal locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
+            Contract.Requires(statements IsNot Nothing)
+            Contract.Requires(locals IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of BlockExpression)() IsNot Nothing)
+
+            Return Expression.Block(From statement In statements
+                                    Let varResult = locals(statement(0))
+                                    Let varLeft = locals(statement(2))
+                                    Let varRight = locals(statement(4))
+                                    Let operation = ParseOperation(varLeft, statement(3), varRight)
+                                    Select Expression.Assign(varResult, operation))
+        End Function
+        Private Function ParseDeclarations(ByVal declarations As IEnumerable(Of String),
+                                           ByVal locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
+            Contract.Requires(declarations IsNot Nothing)
+            Contract.Requires(locals IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of BlockExpression)() IsNot Nothing)
+
+            Return Expression.Block(From declaration In declarations
+                                    Let name = declaration(0)
+                                    Let value = UInt32.Parse(declaration.Substring(2))
+                                    Select Expression.Assign(locals(name), Expression.Constant(value)))
+        End Function
+        Private Function ParseVariables(ByVal declarations As IEnumerable(Of String),
+                                        ByVal statements As IEnumerable(Of String)) As Dictionary(Of Char, ParameterExpression)
+            Contract.Requires(declarations IsNot Nothing)
+            Contract.Requires(statements IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, ParameterExpression))() IsNot Nothing)
+
+            Dim defaultVariables = {SeedVar, ResultVar, InputVar}
+            Dim declarationVariables = From declaration In declarations Select declaration(0)
+            Dim statementVariables = (From statement In statements Select {statement(0), statement(2), statement(4)}).Fold
+
+            Dim variables = New Dictionary(Of Char, ParameterExpression)
+            For Each name In {defaultVariables, declarationVariables, statementVariables}.Fold.Distinct
+                variables.Add(name, Expression.Variable(GetType(UInt32), name))
+            Next name
+            Return variables
+        End Function
+
+        Private Function CompileInstructions(ByVal challengeInstructions As String,
+                                             ByVal challengeSeed As String) As Func(Of IEnumerator(Of IO.Stream), UInt32)
+            Contract.Requires(challengeInstructions IsNot Nothing)
+            Contract.Requires(challengeSeed IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Func(Of IEnumerator(Of IO.Stream), UInt32))() IsNot Nothing)
+
+            'Identify instructions
+            Dim lines = challengeInstructions.Split(" "c)
+            Dim declarations = From line In lines Where line Like "?=#*"
+            Dim statements = From line In lines Where line Like "?=???"
+            Dim statementCount = UInt32.Parse((From line In lines Where line Like "#").First)
+
+            'Check
+            If statements.Count <> statementCount Then Throw New ArgumentException("Statement count didn't match number of statements.")
+            If statements.Count + declarations.Count + 1 <> lines.Count Then Throw New ArgumentException("Unrecognized instructions.")
+
+            'Build method parts
+            Dim dataParameter = Expression.Parameter(GetType(IEnumerator(Of IO.Stream)), "data")
+            Dim varStream = Expression.Variable(GetType(IO.Stream), "stream")
+            Dim varPos = Expression.Variable(GetType(Int32), "pos")
+            Dim varBuffer = Expression.Variable(GetType(Byte()), "buffer")
+            Dim hashVariables = ParseVariables(declarations, statements)
+
+            'Method Initialization
+            Dim initialization = Expression.Block(
+                    ParseDeclarations(declarations, hashVariables),
+                    Expression.Assign(varBuffer, Expression.NewArrayBounds(GetType(Byte), Expression.Constant(1024))),
+                    expression.ExclusiveOrAssign(hashVariables(SeedVar), Expression.Constant(ParseChallengeSeed(challengeSeed))))
+
+            'Method Main Loop
+            '[Applies hashing instructions to each dword in buffered data]
+            Dim breakTarget3 = Expression.Label("break3")
+            Dim workLoop = Expression.Loop(Expression.Block(
+                    Expression.IfThen(Expression.GreaterThanOrEqual(varPos, Expression.Constant(1024)),
+                                      Expression.Break(breakTarget3)),
+                    Expression.Assign(hashVariables(InputVar), Expression.Call(GetType(BitConverter).GetMethod("ToUInt32"), varBuffer, varPos)),
+                    Expression.AddAssign(varPos, Expression.Constant(4)),
+                    ParseStatements(statements, hashVariables)
+                ), breakTarget3)
+            '[Buffers data from 'varStream' until no more, running 'workLoop' on the buffered data]
+            Dim breakTarget2 = Expression.Label("break2")
+            Dim readLoop = Expression.Loop(Expression.Block(
+                    Expression.IfThen(Expression.Not(Expression.Call(GetType(RevisionCheck).GetMethod("PaddedRead", BindingFlags.NonPublic Or BindingFlags.Static),
+                                                                     varStream, varBuffer)),
+                                      Expression.Break(breakTarget2)),
+                    Expression.Assign(varPos, Expression.Constant(0)),
+                    workLoop
+                ), breakTarget2)
+            '[Enumerates input streams, running 'readLoop' on the stream then disposing]
+            Dim breakTarget1 = Expression.Label("break")
+            Dim mainLoop = Expression.Loop(Expression.Block(
+                    Expression.IfThen(Expression.Not(Expression.Call(dataParameter, GetType(Collections.IEnumerator).GetMethod("MoveNext"))),
+                                      Expression.Break(breakTarget1)),
+                    Expression.Assign(varStream, Expression.Call(dataParameter, GetType(IEnumerator(Of IO.Stream)).GetMethod("get_Current"))),
+                    readLoop,
+                    Expression.Call(varStream, GetType(IDisposable).GetMethod("Dispose"))
+                ), breakTarget1)
+
+            'Method Result
+            Dim result = hashVariables(ResultVar)
+
+            'Compile method
+            Dim variables = hashVariables.Values.Concat({varBuffer, varPos, varStream})
+            Dim methodBody = Expression.Block(variables, {initialization, mainLoop, result})
+            Dim method = Expression.Lambda(Of Func(Of IEnumerator(Of IO.Stream), UInt32))(methodBody, dataParameter)
+            Return method.Compile()
         End Function
 
         ''' <summary>
@@ -159,42 +212,10 @@ Namespace Bnet
             Contract.Requires(folder IsNot Nothing)
             Contract.Requires(challengeSeed IsNot Nothing)
             Contract.Requires(challengeInstructions IsNot Nothing)
-
-            'Parse
-            Dim lines = challengeInstructions.Split(" "c).AsEnumerable.GetEnumerator()
-            Dim variables = ReadVariablesFrom(lines)
-            Dim operations = ReadOperationsFrom(lines, variables)
-            If lines.MoveNext Then Throw New ArgumentException("More revision check instructions than expected.")
-
-            Dim indexA = variables.CacheIndexOf("A"c)
-            Dim indexC = variables.CacheIndexOf("C"c)
-            Dim indexS = variables.CacheIndexOf("S"c)
-
-            'Seed variable A [the point of this? obfuscation I guess]
-            variables.ValueAt(indexA) = variables.ValueAt(indexA) Xor ExtractIndexStringHashSeed(challengeSeed)
-
-            'Init tail buffer [used to extend file data to a multiple of 1024]
-            Dim tailBuffer(0 To 1024 - 1) As Byte
-            For i = 0 To tailBuffer.Length - 1
-                tailBuffer(i) = CByte(255 - (i Mod 256))
-            Next i
-
-            'Process hash files
-            For Each filename In HashFiles
-                Using file = New IO.FileStream(IO.Path.Combine(folder, filename), IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
-                    'Apply operations using each dword in stream
-                    Dim br = New IO.BinaryReader(New IO.BufferedStream(New ConcatStream({file, New IO.MemoryStream(tailBuffer)})))
-                    For repeat = 0 To CInt(file.Length).CeilingMultiple(1024) - 1 Step 4
-                        variables.ValueAt(indexS) = br.ReadUInt32()
-                        For Each op In operations
-                            op.ApplyTo(variables)
-                        Next op
-                    Next repeat
-                End Using
-            Next filename
-
-            'Result is the final value of Variable C
-            Return variables.ValueAt(indexC)
+            Dim files = From filename In HashFiles
+                        Select path = IO.Path.Combine(folder, filename)
+                        Select New IO.FileStream(path, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
+            Return CompileInstructions(challengeInstructions, challengeSeed).Invoke(files.GetEnumerator)
         End Function
     End Module
 End Namespace
