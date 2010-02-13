@@ -3,7 +3,9 @@
 Namespace WC3.Protocol
     '''<summary>Game actions which can be performed by players.</summary>
     '''<original-source> http://www.wc3c.net/tools/specs/W3GActions.txt </original-source>
+    '''<remarks>Ids prefixed with 'Trigger' only occur if there is a trigger to catch them.</remarks>
     Public Enum GameActionId As Byte
+        'Global actions [0x00 to 0x07 (spaced to 0x0F)]
         PauseGame = &H1
         ResumeGame = &H2
         SetGameSpeed = &H3
@@ -11,20 +13,14 @@ Namespace WC3.Protocol
         DecreaseGameSpeed = &H5
         SaveGameStarted = &H6
         SaveGameFinished = &H7
-        '_Unseen0x08 = &H8
-        '_Unseen0x09 = &H9
-        '_Unseen0x0A = &HA
-        '_Unseen0x0B = &HB
-        '_Unseen0x0C = &HC
-        '_Unseen0x0D = &HD
-        '_Unseen0x0E = &HE
-        '_Unseen0x0F = &HF
+
+        'Order actions [0x10 to 0x1E (spaced to 0x1F)]
         SelfOrder = &H10
         PointOrder = &H11
         ObjectOrder = &H12
         DropOrGiveItem = &H13
         FogObjectOrder = &H14
-        '_Unseen0x15 = &H15
+        '_unseen0x15 = &H15
         ChangeSelection = &H16
         AssignGroupHotkey = &H17
         SelectGroupHotkey = &H18
@@ -34,9 +30,10 @@ Namespace WC3.Protocol
         SelectGroundItem = &H1C
         CancelHeroRevive = &H1D
         DequeueBuildingOrder = &H1E
-        '_Unseen0x1F = &H1F
+
+        'Cheat actions [0x20 to 0x32 (spaced to 0x4F)]
         CheatFastCooldown = &H20
-        '_Unseen0x21 = &H21
+        '_unseen0x21 = &H21
         CheatInstantDefeat = &H22
         CheatSpeedConstruction = &H23
         CheatFastDeathDecay = &H24
@@ -54,62 +51,23 @@ Namespace WC3.Protocol
         CheatDisableTechRequirements = &H30
         CheatResearchUpgrades = &H31
         CheatInstantVictory = &H32
-        '_Unseen0x33 = &H33
-        '_Unseen0x34 = &H34
-        '_Unseen0x35 = &H35
-        '_Unseen0x36 = &H36
-        '_Unseen0x37 = &H37
-        '_Unseen0x38 = &H38
-        '_Unseen0x39 = &H39
-        '_Unseen0x3A = &H3A
-        '_Unseen0x3B = &H3B
-        '_Unseen0x3C = &H3C
-        '_Unseen0x3D = &H3D
-        '_Unseen0x3E = &H3E
-        '_Unseen0x3F = &H3F
-        '_Unseen0x40 = &H40
-        '_Unseen0x41 = &H41
-        '_Unseen0x42 = &H42
-        '_Unseen0x43 = &H43
-        '_Unseen0x44 = &H44
-        '_Unseen0x45 = &H45
-        '_Unseen0x46 = &H46
-        '_Unseen0x47 = &H47
-        '_Unseen0x48 = &H48
-        '_Unseen0x49 = &H49
-        '_Unseen0x4A = &H4A
-        '_Unseen0x4B = &H4B
-        '_Unseen0x4C = &H4C
-        '_Unseen0x4D = &H4D
-        '_Unseen0x4E = &H4E
-        '_Unseen0x4F = &H4F
+
+        'Alliance actions [0x50 to 0x51 (spaced to 0x5F)]
         ChangeAllyOptions = &H50
         TransferResources = &H51
-        '_Unseen0x52 = &H52
-        '_Unseen0x53 = &H53
-        '_Unseen0x54 = &H54
-        '_Unseen0x55 = &H55
-        '_Unseen0x56 = &H56
-        '_Unseen0x57 = &H57
-        '_Unseen0x58 = &H58
-        '_Unseen0x59 = &H59
-        '_Unseen0x5A = &H5A
-        '_Unseen0x5B = &H5B
-        '_Unseen0x5C = &H5C
-        '_Unseen0x5D = &H5D
-        '_Unseen0x5E = &H5E
-        '_Unseen0x5F = &H5F
+
+        'Trigger related actions [0x60 to 0x75] [note: TriggerSelectionEvent is at 0x1B in the order actions] 
         TriggerChatEvent = &H60
         PressedEscape = &H61
         TriggerWaitFinished = &H62
-        '_Unseen0x63 = &H63
+        '_unseen0x63 = &H63
         TriggerMouseClickedTrackable = &H64
         TriggerMouseTouchedTrackable = &H65
         EnterChooseHeroSkillSubmenu = &H66
         EnterChooseBuildingSubmenu = &H67
         MinimapPing = &H68
-        TriggerDialogButtonClicked2 = &H69
-        TriggerDialogButtonClicked = &H6A
+        DialogButtonClicked = &H69
+        DialogAnyButtonClicked = &H6A
         GameCacheSyncInteger = &H6B
         GameCacheSyncReal = &H6C
         GameCacheSyncBoolean = &H6D
@@ -385,10 +343,10 @@ Namespace WC3.Protocol
         Public Shared ReadOnly TriggerChatEvent As New SimpleDefinition(GameActionId.TriggerChatEvent,
                     New GameObjectIdJar("trigger event").Weaken,
                     New NullTerminatedStringJar("text").Weaken)
-        Public Shared ReadOnly TriggerDialogButtonClicked As New SimpleDefinition(GameActionId.TriggerDialogButtonClicked,
+        Public Shared ReadOnly DialogAnyButtonClicked As New SimpleDefinition(GameActionId.DialogAnyButtonClicked,
                     New GameObjectIdJar("dialog").Weaken,
                     New GameObjectIdJar("button").Weaken)
-        Public Shared ReadOnly TriggerDialogButtonClicked2 As New SimpleDefinition(GameActionId.TriggerDialogButtonClicked2,
+        Public Shared ReadOnly DialogButtonClicked As New SimpleDefinition(GameActionId.DialogButtonClicked,
                     New GameObjectIdJar("button").Weaken,
                     New GameObjectIdJar("dialog").Weaken)
         Public Shared ReadOnly TriggerMouseClickedTrackable As New SimpleDefinition(GameActionId.TriggerMouseClickedTrackable,

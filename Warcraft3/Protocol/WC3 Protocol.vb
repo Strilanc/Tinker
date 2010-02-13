@@ -90,7 +90,7 @@ Namespace WC3.Protocol
         '_Unseen18 = &H18
         PeerPromoteToHostAndContinue = &H19
         '_Unseen1A = &H1A
-        '_Unseen1B = &H1B
+        GameEnd = &H1B
         '_Unseen1C = &H1C
         '_Unseen1D = &H1D
         '''<summary>First thing sent by clients upon connection. Requests entry into the game.</summary>
@@ -183,6 +183,11 @@ Namespace WC3.Protocol
         MapFileDataProblem = &H45
         '''<summary>Sent by clients in response to PING.</summary>
         Pong = &H46
+
+        '''<summary>Tells players the time remaining in a tournament game. Causes players to disc in custom games.</summary>
+        TournamentCountdown = &H50
+        EncryptedServerMeleeData = &H51
+        EncryptedClientMeleeData = &H52
     End Enum
 
     <Flags()>
@@ -491,5 +496,14 @@ Namespace WC3.Protocol
                 New ByteJar("sender index").Weaken,
                 New ByteJar("receiver index").Weaken,
                 New UInt32Jar("map transfer key").Weaken)
+
+        Public Shared ReadOnly TournamentCountdown As New SimpleDefinition(PacketId.TournamentCountdown,
+                New UInt32Jar("unknown").Weaken,
+                New UInt32Jar("time left").Weaken)
+        Public Shared ReadOnly GameEnd As New SimpleDefinition(PacketId.GameEnd)
+        Public Shared ReadOnly EncryptedServerMeleeData As New SimpleDefinition(PacketId.EncryptedServerMeleeData,
+                New RemainingDataJar("encrypted data").Weaken)
+        Public Shared ReadOnly EncryptedClientMeleeData As New SimpleDefinition(PacketId.EncryptedClientMeleeData,
+                New RemainingDataJar("encrypted data").Weaken)
     End Class
 End Namespace

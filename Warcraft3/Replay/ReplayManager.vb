@@ -57,9 +57,8 @@
             'Choose location
             Dim folder = GetDataFolderPath("Replays")
             If defaultFileName Is Nothing Then
-                defaultFileName = "{0} @ {1}, {2}".Frmt(game.Settings.GameDescription.Name,
-                                                        game.Map.Name,
-                                                        (From p In players Select New String(CType(p.Name, Char()).Take(5).ToArray)).StringJoin(" "))
+                defaultFileName = "{0}, {1}".Frmt(game.Settings.GameDescription.Name,
+                                                  DateTime.Now().ToString("MMM d, yyyy, H:mm:ss tt"))
             End If
 
             'Strip invalid characters

@@ -640,7 +640,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerDialogButtonClickedTest()
-        JarTest(GameActions.TriggerDialogButtonClicked,
+        JarTest(GameActions.DialogAnyButtonClicked,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        4, 0, 0, 0, 5, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -650,7 +650,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerDialogButtonClicked2Test()
-        JarTest(GameActions.TriggerDialogButtonClicked2,
+        JarTest(GameActions.DialogButtonClicked,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        4, 0, 0, 0, 5, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {

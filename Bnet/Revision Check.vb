@@ -65,6 +65,7 @@ Namespace Bnet
         ''' <summary>
         ''' Fills a buffer with data from a stream.
         ''' Any remaining space in the buffer is filled with generated data.
+        ''' Returns false if there was no data in the stream.
         ''' </summary>
         Private Function PaddedRead(ByVal stream As IO.Stream, ByVal buffer As Byte()) As Boolean
             Contract.Requires(stream IsNot Nothing)
@@ -77,9 +78,14 @@ Namespace Bnet
             Return True
         End Function
 
+        '''<summary>Combines two expressions into a binary expression, using the given operator character to determine the operation.</summary>
         Private Function ParseOperation(ByVal varLeft As Expression,
                                         ByVal [operator] As Char,
                                         ByVal varRight As Expression) As BinaryExpression
+            Contract.Requires(varLeft IsNot Nothing)
+            Contract.Requires(varRight IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of BinaryExpression)() IsNot Nothing)
+
             Select Case [operator]
                 Case "+"c : Return Expression.Add(varLeft, varRight)
                 Case "-"c : Return Expression.Subtract(varLeft, varRight)
@@ -90,6 +96,7 @@ Namespace Bnet
                 Case Else : Throw New IO.InvalidDataException("Unrecognized revision check operator: '{0}'.".Frmt([operator]))
             End Select
         End Function
+        '''<summary>Transforms a sequence of simple text statements, such as "A=A+B", into a block of binary expressions.</summary>
         Private Function ParseStatements(ByVal statements As IEnumerable(Of String),
                                          ByVal locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
             Contract.Requires(statements IsNot Nothing)
@@ -103,6 +110,7 @@ Namespace Bnet
                                     Let operation = ParseOperation(varLeft, statement(3), varRight)
                                     Select Expression.Assign(varResult, operation))
         End Function
+        '''<summary>Transforms a sequence of simple text declarations, such as "A=52", into a block of assignment expressions.</summary>
         Private Function ParseDeclarations(ByVal declarations As IEnumerable(Of String),
                                            ByVal locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
             Contract.Requires(declarations IsNot Nothing)
@@ -114,6 +122,10 @@ Namespace Bnet
                                     Let value = UInt32.Parse(declaration.Substring(2))
                                     Select Expression.Assign(locals(name), Expression.Constant(value)))
         End Function
+        ''' <summary>
+        ''' Extracts all variable names from simple text declarations and statements.
+        ''' Also includes some default important variables.
+        ''' </summary>
         Private Function ParseVariables(ByVal declarations As IEnumerable(Of String),
                                         ByVal statements As IEnumerable(Of String)) As Dictionary(Of Char, ParameterExpression)
             Contract.Requires(declarations IsNot Nothing)
@@ -131,6 +143,7 @@ Namespace Bnet
             Return variables
         End Function
 
+        '''<summary>Generates a dynamically compiled function specialized to hashing data using the given instructions.</summary>
         Private Function CompileInstructions(ByVal challengeInstructions As String,
                                              ByVal challengeSeed As String) As Func(Of IEnumerator(Of IO.Stream), UInt32)
             Contract.Requires(challengeInstructions IsNot Nothing)
@@ -205,7 +218,7 @@ Namespace Bnet
         ''' <param name="folder">The folder containing the hash files: War3.exe, Storm.dll, Game.dll.</param>
         ''' <param name="challengeSeed">Seeds the initial hash state.</param>
         ''' <param name="challengeInstructions">Specifies initial hash state as well how the hash state is updated.</param>
-        ''' <remarks>Example input: A=443747131 B=3328179921 C=1040998290 4 A=A^S B=B-C C=C^A A=A+B</remarks>
+        ''' <remarks>Example challenge: A=443747131 B=3328179921 C=1040998290 4 A=A^S B=B-C C=C^A A=A+B</remarks>
         Public Function GenerateRevisionCheck(ByVal folder As String,
                                               ByVal challengeSeed As String,
                                               ByVal challengeInstructions As String) As UInteger

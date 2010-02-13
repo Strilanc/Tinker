@@ -6,6 +6,7 @@ Namespace WC3.Replay
         Private ReadOnly _firstBlockOffset As UInt32
         Private ReadOnly _dataSize As UInt32
         Private ReadOnly _buildNumber As UInt16
+        Private ReadOnly _gameDuration As TimeSpan
         Private ReadOnly _streamFactory As Func(Of IRandomReadableStream)
 
         <ContractInvariantMethod()> Private Shadows Sub ObjectInvariant()
@@ -16,13 +17,15 @@ Namespace WC3.Replay
                        ByVal blockCount As UInt32,
                        ByVal firstBlockOffset As UInt32,
                        ByVal dataDecompressedSize As UInt32,
-                       ByVal buildNumber As UInt16)
+                       ByVal buildNumber As UInt16,
+                       ByVal gameDurationMilliseconds As UInt32)
             Contract.Requires(streamFactory IsNot Nothing)
             Me._streamFactory = streamFactory
             Me._firstBlockOffset = firstBlockOffset
             Me._dataSize = dataDecompressedSize
             Me._blockCount = blockCount
             Me._buildNumber = buildNumber
+            Me._gameDuration = gameDurationMilliseconds.Milliseconds
         End Sub
 
         Public Shared Function FromFile(ByVal path As String) As ReplayReader
@@ -48,7 +51,7 @@ Namespace WC3.Replay
                 Dim wc3Version = stream.ReadUInt32()
                 Dim wc3ReplayBuildNumber = stream.ReadUInt16()
                 Dim flags = stream.ReadUInt16()
-                Dim lengthInMilliseconds = stream.ReadUInt32()
+                Dim gameDurationMilliseconds = stream.ReadUInt32()
                 Dim headerCRC32 = stream.ReadUInt32()
                 Contract.Assume(stream.Position = Format.HeaderSize)
 
@@ -66,13 +69,19 @@ Namespace WC3.Replay
                                         blockCount:=blockCount,
                                         firstBlockOffset:=headerSize,
                                         dataDecompressedSize:=decompressedSize,
-                                        BuildNumber:=wc3ReplayBuildNumber)
+                                        BuildNumber:=wc3ReplayBuildNumber,
+                                        gameDurationMilliseconds:=gameDurationMilliseconds)
             End Using
         End Function
 
         Public ReadOnly Property BuildNumber As UInt16
             Get
                 Return _buildNumber
+            End Get
+        End Property
+        Public ReadOnly Property GameDuration As TimeSpan
+            Get
+                Return _gameDuration
             End Get
         End Property
 

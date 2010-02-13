@@ -342,7 +342,6 @@
                 End If
             End If
             If settings.Greeting <> "" Then
-                Logger.Log("Greeted {0}".Frmt(newPlayer.Name), LogMessageType.Positive)
                 SendMessageTo(message:=settings.Greeting, player:=newPlayer, display:=False)
             End If
 

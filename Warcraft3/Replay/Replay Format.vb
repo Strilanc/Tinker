@@ -19,13 +19,13 @@ Namespace WC3.Replay
     <DebuggerDisplay("{ToString}")>
     Public Class ReplayEntry
         Private _id As ReplayEntryId
-        Private _payload As Object
+        Private _payload As IPickle(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal id As ReplayEntryId, ByVal payload As Object)
+        Public Sub New(ByVal id As ReplayEntryId, ByVal payload As IPickle(Of Object))
             Contract.Requires(payload IsNot Nothing)
             Me._id = id
             Me._payload = payload
@@ -36,9 +36,9 @@ Namespace WC3.Replay
                 Return _id
             End Get
         End Property
-        Public ReadOnly Property Payload As Object
+        Public ReadOnly Property Payload As IPickle(Of Object)
             Get
-                Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
                 Return _payload
             End Get
         End Property

@@ -294,7 +294,7 @@
     <Compile Include="Warcraft3\Player\W3PlayerPart.vb" />
     <Compile Include="Warcraft3\Server\GameSet.vb" />
     <Compile Include="Warcraft3\Server\GameSettings.vb" />
-    <Compile Include="Warcraft3\Protocol\W3GameStatsJar.vb" />
+    <Compile Include="Warcraft3\Protocol\GameStatsJar.vb" />
     <Compile Include="Library\KeyedEvent.vb" />
     <Compile Include="Warcraft3\Pinger.vb" />
     <Compile Include="Warcraft3\Protocol\GameAction.vb" />

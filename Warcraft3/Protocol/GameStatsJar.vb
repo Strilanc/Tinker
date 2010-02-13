@@ -32,7 +32,7 @@ Namespace WC3.Protocol
                     New ByteJar("unknown1").Weaken,
                     New UInt16Jar("playable width").Weaken,
                     New UInt16Jar("playable height").Weaken,
-                    New UInt32Jar("xoro checksum").Weaken,
+                    New UInt32Jar("xoro checksum", showHex:=True).Weaken,
                     New NullTerminatedStringJar("relative path").Weaken,
                     New NullTerminatedStringJar("host name").Weaken,
                     New NullTerminatedStringJar("unknown2").Weaken,
