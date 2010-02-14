@@ -11,6 +11,7 @@
             Contract.Invariant(_index < 12)
         End Sub
 
+        <CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2233:OperationsShouldNotOverflow", MessageId:="index-1")>
         Public Sub New(ByVal index As Byte)
             Contract.Requires(index > 0)
             Contract.Requires(index <= 12)

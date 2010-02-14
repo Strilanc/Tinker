@@ -19,8 +19,9 @@ Partial Class SettingsForm
     'Do not modify it using the code editor.
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
+        Me.components = New System.ComponentModel.Container()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(SettingsForm))
-        Me.tipNormal = New System.Windows.Forms.ToolTip()
+        Me.tipNormal = New System.Windows.Forms.ToolTip(Me.components)
         Me.txtMapPath = New System.Windows.Forms.TextBox()
         Me.txtProgramPath = New System.Windows.Forms.TextBox()
         Me.txtCdKeyOwner = New System.Windows.Forms.TextBox()
@@ -33,8 +34,12 @@ Partial Class SettingsForm
         Me.txtPortPool = New System.Windows.Forms.TextBox()
         Me.txtBnlsServer = New System.Windows.Forms.TextBox()
         Me.txtGreeting = New System.Windows.Forms.TextBox()
+        Me.numReplayBuildNumber = New System.Windows.Forms.NumericUpDown()
         Me.tabsSettings = New System.Windows.Forms.TabControl()
         Me.tabGlobalSettings = New System.Windows.Forms.TabPage()
+        Me.lblReplayBuildNumber = New System.Windows.Forms.Label()
+        Me.btnLoadReplayBuildNumber = New System.Windows.Forms.Button()
+        Me.Label4 = New System.Windows.Forms.Label()
         Me.lblWar3FolderPathError = New System.Windows.Forms.Label()
         Me.lblGreeting = New System.Windows.Forms.Label()
         Me.lblBnlsServer = New System.Windows.Forms.Label()
@@ -62,13 +67,13 @@ Partial Class SettingsForm
         Me.btnSave = New System.Windows.Forms.Button()
         Me.btnUserHelp = New System.Windows.Forms.Button()
         Me.OpenFileDialog = New System.Windows.Forms.OpenFileDialog()
-        Me.numReplayBuildNumber = New System.Windows.Forms.NumericUpDown()
-        Me.Label4 = New System.Windows.Forms.Label()
-        Me.btnLoadReplayBuildNumber = New System.Windows.Forms.Button()
-        Me.lblReplayBuildNumber = New System.Windows.Forms.Label()
+        CType(Me.numTickPeriod, System.ComponentModel.ISupportInitialize).BeginInit()
+        CType(Me.numLagLimit, System.ComponentModel.ISupportInitialize).BeginInit()
+        CType(Me.numReplayBuildNumber, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.tabsSettings.SuspendLayout()
         Me.tabGlobalSettings.SuspendLayout()
         Me.tabPlugins.SuspendLayout()
+        CType(Me.gridPlugins, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.tabNewProfile.SuspendLayout()
         Me.SuspendLayout()
         '
@@ -195,6 +200,16 @@ Partial Class SettingsForm
         Me.tipNormal.SetToolTip(Me.txtGreeting, "The text sent to players as they join a game." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Leave blank for no greeting." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Line" & _
                 "s longer than 220 characters will be split.")
         '
+        'numReplayBuildNumber
+        '
+        Me.numReplayBuildNumber.Location = New System.Drawing.Point(232, 215)
+        Me.numReplayBuildNumber.Maximum = New Decimal(New Integer() {65535, 0, 0, 0})
+        Me.numReplayBuildNumber.Name = "numReplayBuildNumber"
+        Me.numReplayBuildNumber.Size = New System.Drawing.Size(119, 20)
+        Me.numReplayBuildNumber.TabIndex = 65
+        Me.tipNormal.SetToolTip(Me.numReplayBuildNumber, "The build number used in replay files." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Used by warcraft to determine if the repl" & _
+                "ay is compatible with the current version.")
+        '
         'tabsSettings
         '
         Me.tabsSettings.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
@@ -243,6 +258,37 @@ Partial Class SettingsForm
         Me.tabGlobalSettings.TabIndex = 3
         Me.tabGlobalSettings.Text = "Global"
         Me.tabGlobalSettings.UseVisualStyleBackColor = True
+        '
+        'lblReplayBuildNumber
+        '
+        Me.lblReplayBuildNumber.AutoSize = True
+        Me.lblReplayBuildNumber.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.lblReplayBuildNumber.ForeColor = System.Drawing.Color.Red
+        Me.lblReplayBuildNumber.Location = New System.Drawing.Point(352, 198)
+        Me.lblReplayBuildNumber.Name = "lblReplayBuildNumber"
+        Me.lblReplayBuildNumber.Size = New System.Drawing.Size(64, 13)
+        Me.lblReplayBuildNumber.TabIndex = 68
+        Me.lblReplayBuildNumber.Text = "Default: #"
+        Me.lblReplayBuildNumber.Visible = False
+        '
+        'btnLoadReplayBuildNumber
+        '
+        Me.btnLoadReplayBuildNumber.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.btnLoadReplayBuildNumber.Location = New System.Drawing.Point(355, 213)
+        Me.btnLoadReplayBuildNumber.Name = "btnLoadReplayBuildNumber"
+        Me.btnLoadReplayBuildNumber.Size = New System.Drawing.Size(97, 21)
+        Me.btnLoadReplayBuildNumber.TabIndex = 67
+        Me.btnLoadReplayBuildNumber.Text = "From Replay ..."
+        Me.btnLoadReplayBuildNumber.UseVisualStyleBackColor = True
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(229, 199)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(106, 13)
+        Me.Label4.TabIndex = 66
+        Me.Label4.Text = "Replay Build Number"
         '
         'lblWar3FolderPathError
         '
@@ -498,47 +544,6 @@ Partial Class SettingsForm
         '
         Me.OpenFileDialog.Title = "Select Plugin"
         '
-        'numReplayBuildNumber
-        '
-        Me.numReplayBuildNumber.Location = New System.Drawing.Point(232, 215)
-        Me.numReplayBuildNumber.Maximum = New Decimal(New Integer() {65535, 0, 0, 0})
-        Me.numReplayBuildNumber.Name = "numReplayBuildNumber"
-        Me.numReplayBuildNumber.Size = New System.Drawing.Size(119, 20)
-        Me.numReplayBuildNumber.TabIndex = 65
-        Me.tipNormal.SetToolTip(Me.numReplayBuildNumber, "The build number used in replay files." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Used by warcraft to determine if the repl" & _
-                "ay is compatible with the current version.")
-        '
-        'Label4
-        '
-        Me.Label4.AutoSize = True
-        Me.Label4.Location = New System.Drawing.Point(229, 199)
-        Me.Label4.Name = "Label4"
-        Me.Label4.Size = New System.Drawing.Size(106, 13)
-        Me.Label4.TabIndex = 66
-        Me.Label4.Text = "Replay Build Number"
-        '
-        'btnLoadReplayBuildNumber
-        '
-        Me.btnLoadReplayBuildNumber.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.btnLoadReplayBuildNumber.Location = New System.Drawing.Point(355, 213)
-        Me.btnLoadReplayBuildNumber.Name = "btnLoadReplayBuildNumber"
-        Me.btnLoadReplayBuildNumber.Size = New System.Drawing.Size(97, 21)
-        Me.btnLoadReplayBuildNumber.TabIndex = 67
-        Me.btnLoadReplayBuildNumber.Text = "From Replay ..."
-        Me.btnLoadReplayBuildNumber.UseVisualStyleBackColor = True
-        '
-        'lblReplayBuildNumber
-        '
-        Me.lblReplayBuildNumber.AutoSize = True
-        Me.lblReplayBuildNumber.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-        Me.lblReplayBuildNumber.ForeColor = System.Drawing.Color.Red
-        Me.lblReplayBuildNumber.Location = New System.Drawing.Point(352, 198)
-        Me.lblReplayBuildNumber.Name = "lblReplayBuildNumber"
-        Me.lblReplayBuildNumber.Size = New System.Drawing.Size(64, 13)
-        Me.lblReplayBuildNumber.TabIndex = 68
-        Me.lblReplayBuildNumber.Text = "Default: #"
-        Me.lblReplayBuildNumber.Visible = False
-        '
         'SettingsForm
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
@@ -553,11 +558,15 @@ Partial Class SettingsForm
         Me.Name = "SettingsForm"
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent
         Me.Text = "Settings"
+        CType(Me.numTickPeriod, System.ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.numLagLimit, System.ComponentModel.ISupportInitialize).EndInit()
+        CType(Me.numReplayBuildNumber, System.ComponentModel.ISupportInitialize).EndInit()
         Me.tabsSettings.ResumeLayout(False)
         Me.tabGlobalSettings.ResumeLayout(False)
         Me.tabGlobalSettings.PerformLayout()
         Me.tabPlugins.ResumeLayout(False)
         Me.tabPlugins.PerformLayout()
+        CType(Me.gridPlugins, System.ComponentModel.ISupportInitialize).EndInit()
         Me.tabNewProfile.ResumeLayout(False)
         Me.tabNewProfile.PerformLayout()
         Me.ResumeLayout(False)

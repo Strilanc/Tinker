@@ -139,7 +139,7 @@ Example: 6113, 6115-6116</value>
   </data>
   <data name="txtBnlsServer.ToolTip" xml:space="preserve">
     <value>The address:port of a BNLS server which supports warden responses (e.g. example.com:9999).
-The server is not given your username, password, or CD Keys.
+The server is not given your user name, password, or CD Keys.
 However, if the server accidentally or purposefully returns incorrect responses, bnet will think you are cheating.</value>
   </data>
   <metadata name="colName.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">

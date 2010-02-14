@@ -33,7 +33,7 @@ Namespace WC3.Replay
                        ByVal wc3BuildNumber As UInt16,
                        ByVal host As Player,
                        ByVal players As IEnumerable(Of Player),
-                       ByVal gameDesc As GameDescription,
+                       ByVal gameDescription As GameDescription,
                        ByVal map As Map,
                        ByVal slots As IEnumerable(Of Slot),
                        ByVal randomSeed As UInt32,
@@ -41,14 +41,14 @@ Namespace WC3.Replay
             Contract.Requires(stream IsNot Nothing)
             Contract.Requires(host IsNot Nothing)
             Contract.Requires(players IsNot Nothing)
-            Contract.Requires(gameDesc IsNot Nothing)
+            Contract.Requires(gameDescription IsNot Nothing)
 
             Me._stream = stream
             Me._startPosition = stream.Position
             Me._wc3Version = wc3Version
             Me._wc3BuildNumber = wc3BuildNumber
 
-            Start(host, players, gameDesc, language, map, slots, randomSeed)
+            Start(host, players, gameDescription, language, map, slots, randomSeed)
         End Sub
 
         Private Sub Start(ByVal host As Player,

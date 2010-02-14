@@ -81,8 +81,11 @@ Namespace WC3
                             Dim pickle = ProcessConnectingPlayer(socket, packetData)
                             logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
                             logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description.Value), LogMessageType.DataParsed)
-                        Catch e As Exception
-                            socket.Disconnect(expected:=False, reason:=e.Message)
+                        Catch ex As Exception When TypeOf ex Is Net.Sockets.SocketException OrElse
+                                                   TypeOf ex Is PicklingException OrElse
+                                                   TypeOf ex Is IO.IOException OrElse
+                                                   TypeOf ex Is IO.InvalidDataException
+                            socket.Disconnect(expected:=False, reason:=ex.Message)
                         End Try
                     End Sub
                 )
@@ -93,8 +96,8 @@ Namespace WC3
                         socket.Disconnect(expected:=False, reason:="Idle")
                     End Sub
                 )
-            Catch e As Exception
-                logger.Log("Error accepting connection: {0}".Frmt(e.Message), LogMessageType.Problem)
+            Catch ex As Exception
+                logger.Log("Error accepting connection: {0}".Frmt(ex.Message), LogMessageType.Problem)
             End Try
         End Sub
 

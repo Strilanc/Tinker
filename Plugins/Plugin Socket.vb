@@ -11,6 +11,7 @@ Namespace Plugins
             Contract.Invariant(_plugin IsNot Nothing)
         End Sub
 
+        <CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId:="System.Reflection.Assembly.LoadFrom")>
         Public Sub New(ByVal name As InvariantString,
                        ByVal bot As Bot.MainBot,
                        ByVal assemblyPath As String)

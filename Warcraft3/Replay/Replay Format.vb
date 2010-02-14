@@ -48,7 +48,7 @@ Namespace WC3.Replay
         End Function
     End Class
 
-    Public Class Format
+    Public NotInheritable Class Format
         Private Sub New()
         End Sub
 

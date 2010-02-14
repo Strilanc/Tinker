@@ -58,7 +58,7 @@
             Dim folder = GetDataFolderPath("Replays")
             If defaultFileName Is Nothing Then
                 defaultFileName = "{0}, {1}".Frmt(game.Settings.GameDescription.Name,
-                                                  DateTime.Now().ToString("MMM d, yyyy, H:mm:ss tt"))
+                                                  DateTime.Now().ToString("MMM d, yyyy, H:mm:ss tt", CultureInfo.InvariantCulture))
             End If
 
             'Strip invalid characters
@@ -82,7 +82,7 @@
                                                  wc3BuildNumber:=My.Settings.ReplayBuildNumber,
                                                  host:=players.First.AssumeNotNull,
                                                  players:=players.Skip(1),
-                                                 gameDesc:=game.Settings.GameDescription,
+                                                 gameDescription:=game.Settings.GameDescription,
                                                  Map:=game.Map,
                                                  slots:=slots,
                                                  randomSeed:=randomSeed)

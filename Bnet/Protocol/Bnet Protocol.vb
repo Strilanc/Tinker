@@ -197,6 +197,7 @@ Namespace Bnet.Protocol
         ForcedJoin = 2
         Diablo2Join = 3
     End Enum
+    <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1027:MarkEnumsWithFlags")>
     Public Enum QueryGameResponse As UInteger
         Ok = 0
         NotFound = 1

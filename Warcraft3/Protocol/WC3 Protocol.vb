@@ -253,6 +253,7 @@ Namespace WC3.Protocol
         SetHandicap = &H14
         GameChat = &H20
     End Enum
+    <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1027:MarkEnumsWithFlags")>
     Public Enum ChatType As Byte
         Lobby = &H10
         Game = &H20
@@ -260,6 +261,7 @@ Namespace WC3.Protocol
     ''' <remarks>
     ''' It appears that anything larger than 2 is considered 'Private', but wc3 does send different codes for each player.
     ''' </remarks>
+    <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1027:MarkEnumsWithFlags")>
     Public Enum ChatReceiverType As UInt32
         AllPlayers = 0
         Allies = 1

@@ -121,7 +121,7 @@ Namespace Bnet
 
             Return Expression.Block(From declaration In declarations
                                     Let name = declaration(0)
-                                    Let value = UInt32.Parse(declaration.Substring(2))
+                                    Let value = UInt32.Parse(declaration.Substring(2), CultureInfo.InvariantCulture)
                                     Select Expression.Assign(locals(name), Expression.Constant(value)))
         End Function
         ''' <summary>
@@ -157,7 +157,7 @@ Namespace Bnet
             Dim lines = challengeInstructions.Split(" "c)
             Dim declarations = From line In lines Where line Like "?=#*"
             Dim statements = From line In lines Where line Like "?=???"
-            Dim statementCount = UInt32.Parse((From line In lines Where line Like "#").First)
+            Dim statementCount = UInt32.Parse((From line In lines Where line Like "#").First, CultureInfo.InvariantCulture)
 
             'Check
             If statements.Count <> statementCount Then Throw New ArgumentException("Statement count didn't match number of statements.")
