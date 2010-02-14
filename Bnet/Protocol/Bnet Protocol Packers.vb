@@ -40,7 +40,7 @@ Namespace Bnet.Protocol
                                                  ByVal clientCDKeySalt As UInt32,
                                                  ByVal cdKeyOwner As String,
                                                  ByVal exeInformation As String,
-                                                 ByVal productAuthentication As CKL.WC3CredentialPair) As Packet
+                                                 ByVal productAuthentication As ProductCredentialPair) As Packet
             Contract.Requires(version IsNot Nothing)
             Contract.Requires(cdKeyOwner IsNot Nothing)
             Contract.Requires(exeInformation IsNot Nothing)

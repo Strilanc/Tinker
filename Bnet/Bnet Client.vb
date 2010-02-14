@@ -46,6 +46,7 @@ Namespace Bnet
         Private ReadOnly _externalProvider As IExternalValues
         Private ReadOnly _clock As IClock
         Private ReadOnly _profile As Bot.ClientProfile
+        Private ReadOnly _productAuthenticator As IProductAuthenticator
         Private ReadOnly _logger As Logger
         Private ReadOnly _packetHandler As Protocol.BnetPacketHandler
         Private _socket As PacketSocket
@@ -79,6 +80,7 @@ Namespace Bnet
             Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_profile IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
+            Contract.Invariant(_productAuthenticator IsNot Nothing)
             Contract.Invariant(_futureLoggedIn IsNot Nothing)
             Contract.Invariant(_futureConnected IsNot Nothing)
             Contract.Invariant(_futureAdvertisedGame IsNot Nothing)
@@ -91,11 +93,13 @@ Namespace Bnet
 
         Public Sub New(ByVal profile As Bot.ClientProfile,
                        ByVal externalProvider As IExternalValues,
+                       ByVal productAuthenticator As IProductAuthenticator,
                        ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(profile IsNot Nothing)
             Contract.Assume(externalProvider IsNot Nothing)
             Contract.Assume(clock IsNot Nothing)
+            Contract.Assume(productAuthenticator IsNot Nothing)
             Me._futureConnected.SetHandled()
             Me._futureLoggedIn.SetHandled()
             Me._futureAdvertisedGame.SetHandled()
@@ -107,6 +111,7 @@ Namespace Bnet
             Me._logger = If(logger, New Logger)
             Me.outQueue = New TaskedCallQueue
             Me.inQueue = New TaskedCallQueue
+            Me._productAuthenticator = productAuthenticator
 
             'Start packet machinery
             Me._packetHandler = New Protocol.BnetPacketHandler("BNET", Me._logger)
@@ -622,10 +627,10 @@ Namespace Bnet
 
             'Async Enter Keys
             ChangeState(ClientState.EnterCDKeys)
-            AsyncRetrieveKeys(clientCdKeySalt, serverCdKeySalt).QueueCallOnValueSuccess(inQueue,
+            _productAuthenticator.AsyncAuthenticate(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).QueueCallOnValueSuccess(inQueue,
                 Sub(keys) EnterKeys(keys:=keys,
-                                    revisionCheckSeedString:=CStr(vals("revision check seed")),
-                                    revisionCheckChallenge:=CStr(vals("revision check challenge")),
+                                    revisionCheckSeed:=CStr(vals("revision check seed")),
+                                    revisionCheckInstructions:=CStr(vals("revision check challenge")),
                                     clientCdKeySalt:=clientCdKeySalt)
             ).Catch(
                 Sub(exception)
@@ -634,34 +639,22 @@ Namespace Bnet
                 End Sub
             )
         End Sub
-        Private Function AsyncRetrieveKeys(ByVal clientCdKeySalt As UInt32, ByVal serverCdKeySalt As UInt32) As IFuture(Of CKL.WC3CredentialPair)
-            If Profile.CKLServerAddress Like "*:#*" Then
-                Dim remoteHost = Profile.CKLServerAddress.Split(":"c)(0)
-                Dim port = UShort.Parse(Profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
-                Dim result = CKL.Client.AsyncBorrowCredentials(remoteHost, port, clientCdKeySalt, serverCdKeySalt, _clock)
-                result.CallOnSuccess(Sub() Logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive)).SetHandled()
-                Return result
-            Else
-                Dim roc = Profile.cdKeyROC.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
-                Dim tft = Profile.cdKeyTFT.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes)
-                If roc.Product <> ProductType.Warcraft3ROC Then Throw New IO.InvalidDataException("Invalid ROC cd key.")
-                If tft.Product <> ProductType.Warcraft3TFT Then Throw New IO.InvalidDataException("Invalid TFT cd key.")
-                Return New CKL.WC3CredentialPair(roc, tft).Futurized
-            End If
-        End Function
-        Private Sub EnterKeys(ByVal keys As CKL.WC3CredentialPair,
-                              ByVal revisionCheckSeedString As String,
-                              ByVal revisionCheckChallenge As String,
+        Private Sub EnterKeys(ByVal keys As ProductCredentialPair,
+                              ByVal revisionCheckSeed As String,
+                              ByVal revisionCheckInstructions As String,
                               ByVal clientCdKeySalt As UInt32)
+            Contract.Requires(keys IsNot Nothing)
+            Contract.Requires(revisionCheckSeed IsNot Nothing)
+            Contract.Requires(revisionCheckInstructions IsNot Nothing)
             If _state <> ClientState.EnterCDKeys Then Throw New InvalidStateException("Incorrect state for entering cd keys.")
             Dim revisionCheckResponse As UInt32
             Try
                 revisionCheckResponse = _externalProvider.GenerateRevisionCheck(
                     folder:=My.Settings.war3path,
-                    challengeSeed:=revisionCheckSeedString,
-                    challengeInstructions:=revisionCheckChallenge)
+                    challengeSeed:=revisionCheckSeed,
+                    challengeInstructions:=revisionCheckInstructions)
             Catch ex As ArgumentException
-                If revisionCheckChallenge = "" Then
+                If revisionCheckInstructions = "" Then
                     Throw New IO.InvalidDataException("Received an invalid revision check challenge from bnet. Try connecting again.")
                 End If
                 Throw New OperationCanceledException("Failed to compute revision check.", ex)

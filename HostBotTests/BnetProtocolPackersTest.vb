@@ -28,9 +28,9 @@ Public Class BnetProtocolPackersTest
                                  clientCDKeySalt:=2,
                                  cdKeyOwner:="test",
                                  exeInformation:="info",
-                                 productAuthentication:=New Tinker.CKL.WC3CredentialPair(
-                                     "EDKBRTRXG88Z9V8M84HY2XVW7N".ToWC3CDKeyCredentials(clientSalt:={1, 2, 3, 4}, serverChallenge:={1, 2, 3, 4}),
-                                     "M68YC4278JJXXVJMKRP8ETN4TC".ToWC3CDKeyCredentials(clientSalt:={1, 2, 3, 4}, serverChallenge:={1, 2, 3, 4})))
+                                 productAuthentication:=New ProductCredentialPair(
+                                     "EDKBRTRXG88Z9V8M84HY2XVW7N".ToWC3CDKeyCredentials(clientSalt:={1, 2, 3, 4}, serverSalt:={1, 2, 3, 4}),
+                                     "M68YC4278JJXXVJMKRP8ETN4TC".ToWC3CDKeyCredentials(clientSalt:={1, 2, 3, 4}, serverSalt:={1, 2, 3, 4})))
     End Sub
     <TestMethod()>
     Public Sub MakeChatCommandTest()

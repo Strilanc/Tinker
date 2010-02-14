@@ -40,10 +40,13 @@ Public Class BnetClientTest
         Dim profile = New Bot.ClientProfile("default")
         profile.userName = "Tinker"
         profile.password = "rekniT"
-        profile.cdKeyROC = "EDKBRTRXG88Z9V8M84HY2XVW7N"
-        profile.cdKeyTFT = "M68YC4278JJXXVJMKRP8ETN4TC"
+        Dim keyRoc = "EDKBRTRXG88Z9V8M84HY2XVW7N"
+        Dim keyTft = "M68YC4278JJXXVJMKRP8ETN4TC"
         Dim clock = New Strilbrary.Time.ManualClock()
-        Dim client = New Bnet.Client(profile, New TestExternalProvider(), clock)
+        Dim client = New Bnet.Client(profile,
+                                     New TestExternalProvider(),
+                                     New CDKeyProductAuthenticator(keyRoc, keyTft),
+                                     clock)
         Dim stream = New TestStream()
         Dim socket = New PacketSocket(stream,
                                       New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
@@ -91,11 +94,11 @@ Public Class BnetClientTest
         Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).Product = Bnet.ProductType.Warcraft3ROC)
         Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).Length = 26)
         Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).PublicKey = 1208212)
-        Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).AuthenticationProof.SequenceEqual(profile.cdKeyROC.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
+        Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).AuthenticationProof.SequenceEqual(keyRoc.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
         Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).Product = Bnet.ProductType.Warcraft3TFT)
         Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).Length = 26)
         Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).PublicKey = 2818526)
-        Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).AuthenticationProof.SequenceEqual(profile.cdKeyTFT.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
+        Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).AuthenticationProof.SequenceEqual(keyTft.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
 
         'program auth finish (S->C)
         stream.EnqueuedReadPacket(

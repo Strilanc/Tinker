@@ -1,25 +1,41 @@
-﻿Namespace CKL
+﻿Imports Tinker.Bnet
+
+Namespace CKL
     '''<summary>Asynchronously connects to a CKLServer and requests a response to a cd key authentication challenge from bnet.</summary>
     Public NotInheritable Class Client
-        Private Shared ReadOnly jar As New Bnet.Protocol.ProductCredentialsJar("authentication")
+        Implements IProductAuthenticator
+        Private Shared ReadOnly jar As New Protocol.ProductCredentialsJar("authentication")
 
-        Private Sub New()
+        Private ReadOnly _logger As Logger
+        Private ReadOnly _remoteHost As String
+        Private ReadOnly _remotePort As UInt16
+        Private ReadOnly _clock As IClock
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_remoteHost IsNot Nothing)
+            Contract.Invariant(_clock IsNot Nothing)
+            Contract.Invariant(_logger IsNot Nothing)
         End Sub
-        <ContractVerification(False)>
-        Public Shared Function AsyncBorrowCredentials(ByVal remoteHost As String,
-                                                      ByVal remotePort As UShort,
-                                                      ByVal clientCDKeySalt As UInt32,
-                                                      ByVal serverCDKeySalt As UInt32,
-                                                      ByVal clock As IClock) As IFuture(Of WC3CredentialPair)
-            Contract.Requires(clock IsNot Nothing)
+
+        Public Sub New(ByVal remoteHost As String,
+                       ByVal remotePort As UInt16,
+                       ByVal clock As IClock,
+                       Optional ByVal logger As Logger = Nothing)
             Contract.Requires(remoteHost IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of WC3CredentialPair))() IsNot Nothing)
-            Dim requestPacket = Concat({CKL.Server.PacketPrefixValue, CKLPacketId.Keys, 0, 0},
-                                       clientCDKeySalt.Bytes,
-                                       serverCDKeySalt.Bytes)
+            Contract.Requires(clock IsNot Nothing)
+            Me._remoteHost = remoteHost
+            Me._remotePort = remotePort
+            Me._clock = clock
+            Me._logger = If(logger, New Logger)
+        End Sub
+
+        <ContractVerification(False)>
+        Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
+                                          ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+            Dim requestPacket = Fold({New Byte() {CKL.Server.PacketPrefixValue, CKLPacketId.Keys, 0, 0}, clientSalt, serverSalt}).ToArray
 
             'Connect to CKL server and send request
-            Dim futureSocket = PacketSocket.AsyncConnect(remoteHost, remotePort, clock, timeout:=10.Seconds)
+            Dim futureSocket = PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)
             Dim futureResponse = futureSocket.Select(
                 Function(socket)
                     socket.WritePacket(requestPacket)
@@ -52,11 +68,13 @@
                                         OrElse tftAuthentication.Product <> Bnet.ProductType.Warcraft3TFT Then
                                 Throw New IO.InvalidDataException("CKL server returned invalid credentials.")
                             End If
-                            Return New WC3CredentialPair(rocAuthentication, tftAuthentication)
+                            Return New ProductCredentialPair(rocAuthentication, tftAuthentication)
                         Case Else
                             Throw New IO.InvalidDataException("Incorrect packet id in data returned from CKL server.")
                     End Select
                 End Function)
+
+            futureKeys.CallOnSuccess(Sub() _logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive))
 
             Return futureKeys
         End Function

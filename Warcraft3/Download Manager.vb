@@ -713,6 +713,7 @@ Namespace WC3
                 client.Transfer.Advance(position - client.ReportedPosition)
             End If
             If client.ReportedPosition < _game.Map.FileSize AndAlso position = _game.Map.FileSize Then
+                Contract.Assume(client.Player IsNot Nothing)
                 If client.Transfer IsNot Nothing Then
                     _game.Logger.Log("{0} finished downloading the map from {1}.".Frmt(client.Player.Name, client.Transfer.Uploader), LogMessageType.Positive)
                     client.Transfer.Dispose() '[nulls client.Transfer]

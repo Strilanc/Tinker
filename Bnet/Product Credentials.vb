@@ -63,6 +63,90 @@
         End Function
     End Class
 
+    ''' <summary>
+    ''' Precomputed pair of credentials used for answering a challenge to prove ownership of a product.
+    ''' </summary>
+    Public NotInheritable Class ProductCredentialPair
+        Private ReadOnly _authenticationROC As ProductCredentials
+        Private ReadOnly _authenticationTFT As ProductCredentials
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_authenticationROC IsNot Nothing)
+            Contract.Invariant(_authenticationTFT IsNot Nothing)
+            Contract.Invariant(_authenticationROC.Product = Bnet.ProductType.Warcraft3ROC)
+            Contract.Invariant(_authenticationTFT.Product = Bnet.ProductType.Warcraft3TFT)
+        End Sub
+
+        Public Sub New(ByVal authenticationROC As Bnet.ProductCredentials,
+                       ByVal authenticationTFT As Bnet.ProductCredentials)
+            Contract.Requires(authenticationROC IsNot Nothing)
+            Contract.Requires(authenticationTFT IsNot Nothing)
+            Contract.Requires(authenticationROC.Product = Bnet.ProductType.Warcraft3ROC)
+            Contract.Requires(authenticationTFT.Product = Bnet.ProductType.Warcraft3TFT)
+            Me._authenticationROC = authenticationROC
+            Me._authenticationTFT = authenticationTFT
+        End Sub
+
+        Public ReadOnly Property AuthenticationROC As Bnet.ProductCredentials
+            Get
+                Contract.Ensures(Contract.Result(Of Bnet.ProductCredentials)() IsNot Nothing)
+                Return _authenticationROC
+            End Get
+        End Property
+        Public ReadOnly Property AuthenticationTFT As Bnet.ProductCredentials
+            Get
+                Contract.Ensures(Contract.Result(Of Bnet.ProductCredentials)() IsNot Nothing)
+                Return _authenticationTFT
+            End Get
+        End Property
+    End Class
+
+    '''<summary>Computes credential pairs used for answering a challenge to prove ownership of a product.=</summary>
+    <ContractClass(GetType(IProductAuthenticator.ContractClass))>
+    Public Interface IProductAuthenticator
+        Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte), ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair)
+
+        <ContractClassFor(GetType(IProductAuthenticator))>
+        Class ContractClass
+            Implements IProductAuthenticator
+            Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
+                                              ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+                Contract.Requires(clientSalt IsNot Nothing)
+                Contract.Requires(serverSalt IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IFuture(Of ProductCredentialPair))() IsNot Nothing)
+                Throw New NotSupportedException()
+            End Function
+        End Class
+    End Interface
+
+    Public Class CDKeyProductAuthenticator
+        Implements IProductAuthenticator
+
+        Private ReadOnly _rocKey As String
+        Private ReadOnly _tftKey As String
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_rocKey IsNot Nothing)
+            Contract.Invariant(_tftKey IsNot Nothing)
+        End Sub
+
+        Public Sub New(ByVal rocKey As String, ByVal tftKey As String)
+            Contract.Requires(rocKey IsNot Nothing)
+            Contract.Requires(tftKey IsNot Nothing)
+            If rocKey.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Invalid ROC cd key.")
+            If tftKey.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("Invalid TFT cd key.")
+            Me._rocKey = rocKey
+            Me._tftKey = tftKey
+        End Sub
+
+        <ContractVerification(False)>
+        Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
+                                          ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+            Return New ProductCredentialPair(_rocKey.ToWC3CDKeyCredentials(clientSalt, serverSalt),
+                                             _tftKey.ToWC3CDKeyCredentials(clientSalt, serverSalt)).Futurized
+        End Function
+    End Class
+
     Public Module WC3CDKey
 #Region "Data"
         Private Const NumDigitsBase2 As Integer = 120
@@ -120,19 +204,20 @@
         <Extension()> <Pure()>
         Public Function ToWC3CDKeyCredentials(ByVal key As String,
                                               ByVal clientSalt As IEnumerable(Of Byte),
-                                              ByVal serverChallenge As IEnumerable(Of Byte)) As ProductCredentials
+                                              ByVal serverSalt As IEnumerable(Of Byte)) As ProductCredentials
             Contract.Requires(key IsNot Nothing)
             Contract.Requires(clientSalt IsNot Nothing)
-            Contract.Requires(serverChallenge IsNot Nothing)
+            Contract.Requires(serverSalt IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ProductCredentials)() IsNot Nothing)
 
-            'Map cd key characters into digits of a base 25 number
+            'Normalize key
             key = key.ToUpperInvariant.Replace("-", "").Replace(" ", "")
             If key.Length < NumDigitsBase25 Then Throw New ArgumentException("Too short", "key")
             If key.Length > NumDigitsBase25 Then Throw New ArgumentException("Too long", "key")
-            If (From c In key Where Not digitMap.ContainsKey(c)).Any Then
-                Throw New ArgumentException("Bad Char: '{0}'".Frmt((From c In key Where Not digitMap.ContainsKey(c)).First), "key")
-            End If
+            Dim badChars = From c In key Where Not digitMap.ContainsKey(c)
+            If badChars.Any Then Throw New ArgumentException("Bad Char: '{0}'".Frmt(badChars.First), "key")
+
+            'Map cd key characters into digits of a base 25 number
             Dim digits As IList(Of Byte) = (From c In key Select digitMap(c)).ToArray
 
             'Shuffle base 5 digits
@@ -171,7 +256,7 @@
                               digits(4), digits(5), digits(6), digits(7),
                               digits(0), digits(1), digits(2), digits(3)}
             Dim proof = {clientSalt,
-                         serverChallenge,
+                         serverSalt,
                          CUInt(product).Bytes,
                          publicKey.Bytes,
                          privateKey

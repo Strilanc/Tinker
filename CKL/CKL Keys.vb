@@ -48,48 +48,13 @@ Namespace CKL
 
         <Pure()>
         Public Function GenerateCredentials(ByVal clientToken As UInt32,
-                                            ByVal serverToken As UInt32) As WC3CredentialPair
-            Contract.Ensures(Contract.Result(Of WC3CredentialPair)() IsNot Nothing)
+                                            ByVal serverToken As UInt32) As ProductCredentialPair
+            Contract.Ensures(Contract.Result(Of ProductCredentialPair)() IsNot Nothing)
             Dim roc = _keyROC.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes)
             Dim tft = _keyTFT.ToWC3CDKeyCredentials(clientToken.Bytes, serverToken.Bytes)
             Contract.Assume(roc.Product = ProductType.Warcraft3ROC)
             Contract.Assume(tft.Product = ProductType.Warcraft3TFT)
-            Return New WC3CredentialPair(authenticationROC:=roc, authenticationTFT:=tft)
+            Return New ProductCredentialPair(authenticationROC:=roc, authenticationTFT:=tft)
         End Function
-    End Class
-
-    Public NotInheritable Class WC3CredentialPair
-        Private ReadOnly _authenticationROC As Bnet.ProductCredentials
-        Private ReadOnly _authenticationTFT As Bnet.ProductCredentials
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_authenticationROC IsNot Nothing)
-            Contract.Invariant(_authenticationTFT IsNot Nothing)
-            Contract.Invariant(_authenticationROC.Product = Bnet.ProductType.Warcraft3ROC)
-            Contract.Invariant(_authenticationTFT.Product = Bnet.ProductType.Warcraft3TFT)
-        End Sub
-
-        Public Sub New(ByVal authenticationROC As Bnet.ProductCredentials,
-                       ByVal authenticationTFT As Bnet.ProductCredentials)
-            Contract.Requires(authenticationROC IsNot Nothing)
-            Contract.Requires(authenticationTFT IsNot Nothing)
-            Contract.Requires(authenticationROC.Product = Bnet.ProductType.Warcraft3ROC)
-            Contract.Requires(authenticationTFT.Product = Bnet.ProductType.Warcraft3TFT)
-            Me._authenticationROC = authenticationROC
-            Me._authenticationTFT = authenticationTFT
-        End Sub
-
-        Public ReadOnly Property AuthenticationROC As Bnet.ProductCredentials
-            Get
-                Contract.Ensures(Contract.Result(Of Bnet.ProductCredentials)() IsNot Nothing)
-                Return _authenticationROC
-            End Get
-        End Property
-        Public ReadOnly Property AuthenticationTFT As Bnet.ProductCredentials
-            Get
-                Contract.Ensures(Contract.Result(Of Bnet.ProductCredentials)() IsNot Nothing)
-                Return _authenticationTFT
-            End Get
-        End Property
     End Class
 End Namespace

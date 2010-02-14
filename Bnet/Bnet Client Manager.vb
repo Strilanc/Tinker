@@ -136,7 +136,19 @@ Namespace Bnet
 
             Dim profile = (From p In bot.Settings.ClientProfiles Where p.name = profileName).FirstOrDefault
             If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
-            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues, New SystemClock())).Futurized
+            Dim clock = New SystemClock
+            Dim logger = New Logger
+
+            Dim authenticator As IProductAuthenticator
+            If profile.CKLServerAddress Like "*:#*" Then
+                Dim remoteHost = profile.CKLServerAddress.Split(":"c)(0)
+                Dim port = UShort.Parse(profile.CKLServerAddress.Split(":"c)(1).AssumeNotNull, CultureInfo.InvariantCulture)
+                authenticator = New CKL.Client(remoteHost, port, clock, logger)
+            Else
+                authenticator = New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
+            End If
+
+            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues, authenticator, clock, logger)).Futurized
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture

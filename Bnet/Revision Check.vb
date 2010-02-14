@@ -97,6 +97,7 @@ Namespace Bnet
             End Select
         End Function
         '''<summary>Transforms a sequence of simple text statements, such as "A=A+B", into a block of binary expressions.</summary>
+        <ContractVerification(False)>
         Private Function ParseStatements(ByVal statements As IEnumerable(Of String),
                                          ByVal locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
             Contract.Requires(statements IsNot Nothing)
@@ -111,6 +112,7 @@ Namespace Bnet
                                     Select Expression.Assign(varResult, operation))
         End Function
         '''<summary>Transforms a sequence of simple text declarations, such as "A=52", into a block of assignment expressions.</summary>
+        <ContractVerification(False)>
         Private Function ParseDeclarations(ByVal declarations As IEnumerable(Of String),
                                            ByVal locals As Dictionary(Of Char, ParameterExpression)) As BlockExpression
             Contract.Requires(declarations IsNot Nothing)
@@ -144,6 +146,7 @@ Namespace Bnet
         End Function
 
         '''<summary>Generates a dynamically compiled function specialized to hashing data using the given instructions.</summary>
+        <ContractVerification(False)>
         Private Function CompileInstructions(ByVal challengeInstructions As String,
                                              ByVal challengeSeed As String) As Func(Of IEnumerator(Of IO.Stream), UInt32)
             Contract.Requires(challengeInstructions IsNot Nothing)
