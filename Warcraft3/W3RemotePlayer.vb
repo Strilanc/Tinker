@@ -151,13 +151,12 @@ Namespace WC3
                               End Sub)
         End Sub
 
-        Public Function AddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
-                                               ByVal jar As IJar(Of T),
+        Public Function AddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                ByVal handler As Func(Of IPickle(Of T), ifuture)) As IDisposable
-            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _packetHandler.AddHandler(id, Function(data) handler(jar.Parse(data)))
+            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data)))
         End Function
 
         Private Sub OnDisconnected(ByVal sender As WC3.W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles _socket.Disconnected

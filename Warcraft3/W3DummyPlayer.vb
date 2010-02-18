@@ -54,13 +54,19 @@ Namespace WC3
         End Sub
 
 #Region "Networking"
-        Private Function AddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
-                                                ByVal jar As IJar(Of T),
-                                                ByVal handler As Func(Of IPickle(Of T), ifuture)) As IDisposable
-            Contract.Requires(jar IsNot Nothing)
+        Private Function AddPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
+                                                ByVal handler As Func(Of IPickle(Of T), IFuture)) As IDisposable
+            Contract.Requires(packet IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _packetHandler.AddHandler(id, Function(data) handler(jar.Parse(data)))
+            Return _packetHandler.AddHandler(packet.Id, Function(data) handler(packet.Jar.Parse(data)))
+        End Function
+        Private Function AddQueuedPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
+                                                      ByVal handler As Action(Of IPickle(Of T))) As IDisposable
+            Contract.Requires(packet IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return AddPacketHandler(packet, Function(pickle) inQueue.QueueAction(Sub() handler(pickle)))
         End Function
 
         Public Function QueueConnect(ByVal hostName As String, ByVal port As UShort) As IFuture
@@ -83,33 +89,14 @@ Namespace WC3
                                                    logger:=Me.logger,
                                                    clock:=New SystemClock))
 
-            AddPacketHandler(id:=Protocol.PacketId.Greet,
-                             jar:=Protocol.Packets.Greet,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveGreet(pickle)))
-            AddPacketHandler(id:=Protocol.PacketId.HostMapInfo,
-                             jar:=Protocol.Packets.HostMapInfo,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveHostMapInfo(pickle)))
-            AddPacketHandler(id:=Protocol.PacketId.Ping,
-                             jar:=Protocol.Packets.Ping,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceivePing(pickle)))
-            AddPacketHandler(id:=Protocol.PacketId.HostMapInfo,
-                             jar:=Protocol.Packets.HostMapInfo,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveHostMapInfo(pickle)))
-            AddPacketHandler(id:=Protocol.PacketId.OtherPlayerJoined,
-                             jar:=Protocol.Packets.OtherPlayerJoined,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveOtherPlayerJoined(pickle)))
-            AddPacketHandler(id:=Protocol.PacketId.OtherPlayerLeft,
-                             jar:=Protocol.Packets.OtherPlayerLeft,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveOtherPlayerLeft(pickle)))
-            AddPacketHandler(id:=Protocol.PacketId.StartLoading,
-                             jar:=Protocol.Packets.StartLoading,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveStartLoading()))
-            AddPacketHandler(id:=Protocol.PacketId.Tick,
-                             jar:=Protocol.Packets.Tick,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveTick(pickle)))
-            AddPacketHandler(id:=Protocol.PacketId.MapFileData,
-                             jar:=Protocol.Packets.MapFileData,
-                             handler:=Function(pickle) inQueue.QueueAction(Sub() OnReceiveMapFileData(pickle)))
+            AddQueuedPacketHandler(Protocol.Packets.Greet, AddressOf OnReceiveGreet)
+            AddQueuedPacketHandler(Protocol.Packets.HostMapInfo, AddressOf OnReceiveHostMapInfo)
+            AddQueuedPacketHandler(Protocol.Packets.Ping, AddressOf OnReceivePing)
+            AddQueuedPacketHandler(Protocol.Packets.OtherPlayerJoined, AddressOf OnReceiveOtherPlayerJoined)
+            AddQueuedPacketHandler(Protocol.Packets.OtherPlayerLeft, AddressOf OnReceiveOtherPlayerLeft)
+            AddQueuedPacketHandler(Protocol.Packets.StartLoading, AddressOf OnReceiveStartLoading)
+            AddQueuedPacketHandler(Protocol.Packets.Tick, AddressOf OnReceiveTick)
+            AddQueuedPacketHandler(Protocol.Packets.MapFileData, AddressOf OnReceiveMapFileData)
 
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
@@ -148,14 +135,8 @@ Namespace WC3
                                     CUInt(pickle.Value("peer key")))
             otherPlayers.Add(player)
             Dim hooks = New List(Of IDisposable)
-            hooks.Add(player.AddPacketHandler(
-                            id:=Protocol.PacketId.PeerPing,
-                            jar:=Protocol.Packets.PeerPing,
-                            handler:=Function(value) inQueue.QueueAction(Sub() OnPeerReceivePeerPing(player, value))))
-            hooks.Add(player.AddPacketHandler(
-                            id:=Protocol.PacketId.MapFileData,
-                            jar:=Protocol.Packets.MapFileData,
-                            handler:=Function(value) inQueue.QueueAction(Sub() OnPeerReceiveMapFileData(player, value))))
+            hooks.Add(player.AddPacketHandler(Protocol.Packets.PeerPing, Function(value) inQueue.QueueAction(Sub() OnPeerReceivePeerPing(player, value))))
+            hooks.Add(player.AddPacketHandler(Protocol.Packets.MapFileData, Function(value) inQueue.QueueAction(Sub() OnPeerReceiveMapFileData(player, value))))
             AddHandler player.Disconnected, AddressOf OnPeerDisconnect
             hooks.Add(New DelegatedDisposable(Sub() RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect))
             _playerHooks(player) = hooks
@@ -170,7 +151,7 @@ Namespace WC3
                 _playerHooks.Remove(player)
             End If
         End Sub
-        Private Sub OnReceiveStartLoading()
+        Private Sub OnReceiveStartLoading(ByVal pickle As IPickle(Of Object))
             If mode = DummyPlayerMode.DownloadMap Then
                 Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
             ElseIf mode = DummyPlayerMode.EnterGame Then

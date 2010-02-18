@@ -8,56 +8,40 @@ Namespace WC3
         Public Event StateUpdated(ByVal sender As Player)
         Private _reportedDownloadPosition As UInt32? = Nothing
 
-        Private Function AddQueuedPacketHandler(ByVal jar As Protocol.Packets.SimpleDefinition,
-                                                ByVal handler As Action(Of IPickle(Of Dictionary(Of InvariantString, Object)))) As IDisposable
-            Contract.Requires(jar IsNot Nothing)
+        Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                           ByVal handler As Action(Of IPickle(Of T))) As IDisposable
+            Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return AddQueuedPacketHandler(jar.id, jar, handler)
-        End Function
-        Private Function AddQueuedPacketHandler(Of T)(ByVal id As Protocol.PacketId,
-                                                      ByVal jar As IJar(Of T),
-                                                      ByVal handler As Action(Of IPickle(Of T))) As IDisposable
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(handler IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            packetHandler.AddLogger(id, jar.Weaken)
-            Return packetHandler.AddHandler(id, Function(data) inQueue.QueueAction(Sub() handler(jar.Parse(data))))
+            packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar.Weaken)
+            Return packetHandler.AddHandler(packetDefinition.Id, Function(data) inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data))))
         End Function
 
-        Public Function QueueAddPacketHandler(ByVal packet As Protocol.Packets.SimpleDefinition,
-                                              ByVal handler As Func(Of IPickle(Of Dictionary(Of InvariantString, Object)), ifuture)) As IFuture(Of IDisposable)
-            Contract.Requires(packet IsNot Nothing)
+        Private Function AddRemotePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                      ByVal handler As Func(Of IPickle(Of T), IFuture)) As IDisposable
+            Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() packetHandler.AddHandler(packet.id, Function(data) handler(packet.Parse(data))))
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar.Weaken)
+            Return packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data)))
         End Function
-        Public Function QueueAddPacketHandler(ByVal id As Protocol.PacketId,
-                                              ByVal handler As Func(Of IReadableList(Of Byte), IFuture)) As IFuture(Of IDisposable)
-            Contract.Requires(handler IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() packetHandler.AddHandler(id, handler))
-        End Function
-        Public Function QueueAddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
-                                                    ByVal jar As IParseJar(Of T),
-                                                    ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable) _
+        Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                    ByVal handler As Func(Of IPickle(Of T), ifuture)) As IFuture(Of IDisposable) _
                                                     Implements IPlayerDownloadAspect.QueueAddPacketHandler
-            Return QueueAddPacketHandler(id, Function(data) handler(jar.Parse(data)))
+            Return inQueue.QueueFunc(Function() AddRemotePacketHandler(packetDefinition, handler))
         End Function
 
         <Pure()>
         <ContractVerification(False)>
         Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
-            Return Protocol.MakeOtherPlayerJoined(Name, PID, peerKey, peerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
+            Return Protocol.MakeOtherPlayerJoined(Name, PID, peerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
         End Function
 
         Private Sub LobbyStart()
             state = PlayerState.Lobby
-            AddQueuedPacketHandler(Protocol.PacketId.PeerConnectionInfo,
-                                   Protocol.Packets.PeerConnectionInfo,
-                                   handler:=AddressOf OnReceivePeerConnectionInfo)
-            AddQueuedPacketHandler(Protocol.Packets.ClientMapInfo, AddressOf OnReceiveClientMapInfo)
+            AddQueuedLocalPacketHandler(Protocol.Packets.PeerConnectionInfo, AddressOf OnReceivePeerConnectionInfo)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ClientMapInfo, AddressOf OnReceiveClientMapInfo)
         End Sub
 
         Private Sub OnReceivePeerConnectionInfo(ByVal flags As IPickle(Of UInt16))

@@ -92,20 +92,14 @@
             Me._index = index
             AddHandler socket.Disconnected, AddressOf OnSocketDisconnected
 
-            AddQueuedPacketHandler(Protocol.PacketId.Pong,
-                                   Protocol.Packets.Pong,
-                                   handler:=Function(pickle)
-                                                outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
-                                                Return pinger.QueueReceivedPong(pickle.Value)
-                                            End Function)
-            AddQueuedPacketHandler(Protocol.PacketId.NonGameAction,
-                                   Protocol.Packets.NonGameAction,
-                                   handler:=AddressOf ReceiveNonGameAction)
-            AddQueuedPacketHandler(Protocol.PacketId.Leaving,
-                                   Protocol.Packets.Leaving,
-                                   handler:=AddressOf ReceiveLeaving)
-            AddQueuedPacketHandler(Protocol.Packets.MapFileDataReceived, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(Protocol.Packets.MapFileDataProblem, AddressOf IgnorePacket)
+            AddRemotePacketHandler(Protocol.Packets.Pong, Function(pickle)
+                                                              outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
+                                                              Return pinger.QueueReceivedPong(pickle.Value)
+                                                          End Function)
+            AddQueuedLocalPacketHandler(Protocol.Packets.NonGameAction, AddressOf ReceiveNonGameAction)
+            AddQueuedLocalPacketHandler(Protocol.Packets.Leaving, AddressOf ReceiveLeaving)
+            AddQueuedLocalPacketHandler(Protocol.Packets.MapFileDataReceived, AddressOf IgnorePacket)
+            AddQueuedLocalPacketHandler(Protocol.Packets.MapFileDataProblem, AddressOf IgnorePacket)
 
             LobbyStart()
 

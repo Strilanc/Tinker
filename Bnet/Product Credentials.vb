@@ -101,7 +101,7 @@
         End Property
     End Class
 
-    '''<summary>Computes credential pairs used for answering a challenge to prove ownership of a product.=</summary>
+    '''<summary>Computes credential pairs used for answering a challenge to prove ownership of a product.</summary>
     <ContractClass(GetType(IProductAuthenticator.ContractClass))>
     Public Interface IProductAuthenticator
         Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte), ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair)

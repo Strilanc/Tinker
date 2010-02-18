@@ -38,9 +38,9 @@ Namespace WC3
 
         Public Sub GamePlayStart()
             state = PlayerState.Playing
-            AddQueuedPacketHandler(Protocol.Packets.Tock, AddressOf ReceiveTock)
-            AddQueuedPacketHandler(Protocol.Packets.RequestDropLaggers, AddressOf ReceiveRequestDropLaggers)
-            AddQueuedPacketHandler(Protocol.Packets.ClientConfirmHostLeaving, Sub() SendPacket(Protocol.MakeHostConfirmHostLeaving()))
+            AddQueuedLocalPacketHandler(Protocol.Packets.Tock, AddressOf ReceiveTock)
+            AddQueuedLocalPacketHandler(Protocol.Packets.RequestDropLaggers, AddressOf ReceiveRequestDropLaggers)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ClientConfirmHostLeaving, Sub() SendPacket(Protocol.MakeHostConfirmHostLeaving()))
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord,
@@ -58,7 +58,7 @@ Namespace WC3
             Return inQueue.QueueAction(Sub() SendTick(record, actions))
         End Function
 
-        Private Sub ReceiveRequestDropLaggers(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveRequestDropLaggers(ByVal pickle As IPickle(Of Object))
             RaiseEvent ReceivedRequestDropLaggers(Me)
         End Sub
 

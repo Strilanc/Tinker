@@ -77,7 +77,7 @@ Namespace WC3
                     End If
 
                     'Parse
-                    Dim pickle = Protocol.Packets.Knock.Parse(data.SubView(4))
+                    Dim pickle = Protocol.Packets.Knock.Jar.Parse(data.SubView(4))
                     Dim vals = pickle.Value
                     Dim player = New W3ConnectingPlayer(Name:=CStr(vals("name")).AssumeNotNull,
                                                         gameid:=CUInt(vals("game id")),

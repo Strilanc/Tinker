@@ -479,7 +479,7 @@ Namespace WC3
         End Function
 
         '''<summary>Boots players in the slot with the given index.</summary>
-        Private Sub Boot(ByVal slotQuery As InvariantString)
+        Private Sub Boot(ByVal slotQuery As InvariantString, ByVal shouldCloseEmptiedSlot As Boolean)
             Dim slot = FindMatchingSlot(slotQuery)
             If Not slot.Contents.EnumPlayers.Any Then
                 Throw New InvalidOperationException("There is no player to boot in slot '{0}'.".Frmt(slotQuery))
@@ -489,18 +489,22 @@ Namespace WC3
             If target IsNot Nothing Then
                 slot.Contents = slot.Contents.RemovePlayer(target)
                 RemovePlayer(target, True, Protocol.PlayerLeaveType.Disconnect, "Booted")
-                Return
+            Else
+                For Each player In slot.Contents.EnumPlayers
+                    Contract.Assume(player IsNot Nothing)
+                    slot.Contents = slot.Contents.RemovePlayer(player)
+                    RemovePlayer(player, True, Protocol.PlayerLeaveType.Disconnect, "Booted")
+                Next player
             End If
 
-            For Each player In slot.Contents.EnumPlayers
-                Contract.Assume(player IsNot Nothing)
-                slot.Contents = slot.Contents.RemovePlayer(player)
-                RemovePlayer(player, True, Protocol.PlayerLeaveType.Disconnect, "Booted")
-            Next player
+            If shouldCloseEmptiedSlot AndAlso slot.Contents.ContentType = SlotContentType.Empty Then
+                slot.Contents = New SlotContentsClosed(slot)
+                ChangedLobbyState()
+            End If
         End Sub
-        Public Function QueueBoot(ByVal slotQuery As InvariantString) As IFuture
+        Public Function QueueBoot(ByVal slotQuery As InvariantString, ByVal shouldCloseEmptiedSlot As Boolean) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() Boot(slotQuery))
+            Return inQueue.QueueAction(Sub() Boot(slotQuery, shouldCloseEmptiedSlot))
         End Function
 #End Region
 

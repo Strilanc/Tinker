@@ -52,8 +52,7 @@ Namespace WC3
         Inherits IFutureDisposable
         ReadOnly Property Name As InvariantString
         ReadOnly Property PID As PID
-        Function QueueAddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
-                                             ByVal jar As IParseJar(Of T),
+        Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                              ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable)
         Function MakePacketOtherPlayerJoined() As Protocol.Packet
         Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture
@@ -76,11 +75,10 @@ Namespace WC3
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public Function QueueAddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
-                                                        ByVal jar As IParseJar(Of T),
+            Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                         ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable) _
                                                         Implements IPlayerDownloadAspect.QueueAddPacketHandler
-                Contract.Requires(jar IsNot Nothing)
+                Contract.Requires(packetDefinition IsNot Nothing)
                 Contract.Requires(handler IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
                 Throw New NotSupportedException
@@ -599,11 +597,9 @@ Namespace WC3
             Contract.Requires(player IsNot Nothing)
 
             Dim playerHooks = New List(Of IFuture(Of IDisposable))() From {
-                    player.QueueAddPacketHandler(id:=Protocol.PacketId.ClientMapInfo,
-                                                 jar:=Protocol.Packets.ClientMapInfo,
+                    player.QueueAddPacketHandler(packetDefinition:=Protocol.Packets.ClientMapInfo,
                                                  handler:=Function(pickle) QueueOnReceiveClientMapInfo(player, pickle)),
-                    player.QueueAddPacketHandler(id:=Protocol.PacketId.PeerConnectionInfo,
-                                                 jar:=Protocol.Packets.PeerConnectionInfo,
+                    player.QueueAddPacketHandler(packetDefinition:=Protocol.Packets.PeerConnectionInfo,
                                                  handler:=Function(pickle) QueueOnReceivePeerConnectionInfo(player, pickle))
                 }
 

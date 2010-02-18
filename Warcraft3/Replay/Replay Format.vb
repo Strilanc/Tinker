@@ -94,7 +94,7 @@ Namespace WC3.Replay
                     New ByteJar("pid").Weaken,
                     New UInt16Jar("size").Weaken,
                     New EnumByteJar(Of WC3.Protocol.ChatType)("type").Weaken,
-                    New EnumUInt32Jar(Of WC3.Protocol.ChatReceiverType)("receiver type").Weaken,
+                    New EnumUInt32Jar(Of WC3.Protocol.ChatReceiverType)("receiver type", checkDefined:=False).Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             jar.AddPackerParser(WC3.Protocol.ChatType.Lobby, New TupleJar(ReplayEntryId.ChatMessage.ToString,
                     New ByteJar("pid").Weaken,
@@ -114,7 +114,7 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryTournamentForcedCountdown As New TupleJar(ReplayEntryId.TournamentForcedCountdown.ToString,
                 New UInt32Jar("counter state").Weaken,
                 New UInt32Jar("counter time").Weaken)
-        Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState
+        Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState.Jar
         Public Shared ReadOnly ReplayEntryTick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(ReplayEntryId.Tick.ToString,
                 New UInt16Jar("time span").Weaken,
                 New Protocol.PlayerActionSetJar("player action set").Repeated("player action sets").Weaken

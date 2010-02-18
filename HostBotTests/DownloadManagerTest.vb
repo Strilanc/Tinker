@@ -113,13 +113,15 @@ Public Class DownloadManagerTest
                 Return _pid
             End Get
         End Property
-        Private Function QueueAddPacketHandler(Of T)(ByVal id As PacketId, ByVal jar As IParseJar(Of T), ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable) Implements IPlayerDownloadAspect.QueueAddPacketHandler
+        Private Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Packets.Definition(Of T),
+                                                     ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable) _
+                                                     Implements IPlayerDownloadAspect.QueueAddPacketHandler
             SyncLock Me
-                Return _handler.AddHandler(id, Function(data)
-                                                   Dim result = handler(jar.Parse(data))
-                                                   result.Catch(Sub(ex) _failFuture.TrySetFailed(ex))
-                                                   Return result
-                                               End Function).Futurized
+                Return _handler.AddHandler(packetDefinition.Id, Function(data)
+                                                                    Dim result = handler(packetDefinition.Jar.Parse(data))
+                                                                    result.Catch(Sub(ex) _failFuture.TrySetFailed(ex))
+                                                                    Return result
+                                                                End Function).Futurized
             End SyncLock
         End Function
         Public Function QueueSendPacket(ByVal packet As Packet) As IFuture Implements IPlayerDownloadAspect.QueueSendPacket

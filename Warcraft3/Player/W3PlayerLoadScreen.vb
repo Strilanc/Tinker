@@ -7,14 +7,13 @@ Namespace WC3
         Public Sub LoadScreenStart()
             state = PlayerState.Loading
             SendPacket(Protocol.MakeStartLoading())
-            AddQueuedPacketHandler(Protocol.Packets.Ready, AddressOf ReceiveReady)
-            AddQueuedPacketHandler(Protocol.PacketId.GameAction, Protocol.Packets.GameAction, AddressOf ReceiveGameAction)
+            AddQueuedLocalPacketHandler(Protocol.Packets.Ready, AddressOf ReceiveReady)
+            AddQueuedLocalPacketHandler(Protocol.Packets.GameAction, AddressOf ReceiveGameAction)
         End Sub
 
         Public Event ReceivedReady(ByVal sender As Player)
-        Private Sub ReceiveReady(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveReady(ByVal pickle As IPickle(Of Object))
             Contract.Requires(pickle IsNot Nothing)
-            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
             Ready = True
             logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)
             'queued because otherwise the static verifier whines about invariants due to passing out 'me'

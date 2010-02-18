@@ -64,12 +64,14 @@ Namespace WC3
             Inherits TemplatedCommand(Of Game)
             Public Sub New()
                 MyBase.New(Name:="Boot",
-                           template:="Name/Color",
-                           Description:="Kicks a player from the game.")
+                           template:="Name/Color -close",
+                           Description:="Kicks a player from the game. Closes their slot if -close is specified.")
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueBoot(argument.RawValue(0)).EvalOnSuccess(Function() "Booted")
+                Dim slotQuery = argument.RawValue(0)
+                Dim shouldClose = argument.HasOptionalSwitch("close")
+                Return target.QueueBoot(slotQuery, shouldClose).EvalOnSuccess(Function() "Booted")
             End Function
         End Class
 
@@ -336,7 +338,7 @@ Namespace WC3
                 Dim argSetting As InvariantString = argument.RawValue(0)
                 Select Case argSetting
                     Case "TickPeriod"
-                        If Not isShort Or val_us < 50 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
+                        If Not isShort Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
                         target.SettingTickPeriod = val_us
                     Case "LagLimit"
                         If Not isShort Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
