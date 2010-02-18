@@ -13,10 +13,7 @@ Imports TinkerTests.PicklingTest
 Public Class WC3ProtocolTest
     <TestMethod()>
     Public Sub ClientConfirmHostLeavingTest()
-        JarTest(Packets.ClientConfirmHostLeaving.Jar,
-                equater:=Function(e1 As Object, e2 As Object) e1.GetType() = GetType(Object) AndAlso e2.GetType() = GetType(Object),
-                data:={},
-                value:=New Object())
+        EmptyJarTest(Packets.ClientConfirmHostLeaving.Jar)
     End Sub
     <TestMethod()>
     Public Sub ClientMapInfoTest()
@@ -52,10 +49,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub HostConfirmHostLeavingTest()
-        JarTest(Packets.HostConfirmHostLeaving.Jar,
-                equater:=Function(e1 As Object, e2 As Object) e1.GetType() = GetType(Object) AndAlso e2.GetType() = GetType(Object),
-                data:={},
-                value:=New Object())
+        EmptyJarTest(Packets.HostConfirmHostLeaving.Jar)
     End Sub
     <TestMethod()>
     Public Sub HostMapInfoTest()
@@ -409,10 +403,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ReadyTest()
-        JarTest(Packets.Ready.Jar,
-                equater:=Function(e1 As Object, e2 As Object) e1.GetType() = GetType(Object) AndAlso e2.GetType() = GetType(Object),
-                data:={},
-                value:=New Object())
+        EmptyJarTest(Packets.Ready.Jar)
     End Sub
     <TestMethod()>
     Public Sub RejectEntryTest()
@@ -433,10 +424,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub RequestDropLaggersTest()
-        JarTest(Packets.RequestDropLaggers.Jar,
-                equater:=Function(e1 As Object, e2 As Object) e1.GetType() = GetType(Object) AndAlso e2.GetType() = GetType(Object),
-                data:={},
-                value:=New Object())
+        EmptyJarTest(Packets.RequestDropLaggers.Jar)
     End Sub
     <TestMethod()>
     Public Sub SetDownloadSourceTest()
@@ -475,17 +463,11 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub StartCountdownTest()
-        JarTest(Packets.StartCountdown.Jar,
-                equater:=Function(e1 As Object, e2 As Object) e1.GetType() = GetType(Object) AndAlso e2.GetType() = GetType(Object),
-                data:={},
-                value:=New Object())
+        EmptyJarTest(Packets.StartCountdown.Jar)
     End Sub
     <TestMethod()>
     Public Sub StartLoadingTest()
-        JarTest(Packets.StartLoading.Jar,
-                data:={},
-                equater:=Function(e1 As Object, e2 As Object) e1.GetType() = GetType(Object) AndAlso e2.GetType() = GetType(Object),
-                value:=New Object())
+        EmptyJarTest(Packets.StartLoading.Jar)
     End Sub
     <TestMethod()>
     Public Sub TextTest()
@@ -538,8 +520,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250},
                         {"player action sets", Tuple(True, {New PlayerActionSet(New PID(1),
-                                           {GameAction.FromValue(GameActionId.CheatGold,
-                                                                 GameActions.CheatGold,
+                                           {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
                                                                      {"amount", 100},
                                                                      {"unknown", 2}})

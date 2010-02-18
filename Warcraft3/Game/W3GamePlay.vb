@@ -45,8 +45,8 @@
             outQueue.QueueAction(Sub() RaiseEvent ReceivedPlayerActions(Me, sender, actions))
 
             '[async lag -wait command detection]
-            If (From action In actions Where action.id = Protocol.GameActionId.GameCacheSyncInteger
-                                       Select vals = CType(action.Payload.Value, Dictionary(Of InvariantString, Object))
+            If (From action In actions Where action.Id = Protocol.GameActionId.GameCacheSyncInteger
+                                       Select vals = CType(action.Payload, Pickling.IPickle(Of Dictionary(Of InvariantString, Object))).Value
                                        Where CStr(vals("filename")) = "HostBot.AsyncLag" AndAlso CStr(vals("mission key")) = "wait").Any Then
                 _asyncWaitTriggered = True
             End If

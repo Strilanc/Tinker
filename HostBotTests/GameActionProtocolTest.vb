@@ -12,7 +12,7 @@ Imports TinkerTests.PicklingTest
 Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub AssignGroupHotkeyTest()
-        JarTest(GameActions.AssignGroupHotkey,
+        JarTest(GameActions.AssignGroupHotkey.Jar,
                 data:={1,
                        1, 0,
                        1, 0, 0, 0, 2, 0, 0, 0},
@@ -23,15 +23,13 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CancelHeroReviveTest()
-        JarTest(GameActions.CancelHeroRevive,
+        JarTest(GameActions.CancelHeroRevive.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"target", New GameObjectId(2, 3)}
-                    })
+                value:=New GameObjectId(2, 3))
     End Sub
     <TestMethod()>
     Public Sub ChangeAllyOptionsTest()
-        JarTest(GameActions.ChangeAllyOptions,
+        JarTest(GameActions.ChangeAllyOptions.Jar,
                 data:={1,
                        1 << 5, 1 << (10 - 8), 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -41,7 +39,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ChangeSelectionTest()
-        JarTest(GameActions.ChangeSelection,
+        JarTest(GameActions.ChangeSelection.Jar,
                 data:={2,
                        1, 0,
                        1, 0, 0, 0, 2, 0, 0, 0},
@@ -52,43 +50,31 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatDisableTechRequirementsTest()
-        JarTest(GameActions.CheatDisableTechRequirements,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatDisableTechRequirements.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatDisableVictoryConditionsTest()
-        JarTest(GameActions.CheatDisableVictoryConditions,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatDisableVictoryConditions.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatEnableResearchTest()
-        JarTest(GameActions.CheatEnableResearch,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatEnableResearch.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatFastCooldownTest()
-        JarTest(GameActions.CheatFastCooldown,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatFastCooldown.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatFastDeathDecayTest()
-        JarTest(GameActions.CheatFastDeathDecay,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatFastDeathDecay.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatGodModeTest()
-        JarTest(GameActions.CheatGodMode,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatGodMode.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatGoldTest()
-        JarTest(GameActions.CheatGold,
+        JarTest(GameActions.CheatGold.Jar,
                 data:={0,
                        100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -98,7 +84,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatGoldAndLumberTest()
-        JarTest(GameActions.CheatGoldAndLumber,
+        JarTest(GameActions.CheatGoldAndLumber.Jar,
                 data:={0,
                        100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -108,19 +94,15 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatInstantDefeatTest()
-        JarTest(GameActions.CheatInstantDefeat,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatInstantDefeat.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatInstantVictoryTest()
-        JarTest(GameActions.CheatInstantVictory,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatInstantVictory.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatLumberTest()
-        JarTest(GameActions.CheatLumber,
+        JarTest(GameActions.CheatLumber.Jar,
                 data:={0,
                        100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -130,57 +112,41 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatNoDefeatTest()
-        JarTest(GameActions.CheatNoDefeat,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatNoDefeat.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatNoFoodLimitTest()
-        JarTest(GameActions.CheatNoFoodLimit,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatNoFoodLimit.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatRemoveFogOfWarTest()
-        JarTest(GameActions.CheatRemoveFogOfWar,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatRemoveFogOfWar.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatResearchUpgradesTest()
-        JarTest(GameActions.CheatResearchUpgrades,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatResearchUpgrades.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatSetTimeOfDayTest()
-        JarTest(GameActions.CheatSetTimeOfDay,
+        JarTest(GameActions.CheatSetTimeOfDay.Jar,
                 data:=BitConverter.GetBytes(CSng(12.0)),
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"time", CSng(12.0)}
-                    })
+                value:=CSng(12.0))
     End Sub
     <TestMethod()>
     Public Sub CheatSpeedConstructionTest()
-        JarTest(GameActions.CheatSpeedConstruction,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatSpeedConstruction.Jar)
     End Sub
     <TestMethod()>
     Public Sub CheatUnlimitedManaTest()
-        JarTest(GameActions.CheatUnlimitedMana,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.CheatUnlimitedMana.Jar)
     End Sub
     <TestMethod()>
     Public Sub DecreaseGameSpeedTest()
-        JarTest(GameActions.DecreaseGameSpeed,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.DecreaseGameSpeed.Jar)
     End Sub
     <TestMethod()>
     Public Sub DequeueBuildingOrderTest()
-        JarTest(GameActions.DequeueBuildingOrder,
+        JarTest(GameActions.DequeueBuildingOrder.Jar,
                 data:={1,
                        &HFE, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -190,7 +156,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub DropOrGiveItemTest()
-        JarTest(GameActions.DropOrGiveItem,
+        JarTest(GameActions.DropOrGiveItem.Jar,
                 data:=New Byte() _
                       {1, 0,
                        3, 0, &HD, 0,
@@ -211,19 +177,15 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub EnterChooseBuildingSubmenuTest()
-        JarTest(GameActions.EnterChooseBuildingSubmenu,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.EnterChooseBuildingSubmenu.Jar)
     End Sub
     <TestMethod()>
     Public Sub EnterChooseHeroSkillSubmenuTest()
-        JarTest(GameActions.EnterChooseHeroSkillSubmenu,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.EnterChooseHeroSkillSubmenu.Jar)
     End Sub
     <TestMethod()>
     Public Sub FogObjectOrderTest()
-        JarTest(GameActions.FogObjectOrder,
+        JarTest(GameActions.FogObjectOrder.Jar,
                 data:=New Byte() _
                       {1, 0,
                        3, 0, &HD, 0,
@@ -250,7 +212,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncBooleanTest()
-        JarTest(GameActions.GameCacheSyncBoolean,
+        JarTest(GameActions.GameCacheSyncBoolean.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
                        116, 101, 115, 0,
@@ -264,7 +226,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncIntegerTest()
-        JarTest(GameActions.GameCacheSyncInteger,
+        JarTest(GameActions.GameCacheSyncInteger.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
                        116, 101, 115, 0,
@@ -278,7 +240,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncRealTest()
-        JarTest(GameActions.GameCacheSyncReal,
+        JarTest(GameActions.GameCacheSyncReal.Jar,
                 data:=New Byte() _
                       {116, 101, 115, 116, 0,
                        101, 115, 116, 0,
@@ -293,7 +255,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncStringTest()
-        JarTest(GameActions.GameCacheSyncString,
+        JarTest(GameActions.GameCacheSyncString.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
                        116, 101, 115, 0,
@@ -307,7 +269,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncUnitTest()
-        JarTest(GameActions.GameCacheSyncUnit,
+        JarTest(GameActions.GameCacheSyncUnit.Jar,
                 data:=New Byte() {
                        48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 0,
                        104, 0,
@@ -406,7 +368,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncEmptyBooleanTest()
-        JarTest(GameActions.GameCacheSyncEmptyBoolean,
+        JarTest(GameActions.GameCacheSyncEmptyBoolean.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
                        116, 101, 115, 0},
@@ -418,7 +380,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncEmptyIntegerTest()
-        JarTest(GameActions.GameCacheSyncEmptyInteger,
+        JarTest(GameActions.GameCacheSyncEmptyInteger.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
                        116, 101, 115, 0},
@@ -430,7 +392,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncEmptyRealTest()
-        JarTest(GameActions.GameCacheSyncEmptyReal,
+        JarTest(GameActions.GameCacheSyncEmptyReal.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
                        116, 101, 115, 0},
@@ -442,7 +404,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncEmptyStringTest()
-        JarTest(GameActions.GameCacheSyncEmptyString,
+        JarTest(GameActions.GameCacheSyncEmptyString.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
                        116, 101, 115, 0},
@@ -455,7 +417,7 @@ Public Class GameActionProtocolTest
     <TestMethod()>
     Public Sub GameCacheSyncEmptyUnitTest()
         Dim raw = Enumerable.Repeat(CByte(0), 86).ToArray
-        JarTest(GameActions.GameCacheSyncEmptyUnit,
+        JarTest(GameActions.GameCacheSyncEmptyUnit.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
                        116, 101, 115, 0},
@@ -467,13 +429,11 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub IncreaseGameSpeedTest()
-        JarTest(GameActions.IncreaseGameSpeed,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.IncreaseGameSpeed.Jar)
     End Sub
     <TestMethod()>
     Public Sub MinimapPingTest()
-        JarTest(GameActions.MinimapPing,
+        JarTest(GameActions.MinimapPing.Jar,
                 data:=BitConverter.GetBytes(CSng(5)).Concat(
                       BitConverter.GetBytes(CSng(6))).Concat(
                       BitConverter.GetBytes(CSng(7))).ToArray,
@@ -485,7 +445,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ObjectOrderTest()
-        JarTest(GameActions.ObjectOrder,
+        JarTest(GameActions.ObjectOrder.Jar,
                 data:=New Byte() _
                       {1, 0,
                        3, 0, &HD, 0,
@@ -504,13 +464,11 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub PauseGameTest()
-        JarTest(GameActions.PauseGame,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.PauseGame.Jar)
     End Sub
     <TestMethod()>
     Public Sub PointOrderTest()
-        JarTest(GameActions.PointOrder,
+        JarTest(GameActions.PointOrder.Jar,
                 data:=New Byte() _
                       {1, 0,
                        3, 0, &HD, 0,
@@ -527,41 +485,31 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub PressedEscapeTest()
-        JarTest(GameActions.PressedEscape,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.PressedEscape.Jar)
     End Sub
     <TestMethod()>
     Public Sub PreSubGroupSelectionTest()
-        JarTest(GameActions.PreSubGroupSelection,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.PreSubGroupSelection.Jar)
     End Sub
     <TestMethod()>
     Public Sub ResumeGameTest()
-        JarTest(GameActions.ResumeGame,
-                data:={},
-                value:=New Dictionary(Of InvariantString, Object) From {})
+        EmptyJarTest(GameActions.ResumeGame.Jar)
     End Sub
     <TestMethod()>
     Public Sub SaveGameFinishedTest()
-        JarTest(GameActions.SaveGameFinished,
+        JarTest(GameActions.SaveGameFinished.Jar,
                 data:={1, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 1}
-                    })
+                value:=1UI)
     End Sub
     <TestMethod()>
     Public Sub SaveGameStartedTest()
-        JarTest(GameActions.SaveGameStarted,
+        JarTest(GameActions.SaveGameStarted.Jar,
                 data:={116, 101, 115, 116, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"filename", "test"}
-                    })
+                value:="test")
     End Sub
     <TestMethod()>
     Public Sub SelectGroundItemTest()
-        JarTest(GameActions.SelectGroundItem,
+        JarTest(GameActions.SelectGroundItem.Jar,
                 data:={1,
                        2, 0, 0, 0, 3, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -571,7 +519,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SelectGroupHotkeyTest()
-        JarTest(GameActions.SelectGroupHotkey,
+        JarTest(GameActions.SelectGroupHotkey.Jar,
                 data:={1, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"group index", 1},
@@ -580,7 +528,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SelectSubGroupTest()
-        JarTest(GameActions.SelectSubGroup,
+        JarTest(GameActions.SelectSubGroup.Jar,
                 data:={&HEF, &HBE, &HED, &HFE,
                        2, 0, 0, 0, 3, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -590,7 +538,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SelfOrderTest()
-        JarTest(GameActions.SelfOrder,
+        JarTest(GameActions.SelfOrder.Jar,
                 data:={1, 0,
                        3, 0, &HD, 0,
                        2, 0, 0, 0, 3, 0, 0, 0},
@@ -602,15 +550,14 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SetGameSpeedTest()
-        JarTest(GameActions.SetGameSpeed,
+        JarTest(GameActions.SetGameSpeed.Jar,
+                Function(e1 As GameSpeedSetting, e2 As GameSpeedSetting) e1 = e2,
                 data:={2},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"speed", GameSpeedSetting.Fast}
-                    })
+                value:=GameSpeedSetting.Fast)
     End Sub
     <TestMethod()>
     Public Sub TransferResourcesTest()
-        JarTest(GameActions.TransferResources,
+        JarTest(GameActions.TransferResources.Jar,
                 data:={1,
                        100, 0, 0, 0,
                        200, 0, 0, 0},
@@ -622,15 +569,14 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerArrowKeyEventTest()
-        JarTest(GameActions.TriggerArrowKeyEvent,
+        JarTest(GameActions.TriggerArrowKeyEvent.Jar,
+                Function(e1 As ArrowKeyEvent, e2 As ArrowKeyEvent) e1 = e2,
                 data:={4},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"event type", ArrowKeyEvent.PressedDownArrow}
-                    })
+                value:=ArrowKeyEvent.PressedDownArrow)
     End Sub
     <TestMethod()>
     Public Sub TriggerChatEventTest()
-        JarTest(GameActions.TriggerChatEvent,
+        JarTest(GameActions.TriggerChatEvent.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -640,7 +586,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerDialogButtonClickedTest()
-        JarTest(GameActions.DialogAnyButtonClicked,
+        JarTest(GameActions.DialogAnyButtonClicked.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        4, 0, 0, 0, 5, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -650,7 +596,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerDialogButtonClicked2Test()
-        JarTest(GameActions.DialogButtonClicked,
+        JarTest(GameActions.DialogButtonClicked.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        4, 0, 0, 0, 5, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -660,23 +606,19 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerMouseClickedTrackableTest()
-        JarTest(GameActions.TriggerMouseClickedTrackable,
+        JarTest(GameActions.TriggerMouseClickedTrackable.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"trackable", New GameObjectId(2, 3)}
-                    })
+                value:=New GameObjectId(2, 3))
     End Sub
     <TestMethod()>
     Public Sub TriggerMouseTouchedTrackableTest()
-        JarTest(GameActions.TriggerMouseTouchedTrackable,
+        JarTest(GameActions.TriggerMouseTouchedTrackable.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"trackable", New GameObjectId(2, 3)}
-                    })
+                value:=New GameObjectId(2, 3))
     End Sub
     <TestMethod()>
     Public Sub TriggerSelectionEventTest()
-        JarTest(GameActions.TriggerSelectionEvent,
+        JarTest(GameActions.TriggerSelectionEvent.Jar,
                 data:={1,
                        2, 0, 0, 0, 3, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -686,7 +628,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerWaitFinishedTest()
-        JarTest(GameActions.TriggerWaitFinished,
+        JarTest(GameActions.TriggerWaitFinished.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        1, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {

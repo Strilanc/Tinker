@@ -4,16 +4,16 @@ Namespace WC3.Protocol
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class GameAction
         Private Shared ReadOnly ActionJar As PrefixSwitchJar(Of GameActionId) = MakeJar()
-        Public ReadOnly id As GameActionId
-        Private ReadOnly _payload As IPickle(Of Object)
+        Private ReadOnly _id As GameActionId
+        Private ReadOnly _payload As IPickle
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal id As GameActionId, ByVal payload As IPickle(Of Object))
+        Private Sub New(ByVal id As GameActionId, ByVal payload As IPickle)
             Contract.Requires(payload IsNot Nothing)
-            Me.id = id
+            Me._id = id
             Me._payload = payload
         End Sub
         Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of GameActionId)))
@@ -21,33 +21,36 @@ Namespace WC3.Protocol
             Contract.Requires(payload IsNot Nothing)
         End Sub
 
-        Public Shared Function FromValue(Of T)(ByVal id As GameActionId,
-                                               ByVal jar As IPackJar(Of T),
+        Public Shared Function FromValue(Of T)(ByVal actionDefinition As GameActions.Definition(Of T),
                                                ByVal value As T) As GameAction
-            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(actionDefinition IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
-            Return New GameAction(id, jar.Weaken.Pack(CType(value, Object)))
+            Return New GameAction(actionDefinition.Id, actionDefinition.Jar.Pack(value))
         End Function
 
-        Public ReadOnly Property Payload As IPickle(Of Object)
+        Public ReadOnly Property Id As GameActionId
             Get
-                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Return _id
+            End Get
+        End Property
+        Public ReadOnly Property Payload As IPickle
+            Get
+                Contract.Ensures(Contract.Result(Of IPickle)() IsNot Nothing)
                 Return _payload
             End Get
         End Property
 
-        Private Shared Sub reg(ByVal jar As PrefixSwitchJar(Of GameActionId),
-                               ByVal definition As GameActions.SimpleDefinition)
+        Private Shared Sub reg(Of T)(ByVal jar As PrefixSwitchJar(Of GameActionId),
+                                     ByVal definition As GameActions.Definition(Of T))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(definition IsNot Nothing)
-            jar.AddPackerParser(definition.id, definition.Weaken)
+            jar.AddPackerParser(definition.Id, definition.Jar.Weaken)
         End Sub
 
         Private Shared Function MakeJar() As PrefixSwitchJar(Of GameActionId)
             Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of GameActionId))() IsNot Nothing)
             Dim jar = New PrefixSwitchJar(Of GameActionId)("W3GameAction")
-
             reg(jar, GameActions.PauseGame)
             reg(jar, GameActions.ResumeGame)
             reg(jar, GameActions.SetGameSpeed)

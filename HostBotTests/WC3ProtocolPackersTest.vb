@@ -74,8 +74,7 @@ Public Class WC3ProtocolPackersTest
     <TestMethod()>
     Public Sub MakeTickTest()
         MakeTick(250, {New PlayerActionSet(New PID(1),
-                                           {GameAction.FromValue(GameActionId.CheatGold,
-                                                                 GameActions.CheatGold,
+                                           {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
                                                                      {"amount", 100},
                                                                      {"unknown", 0}})
