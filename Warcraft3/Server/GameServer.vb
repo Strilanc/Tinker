@@ -18,7 +18,7 @@ Namespace WC3
         Private ReadOnly _viewPlayers As New AsyncViewableCollection(Of Tuple(Of GameSet, Game, Player))(outQueue:=outQueue)
 
         Public Event PlayerTalked(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player, ByVal text As String)
-        Public Event PlayerLeft(ByVal sender As GameServer, ByVal game As Game, ByVal gameState As GameState, ByVal player As Player, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String)
+        Public Event PlayerLeft(ByVal sender As GameServer, ByVal game As Game, ByVal gameState As GameState, ByVal player As Player, ByVal reportedResult As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
         Public Event PlayerSentData(ByVal sever As GameServer, ByVal game As Game, ByVal player As Player, ByVal data As Byte())
         Public Event PlayerEntered(ByVal sender As GameServer, ByVal game As Game, ByVal player As Player)
 

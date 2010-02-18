@@ -59,9 +59,9 @@ Namespace WC3.Replay
 
         Public Shared ReadOnly ReplayEntryStartOfReplay As New TupleJar(ReplayEntryId.StartOfReplay.ToString,
                 New UInt32Jar("unknown1").Weaken,
-                New ByteJar("host pid").Weaken,
-                New NullTerminatedStringJar("host name", maximumContentSize:=15).Weaken,
-                New RemainingDataJar("host peer data").DataSizePrefixed(prefixSize:=1).Weaken,
+                New ByteJar("primary player pid").Weaken,
+                New NullTerminatedStringJar("primary player name", maximumContentSize:=15).Weaken,
+                New RemainingDataJar("primary player shared data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New NullTerminatedStringJar("game name").Weaken,
                 New ByteJar("unknown2").Weaken,
                 New Protocol.GameStatsJar("game stats").Weaken,
@@ -71,13 +71,13 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryPlayerJoined As New TupleJar(ReplayEntryId.PlayerJoined.ToString,
                 New ByteJar("pid").Weaken,
                 New NullTerminatedStringJar("name", maximumContentSize:=15).Weaken,
-                New RemainingDataJar("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
+                New RemainingDataJar("shared data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New UInt32Jar("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryPlayerLeft As New TupleJar(ReplayEntryId.PlayerLeft.ToString,
-                New UInt32Jar("reason").Weaken,
+                New UInt32Jar("unknown1").Weaken,
                 New ByteJar("pid").Weaken,
-                New EnumUInt32Jar(Of Protocol.PlayerLeaveType)("result").Weaken,
-                New UInt32Jar("unknown").Weaken)
+                New EnumUInt32Jar(Of Protocol.PlayerLeaveReason)("reason").Weaken,
+                New UInt32Jar("session leave count").Weaken)
         Public Shared ReadOnly ReplayEntryLoadStarted1 As New TupleJar(ReplayEntryId.LoadStarted1.ToString,
                 New UInt32Jar("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryLoadStarted2 As New TupleJar(ReplayEntryId.LoadStarted2.ToString,

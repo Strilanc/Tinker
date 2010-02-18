@@ -31,16 +31,16 @@ Namespace WC3.Replay
         Public Sub New(ByVal stream As IRandomWritableStream,
                        ByVal wc3Version As UInt32,
                        ByVal wc3BuildNumber As UInt16,
-                       ByVal host As Player,
-                       ByVal players As IEnumerable(Of Player),
+                       ByVal primaryPlayer As Player,
+                       ByVal secondaryPlayers As IEnumerable(Of Player),
                        ByVal gameDescription As GameDescription,
                        ByVal map As Map,
                        ByVal slots As IEnumerable(Of Slot),
                        ByVal randomSeed As UInt32,
                        Optional ByVal language As UInt32 = &H18F8B0)
             Contract.Requires(stream IsNot Nothing)
-            Contract.Requires(host IsNot Nothing)
-            Contract.Requires(players IsNot Nothing)
+            Contract.Requires(primaryPlayer IsNot Nothing)
+            Contract.Requires(secondaryPlayers IsNot Nothing)
             Contract.Requires(gameDescription IsNot Nothing)
 
             Me._stream = stream
@@ -48,18 +48,18 @@ Namespace WC3.Replay
             Me._wc3Version = wc3Version
             Me._wc3BuildNumber = wc3BuildNumber
 
-            Start(host, players, gameDescription, language, map, slots, randomSeed)
+            Start(primaryPlayer, secondaryPlayers, gameDescription, language, map, slots, randomSeed)
         End Sub
 
-        Private Sub Start(ByVal host As Player,
-                          ByVal players As IEnumerable(Of Player),
+        Private Sub Start(ByVal primaryPlayer As Player,
+                          ByVal secondaryPlayers As IEnumerable(Of Player),
                           ByVal gameDesc As GameDescription,
                           ByVal language As UInt32,
                           ByVal map As Map,
                           ByVal slots As IEnumerable(Of Slot),
                           ByVal randomSeed As UInt32)
-            Contract.Requires(host IsNot Nothing)
-            Contract.Requires(players IsNot Nothing)
+            Contract.Requires(primaryPlayer IsNot Nothing)
+            Contract.Requires(secondaryPlayers IsNot Nothing)
             Contract.Requires(gameDesc IsNot Nothing)
 
             _stream.WriteAt(_startPosition, Enumerable.Repeat(CByte(0), CInt(Format.HeaderSize)).ToArray.AsReadableList)
@@ -69,23 +69,23 @@ Namespace WC3.Replay
                                    Format.ReplayEntryStartOfReplay,
                                    New Dictionary(Of InvariantString, Object) From {
                                            {"unknown1", 1},
-                                           {"host pid", host.PID.Index},
-                                           {"host name", host.Name.ToString},
-                                           {"host peer data", host.PeerData},
+                                           {"primary player pid", primaryPlayer.PID.Index},
+                                           {"primary player name", primaryPlayer.Name.ToString},
+                                           {"primary player shared data", primaryPlayer.PeerData},
                                            {"game name", gameDesc.Name.ToString},
                                            {"unknown2", 0},
                                            {"game stats", gameDesc.GameStats},
-                                           {"player count", players.Count + 1},
+                                           {"player count", secondaryPlayers.Count + 1},
                                            {"game type", gameDesc.GameType},
                                            {"language", language}})
 
-            For Each player In players
+            For Each player In secondaryPlayers
                 WriteReplayEntryPickle(ReplayEntryId.PlayerJoined,
                                        Format.ReplayEntryPlayerJoined,
                                        New Dictionary(Of InvariantString, Object) From {
                                                {"pid", player.PID.Index},
                                                {"name", player.Name.ToString},
-                                               {"peer data", player.PeerData},
+                                               {"shared data", player.PeerData},
                                                {"unknown", 0}})
             Next player
 
@@ -182,17 +182,17 @@ Namespace WC3.Replay
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"unknown", 1}})
         End Sub
-        Public Sub AddPlayerLeft(ByVal reason As UInt32,
+        Public Sub AddPlayerLeft(ByVal unknown1 As UInt32,
                                  ByVal pid As PID,
-                                 ByVal result As UInt32,
-                                 ByVal unknown As UInt32)
+                                 ByVal reportedReason As Protocol.PlayerLeaveReason,
+                                 ByVal leaveCount As UInt32)
             WriteReplayEntryPickle(ReplayEntryId.PlayerLeft,
                                    Format.ReplayEntryPlayerLeft,
                                    New Dictionary(Of InvariantString, Object) From {
-                                        {"reason", reason},
+                                        {"unknown1", unknown1},
                                         {"pid", pid.Index},
-                                        {"result", result},
-                                        {"unknown", unknown}})
+                                        {"reason", reportedReason},
+                                        {"session leave count", leaveCount}})
         End Sub
         Public Sub AddGameStateChecksum(ByVal checksum As UInt32)
             WriteReplayEntryPickle(ReplayEntryId.GameStateChecksum,

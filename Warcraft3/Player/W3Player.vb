@@ -33,7 +33,7 @@
 
         Public hasVotedToStart As Boolean
         Public adminAttemptCount As Integer
-        Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String)
+        Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_numPeerConnections >= 0)
@@ -111,8 +111,8 @@
             pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
             AddHandler pinger.SendPing, Sub(sender, salt) QueueSendPacket(Protocol.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) QueueDisconnect(expected:=False,
-                                                                   leaveType:=Protocol.PlayerLeaveType.Disconnect,
-                                                                   reason:="Stopped responding to pings.")
+                                                                   reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
+                                                                   reasonDescription:="Stopped responding to pings.")
         End Sub
 
         Public ReadOnly Property Name As InvariantString Implements IPlayerDownloadAspect.Name
@@ -147,24 +147,24 @@
                 producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Function(packetData) packetHandler.HandlePacket(packetData),
                 errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
-                                                             leaveType:=Protocol.PlayerLeaveType.Disconnect,
-                                                             reason:="Error receiving packet: {0}.".Frmt(exception.Message)))
+                                                             reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
+                                                             reasonDescription:="Error receiving packet: {0}.".Frmt(exception.Message)))
         End Sub
 
         '''<summary>Disconnects this player and removes them from the system.</summary>
         Private Sub Disconnect(ByVal expected As Boolean,
-                               ByVal leaveType As Protocol.PlayerLeaveType,
-                               ByVal reason As String)
-            Contract.Requires(reason IsNot Nothing)
+                               ByVal reportedReason As Protocol.PlayerLeaveReason,
+                               ByVal reasonDescription As String)
+            Contract.Requires(reasonDescription IsNot Nothing)
             If Not Me.isFake Then
-                socket.Disconnect(expected, reason)
+                socket.Disconnect(expected, reasonDescription)
             End If
             If pinger IsNot Nothing Then pinger.Dispose()
-            RaiseEvent Disconnected(Me, expected, leaveType, reason)
+            RaiseEvent Disconnected(Me, expected, reportedReason, reasonDescription)
             Me.Dispose()
         End Sub
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
-            Return inQueue.QueueAction(Sub() Disconnect(expected, leaveType, reason))
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
+            Return inQueue.QueueAction(Sub() Disconnect(expected, reportedReason, reasonDescription))
         End Function
 
         Private Sub SendPacket(ByVal pk As Protocol.Packet)
@@ -178,8 +178,8 @@
             Return result
         End Function
 
-        Private Sub OnSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String)
-            inQueue.QueueAction(Sub() Disconnect(expected, Protocol.PlayerLeaveType.Disconnect, reason))
+        Private Sub OnSocketDisconnected(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reasonDescription As String)
+            inQueue.QueueAction(Sub() Disconnect(expected, Protocol.PlayerLeaveReason.Disconnect, reasonDescription))
         End Sub
 
         Public ReadOnly Property CanHost() As HostTestResult
@@ -229,7 +229,7 @@
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
             If finalizing Then Return Nothing
-            Return QueueDisconnect(expected:=True, leaveType:=Protocol.PlayerLeaveType.Disconnect, reason:="Disposed")
+            Return QueueDisconnect(expected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Disposed")
         End Function
     End Class
 End Namespace

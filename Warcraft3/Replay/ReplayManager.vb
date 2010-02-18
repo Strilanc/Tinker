@@ -80,8 +80,8 @@
             Dim writer = New Replay.ReplayWriter(stream:=file.AsRandomWritableStream,
                                                  wc3Version:=New CachedExternalValues().WC3MajorVersion,
                                                  wc3BuildNumber:=My.Settings.ReplayBuildNumber,
-                                                 host:=players.First.AssumeNotNull,
-                                                 players:=players.Skip(1),
+                                                 primaryPlayer:=players.First.AssumeNotNull,
+                                                 secondaryPlayers:=players.Skip(1),
                                                  gameDescription:=game.Settings.GameDescription,
                                                  Map:=game.Map,
                                                  slots:=slots,
@@ -110,9 +110,9 @@
             End If
         End Sub
         Private Sub Onleave(ByVal leaver As Player,
-                            ByVal result As Protocol.PlayerLeaveType)
+                            ByVal reportedResult As Protocol.PlayerLeaveReason)
             Contract.Requires(leaver IsNot Nothing)
-            _writer.AddPlayerLeft(0, leaver.PID, result, 0)
+            _writer.AddPlayerLeft(0, leaver.PID, reportedResult, 0)
         End Sub
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture

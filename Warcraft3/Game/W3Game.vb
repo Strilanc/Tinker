@@ -49,7 +49,7 @@ Namespace WC3
 
         Public Event Updated(ByVal sender As Game, ByVal slots As List(Of Slot))
         Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivers As Protocol.ChatReceiverType?)
-        Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String)
+        Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
         Public Event ChangedState(ByVal sender As Game, ByVal oldState As GameState, ByVal newState As GameState)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -359,7 +359,7 @@ Namespace WC3
                     ReceiveSetColor(sender, CType(vals("new value"), Slot.PlayerColor))
 
                 Case Else
-                    RemovePlayer(sender, True, Protocol.PlayerLeaveType.Disconnect, "Sent unrecognized client command type: {0}".Frmt(commandType))
+                    RemovePlayer(sender, True, Protocol.PlayerLeaveReason.Disconnect, "Sent unrecognized client command type: {0}".Frmt(commandType))
             End Select
         End Sub
         Public Function QueueReceiveNonGameAction(ByVal player As Player,
@@ -375,10 +375,10 @@ Namespace WC3
         '''<summary>Removes the given player from the instance</summary>
         Private Sub RemovePlayer(ByVal player As Player,
                                  ByVal wasExpected As Boolean,
-                                 ByVal leaveType As Protocol.PlayerLeaveType,
-                                 ByVal reason As String)
+                                 ByVal reportedReason As Protocol.PlayerLeaveReason,
+                                 ByVal reasonDescription As String)
             Contract.Requires(player IsNot Nothing)
-            Contract.Requires(reason IsNot Nothing)
+            Contract.Requires(reasonDescription IsNot Nothing)
             If Not _players.Contains(player) Then
                 Return
             End If
@@ -393,12 +393,12 @@ Namespace WC3
 
             'Clean player
             If IsPlayerVisible(player) Then
-                BroadcastPacket(Protocol.MakeOtherPlayerLeft(player.PID, leaveType), player)
+                BroadcastPacket(Protocol.MakeOtherPlayerLeft(player.PID, reportedReason), player)
             End If
             If player Is adminPlayer Then
                 adminPlayer = Nothing
             End If
-            player.QueueDisconnect(True, leaveType, reason)
+            player.QueueDisconnect(True, reportedReason, reasonDescription)
             _players.Remove(player)
             Select Case state
                 Case Is < GameState.Loading
@@ -419,26 +419,26 @@ Namespace WC3
 
             'Log
             If player.isFake Then
-                Logger.Log("{0} has been removed from the game. ({1})".Frmt(player.Name, reason), LogMessageType.Negative)
+                Logger.Log("{0} has been removed from the game. ({1})".Frmt(player.Name, reasonDescription), LogMessageType.Negative)
             Else
                 flagHasPlayerLeft = True
                 If wasExpected Then
-                    Logger.Log("{0} has left the game. ({1})".Frmt(player.Name, reason), LogMessageType.Negative)
+                    Logger.Log("{0} has left the game. ({1})".Frmt(player.Name, reasonDescription), LogMessageType.Negative)
                 Else
-                    Logger.Log("{0} has disconnected. ({1})".Frmt(player.Name, reason), LogMessageType.Problem)
+                    Logger.Log("{0} has disconnected. ({1})".Frmt(player.Name, reasonDescription), LogMessageType.Problem)
                 End If
                 Dim state_ = Me.state
-                outQueue.QueueAction(Sub() RaiseEvent PlayerLeft(Me, state_, player, leaveType, reason))
+                outQueue.QueueAction(Sub() RaiseEvent PlayerLeft(Me, state_, player, reportedReason, reasonDescription))
             End If
         End Sub
         Public Function QueueRemovePlayer(ByVal player As Player,
                                           ByVal expected As Boolean,
-                                          ByVal leaveType As Protocol.PlayerLeaveType,
-                                          ByVal reason As String) As IFuture
+                                          ByVal reportedReason As Protocol.PlayerLeaveReason,
+                                          ByVal reasonDescription As String) As IFuture
             Contract.Requires(player IsNot Nothing)
-            Contract.Requires(reason IsNot Nothing)
+            Contract.Requires(reasonDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() RemovePlayer(player, expected, leaveType, reason))
+            Return inQueue.QueueAction(Sub() RemovePlayer(player, expected, reportedReason, reasonDescription))
         End Function
 
         Private Sub ElevatePlayer(ByVal name As InvariantString,
@@ -488,12 +488,12 @@ Namespace WC3
             Dim target = (From player In slot.Contents.EnumPlayers Where player.Name = slotQuery).FirstOrDefault
             If target IsNot Nothing Then
                 slot.Contents = slot.Contents.RemovePlayer(target)
-                RemovePlayer(target, True, Protocol.PlayerLeaveType.Disconnect, "Booted")
+                RemovePlayer(target, True, Protocol.PlayerLeaveReason.Disconnect, "Booted")
             Else
                 For Each player In slot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
                     slot.Contents = slot.Contents.RemovePlayer(player)
-                    RemovePlayer(player, True, Protocol.PlayerLeaveType.Disconnect, "Booted")
+                    RemovePlayer(player, True, Protocol.PlayerLeaveReason.Disconnect, "Booted")
                 Next player
             End If
 

@@ -53,7 +53,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeOtherPlayerLeftTest()
-        MakeOtherPlayerLeft(New PID(1), PlayerLeaveType.Disconnect)
+        MakeOtherPlayerLeft(New PID(1), PlayerLeaveReason.Disconnect)
     End Sub
     <TestMethod()>
     Public Sub MakeLobbyStateTest()

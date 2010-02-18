@@ -56,7 +56,7 @@ Namespace WC3
                                              ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable)
         Function MakePacketOtherPlayerJoined() As Protocol.Packet
         Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture
-        Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String) As IFuture
+        Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As IFuture
 
         <ContractClassFor(GetType(IPlayerDownloadAspect))>
         NotInheritable Shadows Class ContractClass
@@ -95,8 +95,8 @@ Namespace WC3
             End Property
             Public Sub Dispose() Implements IDisposable.Dispose
             End Sub
-            Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As Protocol.PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
-                Contract.Requires(reason IsNot Nothing)
+            Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
+                Contract.Requires(reasonDescription IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
@@ -688,8 +688,8 @@ Namespace WC3
 
             If Not _allowDownloads AndAlso position < _game.Map.FileSize Then
                 client.Player.QueueDisconnect(expected:=True,
-                                              leaveType:=Protocol.PlayerLeaveType.Disconnect,
-                                              reason:="Downloads not allowed.")
+                                              reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
+                                              reasonDescription:="Downloads not allowed.")
             End If
         End Sub
         Private Sub OnTypicalMapInfo(ByVal client As TransferClient, ByVal state As Protocol.MapTransferState, ByVal position As UInt32)
@@ -807,8 +807,8 @@ Namespace WC3
 
                 'Force-cancel the transfer by making the uploader and downloader each think the other rejoined
                 If uler IsNot Nothing Then
-                    dler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(uler.PID, Protocol.PlayerLeaveType.Disconnect))
-                    uler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dler.PID, Protocol.PlayerLeaveType.Disconnect))
+                    dler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(uler.PID, Protocol.PlayerLeaveReason.Disconnect))
+                    uler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dler.PID, Protocol.PlayerLeaveReason.Disconnect))
                     dler.QueueSendPacket(uler.MakePacketOtherPlayerJoined())
                     uler.QueueSendPacket(dler.MakePacketOtherPlayerJoined())
                 End If

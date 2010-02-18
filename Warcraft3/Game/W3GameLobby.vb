@@ -157,7 +157,7 @@
                 Contract.Assume(player IsNot Nothing)
                 Dim slot = TryFindPlayerSlot(player)
                 If slot Is Nothing OrElse slot.Contents.Moveable Then
-                    RemovePlayer(player, True, Protocol.PlayerLeaveType.Disconnect, "Fake players removed before loading")
+                    RemovePlayer(player, True, Protocol.PlayerLeaveReason.Disconnect, "Fake players removed before loading")
                 End If
             Next player
 
@@ -209,7 +209,7 @@
                 Throw New InvalidOperationException("No longer accepting players.")
             ElseIf freeIndexes.Count <= 0 Then
                 If fakeHostPlayer IsNot Nothing Then
-                    RemovePlayer(fakeHostPlayer, True, Protocol.PlayerLeaveType.Disconnect, "Need player index for new fake player")
+                    RemovePlayer(fakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for new fake player")
                 Else
                     Throw New InvalidOperationException("No space available for fake player.")
                 End If
@@ -288,10 +288,10 @@
                 pid = bestSlot.Contents.PlayerIndex.Value
                 For Each player In bestSlot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
-                    RemovePlayer(player, wasExpected:=True, leaveType:=Protocol.PlayerLeaveType.Disconnect, reason:="Reservation fulfilled")
+                    RemovePlayer(player, wasExpected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Reservation fulfilled")
                 Next player
                 If fakeHostPlayer IsNot Nothing AndAlso fakeHostPlayer.PID = pid Then
-                    RemovePlayer(fakeHostPlayer, True, Protocol.PlayerLeaveType.Disconnect, "Need player index for joining player.")
+                    RemovePlayer(fakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for joining player.")
                 End If
                 Contract.Assume(freeIndexes.Contains(pid))
             ElseIf bestSlot.Contents.PlayerIndex IsNot Nothing Then
@@ -303,7 +303,7 @@
             ElseIf fakeHostPlayer IsNot Nothing Then
                 'the only player index left belongs to the fake host
                 pid = fakeHostPlayer.PID
-                RemovePlayer(fakeHostPlayer, True, Protocol.PlayerLeaveType.Disconnect, "Need player index for joining player.")
+                RemovePlayer(fakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for joining player.")
                 Contract.Assume(freeIndexes.Contains(pid))
             Else
                 'no indexes left, go away

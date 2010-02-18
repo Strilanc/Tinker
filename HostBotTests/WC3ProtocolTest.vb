@@ -179,7 +179,7 @@ Public Class WC3ProtocolTest
     Public Sub LeavingTest()
         JarTest(Packets.Leaving.Jar,
                 data:={7, 0, 0, 0},
-                value:=PlayerLeaveType.Lose,
+                value:=PlayerLeaveReason.Quit,
                 equater:=Function(e1, e2) e1 = e2)
     End Sub
     <TestMethod()>
@@ -346,7 +346,7 @@ Public Class WC3ProtocolTest
                        7, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"player index", 1},
-                        {"leave type", PlayerLeaveType.Lose}
+                        {"reason", PlayerLeaveReason.Quit}
                     })
     End Sub
     <TestMethod()>

@@ -185,8 +185,8 @@ Public Class DownloadManagerTest
         Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PID) As ifuture
             Return InjectReceivedPacket(MakeMapFileDataReceived(senderPid, PID, position))
         End Function
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal leaveType As PlayerLeaveType, ByVal reason As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
-            _logger.Log("{0} Disconnected: {1}, {2}".Frmt(Me.Name, leaveType, reason), LogMessageType.Negative)
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedResult As PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
+            _logger.Log("{0} Disconnected: {1}, {2}".Frmt(Me.Name, reportedResult, reasonDescription), LogMessageType.Negative)
             _discFuture.TrySetSucceeded()
             Return _discFuture
         End Function
@@ -344,8 +344,8 @@ Public Class DownloadManagerTest
         clock.Advance(DownloadManager.UpdatePeriod)
 
         'Check for cancellation
-        dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.PID, PlayerLeaveType.Disconnect))
-        uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.PID, PlayerLeaveType.Disconnect))
+        dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.PID, PlayerLeaveReason.Disconnect))
+        uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.PID, PlayerLeaveReason.Disconnect))
         dler.ExpectSentPacket(uler1.MakePacketOtherPlayerJoined())
         uler1.ExpectSentPacket(dler.MakePacketOtherPlayerJoined())
         dler.ExpectNoPacket()
@@ -412,8 +412,8 @@ Public Class DownloadManagerTest
 
         'Check for cancellation
         clock.Advance(DownloadManager.UpdatePeriod)
-        dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.PID, PlayerLeaveType.Disconnect))
-        uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.PID, PlayerLeaveType.Disconnect))
+        dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.PID, PlayerLeaveReason.Disconnect))
+        uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.PID, PlayerLeaveReason.Disconnect))
         dler.ExpectSentPacket(uler1.MakePacketOtherPlayerJoined())
         uler1.ExpectSentPacket(dler.MakePacketOtherPlayerJoined())
         dler.ExpectNoPacket()

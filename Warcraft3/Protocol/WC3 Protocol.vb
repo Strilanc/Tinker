@@ -218,13 +218,13 @@ Namespace WC3.Protocol
 
         MaskFilterable = MaskObs Or MaskMaker Or MaskType Or MaskSize
     End Enum
-    Public Enum PlayerLeaveType As Byte
+    Public Enum PlayerLeaveReason As Byte
         Disconnect = 1
-        Lose = 7
-        MeleeLose = 8
-        Win = 9
-        Draw = 10
-        Observer = 11
+        Quit = 7
+        Defeat = 8
+        Victory = 9
+        Tie = 10
+        NeutralOrEndOfGame = 11
         Lobby = 13
     End Enum
     Public Enum LobbyLayoutStyle
@@ -315,7 +315,7 @@ Namespace WC3.Protocol
             End Property
         End Class
         Private Shared Function Define(ByVal id As PacketId) As Definition(Of Object)
-            Return New Definition(Of Object)(id, New EmptyJar(id.ToString).Weaken)
+            Return New Definition(Of Object)(id, New EmptyJar(id.ToString))
         End Function
         Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
@@ -336,11 +336,11 @@ Namespace WC3.Protocol
         Public Shared ReadOnly Pong As Definition(Of UInt32) = Define(PacketId.Pong,
                 New UInt32Jar("salt", showHex:=True))
 
-        Public Shared ReadOnly Leaving As Definition(Of PlayerLeaveType) = Define(PacketId.Leaving,
-                New EnumUInt32Jar(Of PlayerLeaveType)("leave type"))
+        Public Shared ReadOnly Leaving As Definition(Of PlayerLeaveReason) = Define(PacketId.Leaving,
+                New EnumUInt32Jar(Of PlayerLeaveReason)("reason"))
         Public Shared ReadOnly OtherPlayerLeft As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.OtherPlayerLeft,
                 New ByteJar("player index").Weaken,
-                New EnumUInt32Jar(Of PlayerLeaveType)("leave type").Weaken)
+                New EnumUInt32Jar(Of PlayerLeaveReason)("reason").Weaken)
 
         Public Const MaxPlayerNameLength As Integer = 15
         Public Shared ReadOnly Knock As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.Knock,

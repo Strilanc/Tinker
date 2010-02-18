@@ -105,11 +105,11 @@ Namespace WC3.Protocol
         End Function
         <Pure()>
         Public Function MakeOtherPlayerLeft(ByVal pid As PID,
-                                            ByVal leaveType As PlayerLeaveType) As Packet
+                                            ByVal reportedReason As PlayerLeaveReason) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.OtherPlayerLeft, New Dictionary(Of InvariantString, Object) From {
                                 {"player index", pid.Index},
-                                {"leave type", CByte(leaveType)}})
+                                {"reason", CByte(reportedReason)}})
         End Function
         <Pure()>
         Public Function MakeLobbyState(ByVal receiver As Player,

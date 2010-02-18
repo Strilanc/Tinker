@@ -56,7 +56,7 @@
         Private Sub DropLagger()
             For Each player In laggingPlayers
                 Contract.Assume(player IsNot Nothing)
-                RemovePlayer(player, True, Protocol.PlayerLeaveType.Disconnect, "Lagger dropped")
+                RemovePlayer(player, True, Protocol.PlayerLeaveReason.Disconnect, "Lagger dropped")
             Next player
         End Sub
 
