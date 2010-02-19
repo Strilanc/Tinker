@@ -96,7 +96,7 @@ Namespace WC3.Protocol
         Construct = 1 << 2
         Group = 1 << 3
         NoFormation = 1 << 4
-        Unknown5 = 1 << 5 'seen in farseer summon wolf
+        Summon = 1 << 5
         SubGroup = 1 << 6
         AutoCastOn = 1 << 8
     End Enum
@@ -133,23 +133,39 @@ Namespace WC3.Protocol
     End Enum
 
     Public Enum OrderId As UInteger
+        '? = &HD0000
+        '? = &HD0001
+        '? = &HD0002
         Smart = &HD0003 'right-click
         [Stop] = &HD0004
+        Stunned = &HD0005
+        '? = &HD0006
+        '? = &HD0007
+        Cancel = &HD0008
+        '? = &HD0009
+        '? = &HD000A
+        '? = &HD000B
         SetRallyPoint = &HD000C
         GetItem = &HD000D
+        '? = &HD000E
         Attack = &HD000F
         AttackGround = &HD0010
         AttackOnce = &HD0011
         Move = &HD0012
+        '? = &HD0013
         AIMove = &HD0014
+        '? = &HD0015
         Patrol = &HD0016
+        '? = &HD0017
+        '? = &HD0018
         HoldPosition = &HD0019
-        Build = &HD001A
+        BuildMenu = &HD001A
         HumanBuild = &HD001B
         OrcBuild = &HD001C
         NightElfBuild = &HD001D
         UndeadBuild = &HD001E
         ResumeBuild = &HD001F
+        SkillMenu = &HD0020
         GiveOrDropItem = &HD0021
         SwapItemWithItemInSlot1 = &HD0022
         SwapItemWithItemInSlot2 = &HD0023
@@ -163,8 +179,12 @@ Namespace WC3.Protocol
         UseItemInSlot4 = &HD002B
         UseItemInSlot5 = &HD002C
         UseItemInSlot6 = &HD002D
+        '? = &HD002E
+        DetectAOE = &HD002F
+        '? = &HD0030
         ResumeHarvest = &HD0031
         Harvest = &HD0032
+        '? = &HD0033
         ReturnResources = &HD0034
         AutoHarvestGold = &HD0035
         AutoHarvestLumber = &HD0036
@@ -243,7 +263,7 @@ Namespace WC3.Protocol
             End Property
         End Class
         Private Shared Function Define(ByVal id As GameActionId) As Definition(Of Object)
-            Return New Definition(Of Object)(id, New EmptyJar(id.ToString))
+            Return New Definition(Of Object)(id, New EmptyJar())
         End Function
         Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)

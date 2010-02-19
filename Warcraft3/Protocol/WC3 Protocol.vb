@@ -315,7 +315,7 @@ Namespace WC3.Protocol
             End Property
         End Class
         Private Shared Function Define(ByVal id As PacketId) As Definition(Of Object)
-            Return New Definition(Of Object)(id, New EmptyJar(id.ToString))
+            Return New Definition(Of Object)(id, New EmptyJar())
         End Function
         Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
