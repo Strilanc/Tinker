@@ -48,8 +48,9 @@
             Orc = 1 << 1
             NightElf = 1 << 2
             Undead = 1 << 3
+
             Random = 1 << 5
-            Unlocked = 1 << 6
+            Unlocked = 1 << 6 'presence determines if race selection enabled in lobby
         End Enum
         Public Enum PlayerColor As Byte
             Red = 0

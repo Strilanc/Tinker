@@ -145,7 +145,7 @@ Namespace WC3.Protocol
         '? = &HD0009
         '? = &HD000A
         '? = &HD000B
-        SetRallyPoint = &HD000C
+        SetRally = &HD000C
         GetItem = &HD000D
         '? = &HD000E
         Attack = &HD000F
@@ -292,24 +292,24 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly SelfOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.SelfOrder,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
-                    New OrderTypeJar("order").Weaken,
+                    New OrderIdJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken)
         Public Shared ReadOnly PointOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.PointOrder,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
-                    New OrderTypeJar("order").Weaken,
+                    New OrderIdJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
                     New Float32Jar("target x").Weaken,
                     New Float32Jar("target y").Weaken)
         Public Shared ReadOnly ObjectOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.ObjectOrder,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
-                    New OrderTypeJar("order").Weaken,
+                    New OrderIdJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
                     New Float32Jar("x").Weaken,
                     New Float32Jar("y").Weaken,
                     New GameObjectIdJar("target").Weaken)
         Public Shared ReadOnly DropOrGiveItem As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.DropOrGiveItem,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
-                    New OrderTypeJar("order").Weaken,
+                    New OrderIdJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
                     New Float32Jar("x").Weaken,
                     New Float32Jar("y").Weaken,
@@ -317,7 +317,7 @@ Namespace WC3.Protocol
                     New GameObjectIdJar("item").Weaken)
         Public Shared ReadOnly FogObjectOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.FogObjectOrder,
                     New EnumUInt16Jar(Of OrderTypes)("flags").Weaken,
-                    New OrderTypeJar("order").Weaken,
+                    New OrderIdJar("order").Weaken,
                     New GameObjectIdJar("unknown").Weaken,
                     New Float32Jar("x").Weaken,
                     New Float32Jar("y").Weaken,

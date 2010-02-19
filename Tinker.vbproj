@@ -232,7 +232,7 @@
     <Compile Include="Bnet\Protocol\IPEndPointJar.vb" />
     <Compile Include="Warcraft3\Player\PID.vb" />
     <Compile Include="Warcraft3\Protocol\ObjectTypeJar.vb" />
-    <Compile Include="Warcraft3\Protocol\OrderTypeJar.vb" />
+    <Compile Include="Warcraft3\Protocol\OrderIdJar.vb" />
     <Compile Include="Warcraft3\Protocol\Game Action Protocol.vb" />
     <Compile Include="Warcraft3\Protocol\GameObjectIdJar.vb" />
     <Compile Include="Warcraft3\Protocol\SlotJar.vb" />

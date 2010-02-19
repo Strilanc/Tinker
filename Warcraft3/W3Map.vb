@@ -489,14 +489,14 @@ Namespace WC3
             HideMinimap = 1 << 0
             ModifyAllyPriorities = 1 << 1
             Melee = 1 << 2
-
+            Large = 1 << 3
             RevealTerrain = 1 << 4
             FixedPlayerSettings = 1 << 5
             CustomForces = 1 << 6
             CustomTechTree = 1 << 7
             CustomAbilities = 1 << 8
             CustomUpgrades = 1 << 9
-
+            CustomMapProperties = 1 << 10
             WaterWavesOnCliffShores = 1 << 11
             WaterWavesOnSlopeShores = 1 << 12
         End Enum
@@ -629,9 +629,7 @@ Namespace WC3
                     Dim raceData = stream.ReadUInt32()
                     Dim race = slot.Races.Random
                     Select Case raceData
-                        Case 0 'selectable
-                            race = slot.Races.Random
-                            slot.RaceUnlocked = True
+                        Case 0 : slot.RaceUnlocked = True
                         Case 1 : race = slot.Races.Human
                         Case 2 : race = slot.Races.Orc
                         Case 3 : race = slot.Races.Undead

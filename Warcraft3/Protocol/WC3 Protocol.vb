@@ -225,7 +225,6 @@ Namespace WC3.Protocol
         Victory = 9
         Tie = 10
         NeutralOrEndOfGame = 11
-        Lobby = 13
     End Enum
     Public Enum LobbyLayoutStyle
         Melee = 0
