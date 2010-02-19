@@ -20,8 +20,8 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeTextTest()
-        MakeText("test", ChatType.Lobby, ChatReceiverType.Allies, {}, New PID(1))
-        MakeText("test", ChatType.Game, ChatReceiverType.Allies, {}, New PID(1))
+        MakeText("test", ChatType.Lobby, ChatGroup.Allies, {}, New PID(1))
+        MakeText("test", ChatType.Game, ChatGroup.Allies, {}, New PID(1))
     End Sub
     <TestMethod()>
     Public Sub MakeGreetTest()

@@ -277,53 +277,42 @@ Namespace Bnet
             If Me._state <> ClientState.Disconnected Then Throw New InvalidOperationException("Must disconnect before connecting again.")
             ChangeState(ClientState.InitiatingConnection)
 
+            'Port
             Dim port = BnetServerPort
-            Try
-                If Me._socket IsNot Nothing Then
-                    Throw New InvalidOperationException("Client is already connected.")
+            If remoteHost.Contains(":"c) Then
+                Dim parts = remoteHost.Split(":"c)
+                If parts.Count <> 2 OrElse Not UShort.TryParse(parts.Last, NumberStyles.Integer, CultureInfo.InvariantCulture, port) Then
+                    Throw New ArgumentException(paramName:="remoteHost", Message:="Invalid hostname.")
                 End If
-                _bnetRemoteHostName = remoteHost
+                remoteHost = parts.First
+            End If
 
-                'Establish connection
-                Logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
-                If remoteHost.Contains(":"c) Then
-                    Dim remotePortTemp = remoteHost.Split(":"c)(1)
-                    Contract.Assume(remotePortTemp IsNot Nothing) 'remove once static verifier understands String.split
-                    port = UShort.Parse(remotePortTemp, CultureInfo.InvariantCulture)
-                    remoteHost = remoteHost.Split(":"c)(0)
-                End If
-            Catch e As Exception
-                Disconnect(expected:=False, reason:="Failed to start connection: {0}.".Frmt(e.Message))
-                e.RaiseAsUnexpected("Failed to start bnet connection.")
-                Throw
-            End Try
+            'Connect
+            Logger.Log("Connecting to {0}...".Frmt(remoteHost), LogMessageType.Typical)
+            Dim futureSocket = From hostEntry In AsyncDnsLookup(remoteHost)
+                               Select address = hostEntry.AddressList(New Random().Next(hostEntry.AddressList.Count))
+                               From tcpClient In AsyncTcpConnect(address, port)
+                               Let stream = New ThrottledWriteStream(subStream:=tcpClient.GetStream,
+                                                                     initialSlack:=1000,
+                                                                     costEstimator:=Function(data) 100 + data.Length,
+                                                                     costLimit:=400,
+                                                                     costRecoveredPerMillisecond:=0.048,
+                                                                     clock:=_clock)
+                               Select New PacketSocket(stream:=stream,
+                                                       localEndPoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                       remoteEndPoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                       clock:=_clock,
+                                                       timeout:=60.Seconds,
+                                                       Logger:=Logger,
+                                                       bufferSize:=PacketSocket.DefaultBufferSize * 10)
 
-            Dim futureSocket = (From hostEntry In AsyncDnsLookup(remoteHost)
-                                Select address = hostEntry.AddressList(New Random().Next(hostEntry.AddressList.Count))
-                                Select AsyncTcpConnect(address, port)
-                               ).Defuturized
+            'Continue
             Dim result = futureSocket.QueueEvalOnValueSuccess(inQueue,
-                Function(tcpClient)
-                    Dim socket = New PacketSocket(
-                            stream:=New ThrottledWriteStream(
-                                        subStream:=tcpClient.GetStream,
-                                        initialSlack:=1000,
-                                        costEstimator:=Function(data) 100 + data.Length,
-                                        costLimit:=400,
-                                        costRecoveredPerMillisecond:=0.048,
-                                        clock:=_clock),
-                            localendpoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                            remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
-                            clock:=_clock,
-                            timeout:=60.Seconds,
-                            Logger:=Logger,
-                            bufferSize:=PacketSocket.DefaultBufferSize * 10)
+                Function(socket)
                     ChangeState(ClientState.FinishedInitiatingConnection)
                     Return AsyncConnect(socket)
-                End Function).Defuturized()
-            result.Catch(Sub(exception)
-                             QueueDisconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(exception))
-                         End Sub)
+                End Function).Defuturized
+            result.QueueCatch(inQueue, Sub(exception) Disconnect(expected:=False, reason:="Failed to complete connection: {0}.".Frmt(exception.Message)))
             Return result
         End Function
         Public Function QueueConnect(ByVal remoteHost As String) As IFuture

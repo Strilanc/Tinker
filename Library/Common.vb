@@ -376,4 +376,11 @@ Public Module PoorlyCategorizedFunctions
         Next e
         Return nums
     End Function
+
+    Public Sub CheckIOData(ByVal clause As Boolean, ByVal message As String)
+        Contract.Requires(message IsNot Nothing)
+        Contract.Ensures(clause)
+        Contract.EnsuresOnThrow(Of IO.InvalidDataException)(Not clause)
+        If Not clause Then Throw New IO.InvalidDataException(message)
+    End Sub
 End Module

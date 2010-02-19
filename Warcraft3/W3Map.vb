@@ -478,7 +478,8 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Try
                 Return If(TryGetMapString(mapArchive, nameKey), nameKey.ToString)
-            Catch e As Exception
+            Catch e As Exception When TypeOf e Is IO.IOException OrElse
+                                      TypeOf e Is IO.InvalidDataException
                 e.RaiseAsUnexpected("Error reading map strings file for {0}".Frmt(nameKey))
                 Return "{0} (error reading strings file: {1})".Frmt(nameKey, e.Message)
             End Try
@@ -538,7 +539,6 @@ Namespace WC3
         End Class
         '''<summary>Reads map information from the "war3map.w3i" file in the map mpq archive.</summary>
         '''<source>war3map.w3i format found at http://www.wc3campaigns.net/tools/specs/index.html by Zepir/PitzerMike</source>
-        <CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1809:AvoidExcessiveLocals", justification:="Most aren't used. Useful during debugging.")>
         <ContractVerification(False)>
         Private Shared Function ReadMapInfo(ByVal mapArchive As MPQ.Archive) As ReadMapInfoResult
             Contract.Requires(mapArchive IsNot Nothing)
@@ -604,86 +604,89 @@ Namespace WC3
                     Dim waterTintRGBA = stream.ReadExact(4)
                 End If
 
-                'Player Slots
-                Dim numSlotsInFile = stream.ReadUInt32()
-                If numSlotsInFile <= 0 OrElse numSlotsInFile > 12 Then
-                    Throw New IO.InvalidDataException("Invalid number of slots.")
-                End If
-                Dim slots = New List(Of Slot)(capacity:=CInt(numSlotsInFile))
-                Dim slotColorMap = New Dictionary(Of Slot.PlayerColor, Slot)
-                For repeat = 0 To numSlotsInFile - 1
-                    Dim slot = New Slot(CByte(slots.Count + 1), raceUnlocked:=Not CBool(options And MapOptions.FixedPlayerSettings))
-                    'color
-                    slot.color = CType(stream.ReadUInt32(), Slot.PlayerColor)
-                    If Not slot.color.EnumValueIsDefined Then Throw New IO.InvalidDataException("Unrecognized map slot color.")
-                    'type
-                    Dim typeData = stream.ReadUInt32()
-                    Select Case typeData
-                        Case 1 : slot.Contents = New SlotContentsOpen(slot)
-                        Case 2 : slot.Contents = New SlotContentsComputer(slot, slot.ComputerLevel.Normal)
-                        Case 3 : slot = Nothing
-                        Case Else
-                            Throw New IO.InvalidDataException("Unrecognized map slot type data: {0}.".Frmt(typeData))
-                    End Select
-                    'race
-                    Dim raceData = stream.ReadUInt32()
-                    Dim race = slot.Races.Random
-                    Select Case raceData
-                        Case 0 : slot.RaceUnlocked = True
-                        Case 1 : race = slot.Races.Human
-                        Case 2 : race = slot.Races.Orc
-                        Case 3 : race = slot.Races.Undead
-                        Case 4 : race = slot.Races.NightElf
-                        Case Else
-                            Throw New IO.InvalidDataException("Unrecognized map slot race data: {0}.".Frmt(raceData))
-                    End Select
-                    'player
-                    Dim fixedStartPosition = stream.ReadUInt32()
-                    Dim slotPlayerName = stream.ReadNullTerminatedString(maxLength:=256)
-                    Dim startPositionX = stream.ReadSingle()
-                    Dim startPositionY = stream.ReadSingle()
-                    Dim allyPrioritiesLow = stream.ReadUInt32()
-                    Dim allyPrioritiesHigh = stream.ReadUInt32()
-
-                    If slot IsNot Nothing Then
-                        slots.Add(slot)
-                        slot.race = race
-                        slotColorMap(slot.color) = slot
-                    End If
-                    Contract.Assume(slots.Count <= numSlotsInFile)
-                Next repeat
-                If slots.Count <= 0 Then Throw New IO.InvalidDataException("Map contains no player slots.")
-                Contract.Assert(slots.Count <= 12)
-
-                'Forces
-                Dim numForces = stream.ReadUInt32()
-                If numForces <= 0 OrElse numForces > 12 Then
-                    Throw New IO.InvalidDataException("Invalid number of forces.")
-                End If
-                For teamIndex = CByte(0) To CByte(numForces - 1)
-                    Dim forceFlags = stream.ReadUInt32()
-                    Dim memberBitField = stream.ReadUInt32()
-                    Dim forceName = stream.ReadNullTerminatedString(maxLength:=256)
-
-                    For Each color In EnumValues(Of Slot.PlayerColor)()
-                        If Not CBool((memberBitField >> CInt(color)) And &H1) Then Continue For
-                        If Not slotColorMap.ContainsKey(color) Then Continue For
-                        Contract.Assume(slotColorMap(color) IsNot Nothing)
-                        slotColorMap(color).Team = teamIndex
-                    Next color
-                Next teamIndex
+                Dim slots = ReadMapInfoSlotsAndForces(stream, options)
 
                 '... more data in the file but it isn't needed ...
 
-                If CBool(options And MapOptions.Melee) Then
-                    For i = 0 To slots.Count - 1
-                        Contract.Assume(slots(i) IsNot Nothing)
-                        slots(i).Team = CByte(i)
-                        slots(i).race = Slot.Races.Random
-                    Next i
-                End If
-                Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, options, slots.AsReadableList)
+                Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, options, slots)
             End Using
+        End Function
+        <ContractVerification(False)>
+        Private Shared Function ReadMapInfoSlotsAndForces(ByVal stream As IReadableStream, ByVal options As MapOptions) As IReadableList(Of Slot)
+            Contract.Requires(stream IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count > 0)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count <= 12)
+            Dim result = New List(Of Slot)()
+
+            'Slots
+            Dim numSlotsInFile = stream.ReadUInt32()
+            CheckIOData(numSlotsInFile > 0 AndAlso numSlotsInFile <= 12, "Invalid number of slots.")
+            For repeat = 0 To numSlotsInFile - 1
+                'Read
+                Dim colorData = CType(stream.ReadUInt32(), Slot.PlayerColor)
+                Dim typeData = stream.ReadUInt32()
+                Dim raceData = stream.ReadUInt32()
+                Dim fixedStartPosition = stream.ReadUInt32()
+                Dim slotPlayerName = stream.ReadNullTerminatedString(maxLength:=256)
+                Dim startPositionX = stream.ReadSingle()
+                Dim startPositionY = stream.ReadSingle()
+                Dim allyPrioritiesLow = stream.ReadUInt32()
+                Dim allyPrioritiesHigh = stream.ReadUInt32()
+
+                'Check
+                CheckIOData(colorData.EnumValueIsDefined, "Unrecognized map slot color: {0}.".Frmt(colorData))
+                CheckIOData(raceData <= 4, "Unrecognized map slot race data: {0}.".Frmt(raceData))
+                CheckIOData(typeData >= 1 AndAlso typeData <= 3, "Unrecognized map slot type data: {0}.".Frmt(typeData))
+
+                'Use
+                Dim slot = New Slot(index:=CByte(result.Count + 1), raceUnlocked:=Not CBool(options And MapOptions.FixedPlayerSettings))
+                slot.color = colorData
+                Select Case raceData
+                    Case 0 : slot.RaceUnlocked = True
+                    Case 1 : slot.race = slot.Races.Human
+                    Case 2 : slot.race = slot.Races.Orc
+                    Case 3 : slot.race = slot.Races.Undead
+                    Case 4 : slot.race = slot.Races.NightElf
+                    Case Else : Throw New UnreachableException
+                End Select
+                Select Case typeData
+                    Case 1 : slot.Contents = New SlotContentsOpen(slot)
+                    Case 2 : slot.Contents = New SlotContentsComputer(slot, slot.ComputerLevel.Normal)
+                    Case 3 : Continue For 'neutral slots not shown in lobby
+                    Case Else : Throw New UnreachableException
+                End Select
+                result.Add(slot)
+            Next repeat
+            Contract.Assert(result.Count <= numSlotsInFile)
+            CheckIOData(result.Count > 0, "Map contains no player slots.")
+
+            'Forces
+            Dim numForces = stream.ReadUInt32()
+            CheckIOData(numForces > 0 AndAlso numForces <= 12, "Invalid number of forces.")
+            For teamIndex As Byte = 0 To CByte(numForces - 1)
+                'Read
+                Dim forceFlags = stream.ReadUInt32()
+                Dim memberBitField = stream.ReadUInt32()
+                Dim forceName = stream.ReadNullTerminatedString(maxLength:=256)
+
+                'Use
+                For Each slot In result
+                    If CBool(memberBitField And (1UI << slot.color)) Then
+                        slot.Team = teamIndex
+                    End If
+                Next slot
+            Next teamIndex
+            '(melee overrides forces and races)
+            If CBool(options And MapOptions.Melee) Then
+                For i = 0 To result.Count - 1
+                    Contract.Assume(result(i) IsNot Nothing)
+                    result(i).Team = CByte(i)
+                    result(i).race = Slot.Races.Random
+                Next i
+            End If
+
+            Return result.AsReadableList
         End Function
 #End Region
     End Class

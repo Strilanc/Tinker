@@ -88,15 +88,15 @@ Namespace WC3
         Public ReadOnly socket As W3Socket
         Public ReadOnly receiverPeerKey As Byte
         Public ReadOnly pid As PID
-        Public ReadOnly connectionFlags As UShort
+        Public ReadOnly connectionOptions As UShort
         Public Sub New(ByVal socket As W3Socket,
                        ByVal receiverPeerKey As Byte,
                        ByVal pid As PID,
-                       ByVal connectionFlags As UShort)
+                       ByVal connectionOptions As UShort)
             Me.socket = socket
             Me.receiverPeerKey = receiverPeerKey
             Me.pid = pid
-            Me.connectionFlags = connectionFlags
+            Me.connectionOptions = connectionOptions
         End Sub
     End Class
 

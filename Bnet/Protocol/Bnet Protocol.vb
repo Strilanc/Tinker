@@ -174,7 +174,7 @@ Namespace Bnet.Protocol
         Talk = &H5
         Broadcast = &H6
         Channel = &H7
-        UserFlags = &H9
+        UserOptions = &H9
         WhisperSent = &HA
         ChannelFull = &HD
         ChannelDoesNotExist = &HE

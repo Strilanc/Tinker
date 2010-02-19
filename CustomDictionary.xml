@@ -28,6 +28,7 @@
       <Word>pid</Word>
       <Word>pids</Word>
       <Word>Pinger</Word>
+      <Word>Dword</Word>
       <Word>vals</Word>
     </Recognized>
     <Unrecognized>

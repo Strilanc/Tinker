@@ -261,7 +261,7 @@ Namespace WC3.Protocol
     ''' It appears that anything larger than 2 is considered 'Private', but wc3 does send different codes for each player.
     ''' </remarks>
     <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1027:MarkEnumsWithFlags")>
-    Public Enum ChatReceiverType As UInt32
+    Public Enum ChatGroup As UInt32
         AllPlayers = 0
         Allies = 1
         Observers = 2
@@ -381,7 +381,7 @@ Namespace WC3.Protocol
                     New ByteJar("pid").RepeatedWithCountPrefix("receiving players", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New ByteJar("sending player index").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
-                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type", checkDefined:=False).Weaken,
+                    New EnumUInt32Jar(Of ChatGroup)("receiving group", checkDefined:=False).Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             jar.AddPackerParser(ChatType.Lobby, New TupleJar(PacketId.Text.ToString,
                     New ByteJar("pid").RepeatedWithCountPrefix("receiving players", prefixSize:=1, useSingleLineDescription:=True).Weaken,
@@ -417,7 +417,7 @@ Namespace WC3.Protocol
                     New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumUInt32Jar(Of ChatReceiverType)("receiver type").Weaken,
+                    New EnumUInt32Jar(Of ChatGroup)("receiving group").Weaken,
                     New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.LobbyChat, New TupleJar(PacketId.NonGameAction.ToString,
                     New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,

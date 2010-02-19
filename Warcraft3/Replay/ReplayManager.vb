@@ -100,13 +100,13 @@
         End Sub
         Private Sub OnChat(ByVal speaker As Player,
                            ByVal text As String,
-                           ByVal receivers As Protocol.ChatReceiverType?)
+                           ByVal receivingGroup As Protocol.ChatGroup?)
             Contract.Requires(speaker IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
-            If receivers Is Nothing Then
+            If receivingGroup Is Nothing Then
                 _writer.AddLobbyChatMessage(speaker.PID, text)
             Else
-                _writer.AddGameChatMessage(speaker.PID, text, receivers.Value)
+                _writer.AddGameChatMessage(speaker.PID, text, receivingGroup.Value)
             End If
         End Sub
         Private Sub Onleave(ByVal leaver As Player,

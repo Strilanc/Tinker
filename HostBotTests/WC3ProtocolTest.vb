@@ -256,7 +256,7 @@ Public Class WC3ProtocolTest
                         {"receiving player indexes", New Byte() {1, 2, 3}.AsReadableList},
                         {"sending player", 4},
                         {"command type", NonGameAction.GameChat},
-                        {"receiver type", ChatReceiverType.Allies},
+                        {"receiving group", ChatGroup.Allies},
                         {"message", "test"}
                     })
         JarTest(Packets.NonGameAction.Jar,
@@ -481,7 +481,7 @@ Public Class WC3ProtocolTest
                         {"receiving players", New List(Of Byte) From {2, 3}},
                         {"sending player index", 1},
                         {"type", ChatType.Game},
-                        {"receiver type", ChatReceiverType.Allies},
+                        {"receiving group", ChatGroup.Allies},
                         {"message", "test"}
                     })
         JarTest(Packets.Text.Jar,

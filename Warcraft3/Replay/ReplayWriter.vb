@@ -211,7 +211,7 @@ Namespace WC3.Replay
                                         {"type", Protocol.ChatType.Lobby},
                                         {"message", message}})
         End Sub
-        Public Sub AddGameChatMessage(ByVal pid As PID, ByVal message As String, ByVal receiver As WC3.Protocol.ChatReceiverType)
+        Public Sub AddGameChatMessage(ByVal pid As PID, ByVal message As String, ByVal receivingGroup As WC3.Protocol.ChatGroup)
             Contract.Requires(message IsNot Nothing)
             WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
                                    Format.ReplayEntryChatMessage,
@@ -219,7 +219,7 @@ Namespace WC3.Replay
                                         {"pid", pid.Index},
                                         {"size", 1 + 4 + message.Length + 1},
                                         {"type", Protocol.ChatType.Game},
-                                        {"receiver type", receiver},
+                                        {"receiving group", receivingGroup},
                                         {"message", message}})
         End Sub
         Public Sub AddTick(ByVal duration As UInt16, ByVal actions As IReadableList(Of Protocol.PlayerActionSet))

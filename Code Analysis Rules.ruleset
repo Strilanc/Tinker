@@ -2,6 +2,7 @@
 <RuleSet Name="HostBot Customized Rules" Description="Rules applied to HostBot assembly." ToolsVersion="10.0">
   <IncludeAll Action="Warning" />
   <Rules AnalyzerId="Microsoft.Analyzers.ManagedCodeAnalysis" RuleNamespace="Microsoft.Rules.Managed">
+    <Rule Id="CA1000" Action="None" />
     <Rule Id="CA1002" Action="None" />
     <Rule Id="CA1006" Action="None" />
     <Rule Id="CA1008" Action="None" />

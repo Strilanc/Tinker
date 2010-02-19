@@ -22,25 +22,25 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeText(ByVal text As String,
                                  ByVal chatType As ChatType,
-                                 ByVal receivers As ChatReceiverType?,
-                                 ByVal receivingPIDs As IEnumerable(Of PID),
-                                 ByVal senderPID As PID) As Packet
+                                 ByVal receivingGroup As ChatGroup?,
+                                 ByVal receivers As IEnumerable(Of PID),
+                                 ByVal sender As PID) As Packet
             Contract.Requires(text IsNot Nothing)
-            Contract.Requires(receivingPIDs IsNot Nothing)
+            Contract.Requires(receivers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Select Case chatType
                 Case chatType.Game
-                    Contract.Assume(receivers.HasValue)
+                    Contract.Assume(receivingGroup.HasValue)
                     Return Packet.FromValue(Packets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"receiving players", (From p In receivingPIDs Select p.Index).ToList},
-                            {"sending player index", senderPID.Index},
+                            {"receiving players", (From p In receivers Select p.Index).ToList},
+                            {"sending player index", sender.Index},
                             {"type", chatType},
                             {"message", text},
-                            {"receiver type", receivers.Value}})
+                            {"receiving group", receivingGroup.Value}})
                 Case chatType.Lobby
                     Return Packet.FromValue(Packets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"receiving players", (From p In receivingPIDs Select p.Index).ToList},
-                            {"sending player index", senderPID.Index},
+                            {"receiving players", (From p In receivers Select p.Index).ToList},
+                            {"sending player index", sender.Index},
                             {"type", chatType},
                             {"message", text}})
                 Case Else

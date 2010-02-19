@@ -94,7 +94,7 @@ Namespace WC3.Replay
                     New ByteJar("pid").Weaken,
                     New UInt16Jar("size").Weaken,
                     New EnumByteJar(Of WC3.Protocol.ChatType)("type").Weaken,
-                    New EnumUInt32Jar(Of WC3.Protocol.ChatReceiverType)("receiver type", checkDefined:=False).Weaken,
+                    New EnumUInt32Jar(Of WC3.Protocol.ChatGroup)("receiving group", checkDefined:=False).Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             jar.AddPackerParser(WC3.Protocol.ChatType.Lobby, New TupleJar(ReplayEntryId.ChatMessage.ToString,
                     New ByteJar("pid").Weaken,

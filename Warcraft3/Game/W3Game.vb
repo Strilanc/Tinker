@@ -48,7 +48,7 @@ Namespace WC3
         Private ReadOnly _settings As GameSettings
 
         Public Event Updated(ByVal sender As Game, ByVal slots As List(Of Slot))
-        Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivers As Protocol.ChatReceiverType?)
+        Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivingGroup As Protocol.ChatGroup?)
         Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
         Public Event ChangedState(ByVal sender As Game, ByVal oldState As GameState, ByVal newState As GameState)
 
@@ -274,9 +274,9 @@ Namespace WC3
             For Each line In SplitText(body:=message, maxLineLength:=Protocol.Packets.MaxChatTextLength - prefix.Length)
                 player.QueueSendPacket(Protocol.MakeText(text:=prefix + line,
                                                          chatType:=chatType,
-                                                         receivers:=Protocol.ChatReceiverType.Private,
-                                                         receivingPIDs:=(From p In _players Select p.PID),
-                                                         senderPID:=sender.PID))
+                                                         receivingGroup:=Protocol.ChatGroup.Private,
+                                                         receivers:=(From p In _players Select p.PID),
+                                                         sender:=sender.PID))
             Next line
 
             If display Then
@@ -293,7 +293,7 @@ Namespace WC3
         Private Sub ReceiveChat(ByVal sender As Player,
                                 ByVal text As String,
                                 ByVal type As Protocol.ChatType,
-                                ByVal receivers As Protocol.ChatReceiverType?,
+                                ByVal receivingGroup As Protocol.ChatGroup?,
                                 ByVal requestedReceiverIndexes As IReadableList(Of PID))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
@@ -301,7 +301,7 @@ Namespace WC3
 
             'Log
             Logger.Log("{0}: {1}".Frmt(sender.Name, text), LogMessageType.Typical)
-            outQueue.QueueAction(Sub() RaiseEvent PlayerTalked(Me, sender, text, receivers))
+            outQueue.QueueAction(Sub() RaiseEvent PlayerTalked(Me, sender, text, receivingGroup))
 
             'Forward to requested players
             'visible sender
@@ -310,7 +310,7 @@ Namespace WC3
                 text = visibleSender.Name + ": " + text
             End If
             'packet
-            Dim pk = Protocol.MakeText(text, type, receivers, requestedReceiverIndexes, visibleSender.PID)
+            Dim pk = Protocol.MakeText(text, type, receivingGroup, requestedReceiverIndexes, visibleSender.PID)
             'receivers
             For Each receiver In _players
                 Contract.Assume(receiver IsNot Nothing)
@@ -332,9 +332,9 @@ Namespace WC3
                 Case Protocol.NonGameAction.GameChat, Protocol.NonGameAction.LobbyChat
                     Dim message = CStr(vals("message")).AssumeNotNull
                     Dim chatType = If(commandType = Protocol.NonGameAction.GameChat, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
-                    Dim receiverType As Protocol.ChatReceiverType
+                    Dim receivingGroup As Protocol.ChatGroup
                     If chatType = Protocol.ChatType.Game Then
-                        receiverType = CType(vals("receiver type"), Protocol.ChatReceiverType)
+                        receivingGroup = CType(vals("receiving group"), Protocol.ChatGroup)
                     End If
                     Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IReadableList(Of Byte)).AssumeNotNull
                     Dim receivingPIDs = (From index In receivingPlayerIndexes
@@ -343,7 +343,7 @@ Namespace WC3
                     ReceiveChat(sender,
                                 message,
                                 chatType,
-                                receiverType,
+                                receivingGroup,
                                 receivingPIDs)
 
                 Case Protocol.NonGameAction.SetTeam
