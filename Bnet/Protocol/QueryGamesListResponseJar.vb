@@ -27,7 +27,7 @@ Namespace Bnet.Protocol
         End Property
     End Class
     Public Class QueryGamesListResponseJar
-        Inherits BaseParseJar(Of QueryGamesListResponse)
+        Inherits BaseJar(Of QueryGamesListResponse)
 
         Private Shared ReadOnly gameDataJar As New TupleJar("game",
                 New EnumUInt32Jar(Of WC3.Protocol.GameTypes)("game type").Weaken,
@@ -79,11 +79,14 @@ Namespace Bnet.Protocol
                 Next repeat
             End If
 
-            Return New Pickle(Of QueryGamesListResponse)(
-                jarname:=Me.Name,
-                value:=New QueryGamesListResponse(result, games),
-                data:=data.SubView(0, offset),
-                valueDescription:=Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New Pickle(Of QueryGamesListResponse)(jarname:=Me.Name,
+                                                         value:=New QueryGamesListResponse(result, games),
+                                                         data:=data.SubView(0, offset),
+                                                         valueDescription:=Function() Pickle(Of Object).MakeListDescription(pickles))
+        End Function
+
+        Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
+            Throw New NotImplementedException
         End Function
     End Class
 End Namespace

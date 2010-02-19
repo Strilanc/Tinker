@@ -17,11 +17,30 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public NotInheritable Class Packet
-        Private ReadOnly _payload As IPickle(Of Object)
         Private ReadOnly _id As PacketId
-        Public ReadOnly Property Payload As IPickle(Of Object)
+        Private ReadOnly _payload As IPickle
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_payload IsNot Nothing)
+        End Sub
+
+        Private Sub New(ByVal id As PacketId, ByVal payload As IPickle)
+            Contract.Requires(payload IsNot Nothing)
+            Me._id = id
+            Me._payload = payload
+        End Sub
+
+        Public Shared Function FromValue(Of T)(ByVal packetDefinition As Packets.Definition(Of T),
+                                               ByVal value As T) As Packet
+            Contract.Requires(packetDefinition IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
+            Return New Packet(packetDefinition.Id, packetDefinition.Jar.Pack(value))
+        End Function
+
+        Public ReadOnly Property Payload As IPickle
             Get
-                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IPickle)() IsNot Nothing)
                 Return _payload
             End Get
         End Property
@@ -30,25 +49,6 @@ Namespace Bnet.Protocol
                 Return _id
             End Get
         End Property
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_payload IsNot Nothing)
-        End Sub
-
-        Public Sub New(ByVal packer As SimplePacketDefinition, ByVal vals As Dictionary(Of InvariantString, Object))
-            Contract.Requires(packer IsNot Nothing)
-            Contract.Requires(vals IsNot Nothing)
-            Contract.Ensures(Me.Id = packer.id)
-            Me._id = packer.id
-            Me._payload = packer.Pack(vals)
-        End Sub
-        Public Sub New(ByVal id As PacketId, ByVal payload As IPickle(Of Object))
-            Contract.Requires(payload IsNot Nothing)
-            Contract.Ensures(Me.Id = id)
-            Contract.Ensures(Me.Payload Is payload)
-            Me._id = id
-            Me._payload = payload
-        End Sub
     End Class
 
     Public NotInheritable Class BnetPacketHandler
@@ -69,7 +69,7 @@ Namespace Bnet.Protocol
         'verification disabled due to stupid verifier (1.2.3.0118.5)
         <ContractVerification(False)>
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
-            If header(0) <> ServerPackets.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
+            If header(0) <> Packets.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
             Return CType(header(1), PacketId)
         End Function
     End Class

@@ -36,10 +36,8 @@ Namespace Bnet
             Me._client = client
             Me._control = New BnetClientControl(Me)
 
-            Me._hooks.Add(client.QueueAddPacketHandler(
-                    id:=Bnet.Protocol.PacketId.ChatEvent,
-                    jar:=Bnet.Protocol.ServerPackets.ChatEvent,
-                    handler:=Function(pickle) TaskedAction(Sub() OnReceivedChatEvent(pickle.Value))))
+            Me._hooks.Add(client.QueueAddPacketHandler(Bnet.Protocol.Packets.ServerToClient.ChatEvent,
+                                                       Function(pickle) TaskedAction(Sub() OnReceivedChatEvent(pickle.Value))))
 
             client.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
         End Sub

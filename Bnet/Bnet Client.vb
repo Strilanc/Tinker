@@ -116,22 +116,22 @@ Namespace Bnet
             'Start packet machinery
             Me._packetHandler = New Protocol.BnetPacketHandler("BNET", Me._logger)
 
-            AddQueuedPacketHandler(Protocol.ServerPackets.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
-            AddQueuedPacketHandler(Protocol.ServerPackets.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
-            AddQueuedPacketHandler(Protocol.ServerPackets.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
-            AddQueuedPacketHandler(Protocol.ServerPackets.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
-            AddQueuedPacketHandler(Protocol.ServerPackets.ChatEvent, AddressOf ReceiveChatEvent)
-            AddQueuedPacketHandler(Protocol.ServerPackets.EnterChat, AddressOf ReceiveEnterChat)
-            AddQueuedPacketHandler(Protocol.ServerPackets.MessageBox, AddressOf ReceiveMessageBox)
-            AddQueuedPacketHandler(Protocol.ServerPackets.CreateGame3, AddressOf ReceiveCreateGame3)
-            AddQueuedPacketHandler(Protocol.ServerPackets.Warden, AddressOf ReceiveWarden)
-            AddQueuedPacketHandler(Protocol.PacketId.Ping, Protocol.ServerPackets.Ping, AddressOf ReceivePing)
-            AddQueuedPacketHandler(Protocol.PacketId.Null, Protocol.ServerPackets.Null, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(Protocol.PacketId.GetFileTime, Protocol.ServerPackets.GetFileTime, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(Protocol.PacketId.GetIconData, Protocol.ServerPackets.GetIconData, AddressOf IgnorePacket)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationBegin, AddressOf ReceiveProgramAuthenticationBegin)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ProgramAuthenticationFinish, AddressOf ReceiveProgramAuthenticationFinish)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationBegin, AddressOf ReceiveUserAuthenticationBegin)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.UserAuthenticationFinish, AddressOf ReceiveUserAuthenticationFinish)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.ChatEvent, AddressOf ReceiveChatEvent)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.EnterChat, AddressOf ReceiveEnterChat)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.MessageBox, AddressOf ReceiveMessageBox)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Null, AddressOf IgnorePacket)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.GetFileTime, AddressOf IgnorePacket)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.GetIconData, AddressOf IgnorePacket)
 
-            AddQueuedPacketHandler(Protocol.PacketId.QueryGamesList, Protocol.ServerPackets.QueryGamesList, AddressOf IgnorePacket)
-            AddQueuedPacketHandler(Protocol.ServerPackets.FriendsUpdate, AddressOf IgnorePacket)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.QueryGamesList, AddressOf IgnorePacket)
+            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.FriendsUpdate, AddressOf IgnorePacket)
         End Sub
 
         Public ReadOnly Property Profile As Bot.ClientProfile
@@ -167,29 +167,28 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() _state)
         End Function
 
-        Private Function AddQueuedPacketHandler(ByVal jar As Protocol.SimplePacketDefinition,
-                                                ByVal handler As Action(Of IPickle(Of Dictionary(Of InvariantString, Object)))) As IDisposable
-            Contract.Requires(jar IsNot Nothing)
+        Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                           ByVal handler As Action(Of IPickle(Of T))) As IDisposable
+            Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return AddQueuedPacketHandler(jar.id, jar, handler)
+            _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar.Weaken)
+            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data))))
         End Function
-        Private Function AddQueuedPacketHandler(Of T)(ByVal id As Protocol.PacketId,
-                                                      ByVal jar As IParseJar(Of T),
-                                                      ByVal handler As Action(Of IPickle(Of T))) As IDisposable
-            Contract.Requires(jar IsNot Nothing)
+
+        Private Function AddRemotePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
+                                                      ByVal handler As Func(Of IPickle(Of T), IFuture)) As IDisposable
+            Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            _packetHandler.AddLogger(id, jar.Weaken)
-            Return _packetHandler.AddHandler(id, Function(data) inQueue.QueueAction(Sub() handler(jar.Parse(data))))
+            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data)))
         End Function
-        Public Function QueueAddPacketHandler(Of T)(ByVal id As Protocol.PacketId,
-                                                    ByVal jar As IParseJar(Of T),
+        Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                     ByVal handler As Func(Of IPickle(Of T), ifuture)) As IFuture(Of IDisposable)
-            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _packetHandler.AddHandler(id, Function(data) handler(jar.Parse(data))))
+            Return inQueue.QueueFunc(Function() AddRemotePacketHandler(packetDefinition, handler))
         End Function
 
         Private Sub SendText(ByVal text As String)
@@ -207,9 +206,9 @@ Namespace Bnet
                     End If
             End Select
 
-            Dim lines = SplitText(text, maxLineLength:=Protocol.ClientPackets.MaxChatCommandTextLength)
+            Dim lines = SplitText(text, maxLineLength:=Protocol.Packets.ClientToServer.MaxChatCommandTextLength)
             If isBnetCommand AndAlso lines.Count > 1 Then
-                Throw New InvalidOperationException("Can't send multi-line commands or commands larger than {0} characters.".Frmt(Protocol.ClientPackets.MaxChatCommandTextLength))
+                Throw New InvalidOperationException("Can't send multi-line commands or commands larger than {0} characters.".Frmt(Protocol.Packets.ClientToServer.MaxChatCommandTextLength))
             End If
             For Each line In lines
                 Contract.Assume(line IsNot Nothing)
@@ -233,11 +232,11 @@ Namespace Bnet
 
             Dim prefix = "/w {0} ".Frmt(username)
             Contract.Assume(prefix.Length >= 5)
-            If prefix.Length >= Protocol.ClientPackets.MaxChatCommandTextLength \ 2 Then
+            If prefix.Length >= Protocol.Packets.ClientToServer.MaxChatCommandTextLength \ 2 Then
                 Throw New ArgumentOutOfRangeException("username", "Username is too long.")
             End If
 
-            For Each line In SplitText(text, maxLineLength:=Protocol.ClientPackets.MaxChatCommandTextLength - prefix.Length)
+            For Each line In SplitText(text, maxLineLength:=Protocol.Packets.ClientToServer.MaxChatCommandTextLength - prefix.Length)
                 Contract.Assume(line IsNot Nothing)
                 SendPacket(Protocol.MakeChatCommand(prefix + line))
             Next line
@@ -593,7 +592,7 @@ Namespace Bnet
                 Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
                 Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
 
-                _socket.WritePacket(Concat({Protocol.ClientPackets.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
+                _socket.WritePacket(Concat({Protocol.Packets.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
             Catch e As Exception
                 Disconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, e.Message))
                 e.RaiseAsUnexpected("Error sending {0} to {1}".Frmt(packet.Id, _socket.Name))
@@ -788,10 +787,10 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Warden)"
-        Private Sub ReceiveWarden(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveWarden(ByVal pickle As IPickle(Of IReadableList(Of Byte)))
             Contract.Requires(pickle IsNot Nothing)
             If _state < ClientState.WaitingForEnterChat Then Throw New IO.InvalidDataException("Warden packet in unexpected place.")
-            Dim encryptedData = CType(pickle.Value("encrypted data"), IReadableList(Of Byte)).AssumeNotNull
+            Dim encryptedData = pickle.Value
             _wardenClient.QueueSendWardenData(encryptedData)
         End Sub
         Private Sub OnWardenReceivedResponseData(ByVal sender As Warden.Client, ByVal data As IReadableList(Of Byte)) Handles _wardenClient.ReceivedWardenData
@@ -811,10 +810,9 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Games)"
-        Private Sub ReceiveCreateGame3(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Contract.Requires(value IsNot Nothing)
-            Dim vals = value.Value
-            Dim result = CUInt(vals("result"))
+        Private Sub ReceiveCreateGame3(ByVal pickle As IPickle(Of UInt32))
+            Contract.Requires(pickle IsNot Nothing)
+            Dim result = pickle.Value
 
             If result = 0 Then
                 If _state = ClientState.CreatingGame Then

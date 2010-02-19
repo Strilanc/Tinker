@@ -46,12 +46,12 @@ Friend Module TestingCommon
     Friend Sub JarTest(Of T)(ByVal jar As IJar(Of T),
                              ByVal equater As Func(Of T, T, Boolean),
                              ByVal value As T,
-                             ByVal data As IList(Of Byte),
+                             ByVal data As IEnumerable(Of Byte),
                              Optional ByVal appendSafe As Boolean = True,
                              Optional ByVal requireAllData As Boolean = True,
                              Optional ByVal description As String = Nothing)
         Dim packed = jar.Pack(value)
-        Dim parsed = jar.Parse(data.AsReadableList)
+        Dim parsed = jar.Parse(data.ToList.AsReadableList)
         Assert.IsTrue(equater(packed.Value, value))
         Assert.IsTrue(equater(parsed.Value, value))
         Assert.IsTrue(packed.Data.SequenceEqual(data))
@@ -94,7 +94,7 @@ Friend Module TestingCommon
     End Sub
     Friend Sub JarTest(Of T As IEquatable(Of T))(ByVal jar As IJar(Of T),
                                                  ByVal value As T,
-                                                 ByVal data As IList(Of Byte),
+                                                 ByVal data As IEnumerable(Of Byte),
                                                  Optional ByVal appendSafe As Boolean = True,
                                                  Optional ByVal requireAllData As Boolean = True,
                                                  Optional ByVal description As String = Nothing)
@@ -102,7 +102,7 @@ Friend Module TestingCommon
     End Sub
     Friend Sub JarTest(ByVal jar As IJar(Of Dictionary(Of InvariantString, Object)),
                        ByVal value As Dictionary(Of InvariantString, Object),
-                       ByVal data As IList(Of Byte),
+                       ByVal data As IEnumerable(Of Byte),
                        Optional ByVal appendSafe As Boolean = True,
                        Optional ByVal requireAllData As Boolean = True)
         JarTest(jar,

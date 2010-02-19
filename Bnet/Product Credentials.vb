@@ -9,6 +9,8 @@
     ''' </summary>
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class ProductCredentials
+        Implements IEquatable(Of ProductCredentials)
+
         Private ReadOnly _length As UInt32
         Private ReadOnly _product As ProductType
         Private ReadOnly _publicKey As UInteger
@@ -57,6 +59,22 @@
                 Return _proof
             End Get
         End Property
+
+        Public Overrides Function GetHashCode() As Integer
+            Return _publicKey.GetHashCode()
+        End Function
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Dim other = TryCast(obj, ProductCredentials)
+            Return other IsNot Nothing AndAlso Me.Equals(other)
+        End Function
+        Public Overloads Function Equals(ByVal other As ProductCredentials) As Boolean Implements IEquatable(Of ProductCredentials).Equals
+            If other Is Nothing Then Return False
+            If other.Length <> Me.Length Then Return False
+            If other.Product <> Me.Product Then Return False
+            If other.PublicKey <> Me.PublicKey Then Return False
+            If Not other.AuthenticationProof.SequenceEqual(Me.AuthenticationProof) Then Return False
+            Return True
+        End Function
 
         Public Overrides Function ToString() As String
             Return "{0}: {1}".Frmt(Me.Product, Me.PublicKey)
