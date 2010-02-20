@@ -24,8 +24,8 @@ Namespace Plugins
                 Dim classType = asm.GetType("TinkerPluginFactory")
                 If classType Is Nothing Then Throw New OperationFailedException("The target assembly doesn't contain a TinkerPluginFactory.")
                 Me._plugin = CType(Activator.CreateInstance(classType), IPluginFactory).AssumeNotNull.CreatePlugin(bot)
-            Catch e As Exception
-                Throw New PluginException("Error loading plugin assembly from '{0}': {1}.".Frmt(assemblyPath, e), e)
+            Catch ex As Exception
+                Throw New PluginException("Error loading plugin assembly from '{0}': {1}.".Frmt(assemblyPath, ex), ex)
             End Try
         End Sub
 

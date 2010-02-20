@@ -3,6 +3,7 @@ Partial Class ClientForm
     Inherits System.Windows.Forms.Form
 
     'Form overrides dispose to clean up the component list.
+    <CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2213:DisposableFieldsShouldBeDisposed", MessageId:="_bot")>
     <System.Diagnostics.DebuggerNonUserCode()> _
     Protected Overrides Sub Dispose(ByVal disposing As Boolean)
         If disposing AndAlso components IsNot Nothing Then

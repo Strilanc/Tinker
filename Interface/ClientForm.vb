@@ -5,6 +5,7 @@ Public Class ClientForm
     Private _bot As Bot.MainBot
     Private ReadOnly _exceptionForm As New ExceptionForm()
 
+    <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
     Private Shadows Sub OnLoad() Handles Me.Load
         Contract.Assume(_bot Is Nothing)
         Try
@@ -106,7 +107,7 @@ Public Class ClientForm
                                 _bot.Logger.Log("Failed to add plugin '{0}' to bot: {1}".Frmt(pluginName_, ex), LogMessageType.Problem)
                             End Sub)
                 _bot.Logger.Log("Loaded plugin '{0}'.".Frmt(pluginName), LogMessageType.Positive)
-            Catch ex As Exception
+            Catch ex As Plugins.PluginException
                 _bot.Logger.Log("Failed to load plugin profile '{0}': {1}".Frmt(pluginName, ex.Message), LogMessageType.Problem)
                 ex.RaiseAsUnexpected("Loading plugin profile '{0}'".Frmt(pluginName))
             End Try

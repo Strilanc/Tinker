@@ -254,16 +254,19 @@ Public Class SettingsForm
                 If newPath = path Then
                     gridPlugins.Rows.Add(pluginName, rel_path, "")
                 ElseIf IO.File.Exists(newPath) Then
-                    If MessageBox.Show("There is already a plugin with that filename in the plugins folder. Do you want to replace it?", "Replace", MessageBoxButtons.YesNo, MessageBoxIcon.Question) = Windows.Forms.DialogResult.No Then
-                        Return
+                    If MessageBox.Show(text:="There is already a plugin with that filename in the plugins folder. Do you want to replace it?",
+                                       caption:="Replace",
+                                       buttons:=MessageBoxButtons.YesNo,
+                                       icon:=MessageBoxIcon.Question) = Windows.Forms.DialogResult.Yes Then
+                        IO.File.Copy(path, newPath, overwrite:=True)
                     End If
-                    IO.File.Delete(newPath)
-                    IO.File.Copy(path, newPath)
                 Else
                     IO.File.Copy(path, newPath)
                     gridPlugins.Rows.Add(pluginName, rel_path, "")
                 End If
-            Catch ex As Exception
+            Catch ex As Exception When TypeOf ex Is IO.IOException OrElse
+                                       TypeOf ex Is NotSupportedException OrElse
+                                       TypeOf ex Is UnauthorizedAccessException
                 ex.RaiseAsUnexpected("Importing plugin from settings form.")
                 MessageBox.Show("Error importing plugin: {0}".Frmt(ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try

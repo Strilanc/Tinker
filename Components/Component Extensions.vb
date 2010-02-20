@@ -1,7 +1,7 @@
 ﻿Namespace Components
     Public Module IBotComponentExtensions
         <Extension()>
-        <System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
+        <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")>
         Public Sub UIInvokeCommand(ByVal component As IBotComponent, ByVal argument As String)
             Contract.Requires(component IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)

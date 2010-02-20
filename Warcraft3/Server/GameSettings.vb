@@ -252,6 +252,7 @@
                 Return _greeting
             End Get
         End Property
+        <CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId:="Multi")>
         Public ReadOnly Property UseMultiObs As Boolean
             Get
                 Return _useMultiObs

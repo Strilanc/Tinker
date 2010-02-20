@@ -87,49 +87,53 @@ Namespace CKL
 
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
-                consumer:=Function(packetData) inQueue.QueueAction(
-                    Sub()
-                        Dim flag = packetData(0)
-                        Dim id = packetData(0)
-                        Dim data = packetData.SubView(4)
-                        Dim responseData As Byte() = Nothing
-                        Dim errorMessage As String = Nothing
-                        If flag <> PacketPrefixValue Then
-                            errorMessage = "Invalid header id."
-                        Else
-                            Select Case CType(id, CKLPacketId)
-                                Case CKLPacketId.[Error]
-                                    'ignore
-                                Case CKLPacketId.Keys
-                                    If _keys.Count <= 0 Then
-                                        errorMessage = "No keys to lend."
-                                    ElseIf data.Count <> 8 Then
-                                        errorMessage = "Invalid length. Require client token [4] + server token [4]."
-                                    Else
-                                        If _keyIndex >= _keys.Count Then _keyIndex = 0
-                                        Dim credentials = _keys(_keyIndex).GenerateCredentials(clientToken:=data.SubView(0, 4).ToUInt32,
-                                                                                             serverToken:=data.SubView(4, 4).ToUInt32)
-                                        responseData = {jar.Pack(credentials.AuthenticationROC).Data,
-                                                        jar.Pack(credentials.AuthenticationTFT).Data
-                                                       }.Fold.ToArray
-                                        logger.Log("Provided key '{0}' to {1}".Frmt(_keys(_keyIndex).Name, socket.Name), LogMessageType.Positive)
-                                        _keyIndex += 1
-                                    End If
-                                Case Else
-                                    errorMessage = "Invalid packet id."
-                            End Select
-                        End If
-
-                        If responseData IsNot Nothing Then
-                            socket.WritePacket(Concat({PacketPrefixValue, id, 0, 0}, responseData))
-                        End If
-                        If errorMessage IsNot Nothing Then
-                            logger.Log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
-                            socket.WritePacket(Concat({PacketPrefixValue, CKLPacketId.[Error]}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
-                        End If
-                    End Sub),
-                errorHandler:=Sub(exception) logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, exception.Message), LogMessageType.Problem)
+                consumer:=Function(packetData) inQueue.QueueAction(Sub() HandlePacket(socket, packetData)),
+                errorHandler:=Sub(exception) Logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, exception.Message), LogMessageType.Problem)
             )
+        End Sub
+        Private Sub HandlePacket(ByVal socket As PacketSocket, ByVal packetData As IReadableList(Of Byte))
+            Contract.Requires(socket IsNot Nothing)
+            Contract.Requires(packetData IsNot Nothing)
+            Contract.Assume(packetData.Count >= 4)
+
+            Dim flag = packetData(0)
+            Dim id = packetData(0)
+            Dim data = packetData.SubView(4)
+            Dim responseData As Byte() = Nothing
+            Dim errorMessage As String = Nothing
+            If flag <> PacketPrefixValue Then
+                errorMessage = "Invalid header id."
+            Else
+                Select Case CType(id, CKLPacketId)
+                    Case CKLPacketId.[Error]
+                        'ignore
+                    Case CKLPacketId.Keys
+                        If _keys.Count <= 0 Then
+                            errorMessage = "No keys to lend."
+                        ElseIf data.Count <> 8 Then
+                            errorMessage = "Invalid length. Require client token [4] + server token [4]."
+                        Else
+                            If _keyIndex >= _keys.Count Then _keyIndex = 0
+                            Dim credentials = _keys(_keyIndex).GenerateCredentials(clientToken:=data.SubView(0, 4).ToUInt32,
+                                                                                 serverToken:=data.SubView(4, 4).ToUInt32)
+                            responseData = {jar.Pack(credentials.AuthenticationROC).Data,
+                                            jar.Pack(credentials.AuthenticationTFT).Data
+                                           }.Fold.ToArray
+                            Logger.Log("Provided key '{0}' to {1}".Frmt(_keys(_keyIndex).Name, socket.Name), LogMessageType.Positive)
+                            _keyIndex += 1
+                        End If
+                    Case Else
+                        errorMessage = "Invalid packet id."
+                End Select
+            End If
+
+            If responseData IsNot Nothing Then
+                socket.WritePacket(Concat({PacketPrefixValue, id, 0, 0}, responseData))
+            End If
+            If errorMessage IsNot Nothing Then
+                Logger.Log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
+                socket.WritePacket(Concat({PacketPrefixValue, CKLPacketId.[Error]}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
+            End If
         End Sub
 
         Public Sub [Stop]()

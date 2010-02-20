@@ -9,7 +9,7 @@ Imports System.Runtime.InteropServices
 ' Review the values of the assembly attributes
 
 <Assembly: AssemblyTitle("Tinker")> 
-<Assembly: AssemblyDescription("")> 
+<Assembly: AssemblyDescription("A warcraft 3 hostbot.")> 
 <Assembly: AssemblyCompany("")> 
 <Assembly: AssemblyProduct("Tinker")> 
 <Assembly: AssemblyCopyright("")> 
@@ -34,4 +34,5 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyVersion("1.0.0.0")> 
 <Assembly: AssemblyFileVersion("1.0.0.0")> 
 
+<Assembly: CLSCompliant(False)> 
 <Assembly: ContractVerification(True)> 

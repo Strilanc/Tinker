@@ -67,28 +67,20 @@ Namespace WC3
             SyncLock lock
                 _sockets.Add(socket)
             End SyncLock
-            socket.AsyncReadPacket().CallWhenValueReady(
-                Sub(packetData, readException)
-                    If Not TryRemoveSocket(socket) Then Return
-                    If readException IsNot Nothing Then
-                        socket.Disconnect(expected:=False, reason:=readException.Message)
-                        Return
-                    End If
 
-                    Try
-                        Dim id = CType(packetData(1), Protocol.PacketId)
-                        Dim pickle = ProcessConnectingPlayer(socket, packetData)
-                        _logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
-                        _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description.Value), LogMessageType.DataParsed)
-                    Catch ex As Exception When TypeOf ex Is Net.Sockets.SocketException OrElse
-                                               TypeOf ex Is ObjectDisposedException OrElse
-                                               TypeOf ex Is PicklingException OrElse
-                                               TypeOf ex Is IO.IOException OrElse
-                                               TypeOf ex Is IO.InvalidDataException
-                        socket.Disconnect(expected:=False, reason:=ex.Message)
-                    End Try
+            socket.AsyncReadPacket().CallOnValueSuccess(
+                Sub(packetData)
+                    If Not TryRemoveSocket(socket) Then Return
+                    Dim id = CType(packetData(1), Protocol.PacketId)
+                    Dim pickle = ProcessConnectingPlayer(socket, packetData)
+                    _logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
+                    _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description.Value), LogMessageType.DataParsed)
                 End Sub
+            ).Catch(
+                Sub(ex) socket.Disconnect(expected:=False, reason:=ex.Message)
             )
+
+
             _clock.AsyncWait(FirstPacketTimeout).CallWhenReady(
                 Sub()
                     If Not TryRemoveSocket(socket) Then Return
