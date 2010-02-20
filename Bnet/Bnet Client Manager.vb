@@ -170,12 +170,11 @@ Namespace Bnet
                 _autoHook = _bot.QueueCreateActiveGameSetsAsyncView(
                         adder:=Sub(sender, server, gameSet)
                                    If gameSet.GameSettings.IsAdminGame Then Return
-                                   _client.QueueStartAdvertisingGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                                   _client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
                                                                      isPrivate:=gameSet.GameSettings.IsPrivate).SetHandled()
                                End Sub,
                         remover:=Sub(sender, server, gameSet)
-                                     _client.QueueStopAdvertisingGame(reason:="Auto",
-                                                                      id:=gameSet.GameSettings.GameDescription.GameId).SetHandled()
+                                     _client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription).SetHandled()
                                  End Sub)
             Else
                 Contract.Assume(_autoHook IsNot Nothing)

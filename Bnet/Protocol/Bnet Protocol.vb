@@ -384,13 +384,14 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly EnterChat As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.EnterChat,
                     New NullTerminatedStringJar("username").Weaken,
                     New NullTerminatedStringJar("statstring").Weaken) '[both parameters are unused in wc3]
+            Public Const MaxGameNameLength As Integer = 31
             Public Shared ReadOnly CreateGame3 As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.CreateGame3,
                     New EnumUInt32Jar(Of GameStates)("game state").Weaken,
                     New UInt32Jar("seconds since creation").Weaken,
                     New EnumUInt32Jar(Of WC3.Protocol.GameTypes)("game type").Weaken,
                     New UInt32Jar("unknown1=1023").Weaken,
                     New UInt32Jar("is ladder").Weaken,
-                    New NullTerminatedStringJar("name").Weaken,
+                    New NullTerminatedStringJar("name", maximumContentSize:=MaxGameNameLength).Weaken,
                     New NullTerminatedStringJar("password").Weaken,
                     New TextHexValueJar("num free slots", digitCount:=1).Weaken,
                     New TextHexValueJar("game id", digitCount:=8).Weaken,

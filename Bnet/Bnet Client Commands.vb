@@ -20,11 +20,10 @@ Namespace Bnet
             AddCommand(New CAdminCode)
             AddCommand(New CCancelHost)
             AddCommand(New CElevate)
-            AddCommand(New CGame)
-            AddCommand(New CHost)
+            AddCommand(New CommandGame)
+            AddCommand(New CommandHost)
             AddCommand(New CSay)
-            AddCommand(New CStartAdvertising)
-            AddCommand(New CStopAdvertising)
+            AddCommand(New CommandCancelAllHost)
             AddCommand(New CRefreshGamesList)
             AddCommand(New CAuto)
         End Sub
@@ -240,7 +239,7 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CHost
+        Private NotInheritable Class CommandHost
             Inherits TemplatedCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Host",
@@ -260,8 +259,8 @@ Namespace Bnet
                                      ).Defuturized
                 Dim futureAdvertised = futureGameSet.Select(
                     Function(gameSet)
-                        Dim result = target.Client.QueueStartAdvertisingGame(gameDescription:=gameSet.GameSettings.GameDescription,
-                                                                             isPrivate:=gameSet.GameSettings.IsPrivate)
+                        Dim result = target.Client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
+                                                                            isPrivate:=gameSet.GameSettings.IsPrivate)
                         If user IsNot Nothing Then
                             target.QueueSetUserGameSet(user, gameSet)
                             gameSet.FutureDisposed.CallOnSuccess(Sub() target.QueueResetUserGameSet(user, gameSet)).SetHandled()
@@ -270,20 +269,20 @@ Namespace Bnet
                         onStarted = Sub(sender, active)
                                         If active Then Return
                                         RemoveHandler gameSet.StateChanged, onStarted
-                                        target.Client.QueueStopAdvertisingGame(id:=gameSet.GameSettings.GameDescription.GameId, reason:="Game Started")
+                                        target.Client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription)
                                     End Sub
                         AddHandler gameSet.StateChanged, onStarted
                         Return result
                     End Function).Defuturized
                 futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futureGameSet.Value.Dispose())
-                Dim futureDesc = futureAdvertised.EvalOnSuccess(Function() futureGameSet.Value.GameSettings.GameDescription)
-                Return futureDesc.Select(Function(desc) "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(desc.Name,
-                                                                                                                desc.GameStats.AdvertisedPath,
-                                                                                                                futureGameSet.Value.GameSettings.AdminPassword))
+                Return From gameDescription In futureAdvertised
+                       Select "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(gameDescription.Name,
+                                                                                      gameDescription.GameStats.AdvertisedPath,
+                                                                                      futureGameSet.Value.GameSettings.AdminPassword)
             End Function
         End Class
 
-        Private NotInheritable Class CGame
+        Private NotInheritable Class CommandGame
             Inherits PartialCommand(Of Bnet.ClientManager)
             Public Sub New()
                 MyBase.New(Name:="Game",
@@ -312,7 +311,7 @@ Namespace Bnet
                                 Return game.QueueCommandProcessText(target.Bot, Nothing, argumentRest)
                             End Function
                         )
-                            End Function
+                    End Function
                 ).Defuturized.Defuturized
             End Function
         End Class
@@ -392,39 +391,17 @@ Namespace Bnet
             End Function
         End Class
 
-        Private NotInheritable Class CStartAdvertising
+        Private NotInheritable Class CommandCancelAllHost
             Inherits TemplatedCommand(Of Bnet.Client)
             Public Sub New()
-                MyBase.New(Name:="StartAdvertising",
-                           template:="name=<game name> map=<search query> -private -p",
-                           Description:="Places a game in the custom games list, but doesn't start a new game server to accept the joiners.",
-                           Permissions:="root:4,games:5")
-            End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
-                Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
-                Dim hostname As InvariantString = If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value)
-                Return target.QueueStartAdvertisingGame(
-                    gameDescription:=WC3.LocalGameDescription.FromArguments(
-                        name:=argument.NamedValue("name"),
-                        map:=map,
-                        stats:=New WC3.GameStats(map, hostname, argument),
-                        clock:=New SystemClock()),
-                    isPrivate:=argument.HasOptionalSwitch("Private") OrElse argument.HasOptionalSwitch("p")).EvalOnSuccess(Function() "Started advertising")
-            End Function
-        End Class
-
-        Private NotInheritable Class CStopAdvertising
-            Inherits TemplatedCommand(Of Bnet.Client)
-            Public Sub New()
-                MyBase.New(Name:="StopAdvertising",
+                MyBase.New(Name:="CancelAllHost",
                            template:="",
                            Description:="Stops placing a game in the custom games list and unlinks from any linked server.",
                            Permissions:="root:4,games:5")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As Bnet.Client, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Return target.QueueStopAdvertisingGame("Advertising stopped manually.").EvalOnSuccess(Function() "Stopped advertising.")
+                Return target.QueueRemoveAllAdvertisableGames().EvalOnSuccess(Function() "Cancelled advertising of all games.")
             End Function
         End Class
 

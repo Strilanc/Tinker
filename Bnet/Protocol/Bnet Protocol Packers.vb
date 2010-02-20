@@ -132,11 +132,6 @@ Namespace Bnet.Protocol
         Public Function MakeCreateGame3(ByVal game As WC3.GameDescription) As Packet
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Const MAX_GAME_NAME_LENGTH As UInteger = 31
-            If game.Name.Length > MAX_GAME_NAME_LENGTH Then
-                Throw New ArgumentException("Game name must be less than 32 characters long.", "game")
-            End If
-
             Return Packet.FromValue(Packets.ClientToServer.CreateGame3, New Dictionary(Of InvariantString, Object) From {
                     {"game state", game.GameState},
                     {"seconds since creation", CUInt(game.Age.TotalSeconds)},

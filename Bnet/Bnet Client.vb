@@ -53,10 +53,93 @@ Namespace Bnet
         Private WithEvents _wardenClient As Warden.Client
 
         'game
-        Private _advertisedGameDescription As WC3.LocalGameDescription
-        Private _advertisedPrivate As Boolean
-        Private _advertiseTicker As IDisposable
-        Private _futureAdvertisedGame As New FutureAction
+        Private Class AdvertisementEntry
+            Public ReadOnly BaseGameDescription As WC3.LocalGameDescription
+            Public ReadOnly IsPrivate As Boolean
+            Private ReadOnly _initialGameDescription As New FutureFunction(Of WC3.LocalGameDescription)
+            Private _failCount As UInt32
+            Public Sub New(ByVal gameDescription As WC3.LocalGameDescription, ByVal isPrivate As Boolean)
+                Me.BaseGameDescription = gameDescription
+                Me.IsPrivate = isPrivate
+            End Sub
+
+            Public Sub SetNameFailed()
+                _failCount += 1UI
+            End Sub
+            Public Sub SetNameSucceeded()
+                _initialGameDescription.TrySetSucceeded(UpdatedGameDescription(New ManualClock()))
+            End Sub
+            Public Sub SetRemoved()
+                _initialGameDescription.TrySetFailed(New InvalidOperationException("Removed before advertising succeeded."))
+            End Sub
+
+            Public ReadOnly Property FutureDescription As IFuture(Of WC3.LocalGameDescription)
+                Get
+                    Contract.Ensures(Contract.Result(Of IFuture(Of WC3.LocalGameDescription))() IsNot Nothing)
+                    Return _initialGameDescription
+                End Get
+            End Property
+            Private ReadOnly Property GameName As String
+                Get
+                    Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                    Dim result = BaseGameDescription.Name
+                    If _failCount > 0 Then
+                        Dim suffix = " #{0}".Frmt(_failCount)
+                        If result.Length + suffix.Length > Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength Then
+                            result = result.Substring(0, Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength - suffix.Length)
+                        End If
+                        result += suffix
+                    End If
+                    Return result
+                End Get
+            End Property
+            Public ReadOnly Property UpdatedGameDescription(ByVal clock As IClock) As WC3.LocalGameDescription
+                Get
+                    Dim useFull = False
+                    Dim gameState = Protocol.GameStates.Unknown0x10
+                    If IsPrivate Then gameState = gameState Or Protocol.GameStates.Private
+                    If useFull Then
+                        gameState = gameState Or Protocol.GameStates.Full
+                    Else
+                        gameState = gameState And Not Protocol.GameStates.Full
+                    End If
+                    'If in_progress Then gameState = gameState Or BnetPacket.GameStateFlags.InProgress
+                    'If Not empty Then game_state_flags = game_state_flags Or FLAG_NOT_EMPTY [causes problems: why?]
+
+                    Dim gameType = WC3.Protocol.GameTypes.CreateGameUnknown0 Or BaseGameDescription.GameType
+                    If IsPrivate Then
+                        gameState = gameState Or Protocol.GameStates.Private
+                        gameType = gameType Or WC3.Protocol.GameTypes.PrivateGame
+                    Else
+                        gameState = gameState And Not Protocol.GameStates.Private
+                        gameType = gameType And Not WC3.Protocol.GameTypes.PrivateGame
+                    End If
+                    Select Case BaseGameDescription.GameStats.Observers
+                        Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
+                            gameType = gameType Or WC3.Protocol.GameTypes.ObsFull
+                        Case WC3.GameObserverOption.ObsOnDefeat
+                            gameType = gameType Or WC3.Protocol.GameTypes.ObsOnDeath
+                        Case WC3.GameObserverOption.NoObservers
+                            gameType = gameType Or WC3.Protocol.GameTypes.ObsNone
+                    End Select
+
+                    Return New WC3.LocalGameDescription(name:=Me.GameName,
+                                                        gamestats:=BaseGameDescription.GameStats,
+                                                        hostport:=BaseGameDescription.Port,
+                                                        gameid:=BaseGameDescription.GameId,
+                                                        entrykey:=BaseGameDescription.EntryKey,
+                                                        totalslotcount:=BaseGameDescription.TotalSlotCount,
+                                                        gameType:=gameType,
+                                                        state:=gameState,
+                                                        usedslotcount:=BaseGameDescription.UsedSlotCount,
+                                                        baseage:=BaseGameDescription.Age,
+                                                        clock:=clock)
+                End Get
+            End Property
+        End Class
+        Private ReadOnly _advertisementList As New List(Of AdvertisementEntry)
+        Private _curAdvertisement As AdvertisementEntry
+        Private _advertiseRefreshTicker As IDisposable
         Private _reportedListenPort As UShort
 
         'connection
@@ -69,11 +152,13 @@ Namespace Bnet
         Private _futureLoggedIn As New FutureAction
 
         Public Event StateChanged(ByVal sender As Client, ByVal oldState As ClientState, ByVal newState As ClientState)
+        Public Event AdvertisedGame(ByVal sender As Client, ByVal gameDescription As WC3.LocalGameDescription, ByVal [private] As Boolean, ByVal refreshed As Boolean)
 
         Private _lastChannel As InvariantString
         Private _state As ClientState
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_advertisementList IsNot Nothing)
             Contract.Invariant(_packetHandler IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
@@ -83,12 +168,11 @@ Namespace Bnet
             Contract.Invariant(_productAuthenticator IsNot Nothing)
             Contract.Invariant(_futureLoggedIn IsNot Nothing)
             Contract.Invariant(_futureConnected IsNot Nothing)
-            Contract.Invariant(_futureAdvertisedGame IsNot Nothing)
             Contract.Invariant(_externalProvider IsNot Nothing)
             Contract.Invariant((_socket IsNot Nothing) = (_state > ClientState.InitiatingConnection))
             Contract.Invariant((_wardenClient IsNot Nothing) = (_state > ClientState.WaitingForProgramAuthenticationBegin))
             Contract.Invariant((_state <= ClientState.EnterUserCredentials) OrElse (_userCredentials IsNot Nothing))
-            Contract.Invariant((_advertisedGameDescription IsNot Nothing) = (_state >= ClientState.CreatingGame))
+            Contract.Invariant((_curAdvertisement IsNot Nothing) = (_state >= ClientState.CreatingGame))
         End Sub
 
         Public Sub New(ByVal profile As Bot.ClientProfile,
@@ -102,7 +186,6 @@ Namespace Bnet
             Contract.Assume(productAuthenticator IsNot Nothing)
             Me._futureConnected.SetHandled()
             Me._futureLoggedIn.SetHandled()
-            Me._futureAdvertisedGame.SetHandled()
 
             'Pass values
             Me._clock = clock
@@ -150,16 +233,6 @@ Namespace Bnet
             Get
                 If _userCredentials Is Nothing Then Throw New InvalidOperationException("No credentials to get username from.")
                 Return Me._userCredentials.UserName
-            End Get
-        End Property
-        Public ReadOnly Property AdvertisedGameDescription As WC3.LocalGameDescription
-            Get
-                Return Me._advertisedGameDescription
-            End Get
-        End Property
-        Public ReadOnly Property AdvertisedPrivate As Boolean
-            Get
-                Return Me._advertisedPrivate
             End Get
         End Property
         Public Function QueueGetState() As IFuture(Of ClientState)
@@ -413,7 +486,7 @@ Namespace Bnet
             'Finalize class futures
             _futureConnected.TrySetFailed(New InvalidOperationException("Disconnected before connection completed ({0}).".Frmt(reason)))
             _futureLoggedIn.TrySetFailed(New InvalidOperationException("Disconnected before logon completed ({0}).".Frmt(reason)))
-            _futureAdvertisedGame.TrySetFailed(New InvalidOperationException("Disconnected before game creation completed ({0}).".Frmt(reason)))
+            _curAdvertisement = Nothing
 
             ChangeState(ClientState.Disconnected)
             Logger.Log("Disconnected ({0})".Frmt(reason), LogMessageType.Negative)
@@ -421,8 +494,6 @@ Namespace Bnet
                 _wardenClient.Dispose()
                 _wardenClient = Nothing
             End If
-
-            'outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, reason))
 
             If Not expected AndAlso _allowRetryConnect Then
                 _allowRetryConnect = False
@@ -441,138 +512,73 @@ Namespace Bnet
         End Function
 
         Private Sub EnterChannel(ByVal channel As String)
-            _futureAdvertisedGame.TrySetFailed(New InvalidOperationException("Re-entered channel before game was created."))
             SendPacket(Protocol.MakeJoinChannel(Protocol.JoinChannelType.ForcedJoin, channel))
             ChangeState(ClientState.Channel)
+            SyncAdvertisements()
         End Sub
+#End Region
 
-        Private Function BeginAdvertiseGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                            ByVal isPrivate As Boolean) As IFuture
-            Contract.Requires(gameDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-
+#Region "Advertising"
+        Private Sub SyncAdvertisements()
             Select Case _state
-                Case ClientState.Disconnected To ClientState.WaitingForEnterChat
-                    Throw New InvalidOperationException("Can't advertise a game until connected.")
-                Case ClientState.CreatingGame
-                    If _advertisedGameDescription.GameId = gameDescription.GameId Then Return _futureAdvertisedGame
-                    Throw New InvalidOperationException("Already creating a game.")
-                Case ClientState.AdvertisingGame
-                    If _advertisedGameDescription.GameId = gameDescription.GameId Then Return _futureAdvertisedGame
-                    Throw New InvalidOperationException("Already advertising a game.")
                 Case ClientState.Channel
-                    SetReportedListenPort(gameDescription.Port)
-                    Me._advertisedGameDescription = gameDescription
-                    Me._advertisedPrivate = isPrivate
-                    Me._futureAdvertisedGame.TrySetFailed(New OperationFailedException("Started advertising another game."))
-                    Me._futureAdvertisedGame = New FutureAction
-                    Me._futureAdvertisedGame.SetHandled()
+                    If _advertisementList.None Then Return
                     ChangeState(ClientState.CreatingGame)
-                    Try
-                        AdvertiseGame(useFull:=False, refreshing:=False)
-                    Catch ex As Exception
-                        _futureAdvertisedGame.TrySetFailed(New OperationFailedException("Failed to send data."))
-                        ChangeState(ClientState.Channel)
-                        Throw
-                    End Try
-                    Return _futureAdvertisedGame
-                Case Else
-                    Throw _state.MakeImpossibleValueException
+                    _curAdvertisement = _advertisementList.First
+                    SetReportedListenPort(_curAdvertisement.BaseGameDescription.Port)
+                    SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedGameDescription(_clock)))
+                Case ClientState.AdvertisingGame, ClientState.CreatingGame
+                    If _advertisementList.Contains(_curAdvertisement) Then Return
+                    SendPacket(Protocol.MakeCloseGame3())
+                    If _advertiseRefreshTicker IsNot Nothing Then
+                        _advertiseRefreshTicker.Dispose()
+                        _advertiseRefreshTicker = Nothing
+                    End If
+                    _curAdvertisement = Nothing
+                    EnterChannel(_lastChannel)
             End Select
-        End Function
-        Private Sub AdvertiseGame(Optional ByVal useFull As Boolean = False,
-                                  Optional ByVal refreshing As Boolean = False)
-            If refreshing Then
-                If _state <> ClientState.AdvertisingGame Then
-                    Throw New InvalidOperationException("Must have already created game before refreshing")
-                End If
-                ChangeState(ClientState.AdvertisingGame) '[throws event]
-            End If
-
-            Dim gameState = Protocol.GameStates.Unknown0x10
-            If _advertisedPrivate Then gameState = gameState Or Protocol.GameStates.Private
-            If useFull Then
-                gameState = gameState Or Protocol.GameStates.Full
-            Else
-                gameState = gameState And Not Protocol.GameStates.Full
-            End If
-            'If in_progress Then gameState = gameState Or BnetPacket.GameStateFlags.InProgress
-            'If Not empty Then game_state_flags = game_state_flags Or FLAG_NOT_EMPTY [causes problems: why?]
-
-            Dim gameType = WC3.Protocol.GameTypes.CreateGameUnknown0 Or Me._advertisedGameDescription.GameType
-            If _advertisedPrivate Then
-                gameState = gameState Or Protocol.GameStates.Private
-                gameType = gameType Or WC3.Protocol.GameTypes.PrivateGame
-            Else
-                gameState = gameState And Not Protocol.GameStates.Private
-                gameType = gameType And Not WC3.Protocol.GameTypes.PrivateGame
-            End If
-            Select Case Me._advertisedGameDescription.GameStats.Observers
-                Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
-                    gameType = gameType Or WC3.Protocol.GameTypes.ObsFull
-                Case WC3.GameObserverOption.ObsOnDefeat
-                    gameType = gameType Or WC3.Protocol.GameTypes.ObsOnDeath
-                Case WC3.GameObserverOption.NoObservers
-                    gameType = gameType Or WC3.Protocol.GameTypes.ObsNone
-            End Select
-
-            Me._advertisedGameDescription = New WC3.LocalGameDescription(
-                    name:=_advertisedGameDescription.Name,
-                    gamestats:=_advertisedGameDescription.GameStats,
-                    hostport:=_advertisedGameDescription.Port,
-                    gameid:=_advertisedGameDescription.GameId,
-                    entrykey:=_advertisedGameDescription.EntryKey,
-                    totalslotcount:=_advertisedGameDescription.TotalSlotCount,
-                    gameType:=gameType,
-                    state:=gameState,
-                    usedslotcount:=_advertisedGameDescription.UsedSlotCount,
-                    baseage:=_advertisedGameDescription.Age,
-                    clock:=New SystemClock())
-            SendPacket(Protocol.MakeCreateGame3(_advertisedGameDescription))
         End Sub
-        Public Function QueueStartAdvertisingGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                                  ByVal isPrivate As Boolean) As IFuture
+
+        Private Function AddAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription, ByVal isPrivate As Boolean) As IFuture(Of WC3.LocalGameDescription)
+            Contract.Requires(gameDescription IsNot Nothing)
+            Dim entry = (From e In _advertisementList Where e.BaseGameDescription.Equals(gameDescription)).FirstOrDefault
+            If entry Is Nothing Then
+                entry = New AdvertisementEntry(gameDescription, isPrivate)
+                _advertisementList.Add(entry)
+                SyncAdvertisements()
+            End If
+            Return entry.FutureDescription
+        End Function
+        Public Function QueueAddAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription,
+                                                 ByVal isPrivate As Boolean) As IFuture(Of WC3.LocalGameDescription)
             Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() BeginAdvertiseGame(gameDescription, isPrivate)).Defuturized
+            Return inQueue.QueueFunc(Function() AddAdvertisableGame(gameDescription, isPrivate)).Defuturized
         End Function
 
-        Private Sub StopAdvertisingGame(ByVal reason As String)
-            Contract.Requires(reason IsNot Nothing)
-
-            Select Case _state
-                Case ClientState.CreatingGame, ClientState.AdvertisingGame
-                    SendPacket(Protocol.MakeCloseGame3())
-                    If _advertiseTicker IsNot Nothing Then
-                        _advertiseTicker.Dispose()
-                        _advertiseTicker = Nothing
-                    End If
-                    EnterChannel(_lastChannel)
-                    _advertisedGameDescription = Nothing
-                    _futureAdvertisedGame.TrySetFailed(New OperationFailedException("Advertising cancelled: {0}.".Frmt(reason)))
-
-                Case Else
-                    Throw New InvalidOperationException("Wasn't advertising any games.")
-            End Select
+        Private Sub RemoveAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription)
+            For Each entry In From e In _advertisementList.ToList Where e.BaseGameDescription.Equals(gameDescription)
+                entry.SetRemoved()
+                _advertisementList.Remove(entry)
+            Next entry
+            SyncAdvertisements()
         End Sub
-        Public Function QueueStopAdvertisingGame(ByVal reason As String) As IFuture
-            Contract.Requires(reason IsNot Nothing)
+        Public Function QueueRemoveAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription) As IFuture
+            Contract.Requires(gameDescription IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() StopAdvertisingGame(reason))
+            Return inQueue.QueueAction(Sub() RemoveAdvertisableGame(gameDescription))
         End Function
-        Public Function QueueStopAdvertisingGame(ByVal id As UInt32, ByVal reason As String) As IFuture
-            Contract.Requires(reason IsNot Nothing)
+
+        Private Sub RemoveAllAdvertisableGames()
+            _advertisementList.Clear()
+            SyncAdvertisements()
+        End Sub
+        Public Function QueueRemoveAllAdvertisableGames() As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub()
-                                           If _advertisedGameDescription IsNot Nothing AndAlso _advertisedGameDescription.GameId <> id Then
-                                               Throw New InvalidOperationException("The game being advertised does not have that id.")
-                                           End If
-                                           StopAdvertisingGame(reason)
-                                       End Sub)
+            Return inQueue.QueueAction(Sub() RemoveAllAdvertisableGames())
         End Function
 #End Region
 
-#Region "Networking (Send)"
         Private Sub SendPacket(ByVal packet As Protocol.Packet)
             Contract.Requires(Me._state > ClientState.InitiatingConnection)
             Contract.Requires(packet IsNot Nothing)
@@ -592,7 +598,6 @@ Namespace Bnet
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendPacket(packet))
         End Function
-#End Region
 
 #Region "Networking (Connect)"
         Private Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
@@ -803,26 +808,40 @@ Namespace Bnet
             Contract.Requires(pickle IsNot Nothing)
             Dim result = pickle.Value
 
-            If result = 0 Then
-                If _state = ClientState.CreatingGame Then
-                    Logger.Log("Finished creating game.", LogMessageType.Positive)
-                    ChangeState(ClientState.AdvertisingGame)
-                    If Not _advertisedPrivate Then
-                        _advertiseTicker = _clock.AsyncRepeat(RefreshPeriod, Sub() inQueue.QueueAction(Sub() AdvertiseGame(useFull:=False, refreshing:=True)))
+            Select Case _state
+                Case ClientState.AdvertisingGame
+                    If result = 0 Then
+                        'Refresh succeeded
+                        outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedGameDescription(_clock), _curAdvertisement.IsPrivate, True))
+                    Else
+                        'Refresh failed (No idea why it happened, better return to channel and try again)
+                        If _advertiseRefreshTicker IsNot Nothing Then
+                            _advertiseRefreshTicker.Dispose()
+                            _advertiseRefreshTicker = Nothing
+                        End If
+                        _curAdvertisement = Nothing
+                        EnterChannel(_lastChannel)
                     End If
-                    _futureAdvertisedGame.TrySetSucceeded()
-                Else
-                    ChangeState(ClientState.AdvertisingGame) 'throw event
-                End If
-            Else
-                _futureAdvertisedGame.TrySetFailed(New OperationFailedException("BNET didn't allow game creation (error code: {0}). Most likely cause is game name in use.".Frmt(result)))
-                If _advertiseTicker IsNot Nothing Then
-                    _advertiseTicker.Dispose()
-                    _advertiseTicker = Nothing
-                End If
-                EnterChannel(_lastChannel)
-                'RaiseEvent RemovedGame(Me, _advertisedGameDescription, "Failed to advertise the game. Most likely cause is game name in use.")
-            End If
+                Case ClientState.CreatingGame
+                    If result = 0 Then
+                        'Initial advertisement succeeded, start refreshing
+                        ChangeState(ClientState.AdvertisingGame)
+                        If Not _curAdvertisement.IsPrivate Then
+                            _advertiseRefreshTicker = _clock.AsyncRepeat(RefreshPeriod, Sub() inQueue.QueueAction(
+                                Sub()
+                                    If _state <> ClientState.AdvertisingGame Then Return
+                                    SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedGameDescription(_clock)))
+                                End Sub))
+                        End If
+
+                        _curAdvertisement.SetNameSucceeded()
+                        outQueue.QueueAction(Sub() RaiseEvent AdvertisedGame(Me, _curAdvertisement.UpdatedGameDescription(_clock), _curAdvertisement.IsPrivate, False))
+                    Else
+                        'Initial advertisement failed, probably because of game name in use, try again with a new name
+                        _curAdvertisement.SetNameFailed()
+                        SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedGameDescription(_clock)))
+                    End If
+            End Select
         End Sub
         Private Sub IgnorePacket(ByVal value As Object)
             Contract.Requires(value IsNot Nothing)

@@ -33,9 +33,15 @@ Namespace Bnet
             Me._hooks.Add(Me._client.QueueAddPacketHandler(Packets.ServerToClient.QueryGamesList,
                     handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value))))
 
-            Me._client.QueueGetState.CallOnValueSuccess(Sub(state) OnClientStateChanged(Me._client, state, state))
-            AddHandler Me._client.StateChanged, AddressOf OnClientStateChanged
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.StateChanged, AddressOf OnClientStateChanged).Futurized)
+            Me._client.QueueGetState.QueueCallOnValueSuccess(inQueue, Sub(state) OnClientStateChanged(Me._client, state, state))
+            Dim stateChangedHandler As Client.StateChangedEventHandler = Sub(sender, oldState, newState) inQueue.QueueAction(
+                    Sub() OnClientStateChanged(sender, oldState, newState))
+            Dim advertisedHandler As Client.AdvertisedGameEventHandler = Sub(sender, gameDescription, [private], refreshed) inQueue.QueueAction(
+                    Sub() OnClientAdvertisedGame(sender, gameDescription, [private], refreshed))
+            AddHandler Me._client.StateChanged, stateChangedHandler
+            AddHandler Me._client.AdvertisedGame, advertisedHandler
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.StateChanged, stateChangedHandler).Futurized)
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.AdvertisedGame, advertisedHandler).Futurized)
         End Sub
 
         Public Function QueueDispose() As IFuture
@@ -135,36 +141,45 @@ Namespace Bnet
         Private Sub OnClientStateChanged(ByVal sender As Bnet.Client,
                                          ByVal oldState As Bnet.ClientState,
                                          ByVal newState As Bnet.ClientState)
-            inQueue.QueueAction(
-                Sub()
-                    If IsDisposed Then Return
-                    If sender IsNot _client Then Return
-                    txtTalk.Enabled = False
-                    lstState.Enabled = True
-                    lstState.BackColor = SystemColors.Window
-                    Select Case newState
-                        Case Bnet.ClientState.Channel, Bnet.ClientState.CreatingGame
-                            If oldState = Bnet.ClientState.AdvertisingGame Then lstState.Items.Clear()
-                            txtTalk.Enabled = True
-                        Case Bnet.ClientState.AdvertisingGame
-                            lstState.Items.Clear()
-                            lstState.Items.Add("Game")
-                            Dim g = _client.AdvertisedGameDescription
-                            Dim p = _client.AdvertisedPrivate
-                            If g IsNot Nothing Then
-                                lstState.Items.Add(g.Name)
-                                lstState.Items.Add(g.GameStats.AdvertisedPath)
-                                lstState.Items.Add(If(p, "Private", "Public"))
-                                lstState.Items.Add("Refreshed: {0}".Frmt(DateTime.Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
-                            End If
-                            numPrimaryStates = lstState.Items.Count
-                        Case Else
-                            lstState.Items.Clear()
-                            lstState.Enabled = False
-                            lstState.BackColor = SystemColors.ButtonFace
-                    End Select
-                End Sub
-            )
+            Contract.Requires(sender IsNot Nothing)
+
+            If IsDisposed Then Return
+            If sender IsNot _client Then Return
+            txtTalk.Enabled = False
+            lstState.Enabled = True
+            lstState.BackColor = SystemColors.Window
+            Select Case newState
+                Case Bnet.ClientState.Channel, Bnet.ClientState.CreatingGame
+                    If oldState = Bnet.ClientState.AdvertisingGame Then lstState.Items.Clear()
+                    txtTalk.Enabled = True
+                Case Bnet.ClientState.AdvertisingGame
+                    'advertised event will handle it
+                Case Else
+                    lstState.Items.Clear()
+                    lstState.Enabled = False
+                    lstState.BackColor = SystemColors.ButtonFace
+            End Select
+        End Sub
+        Private Sub OnClientAdvertisedGame(ByVal sender As Bnet.Client,
+                                           ByVal gameDescription As WC3.LocalGameDescription,
+                                           ByVal [private] As Boolean,
+                                           ByVal refreshed As Boolean)
+            Contract.Requires(sender IsNot Nothing)
+            Contract.Requires(gameDescription IsNot Nothing)
+
+            If IsDisposed Then Return
+            If sender IsNot _client Then Return
+            txtTalk.Enabled = False
+            lstState.Enabled = True
+            lstState.BackColor = SystemColors.Window
+
+            lstState.Items.Clear()
+            lstState.Items.Add("Game")
+            lstState.Items.Add(gameDescription.Name)
+            lstState.Items.Add(gameDescription.GameStats.AdvertisedPath)
+            lstState.Items.Add(If([private], "Private", "Public"))
+            lstState.Items.Add("Refreshed: {0}".Frmt(DateTime.Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
+            numPrimaryStates = lstState.Items.Count
         End Sub
 
         Private Sub comClient_IssuedCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comClient.IssuedCommand

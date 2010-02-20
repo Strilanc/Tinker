@@ -1,4 +1,5 @@
-﻿Public Class HoldPoint(Of TArg)
+﻿'''<summary>Allows continuing execution only once all attached handlers are finished.</summary>
+Public Class HoldPoint(Of TArg)
     Private ReadOnly _handlers As New List(Of Func(Of TArg, IFuture))
     Private ReadOnly _lock As New Object
 
