@@ -148,13 +148,13 @@
             Contract.Invariant(_tftKey IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal ROCKey As String, ByVal TFTKey As String)
-            Contract.Requires(ROCKey IsNot Nothing)
-            Contract.Requires(TFTKey IsNot Nothing)
-            If ROCKey.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Invalid ROC cd key.")
-            If TFTKey.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("Invalid TFT cd key.")
-            Me._rocKey = ROCKey
-            Me._tftKey = TFTKey
+        Public Sub New(ByVal cdKeyROC As String, ByVal cdKeyTFT As String)
+            Contract.Requires(cdKeyROC IsNot Nothing)
+            Contract.Requires(cdKeyTFT IsNot Nothing)
+            If cdKeyROC.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3ROC Then Throw New ArgumentException("Invalid ROC cd key.")
+            If cdKeyTFT.ToWC3CDKeyCredentials({}, {}).Product <> ProductType.Warcraft3TFT Then Throw New ArgumentException("Invalid TFT cd key.")
+            Me._rocKey = cdKeyROC
+            Me._tftKey = cdKeyTFT
         End Sub
 
         <ContractVerification(False)>

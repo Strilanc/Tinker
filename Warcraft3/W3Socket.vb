@@ -81,16 +81,11 @@ Namespace WC3
                 _socket.WritePacket(Concat({Protocol.Packets.PacketPrefix, packet.id, 0, 0},
                                             packet.Payload.Data.ToArray))
 
-            Catch e As Exception
-                If Not (TypeOf e Is SocketException OrElse
-                        TypeOf e Is ObjectDisposedException OrElse
-                        TypeOf e Is InvalidOperationException OrElse
-                        TypeOf e Is IO.InvalidDataException OrElse
-                        TypeOf e Is IO.IOException) Then
-                    e.RaiseAsUnexpected("Error sending {0} to {1}.".Frmt(packet.id, Name))
-                End If
-                Dim msg = "Error sending {0} to {1}: {2}".Frmt(packet.id, Name, e)
-                _socket.QueueDisconnect(expected:=False, reason:=msg)
+            Catch ex As Exception When TypeOf ex Is SocketException OrElse
+                                       TypeOf ex Is ObjectDisposedException OrElse
+                                       TypeOf ex Is InvalidOperationException OrElse
+                                       TypeOf ex Is IO.IOException
+                _socket.QueueDisconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, Name, ex))
             End Try
         End Sub
 

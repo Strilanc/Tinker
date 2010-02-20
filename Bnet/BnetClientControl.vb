@@ -178,7 +178,8 @@ Namespace Bnet
             lstState.Items.Add(gameDescription.Name)
             lstState.Items.Add(gameDescription.GameStats.AdvertisedPath)
             lstState.Items.Add(If([private], "Private", "Public"))
-            lstState.Items.Add("Refreshed: {0}".Frmt(DateTime.Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
+            lstState.Items.Add("{0}: {1}".Frmt(If(refreshed, "Refreshed", "Created"),
+                                               DateTime.Now.ToString("hh:mm:ss", Globalization.CultureInfo.CurrentCulture)))
             numPrimaryStates = lstState.Items.Count
         End Sub
 

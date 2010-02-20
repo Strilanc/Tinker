@@ -7,22 +7,22 @@ Namespace WC3
 
         Private ReadOnly _clock As IClock
         Private ReadOnly _accepter As New ConnectionAccepter
-        Private ReadOnly logger As Logger
-        Private ReadOnly sockets As New HashSet(Of W3Socket)
+        Private ReadOnly _logger As Logger
+        Private ReadOnly _sockets As New HashSet(Of W3Socket)
         Private ReadOnly lock As New Object()
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_accepter IsNot Nothing)
-            Contract.Invariant(logger IsNot Nothing)
-            Contract.Invariant(sockets IsNot Nothing)
+            Contract.Invariant(_logger IsNot Nothing)
+            Contract.Invariant(_sockets IsNot Nothing)
             Contract.Invariant(lock IsNot Nothing)
         End Sub
 
         Protected Sub New(ByVal clock As IClock,
                           Optional ByVal logger As Logger = Nothing)
             Contract.Assume(clock IsNot Nothing)
-            Me.logger = If(logger, New Logger)
+            Me._logger = If(logger, New Logger)
             Me._clock = clock
             AddHandler _accepter.AcceptedConnection, AddressOf OnAcceptConnection
         End Sub
@@ -35,11 +35,11 @@ Namespace WC3
         Public Sub Reset()
             SyncLock lock
                 Accepter.CloseAllPorts()
-                For Each socket In sockets
+                For Each socket In _sockets
                     Contract.Assume(socket IsNot Nothing)
                     socket.Disconnect(expected:=True, reason:="Accepter Reset")
                 Next socket
-                sockets.Clear()
+                _sockets.Clear()
             End SyncLock
         End Sub
 
@@ -56,56 +56,53 @@ Namespace WC3
         Private Sub OnAcceptConnection(ByVal sender As ConnectionAccepter, ByVal client As Net.Sockets.TcpClient)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(client IsNot Nothing)
-            Try
-                Dim socket = New W3Socket(New PacketSocket(stream:=client.GetStream,
-                                                           localendpoint:=CType(client.Client.LocalEndPoint, Net.IPEndPoint),
-                                                           remoteendpoint:=CType(client.Client.RemoteEndPoint, Net.IPEndPoint),
-                                                           timeout:=60.Seconds,
-                                                           logger:=logger,
-                                                           clock:=_clock))
-                logger.Log("New player connecting from {0}.".Frmt(socket.Name), LogMessageType.Positive)
+            Dim socket = New W3Socket(New PacketSocket(stream:=client.GetStream,
+                                                       localendpoint:=CType(client.Client.LocalEndPoint, Net.IPEndPoint),
+                                                       remoteendpoint:=CType(client.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                       timeout:=60.Seconds,
+                                                       logger:=_logger,
+                                                       clock:=_clock))
+            _logger.Log("New player connecting from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 
-                SyncLock lock
-                    sockets.Add(socket)
-                End SyncLock
-                socket.AsyncReadPacket().CallWhenValueReady(
-                    Sub(packetData, readException)
-                        If Not TryRemoveSocket(socket) Then Return
-                        If readException IsNot Nothing Then
-                            socket.Disconnect(expected:=False, reason:=readException.Message)
-                            Return
-                        End If
+            SyncLock lock
+                _sockets.Add(socket)
+            End SyncLock
+            socket.AsyncReadPacket().CallWhenValueReady(
+                Sub(packetData, readException)
+                    If Not TryRemoveSocket(socket) Then Return
+                    If readException IsNot Nothing Then
+                        socket.Disconnect(expected:=False, reason:=readException.Message)
+                        Return
+                    End If
 
-                        Try
-                            Dim id = CType(packetData(1), Protocol.PacketId)
-                            Dim pickle = ProcessConnectingPlayer(socket, packetData)
-                            logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
-                            logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description.Value), LogMessageType.DataParsed)
-                        Catch ex As Exception When TypeOf ex Is Net.Sockets.SocketException OrElse
-                                                   TypeOf ex Is PicklingException OrElse
-                                                   TypeOf ex Is IO.IOException OrElse
-                                                   TypeOf ex Is IO.InvalidDataException
-                            socket.Disconnect(expected:=False, reason:=ex.Message)
-                        End Try
-                    End Sub
-                )
-                _clock.AsyncWait(FirstPacketTimeout).CallWhenReady(
-                    Sub()
-                        If Not TryRemoveSocket(socket) Then Return
-                        logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)
-                        socket.Disconnect(expected:=False, reason:="Idle")
-                    End Sub
-                )
-            Catch ex As Exception
-                logger.Log("Error accepting connection: {0}".Frmt(ex.Message), LogMessageType.Problem)
-            End Try
+                    Try
+                        Dim id = CType(packetData(1), Protocol.PacketId)
+                        Dim pickle = ProcessConnectingPlayer(socket, packetData)
+                        _logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
+                        _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description.Value), LogMessageType.DataParsed)
+                    Catch ex As Exception When TypeOf ex Is Net.Sockets.SocketException OrElse
+                                               TypeOf ex Is ObjectDisposedException OrElse
+                                               TypeOf ex Is PicklingException OrElse
+                                               TypeOf ex Is IO.IOException OrElse
+                                               TypeOf ex Is IO.InvalidDataException
+                        socket.Disconnect(expected:=False, reason:=ex.Message)
+                    End Try
+                End Sub
+            )
+            _clock.AsyncWait(FirstPacketTimeout).CallWhenReady(
+                Sub()
+                    If Not TryRemoveSocket(socket) Then Return
+                    _logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)
+                    socket.Disconnect(expected:=False, reason:="Idle")
+                End Sub
+            )
         End Sub
 
         '''<summary>Atomically checks if a socket has already been processed, and removes it if not.</summary>
         Private Function TryRemoveSocket(ByVal socket As W3Socket) As Boolean
             SyncLock lock
-                If Not sockets.Contains(socket) Then Return False
-                sockets.Remove(socket)
+                If Not _sockets.Contains(socket) Then Return False
+                _sockets.Remove(socket)
             End SyncLock
             Return True
         End Function

@@ -40,8 +40,8 @@ Public NotInheritable Class PacketSocket
                    Optional ByVal timeout As TimeSpan? = Nothing,
                    Optional ByVal logger As Logger = Nothing,
                    Optional ByVal bufferSize As Integer = DefaultBufferSize,
-                   Optional ByVal headerBytesBeforeSizeCount As Integer = 2,
-                   Optional ByVal headerValueSizeByteCount As Integer = 2,
+                   Optional ByVal preheaderLength As Integer = 2,
+                   Optional ByVal sizeHeaderLength As Integer = 2,
                    Optional ByVal name As InvariantString? = Nothing)
         Contract.Assume(clock IsNot Nothing)
         Contract.Assume(stream IsNot Nothing)
@@ -53,9 +53,9 @@ Public NotInheritable Class PacketSocket
         Contract.Assume(localEndPoint.Port <= UInt16.MaxValue)
         Contract.Assume(remoteEndPoint.Port >= UInt16.MinValue)
         Contract.Assume(remoteEndPoint.Port <= UInt16.MaxValue)
-        Contract.Assume(headerBytesBeforeSizeCount >= 0)
-        Contract.Assume(headerValueSizeByteCount > 0)
-        Contract.Assume(bufferSize >= headerBytesBeforeSizeCount + headerValueSizeByteCount)
+        Contract.Assume(preheaderLength >= 0)
+        Contract.Assume(sizeHeaderLength > 0)
+        Contract.Assume(bufferSize >= preheaderLength + sizeHeaderLength)
         Contract.Assume(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
 
         Me._stream = stream
@@ -65,7 +65,7 @@ Public NotInheritable Class PacketSocket
             Me.deadManSwitch.Arm()
         End If
         Me._logger = If(logger, New Logger)
-        Me.packetStreamer = New PacketStreamer(Me._stream, headerBytesBeforeSizeCount, headerValueSizeByteCount, maxPacketSize:=bufferSize)
+        Me.packetStreamer = New PacketStreamer(Me._stream, preheaderLength, sizeHeaderLength, maxPacketSize:=bufferSize)
         Me._isConnected = True
         Me._remoteEndPoint = remoteEndPoint
         Me._localEndPoint = localEndPoint
@@ -85,14 +85,14 @@ Public NotInheritable Class PacketSocket
                                         Optional ByVal timeout As TimeSpan? = Nothing,
                                         Optional ByVal logger As Logger = Nothing,
                                         Optional ByVal bufferSize As Integer = DefaultBufferSize,
-                                        Optional ByVal headerBytesBeforeSizeCount As Integer = 2,
-                                        Optional ByVal headerValueSizeByteCount As Integer = 2,
+                                        Optional ByVal preheaderLength As Integer = 2,
+                                        Optional ByVal sizeHeaderLength As Integer = 2,
                                         Optional ByVal name As InvariantString? = Nothing) As IFuture(Of PacketSocket)
         Contract.Requires(remoteHost IsNot Nothing)
         Contract.Requires(clock IsNot Nothing)
-        Contract.Requires(headerBytesBeforeSizeCount >= 0)
-        Contract.Requires(headerValueSizeByteCount > 0)
-        Contract.Requires(bufferSize >= headerBytesBeforeSizeCount + headerValueSizeByteCount)
+        Contract.Requires(preheaderLength >= 0)
+        Contract.Requires(sizeHeaderLength > 0)
+        Contract.Requires(bufferSize >= preheaderLength + sizeHeaderLength)
         Contract.Requires(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
         Contract.Ensures(Contract.Result(Of IFuture(Of PacketSocket))() IsNot Nothing)
         Return From socket In AsyncTcpConnect(remoteHost, remotePort)
@@ -103,8 +103,8 @@ Public NotInheritable Class PacketSocket
                                        timeout,
                                        logger,
                                        bufferSize,
-                                       headerBytesBeforeSizeCount,
-                                       headerValueSizeByteCount,
+                                       preheaderLength,
+                                       sizeHeaderLength,
                                        name)
     End Function
 

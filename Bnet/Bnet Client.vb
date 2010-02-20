@@ -61,6 +61,7 @@ Namespace Bnet
             Public Sub New(ByVal gameDescription As WC3.LocalGameDescription, ByVal isPrivate As Boolean)
                 Me.BaseGameDescription = gameDescription
                 Me.IsPrivate = isPrivate
+                _initialGameDescription.SetHandled()
             End Sub
 
             Public Sub SetNameFailed()
@@ -82,14 +83,14 @@ Namespace Bnet
             Private ReadOnly Property GameName As String
                 Get
                     Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                    Const SuffixCharacters As String = "~!@#$%^&*(+-=,./\'"":;"
                     Dim result = BaseGameDescription.Name
-                    If _failCount > 0 Then
-                        Dim suffix = " #{0}".Frmt(_failCount)
-                        If result.Length + suffix.Length > Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength Then
-                            result = result.Substring(0, Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength - suffix.Length)
-                        End If
-                        result += suffix
+                    Dim suffix = New String((From b In _failCount.Bytes.ConvertFromBaseToBase(256, CUInt(SuffixCharacters.Length))
+                                             Select SuffixCharacters(b)).ToArray)
+                    If result.Length + suffix.Length > Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength Then
+                        result = result.Substring(0, Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength - suffix.Length)
                     End If
+                    result += suffix
                     Return result
                 End Get
             End Property
@@ -588,9 +589,12 @@ Namespace Bnet
                 Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
 
                 _socket.WritePacket(Concat({Protocol.Packets.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
-            Catch e As Exception
-                Disconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, e.Message))
-                e.RaiseAsUnexpected("Error sending {0} to {1}".Frmt(packet.Id, _socket.Name))
+            Catch ex As Exception When TypeOf ex Is IO.IOException OrElse
+                                       TypeOf ex Is InvalidOperationException OrElse
+                                       TypeOf ex Is ObjectDisposedException OrElse
+                                       TypeOf ex Is Net.Sockets.SocketException
+                Disconnect(expected:=False, reason:="Error sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, ex.Message))
+                ex.RaiseAsUnexpected("Error sending {0} to {1}".Frmt(packet.Id, _socket.Name))
             End Try
         End Sub
         Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture

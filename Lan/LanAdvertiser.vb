@@ -169,13 +169,12 @@ Namespace Lan
                 'Send
                 _socket.Send(data, data.Length, targetHost, targetPort)
 
-            Catch e As Pickling.PicklingException
-                'Ignore
-                _logger.Log("Error packing {0}: {1} (skipped)".Frmt(pk.id, e), LogMessageType.Negative)
-            Catch e As Exception
-                'Fail
-                _logger.Log("Error sending {0}: {1}".Frmt(pk.id, e), LogMessageType.Problem)
-                e.RaiseAsUnexpected("Exception rose past {0}.send".Frmt(Me.GetType.Name))
+            Catch ex As Exception When TypeOf ex Is InvalidOperationException OrElse
+                                       TypeOf ex Is ObjectDisposedException OrElse
+                                       TypeOf ex Is SocketException OrElse
+                                       TypeOf ex Is IO.IOException
+                _logger.Log("Error sending {0}: {1}".Frmt(pk.Id, ex), LogMessageType.Problem)
+                ex.RaiseAsUnexpected("Exception rose past {0}.send".Frmt(Me.GetType.Name))
             End Try
         End Sub
 

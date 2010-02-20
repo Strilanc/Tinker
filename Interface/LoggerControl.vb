@@ -268,7 +268,7 @@ Public Class LoggerControl
             End While
 
             txtLog.Select(txtLog.TextLength, 0)
-        Catch e As Exception
+        Catch e As InvalidOperationException
             e.RaiseAsUnexpected("Exception rose post LoggerControl.emptyQueue")
         End Try
     End Sub
