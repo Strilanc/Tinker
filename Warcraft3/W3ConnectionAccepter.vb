@@ -80,7 +80,6 @@ Namespace WC3
                 Sub(ex) socket.Disconnect(expected:=False, reason:=ex.Message)
             )
 
-
             _clock.AsyncWait(FirstPacketTimeout).CallWhenReady(
                 Sub()
                     If Not TryRemoveSocket(socket) Then Return

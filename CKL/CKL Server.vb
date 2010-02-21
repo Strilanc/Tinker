@@ -91,6 +91,7 @@ Namespace CKL
                 errorHandler:=Sub(exception) Logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, exception.Message), LogMessageType.Problem)
             )
         End Sub
+        <ContractVerification(False)>
         Private Sub HandlePacket(ByVal socket As PacketSocket, ByVal packetData As IReadableList(Of Byte))
             Contract.Requires(socket IsNot Nothing)
             Contract.Requires(packetData IsNot Nothing)
@@ -115,7 +116,7 @@ Namespace CKL
                         Else
                             If _keyIndex >= _keys.Count Then _keyIndex = 0
                             Dim credentials = _keys(_keyIndex).GenerateCredentials(clientToken:=data.SubView(0, 4).ToUInt32,
-                                                                                 serverToken:=data.SubView(4, 4).ToUInt32)
+                                                                                   serverToken:=data.SubView(4, 4).ToUInt32)
                             responseData = {jar.Pack(credentials.AuthenticationROC).Data,
                                             jar.Pack(credentials.AuthenticationTFT).Data
                                            }.Fold.ToArray

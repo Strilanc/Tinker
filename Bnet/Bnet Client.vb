@@ -553,7 +553,7 @@ Namespace Bnet
         Public Function QueueAddAdvertisableGame(ByVal gameDescription As WC3.LocalGameDescription,
                                                  ByVal isPrivate As Boolean) As IFuture(Of WC3.LocalGameDescription)
             Contract.Requires(gameDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of WC3.LocalGameDescription))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AddAdvertisableGame(gameDescription, isPrivate)).Defuturized
         End Function
 
