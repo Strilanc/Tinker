@@ -92,7 +92,7 @@ Namespace WC3.Replay
             WriteReplayEntryPickle(ReplayEntryId.LobbyState,
                                    Format.ReplayEntryLobbyState,
                                    New Dictionary(Of InvariantString, Object) From {
-                                        {"slots", (From slot In slots Select Protocol.SlotJar.PackSlot(slot, Nothing)).ToList},
+                                        {"slots", (From slot In slots Select Protocol.SlotJar.PackSlot(slot)).ToList},
                                         {"random seed", randomSeed},
                                         {"layout style", map.LayoutStyle},
                                         {"num player slots", map.Slots.Count}})

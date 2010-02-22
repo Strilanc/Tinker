@@ -18,7 +18,7 @@ Namespace WC3.Protocol
         End Sub
 
         Public Shared Function PackSlot(ByVal slot As Slot,
-                                        ByVal receiver As Player) As Dictionary(Of InvariantString, Object)
+                                        Optional ByVal receiver As Player = Nothing) As Dictionary(Of InvariantString, Object)
             Contract.Requires(slot IsNot Nothing)
             Contract.Requires(receiver IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, Object))() IsNot Nothing)

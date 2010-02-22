@@ -1,4 +1,5 @@
 ﻿Namespace WC3
+    <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class Slot
         Public Const ObserverTeamIndex As Byte = 12
         Public Enum LockState
@@ -31,8 +32,7 @@
                        Optional ByVal race As Protocol.Races = Protocol.Races.Random,
                        Optional ByVal handicap As Byte = 100,
                        Optional ByVal locked As LockState = LockState.Unlocked)
-            Contract.Requires(index > 0)
-            Contract.Requires(index <= 12)
+            Contract.Requires(index < 12)
             Contract.Requires(team <= 12)
             Contract.Requires(contents IsNot Nothing)
             Me._index = index
@@ -54,6 +54,8 @@
                         Optional ByVal raceUnlocked As Boolean? = Nothing,
                         Optional ByVal contents As SlotContents = Nothing)
             Contract.Requires(template IsNot Nothing)
+            Contract.Requires(Not index.HasValue OrElse index.Value < 12)
+            Contract.Requires(Not team.HasValue OrElse team.Value <= 12)
             Me._index = If(index, template._index)
             Me._color = If(color, template._color)
             Me._team = If(team, template._team)
@@ -66,8 +68,7 @@
 
         Public ReadOnly Property Index As Byte
             Get
-                Contract.Ensures(Contract.Result(Of Byte)() > 0)
-                Contract.Ensures(Contract.Result(Of Byte)() <= 12)
+                Contract.Ensures(Contract.Result(Of Byte)() < 12)
                 Return _index
             End Get
         End Property
@@ -111,6 +112,7 @@
 
         <Pure()>
         Public Function WithIndex(ByVal index As Byte) As Slot
+            Contract.Requires(index < 12)
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Return New Slot(Me, index:=index)
         End Function
@@ -176,6 +178,10 @@
             result += If(Team = ObserverTeamIndex, "Observer", "Team {0}, {1}, {2}".Frmt(Team + 1, Race, Color))
             result = result.Padded(30)
             Return Contents.AsyncGenerateDescription.Select(Function(desc) result + desc)
+        End Function
+
+        Public Overrides Function ToString() As String
+            Return "Index:{0}, Team:{1}, ContentType:{2}".Frmt(Index, Team, Contents.GetType)
         End Function
     End Class
 End Namespace

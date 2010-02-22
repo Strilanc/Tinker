@@ -19,14 +19,14 @@ Friend Module SharedTestObjects
         name:="Test Map",
         playableWidth:=256,
         playableHeight:=256,
-        slots:={New Slot(index:=1,
+        slots:={New Slot(index:=0,
                          raceunlocked:=False,
                          color:=PlayerColor.Red,
                          team:=0,
                          contents:=New SlotContentsOpen),
-                New Slot(index:=2,
+                New Slot(index:=1,
                          raceunlocked:=False,
-                         color:=PlayerColor.Red,
+                         color:=PlayerColor.Blue,
                          team:=0,
                          contents:=New SlotContentsOpen)}.AsReadableList)
     Friend ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")

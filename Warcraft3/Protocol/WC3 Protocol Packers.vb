@@ -112,25 +112,22 @@ Namespace WC3.Protocol
                                 {"reason", CByte(reportedReason)}})
         End Function
         <Pure()>
-        Public Function MakeLobbyState(ByVal receiver As Player,
-                                       ByVal map As Map,
+        Public Function MakeLobbyState(ByVal layoutStyle As LobbyLayoutStyle,
                                        ByVal slots As IEnumerable(Of Slot),
                                        ByVal randomSeed As ModInt32,
+                                       Optional ByVal receiver As Player = Nothing,
                                        Optional ByVal hideSlots As Boolean = False) As Packet
-            Contract.Requires(receiver IsNot Nothing)
-            Contract.Requires(map IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim reportedPlayerSlots = map.Slots.Count
+            Dim reportedPlayerSlots = slots.Count
             If hideSlots Then
-                'reporting the wrong number of slots causes wc3 not to show them
-                reportedPlayerSlots = If(reportedPlayerSlots = 12, 11, 12)
+                reportedPlayerSlots = 13 '[making the reported count larger than the true count causes wc3 to not update the slot layout]
             End If
 
             Return Packet.FromValue(Packets.LobbyState, New Dictionary(Of InvariantString, Object) From {
                     {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToList},
                     {"random seed", CUInt(randomSeed)},
-                    {"layout style", map.LayoutStyle},
+                    {"layout style", layoutStyle},
                     {"num player slots", reportedPlayerSlots}})
         End Function
         <Pure()>

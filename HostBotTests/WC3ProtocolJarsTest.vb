@@ -28,21 +28,21 @@ Public Class WC3ProtocolJarsTest
                     })
 
         Dim g = New WC3.Game("test", TestSettings, New ManualClock())
-        Dim s1 = New Slot(index:=1, raceUnlocked:=True, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)
-        Dim s2 = s1.WithIndex(2).WithContents(New SlotContentsClosed)
-        Dim s3 = s1.WithIndex(3).WithContents(New SlotContentsComputer(ComputerLevel.Insane))
-        Dim s4 = s1.WithIndex(4).WithContents(New SlotContentsPlayer(TestPlayer))
+        Dim s1 = New Slot(index:=0, raceUnlocked:=True, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)
+        Dim s2 = s1.WithIndex(1).WithContents(New SlotContentsClosed)
+        Dim s3 = s1.WithIndex(2).WithContents(New SlotContentsComputer(ComputerLevel.Insane))
+        Dim s4 = s1.WithIndex(3).WithContents(New SlotContentsPlayer(TestPlayer))
         JarTest(jar,
-                value:=SlotJar.PackSlot(s1, Nothing),
+                value:=SlotJar.PackSlot(s1),
                 data:={0, 255, 0, 0, 0, 0, 96, 1, 100})
         JarTest(jar,
-                value:=SlotJar.PackSlot(s2, Nothing),
+                value:=SlotJar.PackSlot(s2),
                 data:={0, 255, 1, 0, 0, 0, 96, 1, 100})
         JarTest(jar,
-                value:=SlotJar.PackSlot(s3, Nothing),
+                value:=SlotJar.PackSlot(s3),
                 data:={0, 255, 2, 1, 0, 0, 96, 2, 100})
         JarTest(jar,
-                value:=SlotJar.PackSlot(s4, Nothing),
+                value:=SlotJar.PackSlot(s4),
                 data:={1, 254, 2, 0, 0, 0, 96, 1, 100})
     End Sub
 End Class

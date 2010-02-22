@@ -22,9 +22,8 @@
             End Get
         End Property
 
-        Public Overridable ReadOnly Property DataState(ByVal receiver As Player) As Protocol.SlotState
+        Public Overridable ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
             Get
-                Contract.Requires(receiver IsNot Nothing)
                 Return Protocol.SlotState.Open
             End Get
         End Property
@@ -33,15 +32,13 @@
                 Return Protocol.ComputerLevel.Normal
             End Get
         End Property
-        Public Overridable ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As PID?
+        Public Overridable ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PID?
             Get
-                Contract.Requires(receiver IsNot Nothing)
                 Return Nothing
             End Get
         End Property
-        Public Overridable ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
+        Public Overridable ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
             Get
-                Contract.Requires(receiver IsNot Nothing)
                 Return 255
             End Get
         End Property
@@ -52,7 +49,7 @@
             Open = 2
             ReservationForPlayer = 3
         End Enum
-        Public Overridable Function WantPlayer(ByVal name As InvariantString?) As WantPlayerPriority
+        Public Overridable Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Filled
         End Function
         Public Overridable Function WithPlayer(ByVal player As Player) As SlotContents
@@ -93,7 +90,7 @@
         Public Overrides Function WithPlayer(ByVal player As Player) As SlotContents
             Return New SlotContentsPlayer(player)
         End Function
-        Public Overrides Function WantPlayer(ByVal name As InvariantString?) As WantPlayerPriority
+        Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Open
         End Function
         Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
@@ -103,13 +100,13 @@
 
     Public Class SlotContentsClosed
         Inherits SlotContentsOpen
-        Public Overrides Function WantPlayer(ByVal name As InvariantString?) As WantPlayerPriority
+        Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Closed
         End Function
         Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
             Return "Closed".Futurized
         End Function
-        Public Overrides ReadOnly Property DataState(ByVal receiver As Player) As Protocol.SlotState
+        Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return Protocol.SlotState.Closed
             End Get
@@ -135,7 +132,7 @@
                 Return level
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(ByVal receiver As Player) As Protocol.SlotState
+        Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return Protocol.SlotState.Occupied
             End Get
@@ -165,7 +162,7 @@
                 Return _player.PID
             End Get
         End Property
-        Public Overrides Function WantPlayer(ByVal name As InvariantString?) As SlotContents.WantPlayerPriority
+        Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As SlotContents.WantPlayerPriority
             If _player IsNot Nothing AndAlso name IsNot Nothing AndAlso
                                             _player.isFake AndAlso
                                             _player.Name = name.Value Then
@@ -189,17 +186,17 @@
                 Return Type.Player
             End Get
         End Property
-        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As PID?
+        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PID?
             Get
                 Return _player.PID
             End Get
         End Property
-        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
             Get
                 Return _player.AdvertisedDownloadPercent
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(ByVal receiver As Player) As Protocol.SlotState
+        Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return Protocol.SlotState.Occupied
             End Get
@@ -227,8 +224,9 @@
         Public Overrides Function WithoutPlayer(ByVal player As Player) As SlotContents
             Throw New InvalidOperationException()
         End Function
-        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
             Get
+                If receiver Is Nothing Then Return MyBase.DataDownloadPercent(receiver)
                 Return receiver.AdvertisedDownloadPercent
             End Get
         End Property
@@ -274,7 +272,7 @@
             If _players.Contains(player) Then Throw New InvalidOperationException()
             Return New SlotContentsCovered(_coveringSlotId, _playerIndex, _players.Concat(New Player() {player}))
         End Function
-        Public Overrides ReadOnly Property DataPlayerIndex(ByVal receiver As Player) As PID?
+        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PID?
             Get
                 Return If(_players.Contains(receiver), receiver.PID, Nothing)
             End Get
@@ -284,12 +282,12 @@
                 Return _playerIndex
             End Get
         End Property
-        Public Overrides ReadOnly Property DataDownloadPercent(ByVal receiver As Player) As Byte
+        Public Overrides ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
             Get
                 Return CByte(_players.Count)
             End Get
         End Property
-        Public Overrides ReadOnly Property DataState(ByVal receiver As Player) As Protocol.SlotState
+        Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
             Get
                 Return If(_players.Contains(receiver), Protocol.SlotState.Occupied, Protocol.SlotState.Closed)
             End Get

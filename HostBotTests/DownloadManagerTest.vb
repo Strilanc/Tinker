@@ -30,7 +30,7 @@ Public Class DownloadManagerTest
             usesCustomForces:=False,
             usesFixedPlayerSettings:=False,
             name:="Test",
-            slots:={New Slot(index:=1, raceUnlocked:=False, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)}.AsReadableList)
+            slots:={New Slot(index:=0, raceUnlocked:=False, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)}.AsReadableList)
         Private ReadOnly outQueue As New TaskedCallQueue()
         Private ReadOnly _players As New AsyncViewableCollection(Of TestPlayer)(outQueue:=outQueue)
         Private ReadOnly _logger As New Logger

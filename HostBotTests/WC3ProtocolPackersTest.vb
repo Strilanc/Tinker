@@ -57,7 +57,8 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeLobbyStateTest()
-        MakeLobbyState(TestPlayer, TestMap, New List(Of WC3.Slot)(), 0)
+        MakeLobbyState(LobbyLayoutStyle.CustomForces, New List(Of WC3.Slot)(), 0)
+        MakeLobbyState(LobbyLayoutStyle.Melee, New List(Of WC3.Slot)(), 0, TestPlayer)
     End Sub
     <TestMethod()>
     Public Sub MakeStartCountdownTest()

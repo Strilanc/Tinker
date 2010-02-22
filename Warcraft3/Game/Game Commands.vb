@@ -362,13 +362,14 @@ Namespace WC3
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim arg_slot = argument.RawValue(0)
-                Dim arg_team = argument.RawValue(1)
-                Dim val_team As Byte
-                If Not Byte.TryParse(arg_team, val_team) Then
-                    Throw New ArgumentException("Invalid team: '{0}'.".Frmt(arg_team))
+                Dim argSlot = argument.RawValue(0)
+                Dim argTeam = argument.RawValue(1)
+                Dim team As Byte
+                If Not Byte.TryParse(argTeam, team) OrElse team < 1 OrElse team > 13 Then
+                    Throw New ArgumentException("Invalid team: '{0}'.".Frmt(argTeam))
                 End If
-                Return target.QueueSetSlotTeam(arg_slot, val_team).EvalOnSuccess(Function() "Set Team")
+                team -= CByte(1)
+                Return target.QueueSetSlotTeam(argSlot, team).EvalOnSuccess(Function() "Set Team")
             End Function
         End Class
 

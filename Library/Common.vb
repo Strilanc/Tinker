@@ -195,6 +195,14 @@ Public Module PoorlyCategorizedFunctions
         Return best
     End Function
 
+    <Extension()> <Pure()>
+    Public Function Zip(Of T1, T2)(ByVal sequence As IEnumerable(Of T1), ByVal sequence2 As IEnumerable(Of T2)) As IEnumerable(Of Tuple(Of T1, T2))
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(sequence2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Tuple(Of T1, T2)))() IsNot Nothing)
+        Return Enumerable.Zip(sequence, sequence2, Function(e1, e2) Tuple(e1, e2))
+    End Function
+
     <Pure()> <Extension()>
     Public Function ToReadableList(Of T)(ByVal sequence As IEnumerable(Of T)) As IReadableList(Of T)
         Return If(TryCast(sequence, IReadableList(Of T)), sequence.ToArray.AsReadableList)

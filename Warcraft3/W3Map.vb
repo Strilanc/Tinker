@@ -120,14 +120,14 @@ Namespace WC3
                 Dim crc32 = CUInt(vals("crc32"))
                 Dim xoro = CUInt(vals("xoro checksum"))
                 Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
-                Dim slot1 = New Slot(index:=1,
+                Dim slot1 = New Slot(index:=0,
                                      raceUnlocked:=False,
                                      Color:=Protocol.PlayerColor.Red,
                                      contents:=New SlotContentsOpen,
                                      locked:=Slot.LockState.Frozen,
                                      team:=0)
-                Dim slot2 = slot1.WithIndex(2).WithColor(Protocol.PlayerColor.Blue)
-                Dim slot3 = slot1.WithIndex(3).WithColor(Protocol.PlayerColor.Teal).WithContents(New SlotContentsComputer(Protocol.ComputerLevel.Normal))
+                Dim slot2 = slot1.WithIndex(1).WithColor(Protocol.PlayerColor.Blue)
+                Dim slot3 = slot1.WithIndex(2).WithColor(Protocol.PlayerColor.Teal).WithContents(New SlotContentsComputer(Protocol.ComputerLevel.Normal))
                 Contract.Assume(sha1.Count = 20)
                 If Not path.StartsWith("Maps\") Then Throw New IO.InvalidDataException("Invalid map path.")
                 If size <= 0 Then Throw New IO.InvalidDataException("Invalid file size.")
@@ -656,7 +656,7 @@ Namespace WC3
                     Case 3 : Continue For 'neutral slots not shown in lobby
                     Case Else : Throw New UnreachableException
                 End Select
-                result.Add(New Slot(index:=CByte(result.Count + 1),
+                result.Add(New Slot(index:=CByte(result.Count),
                                     raceUnlocked:=raceUnlocked,
                                     Color:=colorData,
                                     contents:=contents,

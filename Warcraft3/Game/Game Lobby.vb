@@ -98,7 +98,7 @@
             'Create observer slots
             Select Case settings.GameDescription.GameStats.Observers
                 Case GameObserverOption.FullObservers, GameObserverOption.Referees
-                    result.AddRange(From i In Enumerable.Range(0, 12 - result.Count)
+                    result.AddRange(From i In Enumerable.Range(result.Count, 12 - result.Count)
                                     Select New Slot(index:=CByte(i),
                                                     Color:=CType(Slot.ObserverTeamIndex, Protocol.PlayerColor),
                                                     team:=Slot.ObserverTeamIndex,
@@ -282,11 +282,11 @@
 
             Return newPlayer
         End Function
-        Public Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal __state As GameState) As Player
+        Public Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
-            If __state > GameState.AcceptingPlayers Then
+            If Not _acceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
             ElseIf Not connectingPlayer.Socket.Connected Then
                 Throw New InvalidOperationException("Player isn't connected.")
@@ -443,12 +443,22 @@
 
             'Perform
             If Not _settings.Map.UsesCustomForces Then
+                If slot.Team <> newTeam AndAlso slot.Team = WC3.Slot.ObserverTeamIndex Then
+                    If (From s In _slots.Slots Where s.Team <> WC3.Slot.ObserverTeamIndex).Count >= _settings.Map.Slots.Count Then
+                        Dim partner = (From s In _slots.Slots
+                                       Where s.Team <> WC3.Slot.ObserverTeamIndex
+                                       Where s.Contents.ContentType = SlotContents.Type.Empty
+                                       ).FirstOrDefault
+                        If partner Is Nothing Then Return 'would exceed max player slots
+                        _slots = _slots.WithSlotsReplaced(partner.WithTeam(slot.Team))
+                    End If
+                End If
                 'set slot to target team
                 _slots = _slots.WithSlotsReplaced(slot.WithTeam(newTeam))
             Else
                 'swap with next open slot from target team
                 For offset_mod = 0 To _slots.Slots.Count - 1
-                    Dim nextIndex = (slot.index + offset_mod) Mod _slots.Slots.Count
+                    Dim nextIndex = (slot.Index + offset_mod) Mod _slots.Slots.Count
                     Contract.Assume(nextIndex >= 0)
                     Dim nextSlot = _slots.Slots(nextIndex)
                     Contract.Assume(nextSlot IsNot Nothing)
@@ -469,7 +479,7 @@
             If Not _acceptingPlayers Then Throw New InvalidOperationException("Can't reserve slots after launch.")
             Dim slot As Slot
             If slotQuery Is Nothing Then
-                slot = (From s In _slots.Slots Where s.Contents.WantPlayer(Nothing) = SlotContents.WantPlayerPriority.Open).FirstOrDefault
+                slot = (From s In _slots.Slots Where s.Contents.WantPlayer() = SlotContents.WantPlayerPriority.Open).FirstOrDefault
                 If slot Is Nothing Then Throw New InvalidOperationException("No available slot.")
             Else
                 slot = FindMatchingSlot(slotQuery.Value)
@@ -557,7 +567,14 @@
 
         Public Sub SetSlotTeam(ByVal slotQuery As InvariantString, ByVal team As Byte)
             If _settings.Map.UsesCustomForces Then Throw New InvalidOperationException("The map says that all teams are locked.")
-            ModifySlot(slotQuery, Function(slot) slot.WithTeam(team))
+            ModifySlot(slotQuery, Function(slot)
+                                      If slot.Team <> team AndAlso slot.Team = WC3.Slot.ObserverTeamIndex Then
+                                          If (From s In _slots.Slots Where s.Team <> WC3.Slot.ObserverTeamIndex).Count >= _settings.Map.Slots.Count Then
+                                              Throw New InvalidOperationException("You can only have {0} non-obs slots.".Frmt(_settings.Map.Slots.Count))
+                                          End If
+                                      End If
+                                      Return slot.WithTeam(team)
+                                  End Function)
         End Sub
 
         Public Sub SetSlotHandicap(ByVal slotQuery As InvariantString, ByVal handicap As Byte)
@@ -576,7 +593,7 @@
         <Pure()>
         Public Function CountFreeSlots() As Integer
             Return (From slot In _slots.Slots
-                    Where slot.Contents.WantPlayer(Nothing) >= SlotContents.WantPlayerPriority.Open
+                    Where slot.Contents.WantPlayer() >= SlotContents.WantPlayerPriority.Open
                     ).Count
         End Function
 
@@ -586,47 +603,85 @@
             If Not _acceptingPlayers Then
                 Throw New InvalidOperationException("Can't change team sizes after launch.")
             End If
+            If desiredTeamSizes.Count = 0 Then Return
 
-            For repeat = 1 To 2
-                Dim availableWellPlacedSlots = New List(Of Slot)
-                Dim misplacedPlayerSlots = New List(Of Slot)
-                Dim teamSizesLeft = desiredTeamSizes.ToArray()
-                For Each slot In _slots.Slots
-                    Contract.Assume(slot IsNot Nothing)
-                    If slot.Team >= teamSizesLeft.Count Then Continue For
+            If _settings.Map.UsesCustomForces Then
+                'Group affected slots by team
+                Dim teamSlotSets = (From team In Enumerable.Range(0, desiredTeamSizes.Count)
+                                    Let size = desiredTeamSizes(team)
+                                    Let slots = (From slot In _slots.Slots
+                                                 Where slot.Team = team
+                                                 Where slot.Contents.ContentType <> SlotContents.Type.Computer
+                                                 Where slot.Contents.Moveable)
+                                    ).ToArray '[cache results to avoid closure problems due to _slots changing later]
 
-                    Select Case slot.Contents.ContentType
-                        Case SlotContents.Type.Computer
-                            'computers slots shouldn't be affected
+                'Group slots by availability
+                Dim availableSlots = From teamSlotSet In teamSlotSets
+                                     From slot In teamSlotSet.slots.Take(teamSlotSet.size)
+                                     Where slot.Contents.ContentType = SlotContents.Type.Empty
+                                     Select slot
+                Dim blockedEmptySlots = From teamSlotSet In teamSlotSets
+                                        From slot In teamSlotSet.slots.Skip(teamSlotSet.size)
+                                        Where slot.Contents.ContentType = SlotContents.Type.Empty
+                                        Select slot
+                Dim blockedPlayerSlots = From teamSlotSet In teamSlotSets
+                                         From slot In teamSlotSet.slots.Skip(teamSlotSet.size)
+                                         Where slot.Contents.ContentType = SlotContents.Type.Player
+                                         Select slot
 
-                        Case SlotContents.Type.Empty
-                            If teamSizesLeft(slot.Team) > 0 Then
-                                teamSizesLeft(slot.Team) -= 1
-                                availableWellPlacedSlots.Add(slot)
-                                _slots = _slots.WithSlotsReplaced(slot.WithContents(New SlotContentsOpen))
-                            Else
-                                _slots = _slots.WithSlotsReplaced(slot.WithContents(New SlotContentsClosed))
-                            End If
-
-                        Case SlotContents.Type.Player
-                            If teamSizesLeft(slot.Team) > 0 Then
-                                teamSizesLeft(slot.Team) -= 1
-                            Else
-                                misplacedPlayerSlots.Add(slot)
-                            End If
-
-                        Case Else
-                            Throw slot.Contents.ContentType.MakeImpossibleValueException
-                    End Select
+                'Open available slots and close blocked slots
+                For Each slot In From s In availableSlots.Skip(blockedPlayerSlots.Count)
+                    _slots = _slots.WithSlotsReplaced(slot.WithContents(New SlotContentsOpen))
+                Next slot
+                For Each slot In From s In blockedEmptySlots
+                    _slots = _slots.WithSlotsReplaced(slot.WithContents(New SlotContentsClosed))
                 Next slot
 
-                'Swap misplaced players to wellplaced slots
-                For i = 0 To Math.Min(availableWellPlacedSlots.Count, misplacedPlayerSlots.Count) - 1
-                    Contract.Assume(availableWellPlacedSlots(i) IsNot Nothing)
-                    Contract.Assume(misplacedPlayerSlots(i) IsNot Nothing)
-                    SwapSlotContents(availableWellPlacedSlots(i), misplacedPlayerSlots(i))
-                Next i
-            Next repeat
+                'Swap players from blocked slots to available slots (closing the now-empty blocked slot)
+                For Each slotPair In availableSlots.Zip(blockedPlayerSlots)
+                    Dim availableSlot = slotPair.Item1
+                    Dim blockedPlayerSlot = slotPair.Item2
+                    _slots = _slots.WithSlotsReplaced(availableSlot.WithContents(blockedPlayerSlot.Contents),
+                                                      blockedPlayerSlot.WithContents(New SlotContentsClosed))
+                Next slotPair
+            Else
+                Dim moveableSlots = Function() From slot In _slots.Slots
+                                               Where slot.Contents.Moveable
+                                               Where slot.Contents.ContentType <> SlotContents.Type.Computer
+
+                'Move players up
+                For Each slotPair In moveableSlots().Zip(From slot In moveableSlots()
+                                                         Where slot.Contents.ContentType = SlotContents.Type.Player
+                                                         Where slot.Team <> slot.ObserverTeamIndex).ToArray
+                    _slots = _slots.WithSlotsReplaced(slotPair.Item1.WithContents(slotPair.Item2.Contents),
+                                                      slotPair.Item2.WithContents(slotPair.Item1.Contents))
+                Next slotPair
+
+                'Move observers down
+                For Each slotPair In moveableSlots().Reverse.Zip(From slot In _slots.Slots.Reverse
+                                                                 Where slot.Team = slot.ObserverTeamIndex).ToArray
+                    _slots = _slots.WithSlotsReplaced(slotPair.Item1.WithContents(slotPair.Item2.Contents).WithTeam(slotPair.Item2.Team),
+                                                      slotPair.Item2.WithContents(slotPair.Item1.Contents).WithTeam(slotPair.Item1.Team))
+                Next slotPair
+
+                'Set teams
+                For Each slotTeam In moveableSlots().Zip(From i In Enumerable.Range(0, desiredTeamSizes.Count)
+                                                         From e In Enumerable.Repeat(CByte(i), desiredTeamSizes(i))
+                                                         Select e).ToArray
+                    _slots = _slots.WithSlotsReplaced(slotTeam.Item1.WithTeam(slotTeam.Item2))
+                Next slotTeam
+                'Open Available
+                For Each slot In From s In moveableSlots().Take(desiredTeamSizes.Sum)
+                                 Where s.Contents.ContentType = SlotContents.Type.Empty
+                    _slots = _slots.WithSlotsReplaced(slot.WithContents(New SlotContentsOpen))
+                Next slot
+                'Close remainder
+                For Each slot In From s In moveableSlots().Skip(desiredTeamSizes.Sum)
+                                 Where s.Contents.ContentType = SlotContents.Type.Empty
+                                 Where s.Team <> WC3.Slot.ObserverTeamIndex
+                    _slots = _slots.WithSlotsReplaced(slot.WithContents(New SlotContentsClosed))
+                Next slot
+            End If
 
             RaiseEvent ChangedPublicState(Me)
         End Sub

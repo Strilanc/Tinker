@@ -116,6 +116,7 @@ Namespace WC3
             'Get player's desired game set
             If Not _gameSets.ContainsKey(player.GameId) Then
                 _logger.Log("{0} specified an invalid game id ({1})".Frmt(player.Name, player.GameId), LogMessageType.Negative)
+                player.Socket.SendPacket(Protocol.MakeReject(Protocol.RejectReason.GameNotFound))
                 player.Socket.Disconnect(expected:=False, reason:="Invalid game id")
                 Return
             End If
@@ -126,7 +127,11 @@ Namespace WC3
             entry.QueueTryAcceptPlayer(player).CallOnValueSuccess(
                 Sub(game) _logger.Log("{0} entered {1}.".Frmt(player.Name, game.Name), LogMessageType.Positive)
             ).Catch(
-                Sub(exception) _logger.Log("A game could not be found for {0}.".Frmt(player.Name), LogMessageType.Negative)
+                Sub(exception)
+                    _logger.Log("A game could not be found for {0}.".Frmt(player.Name), LogMessageType.Negative)
+                    player.Socket.SendPacket(Protocol.MakeReject(Protocol.RejectReason.GameFull))
+                    player.Socket.Disconnect(expected:=True, reason:="A game could not be found for {0}.".Frmt(player.Name))
+                End Sub
             )
         End Sub
 

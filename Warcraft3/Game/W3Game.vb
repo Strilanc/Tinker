@@ -92,7 +92,7 @@ Namespace WC3
                                                       startPlayerholdPoint:=startPlayerholdPoint,
                                                       allowDownloads:=settings.AllowDownloads,
                                                       allowUploads:=settings.AllowUpload)
-            _lobby = New GameLobby(startPlayerholdPoint, downloadManager, logger, _players, _clock, settings)
+            _lobby = New GameLobby(startPlayerholdPoint, downloadManager, _logger, _players, _clock, settings)
             inQueue.QueueAction(Sub() _lobby.TryRestoreFakeHost())
 
             _lobby.StartPlayerHoldPoint.IncludeActionhandler(
@@ -619,7 +619,7 @@ Namespace WC3
         Public Function QueueAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
             Contract.Requires(newPlayer IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _lobby.AddPlayer(newPlayer, state))
+            Return inQueue.QueueFunc(Function() _lobby.AddPlayer(newPlayer))
         End Function
         Public Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect,
                                           ByVal position As UInt32) As IFuture Implements IGameDownloadAspect.QueueSendMapPiece
@@ -632,7 +632,11 @@ Namespace WC3
 
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
-                player.QueueSendPacket(Protocol.MakeLobbyState(player, Map, _lobby.Slots.Slots, randomSeed, Settings.IsAdminGame))
+                player.QueueSendPacket(Protocol.MakeLobbyState(receiver:=player,
+                                                               layoutStyle:=Map.LayoutStyle,
+                                                               slots:=_lobby.Slots.Slots,
+                                                               randomSeed:=randomSeed,
+                                                               hideSlots:=Settings.IsAdminGame))
             Next player
             TryBeginAutoStart()
         End Sub
