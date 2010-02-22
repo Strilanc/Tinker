@@ -32,50 +32,44 @@ Namespace WC3
         Public Shared ReadOnly HostInGameCommands As Commands.CommandSet(Of Game) = GameCommands.MakeHostInGameCommands()
         Public Shared ReadOnly HostLobbyCommands As Commands.CommandSet(Of Game) = GameCommands.MakeHostLobbyCommands()
 
+        Private ReadOnly _lobby As GameLobby
+        Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds, clock:=New SystemClock())
+        Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds, clock:=New SystemClock())
         Private ReadOnly _clock As IClock
-        Private ReadOnly _map As Map
         Private ReadOnly _name As InvariantString
-        Private ReadOnly slots As New List(Of Slot)
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly _logger As Logger
         Private state As GameState = GameState.AcceptingPlayers
-        Private fakeHostPlayer As Player
         Private flagHasPlayerLeft As Boolean
         Private adminPlayer As Player
         Private ReadOnly _players As New AsyncViewableCollection(Of Player)(outQueue:=outQueue)
-        Private ReadOnly pidVisiblityMap As New Dictionary(Of PID, PID)()
         Private ReadOnly _settings As GameSettings
 
-        Public Event Updated(ByVal sender As Game, ByVal slots As List(Of Slot))
+        Public Event Updated(ByVal sender As Game, ByVal slots As IReadableList(Of Slot))
         Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivingGroup As Protocol.ChatGroup?)
         Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
         Public Event ChangedState(ByVal sender As Game, ByVal oldState As GameState, ByVal newState As GameState)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_map IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
-            Contract.Invariant(slots IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_players IsNot Nothing)
-            Contract.Invariant(pidVisiblityMap IsNot Nothing)
 
             Contract.Invariant(_settings IsNot Nothing)
-            Contract.Invariant(freeIndexes IsNot Nothing)
             Contract.Invariant(readyPlayers IsNot Nothing)
             Contract.Invariant(unreadyPlayers IsNot Nothing)
             Contract.Invariant(visibleReadyPlayers IsNot Nothing)
             Contract.Invariant(visibleUnreadyPlayers IsNot Nothing)
             Contract.Invariant(fakeTickTimer IsNot Nothing)
-            Contract.Invariant(_downloadManager IsNot Nothing)
+            Contract.Invariant(_lobby IsNot Nothing)
             Contract.Invariant(_gameTime >= 0)
             Contract.Invariant(laggingPlayers IsNot Nothing)
             Contract.Invariant(gameDataQueue IsNot Nothing)
             Contract.Invariant(updateEventThrottle IsNot Nothing)
             Contract.Invariant(slotStateUpdateThrottle IsNot Nothing)
-            Contract.Invariant(_startPlayerHoldPoint IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
@@ -88,15 +82,43 @@ Namespace WC3
             Contract.Assume(settings IsNot Nothing)
 
             Me._settings = settings
-            Me._map = settings.Map
             Me._clock = clock
             Me._name = name
             Me._logger = If(logger, New Logger)
-            For i As Byte = 1 To 12
-                pidVisiblityMap(New PID(i)) = New PID(i)
-            Next i
 
-            LobbyNew()
+            Dim startPlayerholdPoint = New HoldPoint(Of Player)
+            Dim downloadManager = New DownloadManager(clock:=_clock,
+                                                      Game:=Me,
+                                                      startPlayerholdPoint:=startPlayerholdPoint,
+                                                      allowDownloads:=settings.AllowDownloads,
+                                                      allowUploads:=settings.AllowUpload)
+            _lobby = New GameLobby(startPlayerholdPoint, downloadManager, logger, _players, _clock, settings)
+            inQueue.QueueAction(Sub() _lobby.TryRestoreFakeHost())
+
+            _lobby.StartPlayerHoldPoint.IncludeActionhandler(
+                Sub(newPlayer)
+                    AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() inQueue.QueueAction(AddressOf DropLagger)
+                    AddHandler newPlayer.ReceivedGameActions, Sub(sender, actions) inQueue.QueueAction(Sub() OnReceiveGameActions(sender, actions))
+                    AddHandler newPlayer.Disconnected, Sub(player, expected, reportedReason, reasonDescription) inQueue.QueueAction(Sub() RemovePlayer(player, expected, reportedReason, reasonDescription))
+                    AddHandler newPlayer.ReceivedReady, Sub(player) inQueue.QueueAction(Sub() ReceiveReady(player))
+                    AddHandler newPlayer.SuperficialStateUpdated, Sub() QueueThrowUpdated()
+                    AddHandler newPlayer.StateUpdated, Sub() inQueue.QueueAction(AddressOf _lobby.ThrowChangedPublicState)
+                    AddHandler newPlayer.ReceivedNonGameAction, Sub(player, values) inQueue.QueueAction(Sub() ReceiveNonGameAction(player, values))
+
+                    If settings.Greeting <> "" Then
+                        SendMessageTo(message:=settings.Greeting, player:=newPlayer, display:=False)
+                    End If
+                    If settings.AutoElevateUserName IsNot Nothing AndAlso newPlayer.Name = settings.AutoElevateUserName.Value Then
+                        ElevatePlayer(newPlayer.Name)
+                    End If
+                    TryBeginAutoStart()
+                End Sub)
+            AddHandler _lobby.ChangedPublicState, Sub(sender)
+                                                      ThrowUpdated()
+                                                      slotStateUpdateThrottle.SetActionToRun(Sub() inQueue.QueueAction(Sub() SendLobbyState(Environment.TickCount)))
+                                                  End Sub
+            AddHandler _lobby.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
+
             LoadScreenNew()
             GamePlayNew()
         End Sub
@@ -106,7 +128,7 @@ Namespace WC3
             Return outQueue.QueueAction(Sub() inQueue.QueueAction(
                 Sub()
                     ChangeState(GameState.Disposed)
-                    If _downloadManager IsNot Nothing Then _downloadManager.Dispose()
+                    _lobby.dispose()
                     For Each player In _players
                         player.Dispose()
                     Next player
@@ -121,7 +143,7 @@ Namespace WC3
         Public ReadOnly Property Map As Map Implements IGameDownloadAspect.Map
             Get
                 Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
-                Return _map
+                Return _settings.Map
             End Get
         End Property
         Public ReadOnly Property Name As InvariantString
@@ -137,7 +159,7 @@ Namespace WC3
         End Property
 
         Private Sub ThrowUpdated()
-            Dim slots = (From slot In Me.slots Select slot.Cloned()).ToList()
+            Dim slots = _lobby.Slots.Slots
             updateEventThrottle.SetActionToRun(Sub() outQueue.QueueAction(Sub() RaiseEvent Updated(Me, slots)))
         End Sub
         Public Function QueueThrowUpdated() As IFuture
@@ -176,14 +198,13 @@ Namespace WC3
             Return inQueue.QueueFunc(Function() CommandProcessText(bot, player, argument)).Defuturized
         End Function
 
-#Region "Access"
         Public Function QueueGetAdminPlayer() As IFuture(Of Player)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() adminPlayer)
         End Function
         Public Function QueueGetFakeHostPlayer() As IFuture(Of Player)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() fakeHostPlayer)
+            Return inQueue.QueueFunc(Function() _lobby.FakeHostPlayer)
         End Function
         Public Function QueueGetPlayers() As IFuture(Of List(Of Player))
             Contract.Ensures(Contract.Result(Of IFuture(Of List(Of Player)))() IsNot Nothing)
@@ -197,38 +218,9 @@ Namespace WC3
         Private Sub ChangeState(ByVal newState As GameState)
             Dim oldState = state
             state = newState
+            _lobby._acceptingPlayers = state = GameState.AcceptingPlayers
             outQueue.QueueAction(Sub() RaiseEvent ChangedState(Me, oldState, newState))
         End Sub
-
-        '''<summary>Returns the number of slots potentially available for new players.</summary>
-        <Pure()>
-        Private Function CountFreeSlots() As Integer
-            Return (From slot In slots
-                    Where slot.AssumeNotNull.Contents.WantPlayer(Nothing) >= SlotContents.WantPlayerPriority.Open
-                    ).Count
-        End Function
-
-        '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
-        <Pure()>
-        Private Function FindMatchingSlot(ByVal query As InvariantString) As Slot
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-            Dim bestSlot As Slot = Nothing
-            Dim bestMatch = Slot.Match.None * 3 - SlotContentType.Empty
-            slots.MaxPair(Function(slot) slot.Matches(query) * 3 - slot.Contents.ContentType, bestSlot, bestMatch)
-            If bestMatch = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
-            Contract.Assume(bestSlot IsNot Nothing)
-            Return bestSlot
-        End Function
-
-        '''<summary>Returns the slot containing the given player.</summary>
-        <Pure()>
-        Private Function TryFindPlayerSlot(ByVal player As Player) As Slot
-            Contract.Requires(player IsNot Nothing)
-            Return (From slot In slots
-                    Where (From resident In slot.Contents.EnumPlayers Where resident Is player).Any
-                    ).FirstOrDefault
-        End Function
-#End Region
 
 #Region "Networking"
         '''<summary>Broadcasts a packet to all players. Requires a packer for the packet, and values matching the packer.</summary>
@@ -265,9 +257,9 @@ Namespace WC3
             Contract.Requires(player IsNot Nothing)
 
             'Send Text (from fake host or spoofed from receiver)
-            Dim prefix = If(fakeHostPlayer Is Nothing, "{0}: ".Frmt(Application.ProductName), "")
+            Dim prefix = If(_lobby.FakeHostPlayer Is Nothing, "{0}: ".Frmt(Application.ProductName), "")
             Dim chatType = If(state >= GameState.Loading, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
-            Dim sender = If(fakeHostPlayer, player)
+            Dim sender = If(_lobby.FakeHostPlayer, player)
             If Protocol.Packets.MaxChatTextLength - prefix.Length <= 0 Then
                 Throw New InvalidStateException("The product name is so long there's no room for text to follow it!")
             End If
@@ -305,7 +297,7 @@ Namespace WC3
 
             'Forward to requested players
             'visible sender
-            Dim visibleSender = GetVisiblePlayer(sender)
+            Dim visibleSender = _lobby.GetVisiblePlayer(sender)
             If visibleSender IsNot sender Then
                 text = visibleSender.Name + ": " + text
             End If
@@ -314,7 +306,7 @@ Namespace WC3
             'receivers
             For Each receiver In _players
                 Contract.Assume(receiver IsNot Nothing)
-                Dim visibleReceiver = GetVisiblePlayer(receiver)
+                Dim visibleReceiver = _lobby.GetVisiblePlayer(receiver)
                 If requestedReceiverIndexes.Contains(visibleReceiver.PID) Then
                     receiver.QueueSendPacket(pk)
                 ElseIf visibleReceiver Is visibleSender AndAlso sender IsNot receiver Then
@@ -347,28 +339,21 @@ Namespace WC3
                                 receivingPIDs)
 
                 Case Protocol.NonGameAction.SetTeam
-                    ReceiveSetTeam(sender, CByte(vals("new value")))
+                    _lobby.OnPlayerSetTeam(sender, CByte(vals("new value")))
 
                 Case Protocol.NonGameAction.SetHandicap
-                    ReceiveSetHandicap(sender, CByte(vals("new value")))
+                    _lobby.OnPlayerSetHandicap(sender, CByte(vals("new value")))
 
                 Case Protocol.NonGameAction.SetRace
-                    ReceiveSetRace(sender, CType(vals("new value"), Slot.Races))
+                    _lobby.OnPlayerSetRace(sender, CType(vals("new value"), Protocol.Races))
 
                 Case Protocol.NonGameAction.SetColor
-                    ReceiveSetColor(sender, CType(vals("new value"), Slot.PlayerColor))
+                    _lobby.OnPlayerSetColor(sender, CType(vals("new value"), Protocol.PlayerColor))
 
                 Case Else
                     RemovePlayer(sender, True, Protocol.PlayerLeaveReason.Disconnect, "Sent unrecognized client command type: {0}".Frmt(commandType))
             End Select
         End Sub
-        Public Function QueueReceiveNonGameAction(ByVal player As Player,
-                                                  ByVal values As Dictionary(Of InvariantString, Object)) As IFuture
-            Contract.Requires(player IsNot Nothing)
-            Contract.Requires(values IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() ReceiveNonGameAction(player, values))
-        End Function
 #End Region
 
 #Region "Players"
@@ -384,15 +369,15 @@ Namespace WC3
             End If
 
             'Clean slot
-            Dim slot = TryFindPlayerSlot(player)
+            Dim slot = _lobby.Slots.TryFindPlayerSlot(player)
             If slot IsNot Nothing Then
                 If slot.Contents.EnumPlayers.Contains(player) Then
-                    slot.Contents = slot.Contents.RemovePlayer(player)
+                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithoutPlayer(player)))
                 End If
             End If
 
             'Clean player
-            If IsPlayerVisible(player) Then
+            If _lobby.IsPlayerVisible(player) Then
                 BroadcastPacket(Protocol.MakeOtherPlayerLeft(player.PID, reportedReason), player)
             End If
             If player Is adminPlayer Then
@@ -402,14 +387,11 @@ Namespace WC3
             _players.Remove(player)
             Select Case state
                 Case Is < GameState.Loading
-                    LobbyCatchRemovedPlayer(player, slot)
+                    _lobby.LobbyCatchRemovedPlayer(player, slot)
                 Case GameState.Loading
                     OnLoadScreenRemovedPlayer()
                 Case Is > GameState.Loading
             End Select
-            If player Is fakeHostPlayer Then
-                fakeHostPlayer = Nothing
-            End If
 
             'Clean game
             If state >= GameState.Loading AndAlso Not (From x In _players Where Not x.isFake).Any Then
@@ -431,15 +413,6 @@ Namespace WC3
                 outQueue.QueueAction(Sub() RaiseEvent PlayerLeft(Me, state_, player, reportedReason, reasonDescription))
             End If
         End Sub
-        Public Function QueueRemovePlayer(ByVal player As Player,
-                                          ByVal expected As Boolean,
-                                          ByVal reportedReason As Protocol.PlayerLeaveReason,
-                                          ByVal reasonDescription As String) As IFuture
-            Contract.Requires(player IsNot Nothing)
-            Contract.Requires(reasonDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() RemovePlayer(player, expected, reportedReason, reasonDescription))
-        End Function
 
         Private Sub ElevatePlayer(ByVal name As InvariantString,
                                   Optional ByVal password As String = Nothing)
@@ -449,7 +422,7 @@ Namespace WC3
             If password IsNot Nothing Then
                 player.adminAttemptCount += 1
                 If player.adminAttemptCount > 5 Then Throw New InvalidOperationException("Too many tries.")
-                If password <> settings.AdminPassword Then
+                If password <> Settings.AdminPassword Then
                     Throw New InvalidOperationException("Incorrect password.")
                 End If
             End If
@@ -480,62 +453,32 @@ Namespace WC3
 
         '''<summary>Boots players in the slot with the given index.</summary>
         Private Sub Boot(ByVal slotQuery As InvariantString, ByVal shouldCloseEmptiedSlot As Boolean)
-            Dim slot = FindMatchingSlot(slotQuery)
+            Dim slot = _lobby.FindMatchingSlot(slotQuery)
             If Not slot.Contents.EnumPlayers.Any Then
                 Throw New InvalidOperationException("There is no player to boot in slot '{0}'.".Frmt(slotQuery))
             End If
 
             Dim target = (From player In slot.Contents.EnumPlayers Where player.Name = slotQuery).FirstOrDefault
             If target IsNot Nothing Then
-                slot.Contents = slot.Contents.RemovePlayer(target)
+                _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithoutPlayer(target)))
                 RemovePlayer(target, True, Protocol.PlayerLeaveReason.Disconnect, "Booted")
             Else
                 For Each player In slot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
-                    slot.Contents = slot.Contents.RemovePlayer(player)
+                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithoutPlayer(player)))
                     RemovePlayer(player, True, Protocol.PlayerLeaveReason.Disconnect, "Booted")
                 Next player
             End If
 
-            If shouldCloseEmptiedSlot AndAlso slot.Contents.ContentType = SlotContentType.Empty Then
-                slot.Contents = New SlotContentsClosed(slot)
-                ChangedLobbyState()
+            If shouldCloseEmptiedSlot AndAlso slot.Contents.ContentType = SlotContents.Type.Empty Then
+                _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.WithContents(New SlotContentsClosed))
+                _lobby.ThrowChangedPublicState()
             End If
         End Sub
         Public Function QueueBoot(ByVal slotQuery As InvariantString, ByVal shouldCloseEmptiedSlot As Boolean) As IFuture
             Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() Boot(slotQuery, shouldCloseEmptiedSlot))
         End Function
-#End Region
-
-#Region "Invisible Players"
-        <Pure()>
-        Private Function IsPlayerVisible(ByVal player As Player) As Boolean
-            Contract.Requires(player IsNot Nothing)
-            Return pidVisiblityMap(player.PID) = player.PID
-        End Function
-        <Pure()>
-        Private Function GetVisiblePlayer(ByVal player As Player) As Player
-            Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
-            If IsPlayerVisible(player) Then Return player
-            Dim visibleIndex = pidVisiblityMap(player.PID)
-            Dim visiblePlayer = (From p In _players Where p.PID = visibleIndex).First
-            Contract.Assume(visiblePlayer IsNot Nothing)
-            Return visiblePlayer
-        End Function
-        Private Shared Sub SetupCoveredSlot(ByVal coveringSlot As Slot,
-                                            ByVal coveredSlot As Slot,
-                                            ByVal playerIndex As PID)
-            Contract.Requires(coveringSlot IsNot Nothing)
-            Contract.Requires(coveredSlot IsNot Nothing)
-            If coveringSlot.Contents.EnumPlayers.Count <> 1 Then Throw New InvalidOperationException()
-            If coveredSlot.Contents.EnumPlayers.Any Then Throw New InvalidOperationException()
-            Dim player = coveringSlot.Contents.EnumPlayers.First
-            Contract.Assume(player IsNot Nothing)
-            coveringSlot.Contents = New SlotContentsCovering(coveringSlot, coveredSlot, player)
-            coveredSlot.Contents = New SlotContentsCovered(coveredSlot, coveringSlot, playerIndex, coveredSlot.Contents.EnumPlayers)
-        End Sub
 #End Region
 
         Private Function CreatePlayersAsyncView(ByVal adder As Action(Of Game, Player),
@@ -558,5 +501,194 @@ Namespace WC3
                                                     Implements IGameDownloadAspect.QueueCreatePlayersAsyncView
             Return inQueue.QueueFunc(Function() CreatePlayersAsyncView(adder, remover))
         End Function
+
+#Region "Advancing State"
+        '''<summary>Autostarts the countdown if autostart is enabled and the game stays full for awhile.</summary>
+        Private Function TryBeginAutoStart() As Boolean
+            'Sanity check
+            If Not settings.IsAutoStarted Then Return False
+            If _lobby.CountFreeSlots() > 0 Then Return False
+            If state >= GameState.PreCounting Then Return False
+            If (From player In _players Where Not player.isFake AndAlso player.AdvertisedDownloadPercent <> 100).Any Then
+                Return False
+            End If
+            ChangeState(GameState.PreCounting)
+
+            'Give people a few seconds to realize the game is full before continuing
+            Call _clock.AsyncWait(3.Seconds).QueueCallWhenReady(inQueue,
+                Sub()
+                    If state <> GameState.PreCounting Then Return
+                    If Not Settings.IsAutoStarted OrElse _lobby.CountFreeSlots() > 0 Then
+                        ChangeState(GameState.AcceptingPlayers)
+                    Else
+                        TryStartCountdown()
+                    End If
+                End Sub
+            )
+            Return True
+        End Function
+
+        '''<summary>Starts the countdown to launch.</summary>
+        Private Function TryStartCountdown() As Boolean
+            If state >= GameState.CountingDown Then Return False
+            If (From p In _players Where Not p.isFake AndAlso p.AdvertisedDownloadPercent <> 100).Any Then
+                Return False
+            End If
+
+            ChangeState(GameState.CountingDown)
+            flagHasPlayerLeft = False
+
+            'Perform countdown
+            Dim continueCountdown As Action(Of Integer)
+            continueCountdown = Sub(ticksLeft)
+                                    If state <> GameState.CountingDown Then Return
+
+                                    If flagHasPlayerLeft Then 'abort countdown
+                                        BroadcastMessage("Countdown Aborted", messageType:=LogMessageType.Negative)
+                                        _lobby.TryRestoreFakeHost()
+                                        ChangeState(GameState.AcceptingPlayers)
+                                        _lobby.ThrowChangedPublicState()
+                                    ElseIf ticksLeft > 0 Then 'continue ticking
+                                        BroadcastMessage("Starting in {0}...".Frmt(ticksLeft), messageType:=LogMessageType.Positive)
+                                        _clock.AsyncWait(1.Seconds).QueueCallWhenReady(inQueue, Sub() continueCountdown(ticksLeft - 1))
+                                    Else 'start
+                                        StartLoading()
+                                    End If
+                                End Sub
+            Call _clock.AsyncWait(1.Seconds).QueueCallWhenReady(inQueue, Sub() continueCountdown(5))
+
+            Return True
+        End Function
+        Public Function QueueStartCountdown() As IFuture(Of Boolean)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Boolean))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() TryStartCountdown())
+        End Function
+
+        '''<summary>Launches the game, sending players to the loading screen.</summary>
+        Private Sub StartLoading()
+            If state >= GameState.Loading Then Return
+
+            'Remove fake players
+            For Each player In (From p In _players.ToList Where p.isFake)
+                Contract.Assume(player IsNot Nothing)
+                Dim slot = _lobby.Slots.TryFindPlayerSlot(player)
+                If slot Is Nothing OrElse slot.Contents.Moveable Then
+                    RemovePlayer(player, True, Protocol.PlayerLeaveReason.Disconnect, "Fake players removed before loading")
+                End If
+            Next player
+
+            _lobby.Slots = _lobby.Slots.WithEncodeHCL(Settings)
+            Dim randomSeed As ModInt32 = Environment.TickCount()
+            SendLobbyState(randomSeed)
+
+            If settings.ShouldRecordReplay Then
+                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _players.ToList, _lobby.Slots.Slots, randomSeed)
+            End If
+
+            ChangeState(GameState.Loading)
+            _lobby.Dispose()
+            LoadScreenStart()
+        End Sub
+#End Region
+
+#Region "Lobby"
+        Private Sub SetPlayerVoteToStart(ByVal name As InvariantString, ByVal val As Boolean)
+            If Not Settings.IsAutoStarted Then Throw New InvalidOperationException("Game is not set to start automatically.")
+            Dim p = TryFindPlayer(name)
+            If p Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
+            p.hasVotedToStart = val
+            If Not val Then Return
+
+            Dim numPlayers = (From q In _players Where Not q.isFake).Count
+            Dim numInFavor = (From q In _players Where Not q.isFake AndAlso q.hasVotedToStart).Count
+            If numPlayers >= 2 And numInFavor * 3 >= numPlayers * 2 Then
+                TryStartCountdown()
+            End If
+        End Sub
+        Public Function QueueSetPlayerVoteToStart(ByVal name As InvariantString,
+                                                  ByVal wantsToStart As Boolean) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
+        End Function
+        Public ReadOnly Property StartPlayerHoldPoint As IHoldPoint(Of Player)
+            Get
+                Contract.Ensures(Contract.Result(Of IHoldPoint(Of Player))() IsNot Nothing)
+                Return _lobby.StartPlayerHoldPoint
+            End Get
+        End Property
+        Public Function QueueAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
+            Contract.Requires(newPlayer IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() _lobby.AddPlayer(newPlayer, state))
+        End Function
+        Public Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect,
+                                          ByVal position As UInt32) As IFuture Implements IGameDownloadAspect.QueueSendMapPiece
+            Return inQueue.QueueFunc(Function() _lobby.SendMapPiece(player, position)).Defuturized
+        End Function
+
+        '''<summary>Broadcasts new game state to players, and throws the updated event.</summary>
+        Private Sub SendLobbyState(ByVal randomSeed As ModInt32)
+            If state >= GameState.Loading Then Return
+
+            For Each player In _players
+                Contract.Assume(player IsNot Nothing)
+                player.QueueSendPacket(Protocol.MakeLobbyState(player, Map, _lobby.Slots.Slots, randomSeed, Settings.IsAdminGame))
+            Next player
+            TryBeginAutoStart()
+        End Sub
+
+        Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture
+            Contract.Requires(sizes IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.TrySetTeamSizes(sizes))
+        End Function
+
+        Public Function QueueOpenSlot(ByVal slotQuery As InvariantString) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.OpenSlot(slotQuery))
+        End Function
+        Public Function QueueSetSlotCpu(ByVal slotQuery As InvariantString, ByVal newCpuLevel As Protocol.ComputerLevel) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.ComputerizeSlot(slotQuery, newCpuLevel))
+        End Function
+        Public Function QueueCloseSlot(ByVal slotQuery As InvariantString) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.CloseSlot(slotQuery))
+        End Function
+        Public Function QueueReserveSlot(ByVal userName As InvariantString,
+                                         Optional ByVal slotQuery As InvariantString? = Nothing) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.ReserveSlot(userName, slotQuery))
+        End Function
+        Public Function QueueSwapSlotContents(ByVal slotQuery1 As InvariantString,
+                                              ByVal slotQuery2 As InvariantString) As IFuture
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.SwapSlotContents(slotQuery1, slotQuery2))
+        End Function
+        Public Function QueueSetSlotColor(ByVal slotQuery As InvariantString, ByVal newColor As Protocol.PlayerColor) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.SetSlotColor(slotQuery, newColor))
+        End Function
+        Public Function QueueSetSlotRace(ByVal slotQuery As InvariantString, ByVal newRace As Protocol.Races) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.SetSlotRace(slotQuery, newRace))
+        End Function
+        Public Function QueueSetSlotTeam(ByVal slotQuery As InvariantString, ByVal newTeam As Byte) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.SetSlotTeam(slotQuery, newTeam))
+        End Function
+        Public Function QueueSetSlotHandicap(ByVal slotQuery As InvariantString, ByVal newHandicap As Byte) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.SetSlotHandicap(slotQuery, newHandicap))
+        End Function
+        Public Function QueueSetSlotLocked(ByVal slotQuery As InvariantString, ByVal newLockState As Slot.LockState) As IFuture
+            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.SetSlotLocked(slotQuery, newLockState))
+        End Function
+        Public Function QueueSetAllSlotsLocked(ByVal newLockState As Slot.LockState) As IFuture
+            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Return inQueue.QueueAction(Sub() _lobby.SetAllSlotsLocked(newLockState))
+        End Function
+#End Region
     End Class
 End Namespace

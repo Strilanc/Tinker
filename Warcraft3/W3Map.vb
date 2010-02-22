@@ -120,15 +120,14 @@ Namespace WC3
                 Dim crc32 = CUInt(vals("crc32"))
                 Dim xoro = CUInt(vals("xoro checksum"))
                 Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
-                Dim slot1 = New Slot(index:=1, raceunlocked:=False)
-                Dim slot2 = New Slot(index:=2, raceunlocked:=False)
-                Dim slot3 = New Slot(index:=3, raceunlocked:=False)
-                slot1.color = Slot.PlayerColor.Red
-                slot2.color = Slot.PlayerColor.Blue
-                slot3.color = Slot.PlayerColor.Teal
-                slot1.Contents = New SlotContentsOpen(slot1)
-                slot2.Contents = New SlotContentsOpen(slot2)
-                slot3.Contents = New SlotContentsComputer(slot3, Slot.ComputerLevel.Normal)
+                Dim slot1 = New Slot(index:=1,
+                                     raceUnlocked:=False,
+                                     Color:=Protocol.PlayerColor.Red,
+                                     contents:=New SlotContentsOpen,
+                                     locked:=Slot.LockState.Frozen,
+                                     team:=0)
+                Dim slot2 = slot1.WithIndex(2).WithColor(Protocol.PlayerColor.Blue)
+                Dim slot3 = slot1.WithIndex(3).WithColor(Protocol.PlayerColor.Teal).WithContents(New SlotContentsComputer(Protocol.ComputerLevel.Normal))
                 Contract.Assume(sha1.Count = 20)
                 If Not path.StartsWith("Maps\") Then Throw New IO.InvalidDataException("Invalid map path.")
                 If size <= 0 Then Throw New IO.InvalidDataException("Invalid file size.")
@@ -624,7 +623,7 @@ Namespace WC3
             CheckIOData(numSlotsInFile > 0 AndAlso numSlotsInFile <= 12, "Invalid number of slots.")
             For repeat = 0 To numSlotsInFile - 1
                 'Read
-                Dim colorData = CType(stream.ReadUInt32(), Slot.PlayerColor)
+                Dim colorData = CType(stream.ReadUInt32(), Protocol.PlayerColor)
                 Dim typeData = stream.ReadUInt32()
                 Dim raceData = stream.ReadUInt32()
                 Dim fixedStartPosition = stream.ReadUInt32()
@@ -640,23 +639,29 @@ Namespace WC3
                 CheckIOData(typeData >= 1 AndAlso typeData <= 3, "Unrecognized map slot type data: {0}.".Frmt(typeData))
 
                 'Use
-                Dim slot = New Slot(index:=CByte(result.Count + 1), raceUnlocked:=Not CBool(options And MapOptions.FixedPlayerSettings))
-                slot.color = colorData
+                Dim race = Protocol.Races.Random
+                Dim raceUnlocked = Not CBool(options And MapOptions.FixedPlayerSettings)
+                Dim contents As SlotContents
                 Select Case raceData
-                    Case 0 : slot.RaceUnlocked = True
-                    Case 1 : slot.race = slot.Races.Human
-                    Case 2 : slot.race = slot.Races.Orc
-                    Case 3 : slot.race = slot.Races.Undead
-                    Case 4 : slot.race = slot.Races.NightElf
+                    Case 0 : raceUnlocked = True
+                    Case 1 : race = Protocol.Races.Human
+                    Case 2 : race = Protocol.Races.Orc
+                    Case 3 : race = Protocol.Races.Undead
+                    Case 4 : race = Protocol.Races.NightElf
                     Case Else : Throw New UnreachableException
                 End Select
                 Select Case typeData
-                    Case 1 : slot.Contents = New SlotContentsOpen(slot)
-                    Case 2 : slot.Contents = New SlotContentsComputer(slot, slot.ComputerLevel.Normal)
+                    Case 1 : contents = New SlotContentsOpen()
+                    Case 2 : contents = New SlotContentsComputer(Protocol.ComputerLevel.Normal)
                     Case 3 : Continue For 'neutral slots not shown in lobby
                     Case Else : Throw New UnreachableException
                 End Select
-                result.Add(slot)
+                result.Add(New Slot(index:=CByte(result.Count + 1),
+                                    raceUnlocked:=raceUnlocked,
+                                    Color:=colorData,
+                                    contents:=contents,
+                                    race:=race,
+                                    team:=0))
             Next repeat
             Contract.Assert(result.Count <= numSlotsInFile)
             CheckIOData(result.Count > 0, "Map contains no player slots.")
@@ -670,20 +675,17 @@ Namespace WC3
                 Dim memberBitField = stream.ReadUInt32()
                 Dim forceName = stream.ReadNullTerminatedString(maxLength:=256)
 
-                'Use
-                For Each slot In result
-                    If CBool(memberBitField And (1UI << slot.color)) Then
-                        slot.Team = teamIndex
-                    End If
-                Next slot
+                'Apply
+                Dim teamIndex_ = teamIndex
+                result = (From slot In result
+                          Select If(CBool(memberBitField And (1UI << slot.Color)), slot.WithTeam(teamIndex_), slot)
+                          ).ToList
             Next teamIndex
             '(melee overrides forces and races)
             If CBool(options And MapOptions.Melee) Then
-                For i = 0 To result.Count - 1
-                    Contract.Assume(result(i) IsNot Nothing)
-                    result(i).Team = CByte(i)
-                    result(i).race = Slot.Races.Random
-                Next i
+                result = Enumerable.Zip(result, Enumerable.Range(0, result.Count),
+                                        Function(slot, team) slot.WithTeam(CByte(team)).WithRace(Protocol.Races.Random)
+                                        ).ToList
             End If
 
             Return result.AsReadableList

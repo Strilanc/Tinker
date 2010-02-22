@@ -279,6 +279,41 @@ Namespace WC3.Protocol
         Player12 = 14
         [Private] = 16
     End Enum
+    Public Enum ComputerLevel As Byte
+        Easy = 0
+        Normal = 1
+        Insane = 2
+    End Enum
+    <Flags()>
+    Public Enum Races As Byte
+        Human = 1 << 0
+        Orc = 1 << 1
+        NightElf = 1 << 2
+        Undead = 1 << 3
+
+        Random = 1 << 5
+        Unlocked = 1 << 6 'presence determines if race selection enabled in lobby
+    End Enum
+    Public Enum PlayerColor As Byte
+        Red = 0
+        Blue = 1
+        Teal = 2
+        Purple = 3
+        Yellow = 4
+        Orange = 5
+        Green = 6
+        Pink = 7
+        Grey = 8
+        LightBlue = 9
+        DarkGreen = 10
+        Brown = 11
+        Observer = 12
+    End Enum
+    Public Enum SlotState As Byte
+        Open = 0
+        Closed = 1
+        Occupied = 2
+    End Enum
 
     'verification disabled because this class causes the verifier to go OutOfMemory
     <ContractVerification(False)>
@@ -438,12 +473,12 @@ Namespace WC3.Protocol
                     New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumByteJar(Of Slot.Races)("new value").Weaken))
+                    New EnumByteJar(Of Protocol.Races)("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetColor, New TupleJar(PacketId.NonGameAction.ToString,
                     New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
                     New ByteJar("sending player").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumByteJar(Of Slot.PlayerColor)("new value").Weaken))
+                    New EnumByteJar(Of Protocol.PlayerColor)("new value").Weaken))
             Return Define(PacketId.NonGameAction, commandJar)
         End Function
 

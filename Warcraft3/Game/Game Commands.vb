@@ -134,8 +134,8 @@ Namespace WC3
                 Contract.Assume(target IsNot Nothing)
                 Dim arg_slot = argument.RawValue(0)
                 Dim arg_color = argument.RawValue(1)
-                Dim ret_color As WC3.Slot.PlayerColor
-                If EnumTryParse(Of WC3.Slot.PlayerColor)(arg_color, True, ret_color) Then
+                Dim ret_color As WC3.Protocol.PlayerColor
+                If EnumTryParse(Of WC3.Protocol.PlayerColor)(arg_color, True, ret_color) Then
                     Return target.QueueSetSlotColor(arg_slot, ret_color).EvalOnSuccess(Function() "Set Color")
                 Else
                     Throw New InvalidOperationException("Unrecognized color: '{0}'.".Frmt(arg_color))
@@ -153,8 +153,8 @@ Namespace WC3
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim arg_slot = argument.RawValue(0)
-                Dim arg_difficulty = If(argument.RawValueCount >= 2, argument.RawValue(1), WC3.Slot.ComputerLevel.Normal.ToString)
-                Dim ret_difficulty As WC3.Slot.ComputerLevel
+                Dim arg_difficulty = If(argument.RawValueCount >= 2, argument.RawValue(1), WC3.Protocol.ComputerLevel.Normal.ToString)
+                Dim ret_difficulty As WC3.Protocol.ComputerLevel
                 If arg_difficulty.EnumTryParse(ignoreCase:=True, result:=ret_difficulty) Then
                     Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).EvalOnSuccess(Function() "Set {0} to Computer ({1})".Frmt(arg_slot, arg_difficulty))
                 Else
@@ -243,7 +243,7 @@ Namespace WC3
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim lockType = If(argument.HasOptionalSwitch("full"), WC3.Slot.Lock.Frozen, WC3.Slot.Lock.Sticky)
+                Dim lockType = If(argument.HasOptionalSwitch("full"), WC3.Slot.LockState.Frozen, WC3.Slot.LockState.Sticky)
                 If argument.RawValueCount = 0 Then
                     Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Locked slots")
                 Else
@@ -295,8 +295,8 @@ Namespace WC3
                 Contract.Assume(target IsNot Nothing)
                 Dim arg_slot = argument.RawValue(0)
                 Dim argRace = argument.RawValue(1)
-                Dim ret_race As WC3.Slot.Races
-                If EnumTryParse(Of WC3.Slot.Races)(argRace, True, ret_race) Then
+                Dim ret_race As WC3.Protocol.Races
+                If EnumTryParse(Of WC3.Protocol.Races)(argRace, True, ret_race) Then
                     Return target.QueueSetSlotRace(arg_slot, ret_race).EvalOnSuccess(Function() "Set Race")
                 Else
                     Throw New InvalidOperationException("Unrecognized race: '{0}'.".Frmt(argRace))
@@ -420,7 +420,7 @@ Namespace WC3
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim lockType = WC3.Slot.Lock.Unlocked
+                Dim lockType = WC3.Slot.LockState.Unlocked
                 If argument.RawValueCount = 0 Then
                     Return target.QueueSetAllSlotsLocked(lockType).EvalOnSuccess(Function() "Unlocked slots")
                 Else

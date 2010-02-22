@@ -49,7 +49,7 @@
         Private ReadOnly _observerReservations As IReadableList(Of InvariantString) = New InvariantString() {}.AsReadableList
         Private ReadOnly _observerCount As Integer
         Private ReadOnly _usePermanent As Boolean
-        Private ReadOnly _defaultSlotLockState As Slot.Lock
+        Private ReadOnly _defaultSlotLockState As Slot.LockState
         Private ReadOnly _autoElevateUserName As InvariantString?
         Private ReadOnly _shouldGrabMap As Boolean
         Private ReadOnly _useLoadInGame As Boolean
@@ -87,7 +87,7 @@
             Me._allowDownloads = Not argument.HasOptionalSwitch("NoDL")
             Me._allowUpload = Not argument.HasOptionalSwitch("NoUL")
             Me._isAutoStarted = argument.HasOptionalSwitch("AutoStart") OrElse argument.HasOptionalSwitch("as")
-            Me._defaultSlotLockState = Slot.Lock.Unlocked
+            Me._defaultSlotLockState = Slot.LockState.Unlocked
             Me._adminPassword = If(adminPassword, New Random().Next(0, 1000).ToString("000", CultureInfo.InvariantCulture))
             Me._isAdminGame = isAdminGame
             Me._shouldGrabMap = argument.HasOptionalSwitch("grab")
@@ -220,7 +220,7 @@
                 Return _usePermanent
             End Get
         End Property
-        Public ReadOnly Property DefaultSlotLockState As Slot.Lock
+        Public ReadOnly Property DefaultSlotLockState As Slot.LockState
             Get
                 Return _defaultSlotLockState
             End Get
@@ -282,32 +282,31 @@
         End Property
 #End Region
 
-        Public Function EncodedHCLMode(ByVal handicaps As Byte()) As Byte()
+        Public Function EncodedHCLMode(ByVal handicaps As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(handicaps IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
 
-            Dim indexMap(0 To 255) As Byte
-            Dim blocked(0 To 255) As Boolean
-            blocked(50) = True
-            blocked(60) = True
-            blocked(70) = True
-            blocked(80) = True
-            blocked(90) = True
-            blocked(100) = True
-            Dim i = 0
-            For j = 1 To 255
-                If blocked(j) Then Continue For
-                indexMap(i) = CByte(j)
-                i += 1
-            Next j
+            'Prep
+            Dim defaultHandicaps = New Byte() {50, 60, 70, 80, 90, 100}
+            Dim indexMap = (From e In Enumerable.Range(start:=1, count:=255)
+                            Select b = CByte(e)
+                            Where Not defaultHandicaps.Contains(CByte(b))
+                            ).ToArray
 
-            Dim dat(0 To Math.Min(handicaps.Length, _mapMode.Length) - 1) As Byte
-            For i = 0 To dat.Length - 1
-                Dim v = If(blocked(handicaps(i)), handicaps(i), 100)
-                Dim c = If(HCLChars.Contains(_mapMode(i)), _mapMode(i), " ")
-                dat(i) = indexMap((v - 50) \ 10 + HCLChars.IndexOf(c, StringComparison.CurrentCultureIgnoreCase) * 6)
-            Next i
-            Return dat
+            'Scrub
+            Dim handicapData = From handicap In handicaps
+                               Select If(defaultHandicaps.Contains(handicap), handicap, CByte(100))
+            Dim letterData = From letter In CType(_mapMode, Char())
+                             Select safeLetter = If(HCLChars.Contains(letter), letter, " "c)
+                             Select CByte(HCLChars.IndexOf(CStr(safeLetter), StringComparison.OrdinalIgnoreCase))
+
+            'Encode
+            Dim encodedHandicaps = Enumerable.Zip(handicapData,
+                                                  letterData,
+                                                  Function(handicap, letter) indexMap((handicap - 50) \ 10 + letter * 6))
+            Dim remainingHandicaps = handicapData.Skip(encodedHandicaps.Count)
+
+            Return encodedHandicaps.Concat(remainingHandicaps)
         End Function
     End Class
 End Namespace

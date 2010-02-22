@@ -8,12 +8,12 @@ Namespace WC3.Protocol
             MyBase.New(name, True,
                     New ByteJar("pid").Weaken,
                     New ByteJar("dl").Weaken,
-                    New EnumByteJar(Of SlotContents.State)("state").Weaken,
+                    New EnumByteJar(Of Protocol.SlotState)("state").Weaken,
                     New ByteJar("cpu").Weaken,
                     New ByteJar("team").Weaken,
-                    New EnumByteJar(Of Slot.PlayerColor)("color").Weaken,
-                    New EnumByteJar(Of Slot.Races)("race").Weaken,
-                    New EnumByteJar(Of Slot.ComputerLevel)("difficulty").Weaken,
+                    New EnumByteJar(Of Protocol.PlayerColor)("color").Weaken,
+                    New EnumByteJar(Of Protocol.Races)("race").Weaken,
+                    New EnumByteJar(Of Protocol.ComputerLevel)("difficulty").Weaken,
                     New ByteJar("handicap").Weaken)
         End Sub
 
@@ -27,12 +27,12 @@ Namespace WC3.Protocol
                     {"pid", If(pid Is Nothing, 0, pid.Value.Index)},
                     {"dl", slot.Contents.DataDownloadPercent(receiver)},
                     {"state", slot.Contents.DataState(receiver)},
-                    {"cpu", If(slot.Contents.ContentType = SlotContentType.Computer, 1, 0)},
+                    {"cpu", If(slot.Contents.ContentType = SlotContents.Type.Computer, 1, 0)},
                     {"team", slot.Team},
-                    {"color", If(slot.Team = slot.ObserverTeamIndex, slot.PlayerColor.Observer, slot.color)},
-                    {"race", If(slot.RaceUnlocked, slot.race Or slot.Races.Unlocked, slot.race)},
+                    {"color", If(slot.Team = slot.ObserverTeamIndex, Protocol.PlayerColor.Observer, slot.Color)},
+                    {"race", If(slot.RaceUnlocked, slot.Race Or Protocol.Races.Unlocked, slot.Race)},
                     {"difficulty", slot.Contents.DataComputerLevel},
-                    {"handicap", slot.handicap}}
+                    {"handicap", slot.Handicap}}
         End Function
     End Class
 End Namespace

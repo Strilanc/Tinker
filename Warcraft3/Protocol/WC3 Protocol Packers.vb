@@ -114,7 +114,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeLobbyState(ByVal receiver As Player,
                                        ByVal map As Map,
-                                       ByVal slots As List(Of Slot),
+                                       ByVal slots As IEnumerable(Of Slot),
                                        ByVal randomSeed As ModInt32,
                                        Optional ByVal hideSlots As Boolean = False) As Packet
             Contract.Requires(receiver IsNot Nothing)

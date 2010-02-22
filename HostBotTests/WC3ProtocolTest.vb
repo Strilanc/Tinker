@@ -301,7 +301,7 @@ Public Class WC3ProtocolTest
                         {"receiving player indexes", New Byte() {1, 2, 3}.AsReadableList},
                         {"sending player", 4},
                         {"command type", NonGameAction.SetColor},
-                        {"new value", Slot.PlayerColor.Blue}
+                        {"new value", Protocol.PlayerColor.Blue}
                     })
         JarTest(Packets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
@@ -312,7 +312,7 @@ Public Class WC3ProtocolTest
                         {"receiving player indexes", New Byte() {1, 2, 3}.AsReadableList},
                         {"sending player", 4},
                         {"command type", NonGameAction.SetRace},
-                        {"new value", Slot.Races.Orc}
+                        {"new value", Protocol.Races.Orc}
                     })
     End Sub
     <TestMethod()>

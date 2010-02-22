@@ -50,13 +50,13 @@ Public MustInherit Class PacketHandler(Of TKey)
         Contract.Requires(packetData.Count >= HeaderSize)
         Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
 
-        Dim head = packetData.SubView(0, HeaderSize)
-        Dim body = packetData.SubView(HeaderSize)
-        Dim key = ExtractKey(head)
-        logger.Log(Function() "Received {0} from {1}".Frmt(key, sourceName), LogMessageType.DataEvent)
-
         Dim result = New FutureFunction(Of Ifuture)()
         result.SetByEvaluating(Function()
+                                   Dim head = packetData.SubView(0, HeaderSize)
+                                   Dim body = packetData.SubView(HeaderSize)
+                                   Dim key = ExtractKey(head)
+                                   logger.Log(Function() "Received {0} from {1}".Frmt(key, sourceName), LogMessageType.DataEvent)
+
                                    Dim handlerResults = handlers.Raise(key, body)
                                    If handlerResults.Count = 0 Then
                                        Throw New IO.IOException("No handler for {0}".Frmt(key))

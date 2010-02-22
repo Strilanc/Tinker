@@ -8,7 +8,6 @@ Namespace WC3
         Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect, ByVal position As UInt32) As IFuture
         ReadOnly Property Logger As Logger
         ReadOnly Property Map As Map
-        ReadOnly Property StartPlayerHoldPoint As HoldPoint(Of IPlayerDownloadAspect)
 
         <ContractClassFor(GetType(IGameDownloadAspect))>
         Class ContractClass
@@ -35,12 +34,6 @@ Namespace WC3
             Public ReadOnly Property Map As Map Implements IGameDownloadAspect.Map
                 Get
                     Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
-                    Throw New NotSupportedException
-                End Get
-            End Property
-            Public ReadOnly Property StartPlayerHoldPoint As HoldPoint(Of IPlayerDownloadAspect) Implements IGameDownloadAspect.StartPlayerHoldPoint
-                Get
-                    Contract.Ensures(Contract.Result(Of HoldPoint(Of IPlayerDownloadAspect))() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get
             End Property
@@ -485,10 +478,13 @@ Namespace WC3
 
         Public Sub New(ByVal clock As IClock,
                        ByVal game As IGameDownloadAspect,
+                       ByVal startPlayerHoldPoint As IHoldPoint(Of IPlayerDownloadAspect),
                        ByVal allowDownloads As Boolean,
                        ByVal allowUploads As Boolean)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(game IsNot Nothing)
+            Contract.Requires(startPlayerHoldPoint IsNot Nothing)
+
             Me._clock = clock
             Me._game = game
             Me._allowDownloads = allowDownloads
@@ -501,8 +497,7 @@ Namespace WC3
 
             _hooks.Add(clock.AsyncRepeat(UpdatePeriod, Sub() inQueue.QueueAction(AddressOf OnTick)).Futurized)
 
-            _hooks.Add(game.StartPlayerHoldPoint.IncludeFutureHandler(
-                            Function(arg) inQueue.QueueFunc(
+            _hooks.Add(startPlayerHoldPoint.IncludeFutureHandler(Function(arg) inQueue.QueueFunc(
                                     Function() OnGameStartPlayerHold(arg)).Defuturized).Futurized)
         End Sub
 

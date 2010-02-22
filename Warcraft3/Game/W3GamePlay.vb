@@ -95,11 +95,11 @@
 
                         laggingPlayers.Remove(p)
                         Dim p_ = p
-                        If IsPlayerVisible(p) OrElse (From q In laggingPlayers
-                                                      Where GetVisiblePlayer(q) Is GetVisiblePlayer(p_)).None Then
+                        If _lobby.IsPlayerVisible(p) OrElse (From q In laggingPlayers
+                                                             Where _lobby.GetVisiblePlayer(q) Is _lobby.GetVisiblePlayer(p_)).None Then
                             Contract.Assume(_lagTimer IsNot Nothing)
                             BroadcastPacket(Protocol.MakeRemovePlayerFromLagScreen(
-                                pid:=GetVisiblePlayer(p).PID,
+                                pid:=_lobby.GetVisiblePlayer(p).PID,
                                 lagTimeInMilliseconds:=CUInt(_lagTimer.ElapsedTime.TotalMilliseconds)))
                         End If
                     End If
@@ -134,19 +134,19 @@
                 End If
 
                 gameDataQueue.Dequeue()
-                outgoingActions.Add(Tuple(e.Item1, New Protocol.PlayerActionSet(GetVisiblePlayer(e.Item1).PID, e.Item2)))
+                outgoingActions.Add(Tuple(e.Item1, New Protocol.PlayerActionSet(_lobby.GetVisiblePlayer(e.Item1).PID, e.Item2)))
                 totalDataLength += actionDataLength
             End While
 
             'Send data
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
-                If IsPlayerVisible(player) Then
+                If _lobby.IsPlayerVisible(player) Then
                     player.QueueSendTick(record, (From e In outgoingActions Select e.Item2).ToArray.AsReadableList)
                 Else
                     Dim player_ = player
                     player.QueueSendTick(record, (From e In outgoingActions
-                                                  Let pid = If(e.Item1 Is player_, player_, GetVisiblePlayer(e.Item1)).PID
+                                                  Let pid = If(e.Item1 Is player_, player_, _lobby.GetVisiblePlayer(e.Item1)).PID
                                                   Select New Protocol.PlayerActionSet(pid, e.Item2.Actions)
                                                   ).ToList.AsReadableList)
                 End If
@@ -161,9 +161,5 @@
                 Return _gameTime
             End Get
         End Property
-        Public Function QueueDropLagger() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(AddressOf DropLagger)
-        End Function
     End Class
 End Namespace

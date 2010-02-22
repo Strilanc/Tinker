@@ -30,7 +30,7 @@ Public Class DownloadManagerTest
             usesCustomForces:=False,
             usesFixedPlayerSettings:=False,
             name:="Test",
-            slots:={New Slot(1, False)}.AsReadableList)
+            slots:={New Slot(index:=1, raceUnlocked:=False, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)}.AsReadableList)
         Private ReadOnly outQueue As New TaskedCallQueue()
         Private ReadOnly _players As New AsyncViewableCollection(Of TestPlayer)(outQueue:=outQueue)
         Private ReadOnly _logger As New Logger
@@ -44,7 +44,7 @@ Public Class DownloadManagerTest
                 Return SharedMap
             End Get
         End Property
-        Public ReadOnly Property StartPlayerHoldPoint As HoldPoint(Of IPlayerDownloadAspect) Implements IGameDownloadAspect.StartPlayerHoldPoint
+        Public ReadOnly Property StartPlayerHoldPoint As IHoldPoint(Of IPlayerDownloadAspect)
             Get
                 Return _startPlayerHoldPoint
             End Get
@@ -196,7 +196,7 @@ Public Class DownloadManagerTest
     Public Sub NoDownload()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, allowDownloads:=True, allowUploads:=True)
+        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=True)
         Dim player = New TestPlayer(New PID(2), game.Logger)
         BlockOnFuture(game.AddPlayer(player))
 
@@ -209,7 +209,7 @@ Public Class DownloadManagerTest
     Public Sub HostDownload()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, allowDownloads:=True, allowUploads:=True)
+        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=True)
         Dim dler = New TestPlayer(New PID(2), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
 
@@ -237,7 +237,7 @@ Public Class DownloadManagerTest
     Public Sub PeerDownload()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, allowDownloads:=True, allowUploads:=False)
+        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
         Dim uler = New TestPlayer(New PID(2), game.Logger)
         Dim dler = New TestPlayer(New PID(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
@@ -269,7 +269,7 @@ Public Class DownloadManagerTest
     Public Sub PeerDownloadFail_NoUploader()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, allowDownloads:=True, allowUploads:=False)
+        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
         Dim uler = New TestPlayer(New PID(2), game.Logger)
         Dim dler = New TestPlayer(New PID(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
@@ -290,7 +290,7 @@ Public Class DownloadManagerTest
     Public Sub PeerDownloadFail_NoPeerConnectionInfo()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, allowDownloads:=True, allowUploads:=False)
+        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
         Dim uler = New TestPlayer(New PID(2), game.Logger)
         Dim dler = New TestPlayer(New PID(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
@@ -310,7 +310,7 @@ Public Class DownloadManagerTest
     Public Sub PeerDownload_TimeoutSwitch()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, allowDownloads:=True, allowUploads:=False)
+        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
         Dim dler = New TestPlayer(New PID(2), game.Logger, "dler")
         Dim uler1 = New TestPlayer(New PID(3), game.Logger, "uler1")
         Dim uler2 = New TestPlayer(New PID(4), game.Logger, "uler2")
@@ -369,7 +369,7 @@ Public Class DownloadManagerTest
     Public Sub PeerDownload_SlowSwitch()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, allowDownloads:=True, allowUploads:=False)
+        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
         Dim dler = New TestPlayer(New PID(2), game.Logger, "dler")
         Dim uler1 = New TestPlayer(New PID(3), game.Logger, "uler1")
         Dim uler2 = New TestPlayer(New PID(4), game.Logger, "uler2")

@@ -18,16 +18,16 @@
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartLoading()
                 unreadyPlayers.Add(player)
-                If IsPlayerVisible(player) Then visibleUnreadyPlayers.Add(player)
+                If _lobby.IsPlayerVisible(player) Then visibleUnreadyPlayers.Add(player)
             Next player
 
             'Load
             logger.log("Players Loading", LogMessageType.Positive)
 
             'Ready any lingering fake players
-            For Each player In (From p In _players Where p.isFake _
-                                                  AndAlso IsPlayerVisible(p) _
-                                                  AndAlso TryFindPlayerSlot(p).Contents.Moveable)
+            For Each player In From p In _players Where p.isFake _
+                                                  AndAlso _lobby.IsPlayerVisible(p) _
+                                                  AndAlso _lobby.Slots.TryFindPlayerSlot(p).Contents.Moveable
                 Contract.Assume(player IsNot Nothing)
                 readyPlayers.Add(player)
                 unreadyPlayers.Remove(player)
@@ -79,14 +79,14 @@
 
             'Get if there is a visible readied player
             Dim visibleReadiedPlayer As Player = Nothing
-            If IsPlayerVisible(sendingPlayer) Then
+            If _lobby.IsPlayerVisible(sendingPlayer) Then
                 visibleReadiedPlayer = sendingPlayer
             Else
                 sendingPlayer.QueueSendPacket(Protocol.MakeOtherPlayerReady(sendingPlayer.PID))
                 readyPlayers.Add(sendingPlayer)
                 unreadyPlayers.Remove(sendingPlayer)
 
-                Dim slot = TryFindPlayerSlot(sendingPlayer)
+                Dim slot = _lobby.Slots.TryFindPlayerSlot(sendingPlayer)
                 Contract.Assume(slot IsNot Nothing)
                 If (From x In slot.Contents.EnumPlayers Where Not (x.Ready Or x.isFake)).None Then
                     visibleReadiedPlayer = slot.Contents.EnumPlayers.First
@@ -103,7 +103,7 @@
             If settings.useLoadInGame Then
                 For Each player In _players
                     Contract.Assume(player IsNot Nothing)
-                    If IsPlayerVisible(player) Then
+                    If _lobby.IsPlayerVisible(player) Then
                         sendingPlayer.QueueSendPacket(Protocol.MakeOtherPlayerReady(player.PID))
                     End If
                 Next player
@@ -155,14 +155,5 @@
                 End Sub
             )
         End Sub
-
-        Public Function QueueReceiveReady(ByVal player As Player) As IFuture
-            Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub()
-                                           Contract.Assume(player IsNot Nothing)
-                                           ReceiveReady(player)
-                                       End Sub)
-        End Function
     End Class
 End Namespace

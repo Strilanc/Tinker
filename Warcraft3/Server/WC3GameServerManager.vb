@@ -258,12 +258,13 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of GameSet))() IsNot Nothing)
 
             Dim sha1Checksum = (From b In Enumerable.Range(0, 20) Select CByte(b)).ToArray.AsReadableList
-            Dim slot1 = New Slot(index:=1, raceunlocked:=False)
-            Dim slot2 = New Slot(index:=2, raceunlocked:=False)
-            slot1.color = Slot.PlayerColor.Red
-            slot2.color = Slot.PlayerColor.Blue
-            slot1.Contents = New SlotContentsOpen(slot1)
-            slot2.Contents = New SlotContentsComputer(slot2, Slot.ComputerLevel.Normal)
+            Dim slot1 = New Slot(index:=1,
+                                 raceUnlocked:=False,
+                                 Color:=Protocol.PlayerColor.Red,
+                                 contents:=New SlotContentsOpen,
+                                 locked:=Slot.LockState.Frozen,
+                                 team:=0)
+            Dim slot2 = slot1.WithIndex(2).WithColor(Protocol.PlayerColor.Blue).WithContents(New SlotContentsClosed)
             Contract.Assume(sha1Checksum.Count = 20)
             Dim map = New WC3.Map(streamFactory:=Nothing,
                                   advertisedPath:="Maps\AdminGame.w3x",

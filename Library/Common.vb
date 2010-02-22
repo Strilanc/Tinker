@@ -182,6 +182,24 @@ Public Module PoorlyCategorizedFunctions
     End Function
 #End Region
 
+    <Pure()> <Extension()>
+    Public Function MaxProjection(Of T, P As IComparable(Of P))(ByVal sequence As IEnumerable(Of T), ByVal projection As Func(Of T, P)) As Tuple(Of T, P)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(projection IsNot Nothing)
+        Dim best As Tuple(Of T, P) = Nothing
+        For Each pair In From item In sequence Select Tuple(item, projection(item))
+            If best Is Nothing OrElse pair.Item2.CompareTo(best.Item2) > 0 Then
+                best = pair
+            End If
+        Next pair
+        Return best
+    End Function
+
+    <Pure()> <Extension()>
+    Public Function ToReadableList(Of T)(ByVal sequence As IEnumerable(Of T)) As IReadableList(Of T)
+        Return If(TryCast(sequence, IReadableList(Of T)), sequence.ToArray.AsReadableList)
+    End Function
+
     ''' <summary>
     ''' Determines the little-endian digits in one base from the little-endian digits in another base.
     ''' </summary>

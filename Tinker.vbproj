@@ -67,7 +67,7 @@
     </CodeContractsCustomRewriterClass>
     <CodeContractsRuntimeCheckingLevel>Preconditions</CodeContractsRuntimeCheckingLevel>
     <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
-    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
     <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
     <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
     <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
@@ -212,6 +212,9 @@
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
     <Compile Include="Library\Stream Extensions.vb" />
+    <Compile Include="Warcraft3\SlotContents.vb" />
+    <Compile Include="Warcraft3\SlotSet.vb" />
+    <Compile Include="Warcraft3\Game\Game Lobby.vb" />
     <Compile Include="Warcraft3\Replay\ReplayDataReader.vb" />
     <Compile Include="Warcraft3\Replay\Replay Format.vb" />
     <Compile Include="Warcraft3\Replay\ReplayManager.vb" />
@@ -302,13 +305,12 @@
     <Compile Include="Warcraft3\W3RemotePlayer.vb" />
     <Compile Include="Warcraft3\W3MapDownload.vb" />
     <Compile Include="Warcraft3\Game\W3GameLoadScreen.vb" />
-    <Compile Include="Warcraft3\Game\W3GameLobby.vb" />
     <Compile Include="Warcraft3\Game\W3GamePlay.vb" />
     <Compile Include="Warcraft3\Player\W3Player.vb" />
     <Compile Include="Warcraft3\Server\W3ServerDoor.vb" />
     <Compile Include="Warcraft3\W3ConnectionAccepter.vb" />
     <Compile Include="Warcraft3\W3GameStats.vb" />
-    <Compile Include="Warcraft3\W3Slot.vb" />
+    <Compile Include="Warcraft3\Slot.vb" />
     <Compile Include="Warcraft3\W3Socket.vb" />
     <Compile Include="Warden\Warden Socket.vb" />
     <Compile Include="Warden\BNLS Protocol.vb" />
