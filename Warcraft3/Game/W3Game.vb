@@ -46,7 +46,7 @@ Namespace WC3
         Private ReadOnly _players As New AsyncViewableCollection(Of Player)(outQueue:=outQueue)
         Private ReadOnly _settings As GameSettings
 
-        Public Event Updated(ByVal sender As Game, ByVal slots As IReadableList(Of Slot))
+        Public Event Updated(ByVal sender As Game, ByVal slots As SlotSet)
         Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivingGroup As Protocol.ChatGroup?)
         Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
         Public Event ChangedState(ByVal sender As Game, ByVal oldState As GameState, ByVal newState As GameState)
@@ -159,7 +159,7 @@ Namespace WC3
         End Property
 
         Private Sub ThrowUpdated()
-            Dim slots = _lobby.Slots.Slots
+            Dim slots = _lobby.Slots
             updateEventThrottle.SetActionToRun(Sub() outQueue.QueueAction(Sub() RaiseEvent Updated(Me, slots)))
         End Sub
         Public Function QueueThrowUpdated() As IFuture
@@ -582,7 +582,7 @@ Namespace WC3
             SendLobbyState(randomSeed)
 
             If settings.ShouldRecordReplay Then
-                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _players.ToList, _lobby.Slots.Slots, randomSeed)
+                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _players.ToList, _lobby.Slots, randomSeed)
             End If
 
             ChangeState(GameState.Loading)
@@ -634,7 +634,7 @@ Namespace WC3
                 Contract.Assume(player IsNot Nothing)
                 player.QueueSendPacket(Protocol.MakeLobbyState(receiver:=player,
                                                                layoutStyle:=Map.LayoutStyle,
-                                                               slots:=_lobby.Slots.Slots,
+                                                               slots:=_lobby.Slots,
                                                                randomSeed:=randomSeed,
                                                                hideSlots:=Settings.IsAdminGame))
             Next player

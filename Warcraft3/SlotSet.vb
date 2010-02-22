@@ -1,5 +1,6 @@
 ﻿Namespace WC3
     Public NotInheritable Class SlotSet
+        Implements IEnumerable(Of Slot)
         Private ReadOnly _slots As IReadableList(Of Slot)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -18,16 +19,18 @@
             End Get
         End Property
 
-        Public Function WithSlotsReplaced(ByVal ParamArray newSlots() As Slot) As SlotSet
-            Contract.Requires(newSlots IsNot Nothing)
+        '''<summary>Creates a SlotSet with the same slots, except any slot matching a replacement slot (by index) is replaced by the new slot.</summary>
+        Public Function WithSlotsReplaced(ByVal ParamArray replacementSlots() As Slot) As SlotSet
+            Contract.Requires(replacementSlots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
-            Return Me.WithSlotsReplaced(newSlots.AsEnumerable)
+            Return Me.WithSlotsReplaced(replacementSlots.AsEnumerable)
         End Function
-        Public Function WithSlotsReplaced(ByVal newSlots As IEnumerable(Of Slot)) As SlotSet
-            Contract.Requires(newSlots IsNot Nothing)
+        '''<summary>Creates a SlotSet with the same slots, except any slot matching a replacement slot (by index) is replaced by the new slot.</summary>
+        Public Function WithSlotsReplaced(ByVal replacementSlots As IEnumerable(Of Slot)) As SlotSet
+            Contract.Requires(replacementSlots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
-            Return New SlotSet(From oldSlot In Slots
-                               Let newSlot = (From slot In newSlots Where slot.Index = oldSlot.Index).FirstOrDefault
+            Return New SlotSet(From oldSlot In _slots
+                               Let newSlot = (From slot In replacementSlots Where slot.Index = oldSlot.Index).FirstOrDefault
                                Select If(newSlot, oldSlot))
         End Function
 
@@ -71,6 +74,13 @@
             Dim result = TryFindPlayerSlot(player)
             If result Is Nothing Then Throw New InvalidOperationException("No such player in a slot.")
             Return result
+        End Function
+
+        Public Function GetEnumerator() As IEnumerator(Of Slot) Implements IEnumerable(Of Slot).GetEnumerator
+            Return _slots.GetEnumerator
+        End Function
+        Private Function GetEnumeratorObj() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
+            Return _slots.GetEnumerator
         End Function
     End Class
 End Namespace

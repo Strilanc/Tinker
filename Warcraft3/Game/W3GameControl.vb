@@ -49,7 +49,7 @@ Namespace WC3
             e.Handled = True
         End Sub
 
-        Private Sub OnGameUpdated(ByVal sender As WC3.Game, ByVal slots As IReadableList(Of WC3.Slot))
+        Private Sub OnGameUpdated(ByVal sender As WC3.Game, ByVal slots As SlotSet)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
             Dim descriptions = (From slot In slots Select slot.AsyncGenerateDescription).ToList
