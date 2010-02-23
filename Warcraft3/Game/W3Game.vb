@@ -372,7 +372,8 @@ Namespace WC3
             Dim slot = _lobby.Slots.TryFindPlayerSlot(player)
             If slot IsNot Nothing Then
                 If slot.Contents.EnumPlayers.Contains(player) Then
-                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithoutPlayer(player)))
+                    slot = slot.WithContents(slot.Contents.WithoutPlayer(player))
+                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot)
                 End If
             End If
 

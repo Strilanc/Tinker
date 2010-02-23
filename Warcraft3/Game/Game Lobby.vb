@@ -217,40 +217,43 @@
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
-        <Pure()>
-        Private Function ChooseSlotForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Slot
+        Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PID)
             Contract.Requires(connectingPlayer IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-
-            Return (From slot In _slots
-                    Let match = slot.Contents.WantPlayer(connectingPlayer.Name)
-                    ).Max(comparator:=Function(e1, e2) e1.match - e2.match).slot
-        End Function
-        Private Function AllocatePIDForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot) As PID
-            Contract.Requires(connectingPlayer IsNot Nothing)
-            Contract.Requires(slot IsNot Nothing)
             Contract.Ensures(Not FreeIndexes.Contains(Contract.Result(Of PID)()))
 
-            Dim result As PID
+            'Choose Slot
+            Dim slotMatch = (From s In _slots
+                             Let match = s.Contents.WantPlayer(connectingPlayer.Name)
+                             ).Max(comparator:=Function(e1, e2) e1.match - e2.match)
+            If slotMatch.match < SlotContents.WantPlayerPriority.Open Then
+                Throw New InvalidOperationException("No slot available for player.")
+            End If
+            Dim slot = slotMatch.s
+
+            'Allocate PID
+            Dim pid As PID
             If slot.Contents.WantPlayer(connectingPlayer.Name) = SlotContents.WantPlayerPriority.ReservationForPlayer Then
-                result = slot.Contents.PlayerIndex.Value
+                pid = slot.Contents.PlayerIndex.Value
                 For Each player In slot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
                     RaiseEvent RemovePlayer(Me, player, wasExpected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Reservation fulfilled")
                 Next player
-                Contract.Assume(FreeIndexes.Contains(result))
+                slot = (From s In _slots Where s.MatchableId = slot.MatchableId).Single
+                Contract.Assume(FreeIndexes.Contains(pid))
             ElseIf slot.Contents.PlayerIndex IsNot Nothing Then '[slot forces the pid]
-                result = slot.Contents.PlayerIndex.Value
+                pid = slot.Contents.PlayerIndex.Value
             ElseIf FreeIndexes.Count > 0 Then '[pid available]
-                result = FreeIndexes(0)
+                pid = FreeIndexes(0)
             ElseIf FakeHostPlayer IsNot Nothing Then '[take fake host's pid]
-                result = FakeHostPlayer.PID
+                pid = FakeHostPlayer.PID
                 RaiseEvent RemovePlayer(Me, FakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for joining player.")
+                slot = (From s In _slots Where s.MatchableId = slot.MatchableId).Single
             Else
                 Throw New InvalidOperationException("No available pids.")
             End If
-            FreeIndexes.Remove(result)
-            Return result
+            FreeIndexes.Remove(pid)
+
+            Return Tuple(slot, pid)
         End Function
         Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal pid As PID) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
@@ -292,15 +295,8 @@
                 Throw New InvalidOperationException("Player isn't connected.")
             End If
 
-            'Alllocate space
-            Dim slot = ChooseSlotForNewPlayer(connectingPlayer)
-            Dim match = slot.Contents.WantPlayer(connectingPlayer.Name)
-            If match < SlotContents.WantPlayerPriority.Open Then
-                Throw New InvalidOperationException("No slot available for player.")
-            End If
-            Dim pid = AllocatePIDForNewPlayer(connectingPlayer, slot)
-
-            Return AddPlayer(connectingPlayer, slot, pid)
+            Dim space = AllocateSpaceForNewPlayer(connectingPlayer)
+            Return AddPlayer(connectingPlayer, space.item1, space.item2)
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
@@ -656,6 +652,8 @@
             Contract.Requires(slotSet IsNot Nothing)
             Contract.Requires(desiredTeamSizes IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
+            'Contract.Ensures(players before === players after)
+            'Contract.Ensures(players only moved if their team is full and another team can be filled)
 
             'Group affected slots by team
             Dim affectedSlots = From slot In slotSet
