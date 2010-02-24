@@ -45,11 +45,14 @@ Namespace WC3
         Private adminPlayer As Player
         Private ReadOnly _players As New AsyncViewableCollection(Of Player)(outQueue:=outQueue)
         Private ReadOnly _settings As GameSettings
+        Private ReadOnly _motor As GameMotor
 
         Public Event Updated(ByVal sender As Game, ByVal slots As SlotSet)
         Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivingGroup As Protocol.ChatGroup?)
         Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
         Public Event ChangedState(ByVal sender As Game, ByVal oldState As GameState, ByVal newState As GameState)
+        Public Event ReceivedPlayerActions(ByVal sender As Game, ByVal player As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
+        Public Event Tick(ByVal sender As Game, ByVal timeSpan As UShort, ByVal actionSets As IReadableList(Of Tuple(Of Player, Protocol.PlayerActionSet)))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_clock IsNot Nothing)
@@ -65,9 +68,7 @@ Namespace WC3
             Contract.Invariant(visibleUnreadyPlayers IsNot Nothing)
             Contract.Invariant(fakeTickTimer IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
-            Contract.Invariant(_gameTime >= 0)
-            Contract.Invariant(laggingPlayers IsNot Nothing)
-            Contract.Invariant(gameDataQueue IsNot Nothing)
+            Contract.Invariant(_motor IsNot Nothing)
             Contract.Invariant(updateEventThrottle IsNot Nothing)
             Contract.Invariant(slotStateUpdateThrottle IsNot Nothing)
         End Sub
@@ -76,15 +77,20 @@ Namespace WC3
                        ByVal settings As GameSettings,
                        ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
-            'contract bug wrt interface event implementation requires this:
-            'Contract.Requires(map IsNot Nothing)
-            'Contract.Requires(name IsNot Nothing)
+            Contract.Assume(clock IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
 
             Me._settings = settings
             Me._clock = clock
             Me._name = name
             Me._logger = If(logger, New Logger)
+            Me._motor = New GameMotor(My.Settings.game_speed_factor,
+                                      CUInt(My.Settings.game_tick_period).Milliseconds,
+                                      CUInt(My.Settings.game_lag_limit).Milliseconds,
+                                      Me.inQueue,
+                                      Me._players,
+                                      Me._clock,
+                                      Me._lobby)
 
             Dim startPlayerholdPoint = New HoldPoint(Of Player)
             Dim downloadManager = New DownloadManager(clock:=_clock,
@@ -97,8 +103,6 @@ Namespace WC3
 
             _lobby.StartPlayerHoldPoint.IncludeActionhandler(
                 Sub(newPlayer)
-                    AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() inQueue.QueueAction(AddressOf DropLagger)
-                    AddHandler newPlayer.ReceivedGameActions, Sub(sender, actions) inQueue.QueueAction(Sub() OnReceiveGameActions(sender, actions))
                     AddHandler newPlayer.Disconnected, Sub(player, expected, reportedReason, reasonDescription) inQueue.QueueAction(Sub() RemovePlayer(player, expected, reportedReason, reasonDescription))
                     AddHandler newPlayer.ReceivedReady, Sub(player) inQueue.QueueAction(Sub() ReceiveReady(player))
                     AddHandler newPlayer.SuperficialStateUpdated, Sub() QueueThrowUpdated()
@@ -118,9 +122,11 @@ Namespace WC3
                                                       slotStateUpdateThrottle.SetActionToRun(Sub() inQueue.QueueAction(Sub() SendLobbyState(Environment.TickCount)))
                                                   End Sub
             AddHandler _lobby.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
+            AddHandler _motor.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
+            AddHandler _motor.Tick, Sub(sender, timeSpan, actionSets) outQueue.QueueAction(Sub() RaiseEvent Tick(Me, timeSpan, actionSets))
+            AddHandler _motor.ReceivedPlayerActions, Sub(sender, player, actions) outQueue.QueueAction(Sub() RaiseEvent ReceivedPlayerActions(Me, player, actions))
 
             LoadScreenNew()
-            GamePlayNew()
         End Sub
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
@@ -128,7 +134,8 @@ Namespace WC3
             Return outQueue.QueueAction(Sub() inQueue.QueueAction(
                 Sub()
                     ChangeState(GameState.Disposed)
-                    _lobby.dispose()
+                    _lobby.Dispose()
+                    _motor.Dispose()
                     For Each player In _players
                         player.Dispose()
                     Next player
@@ -157,6 +164,12 @@ Namespace WC3
                 Return _settings
             End Get
         End Property
+        Public ReadOnly Property Motor As GameMotor
+            Get
+                Contract.Ensures(Contract.Result(Of GameMotor)() IsNot Nothing)
+                Return _motor
+            End Get
+        End Property
 
         Private Sub ThrowUpdated()
             Dim slots = _lobby.Slots
@@ -179,7 +192,7 @@ Namespace WC3
                 Else
                     Return Game.GuestInGameCommands.Invoke(Me, user, argument)
                 End If
-            ElseIf settings.IsAdminGame Then
+            ElseIf Settings.IsAdminGame Then
                 Return GameCommands.MakeBotAdminCommands(bot).Invoke(Me, Nothing, argument)
             Else
                 If state < GameState.Loading Then
@@ -507,7 +520,7 @@ Namespace WC3
         '''<summary>Autostarts the countdown if autostart is enabled and the game stays full for awhile.</summary>
         Private Function TryBeginAutoStart() As Boolean
             'Sanity check
-            If Not settings.IsAutoStarted Then Return False
+            If Not Settings.IsAutoStarted Then Return False
             If _lobby.CountFreeSlots() > 0 Then Return False
             If state >= GameState.PreCounting Then Return False
             If (From player In _players Where Not player.isFake AndAlso player.AdvertisedDownloadPercent <> 100).Any Then
@@ -582,7 +595,7 @@ Namespace WC3
             Dim randomSeed As ModInt32 = Environment.TickCount()
             SendLobbyState(randomSeed)
 
-            If settings.ShouldRecordReplay Then
+            If Settings.ShouldRecordReplay Then
                 Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _players.ToList, _lobby.Slots, randomSeed)
             End If
 

@@ -183,11 +183,33 @@ Public Module PoorlyCategorizedFunctions
 #End Region
 
     <Pure()> <Extension()>
+    <ContractVerification(False)>
+    Public Function KeepAtOrAbove(Of T As IComparable(Of T))(ByVal value1 As T, ByVal value2 As T) As T
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of T)().CompareTo(value1) >= 0)
+        Contract.Ensures(Contract.Result(Of T)().CompareTo(value2) >= 0)
+        Return If(value1.CompareTo(value2) >= 0, value1, value2)
+    End Function
+    <Pure()> <Extension()>
+    <ContractVerification(False)>
+    Public Function KeepAtOrBelow(Of T As IComparable(Of T))(ByVal value1 As T, ByVal value2 As T) As T
+        Contract.Requires(value1 IsNot Nothing)
+        Contract.Requires(value2 IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of T)().CompareTo(value1) <= 0)
+        Contract.Ensures(Contract.Result(Of T)().CompareTo(value2) <= 0)
+        Return If(value1.CompareTo(value2) <= 0, value1, value2)
+    End Function
+
+    <Pure()> <Extension()>
     Public Function MaxProjection(Of T, P As IComparable(Of P))(ByVal sequence As IEnumerable(Of T), ByVal projection As Func(Of T, P)) As Tuple(Of T, P)
         Contract.Requires(sequence IsNot Nothing)
         Contract.Requires(projection IsNot Nothing)
         Dim best As Tuple(Of T, P) = Nothing
         For Each pair In From item In sequence Select Tuple(item, projection(item))
+            Contract.Assume(pair IsNot Nothing)
             If best Is Nothing OrElse pair.Item2.CompareTo(best.Item2) > 0 Then
                 best = pair
             End If
@@ -196,6 +218,7 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
+    <ContractVerification(False)>
     Public Function Zip(Of T1, T2)(ByVal sequence As IEnumerable(Of T1), ByVal sequence2 As IEnumerable(Of T2)) As IEnumerable(Of Tuple(Of T1, T2))
         Contract.Requires(sequence IsNot Nothing)
         Contract.Requires(sequence2 IsNot Nothing)
@@ -205,6 +228,8 @@ Public Module PoorlyCategorizedFunctions
 
     <Pure()> <Extension()>
     Public Function ToReadableList(Of T)(ByVal sequence As IEnumerable(Of T)) As IReadableList(Of T)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of T))() IsNot Nothing)
         Return If(TryCast(sequence, IReadableList(Of T)), sequence.ToArray.AsReadableList)
     End Function
 

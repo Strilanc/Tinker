@@ -200,15 +200,16 @@ Namespace WC3
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim val As Object
+                Dim val As IFuture(Of Double)
                 Dim argSetting As InvariantString = argument.RawValue(0)
                 Select Case argSetting
-                    Case "TickPeriod" : val = target.SettingTickPeriod
-                    Case "LagLimit" : val = target.SettingLagLimit
-                    Case "GameRate" : val = target.SettingSpeedFactor
-                    Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argument.RawValue(0)))
+                    Case "TickPeriod" : val = From e In target.Motor.QueueGetTickPeriod Select e.TotalMilliseconds
+                    Case "LagLimit" : val = From e In target.Motor.QueueGetLagLimit Select e.TotalMilliseconds
+                    Case "GameRate" : val = From e In target.Motor.QueueGetSpeedFactor
+                    Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argSetting))
                 End Select
-                Return "{0} = '{1}'".Frmt(argument.RawValue(0), val).Futurized
+                Return From v In val
+                       Select "{0} = '{1}'".Frmt(argSetting, v)
             End Function
         End Class
 
@@ -329,8 +330,8 @@ Namespace WC3
                            template:="setting value",
                            Description:="Sets the value of a game setting {tickperiod, laglimit, gamerate}.")
             End Sub
+            <ContractVerification(False)>
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
                 Dim val_us As UShort
                 Dim vald As Double
                 Dim isShort = UShort.TryParse(argument.RawValue(1), val_us)
@@ -339,13 +340,13 @@ Namespace WC3
                 Select Case argSetting
                     Case "TickPeriod"
                         If Not isShort Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
-                        target.SettingTickPeriod = val_us
+                        target.Motor.QueueSetTickPeriod(CInt(val_us).Milliseconds)
                     Case "LagLimit"
                         If Not isShort Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")
-                        target.SettingLagLimit = val_us
+                        target.Motor.QueueSetLagLimit(CInt(val_us).Milliseconds)
                     Case "GameRate"
                         If Not isDouble Or vald < 0.01 Or vald > 10 Then Throw New ArgumentException("Invalid value")
-                        target.SettingSpeedFactor = vald
+                        target.Motor.QueueSetSpeedFactor(vald)
                     Case Else
                         Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argument.RawValue(0)))
                 End Select

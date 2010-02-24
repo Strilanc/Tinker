@@ -49,24 +49,31 @@
             Open = 2
             ReservationForPlayer = 3
         End Enum
+        <Pure()>
         Public Overridable Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Filled
         End Function
+        <Pure()>
         Public Overridable Function WithPlayer(ByVal player As Player) As SlotContents
             Contract.Requires(player IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of SlotContents)() IsNot Nothing)
             Throw New InvalidOperationException()
         End Function
+        <Pure()>
         Public Overridable Function WithoutPlayer(ByVal player As Player) As SlotContents
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotContents)() IsNot Nothing)
             Throw New InvalidOperationException()
         End Function
+        <Pure()>
         Public Overridable Function EnumPlayers() As IEnumerable(Of Player)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Player))() IsNot Nothing)
             Return New Player() {}
         End Function
 
+        <Pure()>
         Public MustOverride Function AsyncGenerateDescription() As IFuture(Of String)
+        <Pure()>
         Public Overridable Function Matches(ByVal query As InvariantString) As Boolean
             Return False
         End Function
@@ -274,6 +281,7 @@
         End Function
         Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PID?
             Get
+                If receiver Is Nothing Then Return Nothing
                 Return If(_players.Contains(receiver), receiver.PID, Nothing)
             End Get
         End Property

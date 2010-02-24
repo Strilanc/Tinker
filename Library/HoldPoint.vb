@@ -1,7 +1,23 @@
-﻿Public Interface IHoldPoint(Of Out TArg)
+﻿<ContractClass(GetType(IHoldPointContracts(Of )))>
+Public Interface IHoldPoint(Of Out TArg)
     Function IncludeFutureHandler(ByVal handler As Func(Of TArg, IFuture)) As IDisposable
     Function IncludeActionhandler(ByVal handler As Action(Of TArg)) As IDisposable
 End Interface
+<ContractClassFor(GetType(IHoldPoint(Of )))>
+Public Class IHoldPointContracts(Of TArg)
+    Implements IHoldPoint(Of TArg)
+    Public Function IncludeActionhandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionhandler
+        Contract.Requires(handler IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+        Throw New NotSupportedException
+    End Function
+
+    Public Function IncludeFutureHandler(ByVal handler As Func(Of TArg, IFuture)) As IDisposable Implements IHoldPoint(Of TArg).IncludeFutureHandler
+        Contract.Requires(handler IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+        Throw New NotSupportedException
+    End Function
+End Class
 
 '''<summary>Allows continuing execution only once all attached handlers are finished.</summary>
 Public Class HoldPoint(Of TArg)
@@ -19,8 +35,6 @@ Public Class HoldPoint(Of TArg)
     ''' Returns an IDisposable which removes the handler when disposed.
     ''' </summary>
     Public Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionhandler
-        Contract.Requires(handler IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Return IncludeFutureHandler(Function(arg)
                                         Dim result = New FutureAction()
                                         result.SetByCalling(Sub() handler(arg))
@@ -32,8 +46,6 @@ Public Class HoldPoint(Of TArg)
     ''' Returns an IDisposable which removes the handler when disposed.
     ''' </summary>
     Public Function IncludeFutureHandler(ByVal handler As Func(Of TArg, IFuture)) As IDisposable Implements IHoldPoint(Of TArg).IncludeFutureHandler
-        Contract.Requires(handler IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Dim safeHandler = Function(arg As TArg)
                               Dim result = New FutureFunction(Of IFuture)
                               result.SetByEvaluating(Function() handler(arg))

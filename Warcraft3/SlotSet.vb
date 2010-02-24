@@ -42,10 +42,13 @@
                         Let match = slot.Matches(query)
                         Let contentType = slot.Contents.ContentType
                         ).MaxProjection(Function(item) item.match * 3 - item.contentType).Item1
+            Contract.Assume(best IsNot Nothing)
             If best.match = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
+            Contract.Assume(best.slot IsNot Nothing)
             Return best.slot
         End Function
 
+        <ContractVerification(False)>
         Public Function WithEncodeHCL(ByVal settings As GameSettings) As SlotSet
             Contract.Requires(settings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)

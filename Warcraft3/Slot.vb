@@ -18,8 +18,7 @@
         Private ReadOnly _contents As SlotContents
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_index > 0)
-            Contract.Invariant(_index <= 12)
+            Contract.Invariant(_index < 12)
             Contract.Invariant(_team <= 12)
             Contract.Invariant(_contents IsNot Nothing)
         End Sub
@@ -56,14 +55,14 @@
             Contract.Requires(template IsNot Nothing)
             Contract.Requires(Not index.HasValue OrElse index.Value < 12)
             Contract.Requires(Not team.HasValue OrElse team.Value <= 12)
-            Me._index = If(index, template._index)
-            Me._color = If(color, template._color)
-            Me._team = If(team, template._team)
-            Me._handicap = If(handicap, template._handicap)
-            Me._race = If(race, template._race)
-            Me._locked = If(locked, template._locked)
-            Me._raceUnlocked = If(raceUnlocked, template._raceUnlocked)
-            Me._contents = If(contents, template._contents)
+            Me._index = If(index, template.Index)
+            Me._color = If(color, template.Color)
+            Me._team = If(team, template.Team)
+            Me._handicap = If(handicap, template.Handicap)
+            Me._race = If(race, template.Race)
+            Me._locked = If(locked, template.Locked)
+            Me._raceUnlocked = If(raceUnlocked, template.RaceUnlocked)
+            Me._contents = If(contents, template.Contents)
         End Sub
 
         Public ReadOnly Property Index As Byte
@@ -111,37 +110,44 @@
         End Property
 
         <Pure()>
+        <ContractVerification(False)>
         Public Function WithIndex(ByVal index As Byte) As Slot
             Contract.Requires(index < 12)
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Return New Slot(Me, index:=index)
         End Function
         <Pure()>
+        <ContractVerification(False)>
         Public Function WithColor(ByVal color As Protocol.PlayerColor) As Slot
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Return New Slot(Me, color:=color)
         End Function
         <Pure()>
+        <ContractVerification(False)>
         Public Function WithHandicap(ByVal handicap As Byte) As Slot
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Return New Slot(Me, handicap:=handicap)
         End Function
         <Pure()>
+        <ContractVerification(False)>
         Public Function WithTeam(ByVal team As Byte) As Slot
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Return New Slot(Me, team:=team)
         End Function
         <Pure()>
+        <ContractVerification(False)>
         Public Function WithRace(ByVal race As Protocol.Races) As Slot
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Return New Slot(Me, race:=race)
         End Function
         <Pure()>
+        <ContractVerification(False)>
         Public Function WithLock(ByVal locked As LockState) As Slot
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Return New Slot(Me, locked:=locked)
         End Function
         <Pure()>
+        <ContractVerification(False)>
         Public Function WithContents(ByVal contents As SlotContents) As Slot
             Contract.Requires(contents IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
@@ -173,6 +179,7 @@
         End Property
         <Pure()>
         Public Function AsyncGenerateDescription() As IFuture(Of String)
+            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
             Dim result = ""
             If Locked <> LockState.Unlocked Then result += "({0}) ".Frmt(Locked)
             result += If(Team = ObserverTeamIndex, "Observer", "Team {0}, {1}, {2}".Frmt(Team + 1, Race, Color))

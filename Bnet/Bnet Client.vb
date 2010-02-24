@@ -383,6 +383,7 @@ Namespace Bnet
             'Continue
             Dim result = futureSocket.QueueEvalOnValueSuccess(inQueue,
                 Function(socket)
+                    _bnetRemoteHostName = remoteHost
                     ChangeState(ClientState.FinishedInitiatingConnection)
                     Return AsyncConnect(socket)
                 End Function).Defuturized
@@ -496,7 +497,7 @@ Namespace Bnet
                 _wardenClient = Nothing
             End If
 
-            If Not expected AndAlso _allowRetryConnect Then
+            If Not expected AndAlso _allowRetryConnect AndAlso _bnetRemoteHostName IsNot Nothing Then
                 _allowRetryConnect = False
                 _clock.AsyncWait(5.Seconds).CallWhenReady(
                     Sub()

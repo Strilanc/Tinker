@@ -67,7 +67,7 @@
     </CodeContractsCustomRewriterClass>
     <CodeContractsRuntimeCheckingLevel>Preconditions</CodeContractsRuntimeCheckingLevel>
     <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
-    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsRunCodeAnalysis>True</CodeContractsRunCodeAnalysis>
     <CodeContractsBuildReferenceAssembly>False</CodeContractsBuildReferenceAssembly>
     <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
     <CodeContractsBoundsObligations>False</CodeContractsBoundsObligations>
@@ -305,7 +305,7 @@
     <Compile Include="Warcraft3\W3RemotePlayer.vb" />
     <Compile Include="Warcraft3\W3MapDownload.vb" />
     <Compile Include="Warcraft3\Game\W3GameLoadScreen.vb" />
-    <Compile Include="Warcraft3\Game\W3GamePlay.vb" />
+    <Compile Include="Warcraft3\Game\Game Motor.vb" />
     <Compile Include="Warcraft3\Player\W3Player.vb" />
     <Compile Include="Warcraft3\Server\W3ServerDoor.vb" />
     <Compile Include="Warcraft3\W3ConnectionAccepter.vb" />

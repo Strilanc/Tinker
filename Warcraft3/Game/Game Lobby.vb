@@ -35,9 +35,9 @@
                        ByVal players As AsyncViewableCollection(Of Player),
                        ByVal clock As IClock,
                        ByVal settings As GameSettings)
-            Contract.Requires(startPlayerholdPoint IsNot Nothing)
-            Contract.Requires(downloadManager IsNot Nothing)
-            Contract.Requires(logger IsNot Nothing)
+            Contract.Assume(startPlayerholdPoint IsNot Nothing)
+            Contract.Assume(downloadManager IsNot Nothing)
+            Contract.Assume(logger IsNot Nothing)
             Me._startPlayerHoldPoint = startPlayerholdPoint
             Me._downloadManager = downloadManager
             Me._slots = New SlotSet(InitCreateSlots(settings))
@@ -47,9 +47,10 @@
             Me._settings = settings
             Dim pidCount = _slots.Count
             Me._freeIndexes = (From i In Enumerable.Range(1, pidCount) Select New PID(CByte(i))).ToList
-            For i As Byte = 1 To 12
-                _pidVisiblityMap(New PID(i)) = New PID(i)
-            Next i
+            For Each pid In From i In Enumerable.Range(1, 12)
+                            Select New PID(CByte(i))
+                _pidVisiblityMap.Add(pid, pid)
+            Next pid
 
             If _settings.UseMultiObs Then
                 If _settings.Map.Slots.Count <= 10 Then
@@ -112,9 +113,11 @@
 
         Public Property Slots As SlotSet
             Get
+                Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
                 Return _slots
             End Get
             Set(ByVal value As SlotSet)
+                Contract.Requires(value IsNot Nothing)
                 _slots = value
             End Set
         End Property
@@ -135,6 +138,7 @@
         End Property
         Public ReadOnly Property StartPlayerHoldPoint As IHoldPoint(Of Player)
             Get
+                Contract.Ensures(Contract.Result(Of IHoldPoint(Of Player))() IsNot Nothing)
                 Return _startPlayerHoldPoint
             End Get
         End Property
@@ -219,20 +223,23 @@
 
         Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PID)
             Contract.Requires(connectingPlayer IsNot Nothing)
-            Contract.Ensures(Not FreeIndexes.Contains(Contract.Result(Of PID)()))
+            Contract.Ensures(Not FreeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PID))().Item2))
 
             'Choose Slot
             Dim slotMatch = (From s In _slots
                              Let match = s.Contents.WantPlayer(connectingPlayer.Name)
                              ).Max(comparator:=Function(e1, e2) e1.match - e2.match)
+            Contract.Assume(slotMatch IsNot Nothing)
             If slotMatch.match < SlotContents.WantPlayerPriority.Open Then
                 Throw New InvalidOperationException("No slot available for player.")
             End If
             Dim slot = slotMatch.s
+            Contract.Assume(slot IsNot Nothing)
 
             'Allocate PID
             Dim pid As PID
             If slot.Contents.WantPlayer(connectingPlayer.Name) = SlotContents.WantPlayerPriority.ReservationForPlayer Then
+                Contract.Assume(slot.Contents.PlayerIndex.HasValue)
                 pid = slot.Contents.PlayerIndex.Value
                 For Each player In slot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
@@ -258,6 +265,7 @@
         Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal pid As PID) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Requires(slot IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             'Add
             Dim newPlayer = New Player(pid, connectingPlayer, _clock, _downloadManager, Logger)
@@ -269,12 +277,14 @@
             newPlayer.QueueSendPacket(Protocol.MakeGreet(newPlayer.RemoteEndPoint, newPlayer.PID))
             newPlayer.QueueSendPacket(Protocol.MakeHostMapInfo(_settings.Map))
             For Each visibleOtherPlayer In From p In _players Where p IsNot newPlayer AndAlso IsPlayerVisible(p)
+                Contract.Assume(visibleOtherPlayer IsNot Nothing)
                 newPlayer.QueueSendPacket(visibleOtherPlayer.MakePacketOtherPlayerJoined())
             Next visibleOtherPlayer
 
             'Inform others
             If IsPlayerVisible(newPlayer) Then
                 For Each otherPlayer In From p In _players Where p IsNot newPlayer
+                    Contract.Assume(otherPlayer IsNot Nothing)
                     otherPlayer.QueueSendPacket(newPlayer.MakePacketOtherPlayerJoined())
                 Next otherPlayer
             End If
@@ -296,6 +306,7 @@
             End If
 
             Dim space = AllocateSpaceForNewPlayer(connectingPlayer)
+            Contract.Assume(space.Item1 IsNot Nothing)
             Return AddPlayer(connectingPlayer, space.item1, space.item2)
         End Function
 
@@ -327,12 +338,14 @@
             Contract.Requires(slots IsNot Nothing)
             Contract.Requires(coveringSlot IsNot Nothing)
             Contract.Requires(coveredSlot IsNot Nothing)
+            Contract.Requires(coveringSlot.Contents.EnumPlayers.None)
+            Contract.Requires(coveringSlot.Contents.EnumPlayers.Count = 1)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
-            If coveringSlot.Contents.EnumPlayers.Count <> 1 Then Throw New InvalidOperationException()
-            If coveredSlot.Contents.EnumPlayers.Any Then Throw New InvalidOperationException()
 
-            Return slots.WithSlotsReplaced(coveringSlot.WithContents(New SlotContentsCovering(coveredSlot.MatchableId, coveringSlot.Contents.EnumPlayers.First)),
-                                           coveredSlot.WithContents(New SlotContentsCovered(coveringSlot.MatchableId, playerIndex, coveredSlot.Contents.EnumPlayers)))
+            Dim coveringPlayer = coveringSlot.Contents.EnumPlayers.Single
+            Contract.Assume(coveringPlayer IsNot Nothing)
+            Return slots.WithSlotsReplaced(coveringSlot.WithContents(New SlotContentsCovering(coveredSlot.MatchableId, coveringPlayer)),
+                                           coveredSlot.WithContents(New SlotContentsCovered(coveringSlot.MatchableId, playerIndex, {})))
         End Function
 
         Public Function SendMapPiece(ByVal player As IPlayerDownloadAspect,
@@ -455,7 +468,6 @@
                 'swap with next open slot from target team
                 For offset_mod = 0 To _slots.Count - 1
                     Dim nextIndex = (slot.Index + offset_mod) Mod _slots.Count
-                    Contract.Assume(nextIndex >= 0)
                     Dim nextSlot = _slots(nextIndex)
                     Contract.Assume(nextSlot IsNot Nothing)
                     If nextSlot.Team = newTeam AndAlso nextSlot.Contents.WantPlayer(player.Name) >= SlotContents.WantPlayerPriority.Open Then
@@ -639,6 +651,7 @@
                                                        Return slot.WithTeam(team)
                                                    End If
                                                End Function)
+            Contract.Assume(assignedSlots IsNot Nothing)
             Dim closedSlots = From slot In affectedSlots.Skip(assignedSlots.Count)
                               Where slot.Team <> WC3.Slot.ObserverTeamIndex
                               Select slot.WithContents(New SlotContentsClosed)

@@ -60,7 +60,7 @@
 
             'start gameplay
             Me.LoadScreenStop()
-            GameplayStart()
+            Motor.QueueStart()
             If Not settings.UseLoadInGame Then
                 outQueue.QueueAction(Sub() RaiseEvent Launched(Me, usingloadInGame:=False))
             End If
