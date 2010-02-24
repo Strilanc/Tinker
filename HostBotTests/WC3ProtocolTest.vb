@@ -196,19 +196,17 @@ Public Class WC3ProtocolTest
     Public Sub MapFileDataTest()
         JarTest(Packets.MapFileData.Jar,
                 appendSafe:=False,
-                requireAllData:=False,
                 data:={2,
                        3,
                        0, 0, 0, 0,
                        128, 0, 0, 0,
-                       32, 0, 0, 0,
+                       205, 251, 60, 182,
                        1, 2, 3, 4},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"receiving player index", 2},
                         {"sending player index", 3},
                         {"map transfer key", 0},
                         {"file position", 128},
-                        {"crc32", 32},
                         {"file data", New Byte() {1, 2, 3, 4}.AsReadableList}
                     })
     End Sub
@@ -519,7 +517,7 @@ Public Class WC3ProtocolTest
                                 100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250},
-                        {"player action sets", Tuple(True, {New PlayerActionSet(New PID(1),
+                        {"player action sets", Tuple(True, {New PlayerActionSet(New PlayerID(1),
                                            {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
                                                                      {"amount", 100},

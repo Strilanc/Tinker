@@ -95,23 +95,18 @@
             Dim name = allocId.ToString(CultureInfo.InvariantCulture)
             allocId += 1
 
-            Dim game = New Game(name, _gameSettings, _clock)
+            Dim game = WC3.Game.FromSettings(_gameSettings, name, _clock)
             _logger.Log("{0} opened.".Frmt(name), LogMessageType.Positive)
             _games.Add(game)
 
-            'AddHandler game.PlayerTalked, AddressOf c_PlayerTalked
-            'AddHandler game.PlayerLeft, AddressOf c_PlayerLeft
             AddHandler game.ChangedState, Sub(sender, oldState, newState) inQueue.QueueAction(
                     Sub()
                         If oldState < GameState.Loading AndAlso newState >= GameState.Loading Then
                             ActiveGameCount -= 1
                         End If
                     End Sub)
-            'AddHandler game.PlayerEntered, AddressOf c_PlayerEntered
-            'AddHandler game.PlayerSentData, AddressOf c_PlayerSentData
 
             'SetAdvertiserOptions(private:=False)
-            'e_ThrowAddedGame(game)
             Dim playerLink = game.QueueCreatePlayersAsyncView(
                     adder:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Add(New Tuple(Of Game, Player)(game, player))),
                     remover:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(New Tuple(Of Game, Player)(game, player))))
@@ -128,6 +123,7 @@
                 End Sub)
 
             ActiveGameCount += 1
+            game.Start()
             Return game
         End Function
 

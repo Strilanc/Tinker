@@ -34,23 +34,23 @@
             Contract.Invariant(_gameDataQueue IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal gameSpeedFactor As Double,
-                       ByVal gameTickPeriod As TimeSpan,
-                       ByVal gameLagLimit As TimeSpan,
+        Public Sub New(ByVal defaultSpeedFactor As Double,
+                       ByVal defaultTickPeriod As TimeSpan,
+                       ByVal defaultLagLimit As TimeSpan,
                        ByVal inQueue As ICallQueue,
                        ByVal players As AsyncViewableCollection(Of Player),
                        ByVal clock As IClock,
                        ByVal lobby As GameLobby)
-            Contract.Requires(gameSpeedFactor > 0)
-            Contract.Requires(gameTickPeriod.Ticks > 0)
-            Contract.Requires(gameLagLimit.Ticks >= 0)
+            Contract.Requires(defaultSpeedFactor > 0)
+            Contract.Requires(defaultTickPeriod.Ticks > 0)
+            Contract.Requires(defaultLagLimit.Ticks >= 0)
             Contract.Requires(inQueue IsNot Nothing)
             Contract.Requires(players IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(lobby IsNot Nothing)
-            Me._speedFactor = gameSpeedFactor
-            Me._tickPeriod = gameTickPeriod
-            Me._lagLimit = gameLagLimit
+            Me._speedFactor = defaultSpeedFactor
+            Me._tickPeriod = defaultTickPeriod
+            Me._lagLimit = defaultLagLimit
             Me.inQueue = inQueue
             Me._players = players
             Me._clock = clock

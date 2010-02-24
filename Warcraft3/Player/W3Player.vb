@@ -14,7 +14,7 @@
         Inherits FutureDisposable
 
         Private state As PlayerState = PlayerState.Lobby
-        Private ReadOnly _index As PID
+        Private ReadOnly _index As PlayerID
         Private ReadOnly testCanHost As IFuture
         Private ReadOnly socket As W3Socket
         Private ReadOnly packetHandler As Protocol.W3PacketHandler
@@ -52,7 +52,7 @@
         End Sub
 
         '''<summary>Creates a fake player.</summary>
-        Public Sub New(ByVal index As PID,
+        Public Sub New(ByVal index As PlayerID,
                        ByVal name As InvariantString,
                        Optional ByVal logger As Logger = Nothing)
             Me.logger = If(logger, New Logger)
@@ -70,7 +70,7 @@
         End Sub
 
         '''<summary>Creates a real player.</summary>
-        Public Sub New(ByVal index As PID,
+        Public Sub New(ByVal index As PlayerID,
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        ByVal clock As IClock,
                        ByVal downloadManager As DownloadManager,
@@ -120,7 +120,7 @@
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property PID As PID Implements IPlayerDownloadAspect.PID
+        Public ReadOnly Property PID As PlayerID Implements IPlayerDownloadAspect.PID
             Get
                 Return _index
             End Get

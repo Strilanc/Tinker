@@ -16,7 +16,7 @@
                 Return True
             End Get
         End Property
-        Public Overridable ReadOnly Property PlayerIndex() As PID?
+        Public Overridable ReadOnly Property PlayerIndex() As PlayerID?
             Get
                 Return Nothing
             End Get
@@ -32,7 +32,7 @@
                 Return Protocol.ComputerLevel.Normal
             End Get
         End Property
-        Public Overridable ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PID?
+        Public Overridable ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerID?
             Get
                 Return Nothing
             End Get
@@ -164,7 +164,7 @@
         Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
             Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.PID.Index).Futurized, _player.Description)
         End Function
-        Public Overrides ReadOnly Property PlayerIndex() As PID?
+        Public Overrides ReadOnly Property PlayerIndex() As PlayerID?
             Get
                 Return _player.PID
             End Get
@@ -193,7 +193,7 @@
                 Return Type.Player
             End Get
         End Property
-        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PID?
+        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerID?
             Get
                 Return _player.PID
             End Get
@@ -247,7 +247,7 @@
     Public NotInheritable Class SlotContentsCovered
         Inherits SlotContents
         Private ReadOnly _coveringSlotId As InvariantString
-        Private ReadOnly _playerIndex As PID
+        Private ReadOnly _playerIndex As PlayerID
         Private ReadOnly _players As List(Of Player)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -255,7 +255,7 @@
         End Sub
 
         Public Sub New(ByVal coveringSlotId As InvariantString,
-                       ByVal playerIndex As PID,
+                       ByVal playerIndex As PlayerID,
                        ByVal players As IEnumerable(Of Player))
             Contract.Requires(players IsNot Nothing)
             Me._coveringSlotId = coveringSlotId
@@ -279,13 +279,13 @@
             If _players.Contains(player) Then Throw New InvalidOperationException()
             Return New SlotContentsCovered(_coveringSlotId, _playerIndex, _players.Concat(New Player() {player}))
         End Function
-        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PID?
+        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerID?
             Get
                 If receiver Is Nothing Then Return Nothing
                 Return If(_players.Contains(receiver), receiver.PID, Nothing)
             End Get
         End Property
-        Public Overrides ReadOnly Property PlayerIndex() As PID?
+        Public Overrides ReadOnly Property PlayerIndex() As PlayerID?
             Get
                 Return _playerIndex
             End Get

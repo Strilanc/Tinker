@@ -1,50 +1,11 @@
 ﻿Imports Tinker.Pickling
 
 Namespace WC3
-    <ContractClass(GetType(IGameDownloadAspect.ContractClass))>
-    Public Interface IGameDownloadAspect
-        Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of IGameDownloadAspect, IPlayerDownloadAspect),
-                                             ByVal remover As Action(Of IGameDownloadAspect, IPlayerDownloadAspect)) As IFuture(Of IDisposable)
-        Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect, ByVal position As UInt32) As IFuture
-        ReadOnly Property Logger As Logger
-        ReadOnly Property Map As Map
-
-        <ContractClassFor(GetType(IGameDownloadAspect))>
-        Class ContractClass
-            Implements IGameDownloadAspect
-            Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of IGameDownloadAspect, IPlayerDownloadAspect),
-                                                        ByVal remover As Action(Of IGameDownloadAspect, IPlayerDownloadAspect)) As IFuture(Of IDisposable) Implements IGameDownloadAspect.QueueCreatePlayersAsyncView
-                Contract.Requires(adder IsNot Nothing)
-                Contract.Requires(remover IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
-                Throw New NotSupportedException
-            End Function
-            Public Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect,
-                                              ByVal position As UInteger) As IFuture Implements IGameDownloadAspect.QueueSendMapPiece
-                Contract.Requires(player IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
-                Throw New NotSupportedException
-            End Function
-            Public ReadOnly Property Logger As Logger Implements IGameDownloadAspect.Logger
-                Get
-                    Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
-                    Throw New NotSupportedException
-                End Get
-            End Property
-            Public ReadOnly Property Map As Map Implements IGameDownloadAspect.Map
-                Get
-                    Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
-                    Throw New NotSupportedException
-                End Get
-            End Property
-        End Class
-    End Interface
-
     <ContractClass(GetType(IPlayerDownloadAspect.ContractClass))>
     Public Interface IPlayerDownloadAspect
         Inherits IFutureDisposable
         ReadOnly Property Name As InvariantString
-        ReadOnly Property PID As PID
+        ReadOnly Property PID As PlayerID
         Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                              ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable)
         Function MakePacketOtherPlayerJoined() As Protocol.Packet
@@ -63,7 +24,7 @@ Namespace WC3
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public ReadOnly Property PID As PID Implements IPlayerDownloadAspect.PID
+            Public ReadOnly Property PID As PlayerID Implements IPlayerDownloadAspect.PID
                 Get
                     Throw New NotSupportedException
                 End Get
@@ -459,43 +420,60 @@ Namespace WC3
             End Function
         End Class
 
-        Private ReadOnly _game As IGameDownloadAspect
+        Private ReadOnly _map As Map
+        Private ReadOnly _logger As Logger
         Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))()
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
         Private ReadOnly _allowDownloads As Boolean
         Private ReadOnly _allowUploads As Boolean
         Private ReadOnly _playerClients As New Dictionary(Of IPlayerDownloadAspect, TransferClient)
-        Private ReadOnly _defaultClient As TransferClient
         Private ReadOnly _clock As IClock
+        Private _mapPieceSender As Action(Of IPlayerDownloadAspect, UInt32)
+        Private _defaultClient As TransferClient
+        Private ReadOnly _started As New OnetimeLock
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_started IsNot Nothing)
             Contract.Invariant(_playerClients IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
-            Contract.Invariant(_game IsNot Nothing)
+            Contract.Invariant(_mapPieceSender IsNot Nothing)
+            Contract.Invariant(_map IsNot Nothing)
+            Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal clock As IClock,
-                       ByVal game As IGameDownloadAspect,
-                       ByVal startPlayerHoldPoint As IHoldPoint(Of IPlayerDownloadAspect),
+                       ByVal map As Map,
+                       ByVal logger As Logger,
                        ByVal allowDownloads As Boolean,
                        ByVal allowUploads As Boolean)
+            Contract.Requires(map IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
-            Contract.Requires(game IsNot Nothing)
-            Contract.Requires(startPlayerHoldPoint IsNot Nothing)
-
             Me._clock = clock
-            Me._game = game
+            Me._map = map
+            Me._logger = logger
             Me._allowDownloads = allowDownloads
             Me._allowUploads = allowUploads
+        End Sub
+
+        Public Sub Start(ByVal startPlayerHoldPoint As IHoldPoint(Of IPlayerDownloadAspect),
+                         ByVal mapPieceSender As Action(Of IPlayerDownloadAspect, UInt32))
+            Contract.Requires(startPlayerHoldPoint IsNot Nothing)
+            Contract.Requires(mapPieceSender IsNot Nothing)
+            If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
+            If Not _started.TryAcquire() Then Throw New InvalidOperationException("Already started.")
+
+            Me._mapPieceSender = mapPieceSender
+
             If _allowUploads Then
-                _defaultClient = New TransferClient(Nothing, game.Map, clock, {})
+                _defaultClient = New TransferClient(Nothing, _map, _clock, {})
                 _defaultClient.MarkReported()
-                _defaultClient.ReportedPosition = game.Map.FileSize
+                _defaultClient.ReportedPosition = _map.FileSize
             End If
 
-            _hooks.Add(clock.AsyncRepeat(UpdatePeriod, Sub() inQueue.QueueAction(AddressOf OnTick)).Futurized)
+            _hooks.Add(_clock.AsyncRepeat(UpdatePeriod, Sub() inQueue.QueueAction(AddressOf OnTick)).Futurized)
 
             _hooks.Add(startPlayerHoldPoint.IncludeFutureHandler(Function(arg) inQueue.QueueFunc(
                                     Function() OnGameStartPlayerHold(arg)).Defuturized).Futurized)
@@ -515,7 +493,7 @@ Namespace WC3
             Contract.Assume(client.Player IsNot Nothing)
             client.LastSendPosition = Math.Max(client.LastSendPosition, reportedPosition)
             While client.LastSendPosition < reportedPosition + MaxBufferedMapSize AndAlso client.LastSendPosition < FileSize
-                _game.QueueSendMapPiece(client.Player, client.LastSendPosition)
+                Call _mapPieceSender(client.Player, client.LastSendPosition)
                 client.LastSendPosition += Protocol.Packets.MaxFileDataSize
             End While
         End Sub
@@ -582,7 +560,7 @@ Namespace WC3
 
         Public ReadOnly Property FileSize As UInt32
             Get
-                Return _game.Map.FileSize
+                Return _map.FileSize
             End Get
         End Property
 #End Region
@@ -599,7 +577,7 @@ Namespace WC3
                 }
 
 
-            Dim client = New TransferClient(player, _game.Map, _clock, playerHooks)
+            Dim client = New TransferClient(player, _map, _clock, playerHooks)
             _playerClients(player) = client
             If _defaultClient IsNot Nothing Then client.Links.Add(_defaultClient)
 
@@ -654,8 +632,8 @@ Namespace WC3
             Contract.Assume(client IsNot Nothing)
             Contract.Assume(client.Player IsNot Nothing)
 
-            If position > _game.Map.FileSize Then
-                Throw New IO.InvalidDataException("Moved download position past end of file at {0} to {1}.".Frmt(_game.Map.FileSize, position))
+            If position > _map.FileSize Then
+                Throw New IO.InvalidDataException("Moved download position past end of file at {0} to {1}.".Frmt(_map.FileSize, position))
             End If
 
             If Not client.HasReported Then
@@ -681,7 +659,7 @@ Namespace WC3
                 Throw New IO.InvalidDataException("Invalid initial download transfer state.")
             End If
 
-            If Not _allowDownloads AndAlso position < _game.Map.FileSize Then
+            If Not _allowDownloads AndAlso position < _map.FileSize Then
                 client.Player.QueueDisconnect(expected:=True,
                                               reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
                                               reasonDescription:="Downloads not allowed.")
@@ -703,13 +681,13 @@ Namespace WC3
             If client.Transfer IsNot Nothing Then
                 client.Transfer.Advance(position - client.ReportedPosition)
             End If
-            If client.ReportedPosition < _game.Map.FileSize AndAlso position = _game.Map.FileSize Then
+            If client.ReportedPosition < _map.FileSize AndAlso position = _map.FileSize Then
                 Contract.Assume(client.Player IsNot Nothing)
                 If client.Transfer IsNot Nothing Then
-                    _game.Logger.Log("{0} finished downloading the map from {1}.".Frmt(client.Player.Name, client.Transfer.Uploader), LogMessageType.Positive)
+                    _logger.Log("{0} finished downloading the map from {1}.".Frmt(client.Player.Name, client.Transfer.Uploader), LogMessageType.Positive)
                     client.Transfer.Dispose() '[nulls client.Transfer]
                 Else
-                    _game.Logger.Log("{0} finished downloading the map.".Frmt(client.Player.Name), LogMessageType.Positive)
+                    _logger.Log("{0} finished downloading the map.".Frmt(client.Player.Name), LogMessageType.Positive)
                 End If
             End If
         End Sub
@@ -743,7 +721,7 @@ Namespace WC3
                                  Where t.ExpectedDurationRemaining > MinSwitchPeriod
                 Contract.Assume(transfer IsNot Nothing)
                 Dim downloader = transfer.Downloader
-                Dim remainingData = _game.Map.FileSize - transfer.ReportedPosition
+                Dim remainingData = _map.FileSize - transfer.ReportedPosition
                 Dim curExpectedCost = transfer.ExpectedDurationRemaining.TotalSeconds
 
                 'expected cost of switching and downloading from another uploader
@@ -782,11 +760,11 @@ Namespace WC3
                 TransferClient.StartTransfer(downloader, bestAvailableUploader)
 
                 If uler Is Nothing Then
-                    _game.Logger.Log("Initiating map upload to {0}.".Frmt(dler.Name), LogMessageType.Positive)
+                    _logger.Log("Initiating map upload to {0}.".Frmt(dler.Name), LogMessageType.Positive)
                     Contract.Assume(downloader.Transfer.Uploader Is _defaultClient)
                     SendMapFileData(downloader, downloader.ReportedPosition)
                 Else
-                    _game.Logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
+                    _logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
                     uler.QueueSendPacket(Protocol.MakeSetUploadTarget(dler.PID, downloader.ReportedPosition))
                     dler.QueueSendPacket(Protocol.MakeSetDownloadSource(uler.PID))
                 End If
@@ -810,9 +788,9 @@ Namespace WC3
 
                 Dim reason = If(cancellation.TimeSinceLastActivity > FreezePeriod, "frozen", "slow")
                 If uler Is Nothing Then
-                    _game.Logger.Log("Cancelled {0} map upload to {1}.".Frmt(reason, dler.Name), LogMessageType.Negative)
+                    _logger.Log("Cancelled {0} map upload to {1}.".Frmt(reason, dler.Name), LogMessageType.Negative)
                 Else
-                    _game.Logger.Log("Cancelled {0} peer map transfer from {1} to {2}.".Frmt(reason, uler.Name, dler.Name), LogMessageType.Negative)
+                    _logger.Log("Cancelled {0} peer map transfer from {1} to {2}.".Frmt(reason, uler.Name, dler.Name), LogMessageType.Negative)
                 End If
             End If
         End Sub

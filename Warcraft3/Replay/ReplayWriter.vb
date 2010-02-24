@@ -183,7 +183,7 @@ Namespace WC3.Replay
                                         {"unknown", 1}})
         End Sub
         Public Sub AddPlayerLeft(ByVal unknown1 As UInt32,
-                                 ByVal pid As PID,
+                                 ByVal pid As PlayerID,
                                  ByVal reportedReason As Protocol.PlayerLeaveReason,
                                  ByVal leaveCount As UInt32)
             WriteReplayEntryPickle(ReplayEntryId.PlayerLeft,
@@ -201,7 +201,7 @@ Namespace WC3.Replay
                                         {"unknown", 4},
                                         {"checksum", checksum}})
         End Sub
-        Public Sub AddLobbyChatMessage(ByVal pid As PID, ByVal message As String)
+        Public Sub AddLobbyChatMessage(ByVal pid As PlayerID, ByVal message As String)
             Contract.Requires(message IsNot Nothing)
             WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
                                    Format.ReplayEntryChatMessage,
@@ -211,7 +211,7 @@ Namespace WC3.Replay
                                         {"type", Protocol.ChatType.Lobby},
                                         {"message", message}})
         End Sub
-        Public Sub AddGameChatMessage(ByVal pid As PID, ByVal message As String, ByVal receivingGroup As WC3.Protocol.ChatGroup)
+        Public Sub AddGameChatMessage(ByVal pid As PlayerID, ByVal message As String, ByVal receivingGroup As WC3.Protocol.ChatGroup)
             Contract.Requires(message IsNot Nothing)
             WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
                                    Format.ReplayEntryChatMessage,

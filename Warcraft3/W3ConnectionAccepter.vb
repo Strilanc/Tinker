@@ -172,7 +172,7 @@ Namespace WC3
             Dim vals = pickle.Value.AssumeNotNull
             Dim player = New W3ConnectingPeer(socket,
                                               CByte(vals("receiver peer key")),
-                                              New PID(CByte(vals("sender player id"))),
+                                              New PlayerID(CByte(vals("sender player id"))),
                                               CUShort(vals("sender peer connection flags")))
             RaiseEvent Connection(Me, player)
             Return pickle

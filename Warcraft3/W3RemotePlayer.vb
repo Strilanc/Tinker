@@ -87,11 +87,11 @@ Namespace WC3
     Public NotInheritable Class W3ConnectingPeer
         Public ReadOnly socket As W3Socket
         Public ReadOnly receiverPeerKey As Byte
-        Public ReadOnly pid As PID
+        Public ReadOnly pid As PlayerID
         Public ReadOnly connectionOptions As UShort
         Public Sub New(ByVal socket As W3Socket,
                        ByVal receiverPeerKey As Byte,
-                       ByVal pid As PID,
+                       ByVal pid As PlayerID,
                        ByVal connectionOptions As UShort)
             Me.socket = socket
             Me.receiverPeerKey = receiverPeerKey
@@ -102,7 +102,7 @@ Namespace WC3
 
     Public NotInheritable Class W3Peer
         Public ReadOnly name As String
-        Private ReadOnly _pid As PID
+        Private ReadOnly _pid As PlayerID
         Public ReadOnly listenPort As UShort
         Public ReadOnly ip As Net.IPAddress
         Public ReadOnly peerKey As UInteger
@@ -115,7 +115,7 @@ Namespace WC3
         End Sub
 
         Public Sub New(ByVal name As InvariantString,
-                       ByVal pid As PID,
+                       ByVal pid As PlayerID,
                        ByVal listenPort As UShort,
                        ByVal ip As Net.IPAddress,
                        ByVal peerKey As UInt32,
@@ -129,7 +129,7 @@ Namespace WC3
             Me.peerKey = peerKey
         End Sub
 
-        Public ReadOnly Property PID As PID
+        Public ReadOnly Property PID As PlayerID
             Get
                 Return _pid
             End Get

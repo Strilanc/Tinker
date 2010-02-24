@@ -25,7 +25,6 @@ Namespace WC3
 
     Partial Public NotInheritable Class Game
         Inherits FutureDisposable
-        Implements IGameDownloadAspect
 
         Public Shared ReadOnly GuestLobbyCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestLobbyCommands()
         Public Shared ReadOnly GuestInGameCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestInGameCommands()
@@ -37,15 +36,16 @@ Namespace WC3
         Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds, clock:=New SystemClock())
         Private ReadOnly _clock As IClock
         Private ReadOnly _name As InvariantString
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As ICallQueue
+        Private ReadOnly outQueue As ICallQueue
         Private ReadOnly _logger As Logger
         Private state As GameState = GameState.AcceptingPlayers
         Private flagHasPlayerLeft As Boolean
         Private adminPlayer As Player
-        Private ReadOnly _players As New AsyncViewableCollection(Of Player)(outQueue:=outQueue)
+        Private ReadOnly _players As AsyncViewableCollection(Of Player)
         Private ReadOnly _settings As GameSettings
         Private ReadOnly _motor As GameMotor
+        Private ReadOnly _started As OnetimeLock
 
         Public Event Updated(ByVal sender As Game, ByVal slots As SlotSet)
         Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivingGroup As Protocol.ChatGroup?)
@@ -60,7 +60,7 @@ Namespace WC3
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_players IsNot Nothing)
-
+            Contract.Invariant(_started IsNot Nothing)
             Contract.Invariant(_settings IsNot Nothing)
             Contract.Invariant(readyPlayers IsNot Nothing)
             Contract.Invariant(unreadyPlayers IsNot Nothing)
@@ -76,29 +76,79 @@ Namespace WC3
         Public Sub New(ByVal name As InvariantString,
                        ByVal settings As GameSettings,
                        ByVal clock As IClock,
-                       Optional ByVal logger As Logger = Nothing)
-            Contract.Assume(clock IsNot Nothing)
+                       ByVal lobby As GameLobby,
+                       ByVal motor As GameMotor,
+                       ByVal logger As Logger,
+                       ByVal inQueue As ICallQueue,
+                       ByVal outQueue As ICallQueue,
+                       ByVal players As AsyncViewableCollection(Of Player))
             Contract.Assume(settings IsNot Nothing)
-
+            Contract.Assume(clock IsNot Nothing)
+            Contract.Assume(lobby IsNot Nothing)
+            Contract.Assume(motor IsNot Nothing)
+            Contract.Assume(logger IsNot Nothing)
             Me._settings = settings
             Me._clock = clock
             Me._name = name
-            Me._logger = If(logger, New Logger)
-            Me._motor = New GameMotor(My.Settings.game_speed_factor,
-                                      CUInt(My.Settings.game_tick_period).Milliseconds,
-                                      CUInt(My.Settings.game_lag_limit).Milliseconds,
-                                      Me.inQueue,
-                                      Me._players,
-                                      Me._clock,
-                                      Me._lobby)
+            Me._logger = logger
+            Me._lobby = lobby
+            Me._motor = motor
+            Me._players = players
+            Me.inQueue = inQueue
+            Me.outQueue = outQueue
+        End Sub
 
+        Public Shared Function FromSettings(ByVal settings As GameSettings,
+                                            ByVal name As InvariantString,
+                                            ByVal clock As IClock,
+                                            Optional ByVal logger As Logger = Nothing) As Game
+            Contract.Assume(clock IsNot Nothing)
+            Contract.Assume(settings IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Game)() IsNot Nothing)
+
+            logger = If(logger, New Logger)
+
+            Dim inQueue = New TaskedCallQueue
+            Dim outQueue = New TaskedCallQueue
+            Dim players = New AsyncViewableCollection(Of Player)(outQueue)
             Dim startPlayerholdPoint = New HoldPoint(Of Player)
-            Dim downloadManager = New DownloadManager(clock:=_clock,
-                                                      Game:=Me,
-                                                      startPlayerholdPoint:=startPlayerholdPoint,
+            Dim downloadManager = New DownloadManager(clock:=clock,
+                                                      Map:=settings.Map,
+                                                      logger:=logger,
                                                       allowDownloads:=settings.AllowDownloads,
                                                       allowUploads:=settings.AllowUpload)
-            _lobby = New GameLobby(startPlayerholdPoint, downloadManager, _logger, _players, _clock, settings)
+            Dim lobby = New GameLobby(startPlayerholdPoint:=startPlayerholdPoint,
+                                      downloadManager:=downloadManager,
+                                      logger:=logger,
+                                      players:=players,
+                                      clock:=clock,
+                                      settings:=settings)
+            Dim motor = New GameMotor(defaultSpeedFactor:=My.Settings.game_speed_factor,
+                                      defaultTickPeriod:=CUInt(My.Settings.game_tick_period).Milliseconds,
+                                      defaultLagLimit:=CUInt(My.Settings.game_lag_limit).Milliseconds,
+                                      inQueue:=inQueue,
+                                      players:=players,
+                                      clock:=clock,
+                                      lobby:=lobby)
+
+            Return New Game(Name:=Name,
+                            settings:=settings,
+                            clock:=clock,
+                            lobby:=lobby,
+                            motor:=motor,
+                            logger:=logger,
+                            inQueue:=inQueue,
+                            outQueue:=outQueue,
+                            players:=players)
+        End Function
+        Public Sub Start()
+            If Not _started.TryAcquire Then Throw New InvalidOperationException("Already started.")
+            If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
+
+            _lobby.DownloadManager.Start(
+                    startPlayerHoldPoint:=StartPlayerHoldPoint,
+                    mapPieceSender:=Sub(receiver, position) inQueue.QueueAction(Sub() _lobby.SendMapPiece(receiver, position)))
+
             inQueue.QueueAction(Sub() _lobby.TryRestoreFakeHost())
 
             _lobby.StartPlayerHoldPoint.IncludeActionhandler(
@@ -109,14 +159,15 @@ Namespace WC3
                     AddHandler newPlayer.StateUpdated, Sub() inQueue.QueueAction(AddressOf _lobby.ThrowChangedPublicState)
                     AddHandler newPlayer.ReceivedNonGameAction, Sub(player, values) inQueue.QueueAction(Sub() ReceiveNonGameAction(player, values))
 
-                    If settings.Greeting <> "" Then
-                        SendMessageTo(message:=settings.Greeting, player:=newPlayer, display:=False)
+                    If Settings.Greeting <> "" Then
+                        SendMessageTo(message:=Settings.Greeting, player:=newPlayer, display:=False)
                     End If
-                    If settings.AutoElevateUserName IsNot Nothing AndAlso newPlayer.Name = settings.AutoElevateUserName.Value Then
+                    If Settings.AutoElevateUserName IsNot Nothing AndAlso newPlayer.Name = Settings.AutoElevateUserName.Value Then
                         ElevatePlayer(newPlayer.Name)
                     End If
                     TryBeginAutoStart()
                 End Sub)
+
             AddHandler _lobby.ChangedPublicState, Sub(sender)
                                                       ThrowUpdated()
                                                       slotStateUpdateThrottle.SetActionToRun(Sub() inQueue.QueueAction(Sub() SendLobbyState(Environment.TickCount)))
@@ -142,15 +193,9 @@ Namespace WC3
                 End Sub))
         End Function
 
-        Public ReadOnly Property Logger As Logger Implements IGameDownloadAspect.Logger
+        Public ReadOnly Property Logger As Logger
             Get
                 Return _logger
-            End Get
-        End Property
-        Public ReadOnly Property Map As Map Implements IGameDownloadAspect.Map
-            Get
-                Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
-                Return _settings.Map
             End Get
         End Property
         Public ReadOnly Property Name As InvariantString
@@ -299,7 +344,7 @@ Namespace WC3
                                 ByVal text As String,
                                 ByVal type As Protocol.ChatType,
                                 ByVal receivingGroup As Protocol.ChatGroup?,
-                                ByVal requestedReceiverIndexes As IReadableList(Of PID))
+                                ByVal requestedReceiverIndexes As IReadableList(Of PlayerID))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(requestedReceiverIndexes IsNot Nothing)
@@ -343,7 +388,7 @@ Namespace WC3
                     End If
                     Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IReadableList(Of Byte)).AssumeNotNull
                     Dim receivingPIDs = (From index In receivingPlayerIndexes
-                                         Select New PID(index)).ToArray.AsReadableList
+                                         Select New PlayerID(index)).ToArray.AsReadableList
 
                     ReceiveChat(sender,
                                 message,
@@ -450,7 +495,7 @@ Namespace WC3
             Return inQueue.QueueAction(Sub() ElevatePlayer(name, password))
         End Function
 
-        Private Function TryFindPlayer(ByVal pid As PID) As Player
+        Private Function TryFindPlayer(ByVal pid As PlayerID) As Player
             Return (From player In _players
                     Where player.AssumeNotNull.PID = pid).
                     FirstOrDefault
@@ -508,11 +553,6 @@ Namespace WC3
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() CreatePlayersAsyncView(adder, remover))
-        End Function
-        Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of IGameDownloadAspect, IPlayerDownloadAspect),
-                                                    ByVal remover As Action(Of IGameDownloadAspect, IPlayerDownloadAspect)) As IFuture(Of IDisposable) _
-                                                    Implements IGameDownloadAspect.QueueCreatePlayersAsyncView
             Return inQueue.QueueFunc(Function() CreatePlayersAsyncView(adder, remover))
         End Function
 
@@ -636,7 +676,7 @@ Namespace WC3
             Return inQueue.QueueFunc(Function() _lobby.AddPlayer(newPlayer))
         End Function
         Public Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect,
-                                          ByVal position As UInt32) As IFuture Implements IGameDownloadAspect.QueueSendMapPiece
+                                          ByVal position As UInt32) As IFuture
             Return inQueue.QueueFunc(Function() _lobby.SendMapPiece(player, position)).Defuturized
         End Function
 
@@ -647,7 +687,7 @@ Namespace WC3
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueSendPacket(Protocol.MakeLobbyState(receiver:=player,
-                                                               layoutStyle:=Map.LayoutStyle,
+                                                               layoutStyle:=_settings.Map.LayoutStyle,
                                                                slots:=_lobby.Slots,
                                                                randomSeed:=randomSeed,
                                                                hideSlots:=Settings.IsAdminGame))

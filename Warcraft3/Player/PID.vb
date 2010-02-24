@@ -1,8 +1,8 @@
 ﻿Namespace WC3
     ''' <summary>Stores a unique-per-game-per-instant player index in [1, 12].</summary>
     <DebuggerDisplay("{ToString}")>
-    Public Structure PID
-        Implements IEquatable(Of PID)
+    Public Structure PlayerID
+        Implements IEquatable(Of PlayerID)
 
         Private ReadOnly _index As Byte
 
@@ -26,10 +26,10 @@
             End Get
         End Property
 
-        Public Shared Operator =(ByVal value1 As PID, ByVal value2 As PID) As Boolean
+        Public Shared Operator =(ByVal value1 As PlayerID, ByVal value2 As PlayerID) As Boolean
             Return value1._index = value2._index
         End Operator
-        Public Shared Operator <>(ByVal value1 As PID, ByVal value2 As PID) As Boolean
+        Public Shared Operator <>(ByVal value1 As PlayerID, ByVal value2 As PlayerID) As Boolean
             Return Not value1 = value2
         End Operator
 
@@ -37,10 +37,10 @@
             Return _index.GetHashCode
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
-            If Not TypeOf obj Is PID Then Return False
-            Return Me = CType(obj, PID)
+            If Not TypeOf obj Is PlayerID Then Return False
+            Return Me = CType(obj, PlayerID)
         End Function
-        Public Overloads Function Equals(ByVal other As PID) As Boolean Implements IEquatable(Of PID).Equals
+        Public Overloads Function Equals(ByVal other As PlayerID) As Boolean Implements IEquatable(Of PlayerID).Equals
             Return Me = other
         End Function
 

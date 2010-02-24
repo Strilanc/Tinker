@@ -220,6 +220,7 @@ Namespace WC3.Protocol
     End Enum
     Public Enum PlayerLeaveReason As Byte
         Disconnect = 1
+        ProgramClosed = 4
         Quit = 7
         Defeat = 8
         Victory = 9
@@ -563,8 +564,7 @@ Namespace WC3.Protocol
                 New ByteJar("sending player index").Weaken,
                 New UInt32Jar("map transfer key").Weaken,
                 New UInt32Jar("file position").Weaken,
-                New UInt32Jar("crc32", showhex:=True).Weaken,
-                New RemainingDataJar("file data").Weaken)
+                New RemainingDataJar("file data").CRC32ChecksumPrefixed.Weaken)
         Public Shared ReadOnly MapFileDataReceived As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.MapFileDataReceived,
                 New ByteJar("sender index").Weaken,
                 New ByteJar("receiver index").Weaken,

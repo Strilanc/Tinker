@@ -13,8 +13,7 @@ Imports System.Collections.Generic
 <TestClass()>
 Public Class DownloadManagerTest
     Private Class TestGame
-        Implements IGameDownloadAspect
-        Public Shared ReadOnly HostPid As New PID(1)
+        Public Shared ReadOnly HostPid As New PlayerID(1)
         Private Shared ReadOnly _data As Byte() = Enumerable.Repeat(CByte(1), 5000).ToArray
         Private ReadOnly _startPlayerHoldPoint As New HoldPoint(Of IPlayerDownloadAspect)()
         Private Shared ReadOnly SharedMap As New Map(
@@ -34,12 +33,12 @@ Public Class DownloadManagerTest
         Private ReadOnly outQueue As New TaskedCallQueue()
         Private ReadOnly _players As New AsyncViewableCollection(Of TestPlayer)(outQueue:=outQueue)
         Private ReadOnly _logger As New Logger
-        Public ReadOnly Property Logger As Logger Implements IGameDownloadAspect.Logger
+        Public ReadOnly Property Logger As Logger
             Get
                 Return _logger
             End Get
         End Property
-        Public ReadOnly Property Map As Map Implements IGameDownloadAspect.Map
+        Public ReadOnly Property Map As Map
             Get
                 Return SharedMap
             End Get
@@ -49,15 +48,7 @@ Public Class DownloadManagerTest
                 Return _startPlayerHoldPoint
             End Get
         End Property
-        Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of IGameDownloadAspect, IPlayerDownloadAspect),
-                                                    ByVal remover As Action(Of IGameDownloadAspect, IPlayerDownloadAspect)) As IFuture(Of IDisposable) _
-                                                    Implements IGameDownloadAspect.QueueCreatePlayersAsyncView
-            SyncLock Me
-                Return _players.BeginSync(adder:=Sub(sender, player) adder(Me, player),
-                                          remover:=Sub(sender, player) remover(Me, player)).Futurized
-            End SyncLock
-        End Function
-        Public Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect, ByVal position As UInteger) As IFuture Implements IGameDownloadAspect.QueueSendMapPiece
+        Public Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect, ByVal position As UInteger) As IFuture
             Return CType(player, TestPlayer).QueueSendPacket(MakeMapFileData(
                     position,
                     Enumerable.Repeat(CByte(1), CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToArray.AsReadableList,
@@ -81,13 +72,13 @@ Public Class DownloadManagerTest
         Implements IPlayerDownloadAspect
         Private ReadOnly _failFuture As New FutureAction()
         Private ReadOnly _discFuture As New FutureAction()
-        Private ReadOnly _pid As PID
+        Private ReadOnly _pid As PlayerID
         Private ReadOnly _pq As New Queue(Of Packet)()
         Private ReadOnly _lock As New System.Threading.ManualResetEvent(initialState:=False)
         Private ReadOnly _handler As New W3PacketHandler("TestSource")
         Private ReadOnly _logger As Logger
         Private ReadOnly _name As InvariantString
-        Public Sub New(ByVal pid As PID,
+        Public Sub New(ByVal pid As PlayerID,
                        ByVal logger As Logger,
                        Optional ByVal name As InvariantString? = Nothing)
             Me._pid = pid
@@ -108,7 +99,7 @@ Public Class DownloadManagerTest
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property PID As PID Implements IPlayerDownloadAspect.PID
+        Public ReadOnly Property PID As PlayerID Implements IPlayerDownloadAspect.PID
             Get
                 Return _pid
             End Get
@@ -182,7 +173,7 @@ Public Class DownloadManagerTest
         Public Function InjectClientMapInfo(ByVal state As MapTransferState, ByVal position As UInt32) As ifuture
             Return InjectReceivedPacket(MakeClientMapInfo(state, position))
         End Function
-        Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PID) As ifuture
+        Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PlayerID) As ifuture
             Return InjectReceivedPacket(MakeMapFileDataReceived(senderPid, PID, position))
         End Function
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedResult As PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
@@ -196,8 +187,9 @@ Public Class DownloadManagerTest
     Public Sub NoDownload()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=True)
-        Dim player = New TestPlayer(New PID(2), game.Logger)
+        Dim dm = New DownloadManager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=True)
+        dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
+        Dim player = New TestPlayer(New PlayerID(2), game.Logger)
         BlockOnFuture(game.AddPlayer(player))
 
         player.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
@@ -209,8 +201,9 @@ Public Class DownloadManagerTest
     Public Sub HostDownload()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=True)
-        Dim dler = New TestPlayer(New PID(2), game.Logger)
+        Dim dm = New DownloadManager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=True)
+        dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
+        Dim dler = New TestPlayer(New PlayerID(2), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
@@ -237,9 +230,10 @@ Public Class DownloadManagerTest
     Public Sub PeerDownload()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
-        Dim uler = New TestPlayer(New PID(2), game.Logger)
-        Dim dler = New TestPlayer(New PID(3), game.Logger)
+        Dim dm = New DownloadManager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
+        dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
+        Dim uler = New TestPlayer(New PlayerID(2), game.Logger)
+        Dim dler = New TestPlayer(New PlayerID(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
         BlockOnFuture(game.AddPlayer(uler))
 
@@ -269,9 +263,10 @@ Public Class DownloadManagerTest
     Public Sub PeerDownloadFail_NoUploader()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
-        Dim uler = New TestPlayer(New PID(2), game.Logger)
-        Dim dler = New TestPlayer(New PID(3), game.Logger)
+        Dim dm = New DownloadManager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
+        dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
+        Dim uler = New TestPlayer(New PlayerID(2), game.Logger)
+        Dim dler = New TestPlayer(New PlayerID(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
         BlockOnFuture(game.AddPlayer(uler))
 
@@ -290,9 +285,10 @@ Public Class DownloadManagerTest
     Public Sub PeerDownloadFail_NoPeerConnectionInfo()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
-        Dim uler = New TestPlayer(New PID(2), game.Logger)
-        Dim dler = New TestPlayer(New PID(3), game.Logger)
+        Dim dm = New DownloadManager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
+        dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
+        Dim uler = New TestPlayer(New PlayerID(2), game.Logger)
+        Dim dler = New TestPlayer(New PlayerID(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
         BlockOnFuture(game.AddPlayer(uler))
 
@@ -310,10 +306,11 @@ Public Class DownloadManagerTest
     Public Sub PeerDownload_TimeoutSwitch()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
-        Dim dler = New TestPlayer(New PID(2), game.Logger, "dler")
-        Dim uler1 = New TestPlayer(New PID(3), game.Logger, "uler1")
-        Dim uler2 = New TestPlayer(New PID(4), game.Logger, "uler2")
+        Dim dm = New DownloadManager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
+        dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
+        Dim dler = New TestPlayer(New PlayerID(2), game.Logger, "dler")
+        Dim uler1 = New TestPlayer(New PlayerID(3), game.Logger, "uler1")
+        Dim uler2 = New TestPlayer(New PlayerID(4), game.Logger, "uler2")
 
         'Start initial transfer
         WaitUntilFutureSucceeds(game.AddPlayer(dler))
@@ -369,10 +366,11 @@ Public Class DownloadManagerTest
     Public Sub PeerDownload_SlowSwitch()
         Dim game = New TestGame()
         Dim clock = New ManualClock()
-        Dim dm = New DownloadManager(clock, game, game.StartPlayerHoldPoint, allowDownloads:=True, allowUploads:=False)
-        Dim dler = New TestPlayer(New PID(2), game.Logger, "dler")
-        Dim uler1 = New TestPlayer(New PID(3), game.Logger, "uler1")
-        Dim uler2 = New TestPlayer(New PID(4), game.Logger, "uler2")
+        Dim dm = New DownloadManager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
+        dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
+        Dim dler = New TestPlayer(New PlayerID(2), game.Logger, "dler")
+        Dim uler1 = New TestPlayer(New PlayerID(3), game.Logger, "uler1")
+        Dim uler2 = New TestPlayer(New PlayerID(4), game.Logger, "uler2")
 
         'Start initial transfer
         WaitUntilFutureSucceeds(game.AddPlayer(dler))

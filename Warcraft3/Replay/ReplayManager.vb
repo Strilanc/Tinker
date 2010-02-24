@@ -82,8 +82,8 @@
                                                  wc3BuildNumber:=My.Settings.ReplayBuildNumber,
                                                  primaryPlayer:=players.First.AssumeNotNull,
                                                  secondaryPlayers:=players.Skip(1),
-                                                 gameDescription:=game.Settings.GameDescription,
-                                                 Map:=game.Map,
+                                                 GameDescription:=game.Settings.GameDescription,
+                                                 Map:=game.Settings.Map,
                                                  slots:=slots,
                                                  randomSeed:=randomSeed)
 

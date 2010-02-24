@@ -43,6 +43,7 @@
             Me._raceUnlocked = raceUnlocked
             Me._contents = contents
         End Sub
+        <ContractVerification(False)>
         Private Sub New(ByVal template As Slot,
                         Optional ByVal index As Byte? = Nothing,
                         Optional ByVal color As Protocol.PlayerColor? = Nothing,

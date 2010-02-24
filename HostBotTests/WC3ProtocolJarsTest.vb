@@ -27,7 +27,8 @@ Public Class WC3ProtocolJarsTest
                         {"handicap", 100}
                     })
 
-        Dim g = New WC3.Game("test", TestSettings, New ManualClock())
+        Dim g = WC3.Game.FromSettings(TestSettings, "test", New ManualClock())
+        g.Start()
         Dim s1 = New Slot(index:=0, raceUnlocked:=True, color:=PlayerColor.Red, team:=0, contents:=New SlotContentsOpen)
         Dim s2 = s1.WithIndex(1).WithContents(New SlotContentsClosed)
         Dim s3 = s1.WithIndex(2).WithContents(New SlotContentsComputer(ComputerLevel.Insane))

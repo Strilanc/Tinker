@@ -150,17 +150,17 @@ Namespace WC3.Protocol
     Public Class PlayerActionSet
         Implements IEquatable(Of PlayerActionSet)
 
-        Private ReadOnly _pid As PID
+        Private ReadOnly _pid As PlayerID
         Private ReadOnly _actions As IReadableList(Of GameAction)
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_actions IsNot Nothing)
         End Sub
-        Public Sub New(ByVal pid As PID, ByVal actions As IReadableList(Of GameAction))
+        Public Sub New(ByVal pid As PlayerID, ByVal actions As IReadableList(Of GameAction))
             Contract.Requires(actions IsNot Nothing)
             Me._pid = pid
             Me._actions = actions
         End Sub
-        Public ReadOnly Property PID As PID
+        Public ReadOnly Property PID As PlayerID
             Get
                 Return _pid
             End Get
@@ -219,7 +219,7 @@ Namespace WC3.Protocol
             Dim pid = CByte(pickle.Value("pid"))
             Dim actions = CType(pickle.Value("actions"), IReadableList(Of GameAction)).AssumeNotNull
             If pid < 1 OrElse pid > 12 Then Throw New IO.InvalidDataException("Invalid pid.")
-            Dim value = New PlayerActionSet(New PID(pid), actions)
+            Dim value = New PlayerActionSet(New PlayerID(pid), actions)
             Return New Pickle(Of PlayerActionSet)(value, pickle.Data, pickle.Description)
         End Function
     End Class

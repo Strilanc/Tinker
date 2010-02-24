@@ -4,11 +4,11 @@
 
         Private ReadOnly _downloadManager As DownloadManager
         Private ReadOnly _startPlayerHoldPoint As HoldPoint(Of Player)
-        Private ReadOnly _freeIndexes As List(Of PID)
+        Private ReadOnly _freeIndexes As List(Of PlayerID)
         Private ReadOnly _logger As Logger
         Private ReadOnly _clock As IClock
         Private ReadOnly _players As AsyncViewableCollection(Of Player)
-        Private ReadOnly _pidVisiblityMap As New Dictionary(Of PID, PID)()
+        Private ReadOnly _pidVisiblityMap As New Dictionary(Of PlayerID, PlayerID)()
         Private ReadOnly _settings As GameSettings
         Private _fakeHostPlayer As Player
         Public Property _acceptingPlayers As Boolean = True
@@ -46,9 +46,9 @@
             Me._clock = clock
             Me._settings = settings
             Dim pidCount = _slots.Count
-            Me._freeIndexes = (From i In Enumerable.Range(1, pidCount) Select New PID(CByte(i))).ToList
+            Me._freeIndexes = (From i In Enumerable.Range(1, pidCount) Select New PlayerID(CByte(i))).ToList
             For Each pid In From i In Enumerable.Range(1, 12)
-                            Select New PID(CByte(i))
+                            Select New PlayerID(CByte(i))
                 _pidVisiblityMap.Add(pid, pid)
             Next pid
 
@@ -131,7 +131,7 @@
                 Return _fakeHostPlayer
             End Get
         End Property
-        Public ReadOnly Property FreeIndexes As IList(Of PID)
+        Public ReadOnly Property FreeIndexes As IList(Of PlayerID)
             Get
                 Return _freeIndexes
             End Get
@@ -221,9 +221,9 @@
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
-        Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PID)
+        Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PlayerID)
             Contract.Requires(connectingPlayer IsNot Nothing)
-            Contract.Ensures(Not FreeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PID))().Item2))
+            Contract.Ensures(Not FreeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerID))().Item2))
 
             'Choose Slot
             Dim slotMatch = (From s In _slots
@@ -237,7 +237,7 @@
             Contract.Assume(slot IsNot Nothing)
 
             'Allocate PID
-            Dim pid As PID
+            Dim pid As PlayerID
             If slot.Contents.WantPlayer(connectingPlayer.Name) = SlotContents.WantPlayerPriority.ReservationForPlayer Then
                 Contract.Assume(slot.Contents.PlayerIndex.HasValue)
                 pid = slot.Contents.PlayerIndex.Value
@@ -262,7 +262,7 @@
 
             Return Tuple(slot, pid)
         End Function
-        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal pid As PID) As Player
+        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal pid As PlayerID) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Requires(slot IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
@@ -334,7 +334,7 @@
         Public Shared Function SetupCoveredSlot(ByVal slots As SlotSet,
                                                 ByVal coveringSlot As Slot,
                                                 ByVal coveredSlot As Slot,
-                                                ByVal playerIndex As PID) As SlotSet
+                                                ByVal playerIndex As PlayerID) As SlotSet
             Contract.Requires(slots IsNot Nothing)
             Contract.Requires(coveringSlot IsNot Nothing)
             Contract.Requires(coveredSlot IsNot Nothing)
@@ -348,19 +348,22 @@
                                            coveredSlot.WithContents(New SlotContentsCovered(coveringSlot.MatchableId, playerIndex, {})))
         End Function
 
-        Public Function SendMapPiece(ByVal player As IPlayerDownloadAspect,
-                                      ByVal position As UInt32) As ifuture
-            Contract.Requires(player IsNot Nothing)
+        Public Function SendMapPiece(ByVal receiver As IPlayerDownloadAspect,
+                                     ByVal position As UInt32) As IFuture
+            Contract.Requires(receiver IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Dim sender = If(FakeHostPlayer, (From p In _players Where p IsNot player).First)
-            Contract.Assume(sender IsNot Nothing)
+
+            Dim sender = If(_fakeHostPlayer, (From p In _players Where p IsNot receiver).First)
             Dim filedata = _settings.Map.ReadChunk(position, Protocol.Packets.MaxFileDataSize)
-            Dim pk = Protocol.MakeMapFileData(position, filedata, player.PID, sender.PID)
-            Return player.QueueSendPacket(pk)
+            Contract.Assume(sender IsNot Nothing)
+
+            Dim pk = Protocol.MakeMapFileData(position, filedata, receiver.PID, sender.PID)
+            Return receiver.QueueSendPacket(pk)
         End Function
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
+        <ContractVerification(False)>
         Public Function FindMatchingSlot(ByVal query As InvariantString) As Slot
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Dim best = (From slot In _slots
@@ -368,7 +371,6 @@
                         Let content = slot.Contents.ContentType
                         ).MaxProjection(Function(item) item.match * 10 - item.content).Item1
             If best.match = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
-            Contract.Assume(best.slot IsNot Nothing)
             Return best.slot
         End Function
 
