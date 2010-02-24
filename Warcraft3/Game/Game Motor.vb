@@ -188,13 +188,13 @@
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 If _lobby.IsPlayerVisible(player) Then
-                    player.QueueSendTick(record, (From e In outgoingActions Select e.Item2).ToArray.AsReadableList)
+                    player.QueueSendTick(record, (From e In outgoingActions Select e.Item2).ToReadableList)
                 Else
                     Dim player_ = player
                     player.QueueSendTick(record, (From e In outgoingActions
                                                   Let pid = If(e.Item1 Is player_, player_, _lobby.GetVisiblePlayer(e.Item1)).PID
                                                   Select New Protocol.PlayerActionSet(pid, e.Item2.Actions)
-                                                  ).ToList.AsReadableList)
+                                                  ).ToReadableList)
                 End If
             Next player
 

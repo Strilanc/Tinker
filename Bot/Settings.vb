@@ -14,8 +14,8 @@ Namespace Bot
             Contract.Requires(clientProfiles IsNot Nothing)
             Contract.Requires(pluginProfiles IsNot Nothing)
             SyncLock lock
-                Me._clientProfiles = clientProfiles.ToList.AsReadableList
-                Me._pluginProfiles = pluginProfiles.ToList.AsReadableList
+                Me._clientProfiles = clientProfiles.ToReadableList
+                Me._pluginProfiles = pluginProfiles.ToReadableList
             End SyncLock
         End Sub
         <Pure()>

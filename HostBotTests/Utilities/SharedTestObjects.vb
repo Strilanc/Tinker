@@ -11,7 +11,7 @@ Friend Module SharedTestObjects
         advertisedPath:="Maps\test.w3x",
         filesize:=1,
         fileChecksumCRC32:=1,
-        mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToArray.AsReadableList,
+        mapChecksumSHA1:=(From i In Enumerable.Range(0, 20) Select CByte(i)).ToReadableList,
         mapChecksumXORO:=1,
         ismelee:=False,
         usesCustomForces:=True,

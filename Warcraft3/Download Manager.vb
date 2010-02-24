@@ -220,7 +220,7 @@ Namespace WC3
                 Me._map = map
                 Me._player = player
                 Me._clock = clock
-                Me._hooks = hooks.ToArray.AsReadableList
+                Me._hooks = hooks.ToReadableList
                 Me._lastActivityTimer = _clock.Restarted
             End Sub
 

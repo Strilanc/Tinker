@@ -118,7 +118,7 @@ Public Module StreamExtensions
                 '[first parse: learn needed data]
                 Dim result = jar.Parse(view)
                 '[second parse: work with copied data, to avoid accessing the disposed StreamAsList later]
-                result = jar.Parse(result.Data.ToArray.AsReadableList)
+                result = jar.Parse(result.Data.ToReadableList)
                 'Place position after used data, as if it had been read normally
                 stream.Position = oldPosition + result.Data.Count
                 Return result

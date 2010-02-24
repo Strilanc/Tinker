@@ -30,7 +30,7 @@ Namespace Pickling
             Dim checksum = _checksumFunction(pickle.Data)
             Contract.Assume(checksum IsNot Nothing)
             Contract.Assume(checksum.Count = _checksumSize)
-            Dim data = checksum.Concat(pickle.Data).ToArray.AsReadableList
+            Dim data = checksum.Concat(pickle.Data).ToReadableList
             Return New Pickle(Of TValue)(value, data, pickle.Description)
         End Function
 

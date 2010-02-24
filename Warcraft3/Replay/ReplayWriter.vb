@@ -62,7 +62,7 @@ Namespace WC3.Replay
             Contract.Requires(secondaryPlayers IsNot Nothing)
             Contract.Requires(gameDesc IsNot Nothing)
 
-            _stream.WriteAt(_startPosition, Enumerable.Repeat(CByte(0), CInt(Format.HeaderSize)).ToArray.AsReadableList)
+            _stream.WriteAt(_startPosition, Enumerable.Repeat(CByte(0), CInt(Format.HeaderSize)).ToReadableList)
             StartBlock()
 
             WriteReplayEntryPickle(ReplayEntryId.StartOfReplay,
@@ -118,7 +118,7 @@ Namespace WC3.Replay
 
             'Finish block [wc3 won't accept replays which don't null-pad the last block like this]
             If _blockSizeRemaining > 0 Then
-                _dataCompressor.Write(Enumerable.Repeat(CByte(0), _blockSizeRemaining).ToList.AsReadableList)
+                _dataCompressor.Write(Enumerable.Repeat(CByte(0), _blockSizeRemaining).ToReadableList)
             End If
             Dim usableDecompressedLength = CUShort(BlockSize - _blockSizeRemaining)
             Dim blockDecompressedLength = CUShort(BlockSize)

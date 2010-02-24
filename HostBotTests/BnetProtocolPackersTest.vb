@@ -15,7 +15,7 @@ Public Class BnetProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeAccountLogOnFinishTest()
-        MakeAccountLogOnFinish(Enumerable.Repeat(CByte(1), 20).ToArray.AsReadableList)
+        MakeAccountLogOnFinish(Enumerable.Repeat(CByte(1), 20).ToReadableList)
     End Sub
     <TestMethod()>
     Public Sub MakeAuthenticationBeginTest()

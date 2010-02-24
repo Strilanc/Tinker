@@ -96,7 +96,7 @@
         Private Sub OnTick(ByVal duration As UShort,
                            ByVal actions As IReadableList(Of Tuple(Of Player, Protocol.PlayerActionSet)))
             Contract.Requires(actions IsNot Nothing)
-            _writer.AddTick(duration, (From action In actions Select action.Item2).ToArray.AsReadableList)
+            _writer.AddTick(duration, (From action In actions Select action.Item2).ToReadableList)
         End Sub
         Private Sub OnChat(ByVal speaker As Player,
                            ByVal text As String,

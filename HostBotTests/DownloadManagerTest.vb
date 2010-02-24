@@ -22,7 +22,7 @@ Public Class DownloadManagerTest
             fileSize:=CUInt(_data.Length),
             fileChecksumCRC32:=_data.CRC32,
             mapChecksumxoro:=1,
-            mapChecksumSHA1:=Enumerable.Repeat(CByte(1), 20).ToArray.AsReadableList,
+            mapChecksumSHA1:=Enumerable.Repeat(CByte(1), 20).ToReadableList,
             playableWidth:=256,
             playableHeight:=256,
             isMelee:=True,
@@ -51,7 +51,7 @@ Public Class DownloadManagerTest
         Public Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect, ByVal position As UInteger) As IFuture
             Return CType(player, TestPlayer).QueueSendPacket(MakeMapFileData(
                     position,
-                    Enumerable.Repeat(CByte(1), CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToArray.AsReadableList,
+                    Enumerable.Repeat(CByte(1), CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToReadableList,
                     player.PID,
                     HostPid))
         End Function
@@ -128,9 +128,9 @@ Public Class DownloadManagerTest
         Public Function InjectReceivedPacket(ByVal packet As Packet) As IFuture
             SyncLock Me
                 Return _handler.HandlePacket(
-                        New Byte() {Packets.PacketPrefix, packet.id}.Concat(
+                        New Byte() {Packets.PacketPrefix, packet.Id}.Concat(
                                     CUShort(packet.Payload.Data.Count + 4).Bytes).Concat(
-                                    packet.Payload.Data).ToArray.AsReadableList
+                                    packet.Payload.Data).ToReadableList
                 ).Catch(Sub(ex) _failFuture.SetFailed(ex))
             End SyncLock
         End Function
@@ -211,13 +211,13 @@ Public Class DownloadManagerTest
         clock.Advance(DownloadManager.UpdatePeriod)
         For p = Packets.MaxFileDataSize To game.Map.FileSize Step Packets.MaxFileDataSize
             dler.ExpectSentPacket(MakeMapFileData(p - Packets.MaxFileDataSize,
-                                                  Enumerable.Repeat(CByte(1), Packets.MaxFileDataSize).ToArray.AsReadableList,
+                                                  Enumerable.Repeat(CByte(1), Packets.MaxFileDataSize).ToReadableList,
                                                   dler.PID,
                                                   TestGame.HostPid))
             dler.InjectClientMapInfo(MapTransferState.Idle, p)
         Next p
         dler.ExpectSentPacket(MakeMapFileData(game.Map.FileSize.FloorMultiple(Packets.MaxFileDataSize),
-                                                Enumerable.Repeat(CByte(1), CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToArray.AsReadableList,
+                                                Enumerable.Repeat(CByte(1), CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToReadableList,
                                                 dler.PID,
                                                 TestGame.HostPid))
         dler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)

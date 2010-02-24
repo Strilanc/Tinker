@@ -3,6 +3,7 @@ Imports Strilbrary.Collections
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Strilbrary.Values
 Imports Tinker.Pickling
+Imports Tinker
 Imports System.Collections.Generic
 
 Friend Module TestingCommon
@@ -51,7 +52,7 @@ Friend Module TestingCommon
                              Optional ByVal requireAllData As Boolean = True,
                              Optional ByVal description As String = Nothing)
         Dim packed = jar.Pack(value)
-        Dim parsed = jar.Parse(data.ToList.AsReadableList)
+        Dim parsed = jar.Parse(data.ToReadableList)
         Assert.IsTrue(equater(packed.Value, value))
         Assert.IsTrue(equater(parsed.Value, value))
         Assert.IsTrue(packed.Data.SequenceEqual(data))
@@ -65,7 +66,7 @@ Friend Module TestingCommon
 
         If data.Count > 0 Then
             Try
-                jar.Parse(data.Take(data.Count - 1).ToArray.AsReadableList)
+                jar.Parse(data.Take(data.Count - 1).ToReadableList)
                 Assert.IsTrue(Not requireAllData)
             Catch ex As Exception
                 Assert.IsTrue(requireAllData)

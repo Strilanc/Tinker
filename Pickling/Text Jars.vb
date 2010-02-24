@@ -24,7 +24,7 @@ Namespace Pickling
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
             If data.Count < _size Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.Take(_size).ToArray.AsReadableList
+            Dim datum = data.Take(_size).ToReadableList
             Dim value = datum.ParseChrString(nullTerminated:=False)
             Return New Pickle(Of String)(Me.Name, value, datum, Function() """{0}""".Frmt(value))
         End Function
@@ -49,7 +49,7 @@ Namespace Pickling
         Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             If _maximumContentSize > 0 AndAlso value.Length > _maximumContentSize Then Throw New PicklingException("String length exceeded maximum size.")
-            Dim data = value.ToAscBytes.Concat({0}).ToArray.AsReadableList
+            Dim data = value.ToAscBytes.Concat({0}).ToReadableList
             Return New Pickle(Of TValue)(Me.Name, value, data, Function() """{0}""".Frmt(value))
         End Function
 

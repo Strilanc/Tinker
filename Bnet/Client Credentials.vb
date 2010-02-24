@@ -169,7 +169,7 @@ Namespace Bnet
                 'Interleave odd and even hashes
                 Dim result = (From i In Enumerable.Range(0, 40)
                               Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))
-                             ).ToArray.AsReadableList
+                             ).ToReadableList
                 Contract.Assume(result.Count = 40)
                 Return result
             End Get

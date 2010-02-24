@@ -26,7 +26,7 @@ Namespace Pickling
             Dim pickle = _subJar.Pack(value)
             Dim sizeBytes = CULng(pickle.Data.Count).Bytes.Take(_prefixSize)
             If sizeBytes.Take(_prefixSize).ToUInt64 <> pickle.Data.Count Then Throw New PicklingException("Unable to fit byte count into size prefix.")
-            Dim data = sizeBytes.Concat(pickle.Data).ToArray.AsReadableList
+            Dim data = sizeBytes.Concat(pickle.Data).ToReadableList
             Return New Pickle(Of TValue)(value, data, pickle.Description)
         End Function
 

@@ -388,7 +388,7 @@ Namespace WC3
                     End If
                     Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IReadableList(Of Byte)).AssumeNotNull
                     Dim receivingPIDs = (From index In receivingPlayerIndexes
-                                         Select New PlayerID(index)).ToArray.AsReadableList
+                                         Select New PlayerID(index)).ToReadableList
 
                     ReceiveChat(sender,
                                 message,

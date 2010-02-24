@@ -40,7 +40,7 @@ Public Class CachedExternalValues
         Dim fileInfo = New IO.FileInfo(path)
         Contract.Assume(versionInfo IsNot Nothing)
         _exeVersion = (From e In {versionInfo.ProductMajorPart, versionInfo.ProductMinorPart, versionInfo.ProductBuildPart, versionInfo.ProductPrivatePart}
-                       Select CByte(e And &HFF)).Reverse.ToArray.AsReadableList
+                       Select CByte(e And &HFF)).Reverse.ToReadableList
         Contract.Assume(_exeVersion.Count = 4)
         _exeLastModifiedTime = fileInfo.LastWriteTime
         _exeSize = CUInt(fileInfo.Length)

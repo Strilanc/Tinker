@@ -125,7 +125,7 @@
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
             Contract.Requires(prefixSize <= 4)
-            Return New ChecksumPrefixedJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToArray.AsReadableList)
+            Return New ChecksumPrefixedJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToReadableList)
         End Function
     End Module
 End Namespace

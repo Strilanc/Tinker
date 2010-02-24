@@ -114,7 +114,7 @@
                 Else
                     _observerReservations = (From name In argument.OptionalNamedValue("obs").Split(" "c)
                                              Select New InvariantString(name)
-                                            ).ToArray.AsReadableList
+                                            ).ToReadableList
                 End If
             End If
             Me._useMultiObs = argument.HasOptionalSwitch("MultiObs")
