@@ -45,7 +45,7 @@ Namespace WC3
         Private ReadOnly _players As AsyncViewableCollection(Of Player)
         Private ReadOnly _settings As GameSettings
         Private ReadOnly _motor As GameMotor
-        Private ReadOnly _started As OnetimeLock
+        Private ReadOnly _started As New OnetimeLock
 
         Public Event Updated(ByVal sender As Game, ByVal slots As SlotSet)
         Public Event PlayerTalked(ByVal sender As Game, ByVal speaker As Player, ByVal text As String, ByVal receivingGroup As Protocol.ChatGroup?)
@@ -148,8 +148,8 @@ Namespace WC3
             _lobby.DownloadManager.Start(
                     startPlayerHoldPoint:=StartPlayerHoldPoint,
                     mapPieceSender:=Sub(receiver, position) inQueue.QueueAction(Sub() _lobby.SendMapPiece(receiver, position)))
-
             inQueue.QueueAction(Sub() _lobby.TryRestoreFakeHost())
+            _motor.Init()
 
             _lobby.StartPlayerHoldPoint.IncludeActionhandler(
                 Sub(newPlayer)

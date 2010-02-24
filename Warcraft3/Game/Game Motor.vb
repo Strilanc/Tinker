@@ -16,6 +16,7 @@
         Private _lagLimit As TimeSpan
         Private _tickClock As RelativeClock
         Private _lagClock As RelativeClock
+        Private ReadOnly _init As New OnetimeLock
 
         Public Event ReceivedPlayerActions(ByVal sender As GameMotor, ByVal player As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
         Public Event Tick(ByVal sender As GameMotor, ByVal timeSpan As UShort, ByVal actionSets As IReadableList(Of Tuple(Of Player, Protocol.PlayerActionSet)))
@@ -24,6 +25,7 @@
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_laggingPlayers IsNot Nothing)
             Contract.Invariant(_speedFactor > 0)
+            Contract.Invariant(_init isnot nothing)
             Contract.Invariant(_tickPeriod.Ticks > 0)
             Contract.Invariant(_lagLimit.Ticks >= 0)
             Contract.Invariant(inQueue IsNot Nothing)
@@ -56,13 +58,18 @@
             Me._clock = clock
             Me._lobby = lobby
         End Sub
-        Private Sub Start()
+        Public Sub Init()
+            If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
+            If Not _init.TryAcquire Then Throw New InvalidOperationException("Already initialized.")
+
             _lobby.StartPlayerHoldPoint.IncludeActionhandler(
                 Sub(newPlayer)
                     AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() inQueue.QueueAction(Sub() OnDropLagger(newPlayer))
                     AddHandler newPlayer.ReceivedGameActions, Sub(sender, actions) inQueue.QueueAction(Sub() OnReceiveGameActions(sender, actions))
                 End Sub)
+        End Sub
 
+        Private Sub Start()
             For Each player In _players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartPlaying()
