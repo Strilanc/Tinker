@@ -5,7 +5,7 @@ Namespace WC3.Download
     Public Interface IPlayerDownloadAspect
         Inherits IFutureDisposable
         ReadOnly Property Name As InvariantString
-        ReadOnly Property PID As PlayerID
+        ReadOnly Property Id As PlayerId
         Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                              ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable)
         Function MakePacketOtherPlayerJoined() As Protocol.Packet
@@ -24,7 +24,7 @@ Namespace WC3.Download
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public ReadOnly Property PID As PlayerID Implements IPlayerDownloadAspect.PID
+            Public ReadOnly Property Id As PlayerId Implements IPlayerDownloadAspect.Id
                 Get
                     Throw New NotSupportedException
                 End Get

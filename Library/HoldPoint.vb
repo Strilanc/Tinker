@@ -1,12 +1,12 @@
 ﻿<ContractClass(GetType(IHoldPointContracts(Of )))>
 Public Interface IHoldPoint(Of Out TArg)
     Function IncludeFutureHandler(ByVal handler As Func(Of TArg, IFuture)) As IDisposable
-    Function IncludeActionhandler(ByVal handler As Action(Of TArg)) As IDisposable
+    Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable
 End Interface
 <ContractClassFor(GetType(IHoldPoint(Of )))>
 Public Class IHoldPointContracts(Of TArg)
     Implements IHoldPoint(Of TArg)
-    Public Function IncludeActionhandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionhandler
+    Public Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionHandler
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Throw New NotSupportedException
@@ -34,7 +34,7 @@ Public Class HoldPoint(Of TArg)
     ''' Includes a handler which is run before the resulting future from calling 'Hold' will become ready.
     ''' Returns an IDisposable which removes the handler when disposed.
     ''' </summary>
-    Public Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionhandler
+    Public Function IncludeActionHandler(ByVal handler As Action(Of TArg)) As IDisposable Implements IHoldPoint(Of TArg).IncludeActionHandler
         Return IncludeFutureHandler(Function(arg)
                                         Dim result = New FutureAction()
                                         result.SetByCalling(Sub() handler(arg))

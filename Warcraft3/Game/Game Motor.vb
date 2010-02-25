@@ -62,7 +62,7 @@
             If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
             If Not _init.TryAcquire Then Throw New InvalidOperationException("Already initialized.")
 
-            _lobby.StartPlayerHoldPoint.IncludeActionhandler(
+            _lobby.StartPlayerHoldPoint.IncludeActionHandler(
                 Sub(newPlayer)
                     AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() inQueue.QueueAction(Sub() OnDropLagger(newPlayer))
                     AddHandler newPlayer.ReceivedGameActions, Sub(sender, actions) inQueue.QueueAction(Sub() OnReceiveGameActions(sender, actions))
@@ -152,7 +152,7 @@
                                                              Where _lobby.GetVisiblePlayer(q) Is _lobby.GetVisiblePlayer(p_)).None Then
                             Contract.Assume(_lagClock IsNot Nothing)
                             BroadcastPacket(Protocol.MakeRemovePlayerFromLagScreen(
-                                pid:=_lobby.GetVisiblePlayer(p).PID,
+                                pid:=_lobby.GetVisiblePlayer(p).Id,
                                 lagTimeInMilliseconds:=CUInt(_lagClock.ElapsedTime.TotalMilliseconds))).SetHandled()
                         End If
                     End If
@@ -164,7 +164,7 @@
                                   ).ToList
                 _asyncWaitTriggered = False
                 If _laggingPlayers.Count > 0 Then
-                    BroadcastPacket(Protocol.MakeShowLagScreen(From p In _laggingPlayers Select p.PID)).SetHandled()
+                    BroadcastPacket(Protocol.MakeShowLagScreen(From p In _laggingPlayers Select p.Id)).SetHandled()
                     _lagClock = _clock.Restarted()
                 End If
             End If
@@ -187,7 +187,7 @@
                 End If
 
                 _gameDataQueue.Dequeue()
-                outgoingActions.Add(Tuple(e.Item1, New Protocol.PlayerActionSet(_lobby.GetVisiblePlayer(e.Item1).PID, e.Item2)))
+                outgoingActions.Add(Tuple(e.Item1, New Protocol.PlayerActionSet(_lobby.GetVisiblePlayer(e.Item1).Id, e.Item2)))
                 totalDataLength += actionDataLength
             End While
 
@@ -199,7 +199,7 @@
                 Else
                     Dim player_ = player
                     player.QueueSendTick(record, (From e In outgoingActions
-                                                  Let pid = If(e.Item1 Is player_, player_, _lobby.GetVisiblePlayer(e.Item1)).PID
+                                                  Let pid = If(e.Item1 Is player_, player_, _lobby.GetVisiblePlayer(e.Item1)).Id
                                                   Select New Protocol.PlayerActionSet(pid, e.Item2.Actions)
                                                   ).ToReadableList)
                 End If

@@ -16,7 +16,7 @@
                 Return True
             End Get
         End Property
-        Public Overridable ReadOnly Property PlayerIndex() As PlayerID?
+        Public Overridable ReadOnly Property PlayerIndex() As PlayerId?
             Get
                 Return Nothing
             End Get
@@ -32,7 +32,7 @@
                 Return Protocol.ComputerLevel.Normal
             End Get
         End Property
-        Public Overridable ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerID?
+        Public Overridable ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerId?
             Get
                 Return Nothing
             End Get
@@ -162,11 +162,11 @@
             Return New Player() {_player}
         End Function
         Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
-            Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.PID.Index).Futurized, _player.Description)
+            Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.Id.Index).Futurized, _player.Description)
         End Function
-        Public Overrides ReadOnly Property PlayerIndex() As PlayerID?
+        Public Overrides ReadOnly Property PlayerIndex() As PlayerId?
             Get
-                Return _player.PID
+                Return _player.Id
             End Get
         End Property
         Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As SlotContents.WantPlayerPriority
@@ -193,9 +193,9 @@
                 Return Type.Player
             End Get
         End Property
-        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerID?
+        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerId?
             Get
-                Return _player.PID
+                Return _player.Id
             End Get
         End Property
         Public Overrides ReadOnly Property DataDownloadPercent(Optional ByVal receiver As Player = Nothing) As Byte
@@ -247,7 +247,7 @@
     Public NotInheritable Class SlotContentsCovered
         Inherits SlotContents
         Private ReadOnly _coveringSlotId As InvariantString
-        Private ReadOnly _playerIndex As PlayerID
+        Private ReadOnly _playerIndex As PlayerId
         Private ReadOnly _players As List(Of Player)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -255,7 +255,7 @@
         End Sub
 
         Public Sub New(ByVal coveringSlotId As InvariantString,
-                       ByVal playerIndex As PlayerID,
+                       ByVal playerIndex As PlayerId,
                        ByVal players As IEnumerable(Of Player))
             Contract.Requires(players IsNot Nothing)
             Me._coveringSlotId = coveringSlotId
@@ -279,13 +279,13 @@
             If _players.Contains(player) Then Throw New InvalidOperationException()
             Return New SlotContentsCovered(_coveringSlotId, _playerIndex, _players.Concat(New Player() {player}))
         End Function
-        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerID?
+        Public Overrides ReadOnly Property DataPlayerIndex(Optional ByVal receiver As Player = Nothing) As PlayerId?
             Get
                 If receiver Is Nothing Then Return Nothing
-                Return If(_players.Contains(receiver), receiver.PID, Nothing)
+                Return If(_players.Contains(receiver), receiver.Id, Nothing)
             End Get
         End Property
-        Public Overrides ReadOnly Property PlayerIndex() As PlayerID?
+        Public Overrides ReadOnly Property PlayerIndex() As PlayerId?
             Get
                 Return _playerIndex
             End Get

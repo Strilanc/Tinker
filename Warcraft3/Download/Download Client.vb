@@ -8,21 +8,23 @@ Namespace WC3.Download
 
             Private ReadOnly _map As Map
             Private ReadOnly _player As IPlayerDownloadAspect
-            Private _transfer As Transfer
-            Private _lastTransferPartner As TransferClient
-
-            Public Property LastSendPosition As UInt32
-            Private _hasReported As Boolean
-            Private _reportedState As Protocol.MapTransferState = Protocol.MapTransferState.Idle
-            Private _expectedState As Protocol.MapTransferState = Protocol.MapTransferState.Idle
-            Private _totalPastProgress As UInt64
-            Private _totalPastTransferTime As TimeSpan
-            Private _numTransfers As Integer = 0
             Private ReadOnly _clock As IClock
             Private ReadOnly _links As New List(Of TransferClient)
             Private ReadOnly _hooks As IReadableList(Of IFuture(Of IDisposable))
-            Private _lastActivityTimer As RelativeClock
+
+            Private _hasReported As Boolean
             Private _reportedPosition As UInt32
+            Private _reportedState As Protocol.MapTransferState = Protocol.MapTransferState.Idle
+
+            Private _transfer As Transfer
+            Private _expectedState As Protocol.MapTransferState = Protocol.MapTransferState.Idle
+            Private _lastActivityClock As RelativeClock
+            Public Property LastSendPosition As UInt32
+
+            Private _lastTransferPartner As TransferClient
+            Private _totalPastProgress As UInt64
+            Private _totalPastTransferTime As TimeSpan
+            Private _pastTransferCount As Integer = 0
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_map IsNot Nothing)
@@ -30,7 +32,7 @@ Namespace WC3.Download
                 Contract.Invariant(_clock IsNot Nothing)
                 Contract.Invariant(_hooks IsNot Nothing)
                 Contract.Invariant(_transfer Is Nothing OrElse HasReported)
-                Contract.Invariant(_lastActivityTimer IsNot Nothing)
+                Contract.Invariant(_lastActivityClock IsNot Nothing)
             End Sub
 
             Public Sub New(ByVal player As IPlayerDownloadAspect,
@@ -45,10 +47,9 @@ Namespace WC3.Download
                 Me._player = player
                 Me._clock = clock
                 Me._hooks = hooks.ToReadableList
-                Me._lastActivityTimer = _clock.Restarted
+                Me._lastActivityClock = _clock.Restarted
             End Sub
 
-#Region "Naive Properties"
             Public ReadOnly Property Transfer As Transfer
                 Get
                     Return _transfer
@@ -81,11 +82,10 @@ Namespace WC3.Download
                     Return _expectedState
                 End Get
             End Property
-#End Region
 
             Public ReadOnly Property TimeSinceLastActivity As TimeSpan
                 Get
-                    Return _lastActivityTimer.ElapsedTime
+                    Return _lastActivityClock.ElapsedTime
                 End Get
             End Property
             Public ReadOnly Property LocalState As Protocol.MapTransferState
@@ -154,7 +154,7 @@ Namespace WC3.Download
                     Dim dt = TotalMeasurementTime.TotalSeconds
                     Dim dp = TotalProgress
                     If dt < 1 Then Return DefaultBandwidthPerSecond
-                    Dim expansionFactor = 1 + 1 / (1 + _numTransfers)
+                    Dim expansionFactor = 1 + 1 / (1 + _pastTransferCount)
                     Return dp / dt * expansionFactor
                 End Get
             End Property
@@ -200,12 +200,12 @@ Namespace WC3.Download
                                             startingPosition:=downloader.ReportedPosition,
                                             Clock:=downloader._clock,
                                             FileSize:=downloader._map.FileSize)
-                downloader._numTransfers += 1
+                downloader._pastTransferCount += 1
                 downloader._transfer = transfer
                 downloader._expectedState = Protocol.MapTransferState.Downloading
                 downloader._lastTransferPartner = uploader
 
-                uploader._numTransfers += 1
+                uploader._pastTransferCount += 1
                 uploader._transfer = transfer
                 uploader._expectedState = Protocol.MapTransferState.Uploading
                 uploader._lastTransferPartner = downloader
@@ -225,7 +225,7 @@ Namespace WC3.Download
             <ContractVerification(False)>
             Public Sub MarkReported()
                 Contract.Ensures(HasReported)
-                _lastActivityTimer = _lastActivityTimer.Restarted
+                _lastActivityClock = _lastActivityClock.Restarted
                 _hasReported = True
             End Sub
 

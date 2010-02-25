@@ -117,7 +117,7 @@ Namespace WC3
                                                        logger:=logger,
                                                        allowDownloads:=settings.AllowDownloads,
                                                        allowUploads:=settings.AllowUpload)
-            Dim lobby = New GameLobby(startPlayerholdPoint:=startPlayerholdPoint,
+            Dim lobby = New GameLobby(startPlayerHoldPoint:=startPlayerholdPoint,
                                       downloadManager:=downloadManager,
                                       logger:=logger,
                                       players:=players,
@@ -151,7 +151,7 @@ Namespace WC3
             inQueue.QueueAction(Sub() _lobby.TryRestoreFakeHost())
             _motor.Init()
 
-            _lobby.StartPlayerHoldPoint.IncludeActionhandler(
+            _lobby.StartPlayerHoldPoint.IncludeActionHandler(
                 Sub(newPlayer)
                     AddHandler newPlayer.Disconnected, Sub(player, expected, reportedReason, reasonDescription) inQueue.QueueAction(Sub() RemovePlayer(player, expected, reportedReason, reasonDescription))
                     AddHandler newPlayer.ReceivedReady, Sub(player) inQueue.QueueAction(Sub() ReceiveReady(player))
@@ -276,7 +276,7 @@ Namespace WC3
         Private Sub ChangeState(ByVal newState As GameState)
             Dim oldState = state
             state = newState
-            _lobby._acceptingPlayers = state = GameState.AcceptingPlayers
+            _lobby.AcceptingPlayers = state = GameState.AcceptingPlayers
             outQueue.QueueAction(Sub() RaiseEvent ChangedState(Me, oldState, newState))
         End Sub
 
@@ -325,8 +325,8 @@ Namespace WC3
                 player.QueueSendPacket(Protocol.MakeText(text:=prefix + line,
                                                          chatType:=chatType,
                                                          receivingGroup:=Protocol.ChatGroup.Private,
-                                                         receivers:=(From p In _players Select p.PID),
-                                                         sender:=sender.PID))
+                                                         receivers:=(From p In _players Select p.Id),
+                                                         sender:=sender.Id))
             Next line
 
             If display Then
@@ -344,7 +344,7 @@ Namespace WC3
                                 ByVal text As String,
                                 ByVal type As Protocol.ChatType,
                                 ByVal receivingGroup As Protocol.ChatGroup?,
-                                ByVal requestedReceiverIndexes As IReadableList(Of PlayerID))
+                                ByVal requestedReceiverIndexes As IReadableList(Of PlayerId))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             Contract.Requires(requestedReceiverIndexes IsNot Nothing)
@@ -360,12 +360,12 @@ Namespace WC3
                 text = visibleSender.Name + ": " + text
             End If
             'packet
-            Dim pk = Protocol.MakeText(text, type, receivingGroup, requestedReceiverIndexes, visibleSender.PID)
+            Dim pk = Protocol.MakeText(text, type, receivingGroup, requestedReceiverIndexes, visibleSender.Id)
             'receivers
             For Each receiver In _players
                 Contract.Assume(receiver IsNot Nothing)
                 Dim visibleReceiver = _lobby.GetVisiblePlayer(receiver)
-                If requestedReceiverIndexes.Contains(visibleReceiver.PID) Then
+                If requestedReceiverIndexes.Contains(visibleReceiver.Id) Then
                     receiver.QueueSendPacket(pk)
                 ElseIf visibleReceiver Is visibleSender AndAlso sender IsNot receiver Then
                     receiver.QueueSendPacket(pk)
@@ -388,7 +388,7 @@ Namespace WC3
                     End If
                     Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IReadableList(Of Byte)).AssumeNotNull
                     Dim receivingPIDs = (From index In receivingPlayerIndexes
-                                         Select New PlayerID(index)).ToReadableList
+                                         Select New PlayerId(index)).ToReadableList
 
                     ReceiveChat(sender,
                                 message,
@@ -437,7 +437,7 @@ Namespace WC3
 
             'Clean player
             If _lobby.IsPlayerVisible(player) Then
-                BroadcastPacket(Protocol.MakeOtherPlayerLeft(player.PID, reportedReason), player)
+                BroadcastPacket(Protocol.MakeOtherPlayerLeft(player.Id, reportedReason), player)
             End If
             If player Is adminPlayer Then
                 adminPlayer = Nothing
@@ -495,9 +495,9 @@ Namespace WC3
             Return inQueue.QueueAction(Sub() ElevatePlayer(name, password))
         End Function
 
-        Private Function TryFindPlayer(ByVal pid As PlayerID) As Player
+        Private Function TryFindPlayer(ByVal pid As PlayerId) As Player
             Return (From player In _players
-                    Where player.AssumeNotNull.PID = pid).
+                    Where player.AssumeNotNull.Id = pid).
                     FirstOrDefault
         End Function
         Private Function TryFindPlayer(ByVal userName As InvariantString) As Player

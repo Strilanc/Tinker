@@ -4,14 +4,14 @@
 
         Private ReadOnly _downloadManager As Download.Manager
         Private ReadOnly _startPlayerHoldPoint As HoldPoint(Of Player)
-        Private ReadOnly _freeIndexes As List(Of PlayerID)
+        Private ReadOnly _freeIndexes As List(Of PlayerId)
         Private ReadOnly _logger As Logger
         Private ReadOnly _clock As IClock
         Private ReadOnly _players As AsyncViewableCollection(Of Player)
-        Private ReadOnly _pidVisiblityMap As New Dictionary(Of PlayerID, PlayerID)()
+        Private ReadOnly _pidVisiblityMap As New Dictionary(Of PlayerId, PlayerId)()
         Private ReadOnly _settings As GameSettings
         Private _fakeHostPlayer As Player
-        Public Property _acceptingPlayers As Boolean = True
+        Public Property AcceptingPlayers As Boolean = True
         Private _slots As SlotSet
 
         Public Event ChangedPublicState(ByVal sender As GameLobby)
@@ -29,16 +29,16 @@
             Contract.Invariant(_settings IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal startPlayerholdPoint As HoldPoint(Of Player),
+        Public Sub New(ByVal startPlayerHoldPoint As HoldPoint(Of Player),
                        ByVal downloadManager As Download.Manager,
                        ByVal logger As Logger,
                        ByVal players As AsyncViewableCollection(Of Player),
                        ByVal clock As IClock,
                        ByVal settings As GameSettings)
-            Contract.Assume(startPlayerholdPoint IsNot Nothing)
+            Contract.Assume(startPlayerHoldPoint IsNot Nothing)
             Contract.Assume(downloadManager IsNot Nothing)
             Contract.Assume(logger IsNot Nothing)
-            Me._startPlayerHoldPoint = startPlayerholdPoint
+            Me._startPlayerHoldPoint = startPlayerHoldPoint
             Me._downloadManager = downloadManager
             Me._slots = New SlotSet(InitCreateSlots(settings))
             Me._logger = logger
@@ -46,9 +46,9 @@
             Me._clock = clock
             Me._settings = settings
             Dim pidCount = _slots.Count
-            Me._freeIndexes = (From i In Enumerable.Range(1, pidCount) Select New PlayerID(CByte(i))).ToList
+            Me._freeIndexes = (From i In Enumerable.Range(1, pidCount) Select New PlayerId(CByte(i))).ToList
             For Each pid In From i In Enumerable.Range(1, 12)
-                            Select New PlayerID(CByte(i))
+                            Select New PlayerId(CByte(i))
                 _pidVisiblityMap.Add(pid, pid)
             Next pid
 
@@ -131,7 +131,7 @@
                 Return _fakeHostPlayer
             End Get
         End Property
-        Public ReadOnly Property FreeIndexes As IList(Of PlayerID)
+        Public ReadOnly Property FreeIndexes As IList(Of PlayerId)
             Get
                 Return _freeIndexes
             End Get
@@ -153,7 +153,7 @@
             Contract.Requires(player IsNot Nothing)
 
             If slot Is Nothing OrElse slot.Contents.PlayerIndex Is Nothing Then
-                _freeIndexes.Add(player.PID)
+                _freeIndexes.Add(player.Id)
             End If
             If player Is _fakeHostPlayer Then
                 _fakeHostPlayer = Nothing
@@ -165,7 +165,7 @@
 
         Public Function TryRestoreFakeHost() As Player
             If _fakeHostPlayer IsNot Nothing Then Return Nothing
-            If Not _acceptingPlayers Then Return Nothing
+            If Not AcceptingPlayers Then Return Nothing
 
             Dim name = My.Settings.ingame_name
             Contract.Assume(name IsNot Nothing)
@@ -181,7 +181,7 @@
                                       Optional ByVal slot As Slot = Nothing) As Player
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
-            If Not _acceptingPlayers Then
+            If Not AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
             ElseIf FreeIndexes.Count <= 0 Then
                 If FakeHostPlayer IsNot Nothing Then
@@ -221,9 +221,9 @@
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
-        Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PlayerID)
+        Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PlayerId)
             Contract.Requires(connectingPlayer IsNot Nothing)
-            Contract.Ensures(Not FreeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerID))().Item2))
+            Contract.Ensures(Not FreeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerId))().Item2))
 
             'Choose Slot
             Dim slotMatch = (From s In _slots
@@ -237,7 +237,7 @@
             Contract.Assume(slot IsNot Nothing)
 
             'Allocate PID
-            Dim pid As PlayerID
+            Dim pid As PlayerId
             If slot.Contents.WantPlayer(connectingPlayer.Name) = SlotContents.WantPlayerPriority.ReservationForPlayer Then
                 Contract.Assume(slot.Contents.PlayerIndex.HasValue)
                 pid = slot.Contents.PlayerIndex.Value
@@ -252,7 +252,7 @@
             ElseIf FreeIndexes.Count > 0 Then '[pid available]
                 pid = FreeIndexes(0)
             ElseIf FakeHostPlayer IsNot Nothing Then '[take fake host's pid]
-                pid = FakeHostPlayer.PID
+                pid = FakeHostPlayer.Id
                 RaiseEvent RemovePlayer(Me, FakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for joining player.")
                 slot = (From s In _slots Where s.MatchableId = slot.MatchableId).Single
             Else
@@ -262,7 +262,7 @@
 
             Return Tuple(slot, pid)
         End Function
-        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal pid As PlayerID) As Player
+        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal pid As PlayerId) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Requires(slot IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
@@ -274,7 +274,7 @@
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Greet
-            newPlayer.QueueSendPacket(Protocol.MakeGreet(newPlayer.RemoteEndPoint, newPlayer.PID))
+            newPlayer.QueueSendPacket(Protocol.MakeGreet(newPlayer.RemoteEndPoint, newPlayer.Id))
             newPlayer.QueueSendPacket(Protocol.MakeHostMapInfo(_settings.Map))
             For Each visibleOtherPlayer In From p In _players Where p IsNot newPlayer AndAlso IsPlayerVisible(p)
                 Contract.Assume(visibleOtherPlayer IsNot Nothing)
@@ -299,7 +299,7 @@
             Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
-            If Not _acceptingPlayers Then
+            If Not AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
             ElseIf Not connectingPlayer.Socket.Connected Then
                 Throw New InvalidOperationException("Player isn't connected.")
@@ -319,22 +319,22 @@
         <Pure()>
         Public Function IsPlayerVisible(ByVal player As Player) As Boolean
             Contract.Requires(player IsNot Nothing)
-            Return _pidVisiblityMap(player.PID) = player.PID
+            Return _pidVisiblityMap(player.Id) = player.Id
         End Function
         <Pure()>
         Public Function GetVisiblePlayer(ByVal player As Player) As Player
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
             If IsPlayerVisible(player) Then Return player
-            Dim visibleIndex = _pidVisiblityMap(player.PID)
-            Dim visiblePlayer = (From p In _players Where p.PID = visibleIndex).First
+            Dim visibleIndex = _pidVisiblityMap(player.Id)
+            Dim visiblePlayer = (From p In _players Where p.Id = visibleIndex).First
             Contract.Assume(visiblePlayer IsNot Nothing)
             Return visiblePlayer
         End Function
         Public Shared Function SetupCoveredSlot(ByVal slots As SlotSet,
                                                 ByVal coveringSlot As Slot,
                                                 ByVal coveredSlot As Slot,
-                                                ByVal playerIndex As PlayerID) As SlotSet
+                                                ByVal playerIndex As PlayerId) As SlotSet
             Contract.Requires(slots IsNot Nothing)
             Contract.Requires(coveringSlot IsNot Nothing)
             Contract.Requires(coveredSlot IsNot Nothing)
@@ -357,7 +357,7 @@
             Dim filedata = _settings.Map.ReadChunk(position, Protocol.Packets.MaxFileDataSize)
             Contract.Assume(sender IsNot Nothing)
 
-            Dim pk = Protocol.MakeMapFileData(position, filedata, receiver.PID, sender.PID)
+            Dim pk = Protocol.MakeMapFileData(position, filedata, receiver.Id, sender.Id)
             Return receiver.QueueSendPacket(pk)
         End Function
 
@@ -374,16 +374,16 @@
             Return best.slot
         End Function
 
-        Public Sub OnPlayerSetColor(ByVal player As Player, ByVal newColor As Protocol.PlayerColor)
-            Contract.Requires(player IsNot Nothing)
-            Dim slot = _slots.TryFindPlayerSlot(player)
+        Public Sub OnPlayerSetColor(ByVal sender As Player, ByVal newColor As Protocol.PlayerColor)
+            Contract.Requires(sender IsNot Nothing)
+            Dim slot = _slots.TryFindPlayerSlot(sender)
 
             'Validate
             If slot Is Nothing Then Return
             If slot.Color = newColor Then Return
             If slot.Locked = slot.LockState.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
-            If Not _acceptingPlayers Then Return '[too late]
+            If Not AcceptingPlayers Then Return '[too late]
             If Not newColor.EnumValueIsDefined Then Return '[not a valid color]
 
             'check for duplicates
@@ -398,51 +398,51 @@
             _slots = _slots.WithSlotsReplaced(slot.WithColor(newColor))
             RaiseEvent ChangedPublicState(Me)
         End Sub
-        Public Sub OnPlayerSetRace(ByVal player As Player, ByVal newRace As Protocol.Races)
-            Contract.Requires(player IsNot Nothing)
-            Dim slot = _slots.TryFindPlayerSlot(player)
+        Public Sub OnPlayerSetRace(ByVal sender As Player, ByVal newRace As Protocol.Races)
+            Contract.Requires(sender IsNot Nothing)
+            Dim slot = _slots.TryFindPlayerSlot(sender)
 
             'Validate
             If slot Is Nothing Then Return
             If slot.Locked = slot.LockState.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
-            If Not _acceptingPlayers Then Return '[too late]
+            If Not AcceptingPlayers Then Return '[too late]
             If Not newRace.EnumValueIsDefined OrElse newRace = Protocol.Races.Unlocked Then Return '[not a valid race]
 
             'Perform
             _slots = _slots.WithSlotsReplaced(slot.withRace(newRace))
             RaiseEvent ChangedPublicState(Me)
         End Sub
-        Public Sub OnPlayerSetHandicap(ByVal player As Player, ByVal new_handicap As Byte)
-            Contract.Requires(player IsNot Nothing)
-            Dim slot = _slots.TryFindPlayerSlot(player)
+        Public Sub OnPlayerSetHandicap(ByVal sender As Player, ByVal newHandicap As Byte)
+            Contract.Requires(sender IsNot Nothing)
+            Dim slot = _slots.TryFindPlayerSlot(sender)
 
             'Validate
             If slot Is Nothing Then Return
             If slot.locked = slot.LockState.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
-            If Not _acceptingPlayers Then Return '[too late]
+            If Not AcceptingPlayers Then Return '[too late]
 
             'Perform
-            Select Case new_handicap
+            Select Case newHandicap
                 Case 50, 60, 70, 80, 90, 100
-                    _slots = _slots.WithSlotsReplaced(slot.WithHandicap(new_handicap))
+                    _slots = _slots.WithSlotsReplaced(slot.WithHandicap(newHandicap))
                 Case Else
                     Return '[invalid handicap]
             End Select
 
             RaiseEvent ChangedPublicState(Me)
         End Sub
-        Public Sub OnPlayerSetTeam(ByVal player As Player, ByVal newTeam As Byte)
-            Contract.Requires(player IsNot Nothing)
-            Dim slot = _slots.TryFindPlayerSlot(player)
+        Public Sub OnPlayerSetTeam(ByVal sender As Player, ByVal newTeam As Byte)
+            Contract.Requires(sender IsNot Nothing)
+            Dim slot = _slots.TryFindPlayerSlot(sender)
 
             'Validate
             If slot Is Nothing Then Return
             If slot.locked <> slot.LockState.Unlocked Then Return '[no teams changes allowed]
             If newTeam > slot.ObserverTeamIndex Then Return '[invalid value]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
-            If Not _acceptingPlayers Then Return '[too late]
+            If Not AcceptingPlayers Then Return '[too late]
             If newTeam = slot.ObserverTeamIndex Then
                 Select Case _settings.GameDescription.GameStats.Observers
                     Case GameObserverOption.FullObservers, GameObserverOption.Referees
@@ -472,7 +472,7 @@
                     Dim nextIndex = (slot.Index + offset_mod) Mod _slots.Count
                     Dim nextSlot = _slots(nextIndex)
                     Contract.Assume(nextSlot IsNot Nothing)
-                    If nextSlot.Team = newTeam AndAlso nextSlot.Contents.WantPlayer(player.Name) >= SlotContents.WantPlayerPriority.Open Then
+                    If nextSlot.Team = newTeam AndAlso nextSlot.Contents.WantPlayer(sender.Name) >= SlotContents.WantPlayerPriority.Open Then
                         SwapSlotContents(nextSlot, slot)
                         Exit For
                     End If
@@ -486,7 +486,7 @@
         Public Function ReserveSlot(ByVal userName As InvariantString,
                                     Optional ByVal slotQuery As InvariantString? = Nothing) As Player
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
-            If Not _acceptingPlayers Then Throw New InvalidOperationException("Can't reserve slots after launch.")
+            If Not AcceptingPlayers Then Throw New InvalidOperationException("Can't reserve slots after launch.")
             Dim slot As Slot
             If slotQuery Is Nothing Then
                 slot = (From s In _slots Where s.Contents.WantPlayer() = SlotContents.WantPlayerPriority.Open).FirstOrDefault
@@ -505,7 +505,7 @@
                                Optional ByVal avoidPlayers As Boolean = False)
             Contract.Requires(projection IsNot Nothing)
 
-            If Not _acceptingPlayers Then Throw New InvalidOperationException("Can't modify slots during launch.")
+            If Not AcceptingPlayers Then Throw New InvalidOperationException("Can't modify slots during launch.")
 
             Dim slot = FindMatchingSlot(slotQuery)
             If avoidPlayers AndAlso slot.Contents.ContentType = SlotContents.Type.Player Then
@@ -539,7 +539,7 @@
 
         Public Sub SwapSlotContents(ByVal slotQuery1 As InvariantString,
                                     ByVal slotQuery2 As InvariantString)
-            If Not _acceptingPlayers Then Throw New InvalidOperationException("Can't swap slots after launch.")
+            If Not AcceptingPlayers Then Throw New InvalidOperationException("Can't swap slots after launch.")
             Dim slot1 = FindMatchingSlot(slotQuery1)
             Dim slot2 = FindMatchingSlot(slotQuery2)
             If slot1 Is slot2 Then Throw New InvalidOperationException("Slot {0} is slot '{1}'.".Frmt(slotQuery1, slotQuery2))
@@ -556,7 +556,7 @@
         Public Sub SetSlotColor(ByVal slotQuery As InvariantString, ByVal color As Protocol.PlayerColor)
             If _settings.Map.UsesFixedPlayerSettings Then
                 Throw New InvalidOperationException("The map says that slot's color is locked.")
-            ElseIf Not _acceptingPlayers Then
+            ElseIf Not AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't change slot settings after launch.")
             End If
 
@@ -610,7 +610,7 @@
         '''<summary>Opens slots, closes slots and moves players around to try to match the desired team sizes.</summary>
         Public Sub TrySetTeamSizes(ByVal desiredTeamSizes As IEnumerable(Of Integer))
             Contract.Requires(desiredTeamSizes IsNot Nothing)
-            If Not _acceptingPlayers Then
+            If Not AcceptingPlayers Then
                 Throw New InvalidOperationException("Can't change team sizes after launch.")
             End If
 

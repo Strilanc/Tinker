@@ -35,7 +35,7 @@ Namespace WC3
         <ContractVerification(False)>
         Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
-            Return Protocol.MakeOtherPlayerJoined(Name, PID, peerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
+            Return Protocol.MakeOtherPlayerJoined(Name, Id, peerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
         End Function
 
         Private Sub LobbyStart()

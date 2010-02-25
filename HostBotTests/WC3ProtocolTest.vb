@@ -517,7 +517,7 @@ Public Class WC3ProtocolTest
                                 100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250},
-                        {"player action sets", Tuple(True, {New PlayerActionSet(New PlayerID(1),
+                        {"player action sets", Tuple(True, {New PlayerActionSet(New PlayerId(1),
                                            {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
                                                                      {"amount", 100},

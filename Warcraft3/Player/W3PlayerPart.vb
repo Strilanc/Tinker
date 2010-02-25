@@ -56,7 +56,7 @@ Namespace WC3
 
                     Return From text In contextInfo
                            Select Name.Value.Padded(20) +
-                                  "pid={0}".Frmt(Me.PID).Padded(6) +
+                                  "pid={0}".Frmt(Me.Id).Padded(6) +
                                   "Host={0}".Frmt(CanHost()).Padded(12) +
                                   "{0}c".Frmt(_numPeerConnections).Padded(5) +
                                   latencyDesc.Padded(12) +

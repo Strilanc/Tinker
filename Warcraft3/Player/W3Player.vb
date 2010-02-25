@@ -14,7 +14,7 @@
         Inherits FutureDisposable
 
         Private state As PlayerState = PlayerState.Lobby
-        Private ReadOnly _index As PlayerID
+        Private ReadOnly _id As PlayerId
         Private ReadOnly testCanHost As IFuture
         Private ReadOnly socket As W3Socket
         Private ReadOnly packetHandler As Protocol.W3PacketHandler
@@ -52,12 +52,12 @@
         End Sub
 
         '''<summary>Creates a fake player.</summary>
-        Public Sub New(ByVal index As PlayerID,
+        Public Sub New(ByVal index As PlayerId,
                        ByVal name As InvariantString,
                        Optional ByVal logger As Logger = Nothing)
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New Protocol.W3PacketHandler(name, Me.logger)
-            Me._index = index
+            Me._id = index
             Me._peerData = New Byte() {0}.AsReadableList
             If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
             Me._name = name
@@ -70,7 +70,7 @@
         End Sub
 
         '''<summary>Creates a real player.</summary>
-        Public Sub New(ByVal index As PlayerID,
+        Public Sub New(ByVal index As PlayerId,
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        ByVal clock As IClock,
                        ByVal downloadManager As Download.Manager,
@@ -89,7 +89,7 @@
             Me.socket = connectingPlayer.Socket
             Me._name = connectingPlayer.Name
             Me._listenPort = connectingPlayer.ListenPort
-            Me._index = index
+            Me._id = index
             AddHandler socket.Disconnected, AddressOf OnSocketDisconnected
 
             AddRemotePacketHandler(Protocol.Packets.Pong, Function(pickle)
@@ -120,9 +120,9 @@
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property PID As PlayerID Implements Download.IPlayerDownloadAspect.PID
+        Public ReadOnly Property Id As PlayerId Implements Download.IPlayerDownloadAspect.Id
             Get
-                Return _index
+                Return _id
             End Get
         End Property
         Public ReadOnly Property ListenPort As UShort

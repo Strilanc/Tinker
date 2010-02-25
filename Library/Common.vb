@@ -204,10 +204,11 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function MaxProjection(Of T, P As IComparable(Of P))(ByVal sequence As IEnumerable(Of T), ByVal projection As Func(Of T, P)) As Tuple(Of T, P)
+    Public Function MaxProjection(Of TInput, TResult As IComparable(Of TResult))(ByVal sequence As IEnumerable(Of TInput),
+                                                                                 ByVal projection As Func(Of TInput, TResult)) As Tuple(Of TInput, TResult)
         Contract.Requires(sequence IsNot Nothing)
         Contract.Requires(projection IsNot Nothing)
-        Dim best As Tuple(Of T, P) = Nothing
+        Dim best As Tuple(Of TInput, TResult) = Nothing
         For Each pair In From item In sequence Select Tuple(item, projection(item))
             Contract.Assume(pair IsNot Nothing)
             If best Is Nothing OrElse pair.Item2.CompareTo(best.Item2) > 0 Then

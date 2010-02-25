@@ -104,15 +104,15 @@
             Contract.Requires(speaker IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             If receivingGroup Is Nothing Then
-                _writer.AddLobbyChatMessage(speaker.PID, text)
+                _writer.AddLobbyChatMessage(speaker.Id, text)
             Else
-                _writer.AddGameChatMessage(speaker.PID, text, receivingGroup.Value)
+                _writer.AddGameChatMessage(speaker.Id, text, receivingGroup.Value)
             End If
         End Sub
         Private Sub Onleave(ByVal leaver As Player,
                             ByVal reportedResult As Protocol.PlayerLeaveReason)
             Contract.Requires(leaver IsNot Nothing)
-            _writer.AddPlayerLeft(0, leaver.PID, reportedResult, 0)
+            _writer.AddPlayerLeft(0, leaver.Id, reportedResult, 0)
         End Sub
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture

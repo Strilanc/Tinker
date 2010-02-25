@@ -9,15 +9,15 @@ Namespace WC3.Download
             Private ReadOnly _downloader As TransferClient
             Private ReadOnly _uploader As TransferClient
             Private ReadOnly _startingPosition As UInt32
-            Private _durationTimer As RelativeClock
-            Private _lastActivityTimer As RelativeClock
+            Private ReadOnly _durationClock As RelativeClock
+            Private _lastActivityClock As RelativeClock
             Private _totalProgress As UInt32
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_downloader IsNot Nothing)
                 Contract.Invariant(_uploader IsNot Nothing)
-                Contract.Invariant(_durationTimer IsNot Nothing)
-                Contract.Invariant(_lastActivityTimer IsNot Nothing)
+                Contract.Invariant(_durationClock IsNot Nothing)
+                Contract.Invariant(_lastActivityClock IsNot Nothing)
                 Contract.Invariant(_startingPosition <= _fileSize)
             End Sub
 
@@ -37,12 +37,11 @@ Namespace WC3.Download
                 Me._downloader = downloader
                 Me._uploader = uploader
                 Me._fileSize = filesize
-                Me._durationTimer = clock.Restarted()
-                Me._lastActivityTimer = clock.Restarted()
+                Me._durationClock = clock.Restarted()
+                Me._lastActivityClock = clock.Restarted()
                 Me._startingPosition = startingPosition
             End Sub
 
-#Region "Naive Properties"
             Public ReadOnly Property Downloader As TransferClient
                 Get
                     Contract.Ensures(Contract.Result(Of TransferClient)() IsNot Nothing)
@@ -58,13 +57,13 @@ Namespace WC3.Download
             Public ReadOnly Property Duration As TimeSpan
                 Get
                     Contract.Ensures(Contract.Result(Of TimeSpan)().Ticks >= 0)
-                    Return _durationTimer.ElapsedTime
+                    Return _durationClock.ElapsedTime
                 End Get
             End Property
             Public ReadOnly Property TimeSinceLastActivity As TimeSpan
                 Get
                     Contract.Ensures(Contract.Result(Of TimeSpan)().Ticks >= 0)
-                    Return _lastActivityTimer.ElapsedTime
+                    Return _lastActivityClock.ElapsedTime
                 End Get
             End Property
             Public ReadOnly Property StartingPosition As UInt32
@@ -82,7 +81,6 @@ Namespace WC3.Download
                     Return StartingPosition + TotalProgress
                 End Get
             End Property
-#End Region
 
             Public ReadOnly Property BandwidthPerSecond As Double
                 Get
@@ -101,7 +99,7 @@ Namespace WC3.Download
 
             Public Sub Advance(ByVal progress As UInt32)
                 _totalProgress += progress
-                _lastActivityTimer = _lastActivityTimer.Restarted()
+                _lastActivityClock = _lastActivityClock.Restarted()
             End Sub
 
             <ContractVerification(False)>

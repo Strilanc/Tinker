@@ -111,8 +111,8 @@ Namespace WC3.Download
                     Contract.Assume(client.Transfer.Downloader.Player IsNot Nothing)
                     Contract.Assume(client.Transfer.Uploader.Player IsNot Nothing)
                     If client.IsSteady Then Return If(client.ReportedHasFile,
-                                                      "(ul:{0})".Frmt(client.Transfer.Downloader.Player.PID),
-                                                      "(dl:{0})".Frmt(client.Transfer.Uploader.Player.PID))
+                                                      "(ul:{0})".Frmt(client.Transfer.Downloader.Player.Id),
+                                                      "(dl:{0})".Frmt(client.Transfer.Uploader.Player.Id))
                     Return If(client.ReportedHasFile, "(>>ul)", "(>>dl)")
                 End If
             End Get
@@ -212,7 +212,7 @@ Namespace WC3.Download
             If _defaultClient IsNot Nothing Then client.Links.Add(_defaultClient)
             client.Links.AddRange(From peer In _playerClients.Values
                                   Where peer IsNot client
-                                  Let pidFlag = 1UI << (peer.Player.PID.Index - 1)
+                                  Let pidFlag = 1UI << (peer.Player.Id.Index - 1)
                                   Where (flags And pidFlag) <> 0
                                   Select peer)
         End Sub
@@ -358,8 +358,8 @@ Namespace WC3.Download
                     SendMapFileData(downloader, downloader.ReportedPosition)
                 Else
                     _logger.Log("Initiating peer map transfer from {0} to {1}.".Frmt(uler.Name, dler.Name), LogMessageType.Positive)
-                    uler.QueueSendPacket(Protocol.MakeSetUploadTarget(dler.PID, downloader.ReportedPosition))
-                    dler.QueueSendPacket(Protocol.MakeSetDownloadSource(uler.PID))
+                    uler.QueueSendPacket(Protocol.MakeSetUploadTarget(dler.Id, downloader.ReportedPosition))
+                    dler.QueueSendPacket(Protocol.MakeSetDownloadSource(uler.Id))
                 End If
             Next downloader
 
@@ -373,8 +373,8 @@ Namespace WC3.Download
 
                 'Force-cancel the transfer by making the uploader and downloader each think the other rejoined
                 If uler IsNot Nothing Then
-                    dler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(uler.PID, Protocol.PlayerLeaveReason.Disconnect))
-                    uler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dler.PID, Protocol.PlayerLeaveReason.Disconnect))
+                    dler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(uler.Id, Protocol.PlayerLeaveReason.Disconnect))
+                    uler.QueueSendPacket(Protocol.MakeOtherPlayerLeft(dler.Id, Protocol.PlayerLeaveReason.Disconnect))
                     dler.QueueSendPacket(uler.MakePacketOtherPlayerJoined())
                     uler.QueueSendPacket(dler.MakePacketOtherPlayerJoined())
                 End If

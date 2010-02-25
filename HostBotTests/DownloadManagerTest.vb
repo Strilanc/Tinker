@@ -13,7 +13,7 @@ Imports System.Collections.Generic
 <TestClass()>
 Public Class DownloadManagerTest
     Private Class TestGame
-        Public Shared ReadOnly HostPid As New PlayerID(1)
+        Public Shared ReadOnly HostPid As New PlayerId(1)
         Private Shared ReadOnly _data As Byte() = Enumerable.Repeat(CByte(1), 5000).ToArray
         Private ReadOnly _startPlayerHoldPoint As New HoldPoint(Of Download.IPlayerDownloadAspect)()
         Private Shared ReadOnly SharedMap As New Map(
@@ -52,7 +52,7 @@ Public Class DownloadManagerTest
             Return CType(player, TestPlayer).QueueSendPacket(MakeMapFileData(
                     position,
                     Enumerable.Repeat(CByte(1), CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToReadableList,
-                    player.PID,
+                    player.Id,
                     HostPid))
         End Function
         Public Function AddPlayer(ByVal player As TestPlayer) As ifuture
@@ -72,13 +72,13 @@ Public Class DownloadManagerTest
         Implements Download.IPlayerDownloadAspect
         Private ReadOnly _failFuture As New FutureAction()
         Private ReadOnly _discFuture As New FutureAction()
-        Private ReadOnly _pid As PlayerID
+        Private ReadOnly _pid As PlayerId
         Private ReadOnly _pq As New Queue(Of Packet)()
         Private ReadOnly _lock As New System.Threading.ManualResetEvent(initialState:=False)
         Private ReadOnly _handler As New W3PacketHandler("TestSource")
         Private ReadOnly _logger As Logger
         Private ReadOnly _name As InvariantString
-        Public Sub New(ByVal pid As PlayerID,
+        Public Sub New(ByVal pid As PlayerId,
                        ByVal logger As Logger,
                        Optional ByVal name As InvariantString? = Nothing)
             Me._pid = pid
@@ -89,7 +89,7 @@ Public Class DownloadManagerTest
         End Sub
         Public Function MakePacketOtherPlayerJoined() As Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Return MakeOtherPlayerJoined(Name,
-                                         PID,
+                                         ID,
                                          0,
                                          New Byte() {0}.AsReadableList,
                                          New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
@@ -99,7 +99,7 @@ Public Class DownloadManagerTest
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property PID As PlayerID Implements Download.IPlayerDownloadAspect.PID
+        Public ReadOnly Property ID As PlayerId Implements Download.IPlayerDownloadAspect.Id
             Get
                 Return _pid
             End Get
@@ -173,8 +173,8 @@ Public Class DownloadManagerTest
         Public Function InjectClientMapInfo(ByVal state As MapTransferState, ByVal position As UInt32) As ifuture
             Return InjectReceivedPacket(MakeClientMapInfo(state, position))
         End Function
-        Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PlayerID) As ifuture
-            Return InjectReceivedPacket(MakeMapFileDataReceived(senderPid, PID, position))
+        Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PlayerId) As ifuture
+            Return InjectReceivedPacket(MakeMapFileDataReceived(senderPid, ID, position))
         End Function
         Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedResult As PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements Download.IPlayerDownloadAspect.QueueDisconnect
             _logger.Log("{0} Disconnected: {1}, {2}".Frmt(Me.Name, reportedResult, reasonDescription), LogMessageType.Negative)
@@ -189,7 +189,7 @@ Public Class DownloadManagerTest
         Dim clock = New ManualClock()
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=True)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
-        Dim player = New TestPlayer(New PlayerID(2), game.Logger)
+        Dim player = New TestPlayer(New PlayerId(2), game.Logger)
         BlockOnFuture(game.AddPlayer(player))
 
         player.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
@@ -203,7 +203,7 @@ Public Class DownloadManagerTest
         Dim clock = New ManualClock()
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=True)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
-        Dim dler = New TestPlayer(New PlayerID(2), game.Logger)
+        Dim dler = New TestPlayer(New PlayerId(2), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
@@ -212,13 +212,13 @@ Public Class DownloadManagerTest
         For p = Packets.MaxFileDataSize To game.Map.FileSize Step Packets.MaxFileDataSize
             dler.ExpectSentPacket(MakeMapFileData(p - Packets.MaxFileDataSize,
                                                   Enumerable.Repeat(CByte(1), Packets.MaxFileDataSize).ToReadableList,
-                                                  dler.PID,
+                                                  dler.ID,
                                                   TestGame.HostPid))
             dler.InjectClientMapInfo(MapTransferState.Idle, p)
         Next p
         dler.ExpectSentPacket(MakeMapFileData(game.Map.FileSize.FloorMultiple(Packets.MaxFileDataSize),
                                                 Enumerable.Repeat(CByte(1), CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToReadableList,
-                                                dler.PID,
+                                                dler.ID,
                                                 TestGame.HostPid))
         dler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         dler.ExpectNoPacket()
@@ -232,21 +232,21 @@ Public Class DownloadManagerTest
         Dim clock = New ManualClock()
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
-        Dim uler = New TestPlayer(New PlayerID(2), game.Logger)
-        Dim dler = New TestPlayer(New PlayerID(3), game.Logger)
+        Dim uler = New TestPlayer(New PlayerId(2), game.Logger)
+        Dim dler = New TestPlayer(New PlayerId(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
         BlockOnFuture(game.AddPlayer(uler))
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler.PID}))
-        uler.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID}))
+        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler.ID}))
+        uler.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
         uler.ExpectNoPacket()
         dler.ExpectNoPacket()
         clock.Advance(Download.Manager.UpdatePeriod)
 
-        dler.ExpectSentPacket(MakeSetDownloadSource(uler.PID))
-        uler.ExpectSentPacket(MakeSetUploadTarget(dler.PID, 0))
+        dler.ExpectSentPacket(MakeSetDownloadSource(uler.ID))
+        uler.ExpectSentPacket(MakeSetUploadTarget(dler.ID, 0))
         dler.ExpectNoPacket()
         uler.ExpectNoPacket()
         dler.InjectClientMapInfo(MapTransferState.Downloading, 0)
@@ -265,15 +265,15 @@ Public Class DownloadManagerTest
         Dim clock = New ManualClock()
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
-        Dim uler = New TestPlayer(New PlayerID(2), game.Logger)
-        Dim dler = New TestPlayer(New PlayerID(3), game.Logger)
+        Dim uler = New TestPlayer(New PlayerId(2), game.Logger)
+        Dim dler = New TestPlayer(New PlayerId(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
         BlockOnFuture(game.AddPlayer(uler))
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler.InjectClientMapInfo(MapTransferState.Idle, 0)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler.PID}))
-        uler.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID}))
+        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler.ID}))
+        uler.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
         clock.Advance(Download.Manager.UpdatePeriod)
 
         uler.ExpectNoPacket()
@@ -287,8 +287,8 @@ Public Class DownloadManagerTest
         Dim clock = New ManualClock()
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
-        Dim uler = New TestPlayer(New PlayerID(2), game.Logger)
-        Dim dler = New TestPlayer(New PlayerID(3), game.Logger)
+        Dim uler = New TestPlayer(New PlayerId(2), game.Logger)
+        Dim dler = New TestPlayer(New PlayerId(3), game.Logger)
         BlockOnFuture(game.AddPlayer(dler))
         BlockOnFuture(game.AddPlayer(uler))
 
@@ -308,32 +308,32 @@ Public Class DownloadManagerTest
         Dim clock = New ManualClock()
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
-        Dim dler = New TestPlayer(New PlayerID(2), game.Logger, "dler")
-        Dim uler1 = New TestPlayer(New PlayerID(3), game.Logger, "uler1")
-        Dim uler2 = New TestPlayer(New PlayerID(4), game.Logger, "uler2")
+        Dim dler = New TestPlayer(New PlayerId(2), game.Logger, "dler")
+        Dim uler1 = New TestPlayer(New PlayerId(3), game.Logger, "uler1")
+        Dim uler2 = New TestPlayer(New PlayerId(4), game.Logger, "uler2")
 
         'Start initial transfer
         WaitUntilFutureSucceeds(game.AddPlayer(dler))
         WaitUntilFutureSucceeds(game.AddPlayer(uler1))
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler1.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.PID}))
-        WaitUntilFutureSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID})))
+        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID}))
+        WaitUntilFutureSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID})))
         uler1.ExpectNoPacket()
         dler.ExpectNoPacket()
         clock.Advance(Download.Manager.UpdatePeriod)
 
         'Check for transfer
-        dler.ExpectSentPacket(MakeSetDownloadSource(uler1.PID))
-        uler1.ExpectSentPacket(MakeSetUploadTarget(dler.PID, 0))
+        dler.ExpectSentPacket(MakeSetDownloadSource(uler1.ID))
+        uler1.ExpectSentPacket(MakeSetUploadTarget(dler.ID, 0))
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
 
         'Cancel and start new transfer
         WaitUntilFutureSucceeds(game.AddPlayer(uler2))
         uler2.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID}))
-        WaitUntilFutureSucceeds(dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.PID, uler2.PID})))
+        uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
+        WaitUntilFutureSucceeds(dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID, uler2.ID})))
         clock.Advance(Download.Manager.FreezePeriod)
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
@@ -341,8 +341,8 @@ Public Class DownloadManagerTest
         clock.Advance(Download.Manager.UpdatePeriod)
 
         'Check for cancellation
-        dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.PID, PlayerLeaveReason.Disconnect))
-        uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.PID, PlayerLeaveReason.Disconnect))
+        dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.ID, PlayerLeaveReason.Disconnect))
+        uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.ID, PlayerLeaveReason.Disconnect))
         dler.ExpectSentPacket(uler1.MakePacketOtherPlayerJoined())
         uler1.ExpectSentPacket(dler.MakePacketOtherPlayerJoined())
         dler.ExpectNoPacket()
@@ -351,8 +351,8 @@ Public Class DownloadManagerTest
         clock.Advance(Download.Manager.UpdatePeriod)
 
         'Check for new transfer
-        dler.ExpectSentPacket(MakeSetDownloadSource(uler2.PID))
-        uler2.ExpectSentPacket(MakeSetUploadTarget(dler.PID, 0))
+        dler.ExpectSentPacket(MakeSetDownloadSource(uler2.ID))
+        uler2.ExpectSentPacket(MakeSetUploadTarget(dler.ID, 0))
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
         uler2.ExpectNoPacket()
@@ -368,32 +368,32 @@ Public Class DownloadManagerTest
         Dim clock = New ManualClock()
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=False)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
-        Dim dler = New TestPlayer(New PlayerID(2), game.Logger, "dler")
-        Dim uler1 = New TestPlayer(New PlayerID(3), game.Logger, "uler1")
-        Dim uler2 = New TestPlayer(New PlayerID(4), game.Logger, "uler2")
+        Dim dler = New TestPlayer(New PlayerId(2), game.Logger, "dler")
+        Dim uler1 = New TestPlayer(New PlayerId(3), game.Logger, "uler1")
+        Dim uler2 = New TestPlayer(New PlayerId(4), game.Logger, "uler2")
 
         'Start initial transfer
         WaitUntilFutureSucceeds(game.AddPlayer(dler))
         WaitUntilFutureSucceeds(game.AddPlayer(uler1))
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler1.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.PID}))
-        WaitUntilFutureSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID})))
+        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID}))
+        WaitUntilFutureSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID})))
         uler1.ExpectNoPacket()
         dler.ExpectNoPacket()
         clock.Advance(Download.Manager.UpdatePeriod)
 
         'Check for transfer
-        dler.ExpectSentPacket(MakeSetDownloadSource(uler1.PID))
-        uler1.ExpectSentPacket(MakeSetUploadTarget(dler.PID, 0))
+        dler.ExpectSentPacket(MakeSetDownloadSource(uler1.ID))
+        uler1.ExpectSentPacket(MakeSetUploadTarget(dler.ID, 0))
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
 
         'Add second peer
         WaitUntilFutureSucceeds(game.AddPlayer(uler2))
         uler2.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
-        uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.PID}))
-        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.PID, uler2.PID}))
+        uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
+        dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID, uler2.ID}))
 
         'Go slowly
         Dim dt = Download.Manager.MinSwitchPeriod
@@ -410,8 +410,8 @@ Public Class DownloadManagerTest
 
         'Check for cancellation
         clock.Advance(Download.Manager.UpdatePeriod)
-        dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.PID, PlayerLeaveReason.Disconnect))
-        uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.PID, PlayerLeaveReason.Disconnect))
+        dler.ExpectSentPacket(MakeOtherPlayerLeft(uler1.ID, PlayerLeaveReason.Disconnect))
+        uler1.ExpectSentPacket(MakeOtherPlayerLeft(dler.ID, PlayerLeaveReason.Disconnect))
         dler.ExpectSentPacket(uler1.MakePacketOtherPlayerJoined())
         uler1.ExpectSentPacket(dler.MakePacketOtherPlayerJoined())
         dler.ExpectNoPacket()
@@ -421,8 +421,8 @@ Public Class DownloadManagerTest
         clock.Advance(Download.Manager.UpdatePeriod)
 
         'Check for new transfer
-        dler.ExpectSentPacket(MakeSetDownloadSource(uler2.PID))
-        uler2.ExpectSentPacket(MakeSetUploadTarget(dler.PID, i))
+        dler.ExpectSentPacket(MakeSetDownloadSource(uler2.ID))
+        uler2.ExpectSentPacket(MakeSetUploadTarget(dler.ID, i))
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
         uler2.ExpectNoPacket()

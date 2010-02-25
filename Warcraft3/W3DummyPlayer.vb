@@ -17,7 +17,7 @@ Namespace WC3
         Private WithEvents socket As W3Socket
         Private WithEvents accepter As New W3PeerConnectionAccepter(New SystemClock())
         Public readyDelay As TimeSpan = TimeSpan.Zero
-        Private index As PlayerID
+        Private index As PlayerId
         Private dl As MapDownload
         Private poolPort As PortPool.PortHandle
         Private mode As DummyPlayerMode
@@ -109,7 +109,7 @@ Namespace WC3
             socket.SendPacket(Protocol.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
         End Sub
         Private Sub OnReceiveGreet(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
-            index = New PlayerID(CByte(pickle.Value("player index")))
+            index = New PlayerId(CByte(pickle.Value("player index")))
         End Sub
         Private Sub OnReceiveHostMapInfo(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             If mode = DummyPlayerMode.DownloadMap Then
@@ -129,7 +129,7 @@ Namespace WC3
         Private Sub OnReceiveOtherPlayerJoined(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
             Dim ext_addr = CType(pickle.Value("external address"), Dictionary(Of InvariantString, Object))
             Dim player = New W3Peer(CStr(pickle.Value("name")),
-                                    New PlayerID(CByte(pickle.Value("index"))),
+                                    New PlayerId(CByte(pickle.Value("index"))),
                                     CUShort(ext_addr("port")),
                                     New Net.IPAddress(CType(ext_addr("ip"), Byte())),
                                     CUInt(pickle.Value("peer key")))
@@ -168,7 +168,7 @@ Namespace WC3
             If ReceiveDLMapChunk(pickle.Value) Then
                 Disconnect(expected:=True, reason:="Download finished.")
             Else
-                socket.SendPacket(Protocol.MakeMapFileDataReceived(New PlayerID(1), Me.index, pos))
+                socket.SendPacket(Protocol.MakeMapFileDataReceived(New PlayerId(1), Me.index, pos))
             End If
         End Sub
 
@@ -256,7 +256,7 @@ Namespace WC3
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = pickle.Value
-            sender.Socket.SendPacket(Protocol.MakePeerPing(CUInt(vals("salt")), {New PlayerID(1)}))
+            sender.Socket.SendPacket(Protocol.MakePeerPing(CUInt(vals("salt")), {New PlayerId(1)}))
             sender.Socket.SendPacket(Protocol.MakePeerPong(CUInt(vals("salt"))))
         End Sub
         Private Sub OnPeerReceiveMapFileData(ByVal sender As W3Peer,

@@ -51,6 +51,6 @@ Friend Module SharedTestObjects
             GameDescription:=TestDesc,
             argument:=TestArgument)
     Friend ReadOnly TestPlayer As New Player(
-        index:=New PlayerID(1),
+        index:=New PlayerId(1),
         name:="test")
 End Module

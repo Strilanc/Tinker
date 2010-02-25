@@ -12,20 +12,20 @@ Public Class WC3ProtocolPackersTest
 
     <TestMethod()>
     Public Sub MakeShowLagScreenTest()
-        MakeShowLagScreen({New PlayerID(1)})
+        MakeShowLagScreen({New PlayerId(1)})
     End Sub
     <TestMethod()>
     Public Sub MakeRemovePlayerFromLagScreenTest()
-        MakeRemovePlayerFromLagScreen(New PlayerID(1), 100)
+        MakeRemovePlayerFromLagScreen(New PlayerId(1), 100)
     End Sub
     <TestMethod()>
     Public Sub MakeTextTest()
-        MakeText("test", ChatType.Lobby, ChatGroup.Allies, {}, New PlayerID(1))
-        MakeText("test", ChatType.Game, ChatGroup.Allies, {}, New PlayerID(1))
+        MakeText("test", ChatType.Lobby, ChatGroup.Allies, {}, New PlayerId(1))
+        MakeText("test", ChatType.Game, ChatGroup.Allies, {}, New PlayerId(1))
     End Sub
     <TestMethod()>
     Public Sub MakeGreetTest()
-        MakeGreet(New Net.IPEndPoint(Net.IPAddress.Loopback, 6112), New PlayerID(1))
+        MakeGreet(New Net.IPEndPoint(Net.IPAddress.Loopback, 6112), New PlayerId(1))
     End Sub
     <TestMethod()>
     Public Sub MakeRejectTest()
@@ -38,7 +38,7 @@ Public Class WC3ProtocolPackersTest
     <TestMethod()>
     Public Sub MakeOtherPlayerJoinedTest()
         MakeOtherPlayerJoined("test",
-                              New PlayerID(1),
+                              New PlayerId(1),
                               1,
                               New Byte() {0}.AsReadableList,
                               New Net.IPEndPoint(Net.IPAddress.Loopback, 6112))
@@ -49,11 +49,11 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeOtherPlayerReadyTest()
-        MakeOtherPlayerReady(New PlayerID(1))
+        MakeOtherPlayerReady(New PlayerId(1))
     End Sub
     <TestMethod()>
     Public Sub MakeOtherPlayerLeftTest()
-        MakeOtherPlayerLeft(New PlayerID(1), PlayerLeaveReason.Disconnect)
+        MakeOtherPlayerLeft(New PlayerId(1), PlayerLeaveReason.Disconnect)
     End Sub
     <TestMethod()>
     Public Sub MakeLobbyStateTest()
@@ -74,7 +74,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeTickTest()
-        MakeTick(250, {New PlayerActionSet(New PlayerID(1),
+        MakeTick(250, {New PlayerActionSet(New PlayerId(1),
                                            {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
                                                                      {"amount", 100},
@@ -84,15 +84,15 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeMapFileDataTest()
-        MakeMapFileData(5, New Byte() {}.AsReadableList, New PlayerID(1), New PlayerID(2))
+        MakeMapFileData(5, New Byte() {}.AsReadableList, New PlayerId(1), New PlayerId(2))
     End Sub
     <TestMethod()>
     Public Sub MakeSetUploadTargetTest()
-        MakeSetUploadTarget(New PlayerID(1), 0)
+        MakeSetUploadTarget(New PlayerId(1), 0)
     End Sub
     <TestMethod()>
     Public Sub MakeSetDownloadSourceTest()
-        MakeSetDownloadSource(New PlayerID(1))
+        MakeSetDownloadSource(New PlayerId(1))
     End Sub
     <TestMethod()>
     Public Sub MakeClientMapInfoTest()
@@ -100,7 +100,7 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakeMapFileDataReceivedTest()
-        MakeMapFileDataReceived(New PlayerID(1), New PlayerID(2), 0)
+        MakeMapFileDataReceived(New PlayerId(1), New PlayerId(2), 0)
     End Sub
     <TestMethod()>
     Public Sub MakeLanCreateGameTest()
@@ -136,15 +136,15 @@ Public Class WC3ProtocolPackersTest
     End Sub
     <TestMethod()>
     Public Sub MakePeerConnectionInfoTest()
-        MakePeerConnectionInfo({New PlayerID(1), New PlayerID(2)})
+        MakePeerConnectionInfo({New PlayerId(1), New PlayerId(2)})
     End Sub
     <TestMethod()>
     Public Sub MakePeerKnockTest()
-        MakePeerKnock(20, New PlayerID(1), {New PlayerID(1), New PlayerID(3)})
+        MakePeerKnock(20, New PlayerId(1), {New PlayerId(1), New PlayerId(3)})
     End Sub
     <TestMethod()>
     Public Sub MakePeerPingTest()
-        MakePeerPing(42, {New PlayerID(1), New PlayerID(3)})
+        MakePeerPing(42, {New PlayerId(1), New PlayerId(3)})
     End Sub
     <TestMethod()>
     Public Sub MakePeerPongTest()
