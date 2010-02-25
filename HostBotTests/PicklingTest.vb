@@ -397,7 +397,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub TupleJarTest()
-        Dim jar = New TupleJar("jar", New UInt32Jar().Named("32").Weaken, New UInt16Jar().Named("16").Weaken)
+        Dim jar = New TupleJar(New UInt32Jar().Named("32").Weaken, New UInt16Jar().Named("16").Weaken)
         Dim equater = Function(d1 As Dictionary(Of InvariantString, Object), d2 As Dictionary(Of InvariantString, Object)) DictionaryEqual(d1, d2)
         JarTest(jar, equater, New Dictionary(Of InvariantString, Object)() From {{"32", 0UI}, {"16", 0US}}, {0, 0, 0, 0, 0, 0})
         JarTest(jar, equater, New Dictionary(Of InvariantString, Object)() From {{"32", UInt32.MaxValue}, {"16", 0US}}, {&HFF, &HFF, &HFF, &HFF, 0, 0})

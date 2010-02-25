@@ -4,7 +4,7 @@ Namespace CKL
     '''<summary>Asynchronously connects to a CKLServer and requests a response to a cd key authentication challenge from bnet.</summary>
     Public NotInheritable Class Client
         Implements IProductAuthenticator
-        Private Shared ReadOnly jar As New Protocol.ProductCredentialsJar("authentication")
+        Private Shared ReadOnly jar As New Protocol.ProductCredentialsJar()
 
         Private ReadOnly _logger As Logger
         Private ReadOnly _remoteHost As String

@@ -238,13 +238,13 @@ Namespace WC3.Protocol
 
         Public NotInheritable Class Definition(Of T)
             Private ReadOnly _id As GameActionId
-            Private ReadOnly _jar As IJar(Of T)
+            Private ReadOnly _jar As IAnonymousJar(Of T)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As GameActionId, ByVal jar As IJar(Of T))
+            Friend Sub New(ByVal id As GameActionId, ByVal jar As IAnonymousJar(Of T))
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -255,9 +255,9 @@ Namespace WC3.Protocol
                     Return _id
                 End Get
             End Property
-            Public ReadOnly Property Jar As IJar(Of T)
+            Public ReadOnly Property Jar As IAnonymousJar(Of T)
                 Get
-                    Contract.Ensures(Contract.Result(Of IJar(Of T))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IAnonymousJar(Of T))() IsNot Nothing)
                     Return _jar
                 End Get
             End Property
@@ -265,7 +265,7 @@ Namespace WC3.Protocol
         Private Shared Function Define(ByVal id As GameActionId) As Definition(Of Object)
             Return New Definition(Of Object)(id, New EmptyJar())
         End Function
-        Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IJar(Of T)) As Definition(Of T)
+        Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IAnonymousJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Return New Definition(Of T)(id, jar)
         End Function
@@ -276,7 +276,7 @@ Namespace WC3.Protocol
             Contract.Requires(jar1 IsNot Nothing)
             Contract.Requires(jar2 IsNot Nothing)
             Contract.Requires(jars IsNot Nothing)
-            Return New Definition(Of Dictionary(Of InvariantString, Object))(id, New TupleJar(id.ToString, Concat({jar1, jar2}, jars)))
+            Return New Definition(Of Dictionary(Of InvariantString, Object))(id, New TupleJar(Concat({jar1, jar2}, jars)))
         End Function
 
         Public Shared ReadOnly DecreaseGameSpeed As Definition(Of Object) = Define(GameActionId.DecreaseGameSpeed)
@@ -433,7 +433,7 @@ Namespace WC3.Protocol
                     New NullTerminatedStringJar().Named("mission key").Weaken,
                     New NullTerminatedStringJar().Named("key").Weaken,
                     New ObjectTypeJar().Named("unit type").Weaken,
-                    New TupleJar("item slot", True,
+                    New TupleJar(True,
                             New ObjectTypeJar().Named("item").Weaken,
                             New UInt32Jar().Named("charges").Weaken,
                             New UInt32Jar().Named("unknown").Weaken
@@ -451,7 +451,7 @@ Namespace WC3.Protocol
                     New Float32Jar().Named("bonus agility per level").Weaken,
                     New UInt32Jar().Named("base intelligence").Weaken,
                     New Float32Jar().Named("bonus intelligence per level").Weaken,
-                    New TupleJar("skill slot", True,
+                    New TupleJar(True,
                             New ObjectTypeJar().Named("ability").Weaken,
                             New UInt32Jar().Named("level").Weaken
                         ).RepeatedWithCountPrefix(prefixSize:=4).Named("hero skills").Weaken,

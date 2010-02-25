@@ -11,7 +11,7 @@ Imports Tinker.Bnet.Protocol
 Public Class BnetProtocolJarsTest
     <TestMethod()>
     Public Sub DwordStringJarTest()
-        Dim jar = New DwordStringJar("test")
+        Dim jar = New DwordStringJar()
         JarTest(jar, "test", {Asc("t"), Asc("s"), Asc("e"), Asc("t")})
         JarTest(jar, "a", {Asc("a"), 0, 0, 0})
         ExpectException(Of PicklingException)(Sub() jar.Pack("12345"))
@@ -37,14 +37,14 @@ Public Class BnetProtocolJarsTest
     End Sub
     <TestMethod()>
     Public Sub IPAddressJarTest()
-        Dim jar = New IPAddressJar("test")
+        Dim jar = New IPAddressJar()
         Dim equater = Function(a1 As Net.IPAddress, a2 As Net.IPAddress) a1.GetAddressBytes.SequenceEqual(a1.GetAddressBytes)
         JarTest(jar, equater, New Net.IPAddress({0, 0, 0, 0}), {0, 0, 0, 0})
         JarTest(jar, equater, Net.IPAddress.Loopback, {127, 0, 0, 1})
     End Sub
     <TestMethod()>
     Public Sub IPEndPointTest()
-        Dim jar = New IPEndPointJar("test")
+        Dim jar = New IPEndPointJar()
         Dim equater = Function(a1 As Net.IPEndPoint, a2 As Net.IPEndPoint) a1.Address.GetAddressBytes.SequenceEqual(a1.Address.GetAddressBytes) AndAlso a1.Port = a2.Port
         JarTest(jar, equater, New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0), {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, equater, New Net.IPEndPoint(Net.IPAddress.Loopback, 6112), {2, 0, &H17, &HE0, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0})

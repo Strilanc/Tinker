@@ -189,21 +189,13 @@ Namespace WC3.Protocol
     Public Class PlayerActionSetJar
         Inherits BaseAnonymousJar(Of PlayerActionSet)
 
-        Private ReadOnly _dataJar As IJar(Of Dictionary(Of InvariantString, Object))
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_dataJar IsNot Nothing)
-        End Sub
-
-        Public Sub New()
-            _dataJar = New TupleJar("player action set",
-                    New PlayerIdJar().Named("source").Weaken,
-                    New GameActionJar().Repeated.Named("actions").DataSizePrefixed(prefixSize:=2).Weaken)
-        End Sub
+        Private Shared ReadOnly DataJar As New TupleJar(
+                New PlayerIdJar().Named("source").Weaken,
+                New GameActionJar().Repeated.Named("actions").DataSizePrefixed(prefixSize:=2).Weaken)
 
         Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Dim pickle = _dataJar.Pack(New Dictionary(Of InvariantString, Object) From {
+            Dim pickle = DataJar.Pack(New Dictionary(Of InvariantString, Object) From {
                                             {"source", value.Id},
                                             {"actions", value.Actions}
                                        })
@@ -211,7 +203,7 @@ Namespace WC3.Protocol
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
-            Dim pickle = _dataJar.Parse(data)
+            Dim pickle = DataJar.Parse(data)
             Dim id = CType(pickle.Value("source"), PlayerId)
             Dim actions = CType(pickle.Value("actions"), IReadableList(Of GameAction)).AssumeNotNull
             If id.Index < 1 OrElse id.Index > 12 Then Throw New IO.InvalidDataException("Invalid pid.")

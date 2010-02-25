@@ -27,23 +27,19 @@ Namespace Bnet.Protocol
         End Property
     End Class
     Public Class QueryGamesListResponseJar
-        Inherits BaseJar(Of QueryGamesListResponse)
+        Inherits BaseAnonymousJar(Of QueryGamesListResponse)
 
-        Private Shared ReadOnly gameDataJar As New TupleJar("game",
+        Private Shared ReadOnly gameDataJar As New TupleJar(
                 New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type").Weaken,
                 New UInt32Jar().Named("language id").Weaken,
-                New IPEndPointJar("host address").Weaken,
+                New IPEndPointJar().Named("host address").Weaken,
                 New EnumUInt32Jar(Of GameStates)().Named("game state").Weaken,
                 New UInt32Jar().Named("elapsed seconds").Weaken,
                 New NullTerminatedStringJar().Named("game name").Weaken,
                 New NullTerminatedStringJar().Named("game password").Weaken,
                 New TextHexValueJar("num free slots", digitCount:=1).Weaken,
                 New TextHexValueJar("game id", digitCount:=8).Weaken,
-                New WC3.Protocol.GameStatsJar("game statstring").Weaken)
-
-        Public Sub New()
-            MyBase.new(PacketId.QueryGamesList.ToString)
-        End Sub
+                New WC3.Protocol.GameStatsJar().Named("game statstring").Weaken)
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
             Dim count = data.SubView(0, 4).ToUInt32
@@ -79,10 +75,9 @@ Namespace Bnet.Protocol
                 Next repeat
             End If
 
-            Return New Pickle(Of QueryGamesListResponse)(jarname:=Me.Name,
-                                                         value:=New QueryGamesListResponse(result, games),
+            Return New Pickle(Of QueryGamesListResponse)(value:=New QueryGamesListResponse(result, games),
                                                          data:=data.SubView(0, offset),
-                                                         valueDescription:=Function() Pickle(Of Object).MakeListDescription(pickles))
+                                                         description:=Function() Pickle(Of Object).MakeListDescription(pickles))
         End Function
 
         Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As Pickling.IPickle(Of TValue)

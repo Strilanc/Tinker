@@ -4,8 +4,8 @@ Namespace WC3.Protocol
     Public NotInheritable Class SlotJar
         Inherits TupleJar
 
-        Public Sub New(ByVal name As InvariantString)
-            MyBase.New(name, True,
+        Public Sub New()
+            MyBase.New(True,
                     New ByteJar().Named("pid").Weaken,
                     New ByteJar().Named("dl").Weaken,
                     New EnumByteJar(Of Protocol.SlotState)().Named("state").Weaken,

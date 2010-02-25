@@ -2,23 +2,14 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public NotInheritable Class ProductCredentialsJar
-        Inherits BaseJar(Of ProductCredentials)
+        Inherits BaseAnonymousJar(Of ProductCredentials)
 
-        Private ReadOnly _dataJar As TupleJar
-
-        <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_dataJar IsNot Nothing)
-        End Sub
-
-        Public Sub New(ByVal name As InvariantString)
-            MyBase.New(name)
-            Me._dataJar = New TupleJar(name,
-                    New UInt32Jar().Named("length").Weaken,
-                    New EnumUInt32Jar(Of ProductType)().Named("product").Weaken,
-                    New UInt32Jar().Named("public key").Weaken,
-                    New UInt32Jar().Named("unknown").Weaken,
-                    New RawDataJar(Size:=20).Named("proof").Weaken)
-        End Sub
+        Private Shared ReadOnly DataJar As New TupleJar(
+                New UInt32Jar().Named("length").Weaken,
+                New EnumUInt32Jar(Of ProductType)().Named("product").Weaken,
+                New UInt32Jar().Named("public key").Weaken,
+                New UInt32Jar().Named("unknown").Weaken,
+                New RawDataJar(Size:=20).Named("proof").Weaken)
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
@@ -29,12 +20,12 @@ Namespace Bnet.Protocol
                     {"public key", value.PublicKey},
                     {"unknown", 0},
                     {"proof", value.AuthenticationProof}}
-            Dim pickle = _dataJar.Pack(vals)
+            Dim pickle = DataJar.Pack(vals)
             Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ProductCredentials)
-            Dim pickle = _dataJar.Parse(data)
+            Dim pickle = DataJar.Parse(data)
             Dim vals = pickle.Value
             Dim proof = CType(vals("proof"), IReadableList(Of Byte)).AssumeNotNull
             Contract.Assume(proof.Count = 20)

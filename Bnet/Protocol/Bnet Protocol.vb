@@ -221,13 +221,13 @@ Namespace Bnet.Protocol
 
         Public NotInheritable Class Definition(Of T)
             Private ReadOnly _id As PacketId
-            Private ReadOnly _jar As IJar(Of T)
+            Private ReadOnly _jar As IAnonymousJar(Of T)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As PacketId, ByVal jar As IJar(Of T))
+            Friend Sub New(ByVal id As PacketId, ByVal jar As IAnonymousJar(Of T))
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -238,9 +238,9 @@ Namespace Bnet.Protocol
                     Return _id
                 End Get
             End Property
-            Public ReadOnly Property Jar As IJar(Of T)
+            Public ReadOnly Property Jar As IAnonymousJar(Of T)
                 Get
-                    Contract.Ensures(Contract.Result(Of IJar(Of T))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IAnonymousJar(Of T))() IsNot Nothing)
                     Return _jar
                 End Get
             End Property
@@ -248,7 +248,7 @@ Namespace Bnet.Protocol
         Private Shared Function Define(ByVal id As PacketId) As Definition(Of Object)
             Return New Definition(Of Object)(id, New EmptyJar())
         End Function
-        Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IJar(Of T)) As Definition(Of T)
+        Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IAnonymousJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Return New Definition(Of T)(id, jar)
         End Function
@@ -259,7 +259,7 @@ Namespace Bnet.Protocol
             Contract.Requires(jar1 IsNot Nothing)
             Contract.Requires(jar2 IsNot Nothing)
             Contract.Requires(jars IsNot Nothing)
-            Return New Definition(Of Dictionary(Of InvariantString, Object))(id, New TupleJar(id.ToString, Concat({jar1, jar2}, jars)))
+            Return New Definition(Of Dictionary(Of InvariantString, Object))(id, New TupleJar(Concat({jar1, jar2}, jars)))
         End Function
 
         Public NotInheritable Class ServerToClient
@@ -292,7 +292,7 @@ Namespace Bnet.Protocol
                     New EnumUInt32Jar(Of ChatEventId)().Named("event id").Weaken,
                     New UInt32Jar(showhex:=True).Named("flags").Weaken,
                     New UInt32Jar().Named("ping").Weaken,
-                    New IPAddressJar("ip").Weaken,
+                    New IPAddressJar().Named("ip").Weaken,
                     New UInt32Jar(showhex:=True).Named("acc#").Weaken,
                     New UInt32Jar(showhex:=True).Named("authority").Weaken,
                     New NullTerminatedStringJar().Named("username").Weaken,
@@ -305,7 +305,7 @@ Namespace Bnet.Protocol
                     New ByteJar().Named("entry number").Weaken,
                     New ByteJar().Named("location id").Weaken,
                     New ByteJar().Named("status").Weaken,
-                    New DwordStringJar("product id").Weaken,
+                    New DwordStringJar().Named("product id").Weaken,
                     New NullTerminatedStringJar().Named("location").Weaken)
             Public Shared ReadOnly QueryGamesList As Definition(Of QueryGamesListResponse) = Define(PacketId.QueryGamesList,
                     New QueryGamesListResponseJar())
@@ -333,7 +333,7 @@ Namespace Bnet.Protocol
                     New NullTerminatedStringJar().Named("filename").Weaken)
             Public Shared ReadOnly ClanInfo As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.ClanInfo,
                     New ByteJar().Named("unknown").Weaken,
-                    New DwordStringJar("clan tag").Weaken,
+                    New DwordStringJar().Named("clan tag").Weaken,
                     New EnumByteJar(Of ClanRank)().Named("rank").Weaken)
         End Class
 
@@ -343,11 +343,11 @@ Namespace Bnet.Protocol
 
             Public Shared ReadOnly ProgramAuthenticationBegin As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.ProgramAuthenticationBegin,
                     New UInt32Jar().Named("protocol").Weaken,
-                    New DwordStringJar("platform").Weaken,
-                    New DwordStringJar("product").Weaken,
+                    New DwordStringJar().Named("platform").Weaken,
+                    New DwordStringJar().Named("product").Weaken,
                     New UInt32Jar().Named("product major version").Weaken,
                     New FixedSizeStringJar(Size:=4).Named("product language").Weaken,
-                    New IPAddressJar("internal ip").Weaken,
+                    New IPAddressJar().Named("internal ip").Weaken,
                     New UInt32Jar().Named("time zone offset").Weaken,
                     New UInt32Jar().Named("location id").Weaken,
                     New EnumUInt32Jar(Of MPQ.LanguageId)(checkDefined:=False).Named("language id").Weaken,
@@ -359,8 +359,8 @@ Namespace Bnet.Protocol
                     New UInt32Jar(showHex:=True).Named("revision check response").Weaken,
                     New UInt32Jar().Named("# cd keys").Weaken,
                     New UInt32Jar().Named("is spawn").Weaken,
-                    New ProductCredentialsJar("ROC cd key").Weaken,
-                    New ProductCredentialsJar("TFT cd key").Weaken,
+                    New ProductCredentialsJar().Named("ROC cd key").Weaken,
+                    New ProductCredentialsJar().Named("TFT cd key").Weaken,
                     New NullTerminatedStringJar().Named("exe info").Weaken,
                     New NullTerminatedStringJar().Named("owner").Weaken)
             Public Shared ReadOnly UserAuthenticationBegin As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.UserAuthenticationBegin,
@@ -395,7 +395,7 @@ Namespace Bnet.Protocol
                     New NullTerminatedStringJar().Named("password").Weaken,
                     New TextHexValueJar("num free slots", digitCount:=1).Weaken,
                     New TextHexValueJar("game id", digitCount:=8).Weaken,
-                    New WC3.Protocol.GameStatsJar("statstring").Weaken)
+                    New WC3.Protocol.GameStatsJar().Named("statstring").Weaken)
             Public Shared ReadOnly CloseGame3 As Definition(Of Object) = Define(PacketId.CloseGame3)
             Public Shared ReadOnly JoinChannel As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.JoinChannel,
                     New EnumUInt32Jar(Of JoinChannelType)().Named("join type").Weaken,

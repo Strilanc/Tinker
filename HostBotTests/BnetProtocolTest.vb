@@ -35,7 +35,7 @@ Public Class BnetProtocolTest
                      97, 0,
                      &H33,
                      &H31, &H32, &H30, &H30, &H30, &H30, &H30, &H30
-                    }.Concat(New WC3.Protocol.GameStatsJar("test").Pack(TestStats).Data),
+                    }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats).Data),
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"game state", GameStates.Full},
                         {"seconds since creation", 25},
@@ -133,7 +133,7 @@ Public Class BnetProtocolTest
     Public Sub ClientProgramAuthenticationFinishTest()
         Dim rocCred = "EDKBRTRXG88Z9V8M84HY2XVW7N".ToWC3CDKeyCredentials(0UI.Bytes, 0UI.Bytes)
         Dim tftCred = "M68YC4278JJXXVJMKRP8ETN4TC".ToWC3CDKeyCredentials(0UI.Bytes, 0UI.Bytes)
-        Dim credJar = New ProductCredentialsJar("test")
+        Dim credJar = New ProductCredentialsJar()
         JarTest(Packets.ClientToServer.ProgramAuthenticationFinish.Jar,
                 data:=New Byte() {
                        76, 0, 0, 0,
@@ -365,7 +365,7 @@ Public Class BnetProtocolTest
                      0,
                      67,
                      65, &H32, &H30, &H30, &H30, &H30, &H30, &H30
-                     }.Concat(New WC3.Protocol.GameStatsJar("test").Pack(TestStats).Data
+                     }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats).Data
                 ).ToReadableList
         Dim value = Packets.ServerToClient.QueryGamesList.Jar.Parse(New Byte() _
                     {2, 0, 0, 0}.

@@ -12,7 +12,7 @@ Imports Tinker.WC3.Protocol
 Public Class WC3ProtocolJarsTest
     <TestMethod()>
     Public Sub SlotJarTest()
-        Dim jar = New SlotJar("test")
+        Dim jar = New SlotJar()
         JarTest(jar,
                 data:={1, 255, 0, 0, 1, 2, 2, 1, 100},
                 value:=New Dictionary(Of InvariantString, Object) From {

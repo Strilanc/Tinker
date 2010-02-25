@@ -2,7 +2,7 @@
 
 Namespace WC3.Protocol
     Public NotInheritable Class GameStatsJar
-        Inherits BaseJar(Of GameStats)
+        Inherits BaseAnonymousJar(Of GameStats)
 
         <Flags()>
         Private Enum GameSettings As UInteger
@@ -27,7 +27,7 @@ Namespace WC3.Protocol
             ObserversReferees = 1 << 30
         End Enum
 
-        Private Shared ReadOnly DataJar As New TupleJar("game stats",
+        Private Shared ReadOnly DataJar As New TupleJar(
                     New EnumUInt32Jar(Of GameSettings)().Named("settings").Weaken,
                     New ByteJar().Named("unknown1").Weaken,
                     New UInt16Jar().Named("playable width").Weaken,
@@ -37,10 +37,6 @@ Namespace WC3.Protocol
                     New NullTerminatedStringJar().Named("host name").Weaken,
                     New NullTerminatedStringJar().Named("unknown2").Weaken,
                     New RawDataJar(Size:=20).Named("sha1 checksum").Weaken)
-
-        Public Sub New(ByVal name As InvariantString)
-            MyBase.New(name)
-        End Sub
 
         Public Overrides Function Pack(Of TValue As GameStats)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
