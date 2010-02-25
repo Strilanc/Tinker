@@ -1,15 +1,14 @@
 Namespace Pickling
     '''<summary>Pickles fixed-size lists of bytes.</summary>
     Public Class RawDataJar
-        Inherits BaseJar(Of IReadableList(Of Byte))
+        Inherits BaseAnonymousJar(Of IReadableList(Of Byte))
         Private ReadOnly _size As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_size > 0)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString, ByVal size As Integer)
-            MyBase.New(name)
+        Public Sub New(ByVal size As Integer)
             Contract.Requires(size > 0)
             Me._size = size
         End Sub
@@ -18,13 +17,13 @@ Namespace Pickling
             Contract.Assume(value IsNot Nothing)
             If value.Count <> _size Then Throw New PicklingException("Byte array is not of the correct length.")
             Dim data = value
-            Return New Pickle(Of TValue)(Me.Name, value, data, Function() "[{0}]".Frmt(value.ToHexString))
+            Return New Pickle(Of TValue)(value, data, Function() "[{0}]".Frmt(value.ToHexString))
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of Byte))
             If data.Count < _size Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, _size)
             Dim value = datum
-            Return New Pickle(Of IReadableList(Of Byte))(Me.Name, value, datum, Function() "[{0}]".Frmt(value.ToHexString))
+            Return New Pickle(Of IReadableList(Of Byte))(value, datum, Function() "[{0}]".Frmt(value.ToHexString))
         End Function
     End Class
 End Namespace

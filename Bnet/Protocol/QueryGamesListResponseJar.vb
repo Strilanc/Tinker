@@ -30,10 +30,10 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of QueryGamesListResponse)
 
         Private Shared ReadOnly gameDataJar As New TupleJar("game",
-                New EnumUInt32Jar(Of WC3.Protocol.GameTypes)("game type").Weaken,
+                New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type").Weaken,
                 New UInt32Jar().Named("language id").Weaken,
                 New IPEndPointJar("host address").Weaken,
-                New EnumUInt32Jar(Of GameStates)("game state").Weaken,
+                New EnumUInt32Jar(Of GameStates)().Named("game state").Weaken,
                 New UInt32Jar().Named("elapsed seconds").Weaken,
                 New NullTerminatedStringJar("game name").Weaken,
                 New NullTerminatedStringJar("game password").Weaken,

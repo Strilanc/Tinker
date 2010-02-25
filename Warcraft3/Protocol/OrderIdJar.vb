@@ -4,8 +4,8 @@ Namespace WC3.Protocol
     Public NotInheritable Class OrderIdJar
         Inherits EnumUInt32Jar(Of OrderId)
 
-        Public Sub New(ByVal name As InvariantString)
-            MyBase.New(name, checkDefined:=False)
+        Public Sub New()
+            MyBase.New(checkDefined:=False)
         End Sub
 
         Protected Overrides Function ValueToString(ByVal value As OrderId) As String

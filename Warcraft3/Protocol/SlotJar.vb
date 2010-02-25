@@ -8,12 +8,12 @@ Namespace WC3.Protocol
             MyBase.New(name, True,
                     New ByteJar().Named("pid").Weaken,
                     New ByteJar().Named("dl").Weaken,
-                    New EnumByteJar(Of Protocol.SlotState)("state").Weaken,
+                    New EnumByteJar(Of Protocol.SlotState)().Named("state").Weaken,
                     New ByteJar().Named("cpu").Weaken,
                     New ByteJar().Named("team").Weaken,
-                    New EnumByteJar(Of Protocol.PlayerColor)("color").Weaken,
-                    New EnumByteJar(Of Protocol.Races)("race").Weaken,
-                    New EnumByteJar(Of Protocol.ComputerLevel)("difficulty").Weaken,
+                    New EnumByteJar(Of Protocol.PlayerColor)().Named("color").Weaken,
+                    New EnumByteJar(Of Protocol.Races)().Named("race").Weaken,
+                    New EnumByteJar(Of Protocol.ComputerLevel)().Named("difficulty").Weaken,
                     New ByteJar().Named("handicap").Weaken)
         End Sub
 

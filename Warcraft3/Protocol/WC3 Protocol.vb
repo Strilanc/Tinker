@@ -237,7 +237,6 @@ Namespace WC3.Protocol
         Idle = 1
         Uploading = 2
         Downloading = 3
-        Unknown4 = 4
     End Enum
     Public Enum RejectReason As UInteger
         GameNotFound = 0
@@ -372,10 +371,10 @@ Namespace WC3.Protocol
                 New UInt32Jar(showHex:=True).Named("salt"))
 
         Public Shared ReadOnly Leaving As Definition(Of PlayerLeaveReason) = Define(PacketId.Leaving,
-                New EnumUInt32Jar(Of PlayerLeaveReason)("reason"))
+                New EnumUInt32Jar(Of PlayerLeaveReason)().Named("reason"))
         Public Shared ReadOnly OtherPlayerLeft As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.OtherPlayerLeft,
                 New PlayerIdJar("leaver").Weaken,
-                New EnumUInt32Jar(Of PlayerLeaveReason)("reason").Weaken)
+                New EnumUInt32Jar(Of PlayerLeaveReason)().Named("reason").Weaken)
 
         Public Const MaxPlayerNameLength As Integer = 15
         Public Shared ReadOnly Knock As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.Knock,
@@ -385,10 +384,10 @@ Namespace WC3.Protocol
                 New UInt16Jar().Named("listen port").Weaken,
                 New UInt32Jar(showhex:=True).Named("peer key").Weaken,
                 New NullTerminatedStringJar("name", maximumContentSize:=MaxPlayerNameLength).Weaken,
-                New RemainingDataJar("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
+                New RemainingDataJar().Named("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
         Public Shared ReadOnly Greet As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.Greet,
-                New RemainingDataJar("slot data").DataSizePrefixed(prefixSize:=2).Weaken,
+                New RemainingDataJar().Named("slot data").DataSizePrefixed(prefixSize:=2).Weaken,
                 New PlayerIdJar("assigned id").Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken)
         Public Shared ReadOnly HostMapInfo As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.HostMapInfo,
@@ -397,14 +396,14 @@ Namespace WC3.Protocol
                 New UInt32Jar().Named("size").Weaken,
                 New UInt32Jar(showhex:=True).Named("crc32").Weaken,
                 New UInt32Jar(showhex:=True).Named("xoro checksum").Weaken,
-                New RawDataJar("sha1 checksum", Size:=20).Weaken)
+                New RawDataJar(Size:=20).Named("sha1 checksum").Weaken)
         Public Shared ReadOnly RejectEntry As Definition(Of RejectReason) = Define(PacketId.RejectEntry,
-                New EnumUInt32Jar(Of RejectReason)("reason"))
+                New EnumUInt32Jar(Of RejectReason)().Named("reason"))
         Public Shared ReadOnly OtherPlayerJoined As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.OtherPlayerJoined,
                 New UInt32Jar(showhex:=True).Named("peer key").Weaken,
                 New PlayerIdJar("joiner id").Weaken,
                 New NullTerminatedStringJar("name", maximumContentSize:=15).Weaken,
-                New RemainingDataJar("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
+                New RemainingDataJar().Named("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
         Public Shared ReadOnly Text As Definition(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
@@ -416,13 +415,13 @@ Namespace WC3.Protocol
             jar.AddPackerParser(ChatType.Game, New TupleJar(PacketId.Text.ToString,
                     New PlayerIdJar("receiver").RepeatedWithCountPrefix("requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New PlayerIdJar("speaker").Weaken,
-                    New EnumByteJar(Of ChatType)("type").Weaken,
-                    New EnumUInt32Jar(Of ChatGroup)("receiving group", checkDefined:=False).Weaken,
+                    New EnumByteJar(Of ChatType)().Named("type").Weaken,
+                    New EnumUInt32Jar(Of ChatGroup)(checkDefined:=False).Named("receiving group").Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             jar.AddPackerParser(ChatType.Lobby, New TupleJar(PacketId.Text.ToString,
                     New PlayerIdJar("receiver").RepeatedWithCountPrefix("requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New PlayerIdJar("speaker").Weaken,
-                    New EnumByteJar(Of ChatType)("type").Weaken,
+                    New EnumByteJar(Of ChatType)().Named("type").Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             Return Define(PacketId.Text, jar)
         End Function
@@ -436,7 +435,7 @@ Namespace WC3.Protocol
                 New TupleJar(PacketId.LobbyState.ToString,
                         New SlotJar("slot").RepeatedWithCountPrefix("slots", prefixSize:=1).Weaken,
                         New UInt32Jar(showHex:=True).Named("random seed").Weaken,
-                        New EnumByteJar(Of LobbyLayoutStyle)("layout style").Weaken,
+                        New EnumByteJar(Of LobbyLayoutStyle)().Named("layout style").Weaken,
                         New ByteJar().Named("num player slots").Weaken
                     ).DataSizePrefixed(prefixSize:=2))
         Public Shared ReadOnly PeerConnectionInfo As Definition(Of UInt16) = Define(PacketId.PeerConnectionInfo,
@@ -452,34 +451,34 @@ Namespace WC3.Protocol
             commandJar.AddPackerParser(Protocol.NonGameAction.GameChat, New TupleJar(PacketId.NonGameAction.ToString,
                     New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New PlayerIdJar("speaker").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumUInt32Jar(Of ChatGroup)("receiving group").Weaken,
+                    New EnumByteJar(Of NonGameAction)().Named("command type").Weaken,
+                    New EnumUInt32Jar(Of ChatGroup)().Named("receiving group").Weaken,
                     New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.LobbyChat, New TupleJar(PacketId.NonGameAction.ToString,
                     New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New PlayerIdJar("speaker").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New EnumByteJar(Of NonGameAction)().Named("command type").Weaken,
                     New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetTeam, New TupleJar(PacketId.NonGameAction.ToString,
                     New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New PlayerIdJar("sender").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New EnumByteJar(Of NonGameAction)().Named("command type").Weaken,
                     New ByteJar().Named("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetHandicap, New TupleJar(PacketId.NonGameAction.ToString,
                     New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New PlayerIdJar("sender").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
+                    New EnumByteJar(Of NonGameAction)().Named("command type").Weaken,
                     New ByteJar().Named("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetRace, New TupleJar(PacketId.NonGameAction.ToString,
                     New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New PlayerIdJar("sender").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumByteJar(Of Protocol.Races)("new value").Weaken))
+                    New EnumByteJar(Of NonGameAction)().Named("command type").Weaken,
+                    New EnumByteJar(Of Protocol.Races)().Named("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetColor, New TupleJar(PacketId.NonGameAction.ToString,
                     New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
                     New PlayerIdJar("sender").Weaken,
-                    New EnumByteJar(Of NonGameAction)("command type").Weaken,
-                    New EnumByteJar(Of Protocol.PlayerColor)("new value").Weaken))
+                    New EnumByteJar(Of NonGameAction)().Named("command type").Weaken,
+                    New EnumByteJar(Of Protocol.PlayerColor)().Named("new value").Weaken))
             Return Define(PacketId.NonGameAction, commandJar)
         End Function
 
@@ -528,7 +527,7 @@ Namespace WC3.Protocol
                 New NullTerminatedStringJar("password").Weaken,
                 New GameStatsJar("statstring").Weaken,
                 New UInt32Jar().Named("num slots").Weaken,
-                New EnumUInt32Jar(Of GameTypes)("game type").Weaken,
+                New EnumUInt32Jar(Of GameTypes)().Named("game type").Weaken,
                 New UInt32Jar().Named("num players + 1").Weaken,
                 New UInt32Jar().Named("free slots + 1").Weaken,
                 New UInt32Jar().Named("age").Weaken,
@@ -549,7 +548,7 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly ClientMapInfo As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.ClientMapInfo,
                 New UInt32Jar().Named("map transfer key").Weaken,
-                New EnumByteJar(Of MapTransferState)("transfer state").Weaken,
+                New EnumByteJar(Of MapTransferState)().Named("transfer state").Weaken,
                 New UInt32Jar().Named("total downloaded").Weaken)
         Public Shared ReadOnly SetUploadTarget As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.SetUploadTarget,
                 New UInt32Jar().Named("map transfer key").Weaken,
@@ -564,7 +563,7 @@ Namespace WC3.Protocol
                 New PlayerIdJar("uploader").Weaken,
                 New UInt32Jar().Named("map transfer key").Weaken,
                 New UInt32Jar().Named("file position").Weaken,
-                New RemainingDataJar("file data").CRC32ChecksumPrefixed.Weaken)
+                New RemainingDataJar().Named("file data").CRC32ChecksumPrefixed.Weaken)
         Public Shared ReadOnly MapFileDataReceived As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.MapFileDataReceived,
                 New PlayerIdJar("downloader").Weaken,
                 New PlayerIdJar("uploader").Weaken,
@@ -580,8 +579,8 @@ Namespace WC3.Protocol
                 New UInt32Jar().Named("time left").Weaken)
         Public Shared ReadOnly GameEnd As Definition(Of Object) = Define(PacketId.GameEnd)
         Public Shared ReadOnly EncryptedServerMeleeData As Definition(Of IReadableList(Of Byte)) = Define(PacketId.EncryptedServerMeleeData,
-                New RemainingDataJar("encrypted data"))
+                New RemainingDataJar().Named("encrypted data"))
         Public Shared ReadOnly EncryptedClientMeleeData As Definition(Of IReadableList(Of Byte)) = Define(PacketId.EncryptedClientMeleeData,
-                New RemainingDataJar("encrypted data"))
+                New RemainingDataJar().Named("encrypted data"))
     End Class
 End Namespace

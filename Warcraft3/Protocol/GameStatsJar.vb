@@ -28,7 +28,7 @@ Namespace WC3.Protocol
         End Enum
 
         Private Shared ReadOnly DataJar As New TupleJar("game stats",
-                    New EnumUInt32Jar(Of GameSettings)("settings").Weaken,
+                    New EnumUInt32Jar(Of GameSettings)().Named("settings").Weaken,
                     New ByteJar().Named("unknown1").Weaken,
                     New UInt16Jar().Named("playable width").Weaken,
                     New UInt16Jar().Named("playable height").Weaken,
@@ -36,7 +36,7 @@ Namespace WC3.Protocol
                     New NullTerminatedStringJar("relative path").Weaken,
                     New NullTerminatedStringJar("host name").Weaken,
                     New NullTerminatedStringJar("unknown2").Weaken,
-                    New RawDataJar("sha1 checksum", Size:=20).Weaken)
+                    New RawDataJar(Size:=20).Named("sha1 checksum").Weaken)
 
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)

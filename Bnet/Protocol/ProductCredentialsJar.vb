@@ -14,10 +14,10 @@ Namespace Bnet.Protocol
             MyBase.New(name)
             Me._dataJar = New TupleJar(name,
                     New UInt32Jar().Named("length").Weaken,
-                    New EnumUInt32Jar(Of ProductType)("product").Weaken,
+                    New EnumUInt32Jar(Of ProductType)().Named("product").Weaken,
                     New UInt32Jar().Named("public key").Weaken,
                     New UInt32Jar().Named("unknown").Weaken,
-                    New RawDataJar("proof", Size:=20).Weaken)
+                    New RawDataJar(Size:=20).Named("proof").Weaken)
         End Sub
 
         'verification disabled due to stupid verifier (1.2.30118.5)

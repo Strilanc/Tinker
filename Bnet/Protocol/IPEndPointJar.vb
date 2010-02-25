@@ -8,7 +8,7 @@ Namespace Bnet.Protocol
                     New UInt16Jar().Named("protocol").Weaken,
                     New UInt16Jar(ByteOrder:=ByteOrder.BigEndian).Named("port").Weaken,
                     New IPAddressJar("ip").Weaken,
-                    New RawDataJar("unknown", Size:=8).Weaken)
+                    New RawDataJar(Size:=8).Named("unknown").Weaken)
 
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
