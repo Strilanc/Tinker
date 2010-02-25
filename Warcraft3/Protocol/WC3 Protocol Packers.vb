@@ -6,17 +6,17 @@ Namespace WC3.Protocol
         Public Function MakeShowLagScreen(ByVal laggers As IEnumerable(Of PlayerId)) As Packet
             Contract.Requires(laggers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(Packets.ShowLagScreen, (From p In laggers
+            Return Packet.FromValue(Packets.ShowLagScreen, (From lagger In laggers
                                                             Select New Dictionary(Of InvariantString, Object) From {
-                                                                    {"player index", p.Index},
+                                                                    {"id", lagger},
                                                                     {"initial milliseconds used", 2000}}).ToList)
         End Function
         <Pure()>
-        Public Function MakeRemovePlayerFromLagScreen(ByVal pid As PlayerId,
+        Public Function MakeRemovePlayerFromLagScreen(ByVal lagger As PlayerId,
                                                       ByVal lagTimeInMilliseconds As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.RemovePlayerFromLagScreen, New Dictionary(Of InvariantString, Object) From {
-                    {"player index", pid.Index},
+                    {"lagger", lagger},
                     {"marginal milliseconds used", lagTimeInMilliseconds}})
         End Function
         <Pure()>
@@ -32,15 +32,15 @@ Namespace WC3.Protocol
                 Case chatType.Game
                     Contract.Assume(receivingGroup.HasValue)
                     Return Packet.FromValue(Packets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"receiving players", (From p In receivers Select p.Index).ToList},
-                            {"sending player index", sender.Index},
+                            {"requested receivers", receivers.ToList},
+                            {"speaker", sender},
                             {"type", chatType},
                             {"message", text},
                             {"receiving group", receivingGroup.Value}})
                 Case chatType.Lobby
                     Return Packet.FromValue(Packets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"receiving players", (From p In receivers Select p.Index).ToList},
-                            {"sending player index", sender.Index},
+                            {"requested receivers", receivers.ToList},
+                            {"speaker", sender},
                             {"type", chatType},
                             {"message", text}})
                 Case Else
@@ -49,12 +49,12 @@ Namespace WC3.Protocol
         End Function
         <Pure()>
         Public Function MakeGreet(ByVal remoteEndPoint As Net.IPEndPoint,
-                                  ByVal assignedIndex As PlayerId) As Packet
+                                  ByVal assignedId As PlayerId) As Packet
             Contract.Requires(remoteEndPoint IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.Greet, New Dictionary(Of InvariantString, Object) From {
                     {"slot data", New Byte() {}.AsReadableList},
-                    {"player index", assignedIndex.Index},
+                    {"assigned id", assignedId},
                     {"external address", remoteEndPoint}})
         End Function
         <Pure()>
@@ -77,7 +77,7 @@ Namespace WC3.Protocol
         End Function
         <Pure()>
         Public Function MakeOtherPlayerJoined(ByVal name As InvariantString,
-                                              ByVal pid As PlayerId,
+                                              ByVal joiner As PlayerId,
                                               ByVal peerKey As UInt32,
                                               ByVal peerData As IReadableList(Of Byte),
                                               ByVal listenAddress As Net.IPEndPoint) As Packet
@@ -86,7 +86,7 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.OtherPlayerJoined, New Dictionary(Of InvariantString, Object) From {
                     {"peer key", peerKey},
-                    {"index", pid.Index},
+                    {"joiner id", joiner},
                     {"name", name.ToString},
                     {"peer data", peerData},
                     {"external address", listenAddress},
@@ -99,16 +99,16 @@ Namespace WC3.Protocol
         End Function
 
         <Pure()>
-        Public Function MakeOtherPlayerReady(ByVal pid As PlayerId) As Packet
+        Public Function MakeOtherPlayerReady(ByVal readiedPlayer As PlayerId) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(Packets.OtherPlayerReady, pid.Index)
+            Return Packet.FromValue(Packets.OtherPlayerReady, readiedPlayer)
         End Function
         <Pure()>
-        Public Function MakeOtherPlayerLeft(ByVal pid As PlayerId,
+        Public Function MakeOtherPlayerLeft(ByVal leaver As PlayerId,
                                             ByVal reportedReason As PlayerLeaveReason) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.OtherPlayerLeft, New Dictionary(Of InvariantString, Object) From {
-                                {"player index", pid.Index},
+                                {"leaver", leaver},
                                 {"reason", CByte(reportedReason)}})
         End Function
         <Pure()>
@@ -157,38 +157,38 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeMapFileData(ByVal filePosition As UInt32,
                                         ByVal fileData As IReadableList(Of Byte),
-                                        ByVal receiver As PlayerId,
-                                        ByVal sender As PlayerId,
+                                        ByVal downloader As PlayerId,
+                                        ByVal uploader As PlayerId,
                                         Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Requires(filePosition >= 0)
             Contract.Requires(fileData IsNot Nothing)
-            Contract.Requires(receiver <> sender)
+            Contract.Requires(downloader <> uploader)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
 
             Return Packet.FromValue(Packets.MapFileData, New Dictionary(Of InvariantString, Object) From {
-                    {"receiving player index", receiver.Index},
-                    {"sending player index", sender.Index},
+                    {"downloader", downloader},
+                    {"uploader", uploader},
                     {"map transfer key", mapTransferKey},
                     {"file position", filePosition},
                     {"file data", fileData}})
         End Function
         <Pure()>
-        Public Function MakeSetUploadTarget(ByVal receiverIndex As PlayerId,
+        Public Function MakeSetUploadTarget(ByVal downloader As PlayerId,
                                             ByVal filePosition As UInteger,
                                             Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.SetUploadTarget, New Dictionary(Of InvariantString, Object) From {
                     {"map transfer key", mapTransferKey},
-                    {"receiving player index", receiverIndex.Index},
+                    {"downloader", downloader},
                     {"starting file pos", filePosition}})
         End Function
         <Pure()>
-        Public Function MakeSetDownloadSource(ByVal senderIndex As PlayerId,
+        Public Function MakeSetDownloadSource(ByVal uploader As PlayerId,
                                               Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.SetDownloadSource, New Dictionary(Of InvariantString, Object) From {
                     {"map transfer key", mapTransferKey},
-                    {"sending player index", senderIndex.Index}})
+                    {"uploader", uploader}})
         End Function
         <Pure()>
         Public Function MakeClientMapInfo(ByVal transferState As MapTransferState,
@@ -201,14 +201,14 @@ Namespace WC3.Protocol
                     {"total downloaded", totalDownloaded}})
         End Function
         <Pure()>
-        Public Function MakeMapFileDataReceived(ByVal senderIndex As PlayerId,
-                                                ByVal receiverIndex As PlayerId,
+        Public Function MakeMapFileDataReceived(ByVal downloader As PlayerId,
+                                                ByVal uploader As PlayerId,
                                                 ByVal totalDownloaded As UInteger,
                                                 Optional ByVal mapTransferKey As UInt32 = 1) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.MapFileDataReceived, New Dictionary(Of InvariantString, Object) From {
-                    {"sender index", senderIndex.Index},
-                    {"receiver index", receiverIndex.Index},
+                    {"downloader", downloader},
+                    {"uploader", uploader},
                     {"map transfer key", mapTransferKey},
                     {"total downloaded", totalDownloaded}})
         End Function
@@ -310,7 +310,7 @@ Namespace WC3.Protocol
 
         <Pure()>
         Public Function MakePeerKnock(ByVal receiverPeerKey As UInteger,
-                                      ByVal senderId As PlayerId,
+                                      ByVal sender As PlayerId,
                                       ByVal connectedPeers As IEnumerable(Of PlayerId)) As Packet
             Contract.Requires(connectedPeers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
@@ -318,7 +318,7 @@ Namespace WC3.Protocol
             Return Packet.FromValue(Packets.PeerKnock, New Dictionary(Of InvariantString, Object) From {
                     {"receiver peer key", receiverPeerKey},
                     {"unknown1", 0},
-                    {"sender player id", senderId.Index},
+                    {"sender id", sender},
                     {"unknown3", &HFF},
                     {"sender peer connection flags", peerFlags}})
         End Function

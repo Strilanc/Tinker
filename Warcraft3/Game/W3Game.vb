@@ -344,10 +344,10 @@ Namespace WC3
                                 ByVal text As String,
                                 ByVal type As Protocol.ChatType,
                                 ByVal receivingGroup As Protocol.ChatGroup?,
-                                ByVal requestedReceiverIndexes As IReadableList(Of PlayerId))
+                                ByVal requestedReceivers As IReadableList(Of PlayerId))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
-            Contract.Requires(requestedReceiverIndexes IsNot Nothing)
+            Contract.Requires(requestedReceivers IsNot Nothing)
 
             'Log
             Logger.Log("{0}: {1}".Frmt(sender.Name, text), LogMessageType.Typical)
@@ -360,12 +360,12 @@ Namespace WC3
                 text = visibleSender.Name + ": " + text
             End If
             'packet
-            Dim pk = Protocol.MakeText(text, type, receivingGroup, requestedReceiverIndexes, visibleSender.Id)
+            Dim pk = Protocol.MakeText(text, type, receivingGroup, requestedReceivers, visibleSender.Id)
             'receivers
             For Each receiver In _players
                 Contract.Assume(receiver IsNot Nothing)
                 Dim visibleReceiver = _lobby.GetVisiblePlayer(receiver)
-                If requestedReceiverIndexes.Contains(visibleReceiver.Id) Then
+                If requestedReceivers.Contains(visibleReceiver.Id) Then
                     receiver.QueueSendPacket(pk)
                 ElseIf visibleReceiver Is visibleSender AndAlso sender IsNot receiver Then
                     receiver.QueueSendPacket(pk)
@@ -495,15 +495,11 @@ Namespace WC3
             Return inQueue.QueueAction(Sub() ElevatePlayer(name, password))
         End Function
 
-        Private Function TryFindPlayer(ByVal pid As PlayerId) As Player
-            Return (From player In _players
-                    Where player.AssumeNotNull.Id = pid).
-                    FirstOrDefault
+        Private Function TryFindPlayer(ByVal id As PlayerId) As Player
+            Return (From player In _players Where player.Id = id).FirstOrDefault
         End Function
         Private Function TryFindPlayer(ByVal userName As InvariantString) As Player
-            Return (From player In _players
-                    Where player.Name = userName
-                    ).FirstOrDefault
+            Return (From player In _players Where player.Name = userName).FirstOrDefault
         End Function
         Public Function QueueTryFindPlayer(ByVal userName As InvariantString) As IFuture(Of Player)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)

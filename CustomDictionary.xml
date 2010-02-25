@@ -32,6 +32,7 @@
       <Word>Pinger</Word>
       <Word>Dword</Word>
       <Word>vals</Word>
+      <Word>uploader</Word>
     </Recognized>
     <Unrecognized>
       <Word>Nongame</Word>

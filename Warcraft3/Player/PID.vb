@@ -1,4 +1,6 @@
-﻿Namespace WC3
+﻿Imports Tinker.Pickling
+
+Namespace WC3
     ''' <summary>Stores a unique-per-game-per-instant player index in [1, 12].</summary>
     <DebuggerDisplay("{ToString}")>
     Public Structure PlayerId
@@ -48,4 +50,23 @@
             Return Index.ToString(CultureInfo.InvariantCulture)
         End Function
     End Structure
+
+    Public Class PlayerIdJar
+        Inherits BaseJar(Of PlayerId)
+
+        Public Sub New(ByVal name As String)
+            MyBase.New(name)
+        End Sub
+
+        Public Overrides Function Pack(Of TValue As PlayerId)(ByVal value As TValue) As IPickle(Of TValue)
+            Return New Pickle(Of TValue)(Name, value, {CType(value, PlayerId).Index}.ToReadableList)
+        End Function
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerId)
+            If data.Count < 1 Then Throw New PicklingNotEnoughDataException
+            Dim datum = data.SubView(0, 1)
+            If datum(0) < 1 OrElse datum(0) > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(datum(0)))
+            Dim value = New PlayerId(datum(0))
+            Return New Pickle(Of PlayerId)(Name, value, datum)
+        End Function
+    End Class
 End Namespace

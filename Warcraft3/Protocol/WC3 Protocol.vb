@@ -374,7 +374,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly Leaving As Definition(Of PlayerLeaveReason) = Define(PacketId.Leaving,
                 New EnumUInt32Jar(Of PlayerLeaveReason)("reason"))
         Public Shared ReadOnly OtherPlayerLeft As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.OtherPlayerLeft,
-                New ByteJar("player index").Weaken,
+                New PlayerIdJar("leaver").Weaken,
                 New EnumUInt32Jar(Of PlayerLeaveReason)("reason").Weaken)
 
         Public Const MaxPlayerNameLength As Integer = 15
@@ -389,7 +389,7 @@ Namespace WC3.Protocol
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
         Public Shared ReadOnly Greet As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.Greet,
                 New RemainingDataJar("slot data").DataSizePrefixed(prefixSize:=2).Weaken,
-                New ByteJar("player index").Weaken,
+                New PlayerIdJar("assigned id").Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken)
         Public Shared ReadOnly HostMapInfo As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.HostMapInfo,
                 New UInt32Jar("map transfer key").Weaken,
@@ -402,7 +402,7 @@ Namespace WC3.Protocol
                 New EnumUInt32Jar(Of RejectReason)("reason"))
         Public Shared ReadOnly OtherPlayerJoined As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.OtherPlayerJoined,
                 New UInt32Jar("peer key", showhex:=True).Weaken,
-                New ByteJar("index").Weaken,
+                New PlayerIdJar("joiner id").Weaken,
                 New NullTerminatedStringJar("name", maximumContentSize:=15).Weaken,
                 New RemainingDataJar("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken,
@@ -414,21 +414,21 @@ Namespace WC3.Protocol
                     valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
                     dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType))
             jar.AddPackerParser(ChatType.Game, New TupleJar(PacketId.Text.ToString,
-                    New ByteJar("pid").RepeatedWithCountPrefix("receiving players", prefixSize:=1, useSingleLineDescription:=True).Weaken,
-                    New ByteJar("sending player index").Weaken,
+                    New PlayerIdJar("receiver").RepeatedWithCountPrefix("requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
+                    New PlayerIdJar("speaker").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New EnumUInt32Jar(Of ChatGroup)("receiving group", checkDefined:=False).Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             jar.AddPackerParser(ChatType.Lobby, New TupleJar(PacketId.Text.ToString,
-                    New ByteJar("pid").RepeatedWithCountPrefix("receiving players", prefixSize:=1, useSingleLineDescription:=True).Weaken,
-                    New ByteJar("sending player index").Weaken,
+                    New PlayerIdJar("receiver").RepeatedWithCountPrefix("requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
+                    New PlayerIdJar("speaker").Weaken,
                     New EnumByteJar(Of ChatType)("type").Weaken,
                     New NullTerminatedStringJar("message").Weaken))
             Return Define(PacketId.Text, jar)
         End Function
 
-        Public Shared ReadOnly OtherPlayerReady As Definition(Of Byte) = Define(PacketId.OtherPlayerReady,
-                New ByteJar("player index"))
+        Public Shared ReadOnly OtherPlayerReady As Definition(Of PlayerId) = Define(PacketId.OtherPlayerReady,
+                New PlayerIdJar("readied player"))
         Public Shared ReadOnly StartLoading As Definition(Of Object) = Define(PacketId.StartLoading)
         Public Shared ReadOnly StartCountdown As Definition(Of Object) = Define(PacketId.StartCountdown)
         Public Shared ReadOnly Ready As Definition(Of Object) = Define(PacketId.Ready)
@@ -450,34 +450,34 @@ Namespace WC3.Protocol
                     Function(val) CType(val("command type"), NonGameAction),
                     Function(data) CType(data(data(0) + 2), NonGameAction))
             commandJar.AddPackerParser(Protocol.NonGameAction.GameChat, New TupleJar(PacketId.NonGameAction.ToString,
-                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
+                    New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
+                    New PlayerIdJar("speaker").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New EnumUInt32Jar(Of ChatGroup)("receiving group").Weaken,
                     New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.LobbyChat, New TupleJar(PacketId.NonGameAction.ToString,
-                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
+                    New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
+                    New PlayerIdJar("speaker").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New NullTerminatedStringJar("message", maximumContentSize:=MaxChatTextLength).Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetTeam, New TupleJar(PacketId.NonGameAction.ToString,
-                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
+                    New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
+                    New PlayerIdJar("sender").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New ByteJar("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetHandicap, New TupleJar(PacketId.NonGameAction.ToString,
-                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
+                    New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
+                    New PlayerIdJar("sender").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New ByteJar("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetRace, New TupleJar(PacketId.NonGameAction.ToString,
-                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
+                    New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
+                    New PlayerIdJar("sender").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New EnumByteJar(Of Protocol.Races)("new value").Weaken))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetColor, New TupleJar(PacketId.NonGameAction.ToString,
-                    New RemainingDataJar("receiving player indexes").DataSizePrefixed(prefixSize:=1).Weaken,
-                    New ByteJar("sending player").Weaken,
+                    New PlayerIdJar("receiver").RepeatedWithCountPrefix(name:="requested receivers", prefixSize:=1, useSingleLineDescription:=True).Weaken,
+                    New PlayerIdJar("sender").Weaken,
                     New EnumByteJar(Of NonGameAction)("command type").Weaken,
                     New EnumByteJar(Of Protocol.PlayerColor)("new value").Weaken))
             Return Define(PacketId.NonGameAction, commandJar)
@@ -485,11 +485,11 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly ShowLagScreen As Definition(Of IList(Of Dictionary(Of InvariantString, Object))) = Define(PacketId.ShowLagScreen,
                 New TupleJar("lagger", True,
-                        New ByteJar("player index").Weaken,
+                        New PlayerIdJar("id").Weaken,
                         New UInt32Jar("initial milliseconds used").Weaken
                     ).RepeatedWithCountPrefix("laggers", prefixSize:=1))
         Public Shared ReadOnly RemovePlayerFromLagScreen As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.RemovePlayerFromLagScreen,
-                New ByteJar("player index").Weaken,
+                New PlayerIdJar("lagger").Weaken,
                 New UInt32Jar("marginal milliseconds used").Weaken)
         Public Shared ReadOnly RequestDropLaggers As Definition(Of Object) = Define(PacketId.RequestDropLaggers)
         Public Shared ReadOnly Tick As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.Tick,
@@ -500,8 +500,8 @@ Namespace WC3.Protocol
                 New UInt32Jar("game state checksum", showhex:=True).Weaken)
         Public Shared ReadOnly GameAction As Definition(Of IReadableList(Of GameAction)) = Define(PacketId.GameAction,
                 New GameActionJar("action").Repeated(name:="actions").CRC32ChecksumPrefixed)
-        Public Shared ReadOnly NewHost As Definition(Of Byte) = Define(PacketId.NewHost,
-                New ByteJar("player index"))
+        Public Shared ReadOnly NewHost As Definition(Of PlayerId) = Define(PacketId.NewHost,
+                New PlayerIdJar("player"))
         Public Shared ReadOnly ClientConfirmHostLeaving As Definition(Of Object) = Define(PacketId.ClientConfirmHostLeaving)
         Public Shared ReadOnly HostConfirmHostLeaving As Definition(Of Object) = Define(PacketId.HostConfirmHostLeaving)
 
@@ -537,7 +537,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly PeerKnock As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.PeerKnock,
                 New UInt32Jar("receiver peer key", showhex:=True).Weaken,
                 New UInt32Jar("unknown1").Weaken,
-                New ByteJar("sender player id").Weaken,
+                New PlayerIdJar("sender id").Weaken,
                 New ByteJar("unknown3").Weaken,
                 New UInt32Jar("sender peer connection flags").Weaken)
         Public Shared ReadOnly PeerPing As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.PeerPing,
@@ -553,26 +553,26 @@ Namespace WC3.Protocol
                 New UInt32Jar("total downloaded").Weaken)
         Public Shared ReadOnly SetUploadTarget As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.SetUploadTarget,
                 New UInt32Jar("map transfer key").Weaken,
-                New ByteJar("receiving player index").Weaken,
+                New PlayerIdJar("downloader").Weaken,
                 New UInt32Jar("starting file pos").Weaken)
         Public Shared ReadOnly SetDownloadSource As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.SetDownloadSource,
                 New UInt32Jar("map transfer key").Weaken,
-                New ByteJar("sending player index").Weaken)
+                New PlayerIdJar("uploader").Weaken)
         Public Const MaxFileDataSize As UInt32 = 1442
         Public Shared ReadOnly MapFileData As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.MapFileData,
-                New ByteJar("receiving player index").Weaken,
-                New ByteJar("sending player index").Weaken,
+                New PlayerIdJar("downloader").Weaken,
+                New PlayerIdJar("uploader").Weaken,
                 New UInt32Jar("map transfer key").Weaken,
                 New UInt32Jar("file position").Weaken,
                 New RemainingDataJar("file data").CRC32ChecksumPrefixed.Weaken)
         Public Shared ReadOnly MapFileDataReceived As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.MapFileDataReceived,
-                New ByteJar("sender index").Weaken,
-                New ByteJar("receiver index").Weaken,
+                New PlayerIdJar("downloader").Weaken,
+                New PlayerIdJar("uploader").Weaken,
                 New UInt32Jar("map transfer key").Weaken,
                 New UInt32Jar("total downloaded").Weaken)
         Public Shared ReadOnly MapFileDataProblem As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.MapFileDataProblem,
-                New ByteJar("sender index").Weaken,
-                New ByteJar("receiver index").Weaken,
+                New PlayerIdJar("downloader").Weaken,
+                New PlayerIdJar("uploader").Weaken,
                 New UInt32Jar("map transfer key").Weaken)
 
         Public Shared ReadOnly TournamentCountdown As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.TournamentCountdown,

@@ -57,8 +57,8 @@
                     For i = _settings.Map.Slots.Count To 10 - 1
                         CloseSlot(_slots(i).MatchableId)
                     Next i
-                    Dim playerIndex = FreeIndexes(0)
-                    FreeIndexes.Remove(playerIndex)
+                    Dim playerIndex = _freeIndexes(0)
+                    _freeIndexes.Remove(playerIndex)
                     AddFakePlayer("# multi obs", slot:=_slots(10))
                     _slots = GameLobby.SetupCoveredSlot(_slots, _slots(10), _slots(11), playerIndex)
                 End If
@@ -131,11 +131,6 @@
                 Return _fakeHostPlayer
             End Get
         End Property
-        Public ReadOnly Property FreeIndexes As IList(Of PlayerId)
-            Get
-                Return _freeIndexes
-            End Get
-        End Property
         Public ReadOnly Property StartPlayerHoldPoint As IHoldPoint(Of Player)
             Get
                 Contract.Ensures(Contract.Result(Of IHoldPoint(Of Player))() IsNot Nothing)
@@ -183,18 +178,18 @@
 
             If Not AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
-            ElseIf FreeIndexes.Count <= 0 Then
-                If FakeHostPlayer IsNot Nothing Then
-                    RaiseEvent RemovePlayer(Me, FakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for new fake player")
+            ElseIf _freeIndexes.Count <= 0 Then
+                If _fakeHostPlayer IsNot Nothing Then
+                    RaiseEvent RemovePlayer(Me, _fakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for new fake player")
                 Else
                     Throw New InvalidOperationException("No space available for fake player.")
                 End If
             End If
-            Contract.Assume(FreeIndexes.Count > 0)
+            Contract.Assume(_freeIndexes.Count > 0)
 
             'Assign index
-            Dim index = FreeIndexes(0)
-            FreeIndexes.Remove(index)
+            Dim index = _freeIndexes(0)
+            _freeIndexes.Remove(index)
 
             'Make player
             Dim newPlayer = New Player(index, name, Logger)
@@ -223,7 +218,7 @@
 
         Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PlayerId)
             Contract.Requires(connectingPlayer IsNot Nothing)
-            Contract.Ensures(Not FreeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerId))().Item2))
+            Contract.Ensures(Not _freeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerId))().Item2))
 
             'Choose Slot
             Dim slotMatch = (From s In _slots
@@ -236,39 +231,39 @@
             Dim slot = slotMatch.s
             Contract.Assume(slot IsNot Nothing)
 
-            'Allocate PID
-            Dim pid As PlayerId
+            'Allocate id
+            Dim id As PlayerId
             If slot.Contents.WantPlayer(connectingPlayer.Name) = SlotContents.WantPlayerPriority.ReservationForPlayer Then
                 Contract.Assume(slot.Contents.PlayerIndex.HasValue)
-                pid = slot.Contents.PlayerIndex.Value
+                id = slot.Contents.PlayerIndex.Value
                 For Each player In slot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
                     RaiseEvent RemovePlayer(Me, player, wasExpected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Reservation fulfilled")
                 Next player
                 slot = (From s In _slots Where s.MatchableId = slot.MatchableId).Single
-                Contract.Assume(FreeIndexes.Contains(pid))
+                Contract.Assume(_freeIndexes.Contains(id))
             ElseIf slot.Contents.PlayerIndex IsNot Nothing Then '[slot forces the pid]
-                pid = slot.Contents.PlayerIndex.Value
-            ElseIf FreeIndexes.Count > 0 Then '[pid available]
-                pid = FreeIndexes(0)
-            ElseIf FakeHostPlayer IsNot Nothing Then '[take fake host's pid]
-                pid = FakeHostPlayer.Id
-                RaiseEvent RemovePlayer(Me, FakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for joining player.")
+                id = slot.Contents.PlayerIndex.Value
+            ElseIf _freeIndexes.Count > 0 Then '[pid available]
+                id = _freeIndexes(0)
+            ElseIf _fakeHostPlayer IsNot Nothing Then '[take fake host's pid]
+                id = _fakeHostPlayer.Id
+                RaiseEvent RemovePlayer(Me, _fakeHostPlayer, True, Protocol.PlayerLeaveReason.Disconnect, "Need player index for joining player.")
                 slot = (From s In _slots Where s.MatchableId = slot.MatchableId).Single
             Else
                 Throw New InvalidOperationException("No available pids.")
             End If
-            FreeIndexes.Remove(pid)
+            _freeIndexes.Remove(id)
 
-            Return Tuple(slot, pid)
+            Return Tuple(slot, id)
         End Function
-        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal pid As PlayerId) As Player
+        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal id As PlayerId) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Requires(slot IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             'Add
-            Dim newPlayer = New Player(pid, connectingPlayer, _clock, _downloadManager, Logger)
+            Dim newPlayer = New Player(id, connectingPlayer, _clock, _downloadManager, Logger)
             _slots = _slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithPlayer(newPlayer)))
             _players.Add(newPlayer)
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
@@ -334,7 +329,7 @@
         Public Shared Function SetupCoveredSlot(ByVal slots As SlotSet,
                                                 ByVal coveringSlot As Slot,
                                                 ByVal coveredSlot As Slot,
-                                                ByVal playerIndex As PlayerId) As SlotSet
+                                                ByVal coveredPlayersId As PlayerId) As SlotSet
             Contract.Requires(slots IsNot Nothing)
             Contract.Requires(coveringSlot IsNot Nothing)
             Contract.Requires(coveredSlot IsNot Nothing)
@@ -345,7 +340,7 @@
             Dim coveringPlayer = coveringSlot.Contents.EnumPlayers.Single
             Contract.Assume(coveringPlayer IsNot Nothing)
             Return slots.WithSlotsReplaced(coveringSlot.WithContents(New SlotContentsCovering(coveredSlot.MatchableId, coveringPlayer)),
-                                           coveredSlot.WithContents(New SlotContentsCovered(coveringSlot.MatchableId, playerIndex, {})))
+                                           coveredSlot.WithContents(New SlotContentsCovered(coveringSlot.MatchableId, coveredPlayersId, {})))
         End Function
 
         Public Function SendMapPiece(ByVal receiver As Download.IPlayerDownloadAspect,

@@ -52,12 +52,12 @@
         End Sub
 
         '''<summary>Creates a fake player.</summary>
-        Public Sub New(ByVal index As PlayerId,
+        Public Sub New(ByVal id As PlayerId,
                        ByVal name As InvariantString,
                        Optional ByVal logger As Logger = Nothing)
             Me.logger = If(logger, New Logger)
             Me.packetHandler = New Protocol.W3PacketHandler(name, Me.logger)
-            Me._id = index
+            Me._id = id
             Me._peerData = New Byte() {0}.AsReadableList
             If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
             Me._name = name
@@ -70,7 +70,7 @@
         End Sub
 
         '''<summary>Creates a real player.</summary>
-        Public Sub New(ByVal index As PlayerId,
+        Public Sub New(ByVal id As PlayerId,
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        ByVal clock As IClock,
                        ByVal downloadManager As Download.Manager,
@@ -89,7 +89,7 @@
             Me.socket = connectingPlayer.Socket
             Me._name = connectingPlayer.Name
             Me._listenPort = connectingPlayer.ListenPort
-            Me._id = index
+            Me._id = id
             AddHandler socket.Disconnected, AddressOf OnSocketDisconnected
 
             AddRemotePacketHandler(Protocol.Packets.Pong, Function(pickle)

@@ -142,7 +142,7 @@ Namespace WC3
             _playerHooks(player) = hooks
         End Sub
         Private Sub OnReceiveOtherPlayerLeft(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
-            Dim player = (From p In otherPlayers Where p.PID.Index = CByte(pickle.Value("player index"))).FirstOrDefault
+            Dim player = (From p In otherPlayers Where p.Id.Index = CByte(pickle.Value("player index"))).FirstOrDefault
             If player IsNot Nothing Then
                 otherPlayers.Remove(player)
                 For Each e In _playerHooks(player)
@@ -189,7 +189,7 @@ Namespace WC3
             End If
         End Function
         Private Sub SendPlayersConnected()
-            socket.SendPacket(Protocol.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.PID))
+            socket.SendPacket(Protocol.MakePeerConnectionInfo(From p In otherPlayers Where p.Socket IsNot Nothing Select p.Id))
         End Sub
 
         Private Sub OnDisconnect(ByVal sender As W3Socket, ByVal expected As Boolean, ByVal reason As String) Handles socket.Disconnected
@@ -225,7 +225,7 @@ Namespace WC3
                                      ByVal acceptedPlayer As W3ConnectingPeer) Handles accepter.Connection
             inQueue.QueueAction(
                 Sub()
-                    Dim player = (From p In otherPlayers Where p.PID = acceptedPlayer.pid).FirstOrDefault
+                    Dim player = (From p In otherPlayers Where p.Id = acceptedPlayer.id).FirstOrDefault
                     Dim socket = acceptedPlayer.socket
                     If player Is Nothing Then
                         Dim msg = "{0} was not another player in the game.".Frmt(socket.Name)
@@ -268,7 +268,7 @@ Namespace WC3
             If ReceiveDLMapChunk(vals) Then
                 Disconnect(expected:=True, reason:="Download finished.")
             Else
-                sender.Socket.SendPacket(Protocol.MakeMapFileDataReceived(sender.PID, Me.index, pos))
+                sender.Socket.SendPacket(Protocol.MakeMapFileDataReceived(sender.Id, Me.index, pos))
             End If
         End Sub
 #End Region

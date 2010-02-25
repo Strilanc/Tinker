@@ -152,7 +152,7 @@
                                                              Where _lobby.GetVisiblePlayer(q) Is _lobby.GetVisiblePlayer(p_)).None Then
                             Contract.Assume(_lagClock IsNot Nothing)
                             BroadcastPacket(Protocol.MakeRemovePlayerFromLagScreen(
-                                pid:=_lobby.GetVisiblePlayer(p).Id,
+                                lagger:=_lobby.GetVisiblePlayer(p).Id,
                                 lagTimeInMilliseconds:=CUInt(_lagClock.ElapsedTime.TotalMilliseconds))).SetHandled()
                         End If
                     End If

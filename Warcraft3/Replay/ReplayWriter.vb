@@ -69,7 +69,7 @@ Namespace WC3.Replay
                                    Format.ReplayEntryStartOfReplay,
                                    New Dictionary(Of InvariantString, Object) From {
                                            {"unknown1", 1},
-                                           {"primary player pid", primaryPlayer.Id.Index},
+                                           {"primary player id", primaryPlayer.Id},
                                            {"primary player name", primaryPlayer.Name.ToString},
                                            {"primary player shared data", primaryPlayer.PeerData},
                                            {"game name", gameDesc.Name.ToString},
@@ -83,7 +83,7 @@ Namespace WC3.Replay
                 WriteReplayEntryPickle(ReplayEntryId.PlayerJoined,
                                        Format.ReplayEntryPlayerJoined,
                                        New Dictionary(Of InvariantString, Object) From {
-                                               {"pid", player.Id.Index},
+                                               {"joiner id", player.Id},
                                                {"name", player.Name.ToString},
                                                {"shared data", player.PeerData},
                                                {"unknown", 0}})
@@ -183,14 +183,14 @@ Namespace WC3.Replay
                                         {"unknown", 1}})
         End Sub
         Public Sub AddPlayerLeft(ByVal unknown1 As UInt32,
-                                 ByVal pid As PlayerId,
+                                 ByVal leaver As PlayerId,
                                  ByVal reportedReason As Protocol.PlayerLeaveReason,
                                  ByVal leaveCount As UInt32)
             WriteReplayEntryPickle(ReplayEntryId.PlayerLeft,
                                    Format.ReplayEntryPlayerLeft,
                                    New Dictionary(Of InvariantString, Object) From {
                                         {"unknown1", unknown1},
-                                        {"pid", pid.Index},
+                                        {"leaver", leaver},
                                         {"reason", reportedReason},
                                         {"session leave count", leaveCount}})
         End Sub
@@ -201,22 +201,22 @@ Namespace WC3.Replay
                                         {"unknown", 4},
                                         {"checksum", checksum}})
         End Sub
-        Public Sub AddLobbyChatMessage(ByVal pid As PlayerId, ByVal message As String)
+        Public Sub AddLobbyChatMessage(ByVal sender As PlayerId, ByVal message As String)
             Contract.Requires(message IsNot Nothing)
             WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
                                    Format.ReplayEntryChatMessage,
                                    New Dictionary(Of InvariantString, Object) From {
-                                        {"pid", pid.Index},
+                                        {"speaker", sender},
                                         {"size", 1 + message.Length + 1},
                                         {"type", Protocol.ChatType.Lobby},
                                         {"message", message}})
         End Sub
-        Public Sub AddGameChatMessage(ByVal pid As PlayerId, ByVal message As String, ByVal receivingGroup As WC3.Protocol.ChatGroup)
+        Public Sub AddGameChatMessage(ByVal sender As PlayerId, ByVal message As String, ByVal receivingGroup As WC3.Protocol.ChatGroup)
             Contract.Requires(message IsNot Nothing)
             WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
                                    Format.ReplayEntryChatMessage,
                                    New Dictionary(Of InvariantString, Object) From {
-                                        {"pid", pid.Index},
+                                        {"speaker", sender},
                                         {"size", 1 + 4 + message.Length + 1},
                                         {"type", Protocol.ChatType.Game},
                                         {"receiving group", receivingGroup},

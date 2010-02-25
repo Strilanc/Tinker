@@ -150,19 +150,19 @@ Namespace WC3.Protocol
     Public Class PlayerActionSet
         Implements IEquatable(Of PlayerActionSet)
 
-        Private ReadOnly _pid As PlayerId
+        Private ReadOnly _id As PlayerId
         Private ReadOnly _actions As IReadableList(Of GameAction)
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_actions IsNot Nothing)
         End Sub
-        Public Sub New(ByVal pid As PlayerId, ByVal actions As IReadableList(Of GameAction))
+        Public Sub New(ByVal id As PlayerId, ByVal actions As IReadableList(Of GameAction))
             Contract.Requires(actions IsNot Nothing)
-            Me._pid = pid
+            Me._id = id
             Me._actions = actions
         End Sub
-        Public ReadOnly Property PID As PlayerId
+        Public ReadOnly Property Id As PlayerId
             Get
-                Return _pid
+                Return _id
             End Get
         End Property
         Public ReadOnly Property Actions As IReadableList(Of GameAction)
@@ -173,7 +173,7 @@ Namespace WC3.Protocol
         End Property
 
         Public Overrides Function GetHashCode() As Integer
-            Return PID.GetHashCode
+            Return Id.GetHashCode
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Dim other = TryCast(obj, PlayerActionSet)
@@ -182,7 +182,7 @@ Namespace WC3.Protocol
         End Function
         Public Overloads Function Equals(ByVal other As PlayerActionSet) As Boolean Implements System.IEquatable(Of PlayerActionSet).Equals
             If other Is Nothing Then Return False
-            If Me.PID <> other.PID Then Return False
+            If Me.Id <> other.Id Then Return False
             If Me.Actions.Count <> other.Actions.Count Then Return False
             If (From i In Enumerable.Range(0, Me.Actions.Count)
                 Where Not Me.Actions(i).Payload.Data.SequenceEqual(other.Actions(i).Payload.Data)).Any Then Return False
@@ -201,14 +201,14 @@ Namespace WC3.Protocol
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
             _dataJar = New TupleJar("player action set",
-                    New ByteJar("pid").Weaken,
+                    New PlayerIdJar("source").Weaken,
                     New GameActionJar("action").Repeated(name:="actions").DataSizePrefixed(prefixSize:=2).Weaken)
         End Sub
 
         Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             Dim pickle = _dataJar.Pack(New Dictionary(Of InvariantString, Object) From {
-                                            {"pid", value.PID.Index},
+                                            {"source", value.Id},
                                             {"actions", value.Actions}
                                        })
             Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
@@ -216,10 +216,10 @@ Namespace WC3.Protocol
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
             Dim pickle = _dataJar.Parse(data)
-            Dim pid = CByte(pickle.Value("pid"))
+            Dim id = CType(pickle.Value("source"), PlayerId)
             Dim actions = CType(pickle.Value("actions"), IReadableList(Of GameAction)).AssumeNotNull
-            If pid < 1 OrElse pid > 12 Then Throw New IO.InvalidDataException("Invalid pid.")
-            Dim value = New PlayerActionSet(New PlayerId(pid), actions)
+            If id.Index < 1 OrElse id.Index > 12 Then Throw New IO.InvalidDataException("Invalid pid.")
+            Dim value = New PlayerActionSet(id, actions)
             Return New Pickle(Of PlayerActionSet)(value, pickle.Data, pickle.Description)
         End Function
     End Class
