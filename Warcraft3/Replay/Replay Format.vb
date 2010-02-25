@@ -61,7 +61,7 @@ Namespace WC3.Replay
                 New UInt32Jar().Named("unknown1").Weaken,
                 New PlayerIdJar().Named("primary player id").Weaken,
                 New NullTerminatedStringJar(maximumContentSize:=Protocol.Packets.MaxPlayerNameLength).Named("primary player name").Weaken,
-                New RemainingDataJar().Named("primary player shared data").DataSizePrefixed(prefixSize:=1).Weaken,
+                New RemainingDataJar().DataSizePrefixed(prefixSize:=1).Named("primary player shared data").Weaken,
                 New NullTerminatedStringJar().Named("game name").Weaken,
                 New ByteJar().Named("unknown2").Weaken,
                 New Protocol.GameStatsJar().Named("game stats").Weaken,
@@ -71,7 +71,7 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryPlayerJoined As New TupleJar(
                 New PlayerIdJar().Named("joiner id").Weaken,
                 New NullTerminatedStringJar(maximumContentSize:=Protocol.Packets.MaxPlayerNameLength).Named("name").Weaken,
-                New RemainingDataJar().Named("shared data").DataSizePrefixed(prefixSize:=1).Weaken,
+                New RemainingDataJar().DataSizePrefixed(prefixSize:=1).Named("shared data").Weaken,
                 New UInt32Jar().Named("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryPlayerLeft As New TupleJar(
                 New UInt32Jar().Named("unknown1").Weaken,
@@ -118,6 +118,6 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryTick As IAnonymousJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(
                 New UInt16Jar().Named("time span").Weaken,
                 New Protocol.PlayerActionSetJar().Repeated.Named("player action sets").Weaken
-            ).Named("Tick").DataSizePrefixed(prefixSize:=2)
+            ).DataSizePrefixed(prefixSize:=2)
     End Class
 End Namespace

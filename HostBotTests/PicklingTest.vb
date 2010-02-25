@@ -408,11 +408,11 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub DataSizePrefixedJarTest()
-        Dim jar = New DataSizePrefixedJar(Of Byte)(New ByteJar().Named("test"), prefixSize:=2)
+        Dim jar = New DataSizePrefixedJar(Of Byte)(New ByteJar(), prefixSize:=2)
         JarTest(jar, 5, {1, 0, 5})
         JarTest(jar, 3, {1, 0, 3})
 
-        Dim jar2 = New DataSizePrefixedJar(Of String)(New NullTerminatedStringJar().Named("test"), prefixSize:=1)
+        Dim jar2 = New DataSizePrefixedJar(Of String)(New NullTerminatedStringJar(), prefixSize:=1)
         JarTest(jar2, "", {1, 0})
         JarTest(jar2, "A", {2, Asc("A"), 0})
         JarTest(jar2, New String("A"c, 254), New Byte() {255}.Concat(Enumerable.Repeat(CByte(Asc("A")), 254)).Concat({0}).ToList)
@@ -421,12 +421,12 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub OptionalJarTest()
-        Dim jar = New OptionalJar(Of Byte)(New ByteJar().Named("test"))
+        Dim jar = New OptionalJar(Of Byte)(New ByteJar())
         Dim equater = Function(e1 As Tuple(Of Boolean, Byte), e2 As Tuple(Of Boolean, Byte)) e1.Equals(e2)
         JarTest(jar, equater, Tuple(True, CByte(5)), {5})
         JarTest(jar, equater, Tuple(False, CByte(0)), {}, appendSafe:=False)
 
-        Dim jar2 = New OptionalJar(Of String)(New NullTerminatedStringJar().Named("test"))
+        Dim jar2 = New OptionalJar(Of String)(New NullTerminatedStringJar())
         Dim equater2 = Function(e1 As Tuple(Of Boolean, String), e2 As Tuple(Of Boolean, String)) e1.Equals(e2)
         JarTest(jar2, equater2, Tuple(True, ""), {0})
         JarTest(jar2, equater2, Tuple(False, CStr(Nothing)), {}, appendSafe:=False)
@@ -436,7 +436,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub ChecksumPrefixedJarTest()
-        Dim jar = New ChecksumPrefixedJar(Of Byte)(New ByteJar().Named("test"), checksumSize:=1, checksumFunction:=Function(a) {a(0) Xor CByte(1)}.AsReadableList)
+        Dim jar = New ChecksumPrefixedJar(Of Byte)(New ByteJar(), checksumSize:=1, checksumFunction:=Function(a) {a(0) Xor CByte(1)}.AsReadableList)
         JarTest(jar, 5, {4, 5})
         JarTest(jar, 3, {2, 3})
         JarTest(jar, 2, {3, 2})

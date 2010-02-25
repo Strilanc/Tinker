@@ -284,7 +284,7 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly UserAuthenticationFinish As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.UserAuthenticationFinish,
                     New EnumUInt32Jar(Of UserAuthenticationFinishResult)().Named("result").Weaken,
                     New RawDataJar(Size:=20).Named("server password proof").Weaken,
-                    New NullTerminatedStringJar().Named("custom error info").Optional.Weaken)
+                    New NullTerminatedStringJar().Optional.Named("custom error info").Weaken)
             Public Shared ReadOnly RequiredWork As Definition(Of String) = Define(PacketId.RequiredWork,
                     New NullTerminatedStringJar().Named("filename"))
 

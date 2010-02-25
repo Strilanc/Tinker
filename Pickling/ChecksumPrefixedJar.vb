@@ -1,9 +1,9 @@
 Namespace Pickling
     '''<summary>Pickles values where the serialized form is prefixed with a checksum.</summary>
     Public NotInheritable Class ChecksumPrefixedJar(Of T)
-        Inherits BaseJar(Of T)
+        Inherits BaseAnonymousJar(Of T)
 
-        Private ReadOnly _subJar As IJar(Of T)
+        Private ReadOnly _subJar As IAnonymousJar(Of T)
         Private ReadOnly _checksumFunction As Func(Of IReadableList(Of Byte), IReadableList(Of Byte))
         Private ReadOnly _checksumSize As Integer
 
@@ -13,10 +13,9 @@ Namespace Pickling
             Contract.Invariant(_checksumSize > 0)
         End Sub
 
-        Public Sub New(ByVal subJar As IJar(Of T),
+        Public Sub New(ByVal subJar As IAnonymousJar(Of T),
                        ByVal checksumSize As Integer,
                        ByVal checksumFunction As Func(Of IReadableList(Of Byte), IReadableList(Of Byte)))
-            MyBase.New(subJar.Name)
             Contract.Requires(checksumSize > 0)
             Contract.Requires(subJar IsNot Nothing)
             Contract.Requires(checksumFunction IsNot Nothing)

@@ -191,7 +191,7 @@ Namespace WC3.Protocol
 
         Private Shared ReadOnly DataJar As New TupleJar(
                 New PlayerIdJar().Named("source").Weaken,
-                New GameActionJar().Repeated.Named("actions").DataSizePrefixed(prefixSize:=2).Weaken)
+                New GameActionJar().Repeated.DataSizePrefixed(prefixSize:=2).Named("actions").Weaken)
 
         Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

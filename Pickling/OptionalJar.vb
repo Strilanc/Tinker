@@ -1,15 +1,14 @@
 Namespace Pickling
     Public NotInheritable Class OptionalJar(Of T)
-        Inherits BaseJar(Of Tuple(Of Boolean, T))
+        Inherits BaseAnonymousJar(Of Tuple(Of Boolean, T))
 
-        Private ReadOnly _subJar As IJar(Of T)
+        Private ReadOnly _subJar As IAnonymousJar(Of T)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_subJar IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal subJar As IJar(Of T))
-            MyBase.New(subJar.Name)
+        Public Sub New(ByVal subJar As IAnonymousJar(Of T))
             Contract.Requires(subJar IsNot Nothing)
             Me._subJar = subJar
         End Sub
@@ -21,7 +20,7 @@ Namespace Pickling
                 Dim pickle = _subJar.Pack(value.Item2)
                 Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
             Else
-                Return New Pickle(Of TValue)(Name, value, New Byte() {}.AsReadableList, Function() "[Not Included]")
+                Return New Pickle(Of TValue)(value, New Byte() {}.AsReadableList, Function() "[Not Included]")
             End If
         End Function
 
@@ -31,7 +30,7 @@ Namespace Pickling
                 Dim pickle = _subJar.Parse(data)
                 Return New Pickle(Of Tuple(Of Boolean, T))(Tuple(True, pickle.Value), pickle.Data, pickle.Description)
             Else
-                Return New Pickle(Of Tuple(Of Boolean, T))(Name, Tuple(False, CType(Nothing, T)), data, Function() "[Not Included]")
+                Return New Pickle(Of Tuple(Of Boolean, T))(Tuple(False, CType(Nothing, T)), data, Function() "[Not Included]")
             End If
         End Function
     End Class
