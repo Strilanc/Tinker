@@ -236,7 +236,7 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Bnet\Protocol\IPEndPointJar.vb" />
-    <Compile Include="Warcraft3\Player\PID.vb" />
+    <Compile Include="Warcraft3\Player\PlayerId.vb" />
     <Compile Include="Warcraft3\Protocol\ObjectTypeJar.vb" />
     <Compile Include="Warcraft3\Protocol\OrderIdJar.vb" />
     <Compile Include="Warcraft3\Protocol\Game Action Protocol.vb" />

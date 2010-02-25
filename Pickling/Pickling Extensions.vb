@@ -88,6 +88,27 @@
             End Function
         End Class
 
+        Private NotInheritable Class NamedJar(Of T)
+            Inherits BaseJar(Of T)
+            Private ReadOnly _subjar As IAnonymousJar(Of T)
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(_subjar IsNot Nothing)
+            End Sub
+            Public Sub New(ByVal name As InvariantString, ByVal subJar As IAnonymousJar(Of T))
+                MyBase.New(name)
+                Contract.Requires(subJar IsNot Nothing)
+                Me._subjar = subJar
+            End Sub
+            Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
+                Dim pickle = _subjar.Pack(value)
+                Return New Pickle(Of TValue)(Name, value, pickle.Data, Function() pickle.Description.Value)
+            End Function
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+                Dim pickle = _subjar.Parse(data)
+                Return New Pickle(Of T)(Name, pickle.Value, pickle.Data, Function() pickle.Description.Value)
+            End Function
+        End Class
+
         <Extension()> <Pure()>
         Public Function Repeated(Of T)(ByVal jar As IJar(Of T), ByVal name As InvariantString) As RepeatingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
@@ -126,6 +147,10 @@
             Contract.Requires(prefixSize > 0)
             Contract.Requires(prefixSize <= 4)
             Return New ChecksumPrefixedJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToReadableList)
+        End Function
+        <Extension()> <Pure()>
+        Public Function Named(Of T)(ByVal jar As IAnonymousJar(Of T), ByVal name As InvariantString) As IJar(Of T)
+            Return New NamedJar(Of T)(name, jar)
         End Function
     End Module
 End Namespace

@@ -75,6 +75,12 @@
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
     End Class
 
+    Public MustInherit Class BaseAnonymousJar(Of T)
+        Implements IAnonymousJar(Of T)
+        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IAnonymousPackJar(Of T).Pack
+        Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IAnonymousParseJar(Of T).Parse
+    End Class
+
     '''<summary>A base implementation of an IPickle(Of T).</summary>
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class Pickle(Of T)
@@ -101,6 +107,15 @@
             Me._data = data
             Me._value = value
             Me._description = description
+        End Sub
+        Public Sub New(ByVal value As T,
+                       ByVal data As IReadableList(Of Byte),
+                       ByVal description As Func(Of String))
+            Me.New(value, data, New Lazy(Of String)(description))
+            Contract.Requires(value IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
+            Contract.Requires(description IsNot Nothing)
+            Contract.Ensures(Me.Data Is data)
         End Sub
 
         Public Sub New(ByVal jarName As InvariantString,
