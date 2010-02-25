@@ -4,6 +4,7 @@ Imports Strilbrary.Time
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports System.Collections.Generic
 Imports Tinker.Pickling
+Imports Tinker
 Imports Tinker.WC3
 Imports Tinker.WC3.Protocol
 Imports TinkerTests.PicklingTest
@@ -18,7 +19,7 @@ Public Class GameActionProtocolTest
                        1, 0, 0, 0, 2, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"group index", 1},
-                        {"targets", New List(Of GameObjectId)({New GameObjectId(1, 2)})}
+                        {"targets", {New GameObjectId(1, 2)}.ToReadableList}
                     })
     End Sub
     <TestMethod()>
@@ -45,7 +46,7 @@ Public Class GameActionProtocolTest
                        1, 0, 0, 0, 2, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"operation", SelectionOperation.Remove},
-                        {"targets", New List(Of GameObjectId)({New GameObjectId(1, 2)})}
+                        {"targets", {New GameObjectId(1, 2)}.ToReadableList}
                     })
     End Sub
     <TestMethod()>
@@ -330,13 +331,13 @@ Public Class GameActionProtocolTest
                         {"mission key", "h"},
                         {"key", "u"},
                         {"unit type", "Obla".ToAscBytes.Reverse.ToUInt32},
-                        {"inventory", New List(Of Dictionary(Of InvariantString, Object)) From {
-                            New Dictionary(Of InvariantString, Object) From {{"item", "ratf".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}},
-                            New Dictionary(Of InvariantString, Object) From {{"item", "ckng".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}},
-                            New Dictionary(Of InvariantString, Object) From {{"item", "desc".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3700}},
-                            New Dictionary(Of InvariantString, Object) From {{"item", "modt".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}},
-                            New Dictionary(Of InvariantString, Object) From {{"item", "ofro".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}},
-                            New Dictionary(Of InvariantString, Object) From {{"item", 0}, {"charges", 0}, {"unknown", 0}}}},
+                        {"inventory", {New Dictionary(Of InvariantString, Object) From {{"item", "ratf".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}},
+                                       New Dictionary(Of InvariantString, Object) From {{"item", "ckng".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}},
+                                       New Dictionary(Of InvariantString, Object) From {{"item", "desc".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3700}},
+                                       New Dictionary(Of InvariantString, Object) From {{"item", "modt".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}},
+                                       New Dictionary(Of InvariantString, Object) From {{"item", "ofro".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}},
+                                       New Dictionary(Of InvariantString, Object) From {{"item", 0}, {"charges", 0}, {"unknown", 0}}
+                                       }.ToReadableList},
                         {"experience", 2700},
                         {"level ups", 6},
                         {"skill points", 2},
@@ -350,12 +351,12 @@ Public Class GameActionProtocolTest
                         {"bonus agility per level", CSng(1.75000012)},
                         {"base intelligence", 16},
                         {"bonus intelligence per level", CSng(2.25)},
-                        {"hero skills", New List(Of Dictionary(Of InvariantString, Object)) From {
-                            New Dictionary(Of InvariantString, Object) From {{"ability", "AOwk".ToAscBytes.Reverse.ToUInt32}, {"level", 2}},
-                            New Dictionary(Of InvariantString, Object) From {{"ability", "AOcr".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
-                            New Dictionary(Of InvariantString, Object) From {{"ability", "AOmi".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
-                            New Dictionary(Of InvariantString, Object) From {{"ability", "AOww".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
-                            New Dictionary(Of InvariantString, Object) From {{"ability", 0}, {"level", 0}}}},
+                        {"hero skills", {New Dictionary(Of InvariantString, Object) From {{"ability", "AOwk".ToAscBytes.Reverse.ToUInt32}, {"level", 2}},
+                                         New Dictionary(Of InvariantString, Object) From {{"ability", "AOcr".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
+                                         New Dictionary(Of InvariantString, Object) From {{"ability", "AOmi".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
+                                         New Dictionary(Of InvariantString, Object) From {{"ability", "AOww".ToAscBytes.Reverse.ToUInt32}, {"level", 1}},
+                                         New Dictionary(Of InvariantString, Object) From {{"ability", 0}, {"level", 0}}
+                                         }.ToReadableList},
                         {"bonus health", CSng(0)},
                         {"bonus mana", CSng(0)},
                         {"sight radius (day)", CSng(1800)},

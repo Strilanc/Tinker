@@ -293,32 +293,32 @@ Namespace WC3.Protocol
         Public Shared ReadOnly SelfOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.SelfOrder,
                     New EnumUInt16Jar(Of OrderTypes)().Named("flags").Weaken,
                     New OrderIdJar().Named("order").Weaken,
-                    New GameObjectIdJar("unknown").Weaken)
+                    New GameObjectIdJar().Named("unknown").Weaken)
         Public Shared ReadOnly PointOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.PointOrder,
                     New EnumUInt16Jar(Of OrderTypes)().Named("flags").Weaken,
                     New OrderIdJar().Named("order").Weaken,
-                    New GameObjectIdJar("unknown").Weaken,
+                    New GameObjectIdJar().Named("unknown").Weaken,
                     New Float32Jar().Named("target x").Weaken,
                     New Float32Jar().Named("target y").Weaken)
         Public Shared ReadOnly ObjectOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.ObjectOrder,
                     New EnumUInt16Jar(Of OrderTypes)().Named("flags").Weaken,
                     New OrderIdJar().Named("order").Weaken,
-                    New GameObjectIdJar("unknown").Weaken,
+                    New GameObjectIdJar().Named("unknown").Weaken,
                     New Float32Jar().Named("x").Weaken,
                     New Float32Jar().Named("y").Weaken,
-                    New GameObjectIdJar("target").Weaken)
+                    New GameObjectIdJar().Named("target").Weaken)
         Public Shared ReadOnly DropOrGiveItem As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.DropOrGiveItem,
                     New EnumUInt16Jar(Of OrderTypes)().Named("flags").Weaken,
                     New OrderIdJar().Named("order").Weaken,
-                    New GameObjectIdJar("unknown").Weaken,
+                    New GameObjectIdJar().Named("unknown").Weaken,
                     New Float32Jar().Named("x").Weaken,
                     New Float32Jar().Named("y").Weaken,
-                    New GameObjectIdJar("receiver").Weaken,
-                    New GameObjectIdJar("item").Weaken)
+                    New GameObjectIdJar().Named("receiver").Weaken,
+                    New GameObjectIdJar().Named("item").Weaken)
         Public Shared ReadOnly FogObjectOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.FogObjectOrder,
                     New EnumUInt16Jar(Of OrderTypes)().Named("flags").Weaken,
                     New OrderIdJar().Named("order").Weaken,
-                    New GameObjectIdJar("unknown").Weaken,
+                    New GameObjectIdJar().Named("unknown").Weaken,
                     New Float32Jar().Named("x").Weaken,
                     New Float32Jar().Named("y").Weaken,
                     New ObjectTypeJar().Named("target type").Weaken,
@@ -331,7 +331,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly EnterChooseBuildingSubmenu As Definition(Of Object) = Define(GameActionId.EnterChooseBuildingSubmenu)
         Public Shared ReadOnly PressedEscape As Definition(Of Object) = Define(GameActionId.PressedEscape)
         Public Shared ReadOnly CancelHeroRevive As Definition(Of GameObjectId) = Define(GameActionId.CancelHeroRevive,
-                    New GameObjectIdJar("target"))
+                    New GameObjectIdJar().Named("target"))
         Public Shared ReadOnly DequeueBuildingOrder As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.DequeueBuildingOrder,
                     New ByteJar().Named("slot number").Weaken,
                     New ObjectTypeJar().Named("type").Weaken)
@@ -350,20 +350,20 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly AssignGroupHotkey As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.AssignGroupHotkey,
                     New ByteJar().Named("group index").Weaken,
-                    New GameObjectIdJar("target").RepeatedWithCountPrefix("targets", prefixSize:=2).Weaken)
+                    New GameObjectIdJar().RepeatedWithCountPrefix(prefixSize:=2).Named("targets").Weaken)
         Public Shared ReadOnly ChangeSelection As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.ChangeSelection,
                     New EnumByteJar(Of SelectionOperation)().Named("operation").Weaken,
-                    New GameObjectIdJar("target").RepeatedWithCountPrefix("targets", prefixSize:=2).Weaken)
+                    New GameObjectIdJar().RepeatedWithCountPrefix(prefixSize:=2).Named("targets").Weaken)
         Public Shared ReadOnly PreSubGroupSelection As Definition(Of Object) = Define(GameActionId.PreSubGroupSelection)
         Public Shared ReadOnly SelectGroundItem As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.SelectGroundItem,
                     New ByteJar().Named("unknown").Weaken,
-                    New GameObjectIdJar("target").Weaken)
+                    New GameObjectIdJar().Named("target").Weaken)
         Public Shared ReadOnly SelectGroupHotkey As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.SelectGroupHotkey,
                     New ByteJar().Named("group index").Weaken,
                     New ByteJar().Named("unknown").Weaken)
         Public Shared ReadOnly SelectSubGroup As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.SelectSubGroup,
                     New ObjectTypeJar().Named("unit type").Weaken,
-                    New GameObjectIdJar("target").Weaken)
+                    New GameObjectIdJar().Named("target").Weaken)
 
         Public Shared ReadOnly CheatDisableTechRequirements As Definition(Of Object) = Define(GameActionId.CheatDisableTechRequirements)
         Public Shared ReadOnly CheatDisableVictoryConditions As Definition(Of Object) = Define(GameActionId.CheatDisableVictoryConditions)
@@ -394,23 +394,23 @@ Namespace WC3.Protocol
         Public Shared ReadOnly TriggerArrowKeyEvent As Definition(Of ArrowKeyEvent) = Define(GameActionId.TriggerArrowKeyEvent,
                     New EnumByteJar(Of ArrowKeyEvent)().Named("event type"))
         Public Shared ReadOnly TriggerChatEvent As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.TriggerChatEvent,
-                    New GameObjectIdJar("trigger event").Weaken,
+                    New GameObjectIdJar().Named("trigger event").Weaken,
                     New NullTerminatedStringJar("text").Weaken)
         Public Shared ReadOnly DialogAnyButtonClicked As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.DialogAnyButtonClicked,
-                    New GameObjectIdJar("dialog").Weaken,
-                    New GameObjectIdJar("button").Weaken)
+                    New GameObjectIdJar().Named("dialog").Weaken,
+                    New GameObjectIdJar().Named("button").Weaken)
         Public Shared ReadOnly DialogButtonClicked As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.DialogButtonClicked,
-                    New GameObjectIdJar("button").Weaken,
-                    New GameObjectIdJar("dialog").Weaken)
+                    New GameObjectIdJar().Named("button").Weaken,
+                    New GameObjectIdJar().Named("dialog").Weaken)
         Public Shared ReadOnly TriggerMouseClickedTrackable As Definition(Of GameObjectId) = Define(GameActionId.TriggerMouseClickedTrackable,
-                    New GameObjectIdJar("trackable"))
+                    New GameObjectIdJar().Named("trackable"))
         Public Shared ReadOnly TriggerMouseTouchedTrackable As Definition(Of GameObjectId) = Define(GameActionId.TriggerMouseTouchedTrackable,
-                    New GameObjectIdJar("trackable"))
+                    New GameObjectIdJar().Named("trackable"))
         Public Shared ReadOnly TriggerSelectionEvent As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.TriggerSelectionEvent,
                     New EnumByteJar(Of SelectionOperation)().Named("operation").Weaken,
-                    New GameObjectIdJar("target").Weaken)
+                    New GameObjectIdJar().Named("target").Weaken)
         Public Shared ReadOnly TriggerWaitFinished As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.TriggerWaitFinished,
-                    New GameObjectIdJar("trigger thread").Weaken,
+                    New GameObjectIdJar().Named("trigger thread").Weaken,
                     New UInt32Jar().Named("thread wait count").Weaken)
 
         Public Shared ReadOnly GameCacheSyncInteger As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncInteger,
@@ -437,7 +437,7 @@ Namespace WC3.Protocol
                             New ObjectTypeJar().Named("item").Weaken,
                             New UInt32Jar().Named("charges").Weaken,
                             New UInt32Jar().Named("unknown").Weaken
-                        ).RepeatedWithCountPrefix("inventory", prefixSize:=4).Weaken,
+                        ).RepeatedWithCountPrefix(prefixSize:=4).Named("inventory").Weaken,
                     New UInt32Jar().Named("experience").Weaken,
                     New UInt32Jar().Named("level ups").Weaken,
                     New UInt32Jar().Named("skill points").Weaken,
@@ -454,7 +454,7 @@ Namespace WC3.Protocol
                     New TupleJar("skill slot", True,
                             New ObjectTypeJar().Named("ability").Weaken,
                             New UInt32Jar().Named("level").Weaken
-                        ).RepeatedWithCountPrefix("hero skills", prefixSize:=4).Weaken,
+                        ).RepeatedWithCountPrefix(prefixSize:=4).Named("hero skills").Weaken,
                     New Float32Jar().Named("bonus health").Weaken,
                     New Float32Jar().Named("bonus mana").Weaken,
                     New Float32Jar().Named("sight radius (day)").Weaken,

@@ -47,26 +47,23 @@ Namespace WC3
         End Function
 
         Public Overrides Function ToString() As String
-            Return Index.ToString(CultureInfo.InvariantCulture)
+            Return "pid{0}".Frmt(Index)
         End Function
     End Structure
 
     Public Class PlayerIdJar
-        Inherits BaseJar(Of PlayerId)
-
-        Public Sub New(ByVal name As String)
-            MyBase.New(name)
-        End Sub
+        Inherits BaseAnonymousJar(Of PlayerId)
 
         Public Overrides Function Pack(Of TValue As PlayerId)(ByVal value As TValue) As IPickle(Of TValue)
-            Return New Pickle(Of TValue)(Name, value, {CType(value, PlayerId).Index}.ToReadableList)
+            Dim data = {CType(value, PlayerId).Index}.ToReadableList
+            Return New Pickle(Of TValue)(value, data, Function() value.ToString)
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerId)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException
             Dim datum = data.SubView(0, 1)
             If datum(0) < 1 OrElse datum(0) > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(datum(0)))
             Dim value = New PlayerId(datum(0))
-            Return New Pickle(Of PlayerId)(Name, value, datum)
+            Return New Pickle(Of PlayerId)(value, datum, Function() value.ToString)
         End Function
     End Class
 End Namespace

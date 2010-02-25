@@ -9,7 +9,7 @@ Namespace WC3.Protocol
             Return Packet.FromValue(Packets.ShowLagScreen, (From lagger In laggers
                                                             Select New Dictionary(Of InvariantString, Object) From {
                                                                     {"id", lagger},
-                                                                    {"initial milliseconds used", 2000}}).ToList)
+                                                                    {"initial milliseconds used", 2000}}).ToReadableList)
         End Function
         <Pure()>
         Public Function MakeRemovePlayerFromLagScreen(ByVal lagger As PlayerId,
@@ -32,14 +32,14 @@ Namespace WC3.Protocol
                 Case chatType.Game
                     Contract.Assume(receivingGroup.HasValue)
                     Return Packet.FromValue(Packets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"requested receivers", receivers.ToList},
+                            {"requested receivers", receivers.ToReadableList},
                             {"speaker", sender},
                             {"type", chatType},
                             {"message", text},
                             {"receiving group", receivingGroup.Value}})
                 Case chatType.Lobby
                     Return Packet.FromValue(Packets.Text, New Dictionary(Of InvariantString, Object) From {
-                            {"requested receivers", receivers.ToList},
+                            {"requested receivers", receivers.ToReadableList},
                             {"speaker", sender},
                             {"type", chatType},
                             {"message", text}})
@@ -125,7 +125,7 @@ Namespace WC3.Protocol
             End If
 
             Return Packet.FromValue(Packets.LobbyState, New Dictionary(Of InvariantString, Object) From {
-                    {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToList},
+                    {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToReadableList},
                     {"random seed", CUInt(randomSeed)},
                     {"layout style", layoutStyle},
                     {"num player slots", reportedPlayerSlots}})

@@ -386,15 +386,9 @@ Namespace WC3
                     If chatType = Protocol.ChatType.Game Then
                         receivingGroup = CType(vals("receiving group"), Protocol.ChatGroup)
                     End If
-                    Dim receivingPlayerIndexes = CType(vals("receiving player indexes"), IReadableList(Of Byte)).AssumeNotNull
-                    Dim receivingPIDs = (From index In receivingPlayerIndexes
-                                         Select New PlayerId(index)).ToReadableList
+                    Dim requestedReceivers = CType(vals("requested receivers"), IReadableList(Of PlayerId)).AssumeNotNull
 
-                    ReceiveChat(sender,
-                                message,
-                                chatType,
-                                receivingGroup,
-                                receivingPIDs)
+                    ReceiveChat(sender, message, chatType, receivingGroup, requestedReceivers)
 
                 Case Protocol.NonGameAction.SetTeam
                     _lobby.OnPlayerSetTeam(sender, CByte(vals("new value")))

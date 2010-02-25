@@ -186,7 +186,7 @@ Public Class WC3ProtocolTest
                        3,
                        12},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"slots", New List(Of Dictionary(Of InvariantString, Object))()},
+                        {"slots", New List(Of Dictionary(Of InvariantString, Object))().ToReadableList},
                         {"random seed", 13},
                         {"layout style", LobbyLayoutStyle.FixedPlayerSettings},
                         {"num player slots", 12}
@@ -251,7 +251,7 @@ Public Class WC3ProtocolTest
                        1, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToList},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"speaker", New PlayerId(4)},
                         {"command type", NonGameAction.GameChat},
                         {"receiving group", ChatGroup.Allies},
@@ -263,7 +263,7 @@ Public Class WC3ProtocolTest
                        16,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToList},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"speaker", New PlayerId(4)},
                         {"command type", NonGameAction.LobbyChat},
                         {"message", "test"}
@@ -274,7 +274,7 @@ Public Class WC3ProtocolTest
                        17,
                        1},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToList},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
                         {"command type", NonGameAction.SetTeam},
                         {"new value", 1}
@@ -285,7 +285,7 @@ Public Class WC3ProtocolTest
                        20,
                        100},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToList},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
                         {"command type", NonGameAction.SetHandicap},
                         {"new value", 100}
@@ -296,7 +296,7 @@ Public Class WC3ProtocolTest
                        18,
                        1},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToList},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
                         {"command type", NonGameAction.SetColor},
                         {"new value", Protocol.PlayerColor.Blue}
@@ -307,7 +307,7 @@ Public Class WC3ProtocolTest
                        19,
                        2},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToList},
+                        {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
                         {"command type", NonGameAction.SetRace},
                         {"new value", Protocol.Races.Orc}
@@ -453,11 +453,14 @@ Public Class WC3ProtocolTest
                              {"initial milliseconds used", 25}
                          }
         JarTest(Packets.ShowLagScreen.Jar,
-                equater:=Function(e1 As IList(Of Dictionary(Of InvariantString, Object)), e2 As IList(Of Dictionary(Of InvariantString, Object))) ObjectEqual(e1, e2),
+                equater:=Function(e1 As IReadableList(Of Dictionary(Of InvariantString, Object)),
+                                  e2 As IReadableList(Of Dictionary(Of InvariantString, Object)))
+                             Return ObjectEqual(e1, e2)
+                         End Function,
                 data:={2,
                        2, 25, 0, 0, 0,
                        2, 25, 0, 0, 0},
-                value:={lagger, lagger})
+                value:={lagger, lagger}.ToReadableList)
     End Sub
     <TestMethod()>
     Public Sub StartCountdownTest()
@@ -476,7 +479,7 @@ Public Class WC3ProtocolTest
                        1, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToList},
+                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"speaker", New PlayerId(1)},
                         {"type", ChatType.Game},
                         {"receiving group", ChatGroup.Allies},
@@ -488,7 +491,7 @@ Public Class WC3ProtocolTest
                        16,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToList},
+                        {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"speaker", New PlayerId(1)},
                         {"type", ChatType.Lobby},
                         {"message", "test"}

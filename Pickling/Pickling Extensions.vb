@@ -123,14 +123,13 @@
             Return New DataSizePrefixedJar(Of T)(subjar:=jar, prefixSize:=prefixSize)
         End Function
         <Extension()> <Pure()>
-        Public Function RepeatedWithCountPrefix(Of T)(ByVal jar As IJar(Of T),
-                                                      ByVal name As InvariantString,
+        Public Function RepeatedWithCountPrefix(Of T)(ByVal jar As IAnonymousJar(Of T),
                                                       ByVal prefixSize As Integer,
                                                       Optional ByVal useSingleLineDescription As Boolean = False) As ListJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
             Contract.Ensures(Contract.Result(Of ListJar(Of T))() IsNot Nothing)
-            Return New ListJar(Of T)(name, jar, prefixSize, useSingleLineDescription)
+            Return New ListJar(Of T)(jar, prefixSize, useSingleLineDescription)
         End Function
         <Extension()> <Pure()>
         Public Function [Optional](Of T)(ByVal jar As IJar(Of T)) As OptionalJar(Of T)

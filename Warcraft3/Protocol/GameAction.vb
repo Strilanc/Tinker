@@ -201,7 +201,7 @@ Namespace WC3.Protocol
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
             _dataJar = New TupleJar("player action set",
-                    New PlayerIdJar("source").Weaken,
+                    New PlayerIdJar().Named("source").Weaken,
                     New GameActionJar("action").Repeated(name:="actions").DataSizePrefixed(prefixSize:=2).Weaken)
         End Sub
 
