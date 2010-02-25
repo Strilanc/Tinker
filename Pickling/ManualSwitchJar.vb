@@ -1,7 +1,7 @@
 Namespace Pickling
     Public NotInheritable Class ManualSwitchJar
-        Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
-        Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
+        Private ReadOnly packers(0 To 255) As IAnonymousPackJar(Of Object)
+        Private ReadOnly parsers(0 To 255) As IAnonymousParseJar(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(packers IsNot Nothing)
@@ -10,7 +10,7 @@ Namespace Pickling
 
         Public Sub New()
         End Sub
-        Public Sub New(ByVal parsersPackers As IDictionary(Of Byte, IJar(Of Object)))
+        Public Sub New(ByVal parsersPackers As IDictionary(Of Byte, IAnonymousJar(Of Object)))
             If parsersPackers IsNot Nothing Then
                 For Each pair In parsersPackers
                     Me.packers(pair.Key) = pair.Value
@@ -18,8 +18,8 @@ Namespace Pickling
                 Next pair
             End If
         End Sub
-        Public Sub New(ByVal parsers As IDictionary(Of Byte, IParseJar(Of Object)),
-                       ByVal packers As IDictionary(Of Byte, IPackJar(Of Object)))
+        Public Sub New(ByVal parsers As IDictionary(Of Byte, IAnonymousParseJar(Of Object)),
+                       ByVal packers As IDictionary(Of Byte, IAnonymousPackJar(Of Object)))
             Contract.Requires(parsers IsNot Nothing)
             Contract.Requires(packers IsNot Nothing)
             For Each pair In parsers
@@ -43,19 +43,19 @@ Namespace Pickling
             Return packers(index).Pack(value)
         End Function
 
-        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of Object))
+        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IAnonymousJar(Of Object))
             Contract.Requires(jar IsNot Nothing)
             If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString(CultureInfo.InvariantCulture))
             If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString(CultureInfo.InvariantCulture))
             parsers(index) = jar
             packers(index) = jar
         End Sub
-        Public Sub AddParser(ByVal index As Byte, ByVal parser As IParseJar(Of Object))
+        Public Sub AddParser(ByVal index As Byte, ByVal parser As IAnonymousParseJar(Of Object))
             Contract.Requires(parser IsNot Nothing)
             If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index " + index.ToString(CultureInfo.InvariantCulture))
             parsers(index) = parser
         End Sub
-        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IPackJar(Of Object))
+        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IAnonymousPackJar(Of Object))
             Contract.Requires(packer IsNot Nothing)
             If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index " + index.ToString(CultureInfo.InvariantCulture))
             packers(index) = packer

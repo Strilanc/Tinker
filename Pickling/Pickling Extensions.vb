@@ -151,5 +151,34 @@
         Public Function Named(Of T)(ByVal jar As IAnonymousJar(Of T), ByVal name As InvariantString) As IJar(Of T)
             Return New NamedJar(Of T)(name, jar)
         End Function
+
+        <Extension()> <Pure()>
+        Public Function Weaken(Of T)(ByVal jar As IAnonymousJar(Of T)) As IAnonymousJar(Of Object)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IAnonymousJar(Of Object))() IsNot Nothing)
+            Return New WeakAnonymousJar(Of T)(jar)
+        End Function
+        Private NotInheritable Class WeakAnonymousJar(Of T)
+            Inherits BaseAnonymousJar(Of Object)
+            Private ReadOnly subJar As IAnonymousJar(Of T)
+
+            <ContractInvariantMethod()> Private Sub ObjectInvariant()
+                Contract.Invariant(subJar IsNot Nothing)
+            End Sub
+
+            Public Sub New(ByVal jar As IAnonymousJar(Of T))
+                Contract.Requires(jar IsNot Nothing)
+                Me.subJar = jar
+            End Sub
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
+                Dim p = subJar.Parse(data)
+                Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
+            End Function
+            Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
+                Contract.Assume(value IsNot Nothing)
+                Dim p = subJar.Pack(CType(CType(value, Object), T).AssumeNotNull)
+                Return New Pickle(Of R)(value, p.Data, p.Description)
+            End Function
+        End Class
     End Module
 End Namespace

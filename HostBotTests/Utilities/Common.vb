@@ -101,7 +101,7 @@ Friend Module TestingCommon
                                                  Optional ByVal description As String = Nothing)
         JarTest(jar, Function(a As T, b As T) a.Equals(b), value, data, appendSafe, requireAllData, description)
     End Sub
-    Friend Sub JarTest(ByVal jar As IJar(Of Dictionary(Of InvariantString, Object)),
+    Friend Sub JarTest(ByVal jar As IAnonymousJar(Of Dictionary(Of InvariantString, Object)),
                        ByVal value As Dictionary(Of InvariantString, Object),
                        ByVal data As IEnumerable(Of Byte),
                        Optional ByVal appendSafe As Boolean = True,

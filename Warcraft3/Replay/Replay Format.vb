@@ -84,10 +84,10 @@ Namespace WC3.Replay
                 New UInt32Jar().Named("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryGameStarted As New TupleJar(ReplayEntryId.GameStarted.ToString,
                 New UInt32Jar().Named("unknown").Weaken)
-        Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
-        Private Shared Function MakeTextJar() As IJar(Of Dictionary(Of InvariantString, Object))
+        Public Shared ReadOnly ReplayEntryChatMessage As IAnonymousJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
+        Private Shared Function MakeTextJar() As IAnonymousJar(Of Dictionary(Of InvariantString, Object))
+            Contract.Ensures(Contract.Result(Of IAnonymousJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
             Dim jar = New InteriorSwitchJar(Of WC3.Protocol.ChatType, Dictionary(Of InvariantString, Object))(
-                    name:=ReplayEntryId.ChatMessage.ToString,
                     valueKeyExtractor:=Function(val) CType(val("type"), WC3.Protocol.ChatType),
                     dataKeyExtractor:=Function(data) CType(data(3), WC3.Protocol.ChatType))
             jar.AddPackerParser(WC3.Protocol.ChatType.Game, New TupleJar(ReplayEntryId.ChatMessage.ToString,
@@ -101,7 +101,7 @@ Namespace WC3.Replay
                     New UInt16Jar().Named("size").Weaken,
                     New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type").Weaken,
                     New NullTerminatedStringJar().Named("message").Weaken))
-            Return jar
+            Return jar.Named(ReplayEntryId.ChatMessage.ToString)
         End Function
         Public Shared ReadOnly ReplayEntryGameStateChecksum As New TupleJar(ReplayEntryId.GameStateChecksum.ToString,
                 New ByteJar().Named("unknown").Weaken,
@@ -114,7 +114,7 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryTournamentForcedCountdown As New TupleJar(ReplayEntryId.TournamentForcedCountdown.ToString,
                 New UInt32Jar().Named("counter state").Weaken,
                 New UInt32Jar().Named("counter time").Weaken)
-        Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState.Jar
+        Public Shared ReadOnly ReplayEntryLobbyState As IAnonymousJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState.Jar
         Public Shared ReadOnly ReplayEntryTick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(ReplayEntryId.Tick.ToString,
                 New UInt16Jar().Named("time span").Weaken,
                 New Protocol.PlayerActionSetJar().Repeated.Named("player action sets").Weaken

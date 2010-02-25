@@ -324,13 +324,13 @@ Namespace WC3.Protocol
 
         Public NotInheritable Class Definition(Of T)
             Private ReadOnly _id As PacketId
-            Private ReadOnly _jar As IJar(Of T)
+            Private ReadOnly _jar As IAnonymousJar(Of T)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As PacketId, ByVal jar As IJar(Of T))
+            Friend Sub New(ByVal id As PacketId, ByVal jar As IAnonymousJar(Of T))
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -341,9 +341,9 @@ Namespace WC3.Protocol
                     Return _id
                 End Get
             End Property
-            Public ReadOnly Property Jar As IJar(Of T)
+            Public ReadOnly Property Jar As IAnonymousJar(Of T)
                 Get
-                    Contract.Ensures(Contract.Result(Of IJar(Of T))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IAnonymousJar(Of T))() IsNot Nothing)
                     Return _jar
                 End Get
             End Property
@@ -351,7 +351,7 @@ Namespace WC3.Protocol
         Private Shared Function Define(ByVal id As PacketId) As Definition(Of Object)
             Return New Definition(Of Object)(id, New EmptyJar())
         End Function
-        Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IJar(Of T)) As Definition(Of T)
+        Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IAnonymousJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Return New Definition(Of T)(id, jar)
         End Function
@@ -406,10 +406,10 @@ Namespace WC3.Protocol
                 New RemainingDataJar().Named("peer data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New Bnet.Protocol.IPEndPointJar("external address").Weaken,
                 New Bnet.Protocol.IPEndPointJar("internal address").Weaken)
-        Public Shared ReadOnly Text As Definition(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
-        Private Shared Function MakeTextJar() As Definition(Of Dictionary(Of InvariantString, Object))
+        Public Shared ReadOnly Text As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.Text, MakeTextJar())
+        Private Shared Function MakeTextJar() As IAnonymousJar(Of Dictionary(Of InvariantString, Object))
+            Contract.Ensures(Contract.Result(Of IAnonymousJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
             Dim jar = New InteriorSwitchJar(Of ChatType, Dictionary(Of InvariantString, Object))(
-                    name:=PacketId.Text.ToString,
                     valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
                     dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType))
             jar.AddPackerParser(ChatType.Game, New TupleJar(PacketId.Text.ToString,
@@ -423,7 +423,7 @@ Namespace WC3.Protocol
                     New PlayerIdJar().Named("speaker").Weaken,
                     New EnumByteJar(Of ChatType)().Named("type").Weaken,
                     New NullTerminatedStringJar(maximumContentSize:=MaxChatTextLength).Named("message").Weaken))
-            Return Define(PacketId.Text, jar)
+            Return jar
         End Function
 
         Public Shared ReadOnly OtherPlayerReady As Definition(Of PlayerId) = Define(PacketId.OtherPlayerReady,
@@ -442,10 +442,10 @@ Namespace WC3.Protocol
                 New UInt16Jar(showhex:=True).Named("player bitflags"))
 
         Public Const MaxChatTextLength As Integer = 220
-        Public Shared ReadOnly NonGameAction As Definition(Of Dictionary(Of InvariantString, Object)) = MakeNonGameActionJar()
-        Private Shared Function MakeNonGameActionJar() As Definition(Of Dictionary(Of InvariantString, Object))
+        Public Shared ReadOnly NonGameAction As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.NonGameAction, MakeNonGameActionJar())
+        Private Shared Function MakeNonGameActionJar() As IAnonymousJar(Of Dictionary(Of InvariantString, Object))
+            Contract.Ensures(Contract.Result(Of IAnonymousJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
             Dim commandJar = New InteriorSwitchJar(Of NonGameAction, Dictionary(Of InvariantString, Object))(
-                    PacketId.NonGameAction.ToString,
                     Function(val) CType(val("command type"), NonGameAction),
                     Function(data) CType(data(data(0) + 2), NonGameAction))
             commandJar.AddPackerParser(Protocol.NonGameAction.GameChat, New TupleJar(PacketId.NonGameAction.ToString,
@@ -479,7 +479,7 @@ Namespace WC3.Protocol
                     New PlayerIdJar().Named("sender").Weaken,
                     New EnumByteJar(Of NonGameAction)().Named("command type").Weaken,
                     New EnumByteJar(Of Protocol.PlayerColor)().Named("new value").Weaken))
-            Return Define(PacketId.NonGameAction, commandJar)
+            Return commandJar
         End Function
 
         Public Shared ReadOnly ShowLagScreen As Definition(Of IReadableList(Of Dictionary(Of InvariantString, Object))) = Define(PacketId.ShowLagScreen,

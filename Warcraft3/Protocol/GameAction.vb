@@ -3,7 +3,7 @@
 Namespace WC3.Protocol
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class GameAction
-        Private Shared ReadOnly ActionJar As PrefixSwitchJar(Of GameActionId) = MakeJar()
+        Private Shared ReadOnly ActionJar As IJar(Of PrefixPickle(Of GameActionId)) = MakeJar()
         Private ReadOnly _id As GameActionId
         Private ReadOnly _payload As IPickle
 
@@ -48,9 +48,9 @@ Namespace WC3.Protocol
             jar.AddPackerParser(definition.Id, definition.Jar.Weaken)
         End Sub
 
-        Private Shared Function MakeJar() As PrefixSwitchJar(Of GameActionId)
-            Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of GameActionId))() IsNot Nothing)
-            Dim jar = New PrefixSwitchJar(Of GameActionId)("W3GameAction")
+        Private Shared Function MakeJar() As IJar(Of PrefixPickle(Of GameActionId))
+            Contract.Ensures(Contract.Result(Of IJar(Of PrefixPickle(Of GameActionId)))() IsNot Nothing)
+            Dim jar = New PrefixSwitchJar(Of GameActionId)()
             reg(jar, GameActions.PauseGame)
             reg(jar, GameActions.ResumeGame)
             reg(jar, GameActions.SetGameSpeed)
@@ -113,7 +113,7 @@ Namespace WC3.Protocol
             reg(jar, GameActions.GameCacheSyncEmptyReal)
             reg(jar, GameActions.GameCacheSyncEmptyUnit)
             reg(jar, GameActions.GameCacheSyncEmptyString)
-            Return jar
+            Return jar.Named("W3GameAction")
         End Function
 
         Public Shared Function FromData(ByVal data As IReadableList(Of Byte)) As GameAction

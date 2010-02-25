@@ -28,17 +28,13 @@ Namespace Pickling
         End Property
     End Class
     Public NotInheritable Class PrefixSwitchJar(Of T)
-        Inherits BaseJar(Of PrefixPickle(Of T))
-        Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
-        Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
+        Inherits BaseAnonymousJar(Of PrefixPickle(Of T))
+        Private ReadOnly packers(0 To 255) As IAnonymousPackJar(Of Object)
+        Private ReadOnly parsers(0 To 255) As IAnonymousParseJar(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(packers IsNot Nothing)
             Contract.Invariant(parsers IsNot Nothing)
-        End Sub
-
-        Public Sub New(ByVal name As InvariantString)
-            MyBase.new(name)
         End Sub
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -49,29 +45,31 @@ Namespace Pickling
             Dim vindex = CType(CType(index, Object), T)
             Contract.Assume(vindex IsNot Nothing)
             If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to " + vindex.ToString())
-            Dim payload = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
-            Return New Pickle(Of PrefixPickle(Of T))(Name, payload, data.SubView(0, payload.Payload.Data.Count + 1))
+            Dim value = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
+            Dim datum = data.SubView(0, value.Payload.Data.Count + 1)
+            Return New Pickle(Of PrefixPickle(Of T))(value, datum, Function() value.ToString)
         End Function
         Public Overrides Function Pack(Of TValue As PrefixPickle(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             Dim index = CByte(CType(value.Key, Object))
             If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.Key.ToString())
-            Return New Pickle(Of TValue)(Name, value, Concat({index}, packers(index).Pack(value.Payload.Value).Data.ToArray).AsReadableList)
+            Dim data = Concat({index}, packers(index).Pack(value.Payload.Value).Data.ToArray).AsReadableList
+            Return New Pickle(Of TValue)(value, data, Function() value.ToString)
         End Function
 
-        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of Object))
+        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IAnonymousJar(Of Object))
             Contract.Requires(jar IsNot Nothing)
             If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
             If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
             parsers(index) = jar
             packers(index) = jar
         End Sub
-        Public Sub AddParser(ByVal index As Byte, ByVal parser As IParseJar(Of Object))
+        Public Sub AddParser(ByVal index As Byte, ByVal parser As IAnonymousParseJar(Of Object))
             Contract.Requires(parser IsNot Nothing)
             If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
             parsers(index) = parser
         End Sub
-        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IPackJar(Of Object))
+        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IAnonymousPackJar(Of Object))
             Contract.Requires(packer IsNot Nothing)
             If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
             packers(index) = packer
