@@ -286,7 +286,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly SaveGameFinished As Definition(Of UInt32) = Define(GameActionId.SaveGameFinished,
                     New UInt32Jar().Named("unknown"))
         Public Shared ReadOnly SaveGameStarted As Definition(Of String) = Define(GameActionId.SaveGameStarted,
-                    New NullTerminatedStringJar("filename"))
+                    New NullTerminatedStringJar().Named("filename"))
         Public Shared ReadOnly SetGameSpeed As Definition(Of GameSpeedSetting) = Define(GameActionId.SetGameSpeed,
                     New EnumByteJar(Of GameSpeedSetting)().Named("speed"))
 
@@ -395,7 +395,7 @@ Namespace WC3.Protocol
                     New EnumByteJar(Of ArrowKeyEvent)().Named("event type"))
         Public Shared ReadOnly TriggerChatEvent As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.TriggerChatEvent,
                     New GameObjectIdJar().Named("trigger event").Weaken,
-                    New NullTerminatedStringJar("text").Weaken)
+                    New NullTerminatedStringJar().Named("text").Weaken)
         Public Shared ReadOnly DialogAnyButtonClicked As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.DialogAnyButtonClicked,
                     New GameObjectIdJar().Named("dialog").Weaken,
                     New GameObjectIdJar().Named("button").Weaken)
@@ -414,24 +414,24 @@ Namespace WC3.Protocol
                     New UInt32Jar().Named("thread wait count").Weaken)
 
         Public Shared ReadOnly GameCacheSyncInteger As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncInteger,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken,
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken,
                     New UInt32Jar().Named("value").Weaken)
         Public Shared ReadOnly GameCacheSyncBoolean As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncBoolean,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken,
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken,
                     New UInt32Jar().Named("value").Weaken)
         Public Shared ReadOnly GameCacheSyncReal As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncReal,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken,
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken,
                     New Float32Jar().Named("value").Weaken)
         Public Shared ReadOnly GameCacheSyncUnit As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncUnit,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken,
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken,
                     New ObjectTypeJar().Named("unit type").Weaken,
                     New TupleJar("item slot", True,
                             New ObjectTypeJar().Named("item").Weaken,
@@ -465,32 +465,32 @@ Namespace WC3.Protocol
                     New UInt16Jar(showhex:=True).Named("hotkey flags").Weaken)
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         Public Shared ReadOnly GameCacheSyncString As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncString,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken,
-                    New NullTerminatedStringJar("value").Weaken)
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken,
+                    New NullTerminatedStringJar().Named("value").Weaken)
 
         Public Shared ReadOnly GameCacheSyncEmptyInteger As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncEmptyInteger,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken)
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken)
         Public Shared ReadOnly GameCacheSyncEmptyBoolean As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncEmptyBoolean,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken)
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken)
         Public Shared ReadOnly GameCacheSyncEmptyReal As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncEmptyReal,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken)
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken)
         Public Shared ReadOnly GameCacheSyncEmptyUnit As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncEmptyUnit,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken)
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken)
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         Public Shared ReadOnly GameCacheSyncEmptyString As Definition(Of Dictionary(Of InvariantString, Object)) = Define(GameActionId.GameCacheSyncEmptyString,
-                    New NullTerminatedStringJar("filename").Weaken,
-                    New NullTerminatedStringJar("mission key").Weaken,
-                    New NullTerminatedStringJar("key").Weaken)
+                    New NullTerminatedStringJar().Named("filename").Weaken,
+                    New NullTerminatedStringJar().Named("mission key").Weaken,
+                    New NullTerminatedStringJar().Named("key").Weaken)
 
         <Pure()>
         Public Shared Function TypeIdString(ByVal value As UInt32) As String

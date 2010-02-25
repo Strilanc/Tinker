@@ -33,9 +33,9 @@ Namespace WC3.Protocol
                     New UInt16Jar().Named("playable width").Weaken,
                     New UInt16Jar().Named("playable height").Weaken,
                     New UInt32Jar(showHex:=True).Named("xoro checksum").Weaken,
-                    New NullTerminatedStringJar("relative path").Weaken,
-                    New NullTerminatedStringJar("host name").Weaken,
-                    New NullTerminatedStringJar("unknown2").Weaken,
+                    New NullTerminatedStringJar().Named("relative path").Weaken,
+                    New NullTerminatedStringJar().Named("host name").Weaken,
+                    New NullTerminatedStringJar().Named("unknown2").Weaken,
                     New RawDataJar(Size:=20).Named("sha1 checksum").Weaken)
 
         Public Sub New(ByVal name As InvariantString)

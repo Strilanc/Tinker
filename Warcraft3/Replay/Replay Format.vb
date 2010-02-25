@@ -60,9 +60,9 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryStartOfReplay As New TupleJar(ReplayEntryId.StartOfReplay.ToString,
                 New UInt32Jar().Named("unknown1").Weaken,
                 New PlayerIdJar().Named("primary player id").Weaken,
-                New NullTerminatedStringJar("primary player name", maximumContentSize:=15).Weaken,
+                New NullTerminatedStringJar(maximumContentSize:=Protocol.Packets.MaxPlayerNameLength).Named("primary player name").Weaken,
                 New RemainingDataJar().Named("primary player shared data").DataSizePrefixed(prefixSize:=1).Weaken,
-                New NullTerminatedStringJar("game name").Weaken,
+                New NullTerminatedStringJar().Named("game name").Weaken,
                 New ByteJar().Named("unknown2").Weaken,
                 New Protocol.GameStatsJar("game stats").Weaken,
                 New UInt32Jar().Named("player count").Weaken,
@@ -70,7 +70,7 @@ Namespace WC3.Replay
                 New UInt32Jar().Named("language").Weaken)
         Public Shared ReadOnly ReplayEntryPlayerJoined As New TupleJar(ReplayEntryId.PlayerJoined.ToString,
                 New PlayerIdJar().Named("joiner id").Weaken,
-                New NullTerminatedStringJar("name", maximumContentSize:=15).Weaken,
+                New NullTerminatedStringJar(maximumContentSize:=Protocol.Packets.MaxPlayerNameLength).Named("name").Weaken,
                 New RemainingDataJar().Named("shared data").DataSizePrefixed(prefixSize:=1).Weaken,
                 New UInt32Jar().Named("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryPlayerLeft As New TupleJar(ReplayEntryId.PlayerLeft.ToString,
@@ -95,12 +95,12 @@ Namespace WC3.Replay
                     New UInt16Jar().Named("size").Weaken,
                     New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type").Weaken,
                     New EnumUInt32Jar(Of WC3.Protocol.ChatGroup)(checkDefined:=False).Named("receiving group").Weaken,
-                    New NullTerminatedStringJar("message").Weaken))
+                    New NullTerminatedStringJar().Named("message").Weaken))
             jar.AddPackerParser(WC3.Protocol.ChatType.Lobby, New TupleJar(ReplayEntryId.ChatMessage.ToString,
                     New PlayerIdJar().Named("speaker").Weaken,
                     New UInt16Jar().Named("size").Weaken,
                     New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type").Weaken,
-                    New NullTerminatedStringJar("message").Weaken))
+                    New NullTerminatedStringJar().Named("message").Weaken))
             Return jar
         End Function
         Public Shared ReadOnly ReplayEntryGameStateChecksum As New TupleJar(ReplayEntryId.GameStateChecksum.ToString,
@@ -117,7 +117,7 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState.Jar
         Public Shared ReadOnly ReplayEntryTick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(ReplayEntryId.Tick.ToString,
                 New UInt16Jar().Named("time span").Weaken,
-                New Protocol.PlayerActionSetJar("player action set").Repeated("player action sets").Weaken
+                New Protocol.PlayerActionSetJar().Repeated.Named("player action sets").Weaken
             ).DataSizePrefixed(prefixSize:=2)
     End Class
 End Namespace

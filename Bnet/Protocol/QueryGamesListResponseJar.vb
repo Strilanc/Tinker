@@ -35,8 +35,8 @@ Namespace Bnet.Protocol
                 New IPEndPointJar("host address").Weaken,
                 New EnumUInt32Jar(Of GameStates)().Named("game state").Weaken,
                 New UInt32Jar().Named("elapsed seconds").Weaken,
-                New NullTerminatedStringJar("game name").Weaken,
-                New NullTerminatedStringJar("game password").Weaken,
+                New NullTerminatedStringJar().Named("game name").Weaken,
+                New NullTerminatedStringJar().Named("game password").Weaken,
                 New TextHexValueJar("num free slots", digitCount:=1).Weaken,
                 New TextHexValueJar("game id", digitCount:=8).Weaken,
                 New WC3.Protocol.GameStatsJar("game statstring").Weaken)

@@ -110,10 +110,10 @@
         End Class
 
         <Extension()> <Pure()>
-        Public Function Repeated(Of T)(ByVal jar As IJar(Of T), ByVal name As InvariantString) As RepeatingJar(Of T)
+        Public Function Repeated(Of T)(ByVal jar As IAnonymousJar(Of T)) As RepeatingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of RepeatingJar(Of T))() IsNot Nothing)
-            Return New RepeatingJar(Of T)(name:=name, subJar:=jar)
+            Return New RepeatingJar(Of T)(subJar:=jar)
         End Function
         <Extension()> <Pure()>
         Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T), ByVal prefixSize As Integer) As DataSizePrefixedJar(Of T)

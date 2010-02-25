@@ -128,14 +128,11 @@ Namespace WC3.Protocol
     End Class
 
     Public NotInheritable Class GameActionJar
-        Inherits BaseJar(Of GameAction)
-        Public Sub New(ByVal name As InvariantString)
-            MyBase.New(name)
-        End Sub
+        Inherits BaseAnonymousJar(Of GameAction)
 
         Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Return New Pickle(Of TValue)(Name, value, Concat({value.id}, value.Payload.Data.ToArray).AsReadableList)
+            Return New Pickle(Of TValue)(value, Concat({value.Id}, value.Payload.Data.ToArray).AsReadableList, Function() value.ToString)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -143,7 +140,7 @@ Namespace WC3.Protocol
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameAction)
             Dim val = GameAction.FromData(data)
             Dim datum = data.SubView(0, val.Payload.Data.Count + 1) 'include the id
-            Return New Pickle(Of GameAction)(Name, val, datum)
+            Return New Pickle(Of GameAction)(val, datum, Function() val.ToString)
         End Function
     End Class
 
@@ -190,7 +187,7 @@ Namespace WC3.Protocol
         End Function
     End Class
     Public Class PlayerActionSetJar
-        Inherits BaseJar(Of PlayerActionSet)
+        Inherits BaseAnonymousJar(Of PlayerActionSet)
 
         Private ReadOnly _dataJar As IJar(Of Dictionary(Of InvariantString, Object))
 
@@ -198,11 +195,10 @@ Namespace WC3.Protocol
             Contract.Invariant(_dataJar IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString)
-            MyBase.New(name)
+        Public Sub New()
             _dataJar = New TupleJar("player action set",
                     New PlayerIdJar().Named("source").Weaken,
-                    New GameActionJar("action").Repeated(name:="actions").DataSizePrefixed(prefixSize:=2).Weaken)
+                    New GameActionJar().Repeated.Named("actions").DataSizePrefixed(prefixSize:=2).Weaken)
         End Sub
 
         Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
