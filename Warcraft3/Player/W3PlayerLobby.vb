@@ -2,7 +2,7 @@
 
 Namespace WC3
     Partial Public NotInheritable Class Player
-        Implements IPlayerDownloadAspect
+        Implements Download.IPlayerDownloadAspect
 
         Public Event SuperficialStateUpdated(ByVal sender As Player)
         Public Event StateUpdated(ByVal sender As Player)
@@ -27,13 +27,13 @@ Namespace WC3
         End Function
         Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                     ByVal handler As Func(Of IPickle(Of T), ifuture)) As IFuture(Of IDisposable) _
-                                                    Implements IPlayerDownloadAspect.QueueAddPacketHandler
+                                                    Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
             Return inQueue.QueueFunc(Function() AddRemotePacketHandler(packetDefinition, handler))
         End Function
 
         <Pure()>
         <ContractVerification(False)>
-        Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
+        Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
             Return Protocol.MakeOtherPlayerJoined(Name, PID, peerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
         End Function

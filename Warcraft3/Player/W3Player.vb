@@ -21,7 +21,7 @@
         Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
         Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
         Private _numPeerConnections As Integer
-        Private _downloadManager As DownloadManager
+        Private _downloadManager As Download.Manager
         Private ReadOnly pinger As Pinger
 
         Private ReadOnly _name As InvariantString
@@ -73,7 +73,7 @@
         Public Sub New(ByVal index As PlayerID,
                        ByVal connectingPlayer As W3ConnectingPlayer,
                        ByVal clock As IClock,
-                       ByVal downloadManager As DownloadManager,
+                       ByVal downloadManager As Download.Manager,
                        Optional ByVal logger As Logger = Nothing)
             'Contract.Requires(game IsNot Nothing)
             'Contract.Requires(connectingPlayer IsNot Nothing)
@@ -115,12 +115,12 @@
                                                                    reasonDescription:="Stopped responding to pings.")
         End Sub
 
-        Public ReadOnly Property Name As InvariantString Implements IPlayerDownloadAspect.Name
+        Public ReadOnly Property Name As InvariantString Implements Download.IPlayerDownloadAspect.Name
             Get
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property PID As PlayerID Implements IPlayerDownloadAspect.PID
+        Public ReadOnly Property PID As PlayerID Implements Download.IPlayerDownloadAspect.PID
             Get
                 Return _index
             End Get
@@ -163,7 +163,7 @@
             RaiseEvent Disconnected(Me, expected, reportedReason, reasonDescription)
             Me.Dispose()
         End Sub
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements IPlayerDownloadAspect.QueueDisconnect
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements Download.IPlayerDownloadAspect.QueueDisconnect
             Return inQueue.QueueAction(Sub() Disconnect(expected, reportedReason, reasonDescription))
         End Function
 
@@ -172,7 +172,7 @@
             If Me.isFake Then Return
             socket.SendPacket(pk)
         End Sub
-        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture Implements IPlayerDownloadAspect.QueueSendPacket
+        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture Implements Download.IPlayerDownloadAspect.QueueSendPacket
             Dim result = inQueue.QueueAction(Sub() SendPacket(packet))
             result.SetHandled()
             Return result

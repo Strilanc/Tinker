@@ -112,11 +112,11 @@ Namespace WC3
             Dim outQueue = New TaskedCallQueue
             Dim players = New AsyncViewableCollection(Of Player)(outQueue)
             Dim startPlayerholdPoint = New HoldPoint(Of Player)
-            Dim downloadManager = New DownloadManager(clock:=clock,
-                                                      Map:=settings.Map,
-                                                      logger:=logger,
-                                                      allowDownloads:=settings.AllowDownloads,
-                                                      allowUploads:=settings.AllowUpload)
+            Dim downloadManager = New Download.Manager(clock:=clock,
+                                                       Map:=settings.Map,
+                                                       logger:=logger,
+                                                       allowDownloads:=settings.AllowDownloads,
+                                                       allowUploads:=settings.AllowUpload)
             Dim lobby = New GameLobby(startPlayerholdPoint:=startPlayerholdPoint,
                                       downloadManager:=downloadManager,
                                       logger:=logger,
@@ -675,7 +675,7 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _lobby.AddPlayer(newPlayer))
         End Function
-        Public Function QueueSendMapPiece(ByVal player As IPlayerDownloadAspect,
+        Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect,
                                           ByVal position As UInt32) As IFuture
             Return inQueue.QueueFunc(Function() _lobby.SendMapPiece(player, position)).Defuturized
         End Function

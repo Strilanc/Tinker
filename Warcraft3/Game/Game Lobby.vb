@@ -2,7 +2,7 @@
     Public NotInheritable Class GameLobby
         Inherits FutureDisposable
 
-        Private ReadOnly _downloadManager As DownloadManager
+        Private ReadOnly _downloadManager As Download.Manager
         Private ReadOnly _startPlayerHoldPoint As HoldPoint(Of Player)
         Private ReadOnly _freeIndexes As List(Of PlayerID)
         Private ReadOnly _logger As Logger
@@ -30,7 +30,7 @@
         End Sub
 
         Public Sub New(ByVal startPlayerholdPoint As HoldPoint(Of Player),
-                       ByVal downloadManager As DownloadManager,
+                       ByVal downloadManager As Download.Manager,
                        ByVal logger As Logger,
                        ByVal players As AsyncViewableCollection(Of Player),
                        ByVal clock As IClock,
@@ -142,7 +142,7 @@
                 Return _startPlayerHoldPoint
             End Get
         End Property
-        Public ReadOnly Property DownloadManager As DownloadManager
+        Public ReadOnly Property DownloadManager As Download.Manager
             Get
                 Return _downloadManager
             End Get
@@ -348,7 +348,7 @@
                                            coveredSlot.WithContents(New SlotContentsCovered(coveringSlot.MatchableId, playerIndex, {})))
         End Function
 
-        Public Function SendMapPiece(ByVal receiver As IPlayerDownloadAspect,
+        Public Function SendMapPiece(ByVal receiver As Download.IPlayerDownloadAspect,
                                      ByVal position As UInt32) As IFuture
             Contract.Requires(receiver IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)

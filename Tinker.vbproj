@@ -212,6 +212,9 @@
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
     <Compile Include="Library\Stream Extensions.vb" />
+    <Compile Include="Warcraft3\Download\Download Transfer.vb" />
+    <Compile Include="Warcraft3\Download\IPlayerDownloadAspect.vb" />
+    <Compile Include="Warcraft3\Download\Download Client.vb" />
     <Compile Include="Warcraft3\SlotContents.vb" />
     <Compile Include="Warcraft3\SlotSet.vb" />
     <Compile Include="Warcraft3\Game\Game Lobby.vb" />
@@ -219,7 +222,7 @@
     <Compile Include="Warcraft3\Replay\Replay Format.vb" />
     <Compile Include="Warcraft3\Replay\ReplayManager.vb" />
     <Compile Include="Warcraft3\Replay\ReplayWriter.vb" />
-    <Compile Include="Warcraft3\Download Manager.vb" />
+    <Compile Include="Warcraft3\Download\Download Manager.vb" />
     <Compile Include="Warcraft3\Game\GameLoggerControl.Designer.vb">
       <DependentUpon>GameLoggerControl.vb</DependentUpon>
     </Compile>
