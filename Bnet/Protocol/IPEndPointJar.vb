@@ -5,8 +5,8 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of Net.IPEndPoint)
 
         Private Shared ReadOnly DataJar As TupleJar = New TupleJar("NetIPEndPoint",
-                    New UInt16Jar("protocol").Weaken,
-                    New UInt16Jar("port", ByteOrder:=ByteOrder.BigEndian).Weaken,
+                    New UInt16Jar().Named("protocol").Weaken,
+                    New UInt16Jar(ByteOrder:=ByteOrder.BigEndian).Named("port").Weaken,
                     New IPAddressJar("ip").Weaken,
                     New RawDataJar("unknown", Size:=8).Weaken)
 

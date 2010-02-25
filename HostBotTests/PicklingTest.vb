@@ -10,33 +10,33 @@ Public Class PicklingTest
 #Region "Numeric Jars"
     <TestMethod()>
     Public Sub ByteJarTest()
-        Dim jar = New ByteJar("jar")
+        Dim jar = New ByteJar()
         JarTest(jar, 0, {0})
         JarTest(jar, 1, {1})
         JarTest(jar, Byte.MaxValue, {Byte.MaxValue})
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
 
-        jar = New ByteJar("jar", showHex:=True)
+        jar = New ByteJar(showHex:=True)
         JarTest(jar, 0, {0})
         JarTest(jar, 1, {1})
         JarTest(jar, Byte.MaxValue, {Byte.MaxValue})
     End Sub
     <TestMethod()>
     Public Sub UInt16JarTest()
-        Dim jar = New UInt16Jar("jar")
+        Dim jar = New UInt16Jar()
         JarTest(jar, 0, {0, 0})
         JarTest(jar, 1, {1, 0})
         JarTest(jar, 256, {0, 1})
         JarTest(jar, UInt16.MaxValue, {&HFF, &HFF})
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsReadableList))
 
-        jar = New UInt16Jar("jar", showHex:=True)
+        jar = New UInt16Jar(showHex:=True)
         JarTest(jar, 0, {0, 0})
         JarTest(jar, 1, {1, 0})
         JarTest(jar, 256, {0, 1})
         JarTest(jar, UInt16.MaxValue, {&HFF, &HFF})
 
-        jar = New UInt16Jar("jar", ByteOrder:=ByteOrder.BigEndian)
+        jar = New UInt16Jar(ByteOrder:=ByteOrder.BigEndian)
         JarTest(jar, 0, {0, 0})
         JarTest(jar, 1, {0, 1})
         JarTest(jar, 256, {1, 0})
@@ -44,7 +44,7 @@ Public Class PicklingTest
     End Sub
     <TestMethod()>
     Public Sub UInt32JarTest()
-        Dim jar = New UInt32Jar("jar")
+        Dim jar = New UInt32Jar()
         JarTest(jar, 0, {0, 0, 0, 0})
         JarTest(jar, 1, {1, 0, 0, 0})
         JarTest(jar, 256, {0, 1, 0, 0})
@@ -52,14 +52,14 @@ Public Class PicklingTest
         JarTest(jar, UInt32.MaxValue, {&HFF, &HFF, &HFF, &HFF})
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3}.AsReadableList))
 
-        jar = New UInt32Jar("jar", showHex:=True)
+        jar = New UInt32Jar(showHex:=True)
         JarTest(jar, 0, {0, 0, 0, 0})
         JarTest(jar, 1, {1, 0, 0, 0})
         JarTest(jar, 256, {0, 1, 0, 0})
         JarTest(jar, UInt16.MaxValue, {&HFF, &HFF, 0, 0})
         JarTest(jar, UInt32.MaxValue, {&HFF, &HFF, &HFF, &HFF})
 
-        jar = New UInt32Jar("jar", ByteOrder:=ByteOrder.BigEndian)
+        jar = New UInt32Jar(ByteOrder:=ByteOrder.BigEndian)
         JarTest(jar, 0, {0, 0, 0, 0})
         JarTest(jar, 1, {0, 0, 0, 1})
         JarTest(jar, 256, {0, 0, 1, 0})
@@ -68,7 +68,7 @@ Public Class PicklingTest
     End Sub
     <TestMethod()>
     Public Sub UInt64JarTest()
-        Dim jar = New UInt64Jar("jar")
+        Dim jar = New UInt64Jar()
         JarTest(jar, 0, {0, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, 1, {1, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, 256, {0, 1, 0, 0, 0, 0, 0, 0})
@@ -77,7 +77,7 @@ Public Class PicklingTest
         JarTest(jar, UInt64.MaxValue, {&HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF})
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 2, 3, 4, 5, 6, 7}.AsReadableList))
 
-        jar = New UInt64Jar("jar", showHex:=True)
+        jar = New UInt64Jar(showHex:=True)
         JarTest(jar, 0, {0, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, 1, {1, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, 256, {0, 1, 0, 0, 0, 0, 0, 0})
@@ -85,7 +85,7 @@ Public Class PicklingTest
         JarTest(jar, UInt32.MaxValue, {&HFF, &HFF, &HFF, &HFF, 0, 0, 0, 0})
         JarTest(jar, UInt64.MaxValue, {&HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF, &HFF})
 
-        jar = New UInt64Jar("jar", ByteOrder:=ByteOrder.BigEndian)
+        jar = New UInt64Jar(ByteOrder:=ByteOrder.BigEndian)
         JarTest(jar, 0, {0, 0, 0, 0, 0, 0, 0, 0})
         JarTest(jar, 1, {0, 0, 0, 0, 0, 0, 0, 1})
         JarTest(jar, 256, {0, 0, 0, 0, 0, 0, 1, 0})
@@ -95,7 +95,7 @@ Public Class PicklingTest
     End Sub
     <TestMethod()>
     Public Sub Float32JarTest()
-        Dim jar = New Float32Jar("jar")
+        Dim jar = New Float32Jar()
         Dim m = New IO.MemoryStream()
         Dim br = New IO.BinaryWriter(m)
 
@@ -115,7 +115,7 @@ Public Class PicklingTest
     End Sub
     <TestMethod()>
     Public Sub Float64JarTest()
-        Dim jar = New Float64Jar("jar")
+        Dim jar = New Float64Jar()
         Dim m = New IO.MemoryStream()
         Dim br = New IO.BinaryWriter(m)
 
@@ -343,7 +343,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub ListJarTest()
-        Dim jar = New ListJar(Of UInt16)("jar", New UInt16Jar("jar"), prefixSize:=1)
+        Dim jar = New ListJar(Of UInt16)("jar", New UInt16Jar().Named("jar"), prefixSize:=1)
         Dim equater As Func(Of IList(Of UInt16), IList(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
         JarTest(jar, equater, {}, {0})
         JarTest(jar, equater, {0}, {1, 0, 0})
@@ -352,7 +352,7 @@ Public Class PicklingTest
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsReadableList))
 
-        jar = New ListJar(Of UInt16)("jar", New UInt16Jar("jar"), prefixSize:=4)
+        jar = New ListJar(Of UInt16)("jar", New UInt16Jar().Named("jar"), prefixSize:=4)
         JarTest(jar, equater, {}, {0, 0, 0, 0})
         JarTest(jar, equater, {0}, {1, 0, 0, 0, 0, 0})
         JarTest(jar, equater, {1}, {1, 0, 0, 0, 1, 0})
@@ -362,7 +362,7 @@ Public Class PicklingTest
     End Sub
     <TestMethod()>
     Public Sub RepeatingJarTest()
-        Dim jar = New RepeatingJar(Of UInt16)("jar", New UInt16Jar("jar"))
+        Dim jar = New RepeatingJar(Of UInt16)("jar", New UInt16Jar().Named("jar"))
         Dim equater As Func(Of IReadableList(Of UInt16), IReadableList(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
         JarTest(jar, equater, New UInt16() {}.AsReadableList, {}, appendSafe:=False)
         JarTest(jar, equater, New UInt16() {0}.AsReadableList, {0, 0}, appendSafe:=False)
@@ -397,7 +397,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub TupleJarTest()
-        Dim jar = New TupleJar("jar", New UInt32Jar("32").Weaken, New UInt16Jar("16").Weaken)
+        Dim jar = New TupleJar("jar", New UInt32Jar().Named("32").Weaken, New UInt16Jar().Named("16").Weaken)
         Dim equater = Function(d1 As Dictionary(Of InvariantString, Object), d2 As Dictionary(Of InvariantString, Object)) DictionaryEqual(d1, d2)
         JarTest(jar, equater, New Dictionary(Of InvariantString, Object)() From {{"32", 0UI}, {"16", 0US}}, {0, 0, 0, 0, 0, 0})
         JarTest(jar, equater, New Dictionary(Of InvariantString, Object)() From {{"32", UInt32.MaxValue}, {"16", 0US}}, {&HFF, &HFF, &HFF, &HFF, 0, 0})
@@ -408,7 +408,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub DataSizePrefixedJarTest()
-        Dim jar = New DataSizePrefixedJar(Of Byte)(New ByteJar("test"), prefixSize:=2)
+        Dim jar = New DataSizePrefixedJar(Of Byte)(New ByteJar().Named("test"), prefixSize:=2)
         JarTest(jar, 5, {1, 0, 5})
         JarTest(jar, 3, {1, 0, 3})
 
@@ -421,7 +421,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub OptionalJarTest()
-        Dim jar = New OptionalJar(Of Byte)(New ByteJar("test"))
+        Dim jar = New OptionalJar(Of Byte)(New ByteJar().Named("test"))
         Dim equater = Function(e1 As Tuple(Of Boolean, Byte), e2 As Tuple(Of Boolean, Byte)) e1.Equals(e2)
         JarTest(jar, equater, Tuple(True, CByte(5)), {5})
         JarTest(jar, equater, Tuple(False, CByte(0)), {}, appendSafe:=False)
@@ -436,7 +436,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub ChecksumPrefixedJarTest()
-        Dim jar = New ChecksumPrefixedJar(Of Byte)(New ByteJar("test"), checksumSize:=1, checksumFunction:=Function(a) {a(0) Xor CByte(1)}.AsReadableList)
+        Dim jar = New ChecksumPrefixedJar(Of Byte)(New ByteJar().Named("test"), checksumSize:=1, checksumFunction:=Function(a) {a(0) Xor CByte(1)}.AsReadableList)
         JarTest(jar, 5, {4, 5})
         JarTest(jar, 3, {2, 3})
         JarTest(jar, 2, {3, 2})

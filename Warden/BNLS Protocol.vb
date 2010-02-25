@@ -82,14 +82,14 @@ Namespace Warden
             End Sub
 
             Public Shared ReadOnly FullServerConnect As New TupleJar(WardenPacketId.FullServiceConnect.ToString,
-                    New UInt32Jar("cookie").Weaken,
+                    New UInt32Jar(showHex:=True).Named("cookie").Weaken,
                     New EnumUInt32Jar(Of ClientType)("client type").Weaken,
                     New RemainingDataJar("seed").DataSizePrefixed(prefixSize:=2).Weaken,
                     New NullTerminatedStringJar("username").Weaken,
                     New RemainingDataJar("password").DataSizePrefixed(prefixSize:=2).Weaken,
                     New RemainingDataJar("unspecified").Weaken)
             Public Shared ReadOnly FullServiceHandleWardenPacket As New TupleJar(WardenPacketId.FullServiceHandleWardenPacket.ToString,
-                    New UInt32Jar("cookie").Weaken,
+                    New UInt32Jar(showHex:=True).Named("cookie").Weaken,
                     New RemainingDataJar("raw warden packet data").DataSizePrefixed(prefixSize:=2).Weaken,
                     New RemainingDataJar("unspecified").Weaken)
         End Class
@@ -117,8 +117,8 @@ Namespace Warden
     Public Class ServerPacket
         Private Shared ReadOnly dataJar As New TupleJar("data",
                     New EnumByteJar(Of WardenPacketId)("type").Weaken,
-                    New UInt32Jar("cookie").Weaken,
-                    New ByteJar("result").Weaken,
+                    New UInt32Jar().Named("cookie").Weaken,
+                    New ByteJar().Named("result").Weaken,
                     New RemainingDataJar("data").DataSizePrefixed(prefixSize:=2).Weaken,
                     New RemainingDataJar("unspecified").Weaken)
 

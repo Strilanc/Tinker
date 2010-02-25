@@ -13,10 +13,10 @@ Namespace Bnet.Protocol
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name)
             Me._dataJar = New TupleJar(name,
-                    New UInt32Jar("length").Weaken,
+                    New UInt32Jar().Named("length").Weaken,
                     New EnumUInt32Jar(Of ProductType)("product").Weaken,
-                    New UInt32Jar("public key").Weaken,
-                    New UInt32Jar("unknown").Weaken,
+                    New UInt32Jar().Named("public key").Weaken,
+                    New UInt32Jar().Named("unknown").Weaken,
                     New RawDataJar("proof", Size:=20).Weaken)
         End Sub
 

@@ -6,15 +6,15 @@ Namespace WC3.Protocol
 
         Public Sub New(ByVal name As InvariantString)
             MyBase.New(name, True,
-                    New ByteJar("pid").Weaken,
-                    New ByteJar("dl").Weaken,
+                    New ByteJar().Named("pid").Weaken,
+                    New ByteJar().Named("dl").Weaken,
                     New EnumByteJar(Of Protocol.SlotState)("state").Weaken,
-                    New ByteJar("cpu").Weaken,
-                    New ByteJar("team").Weaken,
+                    New ByteJar().Named("cpu").Weaken,
+                    New ByteJar().Named("team").Weaken,
                     New EnumByteJar(Of Protocol.PlayerColor)("color").Weaken,
                     New EnumByteJar(Of Protocol.Races)("race").Weaken,
                     New EnumByteJar(Of Protocol.ComputerLevel)("difficulty").Weaken,
-                    New ByteJar("handicap").Weaken)
+                    New ByteJar().Named("handicap").Weaken)
         End Sub
 
         Public Shared Function PackSlot(ByVal slot As Slot,

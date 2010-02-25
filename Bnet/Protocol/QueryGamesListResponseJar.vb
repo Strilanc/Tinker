@@ -31,10 +31,10 @@ Namespace Bnet.Protocol
 
         Private Shared ReadOnly gameDataJar As New TupleJar("game",
                 New EnumUInt32Jar(Of WC3.Protocol.GameTypes)("game type").Weaken,
-                New UInt32Jar("language id").Weaken,
+                New UInt32Jar().Named("language id").Weaken,
                 New IPEndPointJar("host address").Weaken,
                 New EnumUInt32Jar(Of GameStates)("game state").Weaken,
-                New UInt32Jar("elapsed seconds").Weaken,
+                New UInt32Jar().Named("elapsed seconds").Weaken,
                 New NullTerminatedStringJar("game name").Weaken,
                 New NullTerminatedStringJar("game password").Weaken,
                 New TextHexValueJar("num free slots", digitCount:=1).Weaken,
