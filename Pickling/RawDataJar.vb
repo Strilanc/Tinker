@@ -1,7 +1,7 @@
 Namespace Pickling
     '''<summary>Pickles fixed-size lists of bytes.</summary>
     Public Class RawDataJar
-        Inherits BaseAnonymousJar(Of IReadableList(Of Byte))
+        Inherits BaseJar(Of IReadableList(Of Byte))
         Private ReadOnly _size As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()

@@ -2,7 +2,7 @@
 
 Namespace WC3.Protocol
     Public NotInheritable Class GameObjectIdJar
-        Inherits BaseAnonymousJar(Of GameObjectId)
+        Inherits BaseJar(Of GameObjectId)
 
         Public Overrides Function Pack(Of TValue As GameObjectId)(ByVal value As TValue) As IPickle(Of TValue)
             Dim valued As GameObjectId = value

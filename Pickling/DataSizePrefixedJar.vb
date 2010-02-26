@@ -1,9 +1,9 @@
 Namespace Pickling
     '''<summary>Pickles values where the serialized form is prefixed with the number of bytes used (not counting the prefix).</summary>
     Public NotInheritable Class DataSizePrefixedJar(Of T)
-        Inherits BaseAnonymousJar(Of T)
+        Inherits BaseJar(Of T)
 
-        Private ReadOnly _subJar As IAnonymousJar(Of T)
+        Private ReadOnly _subJar As IJar(Of T)
         Private ReadOnly _prefixSize As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -12,7 +12,7 @@ Namespace Pickling
             Contract.Invariant(_prefixSize <= 8)
         End Sub
 
-        Public Sub New(ByVal subJar As IAnonymousJar(Of T),
+        Public Sub New(ByVal subJar As IJar(Of T),
                        ByVal prefixSize As Integer)
             Contract.Requires(prefixSize > 0)
             Contract.Requires(subJar IsNot Nothing)

@@ -238,13 +238,13 @@ Namespace WC3.Protocol
 
         Public NotInheritable Class Definition(Of T)
             Private ReadOnly _id As GameActionId
-            Private ReadOnly _jar As IAnonymousJar(Of T)
+            Private ReadOnly _jar As IJar(Of T)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As GameActionId, ByVal jar As IAnonymousJar(Of T))
+            Friend Sub New(ByVal id As GameActionId, ByVal jar As IJar(Of T))
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -255,9 +255,9 @@ Namespace WC3.Protocol
                     Return _id
                 End Get
             End Property
-            Public ReadOnly Property Jar As IAnonymousJar(Of T)
+            Public ReadOnly Property Jar As IJar(Of T)
                 Get
-                    Contract.Ensures(Contract.Result(Of IAnonymousJar(Of T))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IJar(Of T))() IsNot Nothing)
                     Return _jar
                 End Get
             End Property
@@ -265,14 +265,14 @@ Namespace WC3.Protocol
         Private Shared Function Define(ByVal id As GameActionId) As Definition(Of Object)
             Return New Definition(Of Object)(id, New EmptyJar())
         End Function
-        Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IAnonymousJar(Of T)) As Definition(Of T)
+        Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Return New Definition(Of T)(id, jar)
         End Function
         Private Shared Function Define(ByVal id As GameActionId,
-                                       ByVal jar1 As IJar(Of Object),
-                                       ByVal jar2 As IJar(Of Object),
-                                       ByVal ParamArray jars() As IJar(Of Object)) As Definition(Of Dictionary(Of InvariantString, Object))
+                                       ByVal jar1 As INamedJar(Of Object),
+                                       ByVal jar2 As INamedJar(Of Object),
+                                       ByVal ParamArray jars() As INamedJar(Of Object)) As Definition(Of Dictionary(Of InvariantString, Object))
             Contract.Requires(jar1 IsNot Nothing)
             Contract.Requires(jar2 IsNot Nothing)
             Contract.Requires(jars IsNot Nothing)

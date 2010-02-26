@@ -1,8 +1,8 @@
 Namespace Pickling
     Public NotInheritable Class InteriorSwitchJar(Of TKey, T)
-        Inherits BaseAnonymousJar(Of T)
-        Private ReadOnly _packers As New Dictionary(Of TKey, IAnonymousPackJar(Of T))
-        Private ReadOnly _parsers As New Dictionary(Of TKey, IAnonymousParseJar(Of T))
+        Inherits BaseJar(Of T)
+        Private ReadOnly _packers As New Dictionary(Of TKey, IPackJar(Of T))
+        Private ReadOnly _parsers As New Dictionary(Of TKey, IParseJar(Of T))
         Private ReadOnly _valueKeyExtractor As Func(Of T, TKey)
         Private ReadOnly _dataKeyExtractor As Func(Of IReadableList(Of Byte), TKey)
 
@@ -32,7 +32,7 @@ Namespace Pickling
             Return _packers(key).AssumeNotNull.Pack(value)
         End Function
 
-        Public Sub AddPackerParser(ByVal key As TKey, ByVal jar As IAnonymousJar(Of T))
+        Public Sub AddPackerParser(ByVal key As TKey, ByVal jar As IJar(Of T))
             Contract.Requires(key IsNot Nothing)
             Contract.Requires(jar IsNot Nothing)
             If _parsers.ContainsKey(key) Then Throw New InvalidOperationException("Parser already registered to {0}".Frmt(key))
@@ -40,13 +40,13 @@ Namespace Pickling
             _parsers.Add(key, jar)
             _packers.Add(key, jar)
         End Sub
-        Public Sub AddParser(ByVal key As TKey, ByVal parser As IAnonymousParseJar(Of T))
+        Public Sub AddParser(ByVal key As TKey, ByVal parser As IParseJar(Of T))
             Contract.Requires(key IsNot Nothing)
             Contract.Requires(parser IsNot Nothing)
             If _parsers.ContainsKey(key) Then Throw New InvalidOperationException("Parser already registered to {0}".Frmt(key))
             _parsers.Add(key, parser)
         End Sub
-        Public Sub AddPacker(ByVal key As TKey, ByVal packer As IAnonymousPackJar(Of T))
+        Public Sub AddPacker(ByVal key As TKey, ByVal packer As IPackJar(Of T))
             Contract.Requires(key IsNot Nothing)
             Contract.Requires(packer IsNot Nothing)
             If _packers.ContainsKey(key) Then Throw New InvalidOperationException("Packer already registered to {0}".Frmt(key))

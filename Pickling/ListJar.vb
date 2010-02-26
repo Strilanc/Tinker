@@ -1,8 +1,8 @@
 Namespace Pickling
     '''<summary>Pickles lists of values, where the serialized form is prefixed by the number of items.</summary>
     Public NotInheritable Class ListJar(Of T)
-        Inherits BaseAnonymousJar(Of IReadableList(Of T))
-        Private ReadOnly _subJar As IAnonymousJar(Of T)
+        Inherits BaseJar(Of IReadableList(Of T))
+        Private ReadOnly _subJar As IJar(Of T)
         Private ReadOnly _prefixSize As Integer
         Private ReadOnly _useSingleLineDescription As Boolean
 
@@ -12,7 +12,7 @@ Namespace Pickling
             Contract.Invariant(_subJar IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal subJar As IAnonymousJar(Of T),
+        Public Sub New(ByVal subJar As IJar(Of T),
                        ByVal prefixSize As Integer,
                        Optional ByVal useSingleLineDescription As Boolean = False)
             Contract.Requires(subJar IsNot Nothing)

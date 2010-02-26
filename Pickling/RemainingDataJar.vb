@@ -1,7 +1,7 @@
 Namespace Pickling
     '''<summary>Pickles the remaining bytes in data.</summary>
     Public Class RemainingDataJar
-        Inherits BaseAnonymousJar(Of IReadableList(Of Byte))
+        Inherits BaseJar(Of IReadableList(Of Byte))
 
         Public Overrides Function Pack(Of TValue As IReadableList(Of Byte))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

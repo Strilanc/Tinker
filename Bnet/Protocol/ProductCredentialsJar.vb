@@ -2,7 +2,7 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public NotInheritable Class ProductCredentialsJar
-        Inherits BaseAnonymousJar(Of ProductCredentials)
+        Inherits BaseJar(Of ProductCredentials)
 
         Private Shared ReadOnly DataJar As New TupleJar(
                 New UInt32Jar().Named("length").Weaken,

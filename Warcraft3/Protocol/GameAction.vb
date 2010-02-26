@@ -3,15 +3,15 @@
 Namespace WC3.Protocol
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class GameAction
-        Private Shared ReadOnly ActionJar As IJar(Of PrefixPickle(Of GameActionId)) = MakeJar()
+        Private Shared ReadOnly ActionJar As INamedJar(Of PrefixPickle(Of GameActionId)) = MakeJar()
         Private ReadOnly _id As GameActionId
-        Private ReadOnly _payload As IPickle
+        Private ReadOnly _payload As ISimplePickle
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal id As GameActionId, ByVal payload As IPickle)
+        Private Sub New(ByVal id As GameActionId, ByVal payload As ISimplePickle)
             Contract.Requires(payload IsNot Nothing)
             Me._id = id
             Me._payload = payload
@@ -34,9 +34,9 @@ Namespace WC3.Protocol
                 Return _id
             End Get
         End Property
-        Public ReadOnly Property Payload As IPickle
+        Public ReadOnly Property Payload As ISimplePickle
             Get
-                Contract.Ensures(Contract.Result(Of IPickle)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
                 Return _payload
             End Get
         End Property
@@ -48,8 +48,8 @@ Namespace WC3.Protocol
             jar.AddPackerParser(definition.Id, definition.Jar.Weaken)
         End Sub
 
-        Private Shared Function MakeJar() As IJar(Of PrefixPickle(Of GameActionId))
-            Contract.Ensures(Contract.Result(Of IJar(Of PrefixPickle(Of GameActionId)))() IsNot Nothing)
+        Private Shared Function MakeJar() As INamedJar(Of PrefixPickle(Of GameActionId))
+            Contract.Ensures(Contract.Result(Of INamedJar(Of PrefixPickle(Of GameActionId)))() IsNot Nothing)
             Dim jar = New PrefixSwitchJar(Of GameActionId)()
             reg(jar, GameActions.PauseGame)
             reg(jar, GameActions.ResumeGame)
@@ -128,7 +128,7 @@ Namespace WC3.Protocol
     End Class
 
     Public NotInheritable Class GameActionJar
-        Inherits BaseAnonymousJar(Of GameAction)
+        Inherits BaseJar(Of GameAction)
 
         Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
@@ -187,7 +187,7 @@ Namespace WC3.Protocol
         End Function
     End Class
     Public Class PlayerActionSetJar
-        Inherits BaseAnonymousJar(Of PlayerActionSet)
+        Inherits BaseJar(Of PlayerActionSet)
 
         Private Shared ReadOnly DataJar As New TupleJar(
                 New PlayerIdJar().Named("source").Weaken,

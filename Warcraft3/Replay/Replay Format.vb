@@ -84,9 +84,9 @@ Namespace WC3.Replay
                 New UInt32Jar().Named("unknown").Weaken)
         Public Shared ReadOnly ReplayEntryGameStarted As New TupleJar(
                 New UInt32Jar().Named("unknown").Weaken)
-        Public Shared ReadOnly ReplayEntryChatMessage As IAnonymousJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
-        Private Shared Function MakeTextJar() As IAnonymousJar(Of Dictionary(Of InvariantString, Object))
-            Contract.Ensures(Contract.Result(Of IAnonymousJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
+        Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
+        Private Shared Function MakeTextJar() As IJar(Of Dictionary(Of InvariantString, Object))
+            Contract.Ensures(Contract.Result(Of IJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
             Dim jar = New InteriorSwitchJar(Of WC3.Protocol.ChatType, Dictionary(Of InvariantString, Object))(
                     valueKeyExtractor:=Function(val) CType(val("type"), WC3.Protocol.ChatType),
                     dataKeyExtractor:=Function(data) CType(data(3), WC3.Protocol.ChatType))
@@ -114,8 +114,8 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryTournamentForcedCountdown As New TupleJar(
                 New UInt32Jar().Named("counter state").Weaken,
                 New UInt32Jar().Named("counter time").Weaken)
-        Public Shared ReadOnly ReplayEntryLobbyState As IAnonymousJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState.Jar
-        Public Shared ReadOnly ReplayEntryTick As IAnonymousJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(
+        Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState.Jar
+        Public Shared ReadOnly ReplayEntryTick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(
                 New UInt16Jar().Named("time span").Weaken,
                 New Protocol.PlayerActionSetJar().Repeated.Named("player action sets").Weaken
             ).DataSizePrefixed(prefixSize:=2)

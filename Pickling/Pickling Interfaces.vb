@@ -1,20 +1,20 @@
 ﻿Namespace Pickling
     '''<summary>Stores the serialization of a value, as well as a description of the value.</summary>
-    <ContractClass(GetType(IPickle.ContractClass))>
-    Public Interface IPickle
+    <ContractClass(GetType(ISimplePickle.ContractClass))>
+    Public Interface ISimplePickle
         ReadOnly Property Data As IReadableList(Of Byte)
         ReadOnly Property Description As Lazy(Of String)
 
-        <ContractClassFor(GetType(IPickle))>
+        <ContractClassFor(GetType(ISimplePickle))>
         Class ContractClass
-            Implements IPickle
-            Public ReadOnly Property Data As IReadableList(Of Byte) Implements IPickle.Data
+            Implements ISimplePickle
+            Public ReadOnly Property Data As IReadableList(Of Byte) Implements ISimplePickle.Data
                 Get
                     Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public ReadOnly Property Description As Lazy(Of String) Implements IPickle.Description
+            Public ReadOnly Property Description As Lazy(Of String) Implements ISimplePickle.Description
                 Get
                     Contract.Ensures(Contract.Result(Of Lazy(Of String))() IsNot Nothing)
                     Throw New NotSupportedException
@@ -26,18 +26,18 @@
     '''<summary>Stores the serialization of a value, as well as a description of the value and the value itself.</summary>
     <ContractClass(GetType(ContractClassIPickle(Of )))>
     Public Interface IPickle(Of Out T)
-        Inherits IPickle
+        Inherits ISimplePickle
         ReadOnly Property Value As T
     End Interface
     <ContractClassFor(GetType(IPickle(Of )))>
     Public NotInheritable Class ContractClassIPickle(Of T)
         Implements IPickle(Of T)
-        Public ReadOnly Property Data As IReadableList(Of Byte) Implements IPickle.Data
+        Public ReadOnly Property Data As IReadableList(Of Byte) Implements ISimplePickle.Data
             Get
                 Throw New NotSupportedException
             End Get
         End Property
-        Public ReadOnly Property Description As Lazy(Of String) Implements IPickle.Description
+        Public ReadOnly Property Description As Lazy(Of String) Implements ISimplePickle.Description
             Get
                 Throw New NotSupportedException
             End Get
@@ -57,13 +57,13 @@
 
     '''<summary>Packs values to create pickles.</summary>
     <ContractClass(GetType(ContractClassIPackJar(Of )))>
-    Public Interface IAnonymousPackJar(Of In T)
+    Public Interface IPackJar(Of In T)
         Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
     End Interface
-    <ContractClassFor(GetType(IAnonymousPackJar(Of )))>
+    <ContractClassFor(GetType(IPackJar(Of )))>
     Public NotInheritable Class ContractClassIPackJar(Of T)
-        Implements IAnonymousPackJar(Of T)
-        Public Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IAnonymousPackJar(Of T).Pack
+        Implements IPackJar(Of T)
+        Public Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of TValue))() IsNot Nothing)
             Throw New NotSupportedException()
@@ -72,13 +72,13 @@
 
     '''<summary>Parses data to create pickles.</summary>
     <ContractClass(GetType(ContractClassIParseJar(Of )))>
-    Public Interface IAnonymousParseJar(Of Out T)
+    Public Interface IParseJar(Of Out T)
         Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
     End Interface
-    <ContractClassFor(GetType(IAnonymousParseJar(Of )))>
+    <ContractClassFor(GetType(IParseJar(Of )))>
     Public NotInheritable Class ContractClassIParseJar(Of T)
-        Implements IAnonymousParseJar(Of T)
-        Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IAnonymousParseJar(Of T).Parse
+        Implements IParseJar(Of T)
+        Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             'Contract.Ensures(Contract.Result(Of IPickle(Of T))().Data.Count <= data.Count) 'disabled because of stupid verifier
@@ -86,23 +86,23 @@
         End Function
     End Class
 
-    Public Interface IAnonymousJar(Of T)
-        Inherits IAnonymousPackJar(Of T)
-        Inherits IAnonymousParseJar(Of T)
+    Public Interface IJar(Of T)
+        Inherits IPackJar(Of T)
+        Inherits IParseJar(Of T)
     End Interface
 
-    Public Interface IPackJar(Of In T)
+    Public Interface INamedPackJar(Of In T)
         Inherits IJarInfo
-        Inherits IAnonymousPackJar(Of T)
+        Inherits IPackJar(Of T)
     End Interface
-    Public Interface IParseJar(Of Out T)
+    Public Interface INamedParseJar(Of Out T)
         Inherits IJarInfo
-        Inherits IAnonymousParseJar(Of T)
+        Inherits IParseJar(Of T)
     End Interface
     '''<summary>Packs values or parses data to create pickles.</summary>
-    Public Interface IJar(Of T)
-        Inherits IParseJar(Of T)
-        Inherits IPackJar(Of T)
-        Inherits IAnonymousJar(Of T)
+    Public Interface INamedJar(Of T)
+        Inherits INamedParseJar(Of T)
+        Inherits INamedPackJar(Of T)
+        Inherits IJar(Of T)
     End Interface
 End Namespace

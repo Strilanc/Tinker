@@ -1,14 +1,14 @@
 Namespace Pickling
     '''<summary>Pickles lists of values, where the serialized form simply continues until there are no more items.</summary>
     Public NotInheritable Class RepeatingJar(Of T)
-        Inherits BaseAnonymousJar(Of IReadableList(Of T))
-        Private ReadOnly _subJar As IAnonymousJar(Of T)
+        Inherits BaseJar(Of IReadableList(Of T))
+        Private ReadOnly _subJar As IJar(Of T)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_subJar IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal subJar As IAnonymousJar(Of T))
+        Public Sub New(ByVal subJar As IJar(Of T))
             Contract.Requires(subJar IsNot Nothing)
             Me._subJar = subJar
         End Sub

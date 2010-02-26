@@ -2,7 +2,7 @@
 
 Namespace WC3.Protocol
     Public NotInheritable Class GameStatsJar
-        Inherits BaseAnonymousJar(Of GameStats)
+        Inherits BaseJar(Of GameStats)
 
         <Flags()>
         Private Enum GameSettings As UInteger

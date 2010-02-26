@@ -2,7 +2,7 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public NotInheritable Class DwordStringJar
-        Inherits BaseAnonymousJar(Of String)
+        Inherits BaseJar(Of String)
 
         Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

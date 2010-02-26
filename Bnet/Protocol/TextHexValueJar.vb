@@ -2,7 +2,7 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public NotInheritable Class TextHexValueJar
-        Inherits BaseAnonymousJar(Of ULong)
+        Inherits BaseJar(Of ULong)
         Private ReadOnly digitCount As Integer
         Private ReadOnly byteOrder As ByteOrder
 

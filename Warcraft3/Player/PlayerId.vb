@@ -52,7 +52,7 @@ Namespace WC3
     End Structure
 
     Public Class PlayerIdJar
-        Inherits BaseAnonymousJar(Of PlayerId)
+        Inherits BaseJar(Of PlayerId)
 
         Public Overrides Function Pack(Of TValue As PlayerId)(ByVal value As TValue) As IPickle(Of TValue)
             Dim data = {CType(value, PlayerId).Index}.ToReadableList

@@ -17,14 +17,18 @@
         End Sub
     End Class
 
-    Public MustInherit Class BaseAnonymousPackJar(Of T)
-        Implements IAnonymousPackJar(Of T)
-        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IAnonymousPackJar(Of T).Pack
+    Public MustInherit Class BasePackJar(Of T)
+        Implements IPackJar(Of T)
+        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
     End Class
-    Public MustInherit Class BaseAnonymousJar(Of T)
-        Implements IAnonymousJar(Of T)
-        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IAnonymousPackJar(Of T).Pack
-        Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IAnonymousParseJar(Of T).Parse
+    Public MustInherit Class BaseJar(Of T)
+        Implements IJar(Of T)
+
+        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
+        Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+        Public Function ParseSimple(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.ParseSimple
+            Return Parse(data)
+        End Function
     End Class
 
     '''<summary>A base implementation of an IPickle(Of T).</summary>

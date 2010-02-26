@@ -39,12 +39,12 @@ Friend Module TestingCommon
         Assert.IsTrue(future.State = FutureState.Succeeded)
     End Sub
 
-    Friend Sub EmptyJarTest(ByVal jar As IAnonymousJar(Of Object))
+    Friend Sub EmptyJarTest(ByVal jar As IJar(Of Object))
         Assert.IsTrue(jar.Parse(New Byte() {}.AsReadableList).Value.GetType() Is GetType(Object))
         Assert.IsTrue(jar.Parse(New Byte() {1}.AsReadableList).Value.GetType() Is GetType(Object))
         Assert.IsTrue(jar.Parse(New Byte() {1}.AsReadableList).Data.Count = 0)
     End Sub
-    Friend Sub JarTest(Of T)(ByVal jar As IAnonymousJar(Of T),
+    Friend Sub JarTest(Of T)(ByVal jar As IJar(Of T),
                              ByVal equater As Func(Of T, T, Boolean),
                              ByVal value As T,
                              ByVal data As IEnumerable(Of Byte),
@@ -93,7 +93,7 @@ Friend Module TestingCommon
             End Try
         End If
     End Sub
-    Friend Sub JarTest(Of T As IEquatable(Of T))(ByVal jar As IAnonymousJar(Of T),
+    Friend Sub JarTest(Of T As IEquatable(Of T))(ByVal jar As IJar(Of T),
                                                  ByVal value As T,
                                                  ByVal data As IEnumerable(Of Byte),
                                                  Optional ByVal appendSafe As Boolean = True,
@@ -101,7 +101,7 @@ Friend Module TestingCommon
                                                  Optional ByVal description As String = Nothing)
         JarTest(jar, Function(a As T, b As T) a.Equals(b), value, data, appendSafe, requireAllData, description)
     End Sub
-    Friend Sub JarTest(ByVal jar As IAnonymousJar(Of Dictionary(Of InvariantString, Object)),
+    Friend Sub JarTest(ByVal jar As IJar(Of Dictionary(Of InvariantString, Object)),
                        ByVal value As Dictionary(Of InvariantString, Object),
                        ByVal data As IEnumerable(Of Byte),
                        Optional ByVal appendSafe As Boolean = True,

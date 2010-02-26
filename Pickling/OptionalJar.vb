@@ -1,14 +1,14 @@
 Namespace Pickling
     Public NotInheritable Class OptionalJar(Of T)
-        Inherits BaseAnonymousJar(Of Tuple(Of Boolean, T))
+        Inherits BaseJar(Of Tuple(Of Boolean, T))
 
-        Private ReadOnly _subJar As IAnonymousJar(Of T)
+        Private ReadOnly _subJar As IJar(Of T)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_subJar IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal subJar As IAnonymousJar(Of T))
+        Public Sub New(ByVal subJar As IJar(Of T))
             Contract.Requires(subJar IsNot Nothing)
             Me._subJar = subJar
         End Sub

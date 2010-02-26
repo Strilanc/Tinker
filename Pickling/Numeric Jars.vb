@@ -1,7 +1,7 @@
 ﻿Namespace Pickling
     '''<summary>Pickles 8-bit unsigned integers.</summary>
     Public Class ByteJar
-        Inherits BaseAnonymousJar(Of Byte)
+        Inherits BaseJar(Of Byte)
         Private ReadOnly _showHex As Boolean
 
         Public Sub New(Optional ByVal showHex As Boolean = False)
@@ -30,7 +30,7 @@
 
     '''<summary>Pickles 16-bit unsigned integers.</summary>
     Public Class UInt16Jar
-        Inherits BaseAnonymousJar(Of UInt16)
+        Inherits BaseJar(Of UInt16)
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
@@ -62,7 +62,7 @@
 
     '''<summary>Pickles 32-bit unsigned integers.</summary>
     Public Class UInt32Jar
-        Inherits BaseAnonymousJar(Of UInt32)
+        Inherits BaseJar(Of UInt32)
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
@@ -94,7 +94,7 @@
 
     '''<summary>Pickles 64-bit unsigned integers.</summary>
     Public Class UInt64Jar
-        Inherits BaseAnonymousJar(Of UInt64)
+        Inherits BaseJar(Of UInt64)
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
@@ -127,7 +127,7 @@
 
     '''<summary>Pickles 32-bit floating point values (singles).</summary>
     Public Class Float32Jar
-        Inherits BaseAnonymousJar(Of Single)
+        Inherits BaseJar(Of Single)
 
         Public NotOverridable Overrides Function Pack(Of TValue As Single)(ByVal value As TValue) As IPickle(Of TValue)
             Dim data = BitConverter.GetBytes(value).AsReadableList
@@ -148,7 +148,7 @@
 
     '''<summary>Pickles 64-bit floating point values (doubles).</summary>
     Public Class Float64Jar
-        Inherits BaseAnonymousJar(Of Double)
+        Inherits BaseJar(Of Double)
 
         Public NotOverridable Overrides Function Pack(Of TValue As Double)(ByVal value As TValue) As IPickle(Of TValue)
             Dim data = BitConverter.GetBytes(value).AsReadableList

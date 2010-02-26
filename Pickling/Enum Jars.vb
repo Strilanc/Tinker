@@ -1,7 +1,7 @@
 ﻿Namespace Pickling
     '''<summary>Pickles byte enumeration types.</summary>
     Public Class EnumByteJar(Of T)
-        Inherits BaseAnonymousJar(Of T)
+        Inherits BaseJar(Of T)
         Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean
@@ -48,7 +48,7 @@
 
     '''<summary>Pickles UInt16 enumeration types.</summary>
     Public Class EnumUInt16Jar(Of T)
-        Inherits BaseAnonymousJar(Of T)
+        Inherits BaseJar(Of T)
         Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean
@@ -99,7 +99,7 @@
 
     '''<summary>Pickles UInt32 enumeration types.</summary>
     Public Class EnumUInt32Jar(Of T)
-        Inherits BaseAnonymousJar(Of T)
+        Inherits BaseJar(Of T)
         Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean
@@ -150,7 +150,7 @@
 
     '''<summary>Pickles UInt64 enumeration types.</summary>
     Public Class EnumUInt64Jar(Of T)
-        Inherits BaseAnonymousJar(Of T)
+        Inherits BaseJar(Of T)
         Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean

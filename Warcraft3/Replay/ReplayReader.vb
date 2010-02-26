@@ -102,7 +102,7 @@ Namespace WC3.Replay
         Private Function EnumerateEntries() As IEnumerator(Of ReplayEntry)
             Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
 
-            Dim blockJars = New Dictionary(Of ReplayEntryId, IAnonymousParseJar(Of Object))() From {
+            Dim blockJars = New Dictionary(Of ReplayEntryId, IParseJar(Of Object))() From {
                         {ReplayEntryId.ChatMessage, Format.ReplayEntryChatMessage},
                         {ReplayEntryId.GameStarted, Format.ReplayEntryGameStarted},
                         {ReplayEntryId.GameStateChecksum, Format.ReplayEntryGameStateChecksum},

@@ -23,7 +23,7 @@ Public MustInherit Class PacketHandler(Of TKey)
     End Sub
 
     Public Sub AddLogger(ByVal key As TKey,
-                         ByVal jar As IAnonymousParseJar(Of Object))
+                         ByVal jar As IParseJar(Of Object))
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Call [AddHandler](key, Function(data)

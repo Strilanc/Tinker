@@ -27,7 +27,7 @@ Namespace Bnet.Protocol
         End Property
     End Class
     Public Class QueryGamesListResponseJar
-        Inherits BaseAnonymousJar(Of QueryGamesListResponse)
+        Inherits BaseJar(Of QueryGamesListResponse)
 
         Private Shared ReadOnly gameDataJar As New TupleJar(
                 New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type").Weaken,
@@ -44,7 +44,7 @@ Namespace Bnet.Protocol
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
             Dim count = data.SubView(0, 4).ToUInt32
             Dim games = New List(Of WC3.RemoteGameDescription)(capacity:=CInt(count))
-            Dim pickles = New List(Of IPickle)(capacity:=CInt(count + 1))
+            Dim pickles = New List(Of ISimplePickle)(capacity:=CInt(count + 1))
             Dim result = QueryGameResponse.Ok
             Dim offset = 4
             If count = 0 Then

@@ -2,7 +2,7 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public Class IPEndPointJar
-        Inherits BaseAnonymousJar(Of Net.IPEndPoint)
+        Inherits BaseJar(Of Net.IPEndPoint)
 
         Private Shared ReadOnly DataJar As TupleJar = New TupleJar(
                     New UInt16Jar().Named("protocol").Weaken,

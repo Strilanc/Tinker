@@ -28,9 +28,9 @@ Namespace Pickling
         End Property
     End Class
     Public NotInheritable Class PrefixSwitchJar(Of T)
-        Inherits BaseAnonymousJar(Of PrefixPickle(Of T))
-        Private ReadOnly packers(0 To 255) As IAnonymousPackJar(Of Object)
-        Private ReadOnly parsers(0 To 255) As IAnonymousParseJar(Of Object)
+        Inherits BaseJar(Of PrefixPickle(Of T))
+        Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
+        Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(packers IsNot Nothing)
@@ -57,19 +57,19 @@ Namespace Pickling
             Return value.Pickled(data, Function() value.ToString)
         End Function
 
-        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IAnonymousJar(Of Object))
+        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of Object))
             Contract.Requires(jar IsNot Nothing)
             If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
             If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
             parsers(index) = jar
             packers(index) = jar
         End Sub
-        Public Sub AddParser(ByVal index As Byte, ByVal parser As IAnonymousParseJar(Of Object))
+        Public Sub AddParser(ByVal index As Byte, ByVal parser As IParseJar(Of Object))
             Contract.Requires(parser IsNot Nothing)
             If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
             parsers(index) = parser
         End Sub
-        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IAnonymousPackJar(Of Object))
+        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IPackJar(Of Object))
             Contract.Requires(packer IsNot Nothing)
             If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
             packers(index) = packer

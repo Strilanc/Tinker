@@ -168,7 +168,7 @@ Namespace WC3.Replay
             Contract.Assume(_blockSizeRemaining >= 0)
         End Sub
         Private Sub WriteReplayEntryPickle(Of T)(ByVal id As ReplayEntryId,
-                                                 ByVal jar As IAnonymousJar(Of T),
+                                                 ByVal jar As IJar(Of T),
                                                  ByVal value As T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)

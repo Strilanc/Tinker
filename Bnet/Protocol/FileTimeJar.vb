@@ -2,7 +2,7 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public NotInheritable Class FileTimeJar
-        Inherits BaseAnonymousJar(Of Date)
+        Inherits BaseJar(Of Date)
 
         Public Overrides Function Pack(Of TValue As Date)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
             Dim data = CType(value, Date).ToFileTime.BitwiseToUInt64.Bytes().AsReadableList

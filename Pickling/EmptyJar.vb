@@ -1,6 +1,6 @@
 Namespace Pickling
     Public NotInheritable Class EmptyJar
-        Inherits BaseAnonymousJar(Of Object)
+        Inherits BaseJar(Of Object)
 
         Public Overrides Function Pack(Of TValue As Object)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

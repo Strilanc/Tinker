@@ -1,7 +1,7 @@
 Namespace Pickling
     '''<summary>Pickles fixed-length strings.</summary>
     Public Class FixedSizeStringJar
-        Inherits BaseAnonymousJar(Of String)
+        Inherits BaseJar(Of String)
         Private ReadOnly _size As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -30,7 +30,7 @@ Namespace Pickling
 
     '''<summary>Pickles variable-length strings.</summary>
     Public Class NullTerminatedStringJar
-        Inherits BaseAnonymousJar(Of String)
+        Inherits BaseJar(Of String)
         Private ReadOnly _maximumContentSize As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()

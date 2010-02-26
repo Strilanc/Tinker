@@ -2,7 +2,7 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public Class IPAddressJar
-        Inherits BaseAnonymousJar(Of Net.IPAddress)
+        Inherits BaseJar(Of Net.IPAddress)
 
         Public Overrides Function Pack(Of TValue As Net.IPAddress)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

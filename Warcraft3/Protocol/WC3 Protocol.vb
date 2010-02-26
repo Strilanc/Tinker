@@ -324,13 +324,13 @@ Namespace WC3.Protocol
 
         Public NotInheritable Class Definition(Of T)
             Private ReadOnly _id As PacketId
-            Private ReadOnly _jar As IAnonymousJar(Of T)
+            Private ReadOnly _jar As IJar(Of T)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_jar IsNot Nothing)
             End Sub
 
-            Friend Sub New(ByVal id As PacketId, ByVal jar As IAnonymousJar(Of T))
+            Friend Sub New(ByVal id As PacketId, ByVal jar As IJar(Of T))
                 Contract.Requires(jar IsNot Nothing)
                 Me._id = id
                 Me._jar = jar
@@ -341,9 +341,9 @@ Namespace WC3.Protocol
                     Return _id
                 End Get
             End Property
-            Public ReadOnly Property Jar As IAnonymousJar(Of T)
+            Public ReadOnly Property Jar As IJar(Of T)
                 Get
-                    Contract.Ensures(Contract.Result(Of IAnonymousJar(Of T))() IsNot Nothing)
+                    Contract.Ensures(Contract.Result(Of IJar(Of T))() IsNot Nothing)
                     Return _jar
                 End Get
             End Property
@@ -351,14 +351,14 @@ Namespace WC3.Protocol
         Private Shared Function Define(ByVal id As PacketId) As Definition(Of Object)
             Return New Definition(Of Object)(id, New EmptyJar())
         End Function
-        Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IAnonymousJar(Of T)) As Definition(Of T)
+        Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Return New Definition(Of T)(id, jar)
         End Function
         Private Shared Function Define(ByVal id As PacketId,
-                                       ByVal jar1 As IJar(Of Object),
-                                       ByVal jar2 As IJar(Of Object),
-                                       ByVal ParamArray jars() As IJar(Of Object)) As Definition(Of Dictionary(Of InvariantString, Object))
+                                       ByVal jar1 As INamedJar(Of Object),
+                                       ByVal jar2 As INamedJar(Of Object),
+                                       ByVal ParamArray jars() As INamedJar(Of Object)) As Definition(Of Dictionary(Of InvariantString, Object))
             Contract.Requires(jar1 IsNot Nothing)
             Contract.Requires(jar2 IsNot Nothing)
             Contract.Requires(jars IsNot Nothing)
@@ -407,8 +407,8 @@ Namespace WC3.Protocol
                 New Bnet.Protocol.IPEndPointJar().Named("external address").Weaken,
                 New Bnet.Protocol.IPEndPointJar().Named("internal address").Weaken)
         Public Shared ReadOnly Text As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.Text, MakeTextJar())
-        Private Shared Function MakeTextJar() As IAnonymousJar(Of Dictionary(Of InvariantString, Object))
-            Contract.Ensures(Contract.Result(Of IAnonymousJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
+        Private Shared Function MakeTextJar() As IJar(Of Dictionary(Of InvariantString, Object))
+            Contract.Ensures(Contract.Result(Of IJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
             Dim jar = New InteriorSwitchJar(Of ChatType, Dictionary(Of InvariantString, Object))(
                     valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
                     dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType))
@@ -443,8 +443,8 @@ Namespace WC3.Protocol
 
         Public Const MaxChatTextLength As Integer = 220
         Public Shared ReadOnly NonGameAction As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.NonGameAction, MakeNonGameActionJar())
-        Private Shared Function MakeNonGameActionJar() As IAnonymousJar(Of Dictionary(Of InvariantString, Object))
-            Contract.Ensures(Contract.Result(Of IAnonymousJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
+        Private Shared Function MakeNonGameActionJar() As IJar(Of Dictionary(Of InvariantString, Object))
+            Contract.Ensures(Contract.Result(Of IJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
             Dim commandJar = New InteriorSwitchJar(Of NonGameAction, Dictionary(Of InvariantString, Object))(
                     Function(val) CType(val("command type"), NonGameAction),
                     Function(data) CType(data(data(0) + 2), NonGameAction))

@@ -1,9 +1,9 @@
 Namespace Pickling
     '''<summary>Pickles tuples of values as dictionaries keyed by jar name.</summary>
     Public Class TupleJar
-        Inherits BaseAnonymousJar(Of Dictionary(Of InvariantString, Object))
+        Inherits BaseJar(Of Dictionary(Of InvariantString, Object))
 
-        Private ReadOnly _subJars As IEnumerable(Of IJar(Of Object))
+        Private ReadOnly _subJars As IEnumerable(Of INamedJar(Of Object))
         Private ReadOnly _useSingleLineDescription As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -11,12 +11,12 @@ Namespace Pickling
         End Sub
 
         Public Sub New(ByVal useSingleLineDescription As Boolean,
-                       ByVal ParamArray subJars() As IJar(Of Object))
+                       ByVal ParamArray subJars() As INamedJar(Of Object))
             Contract.Requires(subJars IsNot Nothing)
             Me._subJars = subJars
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
-        Public Sub New(ByVal ParamArray subJars() As IJar(Of Object))
+        Public Sub New(ByVal ParamArray subJars() As INamedJar(Of Object))
             Me.New(False, subJars)
             Contract.Requires(subJars IsNot Nothing)
         End Sub
@@ -40,7 +40,7 @@ Namespace Pickling
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
             'Parse
             Dim vals = New Dictionary(Of InvariantString, Object)
-            Dim pickles = New List(Of IPickle(Of Object))
+            Dim pickles = New List(Of ISimplePickle)
             Dim curCount = data.Count
             Dim curOffset = 0
             For Each j In _subJars
