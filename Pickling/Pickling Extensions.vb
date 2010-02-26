@@ -152,10 +152,6 @@
                 Dim pickle = _subjar.Parse(data)
                 Return pickle.Value.Pickled(pickle.Data, Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
-
-            Public Function ParseSimple(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.ParseSimple
-                Return Parse(data)
-            End Function
         End Class
 
         <Extension()> <Pure()>

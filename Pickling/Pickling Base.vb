@@ -26,9 +26,6 @@
 
         Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
-        Public Function ParseSimple(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.ParseSimple
-            Return Parse(data)
-        End Function
     End Class
 
     '''<summary>A base implementation of an IPickle(Of T).</summary>
