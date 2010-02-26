@@ -56,14 +56,14 @@ Namespace WC3
 
         Public Overrides Function Pack(Of TValue As PlayerId)(ByVal value As TValue) As IPickle(Of TValue)
             Dim data = {CType(value, PlayerId).Index}.ToReadableList
-            Return New Pickle(Of TValue)(value, data, Function() value.ToString)
+            Return value.Pickled(data)
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerId)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException
             Dim datum = data.SubView(0, 1)
             If datum(0) < 1 OrElse datum(0) > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(datum(0)))
             Dim value = New PlayerId(datum(0))
-            Return New Pickle(Of PlayerId)(value, datum, Function() value.ToString)
+            Return value.Pickled(datum)
         End Function
     End Class
 End Namespace

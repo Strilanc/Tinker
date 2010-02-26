@@ -96,9 +96,8 @@ Namespace WC3.Protocol
                     {"unknown1", 0},
                     {"unknown2", ""}
                 })
-            Return New Pickling.Pickle(Of TValue)(value:=value,
-                                                  Data:=Concat(EncodeStatStringData(rawPickle.Data).ToArray(), {0}).AsReadableList,
-                                                  description:=rawPickle.Description)
+            Dim data = Concat(EncodeStatStringData(rawPickle.Data).ToArray, {0}).AsReadableList
+            Return value.Pickled(data, rawPickle.Description)
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameStats)
             'StatString is null-terminated
@@ -170,7 +169,7 @@ Namespace WC3.Protocol
                                       mapchecksumsha1:=sha1Checksum,
                                       advertisedPath:=relativePath,
                                       hostName:=hostName)
-            Return New Pickling.Pickle(Of GameStats)(value, datum, pickle.Description)
+            Return value.Pickled(datum, pickle.Description)
         End Function
 
         Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)

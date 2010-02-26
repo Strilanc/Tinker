@@ -27,7 +27,7 @@ Namespace Pickling
             Contract.Assume(value IsNot Nothing)
             Dim pickles = (From e In value Select _subJar.Pack(e)).ToList
             Dim data = Concat(CULng(value.Count).Bytes.SubArray(0, _prefixSize), Concat(From p In pickles Select p.Data.ToArray))
-            Return New Pickle(Of TValue)(value, data.AsReadableList(), Function() Pickle(Of T).MakeListDescription(pickles, _useSingleLineDescription))
+            Return value.Pickled(data.AsReadableList, Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of T))
@@ -42,7 +42,7 @@ Namespace Pickling
             For repeat = 1UL To numElements
                 'Value
                 Dim p = _subJar.Parse(data.SubView(curOffset, data.Count - curOffset))
-                pickles.Add(New Pickle(Of T)(p.Value, p.Data, p.Description))
+                pickles.Add(p)
                 'Size
                 Dim n = p.Data.Count
                 curOffset += n
@@ -51,8 +51,8 @@ Namespace Pickling
 
             Dim value = (From p In pickles Select (p.Value)).ToReadableList
             Dim datum = data.SubView(0, curOffset)
-            Dim desc = Function() Pickle(Of T).MakeListDescription(pickles, _useSingleLineDescription)
-            Return New Pickle(Of IReadableList(Of T))(value, datum, desc)
+            Dim desc = Function() pickles.MakeListDescription(_useSingleLineDescription)
+            Return value.Pickled(datum, desc)
         End Function
     End Class
 End Namespace

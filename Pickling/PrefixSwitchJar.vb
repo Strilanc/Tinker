@@ -47,14 +47,14 @@ Namespace Pickling
             If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to " + vindex.ToString())
             Dim value = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
             Dim datum = data.SubView(0, value.Payload.Data.Count + 1)
-            Return New Pickle(Of PrefixPickle(Of T))(value, datum, Function() value.ToString)
+            Return value.Pickled(datum, Function() value.ToString)
         End Function
         Public Overrides Function Pack(Of TValue As PrefixPickle(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             Dim index = CByte(CType(value.Key, Object))
             If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.Key.ToString())
             Dim data = Concat({index}, packers(index).Pack(value.Payload.Value).Data.ToArray).AsReadableList
-            Return New Pickle(Of TValue)(value, data, Function() value.ToString)
+            Return value.Pickled(data, Function() value.ToString)
         End Function
 
         Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IAnonymousJar(Of Object))

@@ -10,102 +10,147 @@
 
         '''<summary>Weakens the type of an IPackJar from T to Object.</summary>
         <Extension()> <Pure()>
-        Public Function Weaken(Of T)(ByVal jar As IPackJar(Of T)) As IPackJar(Of Object)
+        Public Function Weaken(Of T)(ByVal jar As IAnonymousPackJar(Of T)) As IAnonymousPackJar(Of Object)
             Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IPackJar(Of Object))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IAnonymousPackJar(Of Object))() IsNot Nothing)
             Return New WeakPackJar(Of T)(jar)
         End Function
 
         '''<summary>Weakens the type of an IParseJar from T to Object.</summary>
         <Extension()> <Pure()>
-        Public Function Weaken(Of T)(ByVal jar As IParseJar(Of T)) As IParseJar(Of Object)
+        Public Function Weaken(Of T)(ByVal jar As IAnonymousParseJar(Of T)) As IAnonymousParseJar(Of Object)
             Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IParseJar(Of Object))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IAnonymousParseJar(Of Object))() IsNot Nothing)
             Return New WeakParseJar(Of T)(jar)
+        End Function
+
+        <Extension()> <Pure()>
+        Public Function Pickled(Of T)(ByVal value As T,
+                                      ByVal data As IReadableList(Of Byte),
+                                      ByVal description As Lazy(Of String)) As IPickle(Of T)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
+            Contract.Requires(description IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
+            Return value.Pickled(data, description)
+        End Function
+        <Extension()> <Pure()>
+        Public Function Pickled(Of T)(ByVal value As T,
+                                      ByVal data As IReadableList(Of Byte),
+                                      Optional ByVal description As Func(Of String) = Nothing) As IPickle(Of T)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
+            Return value.Pickled(data, New Lazy(Of String)(If(description, Function() value.ToString)))
+        End Function
+
+        <Extension()> <Pure()>
+        Public Function MakeListDescription(ByVal pickles As IEnumerable(Of IPickle),
+                                            Optional ByVal useSingleLineDescription As Boolean = False) As String
+            Contract.Requires(pickles IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Dim descriptions = From e In pickles Select e.Description.Value
+            If useSingleLineDescription Then
+                Return descriptions.StringJoin("; ")
+            Else
+                Return {"{", descriptions.StringJoin(Environment.NewLine).Indent("    "), "}"}.StringJoin(Environment.NewLine)
+            End If
         End Function
 
         '''<summary>Exposes an IJar of arbitrary type as an IJar(Of Object).</summary>
         Private NotInheritable Class WeakJar(Of T)
-            Inherits BaseJar(Of Object)
-            Private ReadOnly subJar As IJar(Of T)
+            Inherits BaseAnonymousJar(Of Object)
+            Implements IJar(Of Object)
+
+            Private ReadOnly _subJar As IJar(Of T)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(subJar IsNot Nothing)
+                Contract.Invariant(_subJar IsNot Nothing)
             End Sub
 
             Public Sub New(ByVal jar As IJar(Of T))
-                MyBase.New(jar.Name)
+                Me._subJar = jar
                 Contract.Requires(jar IsNot Nothing)
-                Me.subJar = jar
             End Sub
+
+            Public ReadOnly Property Name As InvariantString Implements IJarInfo.Name
+                Get
+                    Return _subJar.Name
+                End Get
+            End Property
             Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
-                Dim p = subJar.Parse(data)
+                Dim p = _subJar.Parse(data)
                 Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
             End Function
             Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
                 Contract.Assume(value IsNot Nothing)
-                Dim p = subJar.Pack(CType(CType(value, Object), T).AssumeNotNull)
-                Return New Pickle(Of R)(value, p.Data, p.Description)
+                Dim p = _subJar.Pack(CType(CType(value, Object), T).AssumeNotNull)
+                Return value.Pickled(p.Data, p.Description)
             End Function
         End Class
         '''<summary>Exposes an IPackJar of arbitrary type as an IPackJar(Of Object).</summary>
         Private NotInheritable Class WeakPackJar(Of T)
-            Inherits BasePackJar(Of Object)
-            Private ReadOnly subJar As IPackJar(Of T)
-
+            Inherits BaseAnonymousPackJar(Of Object)
+            Private ReadOnly subJar As IAnonymousPackJar(Of T)
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(subJar IsNot Nothing)
             End Sub
-
-            Public Sub New(ByVal jar As IPackJar(Of T))
-                MyBase.New(jar.Name)
+            Public Sub New(ByVal jar As IAnonymousPackJar(Of T))
                 Contract.Requires(jar IsNot Nothing)
                 Me.subJar = jar
             End Sub
             Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
                 Contract.Assume(value IsNot Nothing)
                 Dim p = subJar.Pack(CType(CType(value, Object), T).AssumeNotNull)
-                Return New Pickle(Of R)(value, p.Data, p.Description)
+                Return value.Pickled(p.Data, p.Description)
             End Function
         End Class
         '''<summary>Exposes an IParseJar of arbitrary type as an IParseJar(Of Object).</summary>
         Private NotInheritable Class WeakParseJar(Of T)
-            Inherits BaseParseJar(Of Object)
-            Private ReadOnly subJar As IParseJar(Of T)
-
+            Implements IAnonymousParseJar(Of Object)
+            Private ReadOnly subJar As IAnonymousParseJar(Of T)
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(subJar IsNot Nothing)
             End Sub
-
-            Public Sub New(ByVal jar As IParseJar(Of T))
-                MyBase.New(jar.Name)
+            Public Sub New(ByVal jar As IAnonymousParseJar(Of T))
                 Contract.Requires(jar IsNot Nothing)
                 Me.subJar = jar
             End Sub
-            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
+            Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object) Implements IAnonymousParseJar(Of Object).Parse
                 Dim p = subJar.Parse(data)
                 Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
             End Function
         End Class
 
         Private NotInheritable Class NamedJar(Of T)
-            Inherits BaseJar(Of T)
+            Implements IJar(Of T)
+            Private ReadOnly _name As InvariantString
             Private ReadOnly _subjar As IAnonymousJar(Of T)
+
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_subjar IsNot Nothing)
             End Sub
+
             Public Sub New(ByVal name As InvariantString, ByVal subJar As IAnonymousJar(Of T))
-                MyBase.New(name)
                 Contract.Requires(subJar IsNot Nothing)
+                Me._name = name
                 Me._subjar = subJar
             End Sub
-            Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
+
+            Public ReadOnly Property Name As InvariantString Implements IJar(Of T).Name
+                Get
+                    Return _name
+                End Get
+            End Property
+
+            Public Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IAnonymousPackJar(Of T).Pack
                 Dim pickle = _subjar.Pack(value)
-                Return New Pickle(Of TValue)(Name, value, pickle.Data, Function() pickle.Description.Value)
+                Return value.Pickled(pickle.Data, Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
-            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+
+            Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IAnonymousParseJar(Of T).Parse
                 Dim pickle = _subjar.Parse(data)
-                Return New Pickle(Of T)(Name, pickle.Value, pickle.Data, Function() pickle.Description.Value)
+                Return pickle.Value.Pickled(pickle.Data, Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
         End Class
 
@@ -177,7 +222,7 @@
             Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
                 Contract.Assume(value IsNot Nothing)
                 Dim p = subJar.Pack(CType(CType(value, Object), T).AssumeNotNull)
-                Return New Pickle(Of R)(value, p.Data, p.Description)
+                Return value.Pickled(p.Data, p.Description)
             End Function
         End Class
     End Module

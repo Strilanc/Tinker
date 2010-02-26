@@ -2,7 +2,7 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public NotInheritable Class TextHexValueJar
-        Inherits BaseJar(Of ULong)
+        Inherits BaseAnonymousJar(Of ULong)
         Private ReadOnly digitCount As Integer
         Private ReadOnly byteOrder As ByteOrder
 
@@ -10,10 +10,8 @@ Namespace Bnet.Protocol
             Contract.Invariant(digitCount > 0)
         End Sub
 
-        Public Sub New(ByVal name As InvariantString,
-                       ByVal digitCount As Integer,
+        Public Sub New(ByVal digitCount As Integer,
                        Optional ByVal byteOrder As ByteOrder = byteOrder.LittleEndian)
-            MyBase.New(name)
             Contract.Requires(digitCount > 0)
             Contract.Requires(digitCount <= 16)
             Me.digitCount = digitCount
@@ -35,14 +33,14 @@ Namespace Bnet.Protocol
                     Throw byteOrder.MakeImpossibleValueException()
             End Select
 
-            Return New Pickle(Of TValue)(Me.Name, value, digits.AsReadableList)
+            Return value.Pickled(digits.AsReadableList)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ULong)
             If data.Count < digitCount Then Throw New PicklingNotEnoughDataException()
-            data = data.SubView(0, digitCount)
-            Dim value = data.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder)
-            Return New Pickle(Of ULong)(Me.Name, value, data)
+            Dim datum = data.SubView(0, digitCount)
+            Dim value = datum.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder)
+            Return value.Pickled(datum)
         End Function
     End Class
 End Namespace

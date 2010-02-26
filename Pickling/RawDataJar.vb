@@ -17,13 +17,13 @@ Namespace Pickling
             Contract.Assume(value IsNot Nothing)
             If value.Count <> _size Then Throw New PicklingException("Byte array is not of the correct length.")
             Dim data = value
-            Return New Pickle(Of TValue)(value, data, Function() "[{0}]".Frmt(value.ToHexString))
+            Return value.Pickled(data, Function() "[{0}]".Frmt(value.ToHexString))
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of Byte))
             If data.Count < _size Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, _size)
             Dim value = datum
-            Return New Pickle(Of IReadableList(Of Byte))(value, datum, Function() "[{0}]".Frmt(value.ToHexString))
+            Return value.Pickled(datum, Function() "[{0}]".Frmt(value.ToHexString))
         End Function
     End Class
 End Namespace

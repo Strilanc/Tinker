@@ -18,9 +18,9 @@ Namespace Pickling
             If value.Item1 Then
                 Contract.Assume(value.Item2 IsNot Nothing)
                 Dim pickle = _subJar.Pack(value.Item2)
-                Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
+                Return value.Pickled(pickle.Data, pickle.Description)
             Else
-                Return New Pickle(Of TValue)(value, New Byte() {}.AsReadableList, Function() "[Not Included]")
+                Return value.Pickled(New Byte() {}.AsReadableList, Function() "[Not Included]")
             End If
         End Function
 
@@ -28,9 +28,9 @@ Namespace Pickling
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Tuple(Of Boolean, T))
             If data.Count > 0 Then
                 Dim pickle = _subJar.Parse(data)
-                Return New Pickle(Of Tuple(Of Boolean, T))(Tuple(True, pickle.Value), pickle.Data, pickle.Description)
+                Return Tuple(True, pickle.Value).Pickled(pickle.Data, pickle.Description)
             Else
-                Return New Pickle(Of Tuple(Of Boolean, T))(Tuple(False, CType(Nothing, T)), data, Function() "[Not Included]")
+                Return Tuple(False, CType(Nothing, T)).Pickled(data, Function() "[Not Included]")
             End If
         End Function
     End Class

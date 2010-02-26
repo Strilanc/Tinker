@@ -20,7 +20,7 @@ Namespace Bnet.Protocol
                     {"port", value.Port},
                     {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsReadableList}}
             Dim pickle = DataJar.Pack(vals)
-            Return New Pickle(Of TValue)(value, pickle.Data, Function() value.ToString)
+            Return value.Pickled(pickle.Data)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -29,7 +29,7 @@ Namespace Bnet.Protocol
             Dim pickle = DataJar.Parse(data)
             Dim vals = pickle.Value
             Dim value = New Net.IPEndPoint(CType(vals("ip"), Net.IPAddress).AssumeNotNull, CUShort(vals("port")))
-            Return New Pickle(Of Net.IPEndPoint)(value, pickle.Data, Function() value.ToString)
+            Return value.Pickled(pickle.Data)
         End Function
     End Class
 End Namespace

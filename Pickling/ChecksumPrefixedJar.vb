@@ -30,7 +30,7 @@ Namespace Pickling
             Contract.Assume(checksum IsNot Nothing)
             Contract.Assume(checksum.Count = _checksumSize)
             Dim data = checksum.Concat(pickle.Data).ToReadableList
-            Return New Pickle(Of TValue)(value, data, pickle.Description)
+            Return value.Pickled(data, pickle.Description)
         End Function
 
         <ContractVerification(False)>
@@ -40,7 +40,7 @@ Namespace Pickling
             Dim pickle = _subJar.Parse(data.SubView(_checksumSize))
             If Not _checksumFunction(pickle.Data).SequenceEqual(checksum) Then Throw New PicklingException("Checksum didn't match.")
             Dim datum = data.SubView(0, _checksumSize + pickle.Data.Count)
-            Return New Pickle(Of T)(pickle.Value, datum, pickle.Description)
+            Return pickle.Value.Pickled(datum, pickle.Description)
         End Function
     End Class
 End Namespace

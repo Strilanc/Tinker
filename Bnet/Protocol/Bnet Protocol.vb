@@ -270,7 +270,7 @@ Namespace Bnet.Protocol
                     New EnumUInt32Jar(Of ProgramAuthenticationBeginLogOnType)().Named("logon type").Weaken,
                     New UInt32Jar(showHex:=True).Named("server cd key salt").Weaken,
                     New UInt32Jar(showHex:=True).Named("udp value").Weaken,
-                    New FileTimeJar("mpq filetime").Weaken,
+                    New FileTimeJar().Named("mpq filetime").Weaken,
                     New NullTerminatedStringJar().Named("revision check seed").Weaken,
                     New NullTerminatedStringJar().Named("revision check challenge").Weaken,
                     New RawDataJar(Size:=128).Named("server signature").Weaken)
@@ -326,10 +326,10 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly GetFileTime As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.GetFileTime,
                     New UInt32Jar().Named("request id").Weaken,
                     New UInt32Jar().Named("unknown").Weaken,
-                    New FileTimeJar("filetime").Weaken,
+                    New FileTimeJar().Named("filetime").Weaken,
                     New NullTerminatedStringJar().Named("filename").Weaken)
             Public Shared ReadOnly GetIconData As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.GetIconData,
-                    New FileTimeJar("filetime").Weaken,
+                    New FileTimeJar().Named("filetime").Weaken,
                     New NullTerminatedStringJar().Named("filename").Weaken)
             Public Shared ReadOnly ClanInfo As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.ClanInfo,
                     New ByteJar().Named("unknown").Weaken,
@@ -393,8 +393,8 @@ Namespace Bnet.Protocol
                     New UInt32Jar().Named("is ladder").Weaken,
                     New NullTerminatedStringJar(maximumContentSize:=MaxGameNameLength).Named("name").Weaken,
                     New NullTerminatedStringJar().Named("password").Weaken,
-                    New TextHexValueJar("num free slots", digitCount:=1).Weaken,
-                    New TextHexValueJar("game id", digitCount:=8).Weaken,
+                    New TextHexValueJar(digitCount:=1).Named("num free slots").Weaken,
+                    New TextHexValueJar(digitCount:=8).Named("game id").Weaken,
                     New WC3.Protocol.GameStatsJar().Named("statstring").Weaken)
             Public Shared ReadOnly CloseGame3 As Definition(Of Object) = Define(PacketId.CloseGame3)
             Public Shared ReadOnly JoinChannel As Definition(Of Dictionary(Of InvariantString, Object)) = Define(PacketId.JoinChannel,

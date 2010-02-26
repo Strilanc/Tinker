@@ -33,9 +33,8 @@ Namespace Pickling
                 Contract.Assume(value(subJar.Name) IsNot Nothing)
                 pickles.Add(subJar.Pack(value(subJar.Name)))
             Next subJar
-            Return New Pickle(Of TValue)(value,
-                                         Concat(From p In pickles Select p.Data.ToArray).AsReadableList(),
-                                         Function() Pickle(Of Object).MakeListDescription(pickles, _useSingleLineDescription))
+            Return value.Pickled(Concat(From p In pickles Select p.Data.ToArray).AsReadableList,
+                                 Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
@@ -58,9 +57,8 @@ Namespace Pickling
             Next j
 
             Dim datum = data.SubView(0, curOffset)
-            Return New Pickle(Of Dictionary(Of InvariantString, Object))(vals,
-                                                                         datum,
-                                                                         Function() Pickle(Of Object).MakeListDescription(pickles, _useSingleLineDescription))
+            Return vals.Pickled(datum,
+                                Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
     End Class
 End Namespace

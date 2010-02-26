@@ -18,12 +18,12 @@ Public Class BnetProtocolJarsTest
     End Sub
     <TestMethod()>
     Public Sub TextHexValueJarTest()
-        Dim jar = New TextHexValueJar("test", digitCount:=8, ByteOrder:=ByteOrder.BigEndian)
+        Dim jar = New TextHexValueJar(digitCount:=8, ByteOrder:=ByteOrder.BigEndian)
         JarTest(jar, &HDEADBEEFUI, "deadbeef".ToAscBytes)
         JarTest(jar, 1, "00000001".ToAscBytes)
         JarTest(jar, 0, "00000000".ToAscBytes)
         ExpectException(Of PicklingException)(Sub() jar.Pack(&H100000000UL))
-        jar = New TextHexValueJar("test", digitCount:=6, ByteOrder:=ByteOrder.LittleEndian)
+        jar = New TextHexValueJar(digitCount:=6, ByteOrder:=ByteOrder.LittleEndian)
         JarTest(jar, &HDEADBEUI, "ebdaed".ToAscBytes)
         JarTest(jar, 1, "100000".ToAscBytes)
         JarTest(jar, 0, "000000".ToAscBytes)
@@ -31,7 +31,7 @@ Public Class BnetProtocolJarsTest
     End Sub
     <TestMethod()>
     Public Sub FileTimeJarTest()
-        Dim jar = New FileTimeJar("test")
+        Dim jar = New FileTimeJar()
         JarTest(jar, New Date(Year:=2010, Month:=1, Day:=16), {0, 224, 177, 95, 96, 150, 202, 1})
         JarTest(jar, New Date(Year:=2009, Month:=2, Day:=16), {0, 96, 185, 9, 235, 143, 201, 1})
     End Sub

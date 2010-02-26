@@ -16,7 +16,7 @@
         Public NotOverridable Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
             If _checkDefined AndAlso Not IsDefined(value) Then Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(value, GetType(T)))
             Dim data = {CType(CType(value, Object), Byte)}.AsReadableList()
-            Return New Pickle(Of TValue)(value, data, Function() ValueToString(value))
+            Return value.Pickled(data, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
@@ -25,7 +25,7 @@
             Dim value = CType(CType(datum.ToUInt16(_byteOrder), Object), T)
             If _checkDefined AndAlso Not IsDefined(value) Then Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(value, GetType(T)))
             Contract.Assume(value IsNot Nothing)
-            Return New Pickle(Of T)(value, datum, Function() ValueToString(value))
+            Return value.Pickled(datum, Function() ValueToString(value))
         End Function
 
         <Pure()>
@@ -65,7 +65,7 @@
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
             End If
             Dim data = CType(CType(value, Object), UInt16).Bytes(_byteOrder).AsReadableList()
-            Return New Pickle(Of TValue)(value, data, Function() ValueToString(value))
+            Return value.Pickled(data, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
@@ -76,7 +76,7 @@
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
             End If
             Contract.Assume(value IsNot Nothing)
-            Return New Pickle(Of T)(value, datum, Function() ValueToString(value))
+            Return value.Pickled(datum, Function() ValueToString(value))
         End Function
 
         <Pure()>
@@ -116,7 +116,7 @@
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
             End If
             Dim data = CType(CType(value, Object), UInt32).Bytes(_byteOrder).AsReadableList()
-            Return New Pickle(Of TValue)(value, data, Function() ValueToString(value))
+            Return value.Pickled(data, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
@@ -127,7 +127,7 @@
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
             End If
             Contract.Assume(value IsNot Nothing)
-            Return New Pickle(Of T)(value, datum, Function() ValueToString(value))
+            Return value.Pickled(datum, Function() ValueToString(value))
         End Function
 
         <Pure()>
@@ -167,7 +167,7 @@
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
             End If
             Dim data = CType(CType(value, Object), UInt64).Bytes(_byteOrder).AsReadableList()
-            Return New Pickle(Of TValue)(value, data, Function() ValueToString(value))
+            Return value.Pickled(data, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
@@ -178,7 +178,7 @@
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
             End If
             Contract.Assume(value IsNot Nothing)
-            Return New Pickle(Of T)(value, datum, Function() ValueToString(value))
+            Return value.Pickled(datum, Function() ValueToString(value))
         End Function
 
         <Pure()>

@@ -37,21 +37,21 @@ Namespace Bnet.Protocol
                 New UInt32Jar().Named("elapsed seconds").Weaken,
                 New NullTerminatedStringJar().Named("game name").Weaken,
                 New NullTerminatedStringJar().Named("game password").Weaken,
-                New TextHexValueJar("num free slots", digitCount:=1).Weaken,
-                New TextHexValueJar("game id", digitCount:=8).Weaken,
+                New TextHexValueJar(digitCount:=1).Named("num free slots").Weaken,
+                New TextHexValueJar(digitCount:=8).Named("game id").Weaken,
                 New WC3.Protocol.GameStatsJar().Named("game statstring").Weaken)
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
             Dim count = data.SubView(0, 4).ToUInt32
             Dim games = New List(Of WC3.RemoteGameDescription)(capacity:=CInt(count))
-            Dim pickles = New List(Of IPickle(Of Object))(capacity:=CInt(count + 1))
+            Dim pickles = New List(Of IPickle)(capacity:=CInt(count + 1))
             Dim result = QueryGameResponse.Ok
             Dim offset = 4
             If count = 0 Then
                 'result of single-game query
                 result = CType(data.SubView(4, 4).ToUInt32, QueryGameResponse)
                 offset += 4
-                pickles.Add(New Pickle(Of Object)("Result", result, data.SubView(4, 4)))
+                pickles.Add(result.Pickled(data.SubView(4, 4), New Lazy(Of String)(Function() "result: {0}".Frmt(result))))
             Else
                 'games matching query
                 For repeat = 1UI To count
@@ -75,9 +75,7 @@ Namespace Bnet.Protocol
                 Next repeat
             End If
 
-            Return New Pickle(Of QueryGamesListResponse)(value:=New QueryGamesListResponse(result, games),
-                                                         data:=data.SubView(0, offset),
-                                                         description:=Function() Pickle(Of Object).MakeListDescription(pickles))
+            Return New QueryGamesListResponse(result, games).Pickled(data.SubView(0, offset), Function() pickles.MakeListDescription())
         End Function
 
         Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As Pickling.IPickle(Of TValue)

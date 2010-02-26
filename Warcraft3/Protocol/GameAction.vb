@@ -132,15 +132,15 @@ Namespace WC3.Protocol
 
         Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Return New Pickle(Of TValue)(value, Concat({value.Id}, value.Payload.Data.ToArray).AsReadableList, Function() value.ToString)
+            Return value.Pickled(Concat({value.Id}, value.Payload.Data.ToArray).AsReadableList)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameAction)
-            Dim val = GameAction.FromData(data)
-            Dim datum = data.SubView(0, val.Payload.Data.Count + 1) 'include the id
-            Return New Pickle(Of GameAction)(val, datum, Function() val.ToString)
+            Dim value = GameAction.FromData(data)
+            Dim datum = data.SubView(0, value.Payload.Data.Count + 1) 'include the id
+            Return value.Pickled(datum)
         End Function
     End Class
 
@@ -199,7 +199,7 @@ Namespace WC3.Protocol
                                             {"source", value.Id},
                                             {"actions", value.Actions}
                                        })
-            Return New Pickle(Of TValue)(value, pickle.Data, pickle.Description)
+            Return value.Pickled(pickle.Data, pickle.Description)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
@@ -208,7 +208,7 @@ Namespace WC3.Protocol
             Dim actions = CType(pickle.Value("actions"), IReadableList(Of GameAction)).AssumeNotNull
             If id.Index < 1 OrElse id.Index > 12 Then Throw New IO.InvalidDataException("Invalid pid.")
             Dim value = New PlayerActionSet(id, actions)
-            Return New Pickle(Of PlayerActionSet)(value, pickle.Data, pickle.Description)
+            Return value.Pickled(pickle.Data, pickle.Description)
         End Function
     End Class
 End Namespace
