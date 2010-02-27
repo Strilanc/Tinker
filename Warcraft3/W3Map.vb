@@ -1,6 +1,6 @@
 Namespace WC3
     Public NotInheritable Class Map
-        Private ReadOnly _streamFactory As Func(Of IO.Stream)
+        Private ReadOnly _streamFactory As Func(Of IRandomReadableStream)
         Private ReadOnly _advertisedPath As InvariantString
         Private ReadOnly _fileSize As UInteger
         Private ReadOnly _fileChecksumCRC32 As UInt32
@@ -26,7 +26,7 @@ Namespace WC3
             Contract.Invariant(_playableHeight > 0)
         End Sub
 
-        Public Sub New(ByVal streamFactory As Func(Of IO.Stream),
+        Public Sub New(ByVal streamFactory As Func(Of IRandomReadableStream),
                        ByVal advertisedPath As InvariantString,
                        ByVal fileSize As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
@@ -68,9 +68,8 @@ Namespace WC3
                                         ByVal wc3MapFolder As InvariantString,
                                         ByVal wc3PatchMPQFolder As InvariantString) As Map
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
-            Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read)
-            Using f = factory()
-                Dim mapArchive = New MPQ.Archive(factory)
+            Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream
+                Dim mapArchive = MPQ.Archive.FromStreamFactory(factory)
                 Dim war3PatchArchive = OpenWar3PatchArchive(wc3PatchMPQFolder)
                 Dim info = ReadMapInfo(mapArchive)
 
@@ -83,10 +82,11 @@ Namespace WC3
                     relPath = IO.Path.GetFileName(relPath)
                 End If
 
+            Using crcStream = factory()
                 Return New Map(streamFactory:=factory,
                                AdvertisedPath:="Maps\" + relPath.ToString.Replace(IO.Path.DirectorySeparatorChar, "\"),
-                               FileSize:=CUInt(f.Length),
-                               FileChecksumCRC32:=f.ToEnumerator.CRC32,
+                               FileSize:=CUInt(crcStream.Length),
+                               FileChecksumCRC32:=MPQ.Library.AsEnumerator(crcStream).CRC32,
                                MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive).AsReadableList,
                                MapChecksumXORO:=CUInt(ComputeMapXoro(mapArchive, war3PatchArchive)),
                                Slots:=info.slots,
@@ -282,13 +282,10 @@ Namespace WC3
             If Not FileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
             Contract.Assume(_streamFactory IsNot Nothing)
 
-            Dim buffer(0 To CInt(size - 1)) As Byte
-            Using f = _streamFactory()
-                If f Is Nothing Then Throw New InvalidStateException("Invalid steam factory.")
-                f.Seek(pos, IO.SeekOrigin.Begin)
-                Dim n = f.Read(buffer, 0, CInt(size))
-                If n < buffer.Length Then ReDim Preserve buffer(0 To n - 1)
-                Dim result = buffer.AsReadableList
+            Using stream = _streamFactory()
+                If stream Is Nothing Then Throw New InvalidStateException("Invalid steam factory.")
+                stream.Position = pos
+                Dim result = stream.Read(CInt(size))
                 Contract.Assume(result.Count <= size)
                 Return result
             End Using
@@ -300,13 +297,13 @@ Namespace WC3
             Dim normalPath = IO.Path.Combine(war3PatchFolder, "War3Patch.mpq")
             Dim copyPath = IO.Path.Combine(war3PatchFolder, "TinkerTempCopyWar3Patch{0}.mpq".Frmt(New CachedExternalValues().WC3ExeVersion.StringJoin(".")))
             If IO.File.Exists(copyPath) Then
-                Return New MPQ.Archive(copyPath)
+                Return MPQ.Archive.FromFile(copyPath)
             ElseIf IO.File.Exists(normalPath) Then
                 Try
-                    Return New MPQ.Archive(normalPath)
+                    Return MPQ.Archive.FromFile(normalPath)
                 Catch e As IO.IOException
                     IO.File.Copy(normalPath, copyPath)
-                    Return New MPQ.Archive(copyPath)
+                    Return MPQ.Archive.FromFile(copyPath)
                 End Try
             Else
                 Throw New IO.IOException("Couldn't find War3Patch.mpq")
@@ -329,7 +326,7 @@ Namespace WC3
                 Dim mpqToUse = If(mapArchive.Hashtable.Contains(filename),
                                   mapArchive,
                                   war3PatchArchive)
-                streams.Add(mpqToUse.OpenFileByName(filename))
+                streams.Add(mpqToUse.OpenFileByName(filename).AsStream)
             Next filename
 
             'Magic value
@@ -349,7 +346,7 @@ Namespace WC3
                 Dim filenameToUse = (From filename In fileset.Split("|"c)
                                      Where mapArchive.Hashtable.Contains(filename)).FirstOrDefault
                 If filenameToUse IsNot Nothing Then
-                    streams.Add(mapArchive.OpenFileByName(filenameToUse))
+                    streams.Add(mapArchive.OpenFileByName(filenameToUse).AsStream)
                 End If
             Next fileset
 
@@ -364,21 +361,19 @@ Namespace WC3
         End Function
 
         '''<summary>Computes parts of the Xoro checksum.</summary>
-        Private Shared Function ComputeStreamXoro(ByVal stream As IO.Stream) As ModInt32
+        Private Shared Function ComputeStreamXoro(ByVal stream As IRandomReadableStream) As ModInt32
             Contract.Requires(stream IsNot Nothing)
             Dim val As ModInt32 = 0
 
-            With New IO.BinaryReader(New IO.BufferedStream(stream))
-                'Process complete dwords
-                For repeat = 1 To stream.Length \ 4
-                    val = (val Xor .ReadUInt32()).ShiftRotateLeft(3)
-                Next repeat
+            'Process complete dwords
+            For repeat = 1 To stream.Length \ 4
+                val = (val Xor stream.ReadUInt32()).ShiftRotateLeft(3)
+            Next repeat
 
-                'Process bytes not in a complete dword
-                For repeat = 1 To stream.Length Mod 4
-                    val = (val Xor .ReadByte()).ShiftRotateLeft(3)
-                Next repeat
-            End With
+            'Process bytes not in a complete dword
+            For repeat = 1 To stream.Length Mod 4
+                val = (val Xor stream.ReadByte()).ShiftRotateLeft(3)
+            Next repeat
 
             Return val
         End Function
@@ -435,7 +430,7 @@ Namespace WC3
             Contract.Requires(mapArchive IsNot Nothing)
 
             'Open strings file and search for given key
-            Using sr = New IO.StreamReader(New IO.BufferedStream(mapArchive.OpenFileByName("war3map.wts")))
+            Using sr = New IO.StreamReader(mapArchive.OpenFileByName("war3map.wts").AsStream)
                 Do Until sr.EndOfStream
                     Dim itemKey = sr.ReadLine()
                     If sr.ReadLine <> "{" Then Continue Do
@@ -542,7 +537,7 @@ Namespace WC3
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
 
-            Using stream = mapArchive.OpenFileByName("war3map.w3i").AsReadableStream
+            Using stream = mapArchive.OpenFileByName("war3map.w3i")
                 Dim fileFormat = CType(stream.ReadUInt32(), MapInfoFormatVersion)
                 If Not fileFormat.EnumValueIsDefined Then
                     Throw New IO.InvalidDataException("Unrecognized war3map.w3i format.")

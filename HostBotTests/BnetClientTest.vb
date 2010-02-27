@@ -4,7 +4,6 @@ Imports Tinker
 Imports Tinker.Bnet
 Imports System.Numerics
 Imports Strilbrary.Values
-Imports Strilbrary.Enumeration
 Imports System.Collections.Generic
 
 <TestClass()>
