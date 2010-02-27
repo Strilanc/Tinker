@@ -25,7 +25,9 @@ Public Class TestStream
         readLock.Set()
     End Sub
     Public Sub EnqueuedReadPacket(ByVal preheader As IEnumerable(Of Byte), ByVal sizeByteCount As Integer, ByVal body As IEnumerable(Of Byte))
-        EnqueueRead(preheader.Concat(CUInt(preheader.Count + sizeByteCount + body.Count).Bytes.SubToArray(0, sizeByteCount)).Concat(body).ToArray)
+        EnqueueRead(Concat(preheader,
+                           CUInt(preheader.Count + sizeByteCount + body.Count).Bytes.Take(sizeByteCount),
+                           body).ToArray)
     End Sub
     Public Sub EnqueueClosed()
         SyncLock lock
@@ -38,7 +40,7 @@ Public Class TestStream
                                    Optional ByVal millisecondsTimeout As Integer = 10000) As Byte()
         Dim headerSize = preheaderByteCount + sizeByteCount
         Dim header = Me.RetrieveWriteData(length:=headerSize, millisecondsTimeout:=millisecondsTimeout)
-        Dim size = CInt(header.SubToArray(preheaderByteCount, sizeByteCount).ToUInt32)
+        Dim size = CInt(header.Skip(preheaderByteCount).Take(sizeByteCount).ToUInt32)
         Dim body = Me.RetrieveWriteData(length:=size - headerSize, millisecondsTimeout:=millisecondsTimeout)
         Return header.Concat(body).ToArray
     End Function
