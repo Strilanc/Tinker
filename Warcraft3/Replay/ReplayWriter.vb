@@ -131,10 +131,9 @@ Namespace WC3.Replay
             Dim compressedLength = CUShort(compressedBlockData.Count)
 
             'compute checksum
-            Dim headerCRC32 = Concat(compressedLength.Bytes,
-                                     blockDecompressedLength.Bytes,
-                                     {0, 0, 0, 0}
-                                     ).CRC32
+            Dim headerCRC32 = Concat(Of Byte)(compressedLength.Bytes,
+                                              blockDecompressedLength.Bytes,
+                                              {0, 0, 0, 0}).CRC32
             Dim bodyCRC32 = compressedBlockData.CRC32
             Dim checksum = ((bodyCRC32 Xor (bodyCRC32 << 16)) And &HFFFF0000UI) Or
                            ((headerCRC32 Xor (headerCRC32 >> 16)) And &HFFFFUI)

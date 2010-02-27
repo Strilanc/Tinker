@@ -117,9 +117,8 @@ Namespace CKL
                             If _keyIndex >= _keys.Count Then _keyIndex = 0
                             Dim credentials = _keys(_keyIndex).GenerateCredentials(clientToken:=data.SubView(0, 4).ToUInt32,
                                                                                    serverToken:=data.SubView(4, 4).ToUInt32)
-                            responseData = {jar.Pack(credentials.AuthenticationROC).Data,
-                                            jar.Pack(credentials.AuthenticationTFT).Data
-                                           }.Fold
+                            responseData = Concat(jar.Pack(credentials.AuthenticationROC).Data,
+                                                  jar.Pack(credentials.AuthenticationTFT).Data)
                             Logger.Log("Provided key '{0}' to {1}".Frmt(_keys(_keyIndex).Name, socket.Name), LogMessageType.Positive)
                             _keyIndex += 1
                         End If

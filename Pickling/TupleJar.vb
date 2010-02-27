@@ -33,7 +33,7 @@ Namespace Pickling
                 Contract.Assume(value(subJar.Name) IsNot Nothing)
                 pickles.Add(subJar.Pack(value(subJar.Name)))
             Next subJar
-            Return value.Pickled(Concat(From p In pickles Select p.Data.ToArray).AsReadableList,
+            Return value.Pickled(Concat(From p In pickles Select (p.Data)).ToReadableList,
                                  Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 

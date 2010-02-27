@@ -259,7 +259,7 @@ Namespace Bnet.Protocol
             Contract.Requires(jar1 IsNot Nothing)
             Contract.Requires(jar2 IsNot Nothing)
             Contract.Requires(jars IsNot Nothing)
-            Return New Definition(Of Dictionary(Of InvariantString, Object))(id, New TupleJar(Concat({jar1, jar2}, jars)))
+            Return New Definition(Of Dictionary(Of InvariantString, Object))(id, New TupleJar({jar1, jar2}.Concat(jars).ToArray))
         End Function
 
         Public NotInheritable Class ServerToClient

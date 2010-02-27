@@ -32,7 +32,7 @@ Namespace CKL
         <ContractVerification(False)>
         Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
                                           ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
-            Dim requestPacket = {clientSalt, serverSalt}.Fold
+            Dim requestPacket = Concat(clientSalt, serverSalt)
 
             'Connect to CKL server and send request
             Dim futureSocket = PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)

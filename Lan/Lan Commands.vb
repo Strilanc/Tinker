@@ -86,12 +86,12 @@ Namespace Lan
             Inherits TemplatedCommand(Of AdvertiserManager)
             Public Sub New()
                 MyBase.New(Name:="Host",
-                           template:=Fold({New String() {"name=<game name>", "map=<search query>"},
-                                           WC3.GameSettings.PartialArgumentTemplates,
-                                           WC3.GameStats.PartialArgumentTemplates}).StringJoin(" "),
+                           template:=Concat({"name=<game name>", "map=<search query>"},
+                                            WC3.GameSettings.PartialArgumentTemplates,
+                                            WC3.GameStats.PartialArgumentTemplates).StringJoin(" "),
                            Description:="Creates a server of a game and advertises it on lan. More help topics under 'Help Host *'.",
                            Permissions:="games:1",
-                           extraHelp:=Fold({WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp}).StringJoin(Environment.NewLine))
+                           extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)

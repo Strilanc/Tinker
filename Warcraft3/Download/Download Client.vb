@@ -169,6 +169,7 @@ Namespace WC3.Download
                                          Where client.ReportedHasFile
                                          Where client.Transfer Is Nothing
                                          Where client.IsSteady
+                If availableUploaders.None Then Return Nothing
                 Return availableUploaders.Max(
                     Function(e1, e2) (From sign In {If(LastTransferPartner Is e1, 0, 1) - If(LastTransferPartner Is e2, 0, 1),
                                                     Math.Sign(e1.EstimatedBandwidthPerSecond - e2.EstimatedBandwidthPerSecond),

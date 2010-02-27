@@ -96,7 +96,7 @@ Namespace WC3.Protocol
                     {"unknown1", 0},
                     {"unknown2", ""}
                 })
-            Dim data = Concat(EncodeStatStringData(rawPickle.Data).ToArray, {0}).AsReadableList
+            Dim data = EncodeStatStringData(rawPickle.Data).Append(0).ToReadableList
             Return value.Pickled(data, rawPickle.Description)
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameStats)

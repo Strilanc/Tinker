@@ -132,7 +132,7 @@ Namespace WC3.Protocol
 
         Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Return value.Pickled(Concat({value.Id}, value.Payload.Data.ToArray).AsReadableList)
+            Return value.Pickled(New Byte() {value.Id}.Concat(value.Payload.Data).ToReadableList)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)

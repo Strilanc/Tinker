@@ -53,7 +53,7 @@ Namespace Pickling
             Contract.Assume(value IsNot Nothing)
             Dim index = CByte(CType(value.Key, Object))
             If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.Key.ToString())
-            Dim data = Concat({index}, packers(index).Pack(value.Payload.Value).Data.ToArray).AsReadableList
+            Dim data = {index}.Concat(packers(index).Pack(value.Payload.Value).Data).ToReadableList
             Return value.Pickled(data, Function() value.ToString)
         End Function
 

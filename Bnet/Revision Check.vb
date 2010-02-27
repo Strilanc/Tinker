@@ -136,10 +136,11 @@ Namespace Bnet
 
             Dim defaultVariables = {SeedVar, ResultVar, InputVar}
             Dim declarationVariables = From declaration In declarations Select declaration(0)
-            Dim statementVariables = (From statement In statements Select {statement(0), statement(2), statement(4)}).Fold
+            Dim statementVariables = Concat(From statement In statements
+                                            Select {statement(0), statement(2), statement(4)})
 
             Dim variables = New Dictionary(Of Char, ParameterExpression)
-            For Each name In {defaultVariables, declarationVariables, statementVariables}.Fold.Distinct
+            For Each name In Concat(defaultVariables, declarationVariables, statementVariables).Distinct
                 variables.Add(name, Expression.Variable(GetType(UInt32), name))
             Next name
             Return variables

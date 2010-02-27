@@ -46,7 +46,7 @@ Public NotInheritable Class ThrottledWriteStream
     End Sub
 
     Public Overrides Sub Write(ByVal buffer() As Byte, ByVal offset As Integer, ByVal count As Integer)
-        Dim data = buffer.SubArray(offset, count)
+        Dim data = buffer.Skip(offset).Take(count).ToArray
         inQueue.QueueAction(Sub()
                                 _queuedWrites.Enqueue(data)
                                 PerformWrites(isWaitCallback:=False)

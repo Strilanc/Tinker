@@ -6,7 +6,7 @@ Namespace WC3.Protocol
 
         Public Overrides Function Pack(Of TValue As GameObjectId)(ByVal value As TValue) As IPickle(Of TValue)
             Dim valued As GameObjectId = value
-            Dim data = Concat(valued.AllocatedId.Bytes, valued.CounterId.Bytes).AsReadableList
+            Dim data = valued.AllocatedId.Bytes.Concat(valued.CounterId.Bytes).ToReadableList
             Return value.Pickled(data)
         End Function
 

@@ -158,8 +158,8 @@ Namespace Lan
             Contract.Requires(pk IsNot Nothing)
             Try
                 'pack
-                Dim data = pk.Payload.Data.ToArray()
-                data = Concat({WC3.Protocol.Packets.PacketPrefix, pk.id}, CUShort(data.Length + 4).Bytes(), data)
+                Dim data = pk.Payload.Data.ToArray
+                data = Concat(Of Byte)({WC3.Protocol.Packets.PacketPrefix, pk.Id}, CUShort(data.Length + 4).Bytes, data).ToArray
 
                 'Log
                 _logger.Log(Function() "Sending to {0}: {1}".Frmt(pk.id, data.ToHexString), LogMessageType.DataRaw)

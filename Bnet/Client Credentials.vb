@@ -148,7 +148,7 @@ Namespace Bnet
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 40)
 
                 Dim userIdAuthData = "{0}:{1}".Frmt(Me._userName.ToUpperInvariant, Me._password.ToUpperInvariant).ToAscBytes
-                Dim passwordKey = {accountSalt, userIdAuthData.SHA1}.Fold.SHA1.ToUnsignedBigInteger
+                Dim passwordKey = Concat(accountSalt, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
                 Dim verifier = BigInteger.ModPow(G, passwordKey, N)
                 Dim serverKey = serverPublicKeyBytes.SHA1.Take(4).Reverse.ToUnsignedBigInteger
 
@@ -179,13 +179,13 @@ Namespace Bnet
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
 
-                Return {FixedSalt,
-                        UserName.ToUpperInvariant.ToAscBytes.SHA1,
-                        accountSalt,
-                        PublicKeyBytes,
-                        serverPublicKeyBytes,
-                        SharedSecret(accountSalt, serverPublicKeyBytes)
-                        }.Fold.SHA1
+                Return Concat(FixedSalt,
+                              UserName.ToUpperInvariant.ToAscBytes.SHA1,
+                              accountSalt,
+                              PublicKeyBytes,
+                              serverPublicKeyBytes,
+                              SharedSecret(accountSalt, serverPublicKeyBytes)
+                              ).SHA1
             End Get
         End Property
         '''<summary>Determines the expected proof, from the server, that it knew the shared secret.</summary>
@@ -197,10 +197,10 @@ Namespace Bnet
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
 
-                Return {PublicKeyBytes,
-                        ClientPasswordProof(accountSalt, serverPublicKeyBytes),
-                        SharedSecret(accountSalt, serverPublicKeyBytes)
-                        }.Fold.SHA1
+                Return Concat(PublicKeyBytes,
+                              ClientPasswordProof(accountSalt, serverPublicKeyBytes),
+                              SharedSecret(accountSalt, serverPublicKeyBytes)
+                              ).SHA1
             End Get
         End Property
     End Class

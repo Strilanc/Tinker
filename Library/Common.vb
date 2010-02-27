@@ -16,9 +16,8 @@ Public Module PoorlyCategorizedFunctions
 
         'Recurse on actual lines, if there are multiple
         If body.Contains(Environment.NewLine) Then
-            Return (From line In Microsoft.VisualBasic.Split(body, Delimiter:=Environment.NewLine)
-                    Select SplitText(line, maxLineLength)
-                   ).Fold.ToReadableList
+            Return Concat(From line In Microsoft.VisualBasic.Split(body, Delimiter:=Environment.NewLine)
+                          Select SplitText(line, maxLineLength))
         End If
 
         'Separate body into lines, respecting the maximum line length and trying to divide along word boundaries
@@ -230,7 +229,7 @@ Public Module PoorlyCategorizedFunctions
             Contract.Assume(result >= 0)
             Return result
         Else
-            Dim result = New BigInteger(Concat(digits, {0}))
+            Dim result = New BigInteger(digits.Append(0).ToArray)
             Contract.Assume(result >= 0)
             Return result
         End If
@@ -239,12 +238,13 @@ Public Module PoorlyCategorizedFunctions
     Public Function ToUnsignedBytes(ByVal value As BigInteger) As IReadableList(Of Byte)
         Contract.Requires(value >= 0)
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-        Dim result = value.ToByteArray()
+        Dim result = value.ToByteArray.ToReadableList
         Contract.Assume(result IsNot Nothing)
-        If result.Length > 0 AndAlso result(result.Length - 1) = 0 Then
-            result = result.SubArray(0, result.Length - 1)
+        If result.Count > 0 AndAlso result.Last = 0 Then
+            Return result.SubView(0, result.Count - 1)
+        Else
+            Return result
         End If
-        Return result.AsReadableList
     End Function
     <Pure()> <Extension()>
     Public Function AssumeNotNull(Of T)(ByVal arg As T) As T

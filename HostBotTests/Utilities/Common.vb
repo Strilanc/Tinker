@@ -73,8 +73,7 @@ Friend Module TestingCommon
             End Try
         End If
         If appendSafe Then
-            Dim data2 = {data, New Byte() {1, 2, 3}}.Fold.ToList
-            Dim parsed2 = jar.Parse(data2.AsReadableList)
+            Dim parsed2 = jar.Parse(data.Concat({1, 2, 3}).ToReadableList)
             Assert.IsTrue(equater(parsed2.Value, value))
             Assert.IsTrue(parsed2.Data.SequenceEqual(data))
             If description IsNot Nothing Then
@@ -84,8 +83,7 @@ Friend Module TestingCommon
             End If
         Else
             Try
-                Dim data2 = {data, New Byte() {1, 2, 3}}.Fold.ToList
-                Dim parsed2 = jar.Parse(data2.AsReadableList)
+                Dim parsed2 = jar.Parse(data.Concat({1, 2, 3}).ToReadableList)
                 Assert.IsFalse(equater(parsed2.Value, value))
                 Assert.IsFalse(parsed2.Data.SequenceEqual(data))
             Catch ex As PicklingException

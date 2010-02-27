@@ -65,7 +65,7 @@ Public NotInheritable Class PacketStreamer
 
                 'Parse header
                 If readSize = FullHeaderSize Then
-                    totalSize = CInt(packetData.SubArray(_preheaderLength, _sizeHeaderLength).ToUInt32())
+                    totalSize = CInt(packetData.Skip(_preheaderLength).Take(_sizeHeaderLength).ToUInt32)
                     If totalSize < FullHeaderSize Then
                         'too small
                         result.SetFailed(New IO.InvalidDataException("Invalid packet size (less than header size)."))
@@ -100,7 +100,7 @@ Public NotInheritable Class PacketStreamer
 
         Dim size = CULng(FullHeaderSize + payload.Count)
         If size >> (_sizeHeaderLength * 8) <> 0 Then Throw New ArgumentException("Too must data to count in size header.", "payload")
-        Dim data = {preheader, size.Bytes.Take(_sizeHeaderLength), payload}.Fold.ToArray
+        Dim data = Concat(preheader, size.Bytes.Take(_sizeHeaderLength), payload).ToArray
         _subStream.Write(data, 0, data.Length)
         Return data
     End Function
