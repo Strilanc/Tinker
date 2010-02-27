@@ -89,7 +89,7 @@
         Private Sub OnReceiveGameActions(ByVal sender As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(actions IsNot Nothing)
-            _gameDataQueue.Enqueue(Tuple(sender, actions))
+            _gameDataQueue.Enqueue(Tuple.Create(sender, actions))
             RaiseEvent ReceivedPlayerActions(Me, sender, actions)
 
             '[async lag -wait command detection]
@@ -119,7 +119,7 @@
 
             _tickClock = _tickClock.Restarted()
             Dim dt = _tickClock.StartingTimeOnParentClock.TotalMilliseconds * _speedFactor
-            Dim dgt = CUShort(_tickPeriod.TotalMilliseconds * _speedFactor).KeepAtOrAbove(1)
+            Dim dgt = CUShort(_tickPeriod.TotalMilliseconds * _speedFactor).ClampAtOrAbove(1)
 
             'Stop for laggers
             UpdateLagScreen()
@@ -187,7 +187,7 @@
                 End If
 
                 _gameDataQueue.Dequeue()
-                outgoingActions.Add(Tuple(e.Item1, New Protocol.PlayerActionSet(_lobby.GetVisiblePlayer(e.Item1).Id, e.Item2)))
+                outgoingActions.Add(Tuple.Create(e.Item1, New Protocol.PlayerActionSet(_lobby.GetVisiblePlayer(e.Item1).Id, e.Item2)))
                 totalDataLength += actionDataLength
             End While
 

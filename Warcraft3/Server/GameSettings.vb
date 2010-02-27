@@ -302,8 +302,7 @@
                              Select CByte(HCLChars.IndexOf(CStr(safeLetter), StringComparison.OrdinalIgnoreCase))
 
             'Encode
-            Dim encodedHandicaps = Enumerable.Zip(handicapData,
-                                                  letterData,
+            Dim encodedHandicaps = Enumerable.Zip(handicapData, letterData,
                                                   Function(handicap, letter) indexMap((handicap - 50) \ 10 + letter * 6))
             Dim remainingHandicaps = handicapData.Skip(encodedHandicaps.Count)
 

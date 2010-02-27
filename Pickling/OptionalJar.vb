@@ -28,9 +28,9 @@ Namespace Pickling
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Tuple(Of Boolean, T))
             If data.Count > 0 Then
                 Dim pickle = _subJar.Parse(data)
-                Return Tuple(True, pickle.Value).Pickled(pickle.Data, pickle.Description)
+                Return Tuple.Create(True, pickle.Value).Pickled(pickle.Data, pickle.Description)
             Else
-                Return Tuple(False, CType(Nothing, T)).Pickled(data, Function() "[Not Included]")
+                Return Tuple.Create(False, CType(Nothing, T)).Pickled(data, Function() "[Not Included]")
             End If
         End Function
     End Class

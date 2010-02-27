@@ -100,31 +100,6 @@ Public Module PoorlyCategorizedFunctions
     End Function
 #End Region
 
-    <Extension()>
-    Public Function Cache(Of T)(ByVal sequence As IEnumerable(Of T)) As IEnumerable(Of T)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-        Return sequence.ToArray
-    End Function
-
-    <Extension()>
-    Public Function AsyncRepeat(ByVal clock As IClock, ByVal period As TimeSpan, ByVal action As action) As IDisposable
-        Contract.Requires(clock IsNot Nothing)
-        Contract.Requires(action IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-
-        Dim stopFlag As Boolean
-        Dim callback As Action
-        callback = Sub()
-                       If stopFlag Then Return
-                       Call action()
-                       clock.AsyncWait(period).CallOnSuccess(callback)
-                   End Sub
-        clock.AsyncWait(period).CallOnSuccess(callback)
-        Return New DelegatedDisposable(Sub() stopFlag = True)
-    End Function
-
-#Region "Filepaths"
     Public Function FindFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As String
         Contract.Requires(fileQuery IsNot Nothing)
         Contract.Requires(likeQuery IsNot Nothing)
@@ -186,59 +161,6 @@ Public Module PoorlyCategorizedFunctions
             e.RaiseAsUnexpected("Error creating folder: {0}.".Frmt(path))
             Throw
         End Try
-    End Function
-#End Region
-
-    <Pure()> <Extension()>
-    <ContractVerification(False)>
-    Public Function KeepAtOrAbove(Of T As IComparable(Of T))(ByVal value1 As T, ByVal value2 As T) As T
-        Contract.Requires(value1 IsNot Nothing)
-        Contract.Requires(value2 IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of T)().CompareTo(value1) >= 0)
-        Contract.Ensures(Contract.Result(Of T)().CompareTo(value2) >= 0)
-        Return If(value1.CompareTo(value2) >= 0, value1, value2)
-    End Function
-    <Pure()> <Extension()>
-    <ContractVerification(False)>
-    Public Function KeepAtOrBelow(Of T As IComparable(Of T))(ByVal value1 As T, ByVal value2 As T) As T
-        Contract.Requires(value1 IsNot Nothing)
-        Contract.Requires(value2 IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of T)().CompareTo(value1) <= 0)
-        Contract.Ensures(Contract.Result(Of T)().CompareTo(value2) <= 0)
-        Return If(value1.CompareTo(value2) <= 0, value1, value2)
-    End Function
-
-    <Pure()> <Extension()>
-    Public Function MaxProjection(Of TInput, TResult As IComparable(Of TResult))(ByVal sequence As IEnumerable(Of TInput),
-                                                                                 ByVal projection As Func(Of TInput, TResult)) As Tuple(Of TInput, TResult)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(projection IsNot Nothing)
-        Dim best As Tuple(Of TInput, TResult) = Nothing
-        For Each pair In From item In sequence Select Tuple(item, projection(item))
-            Contract.Assume(pair IsNot Nothing)
-            If best Is Nothing OrElse pair.Item2.CompareTo(best.Item2) > 0 Then
-                best = pair
-            End If
-        Next pair
-        Return best
-    End Function
-
-    <Extension()> <Pure()>
-    <ContractVerification(False)>
-    Public Function Zip(Of T1, T2)(ByVal sequence As IEnumerable(Of T1), ByVal sequence2 As IEnumerable(Of T2)) As IEnumerable(Of Tuple(Of T1, T2))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(sequence2 IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Tuple(Of T1, T2)))() IsNot Nothing)
-        Return Enumerable.Zip(sequence, sequence2, Function(e1, e2) Tuple(e1, e2))
-    End Function
-
-    <Pure()> <Extension()>
-    Public Function ToReadableList(Of T)(ByVal sequence As IEnumerable(Of T)) As IReadableList(Of T)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of T))() IsNot Nothing)
-        Return If(TryCast(sequence, IReadableList(Of T)), sequence.ToArray.AsReadableList)
     End Function
 
     ''' <summary>
@@ -324,22 +246,6 @@ Public Module PoorlyCategorizedFunctions
         End If
         Return result.AsReadableList
     End Function
-    <Extension()>
-    Public Sub Write(ByVal stream As IWritableStream, ByVal value As Byte)
-        Contract.Requires(stream IsNot Nothing)
-        stream.Write(New Byte() {value}.AsReadableList)
-    End Sub
-    <Pure()>
-    Public Function Tuple(Of T1, T2)(ByVal arg1 As T1, ByVal arg2 As T2) As Tuple(Of T1, T2)
-        Contract.Ensures(Contract.Result(Of Tuple(Of T1, T2))() IsNot Nothing)
-        Return New Tuple(Of T1, T2)(arg1, arg2)
-    End Function
-    <Pure()>
-    Public Function Tuple(Of T1, T2, T3)(ByVal arg1 As T1, ByVal arg2 As T2, ByVal arg3 As T3) As Tuple(Of T1, T2, T3)
-        Contract.Ensures(Contract.Result(Of Tuple(Of T1, T2, T3))() IsNot Nothing)
-        Return New Tuple(Of T1, T2, T3)(arg1, arg2, arg3)
-    End Function
-
     <Pure()> <Extension()>
     Public Function AssumeNotNull(Of T)(ByVal arg As T) As T
         Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)

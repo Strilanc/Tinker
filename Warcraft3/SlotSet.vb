@@ -42,7 +42,7 @@
             Dim best = (From slot In _slots
                         Let match = slot.Matches(query)
                         Let contentType = slot.Contents.ContentType
-                        ).MaxProjection(Function(item) item.match * 3 - item.contentType).Item1
+                        ).MaxRelativeTo(Function(item) item.match * 3 - item.contentType)
             Contract.Assume(best IsNot Nothing)
             If best.match = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
             Contract.Assume(best.slot IsNot Nothing)
@@ -57,8 +57,7 @@
                                Where slot.Contents.Moveable
                                Where slot.Contents.ContentType <> SlotContents.Type.Empty
             Dim encodedHandicaps = settings.EncodedHCLMode(From slot In useableSlots Select slot.Handicap)
-            Return Me.WithSlotsReplaced(Enumerable.Zip(useableSlots,
-                                                       encodedHandicaps,
+            Return Me.WithSlotsReplaced(Enumerable.Zip(useableSlots, encodedHandicaps,
                                                        Function(slot, handicap) slot.WithHandicap(handicap)))
         End Function
 

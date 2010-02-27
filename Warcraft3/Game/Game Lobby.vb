@@ -257,7 +257,7 @@
             End If
             _freeIndexes.Remove(id)
 
-            Return Tuple(slot, id)
+            Return Tuple.Create(slot, id)
         End Function
         Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal id As PlayerId) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
@@ -369,7 +369,7 @@
             Dim best = (From slot In _slots
                         Let match = slot.Matches(query)
                         Let content = slot.Contents.ContentType
-                        ).MaxProjection(Function(item) item.match * 10 - item.content).Item1
+                        ).MaxRelativeTo(Function(item) item.match * 10 - item.content)
             If best.match = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
             Return best.slot
         End Function

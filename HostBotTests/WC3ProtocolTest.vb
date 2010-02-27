@@ -520,7 +520,7 @@ Public Class WC3ProtocolTest
                                 100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250},
-                        {"player action sets", Tuple(True, {New PlayerActionSet(New PlayerId(1),
+                        {"player action sets", Tuple.Create(True, {New PlayerActionSet(New PlayerId(1),
                                            {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
                                                                      {"amount", 100},
@@ -533,7 +533,7 @@ Public Class WC3ProtocolTest
                 data:={100, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 100},
-                        {"player action sets", Tuple(False, CType(Nothing, IReadableList(Of PlayerActionSet)))}})
+                        {"player action sets", Tuple.Create(False, CType(Nothing, IReadableList(Of PlayerActionSet)))}})
     End Sub
     <TestMethod()>
     Public Sub TockTest()

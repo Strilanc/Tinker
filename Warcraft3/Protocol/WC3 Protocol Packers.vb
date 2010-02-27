@@ -151,7 +151,7 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.Tick, New Dictionary(Of InvariantString, Object) From {
                     {"time span", timeSpan},
-                    {"player action sets", Tuple(actions IsNot Nothing, actions)}})
+                    {"player action sets", Tuple.Create(actions IsNot Nothing, actions)}})
         End Function
 
         <Pure()>
@@ -304,7 +304,7 @@ Namespace WC3.Protocol
         Public Function MakePeerConnectionInfo(ByVal pids As IEnumerable(Of PlayerId)) As Packet
             Contract.Requires(pids IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim peerFlags = (From pid In pids Select CUShort(1) << (pid.Index - 1)).ReduceUsing(Function(flag1, flag2) flag1 Or flag2)
+            Dim peerFlags = (From pid In pids Select 1US << (pid.Index - 1)).Aggregate(0US, Function(flag1, flag2) flag1 Or flag2)
             Return Packet.FromValue(Packets.PeerConnectionInfo, peerFlags)
         End Function
 
@@ -314,7 +314,7 @@ Namespace WC3.Protocol
                                       ByVal connectedPeers As IEnumerable(Of PlayerId)) As Packet
             Contract.Requires(connectedPeers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim peerFlags = (From pid In connectedPeers Select CUShort(1) << (pid.Index - 1)).ReduceUsing(Function(flag1, flag2) flag1 Or flag2)
+            Dim peerFlags = (From pid In connectedPeers Select 1US << (pid.Index - 1)).Aggregate(0US, Function(flag1, flag2) flag1 Or flag2)
             Return Packet.FromValue(Packets.PeerKnock, New Dictionary(Of InvariantString, Object) From {
                     {"receiver peer key", receiverPeerKey},
                     {"unknown1", 0},
@@ -327,7 +327,7 @@ Namespace WC3.Protocol
                                      ByVal senderConnectedPeers As IEnumerable(Of PlayerId)) As Packet
             Contract.Requires(senderConnectedPeers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim peerFlags = (From pid In senderConnectedPeers Select CUShort(1) << (pid.Index - 1)).ReduceUsing(Function(flag1, flag2) flag1 Or flag2)
+            Dim peerFlags = (From pid In senderConnectedPeers Select 1US << (pid.Index - 1)).Aggregate(0US, Function(flag1, flag2) flag1 Or flag2)
             Return Packet.FromValue(Packets.PeerPing, New Dictionary(Of InvariantString, Object) From {
                     {"salt", salt},
                     {"sender peer connection flags", peerFlags},
