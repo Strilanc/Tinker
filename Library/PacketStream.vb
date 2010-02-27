@@ -92,18 +92,16 @@ Public NotInheritable Class PacketStreamer
 
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
-    Public Sub WritePacket(ByVal packetData As Byte())
-        Contract.Requires(packetData IsNot Nothing)
-        If packetData.Length < FullHeaderSize Then Throw New ArgumentException("Data didn't include header data.")
+    Public Function WritePacket(ByVal preheader As IEnumerable(Of Byte), ByVal payload As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
+        Contract.Requires(preheader IsNot Nothing)
+        Contract.Requires(payload IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+        If preheader.Count <> _preheaderLength Then Throw New ArgumentException("Preheader was not of the correct size.", "preheader")
 
-        'Encode size
-        Dim sizeBytes = CULng(packetData.Length).Bytes.SubArray(0, _sizeHeaderLength)
-        System.Array.Copy(sourceArray:=sizeBytes,
-                          sourceIndex:=0,
-                          destinationArray:=packetData,
-                          destinationIndex:=_preheaderLength,
-                          length:=_sizeHeaderLength)
-
-        _subStream.Write(packetData, 0, packetData.Length)
-    End Sub
+        Dim size = CULng(FullHeaderSize + payload.Count)
+        If size >> (_sizeHeaderLength * 8) <> 0 Then Throw New ArgumentException("Too must data to count in size header.", "payload")
+        Dim data = {preheader, size.Bytes.Take(_sizeHeaderLength), payload}.Fold.ToArray
+        _subStream.Write(data, 0, data.Length)
+        Return data
+    End Function
 End Class

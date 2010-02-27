@@ -25,9 +25,9 @@ Namespace Pickling
 
         Public Overrides Function Pack(Of TValue As IReadableList(Of T))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Dim pickles = (From e In value Select _subJar.Pack(e)).ToList
-            Dim data = Concat(CULng(value.Count).Bytes.SubArray(0, _prefixSize), Concat(From p In pickles Select p.Data.ToArray))
-            Return value.Pickled(data.AsReadableList, Function() pickles.MakeListDescription(_useSingleLineDescription))
+            Dim pickles = (From e In value Select _subJar.Pack(e)).Cache
+            Dim data = CULng(value.Count).Bytes.SubArray(0, _prefixSize).Concat((From p In pickles Select (p.Data)).Fold).ToReadableList
+            Return value.Pickled(data, Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of T))

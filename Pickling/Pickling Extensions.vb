@@ -32,7 +32,7 @@
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-            Return value.Pickled(data, description)
+            Return New Pickle(Of T)(value, data, description)
         End Function
         <Extension()> <Pure()>
         Public Function Pickled(Of T)(ByVal value As T,
@@ -194,6 +194,8 @@
         End Function
         <Extension()> <Pure()>
         Public Function Named(Of T)(ByVal jar As IJar(Of T), ByVal name As InvariantString) As INamedJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of INamedJar(Of T))() IsNot Nothing)
             Return New NamedJar(Of T)(name, jar)
         End Function
 

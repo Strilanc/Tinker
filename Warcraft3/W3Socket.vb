@@ -78,8 +78,7 @@ Namespace WC3
                 Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.id, Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
 
                 'Send
-                _socket.WritePacket(Concat({Protocol.Packets.PacketPrefix, packet.id, 0, 0},
-                                            packet.Payload.Data.ToArray))
+                _socket.WritePacket({Protocol.Packets.PacketPrefix, packet.Id}, packet.Payload.Data)
 
             Catch ex As Exception When TypeOf ex Is SocketException OrElse
                                        TypeOf ex Is ObjectDisposedException OrElse

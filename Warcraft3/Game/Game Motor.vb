@@ -159,9 +159,9 @@
                 Next p
             Else
                 _laggingPlayers = (From p In _players
-                                  Where Not p.isFake _
-                                  AndAlso p.GetTockTime < _gameTime - If(_asyncWaitTriggered, 0, _lagLimit.TotalMilliseconds)
-                                  ).ToList
+                                   Where Not p.isFake _
+                                   AndAlso p.GetTockTime < _gameTime - If(_asyncWaitTriggered, 0, _lagLimit.TotalMilliseconds)
+                                   ).ToList
                 _asyncWaitTriggered = False
                 If _laggingPlayers.Count > 0 Then
                     BroadcastPacket(Protocol.MakeShowLagScreen(From p In _laggingPlayers Select p.Id)).SetHandled()

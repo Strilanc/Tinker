@@ -52,11 +52,11 @@ Namespace WC3
         Private Sub OnGameUpdated(ByVal sender As WC3.Game, ByVal slots As SlotSet)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
-            Dim descriptions = (From slot In slots Select slot.AsyncGenerateDescription).ToList
+            Dim descriptions = (From slot In slots Select slot.AsyncGenerateDescription).ToArray
             descriptions.Defuturized.QueueCallOnSuccess(inQueue,
                 Sub()
                     If IsDisposed Then Return
-                    For i = 0 To descriptions.Count - 1
+                    For i = 0 To descriptions.Length - 1
                         lstSlots.Items(i) = descriptions(i).Value
                     Next i
                 End Sub

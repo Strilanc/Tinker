@@ -6,11 +6,11 @@ Public Module PoorlyCategorizedFunctions
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
     <Pure()>
-    Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IList(Of String)
+    Public Function SplitText(ByVal body As String, ByVal maxLineLength As Integer) As IEnumerable(Of String)
         Contract.Requires(body IsNot Nothing)
         Contract.Requires(maxLineLength > 0)
-        Contract.Ensures(Contract.Result(Of IList(Of String))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of String))().Count > 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of String))().Count > 0)
         'Contract.Ensures(Contract.ForAll(Contract.Result(Of IList(Of String)), Function(item) item IsNot Nothing))
         'Contract.Ensures(Contract.ForAll(Contract.Result(Of IList(Of String)), Function(item) item.Length <= maxLineLength))
 
@@ -18,7 +18,7 @@ Public Module PoorlyCategorizedFunctions
         If body.Contains(Environment.NewLine) Then
             Return (From line In Microsoft.VisualBasic.Split(body, Delimiter:=Environment.NewLine)
                     Select SplitText(line, maxLineLength)
-                   ).Fold.ToList
+                   ).Fold.ToReadableList
         End If
 
         'Separate body into lines, respecting the maximum line length and trying to divide along word boundaries
@@ -99,6 +99,13 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 #End Region
+
+    <Extension()>
+    Public Function Cache(Of T)(ByVal sequence As IEnumerable(Of T)) As IEnumerable(Of T)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
+        Return sequence.ToArray
+    End Function
 
     <Extension()>
     Public Function AsyncRepeat(ByVal clock As IClock, ByVal period As TimeSpan, ByVal action As action) As IDisposable
@@ -238,22 +245,22 @@ Public Module PoorlyCategorizedFunctions
     ''' Determines the little-endian digits in one base from the little-endian digits in another base.
     ''' </summary>
     <Pure()> <Extension()>
-    Public Function ConvertFromBaseToBase(ByVal digits As IList(Of Byte),
+    Public Function ConvertFromBaseToBase(ByVal digits As IEnumerable(Of Byte),
                                           ByVal inputBase As UInteger,
-                                          ByVal outputBase As UInteger) As IList(Of Byte)
+                                          ByVal outputBase As UInteger) As IReadableList(Of Byte)
         Contract.Requires(digits IsNot Nothing)
         Contract.Requires(inputBase >= 2)
         Contract.Requires(inputBase <= 256)
         Contract.Requires(outputBase >= 2)
         Contract.Requires(outputBase <= 256)
-        Contract.Ensures(Contract.Result(Of IList(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
 
         'Convert from digits in input base to BigInteger
         Dim value = New BigInteger
-        For i = digits.Count - 1 To 0 Step -1
+        For Each digit In digits.Reverse
             value *= inputBase
-            value += digits(i)
-        Next i
+            value += digit
+        Next digit
 
         'Convert from BigInteger to digits in output base
         Dim result = New List(Of Byte)
@@ -263,26 +270,21 @@ Public Module PoorlyCategorizedFunctions
             result.Add(CByte(remainder))
         Loop
 
-        Return result
+        Return result.ToReadableList
     End Function
     ''' <summary>
     ''' Determines a list starting with the elements of the given list but padded with default values to meet a minimum length.
     ''' </summary>
     <Pure()> <Extension()>
-    Public Function PaddedTo(Of T)(ByVal this As IList(Of T),
+    Public Function PaddedTo(Of T)(ByVal this As IReadableList(Of T),
                                    ByVal minimumLength As Integer,
-                                   Optional ByVal paddingValue As T = Nothing) As IList(Of T)
+                                   Optional ByVal paddingValue As T = Nothing) As IReadableList(Of T)
         Contract.Requires(this IsNot Nothing)
         Contract.Requires(minimumLength >= 0)
-        Contract.Ensures(Contract.Result(Of IList(Of T))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of T))().Count = Math.Max(this.Count, minimumLength))
-
-        Dim length = Math.Max(minimumLength, this.Count)
-        Dim result = New List(Of T)(capacity:=length)
-        result.AddRange(this)
-        While result.Count < length
-            result.Add(paddingValue)
-        End While
+        Contract.Ensures(Contract.Result(Of IReadableList(Of T))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of T))().Count = Math.Max(this.Count, minimumLength))
+        If this.Count >= minimumLength Then Return this
+        Dim result = this.Concat(Enumerable.Repeat(paddingValue, minimumLength - this.Count)).ToReadableList
         Contract.Assume(result.Count = Math.Max(this.Count, minimumLength))
         Return result
     End Function
@@ -312,15 +314,15 @@ Public Module PoorlyCategorizedFunctions
         End If
     End Function
     <Pure()> <Extension()>
-    Public Function ToUnsignedByteArray(ByVal value As BigInteger) As Byte()
+    Public Function ToUnsignedBytes(ByVal value As BigInteger) As IReadableList(Of Byte)
         Contract.Requires(value >= 0)
-        Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
         Dim result = value.ToByteArray()
         Contract.Assume(result IsNot Nothing)
         If result.Length > 0 AndAlso result(result.Length - 1) = 0 Then
             result = result.SubArray(0, result.Length - 1)
         End If
-        Return result
+        Return result.AsReadableList
     End Function
     <Extension()>
     Public Sub Write(ByVal stream As IWritableStream, ByVal value As Byte)

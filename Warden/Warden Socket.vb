@@ -94,7 +94,7 @@
             Try
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
                 _logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
-                _socket.WritePacket(Concat(Of Byte)({0, 0, BNLSPacketId.Warden, packet.Id}, packet.Payload.Data.ToArray))
+                _socket.WritePacket({}, {New Byte() {BNLSPacketId.Warden, packet.Id}, packet.Payload.Data.AsEnumerable}.Fold)
 
             Catch e As Exception
                 e.RaiseAsUnexpected("Sending {0} to {1}".Frmt(packet.Id, _socket.Name))

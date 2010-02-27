@@ -7,8 +7,8 @@ Namespace Bnet.Protocol
         Public Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
             If value.Length > 4 Then Throw New PicklingException("Value must be at most 4 characters.")
-            Dim data = value.ToAscBytes().Reverse.PaddedTo(minimumLength:=4)
-            Return value.Pickled(data.AsReadableList)
+            Dim data = value.ToAscBytes().Reverse.AsReadableList.PaddedTo(minimumLength:=4)
+            Return value.Pickled(data)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)

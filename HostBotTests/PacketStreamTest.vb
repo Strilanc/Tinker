@@ -10,7 +10,7 @@ Public Class PacketStreamTest
     Public Sub WritePacketTest_Once()
         Dim m = New IO.MemoryStream()
         Dim p = New PacketStreamer(m, 2, 2, 1000)
-        p.WritePacket({0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
+        p.WritePacket({0, 1}, {4, 5, 6, 7, 8, 9})
         m.Position = 0
         Assert.IsTrue(m.Length = 10)
         Assert.IsTrue(m.ReadBytesExact(10).SequenceEqual({0, 1, 10, 0, 4, 5, 6, 7, 8, 9}))
@@ -19,8 +19,8 @@ Public Class PacketStreamTest
     Public Sub WritePacketTest_Twice()
         Dim m = New IO.MemoryStream()
         Dim p = New PacketStreamer(m, 2, 2, 1000)
-        p.WritePacket({0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
-        p.WritePacket({0, 0, 0, 0, &HFF})
+        p.WritePacket({0, 1}, {4, 5, 6, 7, 8, 9})
+        p.WritePacket({0, 0}, {&HFF})
         m.Position = 0
         Assert.IsTrue(m.Length = 15)
         Assert.IsTrue(m.ReadBytesExact(15).SequenceEqual({0, 1, 10, 0, 4, 5, 6, 7, 8, 9, 0, 0, 5, 0, &HFF}))

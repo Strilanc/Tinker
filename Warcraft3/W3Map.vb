@@ -109,10 +109,9 @@ Namespace WC3
                 If arg Like "0x*[!0-9a-fA-F]" OrElse arg.Length Mod 2 <> 0 Then
                     Throw New ArgumentException("Invalid map meta data. [0x prefix should be followed by hex HostMapInfo packet data].")
                 End If
-                Dim hexData = (From i In Enumerable.Range(1, arg.Length \ 2 - 1)
-                               Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
-                               ).ToArray
-                Dim vals = Protocol.Packets.HostMapInfo.Jar.Parse(hexData.AsReadableList).Value
+                Dim hexData = From i In Enumerable.Range(1, arg.Length \ 2 - 1)
+                              Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
+                Dim vals = Protocol.Packets.HostMapInfo.Jar.Parse(hexData.ToReadableList).Value
 
                 'Extract values
                 Dim path As InvariantString = CStr(vals("path")).AssumeNotNull

@@ -57,7 +57,7 @@
                     For i = _settings.Map.Slots.Count To 10 - 1
                         CloseSlot(_slots(i).MatchableId)
                     Next i
-                    Dim playerIndex = _freeIndexes(0)
+                    Dim playerIndex = _freeIndexes.First
                     _freeIndexes.Remove(playerIndex)
                     AddFakePlayer("# multi obs", slot:=_slots(10))
                     _slots = GameLobby.SetupCoveredSlot(_slots, _slots(10), _slots(11), playerIndex)
@@ -139,6 +139,7 @@
         End Property
         Public ReadOnly Property DownloadManager As Download.Manager
             Get
+                Contract.Ensures(Contract.Result(Of Download.Manager)() IsNot Nothing)
                 Return _downloadManager
             End Get
         End Property
@@ -216,6 +217,7 @@
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
+        <ContractVerification(False)>
         Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PlayerId)
             Contract.Requires(connectingPlayer IsNot Nothing)
             Contract.Ensures(Not _freeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerId))().Item2))
@@ -348,10 +350,13 @@
             Contract.Requires(receiver IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
 
-            Dim sender = If(_fakeHostPlayer, (From p In _players Where p IsNot receiver).First)
+            Dim sender = If(_fakeHostPlayer, (From p In _players
+                                              Where IsPlayerVisible(p)
+                                              Where p.Id <> receiver.Id).First)
             Dim filedata = _settings.Map.ReadChunk(position, Protocol.Packets.MaxFileDataSize)
             Contract.Assume(sender IsNot Nothing)
 
+            Contract.Assume(receiver.Id <> sender.Id)
             Dim pk = Protocol.MakeMapFileData(position, filedata, receiver.Id, sender.Id)
             Return receiver.QueueSendPacket(pk)
         End Function

@@ -59,9 +59,9 @@ Namespace Components
         End Function
 
         ''' <summary>Asynchronously determines a list of all components in the set.</summary>
-        Public Function QueueGetAllComponents() As IFuture(Of IList(Of IBotComponent))
-            Contract.Ensures(Contract.Result(Of IFuture(Of IList(Of IBotComponent)))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _components.ToList)
+        Public Function QueueGetAllComponents() As IFuture(Of IReadableList(Of IBotComponent))
+            Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of IBotComponent)))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() _components.ToReadableList)
         End Function
 
         ''' <summary>Returns an enumeration of components of a type in the set.</summary>
@@ -73,9 +73,9 @@ Namespace Components
                    Select CType(component, T)
         End Function
         ''' <summary>Asynchronously determines a list of all components of a type in the set.</summary>
-        Public Function QueueGetAllComponents(Of T As IBotComponent)() As IFuture(Of IList(Of T))
-            Contract.Ensures(Contract.Result(Of IFuture(Of IList(Of T)))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() EnumComponents(Of T)().ToList)
+        Public Function QueueGetAllComponents(Of T As IBotComponent)() As IFuture(Of IReadableList(Of T))
+            Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of T)))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() EnumComponents(Of T)().ToReadableList)
         End Function
 
         ''' <summary>

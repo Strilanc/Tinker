@@ -29,15 +29,13 @@
 
     <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")>
     Public Function Raise(ByVal key As TKey,
-                          ByVal value As TArg) As IList(Of IFuture)
+                          ByVal value As TArg) As IReadableList(Of IFuture)
         Contract.Requires(key IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IList(Of IFuture))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of IFuture))() IsNot Nothing)
         SyncLock lock
-            If Not handlers.ContainsKey(key) Then Return New IFuture() {}
+            If Not handlers.ContainsKey(key) Then Return New IFuture() {}.AsReadableList
             Contract.Assume(handlers(key) IsNot Nothing)
-            Return (From handler In handlers(key)
-                    Select handler(value)
-                    ).ToArray
+            Return (From handler In handlers(key) Select handler(value)).ToReadableList
         End SyncLock
     End Function
 End Class

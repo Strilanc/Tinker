@@ -33,19 +33,19 @@
     Public Function EnumPorts() As IEnumerable(Of UShort)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of UShort))() IsNot Nothing)
         SyncLock lock
-            Return PortPool.ToArray()
+            Return PortPool.Cache()
         End SyncLock
     End Function
     Public Function EnumUsedPorts() As IEnumerable(Of UShort)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of UShort))() IsNot Nothing)
         SyncLock lock
-            Return OutPorts.ToArray()
+            Return OutPorts.Cache()
         End SyncLock
     End Function
     Public Function EnumAvailablePorts() As IEnumerable(Of UShort)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of UShort))() IsNot Nothing)
         SyncLock lock
-            Return InPorts.ToArray()
+            Return InPorts.Cache()
         End SyncLock
     End Function
 

@@ -2,7 +2,7 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public Class QueryGamesListResponse
-        Private ReadOnly _games As WC3.RemoteGameDescription()
+        Private ReadOnly _games As IReadableList(Of WC3.RemoteGameDescription)
         Private ReadOnly _result As QueryGameResponse
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -11,12 +11,13 @@ Namespace Bnet.Protocol
 
         Public Sub New(ByVal result As QueryGameResponse, ByVal games As IEnumerable(Of WC3.RemoteGameDescription))
             Contract.Requires(games IsNot Nothing)
-            Me._games = games.ToArray
+            Me._games = games.ToReadableList
             Me._result = result
         End Sub
 
-        Public ReadOnly Property Games As IList(Of WC3.RemoteGameDescription)
+        Public ReadOnly Property Games As IReadableList(Of WC3.RemoteGameDescription)
             Get
+                Contract.Ensures(Contract.Result(Of IReadableList(Of WC3.RemoteGameDescription))() IsNot Nothing)
                 Return _games
             End Get
         End Property

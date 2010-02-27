@@ -282,6 +282,7 @@
         End Property
 #End Region
 
+        <ContractVerification(False)>
         Public Function EncodedHCLMode(ByVal handicaps As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(handicaps IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)

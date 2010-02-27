@@ -170,10 +170,11 @@ Public NotInheritable Class PacketSocket
         Return result
     End Function
 
-    Public Sub WritePacket(ByVal data() As Byte)
-        Contract.Requires(data IsNot Nothing)
-        packetStreamer.WritePacket(data) '[modifies size bytes, do not move after log statement]
-        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
+    Public Sub WritePacket(ByVal preheader As IEnumerable(Of Byte), ByVal payload As IEnumerable(Of Byte))
+        Contract.Requires(preheader IsNot Nothing)
+        Contract.Requires(payload IsNot Nothing)
+        Dim writtenData = packetStreamer.WritePacket(preheader, payload)
+        Logger.Log(Function() "Sending to {0}: {1}".Frmt(Name, writtenData.ToHexString), LogMessageType.DataRaw)
     End Sub
 
     Public Sub WriteRawData(ByVal data() As Byte)

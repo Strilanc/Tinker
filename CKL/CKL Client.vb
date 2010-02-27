@@ -32,13 +32,13 @@ Namespace CKL
         <ContractVerification(False)>
         Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
                                           ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
-            Dim requestPacket = Fold({New Byte() {CKL.Server.PacketPrefixValue, CKLPacketId.Keys, 0, 0}, clientSalt, serverSalt}).ToArray
+            Dim requestPacket = {clientSalt, serverSalt}.Fold
 
             'Connect to CKL server and send request
             Dim futureSocket = PacketSocket.AsyncConnect(_remoteHost, _remotePort, _clock, timeout:=10.Seconds)
             Dim futureResponse = futureSocket.Select(
                 Function(socket)
-                    socket.WritePacket(requestPacket)
+                    socket.WritePacket({CKL.Server.PacketPrefixValue, CKLPacketId.Keys}, requestPacket)
                     Return socket.AsyncReadPacket()
                 End Function
             ).Defuturized

@@ -31,17 +31,8 @@
     End Interface
     <ContractClassFor(GetType(IPickle(Of )))>
     Public NotInheritable Class ContractClassIPickle(Of T)
+        Inherits ISimplePickle.ContractClass
         Implements IPickle(Of T)
-        Public ReadOnly Property Data As IReadableList(Of Byte) Implements ISimplePickle.Data
-            Get
-                Throw New NotSupportedException
-            End Get
-        End Property
-        Public ReadOnly Property Description As Lazy(Of String) Implements ISimplePickle.Description
-            Get
-                Throw New NotSupportedException
-            End Get
-        End Property
         Public ReadOnly Property Value As T Implements IPickle(Of T).Value
             Get
                 Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)

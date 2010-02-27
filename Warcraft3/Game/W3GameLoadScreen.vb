@@ -39,10 +39,12 @@
 
             If settings.UseLoadInGame Then
                 outQueue.QueueAction(Sub() RaiseEvent Launched(Me, usingloadInGame:=True))
+                Contract.Assume(fakeTickTimer IsNot Nothing)
                 fakeTickTimer.Start()
             End If
         End Sub
         Private Sub LoadScreenStop()
+            Contract.Assume(fakeTickTimer IsNot Nothing)
             fakeTickTimer.Stop()
         End Sub
 

@@ -29,7 +29,7 @@ Namespace Lan
 
         Public NotInheritable Class LanGame
             Private ReadOnly _gameDescription As WC3.LocalGameDescription
-            Private ReadOnly _targetHosts As List(Of String)
+            Private ReadOnly _targetHosts As IReadableList(Of String)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
                 Contract.Invariant(_gameDescription IsNot Nothing)
@@ -41,7 +41,7 @@ Namespace Lan
                 Contract.Requires(gameDescription IsNot Nothing)
                 Contract.Requires(targetHosts IsNot Nothing)
                 Me._gameDescription = gameDescription
-                Me._targetHosts = targetHosts.ToList
+                Me._targetHosts = targetHosts.ToReadableList
             End Sub
 
             Public ReadOnly Property GameDescription As WC3.LocalGameDescription
@@ -133,7 +133,7 @@ Namespace Lan
         End Function
 
         Private Sub ClearGames()
-            For Each id In _games.Keys.ToArray
+            For Each id In _games.Keys.Cache
                 RemoveGame(id)
             Next id
         End Sub

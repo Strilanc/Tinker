@@ -66,7 +66,6 @@ Namespace WC3
             Contract.Invariant(unreadyPlayers IsNot Nothing)
             Contract.Invariant(visibleReadyPlayers IsNot Nothing)
             Contract.Invariant(visibleUnreadyPlayers IsNot Nothing)
-            Contract.Invariant(fakeTickTimer IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
             Contract.Invariant(_motor IsNot Nothing)
             Contract.Invariant(updateEventThrottle IsNot Nothing)
@@ -87,6 +86,9 @@ Namespace WC3
             Contract.Assume(lobby IsNot Nothing)
             Contract.Assume(motor IsNot Nothing)
             Contract.Assume(logger IsNot Nothing)
+            Contract.Assume(inQueue IsNot Nothing)
+            Contract.Assume(outQueue IsNot Nothing)
+            Contract.Assume(players IsNot Nothing)
             Me._settings = settings
             Me._clock = clock
             Me._name = name
@@ -102,8 +104,8 @@ Namespace WC3
                                             ByVal name As InvariantString,
                                             ByVal clock As IClock,
                                             Optional ByVal logger As Logger = Nothing) As Game
-            Contract.Assume(clock IsNot Nothing)
-            Contract.Assume(settings IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Requires(settings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Game)() IsNot Nothing)
 
             logger = If(logger, New Logger)
@@ -111,21 +113,26 @@ Namespace WC3
             Dim inQueue = New TaskedCallQueue
             Dim outQueue = New TaskedCallQueue
             Dim players = New AsyncViewableCollection(Of Player)(outQueue)
-            Dim startPlayerholdPoint = New HoldPoint(Of Player)
+            Dim startPlayerHoldPoint = New HoldPoint(Of Player)
             Dim downloadManager = New Download.Manager(clock:=clock,
                                                        Map:=settings.Map,
                                                        logger:=logger,
                                                        allowDownloads:=settings.AllowDownloads,
                                                        allowUploads:=settings.AllowUpload)
-            Dim lobby = New GameLobby(startPlayerHoldPoint:=startPlayerholdPoint,
+            Dim lobby = New GameLobby(startPlayerHoldPoint:=startPlayerHoldPoint,
                                       downloadManager:=downloadManager,
                                       logger:=logger,
                                       players:=players,
                                       clock:=clock,
                                       settings:=settings)
-            Dim motor = New GameMotor(defaultSpeedFactor:=My.Settings.game_speed_factor,
-                                      defaultTickPeriod:=CUInt(My.Settings.game_tick_period).Milliseconds,
-                                      defaultLagLimit:=CUInt(My.Settings.game_lag_limit).Milliseconds,
+            Dim speedFactor = My.Settings.game_speed_factor
+            Dim tickPeriod = CUInt(My.Settings.game_tick_period).Milliseconds
+            Dim lagLimit = CUInt(My.Settings.game_lag_limit).Milliseconds
+            Contract.Assume(speedFactor > 0)
+            Contract.Assume(tickPeriod.Ticks > 0)
+            Dim motor = New GameMotor(defaultSpeedFactor:=speedFactor,
+                                      defaultTickPeriod:=tickPeriod,
+                                      defaultLagLimit:=lagLimit,
                                       inQueue:=inQueue,
                                       players:=players,
                                       clock:=clock,
@@ -195,6 +202,7 @@ Namespace WC3
 
         Public ReadOnly Property Logger As Logger
             Get
+                Contract.Ensures(Contract.Result(Of Logger)() IsNot Nothing)
                 Return _logger
             End Get
         End Property
@@ -264,9 +272,9 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _lobby.FakeHostPlayer)
         End Function
-        Public Function QueueGetPlayers() As IFuture(Of List(Of Player))
-            Contract.Ensures(Contract.Result(Of IFuture(Of List(Of Player)))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _players.ToList)
+        Public Function QueueGetPlayers() As IFuture(Of IReadableList(Of Player))
+            Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of Player)))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() _players.ToReadableList)
         End Function
         Public Function QueueGetState() As IFuture(Of GameState)
             Contract.Ensures(Contract.Result(Of IFuture(Of GameState))() IsNot Nothing)
@@ -613,7 +621,7 @@ Namespace WC3
             If state >= GameState.Loading Then Return
 
             'Remove fake players
-            For Each player In (From p In _players.ToList Where p.isFake)
+            For Each player In From p In _players.Cache Where p.isFake
                 Contract.Assume(player IsNot Nothing)
                 Dim slot = _lobby.Slots.TryFindPlayerSlot(player)
                 If slot Is Nothing OrElse slot.Contents.Moveable Then
@@ -626,7 +634,7 @@ Namespace WC3
             SendLobbyState(randomSeed)
 
             If Settings.ShouldRecordReplay Then
-                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _players.ToList, _lobby.Slots, randomSeed)
+                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _players.Cache, _lobby.Slots, randomSeed)
             End If
 
             ChangeState(GameState.Loading)

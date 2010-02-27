@@ -236,38 +236,38 @@
             If badChars.Any Then Throw New ArgumentException("Bad Char: '{0}'".Frmt(badChars.First), "key")
 
             'Map cd key characters into digits of a base 25 number
-            Dim digits As IList(Of Byte) = (From c In key Select digitMap(c)).ToArray
+            Dim digits25 As IReadableList(Of Byte) = (From c In key Select digitMap(c)).ToReadableList
 
             'Shuffle base 5 digits
-            digits = digits.ConvertFromBaseToBase(25, 5).PaddedTo(minimumLength:=NumDigitsBase5)
-            digits = (From i In Enumerable.Range(0, NumDigitsBase5)
-                      Select If(i Mod 2 = 0, digits(i + 1), digits(i - 1))).ToArray
-            digits = (From i In Enumerable.Range(0, NumDigitsBase5)
-                      Select digits((10 + 17 * i) Mod NumDigitsBase5)).ToArray
+            Dim digits5 = digits25.ConvertFromBaseToBase(25, 5).PaddedTo(minimumLength:=NumDigitsBase5)
+            digits5 = (From i In Enumerable.Range(0, NumDigitsBase5)
+                       Select If(i Mod 2 = 0, digits5(i + 1), digits5(i - 1))).ToReadableList
+            digits5 = (From i In Enumerable.Range(0, NumDigitsBase5)
+                       Select digits5((10 + 17 * i) Mod NumDigitsBase5)).ToReadableList
 
             'Xor-Permute nibbles
-            digits = digits.ConvertFromBaseToBase(5, 16).PaddedTo(minimumLength:=NumDigitsBase16)
+            Dim digits16 = digits5.ConvertFromBaseToBase(5, 16).PaddedTo(minimumLength:=NumDigitsBase16).ToArray
             For i = NumDigitsBase16 - 1 To 0 Step -1
                 Dim perm = nibblePermutations(i)
                 Contract.Assume(perm IsNot Nothing)
-                Dim c = perm(digits(i))
+                Dim c = perm(digits16(i))
 
                 'Xor-Permute
                 For j = NumDigitsBase16 - 1 To 0 Step -1
                     If i = j Then Continue For
-                    c = perm(perm(digits(j) Xor c))
+                    c = perm(perm(digits16(j) Xor c))
                 Next j
 
-                digits(i) = c
+                digits16(i) = c
             Next i
 
             'Swap bits
-            digits = digits.ConvertFromBaseToBase(16, 2).PaddedTo(minimumLength:=NumDigitsBase2)
-            digits = (From i In Enumerable.Range(0, NumDigitsBase2)
-                      Select digits((i * 11) Mod NumDigitsBase2)).ToArray
+            Dim digits2 = digits16.ConvertFromBaseToBase(16, 2).PaddedTo(minimumLength:=NumDigitsBase2)
+            digits2 = (From i In Enumerable.Range(0, NumDigitsBase2)
+                       Select digits2((i * 11) Mod NumDigitsBase2)).ToReadableList
 
             'Extract keys
-            digits = digits.ConvertFromBaseToBase(2, 256).PaddedTo(minimumLength:=NumDigitsBase256)
+            Dim digits = digits2.ConvertFromBaseToBase(2, 256).PaddedTo(minimumLength:=NumDigitsBase256)
             Dim product = CType({digits(13) >> &H2, CByte(0), CByte(0), CByte(0)}.ToUInt32, ProductType)
             Dim publicKey = {digits(10), digits(11), digits(12), CByte(0)}.ToUInt32
             Dim privateKey = {digits(8), digits(9),
@@ -280,11 +280,10 @@
                          privateKey
                         }.Fold.SHA1
 
-            Return New ProductCredentials(
-                    product:=product,
-                    publicKey:=publicKey,
-                    length:=NumDigitsBase25,
-                    proof:=proof)
+            Return New ProductCredentials(product:=product,
+                                          publicKey:=publicKey,
+                                          length:=NumDigitsBase25,
+                                          proof:=proof)
         End Function
     End Module
 End Namespace

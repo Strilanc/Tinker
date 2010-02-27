@@ -90,7 +90,8 @@ Public Class ClientForm
         End If
     End Sub
     Private Sub LoadInitialPlugins()
-        For Each pluginName In (From name In My.Settings.initial_plugins.Split(","c) Where name <> "").ToList
+        For Each pluginName In From name In My.Settings.initial_plugins.Split(","c)
+                               Where name <> ""
             Dim pluginName_ = pluginName
             Dim profile = (From p In _bot.Settings.PluginProfiles Where p.name = pluginName_).FirstOrDefault
             If profile Is Nothing Then

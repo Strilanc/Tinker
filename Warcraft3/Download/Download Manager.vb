@@ -29,11 +29,11 @@ Namespace WC3.Download
             Contract.Invariant(_started IsNot Nothing)
             Contract.Invariant(_playerClients IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
-            Contract.Invariant(_mapPieceSender IsNot Nothing)
             Contract.Invariant(_map IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_hooks IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
+            'Contract.Invariant((_started.State = OnetimeLockState.Acquired) = (_mapPieceSender IsNot Nothing))
         End Sub
 
         Public Sub New(ByVal clock As IClock,
@@ -84,6 +84,7 @@ Namespace WC3.Download
             Contract.Requires(client.Transfer IsNot Nothing)
             Contract.Requires(client.Transfer.Uploader Is _defaultClient)
             Contract.Assume(client.Player IsNot Nothing)
+            Contract.Assume(_mapPieceSender IsNot Nothing)
             client.LastSendPosition = Math.Max(client.LastSendPosition, reportedPosition)
             While client.LastSendPosition < reportedPosition + MaxBufferedMapSize AndAlso client.LastSendPosition < FileSize
                 Call _mapPieceSender(client.Player, client.LastSendPosition)

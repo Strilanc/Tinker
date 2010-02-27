@@ -589,7 +589,7 @@ Namespace Bnet
                 Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
                 Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
 
-                _socket.WritePacket(Concat({Protocol.Packets.PacketPrefixValue, packet.Id, 0, 0}, packet.Payload.Data.ToArray))
+                _socket.WritePacket({Protocol.Packets.PacketPrefixValue, packet.Id}, packet.Payload.Data)
             Catch ex As Exception When TypeOf ex Is IO.IOException OrElse
                                        TypeOf ex Is InvalidOperationException OrElse
                                        TypeOf ex Is ObjectDisposedException OrElse

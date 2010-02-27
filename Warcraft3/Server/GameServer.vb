@@ -196,7 +196,7 @@ Namespace WC3
         Private Function AsyncFindPlayer(ByVal username As String) As IFuture(Of Player)
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
-            Return From futureFindResults In (From entry In _gameSets.Values Select entry.QueueTryFindPlayer(username)).ToList.Defuturized
+            Return From futureFindResults In (From entry In _gameSets.Values Select entry.QueueTryFindPlayer(username)).Cache.Defuturized
                    Select (From player In futureFindResults Where player IsNot Nothing).FirstOrDefault
         End Function
         Public Function QueueFindPlayer(ByVal userName As String) As IFuture(Of Player)
@@ -207,7 +207,7 @@ Namespace WC3
         Private Function AsyncFindPlayerGame(ByVal username As String) As IFuture(Of Game)
             Contract.Requires(username IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IFuture(Of Game))() IsNot Nothing)
-            Return From futureFindResults In (From entry In _gameSets.Values Select entry.QueueTryFindPlayerGame(username)).ToList.Defuturized
+            Return From futureFindResults In (From entry In _gameSets.Values Select entry.QueueTryFindPlayerGame(username)).Cache.Defuturized
                    Select (From game In futureFindResults Where game IsNot Nothing).FirstOrDefault
         End Function
         Public Function QueueFindPlayerGame(ByVal userName As String) As IFuture(Of Game)

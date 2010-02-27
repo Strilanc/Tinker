@@ -31,11 +31,11 @@ Namespace Bot
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim profileNames = (From word In argument.Split(" "c) Where word <> "").ToArray
-                If profileNames.Length = 0 Then Throw New ArgumentException("No profiles specified.")
+                Dim profileNames = (From word In argument.Split(" "c) Where word <> "").Cache
+                If profileNames.None Then Throw New ArgumentException("No profiles specified.")
 
                 'Attempt to connect to each listed profile
-                Dim futureManagers = New List(Of IFuture(Of Bnet.ClientManager))(capacity:=profileNames.Count)
+                Dim futureManagers = New List(Of IFuture(Of Bnet.ClientManager))()
                 For Each profileName In profileNames
                     Contract.Assume(profileName IsNot Nothing)
                     'Create and connect
@@ -226,8 +226,8 @@ Namespace Bot
                            Permissions:="games:1",
                            extraHelp:=Fold({WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp}).StringJoin(Environment.NewLine))
             End Sub
+            <ContractVerification(False)>
             Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
-                Contract.Assume(target IsNot Nothing)
                 Return From server In target.QueueGetOrConstructGameServer()
                        From gameSet In server.QueueAddGameFromArguments(argument, user)
                        Let name = gameSet.GameSettings.GameDescription.Name

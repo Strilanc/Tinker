@@ -36,6 +36,7 @@
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
+        <ContractVerification(False)>
         Public Function FindMatchingSlot(ByVal query As InvariantString) As Slot
             Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Dim best = (From slot In _slots
@@ -52,10 +53,9 @@
         Public Function WithEncodeHCL(ByVal settings As GameSettings) As SlotSet
             Contract.Requires(settings IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
-            Dim useableSlots = (From slot In _slots
-                                Where slot.Contents.Moveable
-                                Where slot.Contents.ContentType <> SlotContents.Type.Empty
-                                ).ToArray
+            Dim useableSlots = From slot In _slots
+                               Where slot.Contents.Moveable
+                               Where slot.Contents.ContentType <> SlotContents.Type.Empty
             Dim encodedHandicaps = settings.EncodedHCLMode(From slot In useableSlots Select slot.Handicap)
             Return Me.WithSlotsReplaced(Enumerable.Zip(useableSlots,
                                                        encodedHandicaps,

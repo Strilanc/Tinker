@@ -100,7 +100,7 @@ Namespace CKL
             Dim flag = packetData(0)
             Dim id = packetData(0)
             Dim data = packetData.SubView(4)
-            Dim responseData As Byte() = Nothing
+            Dim responseData As IEnumerable(Of Byte) = Nothing
             Dim errorMessage As String = Nothing
             If flag <> PacketPrefixValue Then
                 errorMessage = "Invalid header id."
@@ -119,7 +119,7 @@ Namespace CKL
                                                                                    serverToken:=data.SubView(4, 4).ToUInt32)
                             responseData = {jar.Pack(credentials.AuthenticationROC).Data,
                                             jar.Pack(credentials.AuthenticationTFT).Data
-                                           }.Fold.ToArray
+                                           }.Fold
                             Logger.Log("Provided key '{0}' to {1}".Frmt(_keys(_keyIndex).Name, socket.Name), LogMessageType.Positive)
                             _keyIndex += 1
                         End If
@@ -129,11 +129,11 @@ Namespace CKL
             End If
 
             If responseData IsNot Nothing Then
-                socket.WritePacket(Concat({PacketPrefixValue, id, 0, 0}, responseData))
+                socket.WritePacket({PacketPrefixValue, id}, responseData)
             End If
             If errorMessage IsNot Nothing Then
                 Logger.Log("Error parsing data from client: " + errorMessage, LogMessageType.Negative)
-                socket.WritePacket(Concat({PacketPrefixValue, CKLPacketId.[Error]}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage)))
+                socket.WritePacket({PacketPrefixValue, CKLPacketId.[Error]}, System.Text.UTF8Encoding.UTF8.GetBytes(errorMessage))
             End If
         End Sub
 

@@ -95,7 +95,7 @@ Namespace Bnet
             Get
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 32)
-                Dim result = _publicKey.ToUnsignedByteArray.PaddedTo(minimumLength:=32).AsReadableList
+                Dim result = _publicKey.ToUnsignedBytes.PaddedTo(minimumLength:=32)
                 Contract.Assume(result.Count = 32)
                 Return result
             End Get
@@ -106,7 +106,7 @@ Namespace Bnet
         Private Shared Function GeneratePrivateKey(Optional ByVal rng As Cryptography.RandomNumberGenerator = Nothing) As BigInteger
             Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
             Contract.Assume(N >= 0)
-            Dim privateKeyDataBuffer = N.ToUnsignedByteArray
+            Dim privateKeyDataBuffer = N.ToUnsignedBytes.ToArray
             If rng Is Nothing Then
                 Using r = New Cryptography.RNGCryptoServiceProvider()
                     r.GetBytes(privateKeyDataBuffer)
@@ -119,18 +119,14 @@ Namespace Bnet
             Return key
         End Function
         '''<summary>Derives a fixed salt value from the shared crypto constants.</summary>
-        Private Shared ReadOnly Property FixedSalt() As Byte()
+        Private Shared ReadOnly Property FixedSalt() As IEnumerable(Of Byte)
             Get
-                Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
-
+                Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
                 Contract.Assume(G >= 0)
                 Contract.Assume(N >= 0)
-                Dim hash1 = G.ToUnsignedByteArray.SHA1
-                Dim hash2 = N.ToUnsignedByteArray.SHA1
-                Dim result = (From i In Enumerable.Range(0, 20) Select hash1(i) Xor hash2(i)).ToArray
-                Contract.Assume(result.Length = 20)
-                Return result
+                Dim hash1 = G.ToUnsignedBytes.SHA1
+                Dim hash2 = N.ToUnsignedBytes.SHA1
+                Return From i In Enumerable.Range(0, 20) Select hash1(i) Xor hash2(i)
             End Get
         End Property
 
@@ -162,7 +158,7 @@ Namespace Bnet
                 Contract.Assume(sharedValue >= 0)
 
                 'Hash odd and even bytes of the shared value
-                Dim sharedValueBytes = sharedValue.ToUnsignedByteArray.PaddedTo(32)
+                Dim sharedValueBytes = sharedValue.ToUnsignedBytes.PaddedTo(32)
                 Dim sharedHashEven = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2)).SHA1
                 Dim sharedHashOdd = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2 + 1)).SHA1
 
@@ -186,10 +182,10 @@ Namespace Bnet
                 Return {FixedSalt,
                         UserName.ToUpperInvariant.ToAscBytes.SHA1,
                         accountSalt,
-                        Me.PublicKeyBytes,
+                        PublicKeyBytes,
                         serverPublicKeyBytes,
                         SharedSecret(accountSalt, serverPublicKeyBytes)
-                       }.Fold.SHA1
+                        }.Fold.SHA1
             End Get
         End Property
         '''<summary>Determines the expected proof, from the server, that it knew the shared secret.</summary>
@@ -201,10 +197,10 @@ Namespace Bnet
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
 
-                Return {Me.PublicKeyBytes,
+                Return {PublicKeyBytes,
                         ClientPasswordProof(accountSalt, serverPublicKeyBytes),
                         SharedSecret(accountSalt, serverPublicKeyBytes)
-                       }.Fold.SHA1
+                        }.Fold.SHA1
             End Get
         End Property
     End Class

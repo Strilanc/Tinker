@@ -277,7 +277,7 @@ Namespace WC3
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Return From players In target.QueueGetPlayers()
-                       From latencies In (From player In players Select player.QueueGetLatencyDescription).ToList.Defuturized
+                       From latencies In (From player In players Select player.QueueGetLatencyDescription).Cache.Defuturized
                        Select "Estimated RTT: {0}".Frmt((From i In Enumerable.Range(0, players.Count)
                                                          Where Not players(i).isFake
                                                          Select "{0}={1}".Frmt(players(i).Name, latencies(i))
