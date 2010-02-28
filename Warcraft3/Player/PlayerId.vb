@@ -58,6 +58,7 @@ Namespace WC3
             Dim data = {CType(value, PlayerId).Index}.ToReadableList
             Return value.Pickled(data)
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerId)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException
             Dim datum = data.SubView(0, 1)

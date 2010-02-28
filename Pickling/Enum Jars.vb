@@ -22,7 +22,7 @@
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 1)
-            Dim value = CType(CType(datum.ToUInt16(_byteOrder), Object), T)
+            Dim value = CType(CType(datum(0), Object), T)
             If _checkDefined AndAlso Not IsDefined(value) Then Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(value, GetType(T)))
             Contract.Assume(value IsNot Nothing)
             Return value.Pickled(datum, Function() ValueToString(value))

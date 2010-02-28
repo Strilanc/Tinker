@@ -1,6 +1,7 @@
 ﻿Imports System.Collections.Generic
 Imports Strilbrary.Collections
 Imports Strilbrary.Values
+Imports Tinker
 
 Public Class TestStream
     Inherits IO.Stream
@@ -40,7 +41,7 @@ Public Class TestStream
                                    Optional ByVal millisecondsTimeout As Integer = 10000) As Byte()
         Dim headerSize = preheaderByteCount + sizeByteCount
         Dim header = Me.RetrieveWriteData(length:=headerSize, millisecondsTimeout:=millisecondsTimeout)
-        Dim size = CInt(header.Skip(preheaderByteCount).Take(sizeByteCount).ToUInt32)
+        Dim size = CInt(header.Skip(preheaderByteCount).Take(sizeByteCount).ToUValue)
         Dim body = Me.RetrieveWriteData(length:=size - headerSize, millisecondsTimeout:=millisecondsTimeout)
         Return header.Concat(body).ToArray
     End Function

@@ -69,25 +69,25 @@ Namespace WC3
                                         ByVal wc3PatchMPQFolder As InvariantString) As Map
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
             Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream
-                Dim mapArchive = MPQ.Archive.FromStreamFactory(factory)
-                Dim war3PatchArchive = OpenWar3PatchArchive(wc3PatchMPQFolder)
-                Dim info = ReadMapInfo(mapArchive)
+            Dim mapArchive = MPQ.Archive.FromStreamFactory(factory)
+            Dim war3PatchArchive = OpenWar3PatchArchive(wc3PatchMPQFolder)
+            Dim info = ReadMapInfo(mapArchive)
 
-                Dim basePath As InvariantString = wc3MapFolder.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
-                Dim relPath As InvariantString = filePath.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
-                If Not basePath.EndsWith(IO.Path.DirectorySeparatorChar) Then basePath += IO.Path.DirectorySeparatorChar
-                If relPath.StartsWith(basePath) Then
-                    relPath = relPath.Substring(basePath.Length)
-                Else
-                    relPath = IO.Path.GetFileName(relPath)
-                End If
+            Dim basePath As InvariantString = wc3MapFolder.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
+            Dim relPath As InvariantString = filePath.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
+            If Not basePath.EndsWith(IO.Path.DirectorySeparatorChar) Then basePath += IO.Path.DirectorySeparatorChar
+            If relPath.StartsWith(basePath) Then
+                relPath = relPath.Substring(basePath.Length)
+            Else
+                relPath = IO.Path.GetFileName(relPath)
+            End If
 
             Using crcStream = factory()
                 Return New Map(streamFactory:=factory,
                                AdvertisedPath:="Maps\" + relPath.ToString.Replace(IO.Path.DirectorySeparatorChar, "\"),
                                FileSize:=CUInt(crcStream.Length),
-                               FileChecksumCRC32:=MPQ.Library.AsEnumerator(crcStream).CRC32,
-                               MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive).AsReadableList,
+                               FileChecksumCRC32:=crcStream.CRC32,
+                               MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive),
                                MapChecksumXORO:=CUInt(ComputeMapXoro(mapArchive, war3PatchArchive)),
                                Slots:=info.slots,
                                PlayableWidth:=info.playableWidth,
@@ -273,9 +273,10 @@ Namespace WC3
 #End Region
 
 #Region "Read"
+        <ContractVerification(False)>
         Public Function ReadChunk(ByVal pos As Int64, ByVal size As UInt32) As IReadableList(Of Byte)
             Contract.Requires(pos >= 0)
-            Contract.Requires(size >= 0)
+            Contract.Requires(size > 0)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count <= size)
             If pos > Me.FileSize Then Throw New InvalidOperationException("Attempted to read past end of map file.")
@@ -285,9 +286,7 @@ Namespace WC3
             Using stream = _streamFactory()
                 If stream Is Nothing Then Throw New InvalidStateException("Invalid steam factory.")
                 stream.Position = pos
-                Dim result = stream.Read(CInt(size))
-                Contract.Assume(result.Count <= size)
-                Return result
+                Return stream.Read(CInt(size))
             End Using
         End Function
 
@@ -312,12 +311,12 @@ Namespace WC3
 
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
         Private Shared Function ComputeMapSha1Checksum(ByVal mapArchive As MPQ.Archive,
-                                                       ByVal war3PatchArchive As MPQ.Archive) As Byte()
+                                                       ByVal war3PatchArchive As MPQ.Archive) As IReadableList(Of Byte)
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
-            Dim streams As New List(Of IO.Stream)
+            Dim streams As New List(Of IReadableStream)
 
             'Overridable map files from war3patch.mpq
             For Each filename In {"scripts\common.j",
@@ -326,11 +325,11 @@ Namespace WC3
                 Dim mpqToUse = If(mapArchive.Hashtable.Contains(filename),
                                   mapArchive,
                                   war3PatchArchive)
-                streams.Add(mpqToUse.OpenFileByName(filename).AsStream)
+                streams.Add(mpqToUse.OpenFileByName(filename))
             Next filename
 
             'Magic value
-            streams.Add(New IO.MemoryStream(New Byte() {&H9E, &H37, &HF1, &H3}))
+            streams.Add(New IO.MemoryStream(New Byte() {&H9E, &H37, &HF1, &H3}).AsReadableStream)
 
             'Important map files
             For Each fileset In {"war3map.j|scripts\war3map.j",
@@ -346,16 +345,16 @@ Namespace WC3
                 Dim filenameToUse = (From filename In fileset.Split("|"c)
                                      Where mapArchive.Hashtable.Contains(filename)).FirstOrDefault
                 If filenameToUse IsNot Nothing Then
-                    streams.Add(mapArchive.OpenFileByName(filenameToUse).AsStream)
+                    streams.Add(mapArchive.OpenFileByName(filenameToUse))
                 End If
             Next fileset
 
-            Using f = New IO.BufferedStream(New ConcatStream(streams))
+            Using stream = New ConcatStream(streams)
                 Using sha = New Security.Cryptography.SHA1Managed()
-                    Dim result = sha.ComputeHash(f)
+                    Dim result = sha.ComputeHash(stream.AsStream)
                     Contract.Assume(result IsNot Nothing)
                     Contract.Assume(result.Length = 20)
-                    Return result
+                    Return result.AsReadableList
                 End Using
             End Using
         End Function
@@ -392,8 +391,8 @@ Namespace WC3
                 Dim mpqToUse = If(mapArchive.Hashtable.Contains(filename),
                                   mapArchive,
                                   war3PatchArchive)
-                Using f = mpqToUse.OpenFileByName(filename)
-                    val = val Xor ComputeStreamXoro(f)
+                Using stream = mpqToUse.OpenFileByName(filename)
+                    val = val Xor ComputeStreamXoro(stream)
                 End Using
             Next filename
 
@@ -415,8 +414,8 @@ Namespace WC3
                 Dim filenameToUse = (From filename In fileset.Split("|"c)
                                      Where mapArchive.Hashtable.Contains(filename)).FirstOrDefault
                 If filenameToUse IsNot Nothing Then
-                    Using f = mapArchive.OpenFileByName(filenameToUse)
-                        val = (val Xor ComputeStreamXoro(f)).ShiftRotateLeft(3)
+                    Using stream = mapArchive.OpenFileByName(filenameToUse)
+                        val = (val Xor ComputeStreamXoro(stream)).ShiftRotateLeft(3)
                     End Using
                 End If
             Next fileset

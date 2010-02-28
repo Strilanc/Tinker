@@ -99,6 +99,21 @@ Public Module PoorlyCategorizedFunctions
     End Function
 #End Region
 
+    <Pure()> <Extension()>
+    Public Function ToUValue(ByVal data As IEnumerable(Of Byte),
+                             Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian) As UInt64
+        Contract.Requires(data IsNot Nothing)
+        If data.Count > 8 Then Throw New ArgumentException("Too many bytes.", "data")
+        Dim padding = Enumerable.Repeat(CByte(0), 8 - data.Count)
+        Select Case byteOrder
+            Case Strilbrary.Values.ByteOrder.LittleEndian
+                Return data.Concat(padding).ToUInt64(byteOrder)
+            Case Strilbrary.Values.ByteOrder.BigEndian
+                Return padding.Concat(data).ToUInt64(byteOrder)
+            Case Else
+                Throw byteOrder.MakeArgumentValueException("byteOrder")
+        End Select
+    End Function
     Public Function FindFileMatching(ByVal fileQuery As String, ByVal likeQuery As String, ByVal directory As String) As String
         Contract.Requires(fileQuery IsNot Nothing)
         Contract.Requires(likeQuery IsNot Nothing)
@@ -235,11 +250,11 @@ Public Module PoorlyCategorizedFunctions
         End If
     End Function
     <Pure()> <Extension()>
+    <ContractVerification(False)>
     Public Function ToUnsignedBytes(ByVal value As BigInteger) As IReadableList(Of Byte)
         Contract.Requires(value >= 0)
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
         Dim result = value.ToByteArray.ToReadableList
-        Contract.Assume(result IsNot Nothing)
         If result.Count > 0 AndAlso result.Last = 0 Then
             Return result.SubView(0, result.Count - 1)
         Else
@@ -268,20 +283,8 @@ Public Module PoorlyCategorizedFunctions
         End Using
     End Function
 
-    '''<summary>Determines the crc32 checksum of a sequence of bytes.</summary>
-    <Extension()> <Pure()>
-    Public Function CRC32(ByVal data As IEnumerable(Of Byte),
-                          Optional ByVal poly As UInteger = &H4C11DB7,
-                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
-        Contract.Requires(data IsNot Nothing)
-        Return data.GetEnumerator.CRC32(poly, polyAlreadyReversed)
-    End Function
-    '''<summary>Determines the crc32 checksum of a sequence of bytes.</summary>
-    <Extension()>
-    Public Function CRC32(ByVal data As IEnumerator(Of Byte),
-                          Optional ByVal poly As UInteger = &H4C11DB7,
-                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
-        Contract.Requires(data IsNot Nothing)
+    Public Function CRC32Table(Optional ByVal poly As UInteger = &H4C11DB7,
+                               Optional ByVal polyAlreadyReversed As Boolean = False) As UInt32()
         Dim reg As UInteger
 
         'Reverse the polynomial
@@ -307,13 +310,41 @@ Public Module PoorlyCategorizedFunctions
                 End If
             Next j
             xorTable(i) = reg
-        Next i
+        Next
+
+        Return xorTable
+    End Function
+    <Extension()> <Pure()>
+    Public Function CRC32(ByVal data As IEnumerable(Of Byte),
+                          Optional ByVal poly As UInteger = &H4C11DB7,
+                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+        Contract.Requires(data IsNot Nothing)
+        Dim xorTable = CRC32Table(poly, polyAlreadyReversed)
 
         'Direct Table Algorithm
-        reg = UInteger.MaxValue
-        While data.MoveNext
-            reg = (reg >> 8) Xor xorTable(data.Current Xor CByte(reg And &HFF))
-        End While
+        Dim reg = UInteger.MaxValue
+        For Each e In data
+            reg = (reg >> 8) Xor xorTable(e Xor CByte(reg And &HFF))
+        Next e
+
+        Return Not reg
+    End Function
+    <Extension()>
+    Public Function CRC32(ByVal data As IReadableStream,
+                          Optional ByVal poly As UInteger = &H4C11DB7,
+                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+        Contract.Requires(data IsNot Nothing)
+        Dim xorTable = CRC32Table(poly, polyAlreadyReversed)
+
+        'Direct Table Algorithm
+        Dim reg = UInteger.MaxValue
+        Do
+            Dim block = data.Read(1024)
+            If block.Count = 0 Then Return reg
+            For Each e In block
+                reg = (reg >> 8) Xor xorTable(e Xor CByte(reg And &HFF))
+            Next e
+        Loop
 
         Return Not reg
     End Function

@@ -65,7 +65,7 @@ Public NotInheritable Class PacketStreamer
 
                 'Parse header
                 If readSize = FullHeaderSize Then
-                    totalSize = CInt(packetData.Skip(_preheaderLength).Take(_sizeHeaderLength).ToUInt32)
+                    totalSize = CInt(packetData.Skip(_preheaderLength).Take(_sizeHeaderLength).ToUValue)
                     If totalSize < FullHeaderSize Then
                         'too small
                         result.SetFailed(New IO.InvalidDataException("Invalid packet size (less than header size)."))

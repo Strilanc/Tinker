@@ -38,7 +38,7 @@ Namespace Pickling
             Dim curOffset = 0
             'List Size
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
-            Dim numElements = data.SubView(0, _prefixSize).ToUInt64
+            Dim numElements = data.SubView(0, _prefixSize).ToUValue
             curOffset += _prefixSize
             'List Elements
             For repeat = 1UL To numElements

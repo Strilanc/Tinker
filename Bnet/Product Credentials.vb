@@ -220,6 +220,7 @@
 
         '''<summary>Generates product credentials using a wc3 cd key.</summary>
         <Extension()> <Pure()>
+        <ContractVerification(False)>
         Public Function ToWC3CDKeyCredentials(ByVal key As String,
                                               ByVal clientSalt As IEnumerable(Of Byte),
                                               ByVal serverSalt As IEnumerable(Of Byte)) As ProductCredentials

@@ -12,6 +12,7 @@
             Return value.Pickled({CByte(value)}.AsReadableList(), Function() ValueToString(value))
         End Function
 
+        <ContractVerification(False)>
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Byte)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 1)
