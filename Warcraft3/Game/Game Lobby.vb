@@ -7,11 +7,10 @@
         Private ReadOnly _freeIndexes As List(Of PlayerId)
         Private ReadOnly _logger As Logger
         Private ReadOnly _clock As IClock
-        Private ReadOnly _players As AsyncViewableCollection(Of Player)
+        Private ReadOnly _kernel As GameKernel
         Private ReadOnly _pidVisiblityMap As New Dictionary(Of PlayerId, PlayerId)()
         Private ReadOnly _settings As GameSettings
         Private _fakeHostPlayer As Player
-        Public Property AcceptingPlayers As Boolean = True
         Private _slots As SlotSet
 
         Public Event ChangedPublicState(ByVal sender As GameLobby)
@@ -23,7 +22,7 @@
             Contract.Invariant(_freeIndexes IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_slots IsNot Nothing)
-            Contract.Invariant(_players IsNot Nothing)
+            Contract.Invariant(_kernel IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_pidVisiblityMap IsNot Nothing)
             Contract.Invariant(_settings IsNot Nothing)
@@ -32,7 +31,7 @@
         Public Sub New(ByVal startPlayerHoldPoint As HoldPoint(Of Player),
                        ByVal downloadManager As Download.Manager,
                        ByVal logger As Logger,
-                       ByVal players As AsyncViewableCollection(Of Player),
+                       ByVal kernel As GameKernel,
                        ByVal clock As IClock,
                        ByVal settings As GameSettings)
             Contract.Assume(startPlayerHoldPoint IsNot Nothing)
@@ -42,7 +41,7 @@
             Me._downloadManager = downloadManager
             Me._slots = New SlotSet(InitCreateSlots(settings))
             Me._logger = logger
-            Me._players = players
+            Me._kernel = kernel
             Me._clock = clock
             Me._settings = settings
             Dim pidCount = _slots.Count
@@ -111,6 +110,11 @@
             Return result.AsReadableList
         End Function
 
+        Private ReadOnly Property AcceptingPlayers As Boolean
+            Get
+                Return _kernel.State = GameState.AcceptingPlayers
+            End Get
+        End Property
         Public Property Slots As SlotSet
             Get
                 Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
@@ -197,10 +201,10 @@
             If slot IsNot Nothing Then
                 _slots = _slots.WithSlotsReplaced(slot.WithContents(New SlotContentsPlayer(newPlayer)))
             End If
-            _players.Add(newPlayer)
+            _kernel.Players.Add(newPlayer)
 
             'Inform other players
-            For Each player In _players
+            For Each player In _kernel.Players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueSendPacket(newPlayer.MakePacketOtherPlayerJoined())
             Next player
@@ -267,20 +271,23 @@
             'Add
             Dim newPlayer = New Player(id, connectingPlayer, _clock, _downloadManager, Logger)
             _slots = _slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithPlayer(newPlayer)))
-            _players.Add(newPlayer)
+            _kernel.Players.Add(newPlayer)
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
             'Greet
             newPlayer.QueueSendPacket(Protocol.MakeGreet(newPlayer.RemoteEndPoint, newPlayer.Id))
             newPlayer.QueueSendPacket(Protocol.MakeHostMapInfo(_settings.Map))
-            For Each visibleOtherPlayer In From p In _players Where p IsNot newPlayer AndAlso IsPlayerVisible(p)
+            For Each visibleOtherPlayer In From p In _kernel.Players
+                                           Where p IsNot newPlayer
+                                           Where IsPlayerVisible(p)
                 Contract.Assume(visibleOtherPlayer IsNot Nothing)
                 newPlayer.QueueSendPacket(visibleOtherPlayer.MakePacketOtherPlayerJoined())
             Next visibleOtherPlayer
 
             'Inform others
             If IsPlayerVisible(newPlayer) Then
-                For Each otherPlayer In From p In _players Where p IsNot newPlayer
+                For Each otherPlayer In From p In _kernel.Players
+                                        Where p IsNot newPlayer
                     Contract.Assume(otherPlayer IsNot Nothing)
                     otherPlayer.QueueSendPacket(newPlayer.MakePacketOtherPlayerJoined())
                 Next otherPlayer
@@ -324,7 +331,7 @@
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
             If IsPlayerVisible(player) Then Return player
             Dim visibleIndex = _pidVisiblityMap(player.Id)
-            Dim visiblePlayer = (From p In _players Where p.Id = visibleIndex).First
+            Dim visiblePlayer = (From p In _kernel.Players Where p.Id = visibleIndex).First
             Contract.Assume(visiblePlayer IsNot Nothing)
             Return visiblePlayer
         End Function
@@ -350,7 +357,7 @@
             Contract.Requires(receiver IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
 
-            Dim sender = If(_fakeHostPlayer, (From p In _players
+            Dim sender = If(_fakeHostPlayer, (From p In _kernel.Players
                                               Where IsPlayerVisible(p)
                                               Where p.Id <> receiver.Id).First)
             Dim filedata = _settings.Map.ReadChunk(position, Protocol.Packets.MaxFileDataSize)
@@ -714,5 +721,55 @@
 
             Return result
         End Function
+
+        '''<summary>Broadcasts a packet to all players. Requires a packer for the packet, and values matching the packer.</summary>
+        Public Sub BroadcastPacket(ByVal pk As Protocol.Packet,
+                                   Optional ByVal source As Player = Nothing)
+            Contract.Requires(pk IsNot Nothing)
+            For Each player In From p In _kernel.Players
+                               Where p IsNot source
+                Contract.Assume(player IsNot Nothing)
+                player.QueueSendPacket(pk)
+            Next player
+        End Sub
+
+        '''<summary>Sends text to all players. Uses spoof chat if necessary.</summary>
+        Public Sub BroadcastMessage(ByVal message As String,
+                                    Optional ByVal playerToAvoid As Player = Nothing,
+                                    Optional ByVal messageType As LogMessageType = LogMessageType.Typical)
+            Contract.Requires(message IsNot Nothing)
+            For Each player In From p In _kernel.Players
+                               Where p IsNot playerToAvoid
+                SendMessageTo(message, player.AssumeNotNull, display:=False)
+            Next player
+            Logger.Log("{0}: {1}".Frmt(Application.ProductName, message), messageType)
+        End Sub
+
+        '''<summary>Sends text to the target player. Uses spoof chat if necessary.</summary>
+        Public Sub SendMessageTo(ByVal message As String,
+                                 ByVal player As Player,
+                                 Optional ByVal display As Boolean = True)
+            Contract.Requires(message IsNot Nothing)
+            Contract.Requires(player IsNot Nothing)
+
+            'Send Text (from fake host or spoofed from receiver)
+            Dim prefix = If(_fakeHostPlayer Is Nothing, "{0}: ".Frmt(Application.ProductName), "")
+            Dim chatType = If(_kernel.State >= GameState.Loading, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
+            Dim sender = If(_fakeHostPlayer, player)
+            If Protocol.Packets.MaxChatTextLength - prefix.Length <= 0 Then
+                Throw New InvalidStateException("The product name is so long there's no room for text to follow it!")
+            End If
+            For Each line In SplitText(body:=message, maxLineLength:=Protocol.Packets.MaxChatTextLength - prefix.Length)
+                player.QueueSendPacket(Protocol.MakeText(text:=prefix + line,
+                                                         chatType:=chatType,
+                                                         receivingGroup:=Protocol.ChatGroup.Private,
+                                                         receivers:=(From p In _kernel.Players Select p.Id),
+                                                         sender:=sender.Id))
+            Next line
+
+            If display Then
+                Logger.Log("(Private to {0}): {1}".Frmt(player.Name, message), LogMessageType.Typical)
+            End If
+        End Sub
     End Class
 End Namespace

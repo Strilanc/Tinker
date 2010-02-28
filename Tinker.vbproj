@@ -153,7 +153,6 @@
   </ItemGroup>
   <ItemGroup>
     <Import Include="Strilbrary.Collections" />
-    <Import Include="Strilbrary.Enumeration" />
     <Import Include="Strilbrary.Exceptions" />
     <Import Include="Strilbrary.Misc" />
     <Import Include="Strilbrary.Streams" />
@@ -214,6 +213,7 @@
     <Compile Include="Warcraft3\Download\Download Transfer.vb" />
     <Compile Include="Warcraft3\Download\IPlayerDownloadAspect.vb" />
     <Compile Include="Warcraft3\Download\Download Client.vb" />
+    <Compile Include="Warcraft3\Game\Game Kernel.vb" />
     <Compile Include="Warcraft3\SlotContents.vb" />
     <Compile Include="Warcraft3\SlotSet.vb" />
     <Compile Include="Warcraft3\Game\Game Lobby.vb" />
@@ -306,7 +306,7 @@
     <Compile Include="Warcraft3\W3Relay.vb" />
     <Compile Include="Warcraft3\W3RemotePlayer.vb" />
     <Compile Include="Warcraft3\W3MapDownload.vb" />
-    <Compile Include="Warcraft3\Game\W3GameLoadScreen.vb" />
+    <Compile Include="Warcraft3\Game\Game Load Screen.vb" />
     <Compile Include="Warcraft3\Game\Game Motor.vb" />
     <Compile Include="Warcraft3\Player\W3Player.vb" />
     <Compile Include="Warcraft3\Server\W3ServerDoor.vb" />

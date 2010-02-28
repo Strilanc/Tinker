@@ -3,7 +3,7 @@
         Inherits FutureDisposable
 
         Private ReadOnly inQueue As ICallQueue
-        Private ReadOnly _players As AsyncViewableCollection(Of Player)
+        Private ReadOnly _kernel As GameKernel
         Private ReadOnly _clock As IClock
         Private ReadOnly _lobby As GameLobby
         Private ReadOnly _gameDataQueue As New Queue(Of Tuple(Of Player, IReadableList(Of Protocol.GameAction)))
@@ -29,7 +29,7 @@
             Contract.Invariant(_tickPeriod.Ticks > 0)
             Contract.Invariant(_lagLimit.Ticks >= 0)
             Contract.Invariant(inQueue IsNot Nothing)
-            Contract.Invariant(_players IsNot Nothing)
+            Contract.Invariant(_kernel IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
             Contract.Invariant(_gameTime >= 0)
@@ -40,21 +40,21 @@
                        ByVal defaultTickPeriod As TimeSpan,
                        ByVal defaultLagLimit As TimeSpan,
                        ByVal inQueue As ICallQueue,
-                       ByVal players As AsyncViewableCollection(Of Player),
+                       ByVal kernel As GameKernel,
                        ByVal clock As IClock,
                        ByVal lobby As GameLobby)
             Contract.Requires(defaultSpeedFactor > 0)
             Contract.Requires(defaultTickPeriod.Ticks > 0)
             Contract.Requires(defaultLagLimit.Ticks >= 0)
             Contract.Requires(inQueue IsNot Nothing)
-            Contract.Requires(players IsNot Nothing)
+            Contract.Requires(kernel IsNot Nothing)
             Contract.Requires(clock IsNot Nothing)
             Contract.Requires(lobby IsNot Nothing)
             Me._speedFactor = defaultSpeedFactor
             Me._tickPeriod = defaultTickPeriod
             Me._lagLimit = defaultLagLimit
             Me.inQueue = inQueue
-            Me._players = players
+            Me._kernel = kernel
             Me._clock = clock
             Me._lobby = lobby
         End Sub
@@ -70,7 +70,7 @@
         End Sub
 
         Private Sub Start()
-            For Each player In _players
+            For Each player In _kernel.Players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartPlaying()
             Next player
@@ -110,7 +110,7 @@
         Private Function BroadcastPacket(ByVal packet As Protocol.Packet) As ifuture
             Contract.Requires(packet IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return (From player In _players Select player.QueueSendPacket(packet)).Defuturized
+            Return (From player In _kernel.Players Select player.QueueSendPacket(packet)).Defuturized
         End Function
 
         '''<summary>Advances game time</summary>
@@ -142,7 +142,7 @@
             If _laggingPlayers.Count > 0 Then
                 For Each p In _laggingPlayers.ToList
                     Contract.Assume(p IsNot Nothing)
-                    If Not _players.Contains(p) Then
+                    If Not _kernel.Players.Contains(p) Then
                         _laggingPlayers.Remove(p)
                     ElseIf p.GetTockTime >= _gameTime OrElse p.isFake Then
 
@@ -158,7 +158,7 @@
                     End If
                 Next p
             Else
-                _laggingPlayers = (From p In _players
+                _laggingPlayers = (From p In _kernel.Players
                                    Where Not p.isFake _
                                    AndAlso p.GetTockTime < _gameTime - If(_asyncWaitTriggered, 0, _lagLimit.TotalMilliseconds)
                                    ).ToList
@@ -192,7 +192,7 @@
             End While
 
             'Send data
-            For Each player In _players
+            For Each player In _kernel.Players
                 Contract.Assume(player IsNot Nothing)
                 If _lobby.IsPlayerVisible(player) Then
                     player.QueueSendTick(record, (From e In outgoingActions Select e.Item2).ToReadableList)

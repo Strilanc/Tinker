@@ -156,8 +156,8 @@ Namespace Bnet
 
             'Identify instructions
             Dim lines = challengeInstructions.Split(" "c)
-            Dim declarations = From line In lines Where line Like "?=#*"
-            Dim statements = From line In lines Where line Like "?=???"
+            Dim declarations = From line In lines Where line Like "[a-zA-Z]=#*"
+            Dim statements = From line In lines Where line Like "[a-zA-Z]=[a-zA-Z]?[a-zA-Z]"
             Dim statementCount = UInt32.Parse((From line In lines Where line Like "#").First, CultureInfo.InvariantCulture)
 
             'Check
@@ -201,7 +201,7 @@ Namespace Bnet
             Dim mainLoop = Expression.Loop(Expression.Block(
                     Expression.IfThen(Expression.Not(Expression.Call(dataParameter, GetType(Collections.IEnumerator).GetMethod("MoveNext"))),
                                       Expression.Break(breakTarget1)),
-                    Expression.Assign(varStream, Expression.Call(dataParameter, GetType(IEnumerator(Of IO.Stream)).GetMethod("get_Current"))),
+                    Expression.Assign(varStream, Expression.Call(dataParameter, GetType(IEnumerator(Of IO.Stream)).GetProperty("Current").GetGetMethod)),
                     readLoop,
                     Expression.Call(varStream, GetType(IDisposable).GetMethod("Dispose"))
                 ), breakTarget1)
