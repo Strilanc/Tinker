@@ -256,7 +256,7 @@ Namespace Bnet
                 Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
                 Dim futureGameSet = (From server In futureServer
                                      Select server.QueueAddGameFromArguments(argument, user)
-                                     ).Unwrap
+                                     ).Unwrap.AssumeNotNull
                 Dim futureAdvertised = futureGameSet.Select(
                     Function(gameSet)
                         Dim result = target.Client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
@@ -273,7 +273,7 @@ Namespace Bnet
                                     End Sub
                         AddHandler gameSet.StateChanged, onStarted
                         Return result
-                    End Function).Unwrap
+                    End Function).Unwrap.AssumeNotNull
                 futureAdvertised.Catch(Sub() If futureGameSet.Status = TaskStatus.RanToCompletion Then futureGameSet.Result.Dispose())
                 Return From gameDescription In futureAdvertised
                        Select "Hosted game '{0}' for map '{1}'. Admin Code: {2}".Frmt(gameDescription.Name,
@@ -312,7 +312,7 @@ Namespace Bnet
                             End Function
                         )
                     End Function
-                ).Unwrap.Unwrap
+                ).Unwrap.Unwrap.AssumeNotNull
             End Function
         End Class
 
@@ -438,7 +438,7 @@ Namespace Bnet
                             End Function
                         )
                     End Function
-                ).Unwrap.Unwrap.ContinueWithFunc(Function() "'{0}' is now the admin.".Frmt(username))
+                ).Unwrap.Unwrap.AssumeNotNull.ContinueWithFunc(Function() "'{0}' is now the admin.".Frmt(username))
             End Function
         End Class
 

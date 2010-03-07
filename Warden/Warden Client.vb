@@ -31,6 +31,8 @@
                 Dim result = New TaskCompletionSource(Of Warden.Socket)
                 result.SetException(New ArgumentException("No remote host specified."))
                 result.SetHandled()
+                Contract.Assume(_activated.Task IsNot Nothing)
+                Contract.Assume(result.Task IsNot Nothing)
                 _activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)).SetHandled()
                 _socket = result.Task
                 Return
@@ -82,7 +84,7 @@
         Public ReadOnly Property Activated As Task
             Get
                 Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-                Return _activated.Task
+                Return _activated.Task.AssumeNotNull
             End Get
         End Property
 

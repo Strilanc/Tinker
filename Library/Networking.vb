@@ -72,7 +72,7 @@ Public Module NetworkingCommon
                     client.EndConnect(ar)
                     Return client
                 End Function)))
-        Return result.Task
+        Return result.Task.AssumeNotNull
     End Function
 
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
@@ -89,7 +89,7 @@ Public Module NetworkingCommon
                     client.EndConnect(ar)
                     Return client
                 End Function)))
-        Return result.Task
+        Return result.Task.AssumeNotNull
     End Function
 
     '''<summary>Asynchronously accepts an incoming connection attempt.</summary>
@@ -100,7 +100,7 @@ Public Module NetworkingCommon
         Dim result = New TaskCompletionSource(Of TcpClient)
         result.DependentCall(Sub() listener.BeginAcceptTcpClient(state:=Nothing,
             callback:=Sub(ar) result.SetByEvaluating(Function() listener.EndAcceptTcpClient(ar))))
-        Return result.Task
+        Return result.Task.AssumeNotNull
     End Function
 
     Public Function AsyncDnsLookup(ByVal remoteHost As String) As Task(Of Net.IPHostEntry)
@@ -109,6 +109,6 @@ Public Module NetworkingCommon
         Dim result = New TaskCompletionSource(Of Net.IPHostEntry)()
         result.DependentCall(Sub() Net.Dns.BeginGetHostEntry(hostNameOrAddress:=remoteHost, stateObject:=Nothing,
             requestCallback:=Sub(ar) result.SetByEvaluating(Function() Net.Dns.EndGetHostEntry(ar))))
-        Return result.Task
+        Return result.Task.AssumeNotNull
     End Function
 End Module

@@ -131,6 +131,7 @@ Public Module PoorlyCategorizedFunctions
             Return "Null Exception"
         ElseIf TypeOf ex Is AggregateException Then
             Dim ax = CType(ex, AggregateException)
+            Contract.Assume(ax.InnerExceptions IsNot Nothing)
             Select Case ax.InnerExceptions.Count
                 Case 0 : Return "Empty AggregateException"
                 Case 1 : Return ax.InnerExceptions.Single.Summarize()

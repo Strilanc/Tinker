@@ -238,7 +238,7 @@ Namespace WC3
             Contract.Requires(argument IsNot Nothing)
             Contract.Requires(user IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.GameSet))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncAddGameFromArguments(argument, user)).Unwrap
+            Return inQueue.QueueFunc(Function() AsyncAddGameFromArguments(argument, user)).Unwrap.AssumeNotNull
         End Function
         Public Function QueueChangeListenPort(ByVal portHandle As PortPool.PortHandle) As Task
             Contract.Requires(portHandle IsNot Nothing)
@@ -303,7 +303,7 @@ Namespace WC3
         Public Function QueueAddAdminGame(ByVal name As InvariantString, ByVal password As String) As Task(Of GameSet)
             Contract.Requires(password IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Unwrap
+            Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Unwrap.AssumeNotNull
         End Function
     End Class
 End Namespace

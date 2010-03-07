@@ -114,6 +114,7 @@
         End Function
 
         '''<summary>Advances game time</summary>
+        <ContractVerification(False)>
         Private Sub OnTick()
             If _tickClock Is Nothing Then Return 'stopped
 

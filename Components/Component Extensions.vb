@@ -23,7 +23,7 @@
                                                    Else
                                                        Return task.Result
                                                    End If
-                                               End Function))
+                                               End Function).AssumeNotNull)
             Catch e As Exception
                 e.RaiseAsUnexpected("UIInvokeCommand for {0}:{1}".Frmt(component.Type, component.Name))
             End Try

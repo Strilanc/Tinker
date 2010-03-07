@@ -256,12 +256,12 @@ Namespace WC3
             End If
         End Function
         Public Function QueueCommandProcessText(ByVal bot As Bot.MainBot,
-                                        ByVal player As Player,
-                                        ByVal argument As String) As Task(Of String)
+                                                ByVal player As Player,
+                                                ByVal argument As String) As Task(Of String)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() CommandProcessText(bot, player, argument)).Unwrap
+            Return inQueue.QueueFunc(Function() CommandProcessText(bot, player, argument)).Unwrap.AssumeNotNull
         End Function
 
         Public Function QueueGetAdminPlayer() As Task(Of Player)

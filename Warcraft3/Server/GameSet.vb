@@ -78,12 +78,12 @@
                     End If
                 End Sub
             )
-            Return result.Task
+            Return result.Task.AssumeNotNull
         End Function
         Public Function QueueTryAcceptPlayer(ByVal player As W3ConnectingPlayer) As Task(Of Game)
             Contract.Requires(player IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncTryAcceptPlayer(player)).Unwrap
+            Return inQueue.QueueFunc(Function() AsyncTryAcceptPlayer(player)).Unwrap.AssumeNotNull
         End Function
 
         Private Function TryFindGame(ByVal name As InvariantString) As Game
@@ -144,7 +144,7 @@
         End Function
         Public Function QueueTryFindPlayer(ByVal userName As InvariantString) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncTryFindPlayer(userName)).Unwrap
+            Return inQueue.QueueFunc(Function() AsyncTryFindPlayer(userName)).Unwrap.AssumeNotNull
         End Function
 
         Private Function AsyncTryFindPlayerGame(ByVal userName As InvariantString) As Task(Of Game)
@@ -153,7 +153,7 @@
         End Function
         Public Function QueueTryFindPlayerGame(ByVal userName As InvariantString) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncTryFindPlayerGame(userName)).Unwrap
+            Return inQueue.QueueFunc(Function() AsyncTryFindPlayerGame(userName)).Unwrap.AssumeNotNull
         End Function
 
         Private Function CreateGameAsyncView(ByVal adder As Action(Of GameSet, Game),

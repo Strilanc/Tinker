@@ -310,12 +310,13 @@ Namespace WC3
         End Function
 
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
+        <ContractVerification(False)>
         Private Shared Function ComputeMapSha1Checksum(ByVal mapArchive As MPQ.Archive,
                                                        ByVal war3PatchArchive As MPQ.Archive) As IReadableList(Of Byte)
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Byte())() IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Byte())().Length = 20)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
             Dim streams As New List(Of IReadableStream)
 
             'Overridable map files from war3patch.mpq
@@ -351,10 +352,7 @@ Namespace WC3
 
             Using stream = New ConcatStream(streams)
                 Using sha = New Security.Cryptography.SHA1Managed()
-                    Dim result = sha.ComputeHash(stream.AsStream)
-                    Contract.Assume(result IsNot Nothing)
-                    Contract.Assume(result.Length = 20)
-                    Return result.AsReadableList
+                    Return sha.ComputeHash(stream.AsStream).AsReadableList
                 End Using
             End Using
         End Function

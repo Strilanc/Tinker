@@ -63,7 +63,7 @@ Public MustInherit Class PacketHandler(Of TKey)
                                    End If
                                    Return handlerResults.AsAggregateTask
                                End Function)
-        Return result.Task.Unwrap
+        Return result.Task.Unwrap.AssumeNotNull
     End Function
 
     <ContractClassFor(GetType(PacketHandler(Of )))>

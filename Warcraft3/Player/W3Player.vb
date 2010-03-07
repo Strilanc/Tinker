@@ -209,6 +209,7 @@
                 Return pinger.QueueGetLatency
             End If
         End Function
+        <ContractVerification(False)>
         Public Function QueueGetLatencyDescription() As Task(Of String)
             Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return (From latency In QueueGetLatency()
@@ -216,7 +217,7 @@
                     Select If(_downloadManager Is Nothing,
                               latencyDesc.AsTask,
                               _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc))
-                   ).Unwrap
+                   ).Unwrap.AssumeNotNull
         End Function
         Public ReadOnly Property PeerConnectionCount() As Integer
             Get

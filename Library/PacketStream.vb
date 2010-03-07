@@ -87,7 +87,7 @@ Public NotInheritable Class PacketStreamer
             End Function
         )
 
-        Return result.Task
+        Return result.Task.AssumeNotNull
     End Function
 
     'verification disabled due to stupid verifier (1.2.30118.5)

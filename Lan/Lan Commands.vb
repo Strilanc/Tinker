@@ -98,10 +98,10 @@ Namespace Lan
                 Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
                 Dim futureGameSet = (From server In futureServer
                                      Select server.QueueAddGameFromArguments(argument, user)
-                                    ).Unwrap
+                                    ).Unwrap.AssumeNotNull
                 Dim futureAdvertised = (From gameSet In futureGameSet
                                         Select target.Advertiser.QueueAddGame(gameSet.GameSettings.GameDescription)
-                                       ).Unwrap
+                                       ).Unwrap.AssumeNotNull
                 futureAdvertised.Catch(Sub() If futureGameSet.Status = TaskStatus.RanToCompletion Then futureGameSet.Result.Dispose())
                 Dim futureDesc = futureAdvertised.ContinueWithFunc(Function() futureGameSet.Result.GameSettings.GameDescription)
                 Return futureDesc.select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.name, desc.GameStats.AdvertisedPath))

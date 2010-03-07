@@ -201,7 +201,7 @@ Namespace WC3
         End Function
         Public Function QueueFindPlayer(ByVal userName As String) As Task(Of Player)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncFindPlayer(userName)).Unwrap
+            Return inQueue.QueueFunc(Function() AsyncFindPlayer(userName)).Unwrap.AssumeNotNull
         End Function
 
         Private Function AsyncFindPlayerGame(ByVal username As String) As Task(Of Game)
@@ -212,7 +212,7 @@ Namespace WC3
         End Function
         Public Function QueueFindPlayerGame(ByVal userName As String) As Task(Of Game)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncFindPlayerGame(userName)).Unwrap
+            Return inQueue.QueueFunc(Function() AsyncFindPlayerGame(userName)).Unwrap.AssumeNotNull
         End Function
 
         Private Function CreateGameSetsAsyncView(ByVal adder As Action(Of GameServer, GameSet),

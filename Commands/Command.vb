@@ -87,12 +87,13 @@
             If IsUserAllowed(user) Then
                 Dim result = New TaskCompletionSource(Of Task(Of String))()
                 result.SetByEvaluating(Function() PerformInvoke(target, user, argument))
-                result.Task.Unwrap.Catch(Sub(ex) ex.RaiseAsUnexpected("Error invoking command"))
-                Return result.Task.Unwrap
+                Dim result2 = result.Task.Unwrap.AssumeNotNull
+                result2.Catch(Sub(ex) ex.RaiseAsUnexpected("Error invoking command"))
+                Return result2
             Else
                 Dim result = New TaskCompletionSource(Of String)
                 result.SetException(New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions)))
-                Return result.Task
+                Return result.Task.AssumeNotNull
             End If
         End Function
 

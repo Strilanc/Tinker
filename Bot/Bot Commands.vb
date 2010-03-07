@@ -41,13 +41,13 @@ Namespace Bot
                     'Create and connect
                     Dim futureManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
                     futureManager.ContinueWithAction(Sub(manager) manager.QueueSetAutomatic(True)).SetHandled()
-                    Dim futureAdded = (From manager In futureManager Select target.Components.QueueAddComponent(manager)).Unwrap
+                    Dim futureAdded = (From manager In futureManager Select target.Components.QueueAddComponent(manager)).Unwrap.AssumeNotNull
                     Dim futureClient = futureAdded.ContinueWithFunc(Function() futureManager.Result.Client)
                     Dim futureConnected = (From client In futureClient
                                            Select client.QueueConnectAndLogOn(
                                                             remoteHost:=client.Profile.server.Split(" "c)(0),
                                                             credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
-                                                        ).Unwrap
+                                                        ).Unwrap.AssumeNotNull
 
                     'Cleanup on failure
                     futureManager.ContinueWithAction(Sub(manager) futureConnected.Catch(Sub() manager.Dispose())).SetHandled()
@@ -74,7 +74,7 @@ Namespace Bot
                         result.SetException(exception.InnerExceptions)
                     End Sub
                 )
-                Return result.Task
+                Return result.Task.AssumeNotNull
             End Function
         End Class
 
@@ -141,7 +141,7 @@ Namespace Bot
                         added.Catch(Sub() manager.Dispose())
                         If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
                         Return added.ContinueWithFunc(Function() "Created Client")
-                    End Function).Unwrap
+                    End Function).Unwrap.AssumeNotNull
             End Function
         End Class
 
@@ -184,7 +184,7 @@ Namespace Bot
                 Dim type As InvariantString = args(0)
                 Dim name As InvariantString = args(1).AssumeNotNull
                 'dispose
-                Return target.Components.QueueFindComponent(type, name).ContinueWith(
+                Return target.Components.QueueFindComponent(type, name).ContinueWithFunc(
                     Function(component)
                         component.Dispose()
                         Return "Disposed {0}".Frmt(argument.RawValue(0))
@@ -336,7 +336,7 @@ Namespace Bot
                 'send
                 Return (From component In target.Components.QueueFindComponent(type, name)
                         Select component.InvokeCommand(user, argumentRest)
-                       ).Unwrap()
+                       ).Unwrap.AssumeNotNull
             End Function
         End Class
     End Class

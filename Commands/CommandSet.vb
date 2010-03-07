@@ -66,7 +66,7 @@
                     End If
                     Return _commandMap(argumentHead).Invoke(target, user, argumentRest)
                 End Function
-            ).UnWrap
+            ).Unwrap.AssumeNotNull
         End Function
     End Class
 End Namespace

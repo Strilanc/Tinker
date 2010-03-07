@@ -61,7 +61,7 @@ Namespace WC3
                                   "{0}c".Frmt(_numPeerConnections).Padded(5) +
                                   latencyDesc.Padded(12) +
                                   text
-                End Function).Unwrap
+                End Function).Unwrap.AssumeNotNull
         End Function
     End Class
 End Namespace

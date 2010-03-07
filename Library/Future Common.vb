@@ -18,7 +18,7 @@
                 count:=count,
                 state:=Nothing,
                 callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar))))
-        Return result.Task
+        Return result.Task.AssumeNotNull
     End Function
 
     ''' <summary>
@@ -46,8 +46,8 @@
                    End Sub
         futureProduct = producer()
         Contract.Assume(futureProduct IsNot Nothing)
-        futureProduct.ContinueWith(consumer).Unwrap.ContinueWith(iterator)
-        Return result.Task
+        futureProduct.ContinueWith(consumer).Unwrap.AssumeNotNull.ContinueWith(iterator)
+        Return result.Task.AssumeNotNull
     End Function
 
     ''' <summary>
@@ -87,6 +87,7 @@
 
         'Start
         Call onFinishedConsuming(Nothing)
+        Contract.Assume(result.Task IsNot Nothing)
         result.Task.Catch(errorHandler)
         Return result.Task
     End Function
@@ -136,6 +137,6 @@
                        End If
                    End Sub
         Call iterator(Nothing)
-        Return result.Task
+        Return result.Task.AssumeNotNull
     End Function
 End Module
