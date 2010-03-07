@@ -48,14 +48,14 @@ Public Class DownloadManagerTest
                 Return _startPlayerHoldPoint
             End Get
         End Property
-        Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect, ByVal position As UInteger) As IFuture
+        Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect, ByVal position As UInteger) As Task
             Return CType(player, TestPlayer).QueueSendPacket(MakeMapFileData(
                     position,
                     Enumerable.Repeat(CByte(1), CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToReadableList,
                     player.Id,
                     HostPid))
         End Function
-        Public Function AddPlayer(ByVal player As TestPlayer) As ifuture
+        Public Function AddPlayer(ByVal player As TestPlayer) As Task
             SyncLock Me
                 _players.Add(player)
                 Return _startPlayerHoldPoint.Hold(player)
@@ -68,10 +68,10 @@ Public Class DownloadManagerTest
         End Sub
     End Class
     Private Class TestPlayer
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements Download.IPlayerDownloadAspect
-        Private ReadOnly _failFuture As New FutureAction()
-        Private ReadOnly _discFuture As New FutureAction()
+        Private ReadOnly _failFuture As New TaskCompletionSource(Of Boolean)()
+        Private ReadOnly _discFuture As New TaskCompletionSource(Of Boolean)()
         Private ReadOnly _pid As PlayerId
         Private ReadOnly _pq As New Queue(Of Packet)()
         Private ReadOnly _lock As New System.Threading.ManualResetEvent(initialState:=False)
@@ -105,33 +105,33 @@ Public Class DownloadManagerTest
             End Get
         End Property
         Private Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Packets.Definition(Of T),
-                                                     ByVal handler As Func(Of IPickle(Of T), IFuture)) As IFuture(Of IDisposable) _
+                                                     ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable) _
                                                      Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
             SyncLock Me
                 Return _handler.AddHandler(packetDefinition.Id, Function(data)
                                                                     Dim result = handler(packetDefinition.Jar.Parse(data))
-                                                                    result.Catch(Sub(ex) _failFuture.TrySetFailed(ex))
+                                                                    result.Catch(Sub(ex) _failFuture.TrySetException(ex.InnerExceptions))
                                                                     Return result
-                                                                End Function).Futurized
+                                                                End Function).AsTask
             End SyncLock
         End Function
-        Public Function QueueSendPacket(ByVal packet As Packet) As IFuture Implements Download.IPlayerDownloadAspect.QueueSendPacket
+        Public Function QueueSendPacket(ByVal packet As Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
             SyncLock Me
                 _pq.Enqueue(packet)
                 _lock.Set()
-                Dim result = New FutureAction()
-                result.SetSucceeded()
-                Return result
+                Dim result = New TaskCompletionSource(Of Boolean)()
+                result.SetResult(True)
+                Return result.Task
             End SyncLock
         End Function
 
-        Public Function InjectReceivedPacket(ByVal packet As Packet) As IFuture
+        Public Function InjectReceivedPacket(ByVal packet As Packet) As Task
             SyncLock Me
                 Return _handler.HandlePacket(
                         New Byte() {Packets.PacketPrefix, packet.Id}.Concat(
                                     CUShort(packet.Payload.Data.Count + 4).Bytes).Concat(
                                     packet.Payload.Data).ToReadableList
-                ).Catch(Sub(ex) _failFuture.SetFailed(ex))
+                ).Catch(Sub(ex) _failFuture.SetException(ex.InnerExceptions))
             End SyncLock
         End Function
         Public Function TryInterceptSentPacket(Optional ByVal timeoutMilliseconds As Integer = 10000) As Packet
@@ -160,26 +160,26 @@ Public Class DownloadManagerTest
                 Throw New IO.InvalidDataException("Incorrect packet contents: received {0} instead of {1}.".Frmt(received.Payload.Description.Value, expected.Payload.Description.Value))
             End If
         End Sub
-        Public ReadOnly Property FailFuture As IFuture
+        Public ReadOnly Property FailFuture As Task
             Get
-                Return _failFuture
+                Return _failFuture.Task
             End Get
         End Property
-        Public ReadOnly Property DiscFuture As IFuture
+        Public ReadOnly Property DiscFuture As Task
             Get
-                Return _discFuture
+                Return _discFuture.Task
             End Get
         End Property
-        Public Function InjectClientMapInfo(ByVal state As MapTransferState, ByVal position As UInt32) As ifuture
+        Public Function InjectClientMapInfo(ByVal state As MapTransferState, ByVal position As UInt32) As Task
             Return InjectReceivedPacket(MakeClientMapInfo(state, position))
         End Function
-        Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PlayerId) As ifuture
+        Public Function InjectMapDataReceived(ByVal position As UInt32, ByVal senderPid As PlayerId) As Task
             Return InjectReceivedPacket(MakeMapFileDataReceived(senderPid, ID, position))
         End Function
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedResult As PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements Download.IPlayerDownloadAspect.QueueDisconnect
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedResult As PlayerLeaveReason, ByVal reasonDescription As String) As Task Implements Download.IPlayerDownloadAspect.QueueDisconnect
             _logger.Log("{0} Disconnected: {1}, {2}".Frmt(Me.Name, reportedResult, reasonDescription), LogMessageType.Negative)
-            _discFuture.TrySetSucceeded()
-            Return _discFuture
+            _discFuture.TrySetResult(True)
+            Return _discFuture.Task
         End Function
     End Class
 
@@ -190,7 +190,7 @@ Public Class DownloadManagerTest
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=True)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
         Dim player = New TestPlayer(New PlayerId(2), game.Logger)
-        BlockOnFuture(game.AddPlayer(player))
+        WaitUntilTaskSucceeds(game.AddPlayer(player))
 
         player.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         clock.Advance(Download.Manager.UpdatePeriod)
@@ -204,7 +204,7 @@ Public Class DownloadManagerTest
         Dim dm = New Download.Manager(clock, game.Map, game.Logger, allowDownloads:=True, allowUploads:=True)
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
         Dim dler = New TestPlayer(New PlayerId(2), game.Logger)
-        BlockOnFuture(game.AddPlayer(dler))
+        WaitUntilTaskSucceeds(game.AddPlayer(dler))
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         dler.ExpectNoPacket()
@@ -223,7 +223,7 @@ Public Class DownloadManagerTest
         dler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         dler.ExpectNoPacket()
 
-        Assert.IsFalse(BlockOnFuture(dler.FailFuture, 50.Milliseconds))
+        ExpectTaskToIdle(dler.FailFuture)
     End Sub
 
     <TestMethod()>
@@ -234,8 +234,8 @@ Public Class DownloadManagerTest
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
         Dim uler = New TestPlayer(New PlayerId(2), game.Logger)
         Dim dler = New TestPlayer(New PlayerId(3), game.Logger)
-        BlockOnFuture(game.AddPlayer(dler))
-        BlockOnFuture(game.AddPlayer(uler))
+        WaitUntilTaskSucceeds(game.AddPlayer(dler))
+        WaitUntilTaskSucceeds(game.AddPlayer(uler))
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
@@ -255,8 +255,8 @@ Public Class DownloadManagerTest
         dler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         uler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
 
-        Assert.IsFalse(BlockOnFuture(dler.FailFuture, 50.Milliseconds))
-        Assert.IsFalse(BlockOnFuture(uler.FailFuture, 50.Milliseconds))
+        ExpectTaskToIdle(dler.FailFuture)
+        ExpectTaskToIdle(uler.FailFuture)
     End Sub
 
     <TestMethod()>
@@ -267,8 +267,8 @@ Public Class DownloadManagerTest
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
         Dim uler = New TestPlayer(New PlayerId(2), game.Logger)
         Dim dler = New TestPlayer(New PlayerId(3), game.Logger)
-        BlockOnFuture(game.AddPlayer(dler))
-        BlockOnFuture(game.AddPlayer(uler))
+        WaitUntilTaskSucceeds(game.AddPlayer(dler))
+        WaitUntilTaskSucceeds(game.AddPlayer(uler))
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler.InjectClientMapInfo(MapTransferState.Idle, 0)
@@ -278,8 +278,8 @@ Public Class DownloadManagerTest
 
         uler.ExpectNoPacket()
         dler.ExpectNoPacket()
-        Assert.IsFalse(BlockOnFuture(dler.FailFuture, 50.Milliseconds))
-        Assert.IsFalse(BlockOnFuture(uler.FailFuture, 50.Milliseconds))
+        ExpectTaskToIdle(dler.FailFuture)
+        ExpectTaskToIdle(uler.FailFuture)
     End Sub
     <TestMethod()>
     Public Sub PeerDownloadFail_NoPeerConnectionInfo()
@@ -289,8 +289,8 @@ Public Class DownloadManagerTest
         dm.Start(game.StartPlayerHoldPoint, AddressOf game.QueueSendMapPiece)
         Dim uler = New TestPlayer(New PlayerId(2), game.Logger)
         Dim dler = New TestPlayer(New PlayerId(3), game.Logger)
-        BlockOnFuture(game.AddPlayer(dler))
-        BlockOnFuture(game.AddPlayer(uler))
+        WaitUntilTaskSucceeds(game.AddPlayer(dler))
+        WaitUntilTaskSucceeds(game.AddPlayer(uler))
 
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
@@ -298,8 +298,8 @@ Public Class DownloadManagerTest
 
         uler.ExpectNoPacket()
         dler.ExpectNoPacket()
-        Assert.IsFalse(BlockOnFuture(dler.FailFuture, 50.Milliseconds))
-        Assert.IsFalse(BlockOnFuture(uler.FailFuture, 50.Milliseconds))
+        ExpectTaskToIdle(dler.FailFuture)
+        ExpectTaskToIdle(uler.FailFuture)
     End Sub
 
     <TestMethod()>
@@ -313,12 +313,12 @@ Public Class DownloadManagerTest
         Dim uler2 = New TestPlayer(New PlayerId(4), game.Logger, "uler2")
 
         'Start initial transfer
-        WaitUntilFutureSucceeds(game.AddPlayer(dler))
-        WaitUntilFutureSucceeds(game.AddPlayer(uler1))
+        WaitUntilTaskSucceeds(game.AddPlayer(dler))
+        WaitUntilTaskSucceeds(game.AddPlayer(uler1))
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler1.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID}))
-        WaitUntilFutureSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID})))
+        WaitUntilTaskSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID})))
         uler1.ExpectNoPacket()
         dler.ExpectNoPacket()
         clock.Advance(Download.Manager.UpdatePeriod)
@@ -330,10 +330,10 @@ Public Class DownloadManagerTest
         uler1.ExpectNoPacket()
 
         'Cancel and start new transfer
-        WaitUntilFutureSucceeds(game.AddPlayer(uler2))
+        WaitUntilTaskSucceeds(game.AddPlayer(uler2))
         uler2.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
-        WaitUntilFutureSucceeds(dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID, uler2.ID})))
+        WaitUntilTaskSucceeds(dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID, uler2.ID})))
         clock.Advance(Download.Manager.FreezePeriod)
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
@@ -357,9 +357,9 @@ Public Class DownloadManagerTest
         uler1.ExpectNoPacket()
         uler2.ExpectNoPacket()
 
-        Assert.IsFalse(BlockOnFuture(dler.FailFuture, 50.Milliseconds))
-        Assert.IsFalse(BlockOnFuture(uler1.FailFuture, 50.Milliseconds))
-        Assert.IsFalse(BlockOnFuture(uler2.FailFuture, 50.Milliseconds))
+        ExpectTaskToIdle(dler.FailFuture)
+        ExpectTaskToIdle(uler1.FailFuture)
+        ExpectTaskToIdle(uler2.FailFuture)
     End Sub
 
     <TestMethod()>
@@ -373,12 +373,12 @@ Public Class DownloadManagerTest
         Dim uler2 = New TestPlayer(New PlayerId(4), game.Logger, "uler2")
 
         'Start initial transfer
-        WaitUntilFutureSucceeds(game.AddPlayer(dler))
-        WaitUntilFutureSucceeds(game.AddPlayer(uler1))
+        WaitUntilTaskSucceeds(game.AddPlayer(dler))
+        WaitUntilTaskSucceeds(game.AddPlayer(uler1))
         dler.InjectClientMapInfo(MapTransferState.Idle, 0)
         uler1.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID}))
-        WaitUntilFutureSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID})))
+        WaitUntilTaskSucceeds(uler1.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID})))
         uler1.ExpectNoPacket()
         dler.ExpectNoPacket()
         clock.Advance(Download.Manager.UpdatePeriod)
@@ -390,7 +390,7 @@ Public Class DownloadManagerTest
         uler1.ExpectNoPacket()
 
         'Add second peer
-        WaitUntilFutureSucceeds(game.AddPlayer(uler2))
+        WaitUntilTaskSucceeds(game.AddPlayer(uler2))
         uler2.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         uler2.InjectReceivedPacket(MakePeerConnectionInfo({dler.ID}))
         dler.InjectReceivedPacket(MakePeerConnectionInfo({uler1.ID, uler2.ID}))
@@ -402,7 +402,7 @@ Public Class DownloadManagerTest
             clock.Advance(Download.Manager.UpdatePeriod)
             dt -= Download.Manager.UpdatePeriod
             i += 1UI
-            WaitUntilFutureSucceeds(dler.InjectClientMapInfo(MapTransferState.Downloading, i))
+            WaitUntilTaskSucceeds(dler.InjectClientMapInfo(MapTransferState.Downloading, i))
         End While
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
@@ -417,7 +417,7 @@ Public Class DownloadManagerTest
         dler.ExpectNoPacket()
         uler1.ExpectNoPacket()
         uler2.ExpectNoPacket()
-        WaitUntilFutureSucceeds(dler.InjectClientMapInfo(MapTransferState.Idle, i))
+        WaitUntilTaskSucceeds(dler.InjectClientMapInfo(MapTransferState.Idle, i))
         clock.Advance(Download.Manager.UpdatePeriod)
 
         'Check for new transfer
@@ -427,8 +427,8 @@ Public Class DownloadManagerTest
         uler1.ExpectNoPacket()
         uler2.ExpectNoPacket()
 
-        Assert.IsFalse(BlockOnFuture(dler.FailFuture, 50.Milliseconds))
-        Assert.IsFalse(BlockOnFuture(uler1.FailFuture, 50.Milliseconds))
-        Assert.IsFalse(BlockOnFuture(uler2.FailFuture, 50.Milliseconds))
+        ExpectTaskToIdle(dler.FailFuture)
+        ExpectTaskToIdle(uler1.FailFuture)
+        ExpectTaskToIdle(uler2.FailFuture)
     End Sub
 End Class

@@ -3,9 +3,9 @@
     ''' Wires a Game to a ReplayWriter.
     ''' </summary>
     Public Class ReplayManager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _writer As ReplayWriter
         Private ReadOnly _hooks As New List(Of IDisposable)
 
@@ -42,7 +42,7 @@
             Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.PlayerLeft, leaveHandler))
             Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.Launched, launchHandler))
 
-            game.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
+            game.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
 
         Public Shared Function StartRecordingFrom(ByVal defaultFileName As String,
@@ -115,7 +115,7 @@
             _writer.AddPlayerLeft(0, leaver.Id, reportedResult, 0)
         End Sub
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueFunc(
                 Function()
@@ -123,8 +123,8 @@
                     For Each hook In _hooks
                         hook.Dispose()
                     Next
-                    Return _writer.FutureDisposed
-                End Function).Defuturized
+                    Return _writer.DisposalTask
+                End Function).Unwrap
         End Function
     End Class
 End Namespace

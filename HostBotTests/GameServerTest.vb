@@ -44,7 +44,7 @@ Public Class GameServerTest
                                     remoteEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6112),
                                     clock:=clock))
 
-            BlockOnFuture(server.QueueAcceptSocket(socket))
+            WaitUntilTaskSucceeds(server.QueueAcceptSocket(socket))
             clock.Advance(1.Minutes)
             Assert.IsTrue(testStream.RetrieveClosed)
         End Using
@@ -55,8 +55,7 @@ Public Class GameServerTest
         Dim clock = New ManualClock()
         Using server = New WC3.GameServer(clock:=clock)
             Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
-            BlockOnFuture(result)
-            Assert.IsTrue(result.State = FutureState.Succeeded)
+            WaitUntilTaskSucceeds(result)
         End Using
     End Sub
 
@@ -66,8 +65,7 @@ Public Class GameServerTest
         Using server = New WC3.GameServer(clock:=clock)
             server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
             Dim result = server.QueueAddGameSet(New WC3.GameSettings(TestMap, TestDesc, TestArgument))
-            BlockOnFuture(result)
-            Assert.IsTrue(result.State = FutureState.Failed)
+            WaitUntilTaskFails(result)
         End Using
     End Sub
 

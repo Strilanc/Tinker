@@ -2,7 +2,7 @@
 
 Namespace WC3.Replay
     Public Class ReplayWriter
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Private Const BlockSize As Integer = 8192
 
@@ -150,7 +150,7 @@ Namespace WC3.Replay
 
         Private Sub WriteData(ByVal data As IReadableList(Of Byte))
             Contract.Requires(data IsNot Nothing)
-            If Me.FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
+            If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
 
             While data.Count >= _blockSizeRemaining
                 _dataCompressor.Write(data.SubView(0, _blockSizeRemaining))
@@ -261,7 +261,7 @@ Namespace WC3.Replay
         End Function
 
         <ContractVerification(False)>
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             EndBlock()
             _stream.WriteAt(position:=_startPosition, data:=GenerateHeader())
 

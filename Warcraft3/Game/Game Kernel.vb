@@ -24,7 +24,7 @@ Namespace WC3
     End Enum
 
     Public NotInheritable Class GameKernel
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Private _state As GameState = GameState.AcceptingPlayers
         Private ReadOnly _players As New AsyncViewableCollection(Of Player)

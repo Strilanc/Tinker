@@ -5,8 +5,8 @@ Namespace Components
     <ContractVerification(False)>
     Public Class TabControl
         Private ReadOnly _botComponentTabs As Components.TabManager
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
-        Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
+        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
+        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_botComponentTabs IsNot Nothing)
@@ -42,7 +42,7 @@ Namespace Components
         Private Shadows Sub OnDisposed() Handles Me.Disposed
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
             Next hook
         End Sub
     End Class

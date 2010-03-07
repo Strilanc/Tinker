@@ -23,7 +23,7 @@ Public Class ClientForm
             Contract.Assume(_exceptionForm.IsHandleCreated)
 
             AddHandler _exceptionForm.ExceptionCountChanged, Sub() btnShowExceptionLog.Text = "Exception Log ({0})".Frmt(_exceptionForm.ExceptionCount)
-            _bot.FutureDisposed.CallWhenReady(Sub() Me.BeginInvoke(Sub() Me.Dispose())).SetHandled()
+            _bot.DisposalTask.ContinueWithAction(Sub() Me.BeginInvoke(Sub() Me.Dispose())).SetHandled()
         Catch ex As Exception
             MessageBox.Show("Error loading program: {0}.".Frmt(ex))
             Me.Close()
@@ -109,7 +109,7 @@ Public Class ClientForm
                             End Sub)
                 _bot.Logger.Log("Loaded plugin '{0}'.".Frmt(pluginName), LogMessageType.Positive)
             Catch ex As Plugins.PluginException
-                _bot.Logger.Log("Failed to load plugin profile '{0}': {1}".Frmt(pluginName, ex.Message), LogMessageType.Problem)
+                _bot.Logger.Log("Failed to load plugin profile '{0}': {1}".Frmt(pluginName, ex.Summarize), LogMessageType.Problem)
                 ex.RaiseAsUnexpected("Loading plugin profile '{0}'".Frmt(pluginName))
             End Try
         Next pluginName

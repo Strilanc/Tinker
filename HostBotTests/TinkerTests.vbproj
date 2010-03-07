@@ -64,6 +64,7 @@
     <Import Include="Microsoft.VisualBasic" />
     <Import Include="System" />
     <Import Include="System.Linq" />
+    <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BnetClientTest.vb" />

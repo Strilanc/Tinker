@@ -1,10 +1,10 @@
 Namespace WC3
     <ContractVerification(False)>
     Public Class W3GameControl
-        Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
+        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
         Private ReadOnly _manager As WC3.GameManager
         Private ReadOnly _game As WC3.Game
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of IDisposable)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(inQueue IsNot Nothing)
@@ -19,7 +19,7 @@ Namespace WC3
         Private Shadows Sub OnDisposed() Handles Me.Disposed
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.Dispose()
             Next hook
         End Sub
         Private Sub OnCommand(ByVal sender As CommandControl, ByVal argument As String) Handles comGame.IssuedCommand
@@ -36,7 +36,7 @@ Namespace WC3
             logGame.SetGame(_game)
 
             AddHandler _game.Updated, AddressOf OnGameUpdated
-            _hooks.Add(New DelegatedDisposable(Sub() RemoveHandler _game.Updated, AddressOf OnGameUpdated).Futurized)
+            _hooks.Add(New DelegatedDisposable(Sub() RemoveHandler _game.Updated, AddressOf OnGameUpdated))
 
             _game.QueueThrowUpdated()
         End Sub
@@ -53,11 +53,11 @@ Namespace WC3
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(slots IsNot Nothing)
             Dim descriptions = (From slot In slots Select slot.AsyncGenerateDescription).ToArray
-            descriptions.Defuturized.QueueCallOnSuccess(inQueue,
+            descriptions.AsAggregateTask.QueueContinueWithAction(inQueue,
                 Sub()
                     If IsDisposed Then Return
                     For i = 0 To descriptions.Length - 1
-                        lstSlots.Items(i) = descriptions(i).Value
+                        lstSlots.Items(i) = descriptions(i).Result
                     Next i
                 End Sub
              )

@@ -14,14 +14,14 @@
                 component.Logger.Log("Command: {0}".Frmt(argDesc), LogMessageType.Typical)
 
                 component.Logger.FutureLog(placeholder:="[running command {0}...]".Frmt(argDesc),
-                                           message:=component.InvokeCommand(Nothing, argument).EvalWhenValueReady(
-                                               Function(message, commandException)
-                                                   If commandException IsNot Nothing Then
-                                                       Return "Failed: {0}".Frmt(commandException.Message)
-                                                   ElseIf message Is Nothing OrElse message = "" Then
+                                           message:=component.InvokeCommand(Nothing, argument).ContinueWith(
+                                               Function(task)
+                                                   If task.Status = TaskStatus.Faulted Then
+                                                       Return "Failed: {0}".Frmt(task.Exception.Summarize)
+                                                   ElseIf task.Result Is Nothing OrElse task.Result = "" Then
                                                        Return "Command '{0}' succeeded.".Frmt(argDesc)
                                                    Else
-                                                       Return message
+                                                       Return task.Result
                                                    End If
                                                End Function))
             Catch e As Exception

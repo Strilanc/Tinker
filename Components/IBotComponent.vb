@@ -1,7 +1,7 @@
 ﻿Namespace Components
     <ContractClass(GetType(IBotComponent.ContractClass))>
     Public Interface IBotComponent
-        Inherits IFutureDisposable
+        Inherits IDisposableWithTask
         ReadOnly Property Name As InvariantString
         ReadOnly Property Type As InvariantString
         ReadOnly Property Logger As Logger
@@ -9,7 +9,7 @@
         ReadOnly Property Control() As Control
         <Pure()>
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
-        Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String)
 
         <ContractClassFor(GetType(IBotComponent))>
         NotInheritable Shadows Class ContractClass
@@ -35,9 +35,9 @@
                 End Get
             End Property
 
-            Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
+            Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
                 Contract.Requires(argument IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
 
@@ -59,7 +59,7 @@
             End Property
             Public Sub Dispose() Implements IDisposable.Dispose
             End Sub
-            Public ReadOnly Property FutureDisposed As Strilbrary.Threading.IFuture Implements Strilbrary.Threading.IFutureDisposable.FutureDisposed
+            Public ReadOnly Property DisposalTask As Task Implements IDisposableWithTask.DisposalTask
                 Get
                     Throw New NotSupportedException
                 End Get

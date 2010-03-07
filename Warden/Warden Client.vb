@@ -1,13 +1,13 @@
 ﻿Namespace Warden
     Public NotInheritable Class Client
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Public Event ReceivedWardenData(ByVal sender As Warden.Client, ByVal wardenData As IReadableList(Of Byte))
         Public Event Failed(ByVal sender As Warden.Client, ByVal exception As Exception)
         Public Event Disconnected(ByVal sender As Warden.Client, ByVal expected As Boolean, ByVal reason As String)
 
-        Private ReadOnly _socket As IFuture(Of Warden.Socket)
-        Private ReadOnly _activated As New FutureAction()
+        Private ReadOnly _socket As Task(Of Warden.Socket)
+        Private ReadOnly _activated As New TaskCompletionSource(Of Boolean)()
         Private ReadOnly _clock As IClock
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -28,11 +28,11 @@
             Me._clock = clock
 
             If remoteHost = "" Then
-                Dim result = New FutureFunction(Of Warden.Socket)
-                result.SetFailed(New ArgumentException("No remote host specified."))
+                Dim result = New TaskCompletionSource(Of Warden.Socket)
+                result.SetException(New ArgumentException("No remote host specified."))
                 result.SetHandled()
-                _activated.CallOnSuccess(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)).SetHandled()
-                _socket = result
+                _activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)).SetHandled()
+                _socket = result.Task
                 Return
             End If
             logger.Log("Connecting to bnls server at {0}:{1}...".Frmt(remoteHost, remotePort), LogMessageType.Positive)
@@ -57,45 +57,45 @@
             Dim receiveForward As Warden.Socket.ReceivedWardenDataEventHandler = Sub(sender, wardenData) RaiseEvent ReceivedWardenData(Me, wardenData)
             Dim failForward As Warden.Socket.FailedEventHandler = Sub(sender, e) RaiseEvent Failed(Me, e)
             Dim disconnectForward As Warden.Socket.DisconnectedEventHandler = Sub(sender, expected, reason) RaiseEvent Disconnected(Me, expected, reason)
-            _socket.CallOnValueSuccess(
+            _socket.ContinueWithAction(
                 Sub(wardenClient)
                     logger.Log("Connected to bnls server.", LogMessageType.Positive)
 
                     AddHandler wardenClient.ReceivedWardenData, receiveForward
                     AddHandler wardenClient.Failed, failForward
                     AddHandler wardenClient.Disconnected, disconnectForward
-                    wardenClient.FutureDisposed.CallWhenReady(
+                    wardenClient.DisposalTask.ContinueWithAction(
                         Sub()
                             RemoveHandler wardenClient.ReceivedWardenData, receiveForward
                             RemoveHandler wardenClient.Failed, failForward
                             RemoveHandler wardenClient.Disconnected, disconnectForward
                         End Sub)
-                        End Sub
+                End Sub
             ).Catch(
                 Sub(exception)
-                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, exception.Message), LogMessageType.Problem)
+                    logger.Log("Error connecting to bnls server at {0}:{1}: {2}".Frmt(remoteHost, remotePort, exception.Summarize), LogMessageType.Problem)
                     exception.RaiseAsUnexpected("Connecting to bnls server.")
                 End Sub
             )
         End Sub
 
-        Public ReadOnly Property Activated As IFuture
+        Public ReadOnly Property Activated As Task
             Get
-                Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-                Return _activated
+                Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+                Return _activated.Task
             End Get
         End Property
 
-        Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As IFuture
+        Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As Task
             Contract.Requires(wardenData IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            _activated.TrySetSucceeded()
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            _activated.TrySetResult(True)
             Return _socket.Select(Function(wardenClient) wardenClient.QueueSendWardenData(wardenData))
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
-            Dim result = _socket.CallOnValueSuccess(Sub(wardenClient) wardenClient.Dispose())
+            Dim result = _socket.ContinueWithAction(Sub(wardenClient) wardenClient.Dispose())
             result.SetHandled()
             Return result
         End Function

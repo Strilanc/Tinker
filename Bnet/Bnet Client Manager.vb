@@ -3,17 +3,17 @@ Imports Tinker.Bot
 
 Namespace Bnet
     Public NotInheritable Class ClientManager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IBotComponent
 
         Private Shared ReadOnly ClientCommands As New Bnet.ClientCommands()
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _name As InvariantString
         Private ReadOnly _client As Bnet.Client
         Private ReadOnly _control As Control
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
         Private ReadOnly _userGameSetMap As New Dictionary(Of BotUser, WC3.GameSet)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -39,7 +39,7 @@ Namespace Bnet
             Me._hooks.Add(client.QueueAddPacketHandler(Bnet.Protocol.Packets.ServerToClient.ChatEvent,
                                                        Function(pickle) TaskedAction(Sub() OnReceivedChatEvent(pickle.Value))))
 
-            client.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
+            client.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
 
         Public ReadOnly Property Client As Bnet.Client
@@ -84,7 +84,7 @@ Namespace Bnet
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return ClientCommands.Invoke(Me, user, argument)
         End Function
 
@@ -112,14 +112,14 @@ Namespace Bnet
             'Normal commands
             Dim commandText = text.Substring(commandPrefix.Length)
             Dim commandResult = Me.InvokeCommand(user, commandText)
-            commandResult.CallOnValueSuccess(
+            commandResult.ContinueWithAction(
                 Sub(message) _client.QueueSendWhisper(user.Name, If(message, "Command Succeeded"))
             ).Catch(
-                Sub(exception) _client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(exception.Message))
+                Sub(exception) _client.QueueSendWhisper(user.Name, "Failed: {0}".Frmt(exception.Summarize))
             )
-            Call New SystemClock().AsyncWait(2.Seconds).CallWhenReady(
+            Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
                 Sub()
-                    If commandResult.State = FutureState.Unknown Then
+                    If commandResult.Status <> TaskStatus.Faulted AndAlso commandResult.Status <> TaskStatus.RanToCompletion Then
                         _client.QueueSendWhisper(user.Name, "Command '{0}' is running... You will be informed when it finishes.".Frmt(text))
                     End If
                 End Sub
@@ -128,9 +128,9 @@ Namespace Bnet
 
         Public Shared Function AsyncCreateFromProfile(ByVal clientName As InvariantString,
                                                       ByVal profileName As InvariantString,
-                                                      ByVal bot As Bot.MainBot) As IFuture(Of ClientManager)
+                                                      ByVal bot As Bot.MainBot) As Task(Of ClientManager)
             Contract.Requires(bot IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of ClientManager))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of ClientManager))() IsNot Nothing)
 
             Dim profile = (From p In bot.Settings.ClientProfiles Where p.name = profileName).FirstOrDefault
             If profile Is Nothing Then Throw New ArgumentException("No profile named '{0}'".Frmt(profileName))
@@ -146,20 +146,20 @@ Namespace Bnet
                 authenticator = New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
             End If
 
-            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues, authenticator, clock, logger)).Futurized
+            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues, authenticator, clock, logger)).AsTask
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _client.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose())
             Return Nothing
         End Function
 
-        Private _autoHook As IFuture(Of IDisposable)
+        Private _autoHook As Task(Of IDisposable)
         Private Sub SetAutomatic(ByVal slaved As Boolean)
             'Do nothing if already in the correct state
             If slaved = (_autoHook IsNot Nothing) Then
@@ -178,12 +178,12 @@ Namespace Bnet
                                  End Sub)
             Else
                 Contract.Assume(_autoHook IsNot Nothing)
-                _autoHook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                _autoHook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
                 _autoHook = Nothing
             End If
         End Sub
-        Public Function QueueSetAutomatic(ByVal slaved As Boolean) As IFuture
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Public Function QueueSetAutomatic(ByVal slaved As Boolean) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SetAutomatic(slaved))
         End Function
 
@@ -202,19 +202,19 @@ Namespace Bnet
                 End If
             End Set
         End Property
-        Public Function QueueTryGetUserGameSet(ByVal user As BotUser) As IFuture(Of WC3.GameSet)
+        Public Function QueueTryGetUserGameSet(ByVal user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(user IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameSet))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of WC3.GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() UserGameSet(user))
         End Function
-        Public Function QueueSetUserGameSet(ByVal user As BotUser, ByVal gameSet As WC3.GameSet) As IFuture
+        Public Function QueueSetUserGameSet(ByVal user As BotUser, ByVal gameSet As WC3.GameSet) As Task
             Contract.Requires(user IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() UserGameSet(user) = gameSet)
         End Function
-        Public Function QueueResetUserGameSet(ByVal user As BotUser, ByVal gameSet As WC3.GameSet) As IFuture
+        Public Function QueueResetUserGameSet(ByVal user As BotUser, ByVal gameSet As WC3.GameSet) As Task
             Contract.Requires(user IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() If UserGameSet(user) Is gameSet Then UserGameSet(user) = Nothing)
         End Function
     End Class

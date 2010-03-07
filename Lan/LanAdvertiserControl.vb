@@ -1,10 +1,10 @@
 Namespace Lan
     <ContractVerification(False)>
     Public Class LanAdvertiserControl
-        Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
+        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
         Private ReadOnly _manager As Lan.AdvertiserManager
         Private ReadOnly _lanAdvertiser As Lan.Advertiser
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
         Private ReadOnly _syncedGames As New List(Of Lan.Advertiser.LanGame)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -32,13 +32,13 @@ Namespace Lan
                                     remover:=Sub(sender, game) inQueue.QueueAction(Sub() OnRemovedGame(game))))
         End Sub
 
-        Public Function QueueDispose() As IFuture
+        Public Function QueueDispose() As Task
             Return inQueue.QueueAction(Sub() Me.Dispose())
         End Function
         Private Sub BnetClientControl_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
             Next hook
         End Sub
 

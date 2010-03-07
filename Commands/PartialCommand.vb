@@ -22,7 +22,7 @@
             Contract.Requires(description IsNot Nothing)
         End Sub
 
-        Protected NotOverridable Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Protected NotOverridable Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Dim i = argument.IndexOf(" "c)
             If i = -1 Then i = argument.Length
             Dim head = argument.Substring(0, i)
@@ -30,7 +30,7 @@
             Return PerformInvoke(target, user, head, rest)
         End Function
 
-        Protected MustOverride Overloads Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As IFuture(Of String)
+        Protected MustOverride Overloads Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
 
         <ContractClassFor(GetType(PartialCommand(Of )))>
         MustInherit Shadows Class ContractClass
@@ -38,11 +38,11 @@
             Protected Sub New()
                 MyBase.New("", "", "")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
                 Contract.Requires(target IsNot Nothing)
                 Contract.Requires(argumentHead IsNot Nothing)
                 Contract.Requires(argumentRest IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
         End Class

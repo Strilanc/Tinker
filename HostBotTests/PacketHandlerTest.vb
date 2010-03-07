@@ -29,9 +29,8 @@ Public Class PacketHandlerTest
         p.AddHandler(key:=1,
                      handler:=Function(data) TaskedAction(Sub() flag = data.SubView(0, 4).touint32))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
-        BlockOnFuture(result)
+        WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag = &H78563412)
-        Assert.IsTrue(result.State = FutureState.Succeeded)
     End Sub
 
     <TestMethod()>
@@ -44,10 +43,9 @@ Public Class PacketHandlerTest
         p.AddHandler(key:=2,
                      handler:=Function(data) TaskedAction(Sub() flag2 = True))
         Dim result = p.HandlePacket(New Byte() {2, &H12, &H34, &H56, &H78}.AsReadableList)
-        BlockOnFuture(result)
+        WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
-        Assert.IsTrue(result.State = FutureState.Succeeded)
     End Sub
 
     <TestMethod()>
@@ -60,10 +58,9 @@ Public Class PacketHandlerTest
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag2 = True))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
-        BlockOnFuture(result)
+        WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
-        Assert.IsTrue(result.State = FutureState.Succeeded)
     End Sub
 
     <TestMethod()>
@@ -74,8 +71,7 @@ Public Class PacketHandlerTest
                                   Throw New InvalidOperationException("Mock Exception")
                               End Function)
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
-        BlockOnFuture(result)
-        Assert.IsTrue(result.State = FutureState.Failed)
+        WaitUntilTaskFails(result)
     End Sub
 
     <TestMethod()>
@@ -84,8 +80,7 @@ Public Class PacketHandlerTest
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() Throw New InvalidOperationException("Mock Exception")))
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
-        BlockOnFuture(result)
-        Assert.IsTrue(result.State = FutureState.Failed)
+        WaitUntilTaskFails(result)
     End Sub
 
     <TestMethod()>
@@ -95,8 +90,7 @@ Public Class PacketHandlerTest
         p.AddHandler(key:=1,
                      handler:=Function(pickle) TaskedAction(Sub() flag = False))
         Dim result = p.HandlePacket(New Byte() {255, &H12, &H34, &H56, &H78}.AsReadableList)
-        BlockOnFuture(result)
-        Assert.IsTrue(result.State = FutureState.Failed)
+        WaitUntilTaskFails(result)
         Assert.IsTrue(flag)
     End Sub
 
@@ -104,8 +98,7 @@ Public Class PacketHandlerTest
     Public Sub MissingHandlerTest()
         Dim p = New TestPacketHandler()
         Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList)
-        BlockOnFuture(result)
-        Assert.IsTrue(result.State = FutureState.Failed)
+        WaitUntilTaskFails(result)
     End Sub
 
     <TestMethod()>
@@ -116,8 +109,7 @@ Public Class PacketHandlerTest
                                                             End Sub)
                      ).Dispose()
         Dim result = p.HandlePacket(New Byte() {1, 2, 3, 4}.AsReadableList)
-        BlockOnFuture(result)
-        Assert.IsTrue(result.State = FutureState.Failed)
+        WaitUntilTaskFails(result)
     End Sub
 
     <TestMethod()>
@@ -131,9 +123,8 @@ Public Class PacketHandlerTest
                      handler:=Function(pickle) TaskedAction(Sub() flag2 = False)
                      ).Dispose()
         Dim result = p.HandlePacket(New Byte() {1, &H12, &H34, &H56, &H78}.AsReadableList)
-        BlockOnFuture(result)
+        WaitUntilTaskSucceeds(result)
         Assert.IsTrue(flag1)
         Assert.IsTrue(flag2)
-        Assert.IsTrue(result.State = FutureState.Succeeded)
     End Sub
 End Class

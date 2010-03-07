@@ -3,7 +3,7 @@ Public Class LoggerControl
     Private callbackModeMap As New Dictionary(Of LogMessageType, CallbackMode)
     Private callbackColorMap As New Dictionary(Of LogMessageType, Color)
     Private WithEvents _logger As Logger
-    Private ReadOnly uiRef As New StartableCallQueue(New InvokedCallQueue(Me))
+    Private ReadOnly uiRef As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
     Private lastQueuedMessage As New QueuedMessage(Nothing, Color.Black)
     Private nextQueuedMessage As QueuedMessage
     Private numQueuedMessages As Integer
@@ -158,7 +158,7 @@ Public Class LoggerControl
                 filestream = New IO.FileStream(IO.Path.Combine(folder, _logFilename), IO.FileMode.Append, IO.FileAccess.Write, IO.FileShare.Read)
             Catch ex As Exception When TypeOf ex Is IO.IOException OrElse
                                        TypeOf ex Is Security.SecurityException
-                Dim msg = "Error opening file for log {0}: {1}".Frmt(_logFilename, ex.Message)
+                Dim msg = "Error opening file for log {0}: {1}".Frmt(_logFilename, ex.Summarize)
                 ex.RaiseAsUnexpected(msg)
                 LogMessage(msg, Color.Red)
                 Return False
@@ -272,17 +272,19 @@ Public Class LoggerControl
             e.RaiseAsUnexpected("Exception rose post LoggerControl.emptyQueue")
         End Try
     End Sub
-    Private Sub LogFutureMessage(ByVal placeholder As String, ByVal futureMessage As IFuture(Of String))
+    Private Sub LogFutureMessage(ByVal placeholder As String, ByVal futureMessage As Task(Of String))
         Contract.Requires(placeholder IsNot Nothing)
         Contract.Requires(futureMessage IsNot Nothing)
 
         Dim m = New QueuedMessage(placeholder, Color.DarkGoldenrod)
         LogMessage(m)
-        futureMessage.CallWhenValueReady(
-            Sub(message, messageException)
+        futureMessage.ContinueWith(
+            Sub(task)
                 SyncLock lock
-                    If messageException IsNot Nothing Then message = messageException.ToString
-                    Dim color = callbackColorMap(If(messageException Is Nothing AndAlso Not message Like "Failed: *",
+                    Dim message = If(task.Status = TaskStatus.Faulted,
+                                     task.Exception.Summarize,
+                                     task.Result)
+                    Dim color = callbackColorMap(If(task.Status = TaskStatus.RanToCompletion AndAlso Not message Like "Failed: *",
                                                     LogMessageType.Positive,
                                                     LogMessageType.Problem))
                     LogMessage(New QueuedMessage(message, color, m))
@@ -305,7 +307,7 @@ Public Class LoggerControl
         LogMessage(message, color, fileOnly)
     End Sub
     Private Sub OnLoggedFutureMessage(ByVal placeholder As String,
-                                      ByVal out As IFuture(Of String)) Handles _logger.LoggedFutureMessage
+                                      ByVal out As Task(Of String)) Handles _logger.LoggedFutureMessage
         uiRef.QueueAction(Sub() LogFutureMessage(placeholder, out))
     End Sub
 #End Region

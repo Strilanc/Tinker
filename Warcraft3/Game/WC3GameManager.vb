@@ -2,14 +2,14 @@
 
 Namespace WC3
     Public Class GameManager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IBotComponent
 
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _name As InvariantString
         Private ReadOnly _game As WC3.Game
         Private ReadOnly _control As Control
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_bot IsNot Nothing)
@@ -31,7 +31,7 @@ Namespace WC3
 
             AddHandler game.PlayerTalked, Sub(sender, player, text, receivers) HandleText(player, text)
 
-            game.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
+            game.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
         Private Sub HandleText(ByVal player As WC3.Player, ByVal text As String)
             Contract.Requires(player IsNot Nothing)
@@ -48,16 +48,16 @@ Namespace WC3
             'Normal commands
             Dim commandText = text.Substring(commandPrefix.Length)
             Dim commandResult = _game.QueueCommandProcessText(_bot, player, commandText)
-            commandResult.CallOnValueSuccess(
+            commandResult.ContinueWithAction(
                 Sub(message) _game.QueueSendMessageTo(If(message, "Command Succeeded"), player)
             ).Catch(
-                Sub(exception) _game.QueueSendMessageTo("Failed: {0}".Frmt(exception.Message), player)
+                Sub(exception) _game.QueueSendMessageTo("Failed: {0}".Frmt(exception.Summarize), player)
             )
 
             'Delay notification
-            Call New SystemClock().AsyncWait(2.Seconds).CallWhenReady(
+            Call New SystemClock().AsyncWait(2.Seconds).ContinueWithAction(
                 Sub()
-                    If commandResult.State = FutureState.Unknown Then
+                    If commandResult.Status <> TaskStatus.RanToCompletion AndAlso commandResult.Status <> TaskStatus.Faulted Then
                         _game.QueueSendMessageTo("Command '{0}' is running... You will be informed when it finishes.".Frmt(text), player)
                     End If
                 End Sub)
@@ -105,14 +105,14 @@ Namespace WC3
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return Game.QueueCommandProcessText(Bot, Nothing, argument)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _game.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose())

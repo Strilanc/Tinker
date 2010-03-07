@@ -3,10 +3,10 @@ Imports Tinker.Bnet.Protocol
 Namespace Bnet
     <ContractVerification(False)>
     Public Class BnetClientControl
-        Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
+        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
         Private ReadOnly _manager As Bnet.ClientManager
         Private ReadOnly _client As Bnet.Client
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of IDisposable)
         Private numPrimaryStates As Integer
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -33,23 +33,23 @@ Namespace Bnet
             Me._hooks.Add(Me._client.QueueAddPacketHandler(Packets.ServerToClient.QueryGamesList,
                     handler:=Function(pickle) inQueue.QueueAction(Sub() OnClientReceivedQueryGamesList(Me._client, pickle.Value))))
 
-            Me._client.QueueGetState.QueueCallOnValueSuccess(inQueue, Sub(state) OnClientStateChanged(Me._client, state, state))
+            Me._client.QueueGetState.QueueContinueWithAction(inQueue, Sub(state) OnClientStateChanged(Me._client, state, state))
             Dim stateChangedHandler As Client.StateChangedEventHandler = Sub(sender, oldState, newState) inQueue.QueueAction(
                     Sub() OnClientStateChanged(sender, oldState, newState))
             Dim advertisedHandler As Client.AdvertisedGameEventHandler = Sub(sender, gameDescription, [private], refreshed) inQueue.QueueAction(
                     Sub() OnClientAdvertisedGame(sender, gameDescription, [private], refreshed))
             AddHandler Me._client.StateChanged, stateChangedHandler
             AddHandler Me._client.AdvertisedGame, advertisedHandler
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.StateChanged, stateChangedHandler).Futurized)
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.AdvertisedGame, advertisedHandler).Futurized)
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.StateChanged, stateChangedHandler))
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler Me._client.AdvertisedGame, advertisedHandler))
         End Sub
 
-        Public Function QueueDispose() As IFuture
+        Public Function QueueDispose() As Task
             Return inQueue.QueueAction(Sub() Me.Dispose())
         End Function
         Private Sub BnetClientControl_Disposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
             For Each hook In _hooks
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.Dispose()
             Next hook
         End Sub
 
@@ -125,13 +125,13 @@ Namespace Bnet
             If _client Is Nothing Then Return
             e.Handled = True
             e.SuppressKeyPress = True
-            _client.QueueSendText(txtTalk.Text).CallOnSuccess(
+            _client.QueueSendText(txtTalk.Text).ContinueWithAction(
                 Sub()
                     logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, txtTalk.Text), Color.DarkBlue)
                 End Sub
             ).Catch(
                 Sub(ex)
-                    logClient.LogMessage("Error sending text: {0}".Frmt(ex.Message), Color.Red)
+                    logClient.LogMessage("Error sending text: {0}".Frmt(ex.Summarize), Color.Red)
                     ex.RaiseAsUnexpected("Sending bnet client text.")
                 End Sub
             )

@@ -32,8 +32,8 @@
         Me._ticker = clock.AsyncRepeat(period, Sub() inQueue.QueueAction(AddressOf OnTick))
     End Sub
 
-    Public Function QueueGetLatency() As IFuture(Of Double)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Double))() IsNot Nothing)
+    Public Function QueueGetLatency() As Task(Of Double)
+        Contract.Ensures(Contract.Result(Of Task(Of Double))() IsNot Nothing)
         Return inQueue.QueueFunc(Function() _latency)
     End Function
 
@@ -65,8 +65,8 @@
         _latency += lambda * stored.Item2.ElapsedTime.TotalMilliseconds
         If _latency <= 0 Then _latency = Double.Epsilon
     End Sub
-    Public Function QueueReceivedPong(ByVal salt As UInteger) As IFuture
-        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+    Public Function QueueReceivedPong(ByVal salt As UInteger) As Task
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return inQueue.QueueAction(Sub() ReceivedPong(salt))
     End Function
 

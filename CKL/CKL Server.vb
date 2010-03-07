@@ -6,8 +6,8 @@ Namespace CKL
         Private Shared ReadOnly jar As New Bnet.Protocol.ProductCredentialsJar()
         Public Const PacketPrefixValue As Byte = 1
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
 
         Public ReadOnly name As InvariantString
         Private WithEvents _accepter As New ConnectionAccepter()
@@ -46,10 +46,10 @@ Namespace CKL
             End Get
         End Property
 
-        Public Function QueueAddKey(ByVal keyName As InvariantString, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As IFuture
+        Public Function QueueAddKey(ByVal keyName As InvariantString, ByVal cdKeyROC As String, ByVal cdKeyTFT As String) As Task
             Contract.Requires(cdKeyROC IsNot Nothing)
             Contract.Requires(cdKeyTFT IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(
                 Sub()
                     If (From k In _keys Where k.Name = keyName).Any Then
@@ -60,8 +60,8 @@ Namespace CKL
                 End Sub
             )
         End Function
-        Public Function QueueRemoveKey(ByVal keyName As InvariantString) As IFuture
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Public Function QueueRemoveKey(ByVal keyName As InvariantString) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(
                 Sub()
                     Dim key = (From k In _keys Where k.Name = keyName).FirstOrDefault
@@ -88,7 +88,7 @@ Namespace CKL
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
                 consumer:=Function(packetData) inQueue.QueueAction(Sub() HandlePacket(socket, packetData)),
-                errorHandler:=Sub(exception) Logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, exception.Message), LogMessageType.Problem)
+                errorHandler:=Sub(exception) Logger.Log("Error receiving from {0}: {1}".Frmt(socket.Name, exception.Summarize), LogMessageType.Problem)
             )
         End Sub
         <ContractVerification(False)>

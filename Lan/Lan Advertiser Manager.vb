@@ -3,16 +3,16 @@ Imports Tinker.Bot
 
 Namespace Lan
     Public Class AdvertiserManager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IBotComponent
 
         Public Shared ReadOnly LanCommands As New Lan.AdvertiserCommands()
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _name As InvariantString
         Private ReadOnly _bot As Bot.MainBot
         Private ReadOnly _advertiser As Lan.Advertiser
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
         Private ReadOnly _control As Control
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -69,7 +69,7 @@ Namespace Lan
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return LanCommands.Invoke(Me, user, argument)
         End Function
 
@@ -83,10 +83,10 @@ Namespace Lan
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _advertiser.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose())
@@ -94,7 +94,7 @@ Namespace Lan
             Return Nothing
         End Function
 
-        Private _autoHook As IFuture(Of IDisposable)
+        Private _autoHook As Task(Of IDisposable)
         Private Sub SetAutomatic(ByVal slaved As Boolean)
             If slaved = (_autoHook IsNot Nothing) Then Return
             If slaved Then
@@ -103,12 +103,12 @@ Namespace Lan
                         remover:=Sub(sender, server, gameSet) _advertiser.QueueRemoveGame(gameSet.GameSettings.GameDescription.GameId).SetHandled())
             Else
                 Contract.Assume(_autoHook IsNot Nothing)
-                _autoHook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                _autoHook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
                 _autoHook = Nothing
             End If
         End Sub
-        Public Function QueueSetAutomatic(ByVal slaved As Boolean) As IFuture
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Public Function QueueSetAutomatic(ByVal slaved As Boolean) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SetAutomatic(slaved))
         End Function
     End Class

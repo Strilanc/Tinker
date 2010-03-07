@@ -18,10 +18,10 @@ Namespace Components
     ''' Stores an asynchronous set of components.
     ''' </summary>
     Public NotInheritable Class ComponentSet
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _components As New AsyncViewableCollection(Of IBotComponent)(outQueue:=outQueue)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -44,7 +44,7 @@ Namespace Components
                 Throw New InvalidOperationException("There is already a {0} named {1}.".Frmt(component.Type, component.Name))
             End If
             _components.Add(component)
-            component.FutureDisposed.QueueCallWhenReady(inQueue, Sub() _components.Remove(component)) 'automatic cleanup
+            component.DisposalTask.QueueContinueWithAction(inQueue, Sub() _components.Remove(component)) 'automatic cleanup
         End Sub
         ''' <summary>
         ''' Asynchronously adds a component to the set.
@@ -52,15 +52,15 @@ Namespace Components
         ''' Asynchronously fails with an InvalidOperationException if the component is already included.
         ''' Asynchronously fails with an InvalidOperationException if a component with the same name and type identifiers is already included.
         ''' </summary>
-        Public Function QueueAddComponent(ByVal component As IBotComponent) As IFuture
+        Public Function QueueAddComponent(ByVal component As IBotComponent) As Task
             Contract.Requires(component IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() AddComponent(component))
         End Function
 
         ''' <summary>Asynchronously determines a list of all components in the set.</summary>
-        Public Function QueueGetAllComponents() As IFuture(Of IReadableList(Of IBotComponent))
-            Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of IBotComponent)))() IsNot Nothing)
+        Public Function QueueGetAllComponents() As Task(Of IReadableList(Of IBotComponent))
+            Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of IBotComponent)))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _components.ToReadableList)
         End Function
 
@@ -73,8 +73,8 @@ Namespace Components
                    Select CType(component, T)
         End Function
         ''' <summary>Asynchronously determines a list of all components of a type in the set.</summary>
-        Public Function QueueGetAllComponents(Of T As IBotComponent)() As IFuture(Of IReadableList(Of T))
-            Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of T)))() IsNot Nothing)
+        Public Function QueueGetAllComponents(Of T As IBotComponent)() As Task(Of IReadableList(Of T))
+            Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of T)))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() EnumComponents(Of T)().ToReadableList)
         End Function
 
@@ -115,8 +115,8 @@ Namespace Components
         ''' Asynchronously fails with an InvalidOperationExceptionFails if there is no such component.
         ''' </summary>
         Public Function QueueFindComponent(ByVal type As InvariantString,
-                                           ByVal name As InvariantString) As IFuture(Of IBotComponent)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IBotComponent))() IsNot Nothing)
+                                           ByVal name As InvariantString) As Task(Of IBotComponent)
+            Contract.Ensures(Contract.Result(Of Task(Of IBotComponent))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() FindComponent(type, name))
         End Function
 
@@ -151,8 +151,8 @@ Namespace Components
         ''' Asynchronously determines a component, from the set, with the given type and name.
         ''' Asynchronously fails with an InvalidOperationExceptionFails if there is no such component.
         ''' </summary>
-        Public Function QueueFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As IFuture(Of T)
-            Contract.Ensures(Contract.Result(Of IFuture(Of T))() IsNot Nothing)
+        Public Function QueueFindComponent(Of T As IBotComponent)(ByVal name As InvariantString) As Task(Of T)
+            Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() FindComponent(Of T)(name))
         End Function
 
@@ -175,9 +175,9 @@ Namespace Components
         ''' Asynchronously determines a component, from the set, with the given type.
         ''' If there was no such component then the result is a new component produced by the given factory and added to the set.
         ''' </summary>
-        Public Function QueueGetOrConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As IFuture(Of T)
+        Public Function QueueGetOrConstructComponent(Of T As IBotComponent)(ByVal factory As Func(Of T)) As Task(Of T)
             Contract.Requires(factory IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of T))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() GetOrConstructComponent(factory))
         End Function
 
@@ -202,10 +202,10 @@ Namespace Components
         ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
         Public Function QueueCreateAsyncView(ByVal adder As Action(Of ComponentSet, IBotComponent),
-                                             ByVal remover As Action(Of ComponentSet, IBotComponent)) As IFuture(Of IDisposable)
+                                             ByVal remover As Action(Of ComponentSet, IBotComponent)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CreateAsyncView(adder, remover))
         End Function
         ''' <summary>
@@ -215,16 +215,16 @@ Namespace Components
         ''' <param name="adder">Asynchronously called with the initial components in the set, as well as new components as they are added.</param>
         ''' <param name="remover">Asynchronously called with components as they are removed.</param>
         Public Function QueueCreateAsyncView(Of T As IBotComponent)(ByVal adder As Action(Of ComponentSet, T),
-                                                                    ByVal remover As Action(Of ComponentSet, T)) As IFuture(Of IDisposable)
+                                                                    ByVal remover As Action(Of ComponentSet, T)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return Me.QueueCreateAsyncView(
                     adder:=Sub(sender, component) If TypeOf component Is T Then adder(sender, CType(component, T)),
                     remover:=Sub(sender, component) If TypeOf component Is T Then remover(sender, CType(component, T)))
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
                 Sub()

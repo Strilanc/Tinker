@@ -18,7 +18,7 @@ Namespace WC3
         End Function
 
         Private Function AddRemotePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                      ByVal handler As Func(Of IPickle(Of T), IFuture)) As IDisposable
+                                                      ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
@@ -26,7 +26,7 @@ Namespace WC3
             Return packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data)))
         End Function
         Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                    ByVal handler As Func(Of IPickle(Of T), ifuture)) As IFuture(Of IDisposable) _
+                                                    ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable) _
                                                     Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
             Return inQueue.QueueFunc(Function() AddRemotePacketHandler(packetDefinition, handler))
         End Function

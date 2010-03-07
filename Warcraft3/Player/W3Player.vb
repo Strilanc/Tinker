@@ -11,15 +11,15 @@
     End Enum
 
     Partial Public NotInheritable Class Player
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Private state As PlayerState = PlayerState.Lobby
         Private ReadOnly _id As PlayerId
-        Private ReadOnly testCanHost As IFuture
+        Private ReadOnly testCanHost As Task
         Private ReadOnly socket As W3Socket
         Private ReadOnly packetHandler As Protocol.W3PacketHandler
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
         Private _numPeerConnections As Integer
         Private _downloadManager As Download.Manager
         Private ReadOnly pinger As Pinger
@@ -63,9 +63,9 @@
             Me._name = name
             isFake = True
             LobbyStart()
-            Dim hostFail = New FutureAction
-            hostFail.SetFailed(New ArgumentException("Fake players can't host."))
-            Me.testCanHost = hostFail
+            Dim hostFail = New TaskCompletionSource(Of Boolean)
+            hostFail.SetException(New ArgumentException("Fake players can't host."))
+            Me.testCanHost = hostFail.Task
             Me.testCanHost.SetHandled()
         End Sub
 
@@ -148,7 +148,7 @@
                 consumer:=Function(packetData) packetHandler.HandlePacket(packetData),
                 errorHandler:=Sub(exception) QueueDisconnect(expected:=False,
                                                              reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
-                                                             reasonDescription:="Error receiving packet: {0}.".Frmt(exception.Message)))
+                                                             reasonDescription:="Error receiving packet: {0}.".Frmt(exception.Summarize)))
         End Sub
 
         '''<summary>Disconnects this player and removes them from the system.</summary>
@@ -163,7 +163,7 @@
             RaiseEvent Disconnected(Me, expected, reportedReason, reasonDescription)
             Me.Dispose()
         End Sub
-        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As IFuture Implements Download.IPlayerDownloadAspect.QueueDisconnect
+        Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As Task Implements Download.IPlayerDownloadAspect.QueueDisconnect
             Return inQueue.QueueAction(Sub() Disconnect(expected, reportedReason, reasonDescription))
         End Function
 
@@ -172,7 +172,7 @@
             If Me.isFake Then Return
             socket.SendPacket(pk)
         End Sub
-        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As IFuture Implements Download.IPlayerDownloadAspect.QueueSendPacket
+        Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
             Dim result = inQueue.QueueAction(Sub() SendPacket(packet))
             result.SetHandled()
             Return result
@@ -184,12 +184,11 @@
 
         Public ReadOnly Property CanHost() As HostTestResult
             Get
-                Dim testState = testCanHost.State
+                Dim testState = testCanHost.Status
                 Select Case testState
-                    Case FutureState.Failed : Return HostTestResult.Fail
-                    Case FutureState.Succeeded : Return HostTestResult.Pass
-                    Case FutureState.Unknown : Return HostTestResult.Test
-                    Case Else : Throw testState.MakeImpossibleValueException()
+                    Case TaskStatus.Faulted : Return HostTestResult.Fail
+                    Case TaskStatus.RanToCompletion : Return HostTestResult.Pass
+                    Case Else : Return HostTestResult.Test
                 End Select
             End Get
         End Property
@@ -202,22 +201,22 @@
                 Return socket.RemoteEndPoint
             End Get
         End Property
-        Public Function QueueGetLatency() As IFuture(Of Double)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Double))() IsNot Nothing)
+        Public Function QueueGetLatency() As Task(Of Double)
+            Contract.Ensures(Contract.Result(Of Task(Of Double))() IsNot Nothing)
             If pinger Is Nothing Then
-                Return 0.0.Futurized
+                Return 0.0.AsTask
             Else
                 Return pinger.QueueGetLatency
             End If
         End Function
-        Public Function QueueGetLatencyDescription() As IFuture(Of String)
-            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+        Public Function QueueGetLatencyDescription() As Task(Of String)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return (From latency In QueueGetLatency()
                     Select latencyDesc = If(latency = 0, "?", "{0:0}ms".Frmt(latency))
                     Select If(_downloadManager Is Nothing,
-                              latencyDesc.Futurized,
+                              latencyDesc.AsTask,
                               _downloadManager.QueueGetClientLatencyDescription(Me, latencyDesc))
-                   ).Defuturized
+                   ).Unwrap
         End Function
         Public ReadOnly Property PeerConnectionCount() As Integer
             Get
@@ -227,7 +226,7 @@
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return QueueDisconnect(expected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Disposed")
         End Function

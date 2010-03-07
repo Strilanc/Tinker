@@ -1,6 +1,6 @@
 ﻿Namespace WC3
     Public NotInheritable Class GameLobby
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Private ReadOnly _downloadManager As Download.Manager
         Private ReadOnly _startPlayerHoldPoint As HoldPoint(Of Player)
@@ -295,7 +295,7 @@
 
             'Effects
             RaiseEvent ChangedPublicState(Me)
-            _startPlayerHoldPoint.Hold(newPlayer).CallWhenReady(Sub() newPlayer.QueueStart()).SetHandled()
+            _startPlayerHoldPoint.Hold(newPlayer).ContinueWithAction(Sub() newPlayer.QueueStart()).SetHandled()
 
             Return newPlayer
         End Function
@@ -314,7 +314,7 @@
             Return AddPlayer(connectingPlayer, space.item1, space.item2)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             _downloadManager.Dispose()
             Return Nothing
@@ -353,9 +353,9 @@
         End Function
 
         Public Function SendMapPiece(ByVal receiver As Download.IPlayerDownloadAspect,
-                                     ByVal position As UInt32) As IFuture
+                                     ByVal position As UInt32) As Task
             Contract.Requires(receiver IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
             Dim sender = If(_fakeHostPlayer, (From p In _kernel.Players
                                               Where IsPlayerVisible(p)

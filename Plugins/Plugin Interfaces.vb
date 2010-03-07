@@ -9,12 +9,12 @@ Namespace Plugins
 
     <ContractClass(GetType(IPlugin.ContractClass))>
     Public Interface IPlugin
-        Inherits IFutureDisposable
+        Inherits IDisposableWithTask
         ReadOnly Property Description() As String
         ReadOnly Property Logger As Logger
         ReadOnly Property HasControl As Boolean
         ReadOnly Property Control() As Control
-        Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String)
         Function IsArgumentPrivate(ByVal argument As String) As Boolean
 
         <ContractClassFor(GetType(IPlugin))>
@@ -46,16 +46,16 @@ Namespace Plugins
                     Throw New NotSupportedException
                 End Get
             End Property
-            Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IPlugin.InvokeCommand
+            Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IPlugin.InvokeCommand
                 Contract.Requires(argument IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
             Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IPlugin.IsArgumentPrivate
                 Contract.Requires(argument IsNot Nothing)
                 Throw New NotSupportedException
             End Function
-            Public ReadOnly Property FutureDisposed As IFuture Implements IFutureDisposable.FutureDisposed
+            Public ReadOnly Property DisposalTask As Task Implements IDisposableWithTask.DisposalTask
                 Get
                     Throw New NotSupportedException
                 End Get

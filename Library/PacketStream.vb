@@ -35,32 +35,32 @@ Public NotInheritable Class PacketStreamer
         End Get
     End Property
 
-    Public Function AsyncReadPacket() As IFuture(Of IReadableList(Of Byte))
-        Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of Byte)))() IsNot Nothing)
+    Public Function AsyncReadPacket() As Task(Of IReadableList(Of Byte))
+        Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Byte)))() IsNot Nothing)
         Dim readSize = 0
         Dim totalSize = 0
         Dim packetData(0 To FullHeaderSize - 1) As Byte
-        Dim result = New FutureFunction(Of IReadableList(Of Byte))
+        Dim result = New TaskCompletionSource(Of IReadableList(Of Byte))
 
         FutureIterate(Function() _subStream.AsyncRead(packetData, readSize, packetData.Length - readSize),
-            Function(numBytesRead, readException)
+            Function(readTask)
                 'Check result
-                If readException IsNot Nothing Then 'read failed
-                    result.SetFailed(readException)
-                    Return False.Futurized
-                ElseIf numBytesRead <= 0 Then 'subStream ended
+                If readTask.Status = TaskStatus.Faulted Then 'read failed
+                    result.SetException(readTask.Exception.InnerExceptions)
+                    Return False.AsTask
+                ElseIf readTask.Result <= 0 Then 'subStream ended
                     If readSize = 0 Then
-                        result.SetFailed(New IO.IOException("End of stream."))
+                        result.SetException(New IO.IOException("End of stream."))
                     Else
-                        result.SetFailed(New IO.IOException("Fragmented packet (stream ended in the middle of a packet)."))
+                        result.SetException(New IO.IOException("Fragmented packet (stream ended in the middle of a packet)."))
                     End If
-                    Return False.Futurized
+                    Return False.AsTask
                 End If
 
                 'Read until whole header or whole body has arrived
-                readSize += numBytesRead
+                readSize += readTask.Result
                 If readSize < packetData.Length Then
-                    Return True.Futurized
+                    Return True.AsTask
                 End If
 
                 'Parse header
@@ -68,26 +68,26 @@ Public NotInheritable Class PacketStreamer
                     totalSize = CInt(packetData.Skip(_preheaderLength).Take(_sizeHeaderLength).ToUValue)
                     If totalSize < FullHeaderSize Then
                         'too small
-                        result.SetFailed(New IO.InvalidDataException("Invalid packet size (less than header size)."))
-                        Return False.Futurized
+                        result.SetException(New IO.InvalidDataException("Invalid packet size (less than header size)."))
+                        Return False.AsTask
                     ElseIf totalSize > _maxPacketSize Then
                         'too large
-                        result.SetFailed(New IO.InvalidDataException("Packet exceeded maximum size."))
-                        Return False.Futurized
+                        result.SetException(New IO.InvalidDataException("Packet exceeded maximum size."))
+                        Return False.AsTask
                     ElseIf totalSize > FullHeaderSize Then
                         'begin reading packet body
                         ReDim Preserve packetData(0 To totalSize - 1)
-                        Return True.Futurized
+                        Return True.AsTask
                     End If
                 End If
 
                 'Finished reading
-                result.SetSucceeded(packetData.AsReadableList)
-                Return False.Futurized
+                result.SetResult(packetData.AsReadableList)
+                Return False.AsTask
             End Function
         )
 
-        Return result
+        Return result.Task
     End Function
 
     'verification disabled due to stupid verifier (1.2.30118.5)

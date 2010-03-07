@@ -13,26 +13,26 @@ Friend Class StreamTester
         Me.dataReader = data
     End Sub
 
-    Public Function AsyncRun() As ifuture
-        Dim result = New FutureAction()
+    Public Function AsyncRun() As Task
+        Dim result = New TaskCompletionSource(Of Boolean)()
         ThreadPooledAction(Sub() RunContinue(result))
-        Return result
+        Return result.Task
     End Function
-    Private Sub RunContinue(ByVal result As FutureAction)
+    Private Sub RunContinue(ByVal result As TaskCompletionSource(Of Boolean))
         Try
             If dataReader.EndOfStream Then
-                result.SetSucceeded()
+                result.SetResult(True)
                 Return
             End If
             Select Case dataReader.ReadLine.ToUpper
                 Case "IGNORE"
                     Dim data = dataReader.ReadLine.FromHexStringToBytes
-                    testStream.AsyncRead(data, 0, data.Length).CallWhenValueReady(
-                        Sub(value, exception)
-                            If exception IsNot Nothing Then
-                                result.SetFailed(exception)
-                            ElseIf value < data.Length Then
-                                result.SetFailed(New IO.InvalidDataException("Data ended before expected."))
+                    testStream.AsyncRead(data, 0, data.Length).ContinueWith(
+                        Sub(task)
+                            If task.Status = TaskStatus.Faulted Then
+                                result.SetException(task.Exception.InnerExceptions)
+                            ElseIf task.Result < data.Length Then
+                                result.SetException(New IO.InvalidDataException("Data ended before expected."))
                             Else
                                 ThreadPooledAction(Sub() RunContinue(result))
                             End If
@@ -40,17 +40,17 @@ Friend Class StreamTester
                 Case "READ"
                     Dim expectedData = dataReader.ReadLine.FromHexStringToBytes
                     Dim data(0 To expectedData.Length - 1) As Byte
-                    testStream.AsyncRead(data, 0, data.Length).CallWhenValueReady(
-                        Sub(value, exception)
-                            If exception IsNot Nothing Then
-                                result.SetFailed(exception)
-                            ElseIf value < data.Length Then
-                                result.SetFailed(New IO.InvalidDataException("Data ended before expected."))
+                    testStream.AsyncRead(data, 0, data.Length).ContinueWith(
+                        Sub(task)
+                            If task.Status = TaskStatus.Faulted Then
+                                result.SetException(task.Exception.InnerExceptions)
+                            ElseIf task.Result < data.Length Then
+                                result.SetException(New IO.InvalidDataException("Data ended before expected."))
                             Else
                                 If expectedData.SequenceEqual(data) Then
                                     ThreadPooledAction(Sub() RunContinue(result))
                                 Else
-                                    result.SetFailed(New IO.IOException("Incorrect data."))
+                                    result.SetException(New IO.IOException("Incorrect data."))
                                 End If
                             End If
                         End Sub)
@@ -62,10 +62,10 @@ Friend Class StreamTester
                     testStream.Close()
                     ThreadPooledAction(Sub() RunContinue(result))
                 Case Else
-                    result.SetFailed(New IO.InvalidDataException("Unrecognized command in test data."))
+                    result.SetException(New IO.InvalidDataException("Unrecognized command in test data."))
             End Select
         Catch e As Exception
-            result.SetFailed(e)
+            result.SetException(e)
         End Try
     End Sub
 

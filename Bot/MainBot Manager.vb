@@ -2,7 +2,7 @@
 
 Namespace Bot
     Public Class MainBotManager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IBotComponent
 
         Public Shared ReadOnly BotCommands As New Bot.BotCommands()
@@ -57,10 +57,10 @@ Namespace Bot
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return BotCommands.Invoke(Bot, user, argument)
         End Function
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _bot.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose())
             Return Nothing

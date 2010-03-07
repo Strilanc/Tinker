@@ -52,9 +52,9 @@ Namespace WC3
             SendPacket(Protocol.MakeTick(record.length, actions))
         End Sub
         Public Function QueueSendTick(ByVal record As TickRecord,
-                                      ByVal actions As IReadableList(Of Protocol.PlayerActionSet)) As IFuture
+                                      ByVal actions As IReadableList(Of Protocol.PlayerActionSet)) As Task
             Contract.Requires(record IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SendTick(record, actions))
         End Function
 
@@ -94,8 +94,8 @@ Namespace WC3
                 Return totalTockTime
             End Get
         End Property
-        Public Function QueueStartPlaying() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueStartPlaying() As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(AddressOf GamePlayStart)
         End Function
     End Class

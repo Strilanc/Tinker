@@ -122,16 +122,16 @@
     '''<summary>Computes credential pairs used for answering a challenge to prove ownership of a product.</summary>
     <ContractClass(GetType(IProductAuthenticator.ContractClass))>
     Public Interface IProductAuthenticator
-        Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte), ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair)
+        Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte), ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair)
 
         <ContractClassFor(GetType(IProductAuthenticator))>
         Class ContractClass
             Implements IProductAuthenticator
             Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
-                                              ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+                                              ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
                 Contract.Requires(clientSalt IsNot Nothing)
                 Contract.Requires(serverSalt IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IFuture(Of ProductCredentialPair))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Task(Of ProductCredentialPair))() IsNot Nothing)
                 Throw New NotSupportedException()
             End Function
         End Class
@@ -159,9 +159,9 @@
 
         <ContractVerification(False)>
         Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
-                                          ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+                                          ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
             Return New ProductCredentialPair(_rocKey.ToWC3CDKeyCredentials(clientSalt, serverSalt),
-                                             _tftKey.ToWC3CDKeyCredentials(clientSalt, serverSalt)).Futurized
+                                             _tftKey.ToWC3CDKeyCredentials(clientSalt, serverSalt)).AsTask
         End Function
     End Class
 

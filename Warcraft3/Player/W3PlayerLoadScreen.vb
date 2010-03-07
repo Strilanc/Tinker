@@ -22,8 +22,8 @@ Namespace WC3
                                  End Sub)
         End Sub
 
-        Public Function QueueStartLoading() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueStartLoading() As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(AddressOf LoadScreenStart)
         End Function
     End Class

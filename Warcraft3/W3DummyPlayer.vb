@@ -11,7 +11,7 @@ Namespace WC3
     Public NotInheritable Class W3DummyPlayer
         Private ReadOnly name As String
         Private ReadOnly listenPort As UShort
-        Private ReadOnly inQueue As ICallQueue
+        Private ReadOnly inQueue As CallQueue
         Private ReadOnly otherPlayers As New List(Of W3Peer)
         Private ReadOnly logger As Logger
         Private WithEvents socket As W3Socket
@@ -55,7 +55,7 @@ Namespace WC3
 
 #Region "Networking"
         Private Function AddPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
-                                                ByVal handler As Func(Of IPickle(Of T), IFuture)) As IDisposable
+                                                ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
             Contract.Requires(packet IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
@@ -69,9 +69,9 @@ Namespace WC3
             Return AddPacketHandler(packet, Function(pickle) inQueue.QueueAction(Sub() handler(pickle)))
         End Function
 
-        Public Function QueueConnect(ByVal hostName As String, ByVal port As UShort) As IFuture
+        Public Function QueueConnect(ByVal hostName As String, ByVal port As UShort) As Task
             Contract.Requires(hostName IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub()
                                            Contract.Assume(hostName IsNot Nothing)
                                            Connect(hostName, port)
@@ -155,7 +155,7 @@ Namespace WC3
             If mode = DummyPlayerMode.DownloadMap Then
                 Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
             ElseIf mode = DummyPlayerMode.EnterGame Then
-                Call New SystemClock().AsyncWait(readyDelay).CallWhenReady(Sub() socket.SendPacket(Protocol.MakeReady()))
+                Call New SystemClock().AsyncWait(readyDelay).ContinueWithAction(Sub() socket.SendPacket(Protocol.MakeReady()))
             End If
         End Sub
         Private Sub OnReceiveTick(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))

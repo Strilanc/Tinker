@@ -15,7 +15,7 @@
 
 Namespace WC3
     Partial Public NotInheritable Class Game
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Public Shared ReadOnly GuestLobbyCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestLobbyCommands()
         Public Shared ReadOnly GuestInGameCommands As Commands.CommandSet(Of Game) = GameCommands.MakeGuestInGameCommands()
@@ -30,8 +30,8 @@ Namespace WC3
         Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds, clock:=New SystemClock())
         Private ReadOnly _clock As IClock
         Private ReadOnly _name As InvariantString
-        Private ReadOnly inQueue As ICallQueue
-        Private ReadOnly outQueue As ICallQueue
+        Private ReadOnly inQueue As CallQueue
+        Private ReadOnly outQueue As CallQueue
         Private ReadOnly _logger As Logger
         Private flagHasPlayerLeft As Boolean
         Private adminPlayer As Player
@@ -68,8 +68,8 @@ Namespace WC3
                        ByVal motor As GameMotor,
                        ByVal loadScreen As GameLoadScreen,
                        ByVal logger As Logger,
-                       ByVal inQueue As ICallQueue,
-                       ByVal outQueue As ICallQueue,
+                       ByVal inQueue As CallQueue,
+                       ByVal outQueue As CallQueue,
                        ByVal kernel As GameKernel)
             Contract.Assume(settings IsNot Nothing)
             Contract.Assume(clock IsNot Nothing)
@@ -150,7 +150,7 @@ Namespace WC3
         End Function
         Public Sub Start()
             If Not _started.TryAcquire Then Throw New InvalidOperationException("Already started.")
-            If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
+            If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
 
             _lobby.DownloadManager.Start(
                     startPlayerHoldPoint:=StartPlayerHoldPoint,
@@ -187,7 +187,7 @@ Namespace WC3
             AddHandler _loadScreen.Launched, Sub(sender, usingLoadInGame) outQueue.QueueAction(Sub() RaiseEvent Launched(Me, usingLoadInGame))
         End Sub
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return outQueue.QueueAction(Sub() inQueue.QueueAction(
                 Sub()
@@ -228,14 +228,14 @@ Namespace WC3
             Dim slots = _lobby.Slots
             updateEventThrottle.SetActionToRun(Sub() outQueue.QueueAction(Sub() RaiseEvent Updated(Me, slots)))
         End Sub
-        Public Function QueueThrowUpdated() As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueThrowUpdated() As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(AddressOf ThrowUpdated)
         End Function
 
         Private Function CommandProcessText(ByVal bot As Bot.MainBot,
                                             ByVal player As Player,
-                                            ByVal argument As String) As IFuture(Of String)
+                                            ByVal argument As String) As Task(Of String)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
             Dim user = If(player Is Nothing, Nothing, New BotUser(player.Name))
@@ -257,40 +257,40 @@ Namespace WC3
         End Function
         Public Function QueueCommandProcessText(ByVal bot As Bot.MainBot,
                                         ByVal player As Player,
-                                        ByVal argument As String) As IFuture(Of String)
+                                        ByVal argument As String) As Task(Of String)
             Contract.Requires(bot IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() CommandProcessText(bot, player, argument)).Defuturized
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() CommandProcessText(bot, player, argument)).Unwrap
         End Function
 
-        Public Function QueueGetAdminPlayer() As IFuture(Of Player)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
+        Public Function QueueGetAdminPlayer() As Task(Of Player)
+            Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() adminPlayer)
         End Function
-        Public Function QueueGetFakeHostPlayer() As IFuture(Of Player)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
+        Public Function QueueGetFakeHostPlayer() As Task(Of Player)
+            Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _lobby.FakeHostPlayer)
         End Function
-        Public Function QueueGetPlayers() As IFuture(Of IReadableList(Of Player))
-            Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of Player)))() IsNot Nothing)
+        Public Function QueueGetPlayers() As Task(Of IReadableList(Of Player))
+            Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Player)))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _kernel.Players.ToReadableList)
         End Function
-        Public Function QueueGetState() As IFuture(Of GameState)
-            Contract.Ensures(Contract.Result(Of IFuture(Of GameState))() IsNot Nothing)
+        Public Function QueueGetState() As Task(Of GameState)
+            Contract.Ensures(Contract.Result(Of Task(Of GameState))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _kernel.State)
         End Function
 
-        Public Function QueueBroadcastMessage(ByVal message As String) As IFuture
+        Public Function QueueBroadcastMessage(ByVal message As String) As Task
             Contract.Requires(message IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.BroadcastMessage(message))
         End Function
 
-        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As Player) As IFuture
+        Public Function QueueSendMessageTo(ByVal message As String, ByVal player As Player) As Task
             Contract.Requires(message IsNot Nothing)
             Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.SendMessageTo(message, player))
         End Function
 
@@ -437,8 +437,8 @@ Namespace WC3
             _lobby.SendMessageTo("You are now the admin.", player)
         End Sub
         Public Function QueueElevatePlayer(ByVal name As InvariantString,
-                                           Optional ByVal password As String = Nothing) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+                                           Optional ByVal password As String = Nothing) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() ElevatePlayer(name, password))
         End Function
 
@@ -448,8 +448,8 @@ Namespace WC3
         Private Function TryFindPlayer(ByVal userName As InvariantString) As Player
             Return (From player In _kernel.Players Where player.Name = userName).FirstOrDefault
         End Function
-        Public Function QueueTryFindPlayer(ByVal userName As InvariantString) As IFuture(Of Player)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
+        Public Function QueueTryFindPlayer(ByVal userName As InvariantString) As Task(Of Player)
+            Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() TryFindPlayer(userName))
         End Function
 
@@ -477,8 +477,8 @@ Namespace WC3
                 _lobby.ThrowChangedPublicState()
             End If
         End Sub
-        Public Function QueueBoot(ByVal slotQuery As InvariantString, ByVal shouldCloseEmptiedSlot As Boolean) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueBoot(ByVal slotQuery As InvariantString, ByVal shouldCloseEmptiedSlot As Boolean) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() Boot(slotQuery, shouldCloseEmptiedSlot))
         End Function
 #End Region
@@ -492,10 +492,10 @@ Namespace WC3
                                              remover:=Sub(sender, item) remover(Me, item))
         End Function
         Public Function QueueCreatePlayersAsyncView(ByVal adder As Action(Of Game, Player),
-                                                    ByVal remover As Action(Of Game, Player)) As IFuture(Of IDisposable)
+                                                    ByVal remover As Action(Of Game, Player)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CreatePlayersAsyncView(adder, remover))
         End Function
 
@@ -512,7 +512,7 @@ Namespace WC3
             _kernel.State = GameState.PreCounting
 
             'Give people a few seconds to realize the game is full before continuing
-            Call _clock.AsyncWait(3.Seconds).QueueCallWhenReady(inQueue,
+            Call _clock.AsyncWait(3.Seconds).QueueContinueWithAction(inQueue,
                 Sub()
                     If _kernel.State <> GameState.PreCounting Then Return
                     If Not Settings.IsAutoStarted OrElse _lobby.CountFreeSlots() > 0 Then
@@ -547,17 +547,17 @@ Namespace WC3
                                         _lobby.ThrowChangedPublicState()
                                     ElseIf ticksLeft > 0 Then 'continue ticking
                                         _lobby.BroadcastMessage("Starting in {0}...".Frmt(ticksLeft), messageType:=LogMessageType.Positive)
-                                        _clock.AsyncWait(1.Seconds).QueueCallWhenReady(inQueue, Sub() continueCountdown(ticksLeft - 1))
+                                        _clock.AsyncWait(1.Seconds).QueueContinueWithAction(inQueue, Sub() continueCountdown(ticksLeft - 1))
                                     Else 'start
                                         StartLoading()
                                     End If
                                 End Sub
-            Call _clock.AsyncWait(1.Seconds).QueueCallWhenReady(inQueue, Sub() continueCountdown(5))
+            Call _clock.AsyncWait(1.Seconds).QueueContinueWithAction(inQueue, Sub() continueCountdown(5))
 
             Return True
         End Function
-        Public Function QueueStartCountdown() As IFuture(Of Boolean)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Boolean))() IsNot Nothing)
+        Public Function QueueStartCountdown() As Task(Of Boolean)
+            Contract.Ensures(Contract.Result(Of Task(Of Boolean))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() TryStartCountdown())
         End Function
 
@@ -603,8 +603,8 @@ Namespace WC3
             End If
         End Sub
         Public Function QueueSetPlayerVoteToStart(ByVal name As InvariantString,
-                                                  ByVal wantsToStart As Boolean) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+                                                  ByVal wantsToStart As Boolean) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() SetPlayerVoteToStart(name, wantsToStart))
         End Function
         Public ReadOnly Property StartPlayerHoldPoint As IHoldPoint(Of Player)
@@ -613,14 +613,14 @@ Namespace WC3
                 Return _lobby.StartPlayerHoldPoint
             End Get
         End Property
-        Public Function QueueAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As IFuture(Of Player)
+        Public Function QueueAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As Task(Of Player)
             Contract.Requires(newPlayer IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Player))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _lobby.AddPlayer(newPlayer))
         End Function
         Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect,
-                                          ByVal position As UInt32) As IFuture
-            Return inQueue.QueueFunc(Function() _lobby.SendMapPiece(player, position)).Defuturized
+                                          ByVal position As UInt32) As Task
+            Return inQueue.QueueFunc(Function() _lobby.SendMapPiece(player, position)).Unwrap
         End Function
 
         '''<summary>Broadcasts new game state to players, and throws the updated event.</summary>
@@ -638,56 +638,56 @@ Namespace WC3
             TryBeginAutoStart()
         End Sub
 
-        Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As IFuture
+        Public Function QueueTrySetTeamSizes(ByVal sizes As IList(Of Integer)) As Task
             Contract.Requires(sizes IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.TrySetTeamSizes(sizes))
         End Function
 
-        Public Function QueueOpenSlot(ByVal slotQuery As InvariantString) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueOpenSlot(ByVal slotQuery As InvariantString) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.OpenSlot(slotQuery))
         End Function
-        Public Function QueueSetSlotCpu(ByVal slotQuery As InvariantString, ByVal newCpuLevel As Protocol.ComputerLevel) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueSetSlotCpu(ByVal slotQuery As InvariantString, ByVal newCpuLevel As Protocol.ComputerLevel) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.ComputerizeSlot(slotQuery, newCpuLevel))
         End Function
-        Public Function QueueCloseSlot(ByVal slotQuery As InvariantString) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueCloseSlot(ByVal slotQuery As InvariantString) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.CloseSlot(slotQuery))
         End Function
         Public Function QueueReserveSlot(ByVal userName As InvariantString,
-                                         Optional ByVal slotQuery As InvariantString? = Nothing) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+                                         Optional ByVal slotQuery As InvariantString? = Nothing) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.ReserveSlot(userName, slotQuery))
         End Function
         Public Function QueueSwapSlotContents(ByVal slotQuery1 As InvariantString,
-                                              ByVal slotQuery2 As InvariantString) As IFuture
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+                                              ByVal slotQuery2 As InvariantString) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.SwapSlotContents(slotQuery1, slotQuery2))
         End Function
-        Public Function QueueSetSlotColor(ByVal slotQuery As InvariantString, ByVal newColor As Protocol.PlayerColor) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueSetSlotColor(ByVal slotQuery As InvariantString, ByVal newColor As Protocol.PlayerColor) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.SetSlotColor(slotQuery, newColor))
         End Function
-        Public Function QueueSetSlotRace(ByVal slotQuery As InvariantString, ByVal newRace As Protocol.Races) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueSetSlotRace(ByVal slotQuery As InvariantString, ByVal newRace As Protocol.Races) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.SetSlotRace(slotQuery, newRace))
         End Function
-        Public Function QueueSetSlotTeam(ByVal slotQuery As InvariantString, ByVal newTeam As Byte) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueSetSlotTeam(ByVal slotQuery As InvariantString, ByVal newTeam As Byte) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.SetSlotTeam(slotQuery, newTeam))
         End Function
-        Public Function QueueSetSlotHandicap(ByVal slotQuery As InvariantString, ByVal newHandicap As Byte) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueSetSlotHandicap(ByVal slotQuery As InvariantString, ByVal newHandicap As Byte) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.SetSlotHandicap(slotQuery, newHandicap))
         End Function
-        Public Function QueueSetSlotLocked(ByVal slotQuery As InvariantString, ByVal newLockState As Slot.LockState) As IFuture
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Public Function QueueSetSlotLocked(ByVal slotQuery As InvariantString, ByVal newLockState As Slot.LockState) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.SetSlotLocked(slotQuery, newLockState))
         End Function
-        Public Function QueueSetAllSlotsLocked(ByVal newLockState As Slot.LockState) As IFuture
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Public Function QueueSetAllSlotsLocked(ByVal newLockState As Slot.LockState) As Task
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lobby.SetAllSlotsLocked(newLockState))
         End Function
 #End Region

@@ -17,26 +17,32 @@ Friend Module TestingCommon
         End Try
         Assert.Fail("Expected an exception of type " + GetType(E).ToString + " but hit no exception.")
     End Sub
-    Public Function BlockOnFutureValue(Of T)(ByVal future As IFuture(Of T)) As IFuture(Of T)
-        If BlockOnFuture(future) Then
-            Return future
+    Public Function BlockOnTaskValue(Of T)(ByVal task As Task(Of T)) As Task(Of T)
+        Dim b As Boolean
+        Try
+            b = task.Wait(millisecondsTimeout:=10000)
+        Catch ex As Exception
+            b = True
+        End Try
+        If b Then
+            Return task
         Else
             Throw New InvalidOperationException("The future did not terminate properly.")
         End If
     End Function
-    Public Function BlockOnFuture(ByVal future As IFuture) As Boolean
-        Return BlockOnFuture(future, New TimeSpan(0, 0, seconds:=100))
-    End Function
-    Public Function BlockOnFuture(ByVal future As IFuture,
-                                  ByVal timeout As TimeSpan) As Boolean
-        Dim waitHandle = New System.Threading.ManualResetEvent(initialState:=False)
-        AddHandler future.Ready, Sub() waitHandle.Set()
-        If future.State <> FutureState.Unknown Then waitHandle.Set()
-        Return waitHandle.WaitOne(timeout)
-    End Function
-    Public Sub WaitUntilFutureSucceeds(ByVal future As IFuture)
-        Assert.IsTrue(BlockOnFuture(future))
-        Assert.IsTrue(future.State = FutureState.Succeeded)
+    Public Sub WaitUntilTaskSucceeds(ByVal task As Task)
+        Assert.IsTrue(task.Wait(millisecondsTimeout:=10000))
+        Assert.IsTrue(task.Status = TaskStatus.RanToCompletion)
+    End Sub
+    Public Sub WaitUntilTaskFails(ByVal task As Task)
+        Try
+            Assert.IsTrue(task.Wait(millisecondsTimeout:=10000))
+        Catch ex As Exception
+        End Try
+        Assert.IsTrue(task.Status = TaskStatus.Faulted)
+    End Sub
+    Public Sub ExpectTaskToIdle(ByVal task As Task)
+        Assert.IsTrue(Not task.Wait(millisecondsTimeout:=10))
     End Sub
 
     Friend Sub EmptyJarTest(ByVal jar As IJar(Of Object))

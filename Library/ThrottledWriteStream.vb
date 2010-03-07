@@ -2,7 +2,7 @@
 Public NotInheritable Class ThrottledWriteStream
     Inherits WrappedStream
 
-    Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
+    Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
     Private ReadOnly _queuedWrites As New Queue(Of Byte())
     Private ReadOnly _costEstimator As Func(Of Byte(), Integer)
     Private ReadOnly _costLimit As Double
@@ -72,7 +72,7 @@ Public NotInheritable Class ThrottledWriteStream
             'Wait if necessary
             If _usedCost > _costLimit Then
                 Dim delay = New TimeSpan(ticks:=CLng((_usedCost - _costLimit) / _recoveryRatePerMillisecond * TimeSpan.TicksPerMillisecond))
-                _timer.AsyncWait(delay).QueueCallOnSuccess(inQueue, Sub() PerformWrites(isWaitCallback:=True))
+                _timer.AsyncWait(delay).QueueContinueWithAction(inQueue, Sub() PerformWrites(isWaitCallback:=True))
                 _throttled = True
                 Return
             End If

@@ -10,18 +10,18 @@ End Enum
 
 Public NotInheritable Class Logger
     Public Event LoggedMessage(ByVal type As LogMessageType, ByVal message As Lazy(Of String))
-    Public Event LoggedFutureMessage(ByVal placeholder As String, ByVal message As IFuture(Of String))
-    Private ReadOnly outQueue As ICallQueue
+    Public Event LoggedFutureMessage(ByVal placeholder As String, ByVal message As Task(Of String))
+    Private ReadOnly outQueue As CallQueue
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
         Contract.Invariant(outQueue IsNot Nothing)
     End Sub
 
-    Public Sub New(Optional ByVal outQueue As ICallQueue = Nothing)
+    Public Sub New(Optional ByVal outQueue As CallQueue = Nothing)
         Me.outQueue = If(outQueue, New TaskedCallQueue())
     End Sub
 
-    Public Sub FutureLog(ByVal placeholder As String, ByVal message As IFuture(Of String))
+    Public Sub FutureLog(ByVal placeholder As String, ByVal message As Task(Of String))
         Contract.Requires(placeholder IsNot Nothing)
         Contract.Requires(message IsNot Nothing)
         outQueue.QueueAction(Sub() RaiseEvent LoggedFutureMessage(placeholder, message))

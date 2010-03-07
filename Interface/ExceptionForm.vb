@@ -1,7 +1,7 @@
 <ContractVerification(False)>
 Public Class ExceptionForm
     Private _exceptions As New List(Of Tuple(Of String, Exception))()
-    Private inQueue As ICallQueue = New InvokedCallQueue(Me)
+    Private inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=True)
     Private ReadOnly _addThrottle As New Throttle(1.Seconds, New SystemClock())
 
     Public Sub New()

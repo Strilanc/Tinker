@@ -61,10 +61,10 @@ Public Module NetworkingCommon
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
     <Pure()>
     Public Function AsyncTcpConnect(ByVal host As String,
-                                    ByVal port As UShort) As IFuture(Of TcpClient)
+                                    ByVal port As UShort) As Task(Of TcpClient)
         Contract.Requires(host IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
-        Dim result = New FutureFunction(Of TcpClient)
+        Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
+        Dim result = New TaskCompletionSource(Of TcpClient)
         Dim client = New TcpClient
         result.DependentCall(Sub() client.BeginConnect(host:=host, port:=port, state:=Nothing,
             requestCallback:=Sub(ar) result.SetByEvaluating(
@@ -72,16 +72,16 @@ Public Module NetworkingCommon
                     client.EndConnect(ar)
                     Return client
                 End Function)))
-        Return result
+        Return result.Task
     End Function
 
     '''<summary>Asynchronously creates and connects a TcpClient to the given remote endpoint.</summary>
     <Pure()>
     Public Function AsyncTcpConnect(ByVal address As Net.IPAddress,
-                                    ByVal port As UShort) As IFuture(Of TcpClient)
+                                    ByVal port As UShort) As Task(Of TcpClient)
         Contract.Requires(address IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
-        Dim result = New FutureFunction(Of TcpClient)
+        Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
+        Dim result = New TaskCompletionSource(Of TcpClient)
         Dim client = New TcpClient
         result.DependentCall(Sub() client.BeginConnect(address:=address, port:=port, state:=Nothing,
             requestCallback:=Sub(ar) result.SetByEvaluating(
@@ -89,26 +89,26 @@ Public Module NetworkingCommon
                     client.EndConnect(ar)
                     Return client
                 End Function)))
-        Return result
+        Return result.Task
     End Function
 
     '''<summary>Asynchronously accepts an incoming connection attempt.</summary>
     <Extension()>
-    Public Function AsyncAcceptConnection(ByVal listener As TcpListener) As IFuture(Of TcpClient)
+    Public Function AsyncAcceptConnection(ByVal listener As TcpListener) As Task(Of TcpClient)
         Contract.Requires(listener IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of TcpClient))() IsNot Nothing)
-        Dim result = New FutureFunction(Of TcpClient)
+        Contract.Ensures(Contract.Result(Of Task(Of TcpClient))() IsNot Nothing)
+        Dim result = New TaskCompletionSource(Of TcpClient)
         result.DependentCall(Sub() listener.BeginAcceptTcpClient(state:=Nothing,
             callback:=Sub(ar) result.SetByEvaluating(Function() listener.EndAcceptTcpClient(ar))))
-        Return result
+        Return result.Task
     End Function
 
-    Public Function AsyncDnsLookup(ByVal remoteHost As String) As IFuture(Of Net.IPHostEntry)
+    Public Function AsyncDnsLookup(ByVal remoteHost As String) As Task(Of Net.IPHostEntry)
         Contract.Requires(remoteHost IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Net.IPHostEntry))() IsNot Nothing)
-        Dim result = New FutureFunction(Of Net.IPHostEntry)()
+        Contract.Ensures(Contract.Result(Of Task(Of Net.IPHostEntry))() IsNot Nothing)
+        Dim result = New TaskCompletionSource(Of Net.IPHostEntry)()
         result.DependentCall(Sub() Net.Dns.BeginGetHostEntry(hostNameOrAddress:=remoteHost, stateObject:=Nothing,
             requestCallback:=Sub(ar) result.SetByEvaluating(Function() Net.Dns.EndGetHostEntry(ar))))
-        Return result
+        Return result.Task
     End Function
 End Module

@@ -7,7 +7,7 @@ Public NotInheritable Class DeadManSwitch
     Private _isArmed As Boolean
     Private _wasReset As Boolean
     Private _timer As RelativeClock
-    Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
+    Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
 
     Public Event Triggered(ByVal sender As DeadManSwitch)
 
@@ -28,7 +28,7 @@ Public NotInheritable Class DeadManSwitch
     ''' Starts the countdown timer.
     ''' No effect if the timer is already started.
     ''' </summary>
-    Public Function Arm() As ifuture
+    Public Function Arm() As Task
         Return inQueue.QueueAction(
             Sub()
                 If _isArmed Then Return
@@ -42,7 +42,7 @@ Public NotInheritable Class DeadManSwitch
     ''' Resets the countdown timer.
     ''' No effect if the timer is stopped.
     ''' </summary>
-    Public Function Reset() As IFuture
+    Public Function Reset() As Task
         Return inQueue.QueueAction(
             Sub()
                 _timer = _timer.Restarted
@@ -53,7 +53,7 @@ Public NotInheritable Class DeadManSwitch
     ''' Cancels the countdown timer.
     ''' No effect if the timer is already stopped.
     ''' </summary>
-    Public Function Disarm() As ifuture
+    Public Function Disarm() As Task
         Return inQueue.QueueAction(
             Sub()
                 _isArmed = False
@@ -67,7 +67,7 @@ Public NotInheritable Class DeadManSwitch
             _wasReset = False
             _timer = _timer.Restarted
             Dim dt = _timer.StartingTimeOnParentClock
-            _timer.AsyncWait(_period - dt).QueueCallWhenReady(inQueue, Sub() OnTimeout())
+            _timer.AsyncWait(_period - dt).QueueContinueWithAction(inQueue, Sub() OnTimeout())
         Else
             _isArmed = False
             RaiseEvent Triggered(Me)

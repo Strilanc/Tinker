@@ -2,16 +2,16 @@
 
 Namespace WC3
     Public Class GameServerManager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IBotComponent
 
         Private Shared ReadOnly ServerCommands As New WC3.ServerCommands()
         Public Shared ReadOnly TypeName As String = "Server"
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
         Private ReadOnly _name As InvariantString
         Private ReadOnly _gameServer As WC3.GameServer
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of IDisposable)
         Private ReadOnly _control As Control
         Private ReadOnly _bot As Bot.MainBot
         Private _listener As Net.Sockets.TcpListener
@@ -51,11 +51,11 @@ Namespace WC3
             Me._listener.Start()
 
             AddHandler _gameServer.PlayerTalked, AddressOf OnPlayerTalked
-            _hooks.Add(New DelegatedDisposable(Sub() RemoveHandler _gameServer.PlayerTalked, AddressOf OnPlayerTalked).Futurized)
+            _hooks.Add(New DelegatedDisposable(Sub() RemoveHandler _gameServer.PlayerTalked, AddressOf OnPlayerTalked))
 
             BeginAccepting()
 
-            _gameServer.FutureDisposed.CallWhenReady(Sub() Me.Dispose())
+            _gameServer.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
 
         Public ReadOnly Property Server As WC3.GameServer
@@ -76,13 +76,13 @@ Namespace WC3
                                                                 remoteendpoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                                                 timeout:=60.Seconds,
                                                                 Logger:=Logger,
-                                                                clock:=_gameServer.clock))
+                                                                clock:=_gameServer.Clock))
                               Return _gameServer.QueueAcceptSocket(socket)
                           End Function,
                 errorHandler:=Sub(exception)
                                   If listener IsNot Me._listener Then Return 'not an error; listener was just closed or changed
                                   exception.RaiseAsUnexpected("Accepting connections for game server.")
-                                  Logger.Log("Error accepting connections: {0}".Frmt(exception.Message), LogMessageType.Problem)
+                                  Logger.Log("Error accepting connections: {0}".Frmt(exception.Summarize), LogMessageType.Problem)
                               End Sub)
         End Sub
 
@@ -143,14 +143,14 @@ Namespace WC3
             End Get
         End Property
 
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return ServerCommands.Invoke(Me, user, argument)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.Dispose()
             Next hook
             _gameServer.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose())
@@ -177,13 +177,12 @@ Namespace WC3
             'Normal commands
             Dim commandText = text.Substring(prefix.Length)
             Throw New NotImplementedException() 'nothing arg follows
-            game.QueueCommandProcessText(Nothing, player, commandText).CallWhenValueReady(
-                Sub(message, messageException)
-                    Contract.Assume(player IsNot Nothing)
-                    If messageException IsNot Nothing Then
-                        game.QueueSendMessageTo("Failed: {0}".Frmt(messageException.Message), player)
-                    ElseIf message IsNot Nothing Then
-                        game.QueueSendMessageTo(message, player)
+            game.QueueCommandProcessText(Nothing, player, commandText).ContinueWith(
+                Sub(task)
+                    If task.Status = TaskStatus.Faulted Then
+                        game.QueueSendMessageTo("Failed: {0}".Frmt(task.Exception.Summarize), player)
+                    ElseIf task.Result IsNot Nothing Then
+                        game.QueueSendMessageTo(task.Result, player)
                     Else
                         game.QueueSendMessageTo("Command Succeeded", player)
                     End If
@@ -202,9 +201,9 @@ Namespace WC3
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Private Function AsyncAddGameFromArguments(ByVal argument As Commands.CommandArgument,
-                                                   ByVal user As BotUser) As IFuture(Of WC3.GameSet)
+                                                   ByVal user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameSet))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of WC3.GameSet))() IsNot Nothing)
 
             Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
 
@@ -235,27 +234,27 @@ Namespace WC3
             Return _gameServer.QueueAddGameSet(gameSettings)
         End Function
         Public Function QueueAddGameFromArguments(ByVal argument As Commands.CommandArgument,
-                                                  ByVal user As BotUser) As IFuture(Of WC3.GameSet)
+                                                  ByVal user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(argument IsNot Nothing)
             Contract.Requires(user IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameSet))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncAddGameFromArguments(argument, user)).Defuturized
+            Contract.Ensures(Contract.Result(Of Task(Of WC3.GameSet))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() AsyncAddGameFromArguments(argument, user)).Unwrap
         End Function
-        Public Function QueueChangeListenPort(ByVal portHandle As PortPool.PortHandle) As IFuture
+        Public Function QueueChangeListenPort(ByVal portHandle As PortPool.PortHandle) As Task
             Contract.Requires(portHandle IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() ChangeListenPort(portHandle))
         End Function
-        Public Function QueueGetListenPort() As IFuture(Of UShort)
-            Contract.Ensures(Contract.Result(Of IFuture(Of UShort))() IsNot Nothing)
+        Public Function QueueGetListenPort() As Task(Of UShort)
+            Contract.Ensures(Contract.Result(Of Task(Of UShort))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _portHandle.Port)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Private Function AsyncAddAdminGame(ByVal name As InvariantString, ByVal password As String) As IFuture(Of GameSet)
+        Private Function AsyncAddAdminGame(ByVal name As InvariantString, ByVal password As String) As Task(Of GameSet)
             Contract.Requires(password IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of GameSet))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
 
             Dim sha1Checksum = (From b In Enumerable.Range(0, 20) Select CByte(b)).ToReadableList
             Dim slot1 = New Slot(index:=0,
@@ -301,10 +300,10 @@ Namespace WC3
 
             Return _gameServer.QueueAddGameSet(gameSettings)
         End Function
-        Public Function QueueAddAdminGame(ByVal name As InvariantString, ByVal password As String) As IFuture(Of GameSet)
+        Public Function QueueAddAdminGame(ByVal name As InvariantString, ByVal password As String) As Task(Of GameSet)
             Contract.Requires(password IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of GameSet))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Defuturized
+            Contract.Ensures(Contract.Result(Of Task(Of GameSet))() IsNot Nothing)
+            Return inQueue.QueueFunc(Function() AsyncAddAdminGame(name, password)).Unwrap
         End Function
     End Class
 End Namespace

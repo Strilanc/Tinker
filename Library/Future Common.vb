@@ -3,51 +3,51 @@
     Public Function AsyncRead(ByVal this As IO.Stream,
                               ByVal buffer() As Byte,
                               ByVal offset As Integer,
-                              ByVal count As Integer) As IFuture(Of Integer)
+                              ByVal count As Integer) As Task(Of Integer)
         Contract.Requires(this IsNot Nothing)
         Contract.Requires(buffer IsNot Nothing)
         Contract.Requires(offset >= 0)
         Contract.Requires(count >= 0)
         Contract.Requires(offset + count <= buffer.Length)
-        Contract.Ensures(Contract.Result(Of IFuture(Of Integer))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task(Of Integer))() IsNot Nothing)
 
-        Dim result = New FutureFunction(Of Integer)
+        Dim result = New TaskCompletionSource(Of Integer)
         result.DependentCall(Sub() this.BeginRead(
                 buffer:=buffer,
                 offset:=offset,
                 count:=count,
                 state:=Nothing,
                 callback:=Sub(ar) result.SetByEvaluating(Function() this.EndRead(ar))))
-        Return result
+        Return result.Task
     End Function
 
     ''' <summary>
     ''' Passes a produced future into a consumer, waits for the consumer to finish, and repeats while the consumer outputs true.
     ''' </summary>
-    Public Function FutureIterate(Of T)(ByVal producer As Func(Of IFuture(Of T)),
-                                        ByVal consumer As Func(Of T, Exception, IFuture(Of Boolean))) As IFuture
+    Public Function FutureIterate(Of T)(ByVal producer As Func(Of Task(Of T)),
+                                        ByVal consumer As Func(Of Task(Of T), Task(Of Boolean))) As Task
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-        Dim result = New FutureAction
-        Dim iterator As Action(Of Boolean, Exception) = Nothing
-        Dim futureProduct As IFuture(Of T)
-        iterator = Sub([continue], consumerException)
-                       If consumerException IsNot Nothing Then
-                           result.SetFailed(consumerException)
-                       ElseIf [continue] Then
+        Dim result = New TaskCompletionSource(Of Boolean)
+        Dim iterator As Action(Of Task(Of Boolean)) = Nothing
+        Dim futureProduct As Task(Of T)
+        iterator = Sub(task)
+                       If task.Status = TaskStatus.Faulted Then
+                           result.SetException(task.Exception.InnerExceptions)
+                       ElseIf task.Result Then
                            futureProduct = producer()
                            Contract.Assume(futureProduct IsNot Nothing)
-                           futureProduct.EvalWhenValueReady(consumer).Defuturized.CallWhenValueReady(iterator)
+                           futureProduct.ContinueWith(consumer).Unwrap.ContinueWith(iterator)
                        Else
-                           result.SetSucceeded()
+                           result.SetResult(True)
                        End If
                    End Sub
         futureProduct = producer()
         Contract.Assume(futureProduct IsNot Nothing)
-        futureProduct.EvalWhenValueReady(consumer).Defuturized.CallWhenValueReady(iterator)
-        Return result
+        futureProduct.ContinueWith(consumer).Unwrap.ContinueWith(iterator)
+        Return result.Task
     End Function
 
     ''' <summary>
@@ -57,54 +57,54 @@
     ''' <param name="consumer">Consumes values produced by the producer.</param>
     ''' <param name="errorHandler">Called when the produce/consume cycle eventually terminates due to an exception.</param>
     ''' <returns>A future which fails once the produce/consume cycle terminates due to an exception.</returns>
-    Public Function AsyncProduceConsumeUntilError(Of T)(ByVal producer As Func(Of IFuture(Of T)),
-                                                        ByVal consumer As Func(Of T, IFuture),
-                                                        ByVal errorHandler As Action(Of Exception)) As IFuture
+    Public Function AsyncProduceConsumeUntilError(Of T)(ByVal producer As Func(Of Task(Of T)),
+                                                        ByVal consumer As Func(Of T, Task),
+                                                        ByVal errorHandler As Action(Of AggregateException)) As Task
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
         Contract.Requires(errorHandler IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-        Dim result = New FutureAction
+        Dim result = New TaskCompletionSource(Of Boolean)
 
         'Setup iteration
-        Dim onFinishedConsuming As Action(Of Exception) = Nothing
-        Dim onFinishedProducing As Action(Of T, Exception) = Nothing
-        onFinishedConsuming = Sub(consumerException)
-                                  If consumerException IsNot Nothing Then
-                                      result.SetFailed(consumerException)
+        Dim onFinishedConsuming As Action(Of Task) = Nothing
+        Dim onFinishedProducing As Action(Of Task(Of T)) = Nothing
+        onFinishedConsuming = Sub(task)
+                                  If task IsNot Nothing AndAlso task.Status = TaskStatus.Faulted Then
+                                      result.SetException(task.Exception.InnerExceptions)
                                   Else
-                                      result.DependentCall(Sub() producer().CallWhenValueReady(onFinishedProducing))
+                                      result.DependentCall(Sub() producer().ContinueWith(onFinishedProducing))
                                   End If
                               End Sub
-        onFinishedProducing = Sub(producedValue, producerException)
-                                  If producerException IsNot Nothing Then
-                                      result.SetFailed(producerException)
+        onFinishedProducing = Sub(task)
+                                  If task.Status = TaskStatus.Faulted Then
+                                      result.SetException(task.Exception.InnerExceptions)
                                   Else
-                                      result.DependentCall(Sub() consumer(producedValue).CallWhenReady(onFinishedConsuming))
+                                      result.DependentCall(Sub() consumer(task.Result).ContinueWith(onFinishedConsuming))
                                   End If
                               End Sub
 
         'Start
         Call onFinishedConsuming(Nothing)
-        result.Catch(errorHandler)
-        Return result
+        result.Task.Catch(errorHandler)
+        Return result.Task
     End Function
-    Public Function AsyncProduceConsumeUntilError2(Of T)(ByVal producer As Func(Of IFuture(Of T)),
+    Public Function AsyncProduceConsumeUntilError2(Of T)(ByVal producer As Func(Of Task(Of T)),
                                                          ByVal consumer As Action(Of T),
-                                                         ByVal errorHandler As Action(Of Exception)) As IFuture
+                                                         ByVal errorHandler As Action(Of AggregateException)) As Task
         Contract.Requires(producer IsNot Nothing)
         Contract.Requires(consumer IsNot Nothing)
         Contract.Requires(errorHandler IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
         Return AsyncProduceConsumeUntilError(
             producer:=producer,
             errorHandler:=errorHandler,
             consumer:=Function(value)
-                          Dim result = New FutureAction
+                          Dim result = New TaskCompletionSource(Of Boolean)
                           result.SetByCalling(Sub() consumer(value))
-                          Return result
+                          Return result.Task
                       End Function)
     End Function
 
@@ -114,28 +114,28 @@
     ''' </summary>
     <Extension()>
     Public Function FutureSelect(Of T)(ByVal sequence As IEnumerable(Of T),
-                                       ByVal filterFunction As Func(Of T, IFuture(Of Boolean))) As IFuture(Of T)
+                                       ByVal filterFunction As Func(Of T, Task(Of Boolean))) As Task(Of T)
         Contract.Requires(sequence IsNot Nothing)
         Contract.Requires(filterFunction IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture(Of T))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task(Of T))() IsNot Nothing)
 
         Dim enumerator = sequence.GetEnumerator
-        Dim result = New FutureFunction(Of T)
-        Dim iterator As Action(Of Boolean, Exception)
-        iterator = Sub(accept, exception)
-                       If exception IsNot Nothing Then
-                           result.SetFailed(exception)
-                       ElseIf accept Then
-                           result.SetSucceeded(enumerator.Current)
+        Dim result = New TaskCompletionSource(Of T)
+        Dim iterator As Action(Of Task(Of Boolean))
+        iterator = Sub(task)
+                       If task IsNot Nothing AndAlso task.Status = TaskStatus.Faulted Then
+                           result.SetException(task.Exception.InnerExceptions)
+                       ElseIf task IsNot Nothing AndAlso task.Result Then
+                           result.SetResult(enumerator.Current)
                        ElseIf Not enumerator.MoveNext Then
-                           result.SetFailed(New OperationFailedException("No Matches"))
+                           result.SetException(New OperationFailedException("No Matches"))
                        Else
                            Dim futureAccept = filterFunction(enumerator.Current)
                            Contract.Assume(futureAccept IsNot Nothing)
-                           futureAccept.CallWhenValueReady(iterator)
+                           futureAccept.ContinueWith(iterator)
                        End If
                    End Sub
-        Call iterator(False, Nothing)
-        Return result
+        Call iterator(Nothing)
+        Return result.Task
     End Function
 End Module

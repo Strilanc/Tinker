@@ -26,25 +26,25 @@ Public NotInheritable Class ConnectionAccepter
             listener.Start()
             listeners.Add(listener)
             FutureIterate(AddressOf listener.AsyncAcceptConnection,
-                Function(client, clientException)
+                Function(clientTask)
                     SyncLock lock
                         'succeeded?
-                        If clientException IsNot Nothing Then
+                        If clientTask.Status = TaskStatus.Faulted Then
                             listener.Stop()
                             listeners.Remove(listener)
-                            Return False.Futurized
+                            Return False.AsTask
                         End If
 
                         'still supposed to be listening?
                         If Not listeners.Contains(listener) Then
-                            client.Close()
-                            Return False.Futurized
+                            clientTask.Result.Close()
+                            Return False.AsTask
                         End If
                     End SyncLock
 
                     'report
-                    RaiseEvent AcceptedConnection(Me, client)
-                    Return True.Futurized
+                    RaiseEvent AcceptedConnection(Me, clientTask.Result)
+                    Return True.AsTask
                 End Function
             )
         End SyncLock

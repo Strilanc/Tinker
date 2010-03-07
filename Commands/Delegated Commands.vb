@@ -4,7 +4,7 @@
     ''' </summary>
     Public NotInheritable Class DelegatedCommand(Of T)
         Inherits Command(Of T)
-        Private ReadOnly processFunction As Func(Of T, BotUser, String, IFuture(Of String))
+        Private ReadOnly processFunction As Func(Of T, BotUser, String, Task(Of String))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(processFunction IsNot Nothing)
@@ -13,7 +13,7 @@
         Public Sub New(ByVal name As InvariantString,
                        ByVal format As InvariantString,
                        ByVal description As String,
-                       ByVal func As Func(Of T, BotUser, String, IFuture(Of String)),
+                       ByVal func As Func(Of T, BotUser, String, Task(Of String)),
                        Optional ByVal permissions As String = Nothing,
                        Optional ByVal extraHelp As String = Nothing,
                        Optional ByVal hasPrivateArguments As Boolean = False)
@@ -23,7 +23,7 @@
             Me.processFunction = func
         End Sub
 
-        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Dim result = processFunction(target, user, argument)
             Contract.Assume(result IsNot Nothing)
             Return result
@@ -35,7 +35,7 @@
     ''' </summary>
     Public NotInheritable Class DelegatedPartialCommand(Of T)
         Inherits PartialCommand(Of T)
-        Private ReadOnly processFunction As Func(Of T, BotUser, String, String, IFuture(Of String))
+        Private ReadOnly processFunction As Func(Of T, BotUser, String, String, Task(Of String))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(processFunction IsNot Nothing)
@@ -44,7 +44,7 @@
         Public Sub New(ByVal name As InvariantString,
                        ByVal headType As String,
                        ByVal description As String,
-                       ByVal func As Func(Of T, BotUser, String, String, IFuture(Of String)),
+                       ByVal func As Func(Of T, BotUser, String, String, Task(Of String)),
                        Optional ByVal permissions As String = Nothing,
                        Optional ByVal extraHelp As String = Nothing,
                        Optional ByVal hasPrivateArguments As Boolean = False)
@@ -55,7 +55,7 @@
             Me.processFunction = func
         End Sub
 
-        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal head As String, ByVal rest As String) As IFuture(Of String)
+        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal head As String, ByVal rest As String) As Task(Of String)
             Dim result = processFunction(target, user, head, rest)
             Contract.Assume(result IsNot Nothing)
             Return result
@@ -67,7 +67,7 @@
     ''' </summary>
     Public NotInheritable Class DelegatedTemplatedCommand(Of T)
         Inherits TemplatedCommand(Of T)
-        Private ReadOnly processFunction As Func(Of T, BotUser, CommandArgument, IFuture(Of String))
+        Private ReadOnly processFunction As Func(Of T, BotUser, CommandArgument, Task(Of String))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(processFunction IsNot Nothing)
@@ -76,7 +76,7 @@
         Public Sub New(ByVal name As InvariantString,
                        ByVal template As InvariantString,
                        ByVal description As String,
-                       ByVal func As Func(Of T, BotUser, CommandArgument, IFuture(Of String)),
+                       ByVal func As Func(Of T, BotUser, CommandArgument, Task(Of String)),
                        Optional ByVal permissions As String = Nothing,
                        Optional ByVal extraHelp As String = Nothing,
                        Optional ByVal hasPrivateArguments As Boolean = False)
@@ -86,7 +86,7 @@
             Me.processFunction = func
         End Sub
 
-        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
             Dim result = processFunction(target, user, argument)
             Contract.Assume(result IsNot Nothing)
             Return result

@@ -33,7 +33,7 @@ Public Module StreamExtensions
 
     <DebuggerDisplay("{ToString}")>
     Private Class StreamAsList
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IReadableList(Of Byte)
 
         Private ReadOnly _stream As IRandomReadableStream
@@ -78,7 +78,7 @@ Public Module StreamExtensions
         Default Public ReadOnly Property Item(ByVal index As Integer) As Byte Implements IReadableList(Of Byte).Item
             <ContractVerification(False)>
             Get
-                If Me.FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.FullName)
+                If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.FullName)
                 Return _stream.ReadExactAt(position:=_offset + index, exactCount:=1)(0)
             End Get
         End Property
@@ -99,7 +99,7 @@ Public Module StreamExtensions
             End If
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If _takeOwnershipofStream Then _stream.Dispose()
             Return MyBase.PerformDispose(finalizing)
         End Function
@@ -124,7 +124,7 @@ Public Module StreamExtensions
                 Return result
             End Using
         Catch ex As PicklingException
-            Throw New IO.InvalidDataException(ex.Message, ex)
+            Throw New IO.InvalidDataException(ex.Summarize, ex)
         End Try
     End Function
 

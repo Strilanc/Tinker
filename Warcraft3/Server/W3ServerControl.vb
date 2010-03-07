@@ -1,10 +1,10 @@
 Namespace WC3
     <ContractVerification(False)>
     Public Class W3ServerControl
-        Private ReadOnly inQueue As New StartableCallQueue(New InvokedCallQueue(Me))
+        Private ReadOnly inQueue As CallQueue = New InvokedCallQueue(Me, initiallyStarted:=False)
         Private ReadOnly _manager As WC3.GameServerManager
         Private ReadOnly _server As GameServer
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
         Private ReadOnly _games As New Dictionary(Of Game, WC3.GameManager)
         Private ReadOnly _gameSets As New List(Of GameSet)
         Private ReadOnly gameTabs As Components.TabManager
@@ -26,7 +26,7 @@ Namespace WC3
         Private Shadows Sub OnDisposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
             Next hook
         End Sub
 
@@ -72,7 +72,7 @@ Namespace WC3
         End Sub
 
         Private Sub BeginUpdateStateDisplay()
-            Me._manager.QueueGetListenPort().QueueCallOnValueSuccess(inQueue, AddressOf UpdateStateDisplay)
+            Me._manager.QueueGetListenPort().QueueContinueWithAction(inQueue, AddressOf UpdateStateDisplay)
         End Sub
         Private Sub UpdateStateDisplay(ByVal port As UShort)
             If IsDisposed Then Return

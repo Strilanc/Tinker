@@ -2,11 +2,11 @@
 
 Namespace Lan
     Public NotInheritable Class Advertiser
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Public Shared ReadOnly LanTargetPort As UShort = 6112
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
-        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue()
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
+        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue()
 
         Private ReadOnly _games As New Dictionary(Of UInt32, LanGame)
         Private ReadOnly _viewGames As New AsyncViewableCollection(Of LanGame)(outQueue:=outQueue)
@@ -76,7 +76,7 @@ Namespace Lan
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(
                 Sub()
@@ -105,9 +105,9 @@ Namespace Lan
             _viewGames.Add(lanGame)
         End Sub
         Public Function QueueAddGame(ByVal gameDescription As WC3.LocalGameDescription,
-                                     Optional ByVal targetHosts As IEnumerable(Of String) = Nothing) As IFuture
+                                     Optional ByVal targetHosts As IEnumerable(Of String) = Nothing) As Task
             Contract.Requires(gameDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() AddGame(gameDescription, targetHosts))
         End Function
 
@@ -127,8 +127,8 @@ Namespace Lan
             _viewGames.Remove(game)
             Return True
         End Function
-        Public Function QueueRemoveGame(ByVal id As UInt32) As IFuture(Of Boolean)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Boolean))() IsNot Nothing)
+        Public Function QueueRemoveGame(ByVal id As UInt32) As Task(Of Boolean)
+            Contract.Ensures(Contract.Result(Of Task(Of Boolean))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() RemoveGame(id))
         End Function
 
@@ -137,7 +137,7 @@ Namespace Lan
                 RemoveGame(id)
             Next id
         End Sub
-        Public Function QueueClearGames() As IFuture
+        Public Function QueueClearGames() As Task
             Return inQueue.QueueAction(AddressOf ClearGames)
         End Function
 
@@ -187,10 +187,10 @@ Namespace Lan
                                         remover:=Sub(sender, game) remover(Me, game))
         End Function
         Public Function QueueCreateGamesAsyncView(ByVal adder As Action(Of Lan.Advertiser, LanGame),
-                                                  ByVal remover As Action(Of Lan.Advertiser, LanGame)) As IFuture(Of IDisposable)
+                                                  ByVal remover As Action(Of Lan.Advertiser, LanGame)) As Task(Of IDisposable)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() CreateGamesAsyncView(adder, remover))
         End Function
     End Class

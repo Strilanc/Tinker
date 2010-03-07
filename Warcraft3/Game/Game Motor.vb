@@ -1,8 +1,8 @@
 ﻿Namespace WC3
     Public Class GameMotor
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
-        Private ReadOnly inQueue As ICallQueue
+        Private ReadOnly inQueue As CallQueue
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _clock As IClock
         Private ReadOnly _lobby As GameLobby
@@ -25,7 +25,7 @@
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_laggingPlayers IsNot Nothing)
             Contract.Invariant(_speedFactor > 0)
-            Contract.Invariant(_init isnot nothing)
+            Contract.Invariant(_init IsNot Nothing)
             Contract.Invariant(_tickPeriod.Ticks > 0)
             Contract.Invariant(_lagLimit.Ticks >= 0)
             Contract.Invariant(inQueue IsNot Nothing)
@@ -39,7 +39,7 @@
         Public Sub New(ByVal defaultSpeedFactor As Double,
                        ByVal defaultTickPeriod As TimeSpan,
                        ByVal defaultLagLimit As TimeSpan,
-                       ByVal inQueue As ICallQueue,
+                       ByVal inQueue As CallQueue,
                        ByVal kernel As GameKernel,
                        ByVal clock As IClock,
                        ByVal lobby As GameLobby)
@@ -59,7 +59,7 @@
             Me._lobby = lobby
         End Sub
         Public Sub Init()
-            If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
+            If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
             If Not _init.TryAcquire Then Throw New InvalidOperationException("Already initialized.")
 
             _lobby.StartPlayerHoldPoint.IncludeActionHandler(
@@ -77,10 +77,10 @@
             _tickClock = _clock.Restarted()
             OnTick()
         End Sub
-        Public Function QueueStart() As IFuture
+        Public Function QueueStart() As Task
             Return inQueue.QueueAction(AddressOf Start)
         End Function
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(Sub() _tickClock = Nothing)
         End Function
@@ -107,10 +107,10 @@
             Next player
         End Sub
 
-        Private Function BroadcastPacket(ByVal packet As Protocol.Packet) As ifuture
+        Private Function BroadcastPacket(ByVal packet As Protocol.Packet) As Task
             Contract.Requires(packet IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
-            Return (From player In _kernel.Players Select player.QueueSendPacket(packet)).Defuturized
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+            Return (From player In _kernel.Players Select player.QueueSendPacket(packet)).AsAggregateTask
         End Function
 
         '''<summary>Advances game time</summary>
@@ -124,7 +124,7 @@
             'Stop for laggers
             UpdateLagScreen()
             If _laggingPlayers.Count > 0 Then
-                _clock.AsyncWait(_tickPeriod).QueueCallOnSuccess(inQueue, AddressOf OnTick)
+                _clock.AsyncWait(_tickPeriod).QueueContinueWithAction(inQueue, AddressOf OnTick)
                 Return
             End If
 
@@ -132,7 +132,7 @@
             _leftoverGameTime += dt - dgt
             _leftoverGameTime = _leftoverGameTime.Between(-dgt * 10, dgt * 10)
             Dim nextTickTime = CLng(dgt - _leftoverGameTime).Between(dgt \ 2US, dgt * 2US).Milliseconds
-            _clock.AsyncWait(nextTickTime).QueueCallOnSuccess(inQueue, AddressOf OnTick)
+            _clock.AsyncWait(nextTickTime).QueueContinueWithAction(inQueue, AddressOf OnTick)
 
             'Send
             SendQueuedGameData(New TickRecord(dgt, _gameTime))
@@ -208,32 +208,32 @@
             RaiseEvent Tick(Me, record.length, outgoingActions.AsReadableList)
         End Sub
 
-        Public Function QueueGetTickPeriod() As IFuture(Of TimeSpan)
-            Contract.Ensures(Contract.Result(Of IFuture(Of TimeSpan))() IsNot Nothing)
+        Public Function QueueGetTickPeriod() As Task(Of TimeSpan)
+            Contract.Ensures(Contract.Result(Of Task(Of TimeSpan))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _tickPeriod)
         End Function
-        Public Function QueueGetSpeedFactor() As IFuture(Of Double)
-            Contract.Ensures(Contract.Result(Of IFuture(Of Double))() IsNot Nothing)
+        Public Function QueueGetSpeedFactor() As Task(Of Double)
+            Contract.Ensures(Contract.Result(Of Task(Of Double))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _speedFactor)
         End Function
-        Public Function QueueGetLagLimit() As IFuture(Of TimeSpan)
-            Contract.Ensures(Contract.Result(Of IFuture(Of TimeSpan))() IsNot Nothing)
+        Public Function QueueGetLagLimit() As Task(Of TimeSpan)
+            Contract.Ensures(Contract.Result(Of Task(Of TimeSpan))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() _lagLimit)
         End Function
 
-        Public Function QueueSetTickPeriod(ByVal value As TimeSpan) As IFuture
+        Public Function QueueSetTickPeriod(ByVal value As TimeSpan) As Task
             Contract.Requires(value.Ticks > 0)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _tickPeriod = value)
         End Function
-        Public Function QueueSetSpeedFactor(ByVal value As Double) As IFuture
+        Public Function QueueSetSpeedFactor(ByVal value As Double) As Task
             Contract.Requires(value > 0)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _speedFactor = value)
         End Function
-        Public Function QueueSetLagLimit(ByVal value As TimeSpan) As IFuture
+        Public Function QueueSetLagLimit(ByVal value As TimeSpan) As Task
             Contract.Requires(value.Ticks >= 0)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() _lagLimit = value)
         End Function
     End Class

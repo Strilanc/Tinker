@@ -34,9 +34,8 @@ Public Class PacketStreamTest
         m.Position = 0
         Dim p = New PacketStreamer(m, 2, 1, 1000)
         Dim f = p.AsyncReadPacket()
-        BlockOnFuture(f)
-        Assert.IsTrue(f.State = FutureState.Succeeded)
-        Assert.IsTrue(f.Value.SequenceEqual({0, 1, 10, 3, 4, 5, 6, 7, 8, 9}))
+        WaitUntilTaskSucceeds(f)
+        Assert.IsTrue(f.Result.SequenceEqual({0, 1, 10, 3, 4, 5, 6, 7, 8, 9}))
     End Sub
     <TestMethod()>
     Public Sub ReadPacketTest_Twice()
@@ -45,10 +44,9 @@ Public Class PacketStreamTest
         m.Write(d, 0, d.Length)
         m.Position = 0
         Dim p = New PacketStreamer(m, 2, 1, 1000)
-        BlockOnFuture(p.AsyncReadPacket())
+        WaitUntilTaskSucceeds(p.AsyncReadPacket())
         Dim f = p.AsyncReadPacket()
-        BlockOnFuture(f)
-        Assert.IsTrue(f.State = FutureState.Succeeded)
-        Assert.IsTrue(f.Value.SequenceEqual({0, 0, 4, &HFF}))
+        WaitUntilTaskSucceeds(f)
+        Assert.IsTrue(f.Result.SequenceEqual({0, 0, 4, &HFF}))
     End Sub
 End Class

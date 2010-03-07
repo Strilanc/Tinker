@@ -4,13 +4,13 @@ Namespace WC3.Download
     Partial Public Class Manager
         <DebuggerDisplay("{ToString}")>
         Private Class TransferClient
-            Inherits FutureDisposable
+            Inherits DisposableWithTask
 
             Private ReadOnly _map As Map
             Private ReadOnly _player As IPlayerDownloadAspect
             Private ReadOnly _clock As IClock
             Private ReadOnly _links As New List(Of TransferClient)
-            Private ReadOnly _hooks As IReadableList(Of IFuture(Of IDisposable))
+            Private ReadOnly _hooks As IReadableList(Of Task(Of IDisposable))
 
             Private _hasReported As Boolean
             Private _reportedPosition As UInt32
@@ -38,7 +38,7 @@ Namespace WC3.Download
             Public Sub New(ByVal player As IPlayerDownloadAspect,
                            ByVal map As Map,
                            ByVal clock As IClock,
-                           ByVal hooks As IEnumerable(Of IFuture(Of IDisposable)))
+                           ByVal hooks As IEnumerable(Of Task(Of IDisposable)))
                 Contract.Requires(map IsNot Nothing)
                 Contract.Requires(clock IsNot Nothing)
                 Contract.Requires(hooks IsNot Nothing)
@@ -230,14 +230,14 @@ Namespace WC3.Download
                 _hasReported = True
             End Sub
 
-            Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+            Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
                 If _transfer IsNot Nothing Then
                     _transfer.Dispose()
                     _transfer = Nothing
                 End If
                 Return (From hook In _hooks
-                        Select hook.CallOnValueSuccess(Sub(value) value.Dispose())
-                       ).Defuturized
+                        Select hook.ContinueWithAction(Sub(value) value.Dispose())
+                       ).AsAggregateTask
             End Function
 
             Public Overrides Function ToString() As String

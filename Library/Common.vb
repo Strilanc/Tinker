@@ -124,6 +124,33 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 
+    <Extension()>
+    Public Function Summarize(ByVal ex As Exception) As String
+        Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        If ex Is Nothing Then
+            Return "Null Exception"
+        ElseIf TypeOf ex Is AggregateException Then
+            Dim ax = CType(ex, AggregateException)
+            Select Case ax.InnerExceptions.Count
+                Case 0 : Return "Empty AggregateException"
+                Case 1 : Return ax.InnerExceptions.Single.Summarize()
+                Case Else : Return "{0} Exceptions Occured: {1}".Frmt(ax.InnerExceptions.Count,
+                                                                      Environment.NewLine + ax.InnerExceptions.StringJoin(Environment.NewLine))
+            End Select
+        Else
+            Return "({0}) {1}".Frmt(ex.GetType.Name, ex.Message)
+        End If
+    End Function
+
+    <Extension()>
+    Public Sub SetHandled(Of T)(ByVal task As TaskCompletionSource(Of T))
+
+    End Sub
+    <Extension()>
+    Public Sub SetHandled(ByVal task As Task)
+
+    End Sub
+
     Public Function FindFilesMatching(ByVal fileQuery As String,
                                       ByVal likeQuery As InvariantString,
                                       ByVal directory As InvariantString,
@@ -275,7 +302,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
         Using sha = New System.Security.Cryptography.SHA1Managed()
-            Dim hash = sha.ComputeHash(MPQ.Library.AsStream(data).AsStream)
+            Dim hash = sha.ComputeHash(MPQ.Library.AsStream(data.GetEnumerator).AsStream)
             Contract.Assume(hash IsNot Nothing)
             Dim result = hash.AsReadableList()
             Contract.Assume(result.Count = 20)

@@ -10,11 +10,11 @@ Public Class HelpCommandTest
         description:="A test command.",
         permissions:="root:1",
         func:=Function(target, user, arg)
-                  Return "".Futurized
+                  Return "".AsTask
               End Function,
         extraHelp:="x=test")
-    Private Shared Function BlockingInvoke(ByVal command As Command(Of Object), ByVal arg As String) As IFuture(Of String)
-        Return BlockOnFutureValue(command.Invoke(New Object, Nothing, arg))
+    Private Shared Function BlockingInvoke(ByVal command As Command(Of Object), ByVal arg As String) As Task(Of String)
+        Return BlockOnTaskValue(command.Invoke(New Object, Nothing, arg))
     End Function
 
     <TestMethod()>
@@ -29,27 +29,27 @@ Public Class HelpCommandTest
     <TestMethod()>
     Public Sub FixedContentTest()
         Dim help = New HelpCommand(Of Object)
-        Assert.IsTrue(BlockingInvoke(help, "").State = FutureState.Succeeded)
-        Assert.IsTrue(BlockingInvoke(help, "*").State = FutureState.Succeeded)
-        Assert.IsTrue(BlockingInvoke(help, "+").State = FutureState.Succeeded)
-        Assert.IsTrue(BlockingInvoke(help, "?").State = FutureState.Succeeded)
-        Assert.IsTrue(BlockingInvoke(help, "!").State = FutureState.Failed)
+        Assert.IsTrue(BlockingInvoke(help, "").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "*").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "+").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "?").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "!").Status = TaskStatus.Faulted)
     End Sub
 
     <TestMethod()>
     Public Sub CommandExistsTest()
         Dim help = New HelpCommand(Of Object)
         Dim testCommand = TestCommandFactory()
-        Assert.IsTrue(BlockingInvoke(help, "Test").State = FutureState.Failed)
-        Assert.IsTrue(BlockingInvoke(help, "test x").State = FutureState.Failed)
+        Assert.IsTrue(BlockingInvoke(help, "Test").Status = TaskStatus.Faulted)
+        Assert.IsTrue(BlockingInvoke(help, "test x").Status = TaskStatus.Faulted)
         help.AddCommand(testCommand)
-        Assert.IsTrue(BlockingInvoke(help, "Test").State = FutureState.Succeeded)
-        Assert.IsTrue(BlockingInvoke(help, "test").State = FutureState.Succeeded)
-        Assert.IsTrue(BlockingInvoke(help, "test x").State = FutureState.Succeeded)
-        Assert.IsTrue(BlockingInvoke(help, "test y").State = FutureState.Failed)
+        Assert.IsTrue(BlockingInvoke(help, "Test").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "test").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "test x").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "test y").Status = TaskStatus.Faulted)
         help.RemoveCommand(testCommand)
-        Assert.IsTrue(BlockingInvoke(help, "test").State = FutureState.Failed)
-        Assert.IsTrue(BlockingInvoke(help, "test x").State = FutureState.Failed)
+        Assert.IsTrue(BlockingInvoke(help, "test").Status = TaskStatus.Faulted)
+        Assert.IsTrue(BlockingInvoke(help, "test x").Status = TaskStatus.Faulted)
     End Sub
 
     <TestMethod()>
@@ -57,8 +57,8 @@ Public Class HelpCommandTest
         Dim help = New HelpCommand(Of Object)
         Dim testCommand = TestCommandFactory()
         help.AddCommand(testCommand)
-        Assert.IsTrue(BlockingInvoke(help, "Test x").Value = "test")
-        Dim result = BlockingInvoke(help, "Test").Value
+        Assert.IsTrue(BlockingInvoke(help, "Test x").Result = "test")
+        Dim result = BlockingInvoke(help, "Test").Result
         Assert.IsTrue(result.Contains(testCommand.Description))
         Assert.IsTrue(result.Contains(testCommand.Format))
         Assert.IsTrue(result.Contains(testCommand.Permissions))

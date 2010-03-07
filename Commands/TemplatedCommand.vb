@@ -23,7 +23,7 @@
             Me._template = New CommandTemplate(template)
         End Sub
 
-        Protected NotOverridable Overloads Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Protected NotOverridable Overloads Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Dim arg = New CommandArgument(argument)
             Dim argException = _template.TryFindMismatch(arg)
             If argException IsNot Nothing Then Throw argException
@@ -31,7 +31,7 @@
         End Function
 
         '''<summary>Uses a parsed argument to processes the command.</summary>
-        Protected MustOverride Overloads Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+        Protected MustOverride Overloads Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
 
         <ContractClassFor(GetType(TemplatedCommand(Of )))>
         MustInherit Shadows Class ContractClass
@@ -39,10 +39,10 @@
             Protected Sub New()
                 MyBase.New("", "", "")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Requires(target IsNot Nothing)
                 Contract.Requires(argument IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
         End Class

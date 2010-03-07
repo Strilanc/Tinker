@@ -106,7 +106,7 @@ Public Class BnetClientTest
                     {"result", Protocol.ProgramAuthenticationFinishResult.Passed},
                     {"info", ""}
                 }).Data)
-        Assert.IsTrue(BlockOnFuture(fConnect))
+        WaitUntilTaskSucceeds(fConnect)
         Dim credentials = New Bnet.ClientCredentials(profile.userName, profile.password, privateKey:=2)
         client.QueueLogOn(credentials)
 

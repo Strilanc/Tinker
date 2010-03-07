@@ -31,26 +31,26 @@ Public MustInherit Class PacketHandler(Of TKey)
                                    If pickle.Data.Count < data.Count Then Throw New PicklingException("Data left over after parsing.")
                                    If pickle.Data.Count > data.Count Then Throw New PicklingException("Pickle contains more data than was parsed.")
                                    logger.Log(Function() "Received {0} from {1}: {2}".Frmt(key, sourceName, pickle.Description.Value), LogMessageType.DataParsed)
-                                   Dim result = New FutureAction()
-                                   result.SetSucceeded()
-                                   Return result
+                                   Dim result = New TaskCompletionSource(Of Boolean)()
+                                   result.SetResult(True)
+                                   Return result.Task
                                End Function)
     End Sub
 
     Public Function [AddHandler](ByVal key As TKey,
-                                 ByVal handler As Func(Of IReadableList(Of Byte), IFuture)) As IDisposable
+                                 ByVal handler As Func(Of IReadableList(Of Byte), Task)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
         Return handlers.AddHandler(key, handler)
     End Function
 
-    Public Function HandlePacket(ByVal packetData As IReadableList(Of Byte)) As IFuture
+    Public Function HandlePacket(ByVal packetData As IReadableList(Of Byte)) As Task
         Contract.Requires(packetData IsNot Nothing)
         Contract.Requires(packetData.Count >= HeaderSize)
-        Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
 
-        Dim result = New FutureFunction(Of Ifuture)()
+        Dim result = New TaskCompletionSource(Of Task)()
         result.SetByEvaluating(Function()
                                    Dim head = packetData.SubView(0, HeaderSize)
                                    Dim body = packetData.SubView(HeaderSize)
@@ -61,9 +61,9 @@ Public MustInherit Class PacketHandler(Of TKey)
                                    If handlerResults.Count = 0 Then
                                        Throw New IO.IOException("No handler for {0}".Frmt(key))
                                    End If
-                                   Return handlerResults.Defuturized
+                                   Return handlerResults.AsAggregateTask
                                End Function)
-        Return result.Defuturized
+        Return result.Task.Unwrap
     End Function
 
     <ContractClassFor(GetType(PacketHandler(Of )))>

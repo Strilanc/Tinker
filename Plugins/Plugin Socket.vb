@@ -2,7 +2,7 @@ Imports System.Reflection
 
 Namespace Plugins
     Friend Class Socket
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Private ReadOnly _plugin As IPlugin
         Private ReadOnly _name As InvariantString
@@ -42,7 +42,7 @@ Namespace Plugins
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _plugin.Dispose()
             Return Nothing
         End Function

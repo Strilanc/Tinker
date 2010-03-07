@@ -124,16 +124,16 @@
             If Not _games.ContainsKey(connector.GameId) Then Throw New IO.InvalidDataException()
             Dim game = _games(connector.GameId)
             Contract.Assume(game IsNot Nothing)
-            AsyncTcpConnect(game.RemoteGame.Address, game.RemoteGame.Port).CallWhenValueReady(
-                Sub(result, exception)
-                    If exception IsNot Nothing Then
-                        connector.Socket.Disconnect(expected:=False, reason:="Failed to interconnect with game host.")
+            AsyncTcpConnect(game.RemoteGame.Address, game.RemoteGame.Port).ContinueWith(
+                Sub(task)
+                    If task.Status = TaskStatus.Faulted Then
+                        connector.Socket.Disconnect(expected:=False, reason:="Failed to interconnect with game host: {0}.".Frmt(task.Exception.Summarize))
                         Return
                     End If
 
-                    Dim w = New W3Socket(New PacketSocket(stream:=result.GetStream,
-                                                          localendpoint:=CType(result.Client.LocalEndPoint, Net.IPEndPoint),
-                                                          remoteendpoint:=CType(result.Client.RemoteEndPoint, Net.IPEndPoint),
+                    Dim w = New W3Socket(New PacketSocket(stream:=task.Result.GetStream,
+                                                          localendpoint:=CType(task.Result.Client.LocalEndPoint, Net.IPEndPoint),
+                                                          remoteendpoint:=CType(task.Result.Client.RemoteEndPoint, Net.IPEndPoint),
                                                           clock:=_clock))
                     w.SendPacket(Protocol.MakeKnock(connector.Name,
                                                     connector.ListenPort,
@@ -158,21 +158,21 @@
         Private Sub New()
         End Sub
 
-        Public Shared Function InterShunt(ByVal stream1 As IO.Stream, ByVal stream2 As IO.Stream) As FutureDisposable
+        Public Shared Function InterShunt(ByVal stream1 As IO.Stream, ByVal stream2 As IO.Stream) As DisposableWithTask
             Contract.Requires(stream1 IsNot Nothing)
             Contract.Requires(stream2 IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of FutureDisposable)() IsNot Nothing)
-            Dim result = New FutureDisposable
-            Shunt(stream1, stream2).CallWhenReady(Sub() result.Dispose())
-            Shunt(stream2, stream1).CallWhenReady(Sub() result.Dispose())
-            result.FutureDisposed.CallWhenReady(Sub() stream1.Dispose())
-            result.FutureDisposed.CallWhenReady(Sub() stream2.Dispose())
+            Contract.Ensures(Contract.Result(Of DisposableWithTask)() IsNot Nothing)
+            Dim result = New DisposableWithTask
+            Shunt(stream1, stream2).ContinueWithAction(Sub() result.Dispose())
+            Shunt(stream2, stream1).ContinueWithAction(Sub() result.Dispose())
+            result.DisposalTask.ContinueWithAction(Sub() stream1.Dispose())
+            result.DisposalTask.ContinueWithAction(Sub() stream2.Dispose())
             Return result
         End Function
-        Private Shared Function Shunt(ByVal src As IO.Stream, ByVal dst As IO.Stream) As ifuture
+        Private Shared Function Shunt(ByVal src As IO.Stream, ByVal dst As IO.Stream) As Task
             Contract.Requires(src IsNot Nothing)
             Contract.Requires(dst IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Dim buffer(0 To 4096 - 1) As Byte
             Return AsyncProduceConsumeUntilError2(
                 producer:=Function() src.AsyncRead(buffer, 0, buffer.Length),

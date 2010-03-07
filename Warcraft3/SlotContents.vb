@@ -72,7 +72,7 @@
         End Function
 
         <Pure()>
-        Public MustOverride Function AsyncGenerateDescription() As IFuture(Of String)
+        Public MustOverride Function AsyncGenerateDescription() As Task(Of String)
         <Pure()>
         Public Overridable Function Matches(ByVal query As InvariantString) As Boolean
             Return False
@@ -85,8 +85,8 @@
             Protected Sub New()
                 Throw New NotSupportedException
             End Sub
-            Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
-                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+            Public Overrides Function AsyncGenerateDescription() As Task(Of String)
+                Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
         End Class
@@ -100,8 +100,8 @@
         Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Open
         End Function
-        Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
-            Return "Open".Futurized
+        Public Overrides Function AsyncGenerateDescription() As Task(Of String)
+            Return "Open".AsTask
         End Function
     End Class
 
@@ -110,8 +110,8 @@
         Public Overrides Function WantPlayer(Optional ByVal name As InvariantString? = Nothing) As WantPlayerPriority
             Return WantPlayerPriority.Closed
         End Function
-        Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
-            Return "Closed".Futurized
+        Public Overrides Function AsyncGenerateDescription() As Task(Of String)
+            Return "Closed".AsTask
         End Function
         Public Overrides ReadOnly Property DataState(Optional ByVal receiver As Player = Nothing) As Protocol.SlotState
             Get
@@ -126,8 +126,8 @@
         Public Sub New(ByVal level As Protocol.ComputerLevel)
             Me.level = level
         End Sub
-        Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
-            Return "Computer ({0})".Frmt(DataComputerLevel).Futurized
+        Public Overrides Function AsyncGenerateDescription() As Task(Of String)
+            Return "Computer ({0})".Frmt(DataComputerLevel).AsTask
         End Function
         Public Overrides ReadOnly Property ContentType() As Type
             Get
@@ -161,8 +161,8 @@
         Public Overrides Function EnumPlayers() As IEnumerable(Of Player)
             Return New Player() {_player}
         End Function
-        Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
-            Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.Id.Index).Futurized, _player.Description)
+        Public Overrides Function AsyncGenerateDescription() As Task(Of String)
+            Return If(_player.isFake, "(Fake){0} pid={1}".Frmt(_player.Name, _player.Id.Index).AsTask, _player.Description)
         End Function
         Public Overrides ReadOnly Property PlayerIndex() As PlayerId?
             Get
@@ -225,7 +225,7 @@
             Contract.Requires(player IsNot Nothing)
             Me._coveredSlotId = coveredSlotId
         End Sub
-        Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
+        Public Overrides Function AsyncGenerateDescription() As Task(Of String)
             Return MyBase.AsyncGenerateDescription.Select(Function(desc) "[Covering {0}] {1}".Frmt(CoveredSlotId, desc))
         End Function
         Public Overrides Function WithoutPlayer(ByVal player As Player) As SlotContents
@@ -268,8 +268,8 @@
                 Return _coveringSlotId
             End Get
         End Property
-        Public Overrides Function AsyncGenerateDescription() As IFuture(Of String)
-            Return "[Covered by {0}] Players: {1}".Frmt(_coveringSlotId, (From player In _players Select player.Name).StringJoin(", ")).Futurized
+        Public Overrides Function AsyncGenerateDescription() As Task(Of String)
+            Return "[Covered by {0}] Players: {1}".Frmt(_coveringSlotId, (From player In _players Select player.Name).StringJoin(", ")).AsTask
         End Function
         Public Overrides Function WithoutPlayer(ByVal player As Player) As SlotContents
             If Not _players.Contains(player) Then Throw New InvalidOperationException()

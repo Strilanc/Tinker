@@ -1,6 +1,6 @@
 ﻿Namespace WC3
     Public NotInheritable Class GameLoadScreen
-        Private ReadOnly inQueue As ICallQueue
+        Private ReadOnly inQueue As CallQueue
         Private ReadOnly readyPlayers As New HashSet(Of Player)
         Private ReadOnly unreadyPlayers As New HashSet(Of Player)
         Private ReadOnly visibleReadyPlayers As New HashSet(Of Player)
@@ -31,7 +31,7 @@
         End Sub
 
         Public Sub New(ByVal kernel As GameKernel,
-                       ByVal inQueue As ICallQueue,
+                       ByVal inQueue As CallQueue,
                        ByVal clock As IClock,
                        ByVal lobby As GameLobby,
                        ByVal logger As Logger,

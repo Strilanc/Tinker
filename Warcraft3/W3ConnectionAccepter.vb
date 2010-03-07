@@ -68,7 +68,7 @@ Namespace WC3
                 _sockets.Add(socket)
             End SyncLock
 
-            socket.AsyncReadPacket().CallOnValueSuccess(
+            socket.AsyncReadPacket().ContinueWithAction(
                 Sub(packetData)
                     If Not TryRemoveSocket(socket) Then Return
                     Dim id = CType(packetData(1), Protocol.PacketId)
@@ -77,10 +77,10 @@ Namespace WC3
                     _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description.Value), LogMessageType.DataParsed)
                 End Sub
             ).Catch(
-                Sub(ex) socket.Disconnect(expected:=False, reason:=ex.Message)
+                Sub(ex) socket.Disconnect(expected:=False, reason:=ex.Summarize)
             )
 
-            _clock.AsyncWait(FirstPacketTimeout).CallWhenReady(
+            _clock.AsyncWait(FirstPacketTimeout).ContinueWithAction(
                 Sub()
                     If Not TryRemoveSocket(socket) Then Return
                     _logger.Log("Connection from {0} timed out.".Frmt(socket.Name), LogMessageType.Negative)

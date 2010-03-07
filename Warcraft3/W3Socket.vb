@@ -88,8 +88,8 @@ Namespace WC3
             End Try
         End Sub
 
-        Public Function AsyncReadPacket() As IFuture(Of IReadableList(Of Byte))
-            Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of Byte)))() IsNot Nothing)
+        Public Function AsyncReadPacket() As Task(Of IReadableList(Of Byte))
+            Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Byte)))() IsNot Nothing)
             Return _socket.AsyncReadPacket()
         End Function
 

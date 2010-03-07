@@ -152,7 +152,7 @@ Namespace WC3
         End Sub
 
         Public Function AddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                               ByVal handler As Func(Of IPickle(Of T), ifuture)) As IDisposable
+                                               ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)

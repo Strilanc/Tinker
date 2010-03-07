@@ -47,7 +47,7 @@ Namespace WC3
         'func:=Function(target, user, argument)
         'Dim port As UShort
         'If Not UShort.TryParse(argument.RawValue(0), port) Then Throw New ArgumentException("Invalid port")
-        'Return target.QueueOpenPort(port).EvalOnSuccess(Function() "Port opened.")
+        'Return target.QueueOpenPort(port).ContinueWithFunc(Function() "Port opened.")
         'End Function)
 
         'Private ReadOnly StopListening As New DelegatedTemplatedCommand(Of WC3.GameServer)(
@@ -57,13 +57,13 @@ Namespace WC3
         'Permissions:="root:4",
         'func:=Function(target, user, argument)
         'If argument.TryGetOptionalNamedValue("port") Is Nothing Then
-        'Return target.QueueCloseAllPorts().EvalOnSuccess(Function() "Ports closed.")
+        'Return target.QueueCloseAllPorts().ContinueWithFunc(Function() "Ports closed.")
         'Else
         'Dim port As UShort
         'If Not UShort.TryParse(argument.TryGetOptionalNamedValue("port"), port) Then
         'Throw New InvalidOperationException("Invalid port")
         'End If
-        'Return target.QueueClosePort(port).EvalOnSuccess(Function() "Port closed.")
+        'Return target.QueueClosePort(port).ContinueWithFunc(Function() "Port closed.")
         'End If
         'End Function)
 
@@ -73,7 +73,7 @@ Namespace WC3
         'Description:="Opens a new game instance.",
         'Permissions:="root:4;games:4",
         'func:=Function(target, user, argument)
-        'Return target.QueueCreateGame(argument.RawValue(0)).EvalOnSuccess(Function() "Created instance.")
+        'Return target.QueueCreateGame(argument.RawValue(0)).ContinueWithFunc(Function() "Created instance.")
         'End Function)
 
         'Private ReadOnly CloseInstance As New DelegatedTemplatedCommand(Of WC3.GameServer)(
@@ -82,7 +82,7 @@ Namespace WC3
         'Description:="Closes the named game instance.",
         'Permissions:="root:4;games:4",
         'func:=Function(target, user, argument)
-        'Return target.QueueRemoveGame(argument.RawValue(0), ignorePermanent:=True).EvalOnSuccess(Function() "Closed instance.")
+        'Return target.QueueRemoveGame(argument.RawValue(0), ignorePermanent:=True).ContinueWithFunc(Function() "Closed instance.")
         'End Function)
     End Class
 End Namespace

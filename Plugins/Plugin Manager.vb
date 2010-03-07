@@ -2,13 +2,13 @@
 
 Namespace Plugins
     Friend Class PluginManager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IBotComponent
 
         Private Const TypeName As String = "Plugin"
 
         Private ReadOnly _socket As Plugins.Socket
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))
+        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_socket IsNot Nothing)
@@ -44,14 +44,14 @@ Namespace Plugins
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate
             Return _socket.Plugin.IsArgumentPrivate(argument)
         End Function
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return _socket.Plugin.InvokeCommand(user, argument)
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
             Next hook
             _socket.Dispose()
             Return Nothing

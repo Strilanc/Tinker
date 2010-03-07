@@ -93,7 +93,7 @@
 
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class PortHandle
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Private ReadOnly _pool As PortPool
         Private ReadOnly _port As UShort
 
@@ -109,12 +109,12 @@
 
         Public ReadOnly Property Port() As UShort
             Get
-                If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
+                If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
                 Return _port
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             SyncLock _pool.lock
                 Contract.Assume(_pool.OutPorts.Contains(_port))
                 Contract.Assume(Not _pool.InPorts.Contains(_port))
@@ -127,7 +127,7 @@
         End Function
 
         Public Overrides Function ToString() As String
-            Return _port.ToString(CultureInfo.InvariantCulture) + If(FutureDisposed.State <> FutureState.Unknown, " (disposed)", "")
+            Return _port.ToString(CultureInfo.InvariantCulture) + If(Me.IsDisposed, " (disposed)", "")
         End Function
     End Class
 End Class

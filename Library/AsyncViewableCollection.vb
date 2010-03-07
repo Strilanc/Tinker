@@ -5,7 +5,7 @@
 Public Class AsyncViewableCollection(Of T)
     Implements ICollection(Of T)
 
-    Private ReadOnly outQueue As ICallQueue
+    Private ReadOnly outQueue As CallQueue
     Private ReadOnly _items As New List(Of T)
 
     Public Event Added(ByVal sender As AsyncViewableCollection(Of T), ByVal item As T)
@@ -20,7 +20,7 @@ Public Class AsyncViewableCollection(Of T)
     ''' Constructs an AsyncViewableCollection which queues synchronizing events on an action queue.
     ''' </summary>
     ''' <param name="outQueue">The action queue async events are queued on. Uses a new TaskedCallQueue if null.</param>
-    Public Sub New(Optional ByVal outQueue As ICallQueue = Nothing)
+    Public Sub New(Optional ByVal outQueue As CallQueue = Nothing)
         Me.outQueue = If(outQueue, New TaskedCallQueue())
     End Sub
 

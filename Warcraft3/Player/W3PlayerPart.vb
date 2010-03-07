@@ -28,11 +28,11 @@ Namespace WC3
             End Get
         End Property
 
-        Public Function Description() As IFuture(Of String)
-            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+        Public Function Description() As Task(Of String)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return QueueGetLatencyDescription.Select(
                 Function(latencyDesc)
-                    Dim contextInfo As IFuture(Of String)
+                    Dim contextInfo As Task(Of String)
                     Select Case state
                         Case PlayerState.Lobby
                             Dim p = AdvertisedDownloadPercent
@@ -46,9 +46,9 @@ Namespace WC3
                                           Select "DL={0}".Frmt(dlText).Padded(9) + _
                                                  "EB={0}".Frmt(rateDescription)
                         Case PlayerState.Loading
-                            contextInfo = "Ready={0}".Frmt(Ready).Futurized
+                            contextInfo = "Ready={0}".Frmt(Ready).AsTask
                         Case PlayerState.Playing
-                            contextInfo = "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime).Futurized
+                            contextInfo = "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime).AsTask
                         Case Else
                             Throw state.MakeImpossibleValueException
                     End Select
@@ -61,7 +61,7 @@ Namespace WC3
                                   "{0}c".Frmt(_numPeerConnections).Padded(5) +
                                   latencyDesc.Padded(12) +
                                   text
-                End Function).Defuturized
+                End Function).Unwrap
         End Function
     End Class
 End Namespace

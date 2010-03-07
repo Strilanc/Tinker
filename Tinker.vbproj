@@ -90,6 +90,7 @@
     <CodeContractsRedundantAssumptions>True</CodeContractsRedundantAssumptions>
     <CodeContractsReferenceAssembly>Build</CodeContractsReferenceAssembly>
     <WarningsAsErrors>41999,42016,42017,42018,42019,42020,42021,42022,42032,42036,42105,42106,42107</WarningsAsErrors>
+    <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -168,6 +169,7 @@
     <Import Include="System.Globalization" />
     <Import Include="System.Linq" />
     <Import Include="System.Runtime.CompilerServices" />
+    <Import Include="System.Threading.Tasks" />
     <Import Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
@@ -309,7 +311,6 @@
     <Compile Include="Warcraft3\Game\Game Load Screen.vb" />
     <Compile Include="Warcraft3\Game\Game Motor.vb" />
     <Compile Include="Warcraft3\Player\W3Player.vb" />
-    <Compile Include="Warcraft3\Server\W3ServerDoor.vb" />
     <Compile Include="Warcraft3\W3ConnectionAccepter.vb" />
     <Compile Include="Warcraft3\W3GameStats.vb" />
     <Compile Include="Warcraft3\Slot.vb" />

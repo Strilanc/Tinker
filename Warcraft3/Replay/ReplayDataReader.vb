@@ -3,7 +3,7 @@
     ''' Exposes warcraft 3 replay data as an IRandomReadableStream.
     ''' </summary>
     Public NotInheritable Class ReplayDataReader
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IRandomReadableStream
 
         Private Structure BlockInfo
@@ -284,7 +284,7 @@
             End Set
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _stream.Dispose()
             Return Nothing
         End Function

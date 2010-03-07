@@ -9,8 +9,8 @@ Public NotInheritable Class PacketSocket
     Public Property Name As InvariantString
     Public Property Logger As Logger
 
-    Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
-    Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue()
+    Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
+    Private ReadOnly outQueue As CallQueue = New TaskedCallQueue()
 
     Public Const DefaultBufferSize As Integer = 1460 '[sending more data in a packet causes wc3 clients to disc; happens to be maximum ethernet header size]
     Public ReadOnly bufferSize As Integer
@@ -87,14 +87,14 @@ Public NotInheritable Class PacketSocket
                                         Optional ByVal bufferSize As Integer = DefaultBufferSize,
                                         Optional ByVal preheaderLength As Integer = 2,
                                         Optional ByVal sizeHeaderLength As Integer = 2,
-                                        Optional ByVal name As InvariantString? = Nothing) As IFuture(Of PacketSocket)
+                                        Optional ByVal name As InvariantString? = Nothing) As Task(Of PacketSocket)
         Contract.Requires(remoteHost IsNot Nothing)
         Contract.Requires(clock IsNot Nothing)
         Contract.Requires(preheaderLength >= 0)
         Contract.Requires(sizeHeaderLength > 0)
         Contract.Requires(bufferSize >= preheaderLength + sizeHeaderLength)
         Contract.Requires(timeout Is Nothing OrElse timeout.Value.Ticks > 0)
-        Contract.Ensures(Contract.Result(Of IFuture(Of PacketSocket))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task(Of PacketSocket))() IsNot Nothing)
         Return From socket In AsyncTcpConnect(remoteHost, remotePort)
                Select New PacketSocket(socket.GetStream,
                                        CType(socket.Client.LocalEndPoint, Net.IPEndPoint),
@@ -142,21 +142,21 @@ Public NotInheritable Class PacketSocket
         _stream.Close()
         outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
     End Sub
-    Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As ifuture
+    Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reason As String) As Task
         Contract.Requires(reason IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IFuture)() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return inQueue.QueueAction(Sub() Disconnect(expected, reason))
     End Function
     Private Sub DeadManSwitch_Triggered(ByVal sender As DeadManSwitch) Handles deadManSwitch.Triggered
         Disconnect(expected:=False, reason:="Connection went idle.")
     End Sub
 
-    Public Function AsyncReadPacket() As IFuture(Of IReadableList(Of Byte))
-        Contract.Ensures(Contract.Result(Of IFuture(Of IReadableList(Of Byte)))() IsNot Nothing)
+    Public Function AsyncReadPacket() As Task(Of IReadableList(Of Byte))
+        Contract.Ensures(Contract.Result(Of Task(Of IReadableList(Of Byte)))() IsNot Nothing)
         'Read
         Dim result = packetStreamer.AsyncReadPacket()
         'Handle
-        result.QueueCallOnValueSuccess(inQueue,
+        result.QueueContinueWithAction(inQueue,
             Sub(data)
                 If deadManSwitch IsNot Nothing Then deadManSwitch.Reset()
                 Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
@@ -164,7 +164,7 @@ Public NotInheritable Class PacketSocket
         ).QueueCatch(inQueue,
             Sub(ex)
                 If _isConnected Then ex.RaiseAsUnexpected("Receiving packet")
-                Disconnect(expected:=False, reason:=ex.Message)
+                Disconnect(expected:=False, reason:=ex.Summarize)
             End Sub
         )
         Return result

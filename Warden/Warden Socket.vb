@@ -1,13 +1,13 @@
 ﻿Namespace Warden
     Public NotInheritable Class Socket
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Public Event ReceivedWardenData(ByVal sender As Warden.Socket, ByVal wardenData As IReadableList(Of Byte))
         Public Event Failed(ByVal sender As Warden.Socket, ByVal exception As Exception)
         Public Event Disconnected(ByVal sender As Warden.Socket, ByVal expected As Boolean, ByVal reason As String)
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
-        Private ReadOnly outQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly outQueue As CallQueue = New TaskedCallQueue
         Private ReadOnly _socket As PacketSocket
         Private ReadOnly _logger As Logger
         Private ReadOnly _cookie As UInt32
@@ -49,7 +49,7 @@
                 errorHandler:=Sub(exception) outQueue.QueueAction(Sub() RaiseEvent Failed(Me, exception))
             )
         End Sub
-        Private Function AsyncReadPacket() As IFuture(Of ServerPacket)
+        Private Function AsyncReadPacket() As Task(Of ServerPacket)
             Return _socket.AsyncReadPacket().Select(
                 Function(packetData)
                     'Check
@@ -102,13 +102,13 @@
                 Throw
             End Try
         End Sub
-        Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As ifuture
+        Public Function QueueSendWardenData(ByVal wardenData As IReadableList(Of Byte)) As Task
             Contract.Requires(wardenData IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() WritePacket(ClientPacket.MakeFullServiceHandleWardenPacket(_cookie, wardenData)))
         End Function
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Strilbrary.Threading.IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(Sub() _socket.QueueDisconnect(expected:=True, reason:="Disposed"))
         End Function

@@ -2,7 +2,7 @@
 
 Namespace CKL
     Public NotInheritable Class ServerManager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
         Implements IBotComponent
 
         Public Shared ReadOnly WidgetTypeName As InvariantString = "CKL"
@@ -23,7 +23,7 @@ Namespace CKL
             Me._control = New GenericBotComponentControl(Me)
         End Sub
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _server.Stop()
             _control.AsyncInvokedAction(Sub() _control.Dispose())
             Return Nothing
@@ -40,7 +40,7 @@ Namespace CKL
                 Return True
             End Get
         End Property
-        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As IFuture(Of String) Implements IBotComponent.InvokeCommand
+        Public Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String) Implements IBotComponent.InvokeCommand
             Return Commands.Invoke(_server, user, argument)
         End Function
         Public Function IsArgumentPrivate(ByVal argument As String) As Boolean Implements IBotComponent.IsArgumentPrivate

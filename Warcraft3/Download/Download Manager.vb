@@ -2,7 +2,7 @@
 
 Namespace WC3.Download
     Partial Public Class Manager
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Public Shared ReadOnly ForceSteadyPeriod As TimeSpan = 5.Seconds
         Public Shared ReadOnly FreezePeriod As TimeSpan = 10.Seconds
@@ -15,8 +15,8 @@ Namespace WC3.Download
 
         Private ReadOnly _map As Map
         Private ReadOnly _logger As Logger
-        Private ReadOnly _hooks As New List(Of IFuture(Of IDisposable))()
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue()
+        Private ReadOnly _hooks As New List(Of Task(Of IDisposable))()
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
         Private ReadOnly _allowDownloads As Boolean
         Private ReadOnly _allowUploads As Boolean
         Private ReadOnly _playerClients As New Dictionary(Of IPlayerDownloadAspect, TransferClient)
@@ -55,7 +55,7 @@ Namespace WC3.Download
                          ByVal mapPieceSender As Action(Of IPlayerDownloadAspect, UInt32))
             Contract.Requires(startPlayerHoldPoint IsNot Nothing)
             Contract.Requires(mapPieceSender IsNot Nothing)
-            If FutureDisposed.State <> FutureState.Unknown Then Throw New ObjectDisposedException(Me.GetType.Name)
+            If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
             If Not _started.TryAcquire() Then Throw New InvalidOperationException("Already started.")
 
             Me._mapPieceSender = mapPieceSender
@@ -66,10 +66,10 @@ Namespace WC3.Download
                 _defaultClient.ReportedPosition = _map.FileSize
             End If
 
-            _hooks.Add(_clock.AsyncRepeat(UpdatePeriod, Sub() inQueue.QueueAction(AddressOf OnTick)).Futurized)
+            _hooks.Add(_clock.AsyncRepeat(UpdatePeriod, Sub() inQueue.QueueAction(AddressOf OnTick)).AsTask)
 
             _hooks.Add(startPlayerHoldPoint.IncludeFutureHandler(Function(arg) inQueue.QueueFunc(
-                                    Function() OnGameStartPlayerHold(arg)).Defuturized).Futurized)
+                                    Function() OnGameStartPlayerHold(arg)).Unwrap).AsTask)
         End Sub
 
         '''<summary>Enumates the player clients as well as the default client.</summary>
@@ -118,10 +118,10 @@ Namespace WC3.Download
                 End If
             End Get
         End Property
-        Public Function QueueGetClientLatencyDescription(ByVal player As IPlayerDownloadAspect, ByVal latencyDescription As String) As IFuture(Of String)
+        Public Function QueueGetClientLatencyDescription(ByVal player As IPlayerDownloadAspect, ByVal latencyDescription As String) As Task(Of String)
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(latencyDescription IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() ClientLatencyDescription(player, latencyDescription))
         End Function
 
@@ -146,9 +146,9 @@ Namespace WC3.Download
                 Return ">HiB/s" '... What? It could happen...
             End Get
         End Property
-        Public Function QueueGetClientBandwidthDescription(ByVal player As IPlayerDownloadAspect) As IFuture(Of String)
+        Public Function QueueGetClientBandwidthDescription(ByVal player As IPlayerDownloadAspect) As Task(Of String)
             Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() ClientBandwidthDescription(player))
         End Function
 
@@ -160,10 +160,10 @@ Namespace WC3.Download
 #End Region
 
 #Region "Game-Triggered"
-        Private Function OnGameStartPlayerHold(ByVal player As IPlayerDownloadAspect) As IFuture
+        Private Function OnGameStartPlayerHold(ByVal player As IPlayerDownloadAspect) As Task
             Contract.Requires(player IsNot Nothing)
 
-            Dim playerHooks = New List(Of IFuture(Of IDisposable))() From {
+            Dim playerHooks = New List(Of Task(Of IDisposable))() From {
                     player.QueueAddPacketHandler(packetDefinition:=Protocol.Packets.ClientMapInfo,
                                                  handler:=Function(pickle) QueueOnReceiveClientMapInfo(player, pickle)),
                     player.QueueAddPacketHandler(packetDefinition:=Protocol.Packets.PeerConnectionInfo,
@@ -175,30 +175,30 @@ Namespace WC3.Download
             _playerClients(player) = client
             If _defaultClient IsNot Nothing Then client.Links.Add(_defaultClient)
 
-            player.FutureDisposed.QueueCallOnSuccess(inQueue,
+            player.DisposalTask.QueueContinueWithAction(inQueue,
                 Sub()
                     client.Dispose()
                     _playerClients.Remove(player)
                 End Sub)
 
-            Return playerHooks.Defuturized
+            Return playerHooks.AsAggregateTask
         End Function
 #End Region
 
 #Region "Communication-Triggered"
-        Private Function QueueOnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object))) As ifuture
+        Private Function QueueOnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object))) As Task
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Dim vals = pickle.Value
             Return inQueue.QueueAction(Sub() OnReceiveClientMapInfo(player:=player,
                                                                     state:=CType(vals("transfer state"), Protocol.MapTransferState),
                                                                     position:=CUInt(vals("total downloaded"))))
         End Function
-        Private Function QueueOnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of UInt16)) As ifuture
+        Private Function QueueOnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of UInt16)) As Task
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ifuture)() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() OnReceivePeerConnectionInfo(player:=player,
                                                                          flags:=pickle.Value))
         End Function
@@ -390,20 +390,20 @@ Namespace WC3.Download
         End Sub
 #End Region
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As IFuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueFunc(
                 Function()
-                    Dim results = New List(Of IFuture)()
+                    Dim results = New List(Of Task)()
                     For Each e In _hooks
-                        results.Add(e.CallOnValueSuccess(Sub(value) value.Dispose()))
+                        results.Add(e.ContinueWithAction(Sub(value) value.Dispose()))
                     Next e
                     For Each e In AllClients
                         e.Dispose()
-                        results.Add(e.FutureDisposed)
+                        results.Add(e.DisposalTask)
                     Next e
-                    Return results.Defuturized
-                End Function).Defuturized
+                    Return results.AsAggregateTask
+                End Function).Unwrap
         End Function
     End Class
 End Namespace

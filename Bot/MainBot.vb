@@ -15,11 +15,11 @@
 
 Namespace Bot
     Public NotInheritable Class MainBot
-        Inherits FutureDisposable
+        Inherits DisposableWithTask
 
         Public Shared ReadOnly TriggerCommandText As InvariantString = "?trigger"
 
-        Private ReadOnly inQueue As ICallQueue = New TaskedCallQueue
+        Private ReadOnly inQueue As CallQueue = New TaskedCallQueue
 
         Private ReadOnly _settings As New Bot.Settings()
         Private ReadOnly _portPool As New PortPool()
@@ -63,7 +63,7 @@ Namespace Bot
             End Get
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As ifuture
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             Return inQueue.QueueAction(Sub() _components.Dispose())
         End Function
@@ -71,33 +71,33 @@ Namespace Bot
 
     Public Module BotExtensions
         <Extension()>
-        Public Function InvokeCommand(ByVal this As MainBot, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Public Function InvokeCommand(ByVal this As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             Return (From components In this.Components.QueueGetAllComponents(Of MainBotManager)()
                     Select manager = components.First
                     Select manager.InvokeCommand(user, argument)
-                   ).Defuturized
+                   ).Unwrap
         End Function
         <Extension()>
-        Public Function QueueGetOrConstructGameServer(ByVal this As MainBot) As IFuture(Of WC3.GameServerManager)
+        Public Function QueueGetOrConstructGameServer(ByVal this As MainBot) As Task(Of WC3.GameServerManager)
             Contract.Requires(this IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of WC3.GameServerManager))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of WC3.GameServerManager))() IsNot Nothing)
             Return this.Components.QueueGetOrConstructComponent(Of WC3.GameServerManager)(
                 factory:=Function() New WC3.GameServerManager("Auto", New WC3.GameServer(New SystemClock()), this))
         End Function
         <Extension()>
         Public Function QueueCreateActiveGameSetsAsyncView(ByVal this As MainBot,
                                                            ByVal adder As Action(Of MainBot, WC3.GameServer, WC3.GameSet),
-                                                           ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As IFuture(Of IDisposable)
+                                                           ByVal remover As Action(Of MainBot, WC3.GameServer, WC3.GameSet)) As Task(Of IDisposable)
             Contract.Requires(this IsNot Nothing)
             Contract.Requires(adder IsNot Nothing)
             Contract.Requires(remover IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of IDisposable))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
 
-            Dim inQueue = New StartableCallQueue(New TaskedCallQueue())
-            Dim hooks = New List(Of IFuture(Of IDisposable))
+            Dim inQueue = New TaskedCallQueue(initiallyStarted:=False)
+            Dim hooks = New List(Of Task(Of IDisposable))
             Dim viewHook = this.Components.QueueCreateAsyncView(Of WC3.GameServerManager)(
                 adder:=Sub(sender, manager) inQueue.QueueAction(
                            Sub()
@@ -108,7 +108,7 @@ Namespace Bot
                                'async remove when view is disposed
                                hooks.Add(gameSetLink)
                                'async auto-remove when server is disposed
-                               Call {gameSetLink, manager.Server.FutureDisposed}.Defuturized.QueueCallOnSuccess(inQueue, Sub() gameSetLink.Value.Dispose()).SetHandled()
+                               Call {gameSetLink, manager.Server.DisposalTask}.AsAggregateTask.QueueContinueWithAction(inQueue, Sub() gameSetLink.Result.Dispose()).SetHandled()
                            End Sub),
                 remover:=Sub(sender, server)
                              'no action needed
@@ -116,11 +116,11 @@ Namespace Bot
             hooks.Add(viewHook)
 
             inQueue.Start()
-            Return viewHook.Select(Function() New DelegatedDisposable(Sub() inQueue.QueueAction(
+            Return viewHook.Select(Of IDisposable)(Function() New DelegatedDisposable(Sub() inQueue.QueueAction(
                 Sub()
                     If hooks Is Nothing Then Return
                     For Each hook In hooks
-                        hook.CallOnValueSuccess(Sub(value) value.Dispose()).SetHandled()
+                        hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
                     Next hook
                     hooks = Nothing
                 End Sub)))

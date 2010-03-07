@@ -80,23 +80,23 @@
             Return (From pair In _permissions Where user.Permission(pair.Key) < pair.Value).None
         End Function
 
-        Public Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Public Function Invoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Contract.Requires(target IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
             If IsUserAllowed(user) Then
-                Dim result = New FutureFunction(Of IFuture(Of String))()
+                Dim result = New TaskCompletionSource(Of Task(Of String))()
                 result.SetByEvaluating(Function() PerformInvoke(target, user, argument))
-                result.Defuturized.Catch(Sub(ex) ex.RaiseAsUnexpected("Error invoking command"))
-                Return result.Defuturized
+                result.Task.Unwrap.Catch(Sub(ex) ex.RaiseAsUnexpected("Error invoking command"))
+                Return result.Task.Unwrap
             Else
-                Dim result = New FutureFunction(Of String)
-                result.SetFailed(New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions)))
-                Return result
+                Dim result = New TaskCompletionSource(Of String)
+                result.SetException(New InvalidOperationException("Insufficient permissions. Need {0}.".Frmt(Me.Permissions)))
+                Return result.Task
             End If
         End Function
 
-        Protected MustOverride Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Protected MustOverride Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
 
         <ContractClassFor(GetType(Command(Of )))>
         MustInherit Class ContractClass
@@ -104,10 +104,10 @@
             Protected Sub New()
                 MyBase.New("", "", "")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
                 Contract.Requires(target IsNot Nothing)
                 Contract.Requires(argument IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IFuture(Of String))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
         End Class

@@ -473,7 +473,7 @@ Namespace WC3
             Catch e As Exception When TypeOf e Is IO.IOException OrElse
                                       TypeOf e Is IO.InvalidDataException
                 e.RaiseAsUnexpected("Error reading map strings file for {0}".Frmt(nameKey))
-                Return "{0} (error reading strings file: {1})".Frmt(nameKey, e.Message)
+                Return "{0} (error reading strings file: {1})".Frmt(nameKey, e.Summarize)
             End Try
         End Function
 

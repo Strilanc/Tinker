@@ -31,7 +31,7 @@ Namespace CKL
 
         <ContractVerification(False)>
         Public Function AsyncAuthenticate(ByVal clientSalt As IEnumerable(Of Byte),
-                                          ByVal serverSalt As IEnumerable(Of Byte)) As IFuture(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
+                                          ByVal serverSalt As IEnumerable(Of Byte)) As Task(Of ProductCredentialPair) Implements IProductAuthenticator.AsyncAuthenticate
             Dim requestPacket = Concat(clientSalt, serverSalt)
 
             'Connect to CKL server and send request
@@ -41,12 +41,12 @@ Namespace CKL
                     socket.WritePacket({CKL.Server.PacketPrefixValue, CKLPacketId.Keys}, requestPacket)
                     Return socket.AsyncReadPacket()
                 End Function
-            ).Defuturized
+            ).Unwrap
 
             'Process response
             Dim futureKeys = futureResponse.Select(
                 Function(packetData)
-                    futureSocket.Value.QueueDisconnect(expected:=True, reason:="Received response")
+                    futureSocket.Result.QueueDisconnect(expected:=True, reason:="Received response")
 
                     'Read header
                     Contract.Assume(packetData.Count >= 4)
@@ -74,7 +74,7 @@ Namespace CKL
                     End Select
                 End Function)
 
-            futureKeys.CallOnSuccess(Sub() _logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive))
+            futureKeys.ContinueWithAction(Sub() _logger.Log("Succesfully borrowed keys from CKL server.", LogMessageType.Positive))
 
             Return futureKeys
         End Function

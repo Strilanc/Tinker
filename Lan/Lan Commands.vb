@@ -27,13 +27,13 @@ Namespace Lan
                            template:="On|Off",
                            Description:="Causes the advertiser to automatically advertise all games on any server when 'On'.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Select Case New InvariantString(argument.RawValue(0))
                     Case "On"
-                        Return target.QueueSetAutomatic(True).EvalOnSuccess(Function() "Now automatically advertising games.")
+                        Return target.QueueSetAutomatic(True).ContinueWithFunc(Function() "Now automatically advertising games.")
                     Case "Off"
-                        Return target.QueueSetAutomatic(False).EvalOnSuccess(Function() "Now not automatically advertising games.")
+                        Return target.QueueSetAutomatic(False).ContinueWithFunc(Function() "Now not automatically advertising games.")
                     Case Else
                         Throw New ArgumentException("Must specify 'On' or 'Off' as an argument.")
                 End Select
@@ -47,14 +47,14 @@ Namespace Lan
                            template:="id=# name=<game name> map=<search query>",
                            Description:="Adds a game to be advertised, but doesn't create a new server to go with it.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.NamedValue("name")
                 Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
                 Dim gameStats = New WC3.GameStats(map, If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value), argument)
                 Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, gameStats, clock:=New SystemClock())
 
-                Return target.QueueAddGame(gameDescription).EvalOnSuccess(Function() "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath))
+                Return target.QueueAddGame(gameDescription).ContinueWithFunc(Function() "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath))
             End Function
         End Class
 
@@ -65,7 +65,7 @@ Namespace Lan
                            template:="id",
                            Description:="Removes a game being advertised.")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As Advertiser, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim id As UInteger
                 If Not UInteger.TryParse(argument.RawValue(0), id) Then
@@ -93,17 +93,17 @@ Namespace Lan
                            Permissions:="games:1",
                            extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As AdvertiserManager, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim futureServer = target.Bot.QueueGetOrConstructGameServer()
                 Dim futureGameSet = (From server In futureServer
                                      Select server.QueueAddGameFromArguments(argument, user)
-                                    ).Defuturized
+                                    ).Unwrap
                 Dim futureAdvertised = (From gameSet In futureGameSet
                                         Select target.Advertiser.QueueAddGame(gameSet.GameSettings.GameDescription)
-                                       ).Defuturized
-                futureAdvertised.Catch(Sub() If futureGameSet.State = FutureState.Succeeded Then futureGameSet.value.dispose())
-                Dim futureDesc = futureAdvertised.EvalOnSuccess(Function() futureGameSet.Value.GameSettings.GameDescription)
+                                       ).Unwrap
+                futureAdvertised.Catch(Sub() If futureGameSet.Status = TaskStatus.RanToCompletion Then futureGameSet.Result.Dispose())
+                Dim futureDesc = futureAdvertised.ContinueWithFunc(Function() futureGameSet.Result.GameSettings.GameDescription)
                 Return futureDesc.select(Function(desc) "Hosted game '{0}' for map '{1}'".Frmt(desc.name, desc.GameStats.AdvertisedPath))
             End Function
         End Class

@@ -268,7 +268,7 @@ Public Class SettingsForm
                                        TypeOf ex Is NotSupportedException OrElse
                                        TypeOf ex Is UnauthorizedAccessException
                 ex.RaiseAsUnexpected("Importing plugin from settings form.")
-                MessageBox.Show("Error importing plugin: {0}".Frmt(ex.Message), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+                MessageBox.Show("Error importing plugin: {0}".Frmt(ex.Summarize), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
             End Try
         End If
     End Sub
@@ -298,7 +298,7 @@ Public Class SettingsForm
             End If
         Catch ex As IO.IOException
             ex.RaiseAsUnexpected("Reading replay build number.")
-            MessageBox.Show("Error reading replay: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
+            MessageBox.Show("Error reading replay: {0}".Frmt(ex.Summarize), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error)
         End Try
     End Sub
 

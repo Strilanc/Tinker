@@ -33,14 +33,14 @@
 
         'verification disabled due to stupid verifier (1.2.3.0118.5)
         <ContractVerification(False)>
-        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+        Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
             Select Case argument
                 Case "" 'intro
                     Return {"[Tinker] 'Help ?' for how to use commands",
                             "'Help *' for available commands",
                             "'Help +' for all commands",
                             "'Help command' for help with specific commands."
-                            }.StringJoin(", ").Futurized
+                            }.StringJoin(", ").AsTask
 
                 Case "?" 'how to use commands
                     Return {"Commands take four types of arguments: named arguments, optional named arguments, optional switches, and raw arguments.",
@@ -50,20 +50,20 @@
                             "Optional switches, such as -useFancyPants, are argument which can either be skipped or included.",
                             "Optional named arguments, such as -optional=value, can be skipped but are otherwise named arguments prefixed with a -.",
                             "There are also tail arguments, which aren't separated by spaces, like MapQuery in 'FindMaps MapQuery...'."
-                            }.StringJoin(Environment.NewLine).Futurized
+                            }.StringJoin(Environment.NewLine).AsTask
 
                 Case "*" 'list available commands
                     Return (From command In _commandMap.Values
                             Order By command.Name
                             Where command.IsUserAllowed(user)
                             Select command.Name
-                            ).StringJoin(" ").Futurized
+                            ).StringJoin(" ").AsTask
 
                 Case "+" 'list all commands
                     Return (From command In _commandMap.Values
                             Order By command.Name
                             Select command.Name
-                            ).StringJoin(" ").Futurized
+                            ).StringJoin(" ").AsTask
 
                 Case Else 'help with specific commands
                     Dim p = argument.IndexOf(" "c)
@@ -75,7 +75,7 @@
                             Return "{0} [{1} {2}] {{{3}}}".Frmt(command.Description,
                                                                 command.Name,
                                                                 command.Format,
-                                                                command.Permissions).Futurized
+                                                                command.Permissions).AsTask
                         End If
                     Else
                         'command subtopics
@@ -88,10 +88,10 @@
                             If rest = "*" Then 'list subtopics
                                 Return (From key In command.HelpTopics.Keys
                                         Order By key
-                                        ).StringJoin(" ").Futurized
+                                        ).StringJoin(" ").AsTask
                             ElseIf command.HelpTopics.TryGetValue(key:=rest, value:=result) Then
                                 Contract.Assume(result IsNot Nothing)
-                                Return result.Futurized
+                                Return result.AsTask
                             End If
                         End If
                     End If

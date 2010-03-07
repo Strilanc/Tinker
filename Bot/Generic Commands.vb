@@ -13,9 +13,9 @@ Namespace Bot
                            Description:="Recaches external and internal IP addresses",
                            Permissions:="root:5")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 CacheIPAddresses()
-                Return "Recaching addresses.".Futurized
+                Return "Recaching addresses.".AsTask
             End Function
         End Class
 
@@ -27,7 +27,7 @@ Namespace Bot
                            Description:="Downloads a map directly from a supported web site.",
                            Permissions:="root:2")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 'Run download on a separate thread to avoid blocking anything
                 Return ThreadedFunc(
                     Function()
@@ -113,13 +113,13 @@ Namespace Bot
                            Format:="MapQuery...",
                            Permissions:="games:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As T, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
                 Dim results = FindFilesMatching(fileQuery:="*{0}*".Frmt(argument),
                                                 likeQuery:="*.[wW]3[mxMX]",
                                                 directory:=My.Settings.mapPath.AssumeNotNull,
                                                 maxResults:=5)
-                If results.Count = 0 Then Return "No matching maps.".Futurized
-                Return results.StringJoin(", ").Futurized
+                If results.Count = 0 Then Return "No matching maps.".AsTask
+                Return results.StringJoin(", ").AsTask
             End Function
         End Class
     End Class

@@ -29,52 +29,52 @@ Namespace Bot
                            Description:="Creates and connects bnet clients, using the given profiles. All of the clients will be set to automatic hosting.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim profileNames = (From word In argument.Split(" "c) Where word <> "").Cache
                 If profileNames.None Then Throw New ArgumentException("No profiles specified.")
 
                 'Attempt to connect to each listed profile
-                Dim futureManagers = New List(Of IFuture(Of Bnet.ClientManager))()
+                Dim futureManagers = New List(Of Task(Of Bnet.ClientManager))()
                 For Each profileName In profileNames
                     Contract.Assume(profileName IsNot Nothing)
                     'Create and connect
                     Dim futureManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
-                    futureManager.CallOnValueSuccess(Sub(manager) manager.QueueSetAutomatic(True)).SetHandled()
-                    Dim futureAdded = (From manager In futureManager Select target.Components.QueueAddComponent(manager)).Defuturized
-                    Dim futureClient = futureAdded.EvalOnSuccess(Function() futureManager.Value.Client)
+                    futureManager.ContinueWithAction(Sub(manager) manager.QueueSetAutomatic(True)).SetHandled()
+                    Dim futureAdded = (From manager In futureManager Select target.Components.QueueAddComponent(manager)).Unwrap
+                    Dim futureClient = futureAdded.ContinueWithFunc(Function() futureManager.Result.Client)
                     Dim futureConnected = (From client In futureClient
                                            Select client.QueueConnectAndLogOn(
                                                             remoteHost:=client.Profile.server.Split(" "c)(0),
                                                             credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
-                                                        ).Defuturized
+                                                        ).Unwrap
 
                     'Cleanup on failure
-                    futureManager.CallOnValueSuccess(Sub(manager) futureConnected.Catch(Sub() manager.Dispose())).SetHandled()
+                    futureManager.ContinueWithAction(Sub(manager) futureConnected.Catch(Sub() manager.Dispose())).SetHandled()
                     'Store
-                    futureManagers.Add(futureConnected.EvalOnSuccess(Function() futureManager.Value))
+                    futureManagers.Add(futureConnected.ContinueWithFunc(Function() futureManager.Result))
                 Next profileName
 
                 'Link connected clients when connections completed
-                Dim result = New FutureFunction(Of String)()
-                futureManagers.Defuturized.CallOnSuccess(
+                Dim result = New TaskCompletionSource(Of String)()
+                futureManagers.AsAggregateTask.ContinueWithAction(
                     Sub()
                         'Links.AdvertisingLink.CreateMultiWayLink(clients)
-                        result.SetSucceeded("Connected")
+                        result.SetResult("Connected")
                     End Sub
                 ).Catch(
                     Sub(exception)
                         'Dispose all upon failure
                         For Each futureManager In futureManagers
-                            If futureManager.State = FutureState.Succeeded Then
-                                futureManager.Value.Dispose()
+                            If futureManager.Status = TaskStatus.RanToCompletion Then
+                                futureManager.Result.Dispose()
                             End If
                         Next futureManager
                         'Propagate
-                        result.SetFailed(exception)
+                        result.SetException(exception.InnerExceptions)
                     End Sub
                 )
-                Return result
+                Return result.Task
             End Function
         End Class
 
@@ -89,7 +89,7 @@ Namespace Bot
                            hasPrivateArguments:=True)
             End Sub
 
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim password = argument.NamedValue("password")
@@ -107,7 +107,7 @@ Namespace Bot
                            template:="name",
                            Permissions:="root:5")
             End Sub
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim port = target.PortPool.TryAcquireAnyPort()
                 If port Is Nothing Then Throw New OperationFailedException("No available ports in the pool.")
@@ -118,7 +118,7 @@ Namespace Bot
                 Dim manager = New CKL.ServerManager(server)
                 Dim finished = target.Components.QueueAddComponent(manager)
                 finished.Catch(Sub() manager.Dispose())
-                Return finished.EvalOnSuccess(Function() "Added CKL server {0}".Frmt(name))
+                Return finished.ContinueWithFunc(Function() "Added CKL server {0}".Frmt(name))
             End Function
         End Class
 
@@ -130,7 +130,7 @@ Namespace Bot
                            Description:="Creates a new bnet client. -Auto causes the client to automatically advertising any games hosted by the bot.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim profileName As InvariantString = If(argument.TryGetOptionalNamedValue("profile"), "default")
                 Dim clientName As InvariantString = argument.RawValue(0)
@@ -140,8 +140,8 @@ Namespace Bot
                         Dim added = target.Components.QueueAddComponent(manager)
                         added.Catch(Sub() manager.Dispose())
                         If argument.HasOptionalSwitch("auto") Then manager.QueueSetAutomatic(True)
-                        Return added.EvalOnSuccess(Function() "Created Client")
-                    End Function).Defuturized
+                        Return added.ContinueWithFunc(Function() "Created Client")
+                    End Function).Unwrap
             End Function
         End Class
 
@@ -153,7 +153,7 @@ Namespace Bot
                            Description:="Creates a lan advertiser. -Manual causes the advertiser to not automatically advertise any games hosted by the bot.",
                            Permissions:="root:4")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.RawValue(0)
                 Dim remoteHost = If(argument.TryGetOptionalNamedValue("receiver"), "localhost")
@@ -164,7 +164,7 @@ Namespace Bot
                 If auto Then manager.QueueSetAutomatic(auto)
                 Dim finished = target.Components.QueueAddComponent(manager)
                 finished.Catch(Sub() manager.Dispose())
-                Return finished.EvalOnSuccess(Function() "Created lan advertiser.")
+                Return finished.ContinueWithFunc(Function() "Created lan advertiser.")
             End Function
         End Class
 
@@ -176,7 +176,7 @@ Namespace Bot
                            Description:="Disposes a bot component.",
                            Permissions:="root:5")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 'parse
                 Dim args = argument.RawValue(0).Split(":"c)
@@ -184,7 +184,7 @@ Namespace Bot
                 Dim type As InvariantString = args(0)
                 Dim name As InvariantString = args(1).AssumeNotNull
                 'dispose
-                Return target.Components.QueueFindComponent(type, name).Select(
+                Return target.Components.QueueFindComponent(type, name).ContinueWith(
                     Function(component)
                         component.Dispose()
                         Return "Disposed {0}".Frmt(argument.RawValue(0))
@@ -200,7 +200,7 @@ Namespace Bot
                            Description:="Returns a global setting's value {tickperiod, laglimit, commandprefix, gamerate}.",
                            Permissions:="root:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Dim argSetting As InvariantString = argument.RawValue(0)
 
                 Dim settingValue As Object
@@ -211,7 +211,7 @@ Namespace Bot
                     Case "GameRate" : settingValue = My.Settings.game_speed_factor
                     Case Else : Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argSetting))
                 End Select
-                Return "{0} = '{1}'".Frmt(argSetting, settingValue).Futurized
+                Return "{0} = '{1}'".Frmt(argSetting, settingValue).AsTask
             End Function
         End Class
 
@@ -227,7 +227,7 @@ Namespace Bot
                            extraHelp:=Concat(WC3.GameSettings.PartialArgumentHelp, WC3.GameStats.PartialArgumentHelp).StringJoin(Environment.NewLine))
             End Sub
             <ContractVerification(False)>
-            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Strilbrary.Threading.IFuture(Of String)
+            Protected Overloads Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As Commands.CommandArgument) As Task(Of String)
                 Return From server In target.QueueGetOrConstructGameServer()
                        From gameSet In server.QueueAddGameFromArguments(argument, user)
                        Let name = gameSet.GameSettings.GameDescription.Name
@@ -244,7 +244,7 @@ Namespace Bot
                            Description:="Lists all bot components. Use -type= to filter by component type.",
                            Permissions:="root:1")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim typeFilter = argument.TryGetOptionalNamedValue("type")
                 If typeFilter Is Nothing Then
@@ -270,7 +270,7 @@ Namespace Bot
                            Description:="Loads the named plugin.",
                            Permissions:="root:5")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim profile = (From p In target.Settings.PluginProfiles Where p.name = argument.RawValue(0)).FirstOrDefault
                 If profile Is Nothing Then Throw New InvalidOperationException("No such plugin profile.")
@@ -278,7 +278,7 @@ Namespace Bot
                 Dim manager = New Plugins.PluginManager(socket)
                 Dim added = target.Components.QueueAddComponent(manager)
                 added.Catch(Sub() manager.Dispose())
-                Return added.EvalOnSuccess(Function() "Loaded plugin. Description: {0}".Frmt(socket.Plugin.Description))
+                Return added.ContinueWithFunc(Function() "Loaded plugin. Description: {0}".Frmt(socket.Plugin.Description))
             End Function
         End Class
 
@@ -290,7 +290,7 @@ Namespace Bot
                            Description:="Sets a global setting {tickperiod, laglimit, commandprefix, gamerate}.",
                            Permissions:="root:2")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Dim argSetting As InvariantString = argument.RawValue(0)
                 Dim argValue = argument.RawValue(1)
 
@@ -313,7 +313,7 @@ Namespace Bot
                     Case Else
                         Throw New ArgumentException("Unrecognized setting '{0}'.".Frmt(argSetting))
                 End Select
-                Return "{0} set to {1}".Frmt(argSetting, argValue).Futurized
+                Return "{0} set to {1}".Frmt(argSetting, argValue).AsTask
             End Function
         End Class
 
@@ -325,7 +325,7 @@ Namespace Bot
                            Description:="Forwards commands to the named component.",
                            Permissions:="root:3")
             End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As IFuture(Of String)
+            Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argumentHead As String, ByVal argumentRest As String) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 'parse
                 Dim args = argumentHead.Split(":"c)
@@ -336,7 +336,7 @@ Namespace Bot
                 'send
                 Return (From component In target.Components.QueueFindComponent(type, name)
                         Select component.InvokeCommand(user, argumentRest)
-                       ).Defuturized()
+                       ).Unwrap()
             End Function
         End Class
     End Class

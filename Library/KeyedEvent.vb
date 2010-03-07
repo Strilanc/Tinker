@@ -1,5 +1,5 @@
 ﻿Public Class KeyedEvent(Of TKey, TArg)
-    Private ReadOnly handlers As New Dictionary(Of TKey, List(Of Func(Of TArg, IFuture)))
+    Private ReadOnly handlers As New Dictionary(Of TKey, List(Of Func(Of TArg, Task)))
     Private ReadOnly lock As New Object()
 
     <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -7,14 +7,14 @@
     End Sub
 
     Public Function [AddHandler](ByVal key As TKey,
-                                 ByVal handler As Func(Of TArg, IFuture)) As IDisposable
+                                 ByVal handler As Func(Of TArg, Task)) As IDisposable
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(handler IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
 
         SyncLock lock
             If Not handlers.ContainsKey(key) Then
-                handlers(key) = New List(Of Func(Of TArg, IFuture))
+                handlers(key) = New List(Of Func(Of TArg, Task))
             End If
             Contract.Assume(handlers(key) IsNot Nothing)
             handlers(key).Add(handler)
@@ -29,11 +29,11 @@
 
     <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1030:UseEventsWhereAppropriate")>
     Public Function Raise(ByVal key As TKey,
-                          ByVal value As TArg) As IReadableList(Of IFuture)
+                          ByVal value As TArg) As IReadableList(Of Task)
         Contract.Requires(key IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IReadableList(Of IFuture))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IReadableList(Of Task))() IsNot Nothing)
         SyncLock lock
-            If Not handlers.ContainsKey(key) Then Return New IFuture() {}.AsReadableList
+            If Not handlers.ContainsKey(key) Then Return New Task() {}.AsReadableList
             Contract.Assume(handlers(key) IsNot Nothing)
             Return (From handler In handlers(key) Select handler(value)).ToReadableList
         End SyncLock
