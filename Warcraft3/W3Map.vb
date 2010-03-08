@@ -88,7 +88,7 @@ Namespace WC3
                                FileSize:=CUInt(crcStream.Length),
                                FileChecksumCRC32:=crcStream.CRC32,
                                MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive),
-                               MapChecksumXORO:=CUInt(ComputeMapXoro(mapArchive, war3PatchArchive)),
+                               MapChecksumXORO:=ComputeMapXoro(mapArchive, war3PatchArchive),
                                Slots:=info.slots,
                                PlayableWidth:=info.playableWidth,
                                PlayableHeight:=info.playableHeight,
@@ -383,7 +383,7 @@ Namespace WC3
 
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
         Private Shared Function ComputeMapXoro(ByVal mapArchive As MPQ.Archive,
-                                               ByVal war3PatchArchive As MPQ.Archive) As ModInt32
+                                               ByVal war3PatchArchive As MPQ.Archive) As UInt32
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
             Dim result = 0UI

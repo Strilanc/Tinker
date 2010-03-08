@@ -177,7 +177,8 @@ Namespace WC3
 
             AddHandler _lobby.ChangedPublicState, Sub(sender)
                                                       ThrowUpdated()
-                                                      slotStateUpdateThrottle.SetActionToRun(Sub() inQueue.QueueAction(Sub() SendLobbyState(Environment.TickCount)))
+                                                      slotStateUpdateThrottle.SetActionToRun(Sub() inQueue.QueueAction(
+                                                                                                 Sub() SendLobbyState(New ModInt32(Environment.TickCount).UnsignedValue)))
                                                   End Sub
             AddHandler _lobby.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
             AddHandler _motor.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
@@ -576,10 +577,10 @@ Namespace WC3
 
             _lobby.Slots = _lobby.Slots.WithEncodeHCL(Settings)
             Dim randomSeed As ModInt32 = Environment.TickCount()
-            SendLobbyState(randomSeed)
+            SendLobbyState(randomSeed.UnsignedValue)
 
             If Settings.ShouldRecordReplay Then
-                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _kernel.Players.Cache, _lobby.Slots, randomSeed)
+                Replay.ReplayManager.StartRecordingFrom(Settings.DefaultReplayFileName, Me, _kernel.Players.Cache, _lobby.Slots, randomSeed.UnsignedValue)
             End If
 
             _kernel.State = GameState.Loading
@@ -624,7 +625,7 @@ Namespace WC3
         End Function
 
         '''<summary>Broadcasts new game state to players, and throws the updated event.</summary>
-        Private Sub SendLobbyState(ByVal randomSeed As ModInt32)
+        Private Sub SendLobbyState(ByVal randomSeed As UInt32)
             If _kernel.State >= GameState.Loading Then Return
 
             For Each player In _kernel.Players

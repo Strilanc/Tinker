@@ -114,7 +114,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeLobbyState(ByVal layoutStyle As LobbyLayoutStyle,
                                        ByVal slots As IEnumerable(Of Slot),
-                                       ByVal randomSeed As ModInt32,
+                                       ByVal randomSeed As UInt32,
                                        Optional ByVal receiver As Player = Nothing,
                                        Optional ByVal hideSlots As Boolean = False) As Packet
             Contract.Requires(slots IsNot Nothing)
@@ -126,7 +126,7 @@ Namespace WC3.Protocol
 
             Return Packet.FromValue(Packets.LobbyState, New Dictionary(Of InvariantString, Object) From {
                     {"slots", (From slot In slots Select SlotJar.PackSlot(slot, receiver)).ToReadableList},
-                    {"random seed", CUInt(randomSeed)},
+                    {"random seed", randomSeed},
                     {"layout style", layoutStyle},
                     {"num player slots", reportedPlayerSlots}})
         End Function
