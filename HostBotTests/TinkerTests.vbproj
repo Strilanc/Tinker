@@ -49,6 +49,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Documents\Visual Studio 10\Projects\Strilbrary\Strilbrary\bin\Release\Strilbrary.dll</HintPath>
     </Reference>
+    <Reference Include="StrilbraryUnchecked">
+      <HintPath>..\..\..\..\Documents\Visual Studio 10\Projects\Strilbrary\StrilbraryUnchecked\bin\Release\StrilbraryUnchecked.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />

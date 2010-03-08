@@ -357,19 +357,25 @@ Namespace WC3
             End Using
         End Function
 
+        Private Shared Function XoroAccumulate(ByVal accumulator As UInt32, ByVal value As UInt32) As UInt32
+            Dim result = accumulator Xor value
+            result = (result << 3) Or (result >> 29)
+            Return result
+        End Function
+
         '''<summary>Computes parts of the Xoro checksum.</summary>
-        Private Shared Function ComputeStreamXoro(ByVal stream As IRandomReadableStream) As ModInt32
+        Private Shared Function ComputeStreamXoro(ByVal stream As IRandomReadableStream) As UInt32
             Contract.Requires(stream IsNot Nothing)
-            Dim val As ModInt32 = 0
+            Dim val = 0UI
 
             'Process complete dwords
             For repeat = 1 To stream.Length \ 4
-                val = (val Xor stream.ReadUInt32()).ShiftRotateLeft(3)
+                val = XoroAccumulate(val, stream.ReadUInt32())
             Next repeat
 
             'Process bytes not in a complete dword
             For repeat = 1 To stream.Length Mod 4
-                val = (val Xor stream.ReadByte()).ShiftRotateLeft(3)
+                val = XoroAccumulate(val, stream.ReadByte())
             Next repeat
 
             Return val
@@ -380,7 +386,7 @@ Namespace WC3
                                                ByVal war3PatchArchive As MPQ.Archive) As ModInt32
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
-            Dim val As ModInt32 = 0
+            Dim result = 0UI
 
             'Overridable map files from war3patch.mpq
             For Each filename In {"scripts\common.j",
@@ -390,13 +396,13 @@ Namespace WC3
                                   mapArchive,
                                   war3PatchArchive)
                 Using stream = mpqToUse.OpenFileByName(filename)
-                    val = val Xor ComputeStreamXoro(stream)
+                    result = result Xor ComputeStreamXoro(stream)
                 End Using
             Next filename
+            result = XoroAccumulate(0, result)
 
             'Magic value
-            val = val.ShiftRotateLeft(3)
-            val = (val Xor &H3F1379E).ShiftRotateLeft(3)
+            result = XoroAccumulate(result, &H3F1379E)
 
             'Important map files
             For Each fileset In {"war3map.j|scripts\war3map.j",
@@ -413,12 +419,12 @@ Namespace WC3
                                      Where mapArchive.Hashtable.Contains(filename)).FirstOrDefault
                 If filenameToUse IsNot Nothing Then
                     Using stream = mapArchive.OpenFileByName(filenameToUse)
-                        val = (val Xor ComputeStreamXoro(stream)).ShiftRotateLeft(3)
+                        result = XoroAccumulate(result, ComputeStreamXoro(stream))
                     End Using
                 End If
             Next fileset
 
-            Return val
+            Return result
         End Function
 
         '''<summary>Finds a string in the war3map.wts file. Returns null if the string is not found.</summary>
