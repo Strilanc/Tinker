@@ -1,7 +1,7 @@
 ﻿Imports Tinker.Pickling
 
 Namespace WC3.Download
-    Partial Public Class Manager
+    Public Class Manager
         Inherits DisposableWithTask
 
         Public Shared ReadOnly ForceSteadyPeriod As TimeSpan = 5.Seconds

@@ -14,6 +14,7 @@ Namespace WC3.Download
 
         <ContractClassFor(GetType(IPlayerDownloadAspect))>
         NotInheritable Shadows Class ContractClass
+            Inherits IDisposableWithTask.ContractClass
             Implements IPlayerDownloadAspect
             Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined
                 Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
@@ -42,13 +43,6 @@ Namespace WC3.Download
                 Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
-            Public ReadOnly Property DisposalTask As Task Implements IDisposableWithTask.DisposalTask
-                Get
-                    Throw New NotSupportedException
-                End Get
-            End Property
-            Public Sub Dispose() Implements IDisposable.Dispose
-            End Sub
             Public Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As Task Implements IPlayerDownloadAspect.QueueDisconnect
                 Contract.Requires(reasonDescription IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
