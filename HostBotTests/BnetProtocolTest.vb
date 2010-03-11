@@ -179,7 +179,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientUserAuthenticationBeginTest()
-        Dim key = (From i In Enumerable.Range(0, 32) Select CByte(i)).ToArray
+        Dim key = CByte(32).Range.ToArray
         JarTest(Packets.ClientToServer.UserAuthenticationBegin.Jar,
                 data:=key.Concat(
                       {116, 101, 115, 116, 0}),
@@ -190,7 +190,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientUserAuthenticationFinishTest()
-        Dim proof = (From i In Enumerable.Range(0, 20) Select CByte(i)).ToReadableList
+        Dim proof = CByte(20).Range.ToReadableList
         JarTest(Packets.ClientToServer.UserAuthenticationFinish.Jar,
                 equater:=Function(e1 As IReadableList(Of Byte), e2 As IReadableList(Of Byte)) e1.SequenceEqual(e2),
                 data:=proof,
@@ -198,7 +198,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ClientWardenTest()
-        Dim data = (From i In Enumerable.Range(0, 50) Select CByte(i)).ToReadableList
+        Dim data = CByte(50).Range.ToReadableList
         JarTest(Packets.ClientToServer.Warden.Jar,
                 equater:=Function(e1 As IReadableList(Of Byte), e2 As IReadableList(Of Byte)) e1.SequenceEqual(e2),
                 data:=data,
@@ -323,7 +323,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerProgramAuthenticationBeginTest()
-        Dim sig = (From e In Enumerable.Range(0, 128) Select CByte(e)).ToReadableList
+        Dim sig = CByte(128).Range.ToReadableList
         JarTest(Packets.ServerToClient.ProgramAuthenticationBegin.Jar,
                 data:=New Byte() {2, 0, 0, 0,
                        42, 0, 0, 0,
@@ -393,7 +393,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerUserAuthenticationBeginTest()
-        Dim key = (From i In Enumerable.Range(0, 32) Select CByte(i)).ToReadableList
+        Dim key = CByte(32).Range.ToReadableList
         Dim salt = key.Reverse.ToReadableList
         JarTest(Packets.ServerToClient.UserAuthenticationBegin.Jar,
                 data:=New Byte() {0, 0, 0, 0}.Concat(salt).Concat(key),
@@ -405,7 +405,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerUserAuthenticationFinishTest()
-        Dim proof = (From i In Enumerable.Range(0, 20) Select CByte(i)).ToReadableList
+        Dim proof = CByte(20).Range.ToReadableList
         JarTest(Packets.ServerToClient.UserAuthenticationFinish.Jar,
                 data:=New Byte() {0, 0, 0, 0}.Concat(
                       proof).Concat(
@@ -418,7 +418,7 @@ Public Class BnetProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ServerWardenTest()
-        Dim data = (From i In Enumerable.Range(0, 50) Select CByte(i)).ToReadableList
+        Dim data = CByte(50).Range.ToReadableList
         JarTest(Packets.ServerToClient.Warden.Jar,
                 equater:=Function(e1 As IReadableList(Of Byte), e2 As IReadableList(Of Byte)) e1.SequenceEqual(e2),
                 data:=data,

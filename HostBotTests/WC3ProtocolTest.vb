@@ -53,8 +53,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub HostMapInfoTest()
-        Dim sha1 = (From i In Enumerable.Range(0, 20)
-                    Select CByte(i)).ToReadableList
+        Dim sha1 = CByte(20).Range.ToReadableList
         JarTest(Packets.HostMapInfo.Jar,
                 data:=New Byte() _
                       {0, 0, 0, 0,

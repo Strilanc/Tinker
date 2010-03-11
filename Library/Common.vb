@@ -104,7 +104,7 @@ Public Module PoorlyCategorizedFunctions
                              Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian) As UInt64
         Contract.Requires(data IsNot Nothing)
         If data.Count > 8 Then Throw New ArgumentException("Too many bytes.", "data")
-        Dim padding = Enumerable.Repeat(CByte(0), 8 - data.Count)
+        Dim padding = CByte(0).Repeated(8 - data.Count)
         Select Case byteOrder
             Case Strilbrary.Values.ByteOrder.LittleEndian
                 Return data.Concat(padding).ToUInt64(byteOrder)
@@ -143,13 +143,83 @@ Public Module PoorlyCategorizedFunctions
         End If
     End Function
 
+    <Extension()> <Pure()>
+    Public Function Interleaved(Of T)(ByVal sequences As IEnumerable(Of IEnumerable(Of T))) As IEnumerable(Of T)
+        Contract.Requires(sequences IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
+        Dim result = New List(Of T)
+        Dim enumerators = (From sequence In sequences Select sequence.GetEnumerator).ToList
+        Dim index = 0
+        Do
+            While Not enumerators(index).MoveNext
+                enumerators.RemoveAt(index)
+                If enumerators.Count = 0 Then Exit Do
+                index = index Mod enumerators.Count
+            End While
+
+            result.Add(enumerators(index).Current)
+            index = (index + 1) Mod enumerators.Count
+        Loop
+        Return result
+    End Function
+    <Extension()> <Pure()>
+    Public Function Deinterleaved(Of T)(ByVal sequence As IEnumerable(Of T), ByVal sequenceCount As Integer) As IEnumerable(Of IEnumerable(Of T))
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(sequenceCount >= 1)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of T)))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of T)))().Count = sequenceCount)
+        Dim result = (From i In sequenceCount.Range Select New List(Of T)).ToList
+        Dim index = 0
+        For Each item In sequence
+            result(index).Add(item)
+            index = (index + 1) Mod sequenceCount
+        Next item
+        Return result
+    End Function
+
+    '''<summary>Returns a sequence of the non-negative integers less than the limit, starting at 0 and incrementing.</summary>
+    <Pure()> <Extension()>
+    Public Function Range(ByVal limit As Int32) As IEnumerable(Of Int32)
+        Contract.Requires(limit >= 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))().Count = limit)
+        Return Enumerable.Range(0, limit)
+    End Function
+    '''<summary>Returns a sequence of the bytes less than the limit, starting at 0 and incrementing.</summary>
+    <Pure()> <Extension()>
+    Public Function Range(ByVal limit As Byte) As IEnumerable(Of Byte)
+        Contract.Requires(limit >= 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))().Count = limit)
+        Return From i In limit.Range Select CByte(i)
+    End Function
+
+    '''<summary>Returns a sequence with items equal to the given sequence's items offset by the given amount.</summary>
+    <Pure()> <Extension()>
+    Public Function OffsetBy(ByVal sequence As IEnumerable(Of Int32), ByVal offset As Int32) As IEnumerable(Of Int32)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))().Count = sequence.Count)
+        Return From i In sequence Select i + offset
+    End Function
+
+    '''<summary>Returns a sequence consisting of a repeated value.</summary>
+    <Pure()> <Extension()>
+    Public Function Repeated(Of T)(ByVal value As T, ByVal count As Integer) As IEnumerable(Of T)
+        Contract.Requires(count >= 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))().Count = count)
+        Return Enumerable.Repeat(value, count)
+    End Function
+
     <Extension()>
     Public Sub SetHandled(Of T)(ByVal task As TaskCompletionSource(Of T))
-
+        task.Task.SetHandled()
     End Sub
     <Extension()>
     Public Sub SetHandled(ByVal task As Task)
-
+        task.Catch(Sub()
+                   End Sub)
     End Sub
 
     Public Function FindFilesMatching(ByVal fileQuery As String,
@@ -248,7 +318,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IReadableList(Of T))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IReadableList(Of T))().Count = Math.Max(this.Count, minimumLength))
         If this.Count >= minimumLength Then Return this
-        Dim result = this.Concat(Enumerable.Repeat(paddingValue, minimumLength - this.Count)).ToReadableList
+        Dim result = this.Concat(paddingValue.Repeated(minimumLength - this.Count)).ToReadableList
         Contract.Assume(result.Count = Math.Max(this.Count, minimumLength))
         Return result
     End Function

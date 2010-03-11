@@ -6,7 +6,6 @@
         Private ReadOnly _startPlayerHoldPoint As HoldPoint(Of Player)
         Private ReadOnly _freeIndexes As List(Of PlayerId)
         Private ReadOnly _logger As Logger
-        Private ReadOnly _clock As IClock
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _pidVisiblityMap As New Dictionary(Of PlayerId, PlayerId)()
         Private ReadOnly _settings As GameSettings
@@ -23,7 +22,6 @@
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_slots IsNot Nothing)
             Contract.Invariant(_kernel IsNot Nothing)
-            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_pidVisiblityMap IsNot Nothing)
             Contract.Invariant(_settings IsNot Nothing)
         End Sub
@@ -32,7 +30,6 @@
                        ByVal downloadManager As Download.Manager,
                        ByVal logger As Logger,
                        ByVal kernel As GameKernel,
-                       ByVal clock As IClock,
                        ByVal settings As GameSettings)
             Contract.Assume(startPlayerHoldPoint IsNot Nothing)
             Contract.Assume(downloadManager IsNot Nothing)
@@ -42,11 +39,10 @@
             Me._slots = New SlotSet(InitCreateSlots(settings))
             Me._logger = logger
             Me._kernel = kernel
-            Me._clock = clock
             Me._settings = settings
             Dim pidCount = _slots.Count
-            Me._freeIndexes = (From i In Enumerable.Range(1, pidCount) Select New PlayerId(CByte(i))).ToList
-            For Each pid In From i In Enumerable.Range(1, 12)
+            Me._freeIndexes = (From i In pidCount.Range.OffsetBy(1) Select New PlayerId(CByte(i))).ToList
+            For Each pid In From i In 12.Range.OffsetBy(1)
                             Select New PlayerId(CByte(i))
                 _pidVisiblityMap.Add(pid, pid)
             Next pid
@@ -98,7 +94,7 @@
             'Create observer slots
             Select Case settings.GameDescription.GameStats.Observers
                 Case GameObserverOption.FullObservers, GameObserverOption.Referees
-                    result.AddRange(From i In Enumerable.Range(result.Count, 12 - result.Count)
+                    result.AddRange(From i In 12.Range.Skip(result.Count)
                                     Select New Slot(index:=CByte(i),
                                                     Color:=CType(Slot.ObserverTeamIndex, Protocol.PlayerColor),
                                                     team:=Slot.ObserverTeamIndex,
@@ -269,7 +265,7 @@
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             'Add
-            Dim newPlayer = New Player(id, connectingPlayer, _clock, _downloadManager, Logger)
+            Dim newPlayer = New Player(id, connectingPlayer, _kernel.Clock, _downloadManager, Logger)
             _slots = _slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithPlayer(newPlayer)))
             _kernel.Players.Add(newPlayer)
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
@@ -647,20 +643,17 @@
                                 Where slot.Contents.ContentType <> SlotContents.Type.Computer
                                 Where slot.Team <> WC3.Slot.ObserverTeamIndex OrElse slot.Contents.ContentType = SlotContents.Type.Empty
                                 Order By slot.Contents.ContentType Descending, slot.Index Ascending
-            Dim teamIndexes = From i In Enumerable.Range(0, desiredTeamSizes.Count)
-                              From e In Enumerable.Repeat(CByte(i), desiredTeamSizes(i))
-                              Select e
+            Dim teamIndexes = From team In desiredTeamSizes.Count.Range
+                              From teamRepeated In CByte(team).Repeated(desiredTeamSizes(team))
+                              Select teamRepeated
 
             'Compute transformed slots
-            Dim assignedSlots = Enumerable.Zip(affectedSlots.Take(maxNonObserverSlots), teamIndexes,
-                                               Function(slot, team)
-                                                   If slot.Contents.ContentType = SlotContents.Type.Empty Then
-                                                       Return slot.WithTeam(team).WithContents(New SlotContentsOpen)
-                                                   Else
-                                                       Return slot.WithTeam(team)
-                                                   End If
-                                               End Function)
-            Contract.Assume(assignedSlots IsNot Nothing)
+            Dim assignedSlots = From pair In affectedSlots.Take(maxNonObserverSlots).Zip(teamIndexes)
+                                Let slot = pair.Item1
+                                Let team = pair.Item2
+                                Select slot.WithTeam(team).WithContents(If(slot.Contents.ContentType = SlotContents.Type.Empty,
+                                                                           New SlotContentsOpen,
+                                                                           slot.Contents))
             Dim closedSlots = From slot In affectedSlots.Skip(assignedSlots.Count)
                               Where slot.Team <> WC3.Slot.ObserverTeamIndex
                               Select slot.WithContents(New SlotContentsClosed)
@@ -682,7 +675,7 @@
                                 Where slot.Contents.ContentType <> SlotContents.Type.Computer
                                 Where slot.Contents.Moveable
                                 Order By slot.Contents.ContentType Descending, slot.Index Ascending
-            Dim teamSlotSets = From team In Enumerable.Range(0, desiredTeamSizes.Count)
+            Dim teamSlotSets = From team In desiredTeamSizes.Count.Range
                                Let size = desiredTeamSizes(team)
                                Let slots = (From slot In affectedSlots Where slot.Team = team)
 

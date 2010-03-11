@@ -2,6 +2,8 @@
     '''<summary>Pickles byte enumeration types.</summary>
     Public Class EnumByteJar(Of T)
         Inherits BaseJar(Of T)
+        Private Const ValueByteCount As Integer = 1
+        Private Const ValueBitCount As Integer = ValueByteCount * 8
         Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean
@@ -21,9 +23,9 @@
 
         <ContractVerification(False)>
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
-            If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 1)
-            Dim value = CType(CType(datum(0), Object), T)
+            If data.Count < ValueByteCount Then Throw New PicklingNotEnoughDataException()
+            Dim datum = data.SubView(0, ValueByteCount)
+            Dim value = CType(CType(datum.Single, Object), T)
             If _checkDefined AndAlso Not IsDefined(value) Then Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(value, GetType(T)))
             Contract.Assume(value IsNot Nothing)
             Return value.Pickled(datum, Function() ValueToString(value))
@@ -33,7 +35,7 @@
         Private Function IsDefined(ByVal value As T) As Boolean
             If _isFlagEnum Then
                 Dim n = CType(CType(value, Object), Byte)
-                Return (From i In Enumerable.Range(0, 8)
+                Return (From i In ValueBitCount.Range
                         Select v = CByte(1) << i
                         Where (n And v) <> 0
                         Where Not CType(CType(v, Object), T).EnumValueIsDefined()).None
@@ -50,6 +52,8 @@
     '''<summary>Pickles UInt16 enumeration types.</summary>
     Public Class EnumUInt16Jar(Of T)
         Inherits BaseJar(Of T)
+        Private Const ValueByteCount As Integer = 2
+        Private Const ValueBitCount As Integer = ValueByteCount * 8
         Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean
@@ -70,8 +74,8 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
-            If data.Count < 2 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 2)
+            If data.Count < ValueByteCount Then Throw New PicklingNotEnoughDataException()
+            Dim datum = data.SubView(0, ValueByteCount)
             Dim value = CType(CType(datum.ToUInt16(_byteOrder), Object), T)
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
@@ -84,7 +88,7 @@
         Private Function IsDefined(ByVal value As T) As Boolean
             If _isFlagEnum Then
                 Dim n = CType(CType(value, Object), UInt16)
-                Return (From i In Enumerable.Range(0, 16)
+                Return (From i In ValueBitCount.Range
                         Select v = 1US << i
                         Where (n And v) <> 0
                         Where Not CType(CType(v, Object), T).EnumValueIsDefined()).None
@@ -101,6 +105,8 @@
     '''<summary>Pickles UInt32 enumeration types.</summary>
     Public Class EnumUInt32Jar(Of T)
         Inherits BaseJar(Of T)
+        Private Const ValueByteCount As Integer = 4
+        Private Const ValueBitCount As Integer = ValueByteCount * 8
         Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean
@@ -121,8 +127,8 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
-            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 4)
+            If data.Count < ValueByteCount Then Throw New PicklingNotEnoughDataException()
+            Dim datum = data.SubView(0, ValueByteCount)
             Dim value = CType(CType(datum.ToUInt32(_byteOrder), Object), T)
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
@@ -135,7 +141,7 @@
         Private Function IsDefined(ByVal value As T) As Boolean
             If _isFlagEnum Then
                 Dim n = CType(CType(value, Object), UInt32)
-                Return (From i In Enumerable.Range(0, 32)
+                Return (From i In ValueBitCount.Range
                         Select v = 1UI << i
                         Where (n And v) <> 0
                         Where Not CType(CType(v, Object), T).EnumValueIsDefined()).None
@@ -152,6 +158,8 @@
     '''<summary>Pickles UInt64 enumeration types.</summary>
     Public Class EnumUInt64Jar(Of T)
         Inherits BaseJar(Of T)
+        Private Const ValueByteCount As Integer = 8
+        Private Const ValueBitCount As Integer = ValueByteCount * 8
         Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean
@@ -172,8 +180,8 @@
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
-            If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 8)
+            If data.Count < ValueByteCount Then Throw New PicklingNotEnoughDataException()
+            Dim datum = data.SubView(0, ValueByteCount)
             Dim value = CType(CType(datum.ToUInt64(_byteOrder), Object), T)
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(T)))
@@ -186,7 +194,7 @@
         Private Function IsDefined(ByVal value As T) As Boolean
             If _isFlagEnum Then
                 Dim n = CType(CType(value, Object), UInt64)
-                Return (From i In Enumerable.Range(0, 64)
+                Return (From i In ValueBitCount.Range
                         Select v = 1UL << i
                         Where (n And v) <> 0
                         Where Not CType(CType(v, Object), T).EnumValueIsDefined()).None

@@ -28,13 +28,26 @@ Namespace WC3
 
         Private _state As GameState = GameState.AcceptingPlayers
         Private ReadOnly _players As New AsyncViewableCollection(Of Player)
+        Private ReadOnly _clock As IClock
 
         Public Event ChangedState(ByVal sender As GameKernel, ByVal oldState As GameState, ByVal newState As GameState)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_players IsNot Nothing)
+            Contract.Invariant(_clock IsNot Nothing)
         End Sub
 
+        Public Sub New(ByVal clock As IClock)
+            Contract.Assume(clock IsNot Nothing)
+            Me._clock = clock
+        End Sub
+
+        Public ReadOnly Property Clock As IClock
+            Get
+                Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)
+                Return _clock
+            End Get
+        End Property
         Public ReadOnly Property Players As AsyncViewableCollection(Of Player)
             Get
                 Contract.Ensures(Contract.Result(Of AsyncViewableCollection(Of Player))() IsNot Nothing)

@@ -415,7 +415,7 @@ Public Class PicklingTest
         Dim jar2 = New DataSizePrefixedJar(Of String)(New NullTerminatedStringJar(), prefixSize:=1)
         JarTest(jar2, "", {1, 0})
         JarTest(jar2, "A", {2, Asc("A"), 0})
-        JarTest(jar2, New String("A"c, 254), New Byte() {255}.Concat(Enumerable.Repeat(CByte(Asc("A")), 254)).Concat({0}).ToList)
+        JarTest(jar2, New String("A"c, 254), New Byte() {255}.Concat(CByte(Asc("A")).Repeated(254)).Concat({0}).ToList)
         ExpectException(Of PicklingException)(Sub() jar2.Pack(New String("A"c, 255)))
     End Sub
 

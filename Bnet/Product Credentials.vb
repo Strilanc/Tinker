@@ -218,6 +218,20 @@
         End Function
 #End Region
 
+        '''<summary>Permutes the items in a list by assigning items to positions which have been offset and scaled.</summary>
+        '''<remarks>This transformation is reversible if and only if the factor is coprime to the number of items.</remarks>
+        <Extension()> <Pure()>
+        Private Function Permute(Of T)(ByVal items As IReadableList(Of T), ByVal offset As Integer, ByVal factor As Integer) As IReadableList(Of T)
+            Contract.Requires(items IsNot Nothing)
+            Contract.Requires(offset >= 0)
+            Contract.Requires(factor > 0)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of T))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of T))().Count = items.Count)
+            Return (From i In items.Count.Range
+                    Select items((offset + factor * i) Mod items.Count)
+                    ).ToReadableList
+        End Function
+
         '''<summary>Generates product credentials using a wc3 cd key.</summary>
         <Extension()> <Pure()>
         <ContractVerification(False)>
@@ -239,12 +253,10 @@
             'Map cd key characters into digits of a base 25 number
             Dim digits25 As IReadableList(Of Byte) = (From c In key Select digitMap(c)).ToReadableList
 
-            'Shuffle base 5 digits
+            'Permute base 5 digits
             Dim digits5 = digits25.ConvertFromBaseToBase(25, 5).PaddedTo(minimumLength:=NumDigitsBase5)
-            digits5 = (From i In Enumerable.Range(0, NumDigitsBase5)
-                       Select If(i Mod 2 = 0, digits5(i + 1), digits5(i - 1))).ToReadableList
-            digits5 = (From i In Enumerable.Range(0, NumDigitsBase5)
-                       Select digits5((10 + 17 * i) Mod NumDigitsBase5)).ToReadableList
+            digits5 = digits5.Deinterleaved(2).Reverse.Interleaved.ToReadableList
+            digits5 = digits5.Permute(offset:=10, factor:=17)
 
             'Xor-Permute nibbles
             Dim digits16 = digits5.ConvertFromBaseToBase(5, 16).PaddedTo(minimumLength:=NumDigitsBase16).ToArray
@@ -262,10 +274,9 @@
                 digits16(i) = c
             Next i
 
-            'Swap bits
+            'Permute bits
             Dim digits2 = digits16.ConvertFromBaseToBase(16, 2).PaddedTo(minimumLength:=NumDigitsBase2)
-            digits2 = (From i In Enumerable.Range(0, NumDigitsBase2)
-                       Select digits2((i * 11) Mod NumDigitsBase2)).ToReadableList
+            digits2 = digits2.Permute(offset:=0, factor:=11)
 
             'Extract keys
             Dim digits = digits2.ConvertFromBaseToBase(2, 256).PaddedTo(minimumLength:=NumDigitsBase256)

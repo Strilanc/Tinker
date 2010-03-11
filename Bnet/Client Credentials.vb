@@ -126,7 +126,8 @@ Namespace Bnet
                 Contract.Assume(N >= 0)
                 Dim hash1 = G.ToUnsignedBytes.SHA1
                 Dim hash2 = N.ToUnsignedBytes.SHA1
-                Return From i In Enumerable.Range(0, 20) Select hash1(i) Xor hash2(i)
+                Return From pair In hash1.Zip(hash2)
+                       Select pair.Item1 Xor pair.Item2
             End Get
         End Property
 
@@ -155,17 +156,12 @@ Namespace Bnet
                 'Shared value
                 Dim serverPublicKey = serverPublicKeyBytes.ToUnsignedBigInteger
                 Dim sharedValue = BigInteger.ModPow(serverPublicKey - verifier + N, Me._privateKey + serverKey * passwordKey, N)
+
+                'Interleave hashes of odd and even bytes of the shared value
                 Contract.Assume(sharedValue >= 0)
-
-                'Hash odd and even bytes of the shared value
-                Dim sharedValueBytes = sharedValue.ToUnsignedBytes.PaddedTo(32)
-                Dim sharedHashEven = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2)).SHA1
-                Dim sharedHashOdd = (From i In Enumerable.Range(0, 16) Select sharedValueBytes(i * 2 + 1)).SHA1
-
-                'Interleave odd and even hashes
-                Dim result = (From i In Enumerable.Range(0, 40)
-                              Select If(i Mod 2 = 0, sharedHashEven(i \ 2), sharedHashOdd(i \ 2))
-                             ).ToReadableList
+                Dim result = (From slice In sharedValue.ToUnsignedBytes.PaddedTo(32).Deinterleaved(2)
+                              Select slice.SHA1
+                              ).Interleaved.ToReadableList
                 Contract.Assume(result.Count = 40)
                 Return result
             End Get

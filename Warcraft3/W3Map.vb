@@ -109,7 +109,7 @@ Namespace WC3
                 If arg Like "0x*[!0-9a-fA-F]" OrElse arg.Length Mod 2 <> 0 Then
                     Throw New ArgumentException("Invalid map meta data. [0x prefix should be followed by hex HostMapInfo packet data].")
                 End If
-                Dim hexData = From i In Enumerable.Range(1, arg.Length \ 2 - 1)
+                Dim hexData = From i In (arg.Length \ 2).Range.Skip(1)
                               Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
                 Dim vals = Protocol.Packets.HostMapInfo.Jar.Parse(hexData.ToReadableList).Value
 
@@ -680,9 +680,11 @@ Namespace WC3
             Next teamIndex
             '(melee overrides forces and races)
             If CBool(options And MapOptions.Melee) Then
-                result = Enumerable.Zip(result, Enumerable.Range(0, result.Count),
-                                        Function(slot, team) slot.WithTeam(CByte(team)).WithRace(Protocol.Races.Random)
-                                        ).ToList
+                result = (From pair In result.Zip(result.Count.Range)
+                          Let slot = pair.Item1
+                          Let team = pair.Item2
+                          Select slot.WithTeam(CByte(team)).WithRace(Protocol.Races.Random)
+                          ).ToList
             End If
 
             Return result.AsReadableList

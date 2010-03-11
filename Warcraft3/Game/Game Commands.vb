@@ -278,10 +278,10 @@ Namespace WC3
                 Contract.Assume(target IsNot Nothing)
                 Return From players In target.QueueGetPlayers()
                        From latencies In (From player In players Select player.QueueGetLatencyDescription).Cache.AsAggregateTask
-                       Select "Estimated RTT: {0}".Frmt((From i In Enumerable.Range(0, players.Count)
-                                                         Where Not players(i).isFake
-                                                         Select "{0}={1}".Frmt(players(i).Name, latencies(i))
-                                                        ).StringJoin(" "))
+                       Select "Estimated RTT: {0}".Frmt((From pair In players.Zip(latencies)
+                                                         Where Not pair.Item1.isFake
+                                                         Select "{0}={1}".Frmt(pair.Item1.Name, pair.Item2)
+                                                         ).StringJoin(" "))
             End Function
         End Class
 

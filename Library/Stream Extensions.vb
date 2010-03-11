@@ -70,7 +70,7 @@ Public Module StreamExtensions
 
         <ContractVerification(False)>
         Public Function IndexOf(ByVal item As Byte) As Integer Implements IReadableList(Of Byte).IndexOf
-            Return (From i In Enumerable.Range(0, Count)
+            Return (From i In Count.Range
                     Where Me(i) = item
                     Select i + 1
                     ).FirstOrDefault - 1
@@ -84,7 +84,7 @@ Public Module StreamExtensions
         End Property
 
         Public Function GetEnumerator() As IEnumerator(Of Byte) Implements IEnumerable(Of Byte).GetEnumerator
-            Return (From i In Enumerable.Range(0, Count)
+            Return (From i In Count.Range
                     Select Item(i)).GetEnumerator
         End Function
         Private Function GetEnumeratorObj() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
@@ -118,7 +118,7 @@ Public Module StreamExtensions
                 '[first parse: learn needed data]
                 Dim result = jar.Parse(view)
                 '[second parse: work with copied data, to avoid accessing the disposed StreamAsList later]
-                result = jar.Parse(result.Data.ToReadableList)
+                result = jar.Parse(result.Data.ToArray.AsReadableList)
                 'Place position after used data, as if it had been read normally
                 stream.Position = oldPosition + result.Data.Count
                 Return result

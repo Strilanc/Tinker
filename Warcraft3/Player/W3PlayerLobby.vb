@@ -46,7 +46,7 @@ Namespace WC3
 
         Private Sub OnReceivePeerConnectionInfo(ByVal flags As IPickle(Of UInt16))
             Contract.Requires(flags IsNot Nothing)
-            _numPeerConnections = (From i In enumerable.Range(0, 12)
+            _numPeerConnections = (From i In 12.Range
                                    Where ((flags.Value >> i) And &H1) <> 0).Count
             Contract.Assume(_numPeerConnections <= 12)
             RaiseEvent SuperficialStateUpdated(Me)

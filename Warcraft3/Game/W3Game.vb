@@ -28,7 +28,6 @@ Namespace WC3
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly slotStateUpdateThrottle As New Throttle(cooldown:=250.Milliseconds, clock:=New SystemClock())
         Private ReadOnly updateEventThrottle As New Throttle(cooldown:=100.Milliseconds, clock:=New SystemClock())
-        Private ReadOnly _clock As IClock
         Private ReadOnly _name As InvariantString
         Private ReadOnly inQueue As CallQueue
         Private ReadOnly outQueue As CallQueue
@@ -47,7 +46,6 @@ Namespace WC3
         Public Event Launched(ByVal sender As Game, ByVal usingLoadInGame As Boolean)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(outQueue IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
@@ -63,7 +61,6 @@ Namespace WC3
 
         Public Sub New(ByVal name As InvariantString,
                        ByVal settings As GameSettings,
-                       ByVal clock As IClock,
                        ByVal lobby As GameLobby,
                        ByVal motor As GameMotor,
                        ByVal loadScreen As GameLoadScreen,
@@ -72,7 +69,6 @@ Namespace WC3
                        ByVal outQueue As CallQueue,
                        ByVal kernel As GameKernel)
             Contract.Assume(settings IsNot Nothing)
-            Contract.Assume(clock IsNot Nothing)
             Contract.Assume(lobby IsNot Nothing)
             Contract.Assume(motor IsNot Nothing)
             Contract.Assume(logger IsNot Nothing)
@@ -81,7 +77,6 @@ Namespace WC3
             Contract.Assume(kernel IsNot Nothing)
             Contract.Assume(loadScreen IsNot Nothing)
             Me._settings = settings
-            Me._clock = clock
             Me._name = name
             Me._logger = logger
             Me._lobby = lobby
@@ -104,7 +99,7 @@ Namespace WC3
 
             Dim inQueue = New TaskedCallQueue
             Dim outQueue = New TaskedCallQueue
-            Dim kernel = New GameKernel()
+            Dim kernel = New GameKernel(clock)
             Dim startPlayerHoldPoint = New HoldPoint(Of Player)
             Dim downloadManager = New Download.Manager(clock:=clock,
                                                        Map:=settings.Map,
@@ -115,7 +110,6 @@ Namespace WC3
                                       downloadManager:=downloadManager,
                                       logger:=logger,
                                       kernel:=kernel,
-                                      clock:=clock,
                                       settings:=settings)
             Dim speedFactor = My.Settings.game_speed_factor
             Dim tickPeriod = CUInt(My.Settings.game_tick_period).Milliseconds
@@ -127,10 +121,8 @@ Namespace WC3
                                       defaultLagLimit:=lagLimit,
                                       inQueue:=inQueue,
                                       kernel:=kernel,
-                                      clock:=clock,
                                       lobby:=lobby)
             Dim loadScreen = New GameLoadScreen(kernel:=kernel,
-                                                clock:=clock,
                                                 lobby:=lobby,
                                                 logger:=logger,
                                                 settings:=settings,
@@ -139,7 +131,6 @@ Namespace WC3
 
             Return New Game(name:=name,
                             settings:=settings,
-                            clock:=clock,
                             lobby:=lobby,
                             motor:=motor,
                             loadScreen:=loadScreen,
@@ -513,7 +504,7 @@ Namespace WC3
             _kernel.State = GameState.PreCounting
 
             'Give people a few seconds to realize the game is full before continuing
-            Call _clock.AsyncWait(3.Seconds).QueueContinueWithAction(inQueue,
+            Call _kernel.Clock.AsyncWait(3.Seconds).QueueContinueWithAction(inQueue,
                 Sub()
                     If _kernel.State <> GameState.PreCounting Then Return
                     If Not Settings.IsAutoStarted OrElse _lobby.CountFreeSlots() > 0 Then
@@ -548,12 +539,12 @@ Namespace WC3
                                         _lobby.ThrowChangedPublicState()
                                     ElseIf ticksLeft > 0 Then 'continue ticking
                                         _lobby.BroadcastMessage("Starting in {0}...".Frmt(ticksLeft), messageType:=LogMessageType.Positive)
-                                        _clock.AsyncWait(1.Seconds).QueueContinueWithAction(inQueue, Sub() continueCountdown(ticksLeft - 1))
+                                        _kernel.Clock.AsyncWait(1.Seconds).QueueContinueWithAction(inQueue, Sub() continueCountdown(ticksLeft - 1))
                                     Else 'start
                                         StartLoading()
                                     End If
                                 End Sub
-            Call _clock.AsyncWait(1.Seconds).QueueContinueWithAction(inQueue, Sub() continueCountdown(5))
+            Call _kernel.Clock.AsyncWait(1.Seconds).QueueContinueWithAction(inQueue, Sub() continueCountdown(5))
 
             Return True
         End Function

@@ -289,21 +289,25 @@
 
             'Prep
             Dim defaultHandicaps = New Byte() {50, 60, 70, 80, 90, 100}
-            Dim indexMap = (From e In Enumerable.Range(start:=1, count:=255)
+            Dim indexMap = (From e In 256.Range.Skip(1)
                             Select b = CByte(e)
-                            Where Not defaultHandicaps.Contains(CByte(b))
+                            Where Not defaultHandicaps.Contains(b)
                             ).ToArray
 
             'Scrub
             Dim handicapData = From handicap In handicaps
                                Select If(defaultHandicaps.Contains(handicap), handicap, CByte(100))
-            Dim letterData = From letter In CType(_mapMode, Char())
+            Dim letterData = From letter In _mapMode.AsEnumerable
                              Select safeLetter = If(HCLChars.Contains(letter), letter, " "c)
                              Select CByte(HCLChars.IndexOf(CStr(safeLetter), StringComparison.OrdinalIgnoreCase))
 
-            'Encode
-            Dim encodedHandicaps = Enumerable.Zip(handicapData, letterData,
-                                                  Function(handicap, letter) indexMap((handicap - 50) \ 10 + letter * 6))
+            'Encode (map original handicap onto [0, 6), then include hcl mode data on top)
+            Dim encodedHandicaps = From pair In handicapData.Zip(letterData)
+                                   Let handicap = pair.Item1
+                                   Let letter = pair.Item2
+                                   Let originalData = handicap \ 10 - 5
+                                   Let modeData = letter * 6
+                                   Select indexMap(originalData + modeData)
             Dim remainingHandicaps = handicapData.Skip(encodedHandicaps.Count)
 
             Return encodedHandicaps.Concat(remainingHandicaps)

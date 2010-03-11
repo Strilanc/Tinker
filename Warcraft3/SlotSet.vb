@@ -57,8 +57,10 @@
                                Where slot.Contents.Moveable
                                Where slot.Contents.ContentType <> SlotContents.Type.Empty
             Dim encodedHandicaps = settings.EncodedHCLMode(From slot In useableSlots Select slot.Handicap)
-            Return Me.WithSlotsReplaced(Enumerable.Zip(useableSlots, encodedHandicaps,
-                                                       Function(slot, handicap) slot.WithHandicap(handicap)))
+            Return Me.WithSlotsReplaced(From pair In useableSlots.Zip(encodedHandicaps)
+                                        Let slot = pair.Item1
+                                        Let handicap = pair.Item2
+                                        Select slot.WithHandicap(handicap))
         End Function
 
         <Pure()>

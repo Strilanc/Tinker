@@ -1,14 +1,16 @@
 ﻿Namespace WC3
     Public NotInheritable Class GameLoadScreen
+        Private Shared ReadOnly LoadInGameTickPeriod As TimeSpan = 30.Seconds
+
         Private ReadOnly inQueue As CallQueue
         Private ReadOnly readyPlayers As New HashSet(Of Player)
         Private ReadOnly unreadyPlayers As New HashSet(Of Player)
         Private ReadOnly visibleReadyPlayers As New HashSet(Of Player)
         Private ReadOnly visibleUnreadyPlayers As New HashSet(Of Player)
-        Private numFakeTicks As Integer
-        Private fakeTickTimer As Timers.Timer
+        Private _loadInGameTickCount As Integer
+        Private _loadInGameTicker As IDisposable
         Private ReadOnly _kernel As GameKernel
-        Private ReadOnly _initialized As New OneTimeLock
+        Private ReadOnly _startLock As New OnetimeLock
         Private ReadOnly _lobby As GameLobby
         Private ReadOnly _logger As Logger
         Private ReadOnly _settings As GameSettings
@@ -21,7 +23,7 @@
             Contract.Invariant(_settings IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_kernel IsNot Nothing)
-            Contract.Invariant(_initialized IsNot Nothing)
+            Contract.Invariant(_startLock IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
             Contract.Invariant(_motor IsNot Nothing)
             Contract.Invariant(readyPlayers IsNot Nothing)
@@ -32,7 +34,6 @@
 
         Public Sub New(ByVal kernel As GameKernel,
                        ByVal inQueue As CallQueue,
-                       ByVal clock As IClock,
                        ByVal lobby As GameLobby,
                        ByVal logger As Logger,
                        ByVal settings As GameSettings,
@@ -41,7 +42,6 @@
             Contract.Assume(lobby IsNot Nothing)
             Contract.Assume(logger IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
-            Contract.Assume(clock IsNot Nothing)
             Contract.Assume(motor IsNot Nothing)
             Contract.Assume(inQueue IsNot Nothing)
             Me._kernel = kernel
@@ -50,12 +50,11 @@
             Me._settings = settings
             Me._motor = motor
             Me.inQueue = inQueue
-
-            Me.fakeTickTimer = New Timers.Timer(30.Seconds.TotalMilliseconds)
-            AddHandler fakeTickTimer.Elapsed, Sub() OnFakeTick()
         End Sub
 
         Public Sub Start()
+            If Not _startLock.TryAcquire Then Throw New InvalidOperationException("Already started.")
+
             For Each player In _kernel.Players
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartLoading()
@@ -82,13 +81,8 @@
 
             If _settings.UseLoadInGame Then
                 RaiseEvent Launched(Me, usingloadInGame:=True)
-                Contract.Assume(fakeTickTimer IsNot Nothing)
-                fakeTickTimer.Start()
+                _loadInGameTicker = _kernel.Clock.AsyncRepeat(LoadInGameTickPeriod, Sub() inQueue.QueueAction(AddressOf OnLoadInGameTick))
             End If
-        End Sub
-        Private Sub LoadScreenStop()
-            Contract.Assume(fakeTickTimer IsNot Nothing)
-            fakeTickTimer.Stop()
         End Sub
 
         Public Sub OnRemovedPlayer()
@@ -104,8 +98,11 @@
             _logger.Log("Launching", LogMessageType.Positive)
 
             'start gameplay
-            Me.LoadScreenStop()
-            _Motor.QueueStart()
+            If _loadInGameTicker IsNot Nothing Then
+                _loadInGameTicker.Dispose()
+                _loadInGameTicker = Nothing
+            End If
+            _motor.QueueStart()
             If Not _settings.UseLoadInGame Then
                 RaiseEvent Launched(Me, usingloadInGame:=False)
             End If
@@ -133,7 +130,7 @@
 
                 Dim slot = _lobby.Slots.TryFindPlayerSlot(sendingPlayer)
                 Contract.Assume(slot IsNot Nothing)
-                If (From x In slot.Contents.EnumPlayers Where Not (x.Ready Or x.isFake)).None Then
+                If (From p In slot.Contents.EnumPlayers Where Not p.isFake AndAlso Not p.Ready).None Then
                     visibleReadiedPlayer = slot.Contents.EnumPlayers.First
                 End If
             End If
@@ -152,7 +149,7 @@
                         sendingPlayer.QueueSendPacket(Protocol.MakeOtherPlayerReady(player.Id))
                     End If
                 Next player
-                For i = 1 To numFakeTicks
+                For i = 1 To _loadInGameTickCount
                     sendingPlayer.QueueSendPacket(Protocol.MakeTick(0))
                 Next i
 
@@ -181,24 +178,21 @@
             TryLaunch()
         End Sub
 
-        Private Sub OnFakeTick()
-            inQueue.QueueAction(
-                Sub()
-                    If _kernel.State > GameState.Loading Then Return
-                    If readyPlayers.Count = 0 Then Return
+        Private Sub OnLoadInGameTick()
+            If _loadInGameTicker Is Nothing Then Return
+            If _kernel.State > GameState.Loading Then Return
+            If readyPlayers.Count = 0 Then Return
 
-                    numFakeTicks += 1
-                    For Each player In readyPlayers
-                        Contract.Assume(player IsNot Nothing)
-                        For Each other In visibleUnreadyPlayers
-                            Contract.Assume(other IsNot Nothing)
-                            player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(other.Id, 0))
-                        Next other
-                        player.QueueSendPacket(Protocol.MakeTick(0))
-                        player.QueueSendPacket(Protocol.MakeShowLagScreen(From p In visibleUnreadyPlayers Select p.Id))
-                    Next player
-                End Sub
-            )
+            _loadInGameTickCount += 1
+            For Each player In readyPlayers
+                Contract.Assume(player IsNot Nothing)
+                For Each other In visibleUnreadyPlayers
+                    Contract.Assume(other IsNot Nothing)
+                    player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(other.Id, 0))
+                Next other
+                player.QueueSendPacket(Protocol.MakeTick(0))
+                player.QueueSendPacket(Protocol.MakeShowLagScreen(From p In visibleUnreadyPlayers Select p.Id))
+            Next player
         End Sub
     End Class
 End Namespace

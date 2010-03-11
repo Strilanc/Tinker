@@ -14,7 +14,7 @@ Imports System.Collections.Generic
 Public Class DownloadManagerTest
     Private Class TestGame
         Public Shared ReadOnly HostPid As New PlayerId(1)
-        Private Shared ReadOnly _data As Byte() = Enumerable.Repeat(CByte(1), 5000).ToArray
+        Private Shared ReadOnly _data As Byte() = CByte(1).Repeated(5000).ToArray
         Private ReadOnly _startPlayerHoldPoint As New HoldPoint(Of Download.IPlayerDownloadAspect)()
         Private Shared ReadOnly SharedMap As New Map(
             streamFactory:=Function() New IO.MemoryStream(_data, writable:=False).AsRandomReadableStream,
@@ -22,7 +22,7 @@ Public Class DownloadManagerTest
             fileSize:=CUInt(_data.Length),
             fileChecksumCRC32:=_data.CRC32,
             mapChecksumxoro:=1,
-            mapChecksumSHA1:=Enumerable.Repeat(CByte(1), 20).ToReadableList,
+            mapChecksumSHA1:=CByte(1).Repeated(20).ToReadableList,
             playableWidth:=256,
             playableHeight:=256,
             isMelee:=True,
@@ -51,7 +51,7 @@ Public Class DownloadManagerTest
         Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect, ByVal position As UInteger) As Task
             Return CType(player, TestPlayer).QueueSendPacket(MakeMapFileData(
                     position,
-                    Enumerable.Repeat(CByte(1), CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToReadableList,
+                    CByte(1).Repeated(CInt(Math.Min(Packets.MaxFileDataSize, Map.FileSize - position))).ToReadableList,
                     player.Id,
                     HostPid))
         End Function
@@ -217,9 +217,9 @@ Public Class DownloadManagerTest
             dler.InjectClientMapInfo(MapTransferState.Idle, p)
         Next p
         dler.ExpectSentPacket(MakeMapFileData(game.Map.FileSize.FloorMultiple(Packets.MaxFileDataSize),
-                                                Enumerable.Repeat(CByte(1), CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToReadableList,
-                                                dler.ID,
-                                                TestGame.HostPid))
+                                              CByte(1).Repeated(CInt(game.Map.FileSize Mod Packets.MaxFileDataSize)).ToReadableList,
+                                              dler.ID,
+                                              TestGame.HostPid))
         dler.InjectClientMapInfo(MapTransferState.Idle, game.Map.FileSize)
         dler.ExpectNoPacket()
 

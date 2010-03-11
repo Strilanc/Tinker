@@ -4,7 +4,6 @@
 
         Private ReadOnly inQueue As CallQueue
         Private ReadOnly _kernel As GameKernel
-        Private ReadOnly _clock As IClock
         Private ReadOnly _lobby As GameLobby
         Private ReadOnly _gameDataQueue As New Queue(Of Tuple(Of Player, IReadableList(Of Protocol.GameAction)))
 
@@ -30,7 +29,6 @@
             Contract.Invariant(_lagLimit.Ticks >= 0)
             Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_kernel IsNot Nothing)
-            Contract.Invariant(_clock IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
             Contract.Invariant(_gameTime >= 0)
             Contract.Invariant(_gameDataQueue IsNot Nothing)
@@ -41,21 +39,18 @@
                        ByVal defaultLagLimit As TimeSpan,
                        ByVal inQueue As CallQueue,
                        ByVal kernel As GameKernel,
-                       ByVal clock As IClock,
                        ByVal lobby As GameLobby)
             Contract.Requires(defaultSpeedFactor > 0)
             Contract.Requires(defaultTickPeriod.Ticks > 0)
             Contract.Requires(defaultLagLimit.Ticks >= 0)
             Contract.Requires(inQueue IsNot Nothing)
             Contract.Requires(kernel IsNot Nothing)
-            Contract.Requires(clock IsNot Nothing)
             Contract.Requires(lobby IsNot Nothing)
             Me._speedFactor = defaultSpeedFactor
             Me._tickPeriod = defaultTickPeriod
             Me._lagLimit = defaultLagLimit
             Me.inQueue = inQueue
             Me._kernel = kernel
-            Me._clock = clock
             Me._lobby = lobby
         End Sub
         Public Sub Init()
@@ -74,7 +69,7 @@
                 Contract.Assume(player IsNot Nothing)
                 player.QueueStartPlaying()
             Next player
-            _tickClock = _clock.Restarted()
+            _tickClock = _kernel.Clock.Restarted()
             OnTick()
         End Sub
         Public Function QueueStart() As Task
@@ -125,7 +120,7 @@
             'Stop for laggers
             UpdateLagScreen()
             If _laggingPlayers.Count > 0 Then
-                _clock.AsyncWait(_tickPeriod).QueueContinueWithAction(inQueue, AddressOf OnTick)
+                _kernel.Clock.AsyncWait(_tickPeriod).QueueContinueWithAction(inQueue, AddressOf OnTick)
                 Return
             End If
 
@@ -133,7 +128,7 @@
             _leftoverGameTime += dt - dgt
             _leftoverGameTime = _leftoverGameTime.Between(-dgt * 10, dgt * 10)
             Dim nextTickTime = CLng(dgt - _leftoverGameTime).Between(dgt \ 2US, dgt * 2US).Milliseconds
-            _clock.AsyncWait(nextTickTime).QueueContinueWithAction(inQueue, AddressOf OnTick)
+            _kernel.Clock.AsyncWait(nextTickTime).QueueContinueWithAction(inQueue, AddressOf OnTick)
 
             'Send
             SendQueuedGameData(New TickRecord(dgt, _gameTime))
@@ -166,7 +161,7 @@
                 _asyncWaitTriggered = False
                 If _laggingPlayers.Count > 0 Then
                     BroadcastPacket(Protocol.MakeShowLagScreen(From p In _laggingPlayers Select p.Id)).SetHandled()
-                    _lagClock = _clock.Restarted()
+                    _lagClock = _kernel.Clock.Restarted()
                 End If
             End If
         End Sub

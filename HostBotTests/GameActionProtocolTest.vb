@@ -417,7 +417,6 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncEmptyUnitTest()
-        Dim raw = Enumerable.Repeat(CByte(0), 86).ToArray
         JarTest(GameActions.GameCacheSyncEmptyUnit.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,

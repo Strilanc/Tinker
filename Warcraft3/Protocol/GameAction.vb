@@ -181,8 +181,8 @@ Namespace WC3.Protocol
             If other Is Nothing Then Return False
             If Me.Id <> other.Id Then Return False
             If Me.Actions.Count <> other.Actions.Count Then Return False
-            If (From i In Enumerable.Range(0, Me.Actions.Count)
-                Where Not Me.Actions(i).Payload.Data.SequenceEqual(other.Actions(i).Payload.Data)).Any Then Return False
+            If (From pair In Me.Actions.Zip(other.Actions)
+                Where Not pair.Item1.Payload.Data.SequenceEqual(pair.Item2.Payload.Data)).Any Then Return False
             Return True
         End Function
     End Class
