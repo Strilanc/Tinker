@@ -191,7 +191,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(limit >= 0)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))().Count = limit)
-        Return From i In limit.Range Select CByte(i)
+        Return From i In CInt(limit).Range Select CByte(i)
     End Function
 
     '''<summary>Returns a sequence with items equal to the given sequence's items offset by the given amount.</summary>
