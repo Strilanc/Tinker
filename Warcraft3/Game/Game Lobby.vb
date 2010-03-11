@@ -49,7 +49,7 @@
 
             If _settings.UseMultiObs Then
                 If _settings.Map.Slots.Count <= 10 Then
-                    For i = _settings.Map.Slots.Count To 10 - 1
+                    For Each i In 10.Range.Skip(_settings.Map.Slots.Count)
                         CloseSlot(_slots(i).MatchableId)
                     Next i
                     Dim playerIndex = _freeIndexes.First
@@ -471,7 +471,7 @@
                 _slots = _slots.WithSlotsReplaced(slot.WithTeam(newTeam))
             Else
                 'swap with next open slot from target team
-                For offset_mod = 0 To _slots.Count - 1
+                For Each offset_mod In _slots.Count.Range
                     Dim nextIndex = (slot.Index + offset_mod) Mod _slots.Count
                     Dim nextSlot = _slots(nextIndex)
                     Contract.Assume(nextSlot IsNot Nothing)

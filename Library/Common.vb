@@ -24,11 +24,10 @@ Public Module PoorlyCategorizedFunctions
         Dim result = New List(Of String)()
         Dim ws = 0 'word start
         Dim ls = 0 'line start
-        For we = 0 To body.Length 'iterate for word endings
+        For Each we In body.IndexesOf(" "c).Append(body.Length) 'iterate over word endings
             Contract.Assert(ls <= ws)
             Contract.Assert(ws <= ls + maxLineLength + 1)
             Contract.Assert(ws <= we)
-            If we < body.Length AndAlso body(we) <> " "c Then Continue For 'not a word ending position
 
             If ws + maxLineLength < we Then 'word will not fit on a single line
                 'Output current line, shoving as much of the word at the end of the line as possible
@@ -75,27 +74,22 @@ Public Module PoorlyCategorizedFunctions
     Public Function BuildDictionaryFromString(Of T)(ByVal text As String,
                                                     ByVal parser As Func(Of String, T),
                                                     ByVal pairDivider As String,
-                                                    ByVal valueDivider As String) As Dictionary(Of InvariantString, T)
+                                                    ByVal valueDivider As String) As IDictionary(Of InvariantString, T)
         Contract.Requires(parser IsNot Nothing)
         Contract.Requires(text IsNot Nothing)
         Contract.Requires(pairDivider IsNot Nothing)
         Contract.Requires(valueDivider IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, T))() IsNot Nothing)
-        Dim result = New Dictionary(Of InvariantString, T)
-        Dim pd = New String() {pairDivider}
-        Dim vd = New String() {valueDivider}
-        For Each pair In text.Split(pd, StringSplitOptions.RemoveEmptyEntries)
-            Contract.Assume(pair IsNot Nothing)
-            Dim p = pair.IndexOf(valueDivider, StringComparison.OrdinalIgnoreCase)
-            If p = -1 Then Throw New ArgumentException("'{0}' didn't include a value divider ('{1}').".Frmt(pair, valueDivider))
-            Contract.Assume(p >= 0)
-            Contract.Assume(p <= pair.Length)
-            Dim key = pair.Substring(0, p)
-            Contract.Assume(p + valueDivider.Length <= pair.Length)
-            Dim value = pair.Substring(p + valueDivider.Length)
-            result(key) = parser(value)
-        Next pair
-        Return result
+        Contract.Ensures(Contract.Result(Of IDictionary(Of InvariantString, T))() IsNot Nothing)
+        Dim pairs = text.Split({pairDivider}, StringSplitOptions.RemoveEmptyEntries)
+        If (From pair In pairs Where Not pair.Contains(valueDivider)).Any Then
+            Throw New ArgumentException("Missing value divider '{0}' in '{1}'.".Frmt(valueDivider, text))
+        End If
+
+        Return (From pair In pairs
+                Let p = pair.IndexOf(valueDivider, StringComparison.Ordinal)
+                Let key As InvariantString = pair.Substring(0, p)
+                Let value = parser(pair.Substring(p + valueDivider.Length))
+                ).ToDictionary(keySelector:=Function(e) e.key, elementSelector:=Function(e) e.value)
     End Function
 #End Region
 
@@ -124,7 +118,50 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 
-    <Extension()>
+    <Extension()> <Pure()>
+    Public Function ZipWithIndexes(Of T)(ByVal sequence As IEnumerable(Of T)) As IEnumerable(Of Tuple(Of T, Integer))
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Tuple(Of T, Integer)))() IsNot Nothing)
+        Return sequence.Zip(Int32.MaxValue.Range)
+    End Function
+    <Extension()> <Pure()>
+    Public Function Bits(ByVal value As UInt64) As IEnumerable(Of Boolean)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 64)
+        Return From i In 64.Range Select CBool((value >> i) And 1UI)
+    End Function
+    <Extension()> <Pure()>
+    Public Function Bits(ByVal value As UInt32) As IEnumerable(Of Boolean)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 32)
+        Return From i In 32.Range Select CBool((value >> i) And 1UI)
+    End Function
+    <Extension()> <Pure()>
+    Public Function Bits(ByVal value As UInt16) As IEnumerable(Of Boolean)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 16)
+        Return From i In 16.Range Select CBool((value >> i) And CByte(1))
+    End Function
+    <Extension()> <Pure()>
+    Public Function Bits(ByVal value As Byte) As IEnumerable(Of Boolean)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 8)
+        Return From i In 8.Range Select CBool((value >> i) And CByte(1))
+    End Function
+
+    <Extension()> <Pure()>
+    Public Function IndexesOf(Of T)(ByVal sequence As IEnumerable(Of T), ByVal value As T) As IEnumerable(Of Integer)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Integer))() IsNot Nothing)
+        Return From pair In sequence.ZipWithIndexes
+               Let item = pair.Item1
+               Let position = pair.Item2
+               Where value.Equals(item)
+               Select position
+    End Function
+
+    <Extension()> <Pure()>
     Public Function Summarize(ByVal ex As Exception) As String
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         If ex Is Nothing Then
@@ -168,22 +205,33 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(sequenceCount >= 1)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of T)))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of T)))().Count = sequenceCount)
-        Dim result = (From i In sequenceCount.Range Select New List(Of T)).ToList
-        Dim index = 0
-        For Each item In sequence
-            result(index).Add(item)
-            index = (index + 1) Mod sequenceCount
-        Next item
-        Return result
+        Return sequence.ZipWithIndexes.GroupBy(keySelector:=Function(pair) pair.Item2 Mod sequenceCount,
+                                               elementSelector:=Function(pair) pair.Item1)
     End Function
 
-    '''<summary>Returns a sequence of the non-negative integers less than the limit, starting at 0 and incrementing.</summary>
+    '''<summary>Returns a sequence of non-negative integers less than the limit, starting at 0 and incrementing.</summary>
     <Pure()> <Extension()>
     Public Function Range(ByVal limit As Int32) As IEnumerable(Of Int32)
         Contract.Requires(limit >= 0)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))().Count = limit)
         Return Enumerable.Range(0, limit)
+    End Function
+    '''<summary>Returns a sequence of unsigned integers less than the limit, starting at 0 and incrementing.</summary>
+    <Pure()> <Extension()>
+    Public Function Range(ByVal limit As UInt32) As IEnumerable(Of UInt32)
+        Contract.Requires(limit >= 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of UInt32))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of UInt32))().Count = limit)
+        Return From i In CInt(limit).Range Select CUInt(i)
+    End Function
+    '''<summary>Returns a sequence of unsigned integers less than the limit, starting at 0 and incrementing.</summary>
+    <Pure()> <Extension()>
+    Public Function Range(ByVal limit As UInt16) As IEnumerable(Of UInt16)
+        Contract.Requires(limit >= 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of UInt16))() IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of UInt16))().Count = limit)
+        Return From i In CInt(limit).Range Select CUShort(i)
     End Function
     '''<summary>Returns a sequence of the bytes less than the limit, starting at 0 and incrementing.</summary>
     <Pure()> <Extension()>
@@ -383,32 +431,27 @@ Public Module PoorlyCategorizedFunctions
 
     Public Function CRC32Table(Optional ByVal poly As UInteger = &H4C11DB7,
                                Optional ByVal polyAlreadyReversed As Boolean = False) As UInt32()
-        Dim reg As UInteger
-
         'Reverse the polynomial
-        If polyAlreadyReversed = False Then
-            Dim polyRev As UInteger = 0
-            For i = 0 To 31
-                If ((poly >> i) And &H1) <> 0 Then
-                    polyRev = polyRev Or (CUInt(&H1) << (31 - i))
-                End If
-            Next i
+        If Not polyAlreadyReversed Then
+            Dim polyRev = 0UI
+            For Each bit In poly.Bits
+                polyRev <<= 1
+                If bit Then polyRev += 1UI
+            Next bit
             poly = polyRev
         End If
 
         'Precompute the combined XOR masks for each byte
-        Dim xorTable(0 To 255) As UInteger
-        For i = 0 To 255
-            reg = CUInt(i)
-            For j = 0 To 7
-                If (reg And CUInt(&H1)) <> 0 Then
-                    reg = (reg >> 1) Xor poly
-                Else
-                    reg >>= 1
-                End If
-            Next j
-            xorTable(i) = reg
-        Next
+        Dim xorTable(0 To 256 - 1) As UInteger
+        For Each i In xorTable.Count.Range
+            Dim accumulator = CUInt(i)
+            For Each repeat In 8.Range
+                Dim useXor = CBool(accumulator And 1UI)
+                accumulator >>= 1
+                If useXor Then accumulator = accumulator Xor poly
+            Next repeat
+            xorTable(i) = accumulator
+        Next i
 
         Return xorTable
     End Function
@@ -420,12 +463,12 @@ Public Module PoorlyCategorizedFunctions
         Dim xorTable = CRC32Table(poly, polyAlreadyReversed)
 
         'Direct Table Algorithm
-        Dim reg = UInteger.MaxValue
+        Dim result = UInteger.MaxValue
         For Each e In data
-            reg = (reg >> 8) Xor xorTable(e Xor CByte(reg And &HFF))
+            result = (result >> 8) Xor xorTable(e Xor CByte(result And &HFFUI))
         Next e
 
-        Return Not reg
+        Return Not result
     End Function
     <Extension()>
     Public Function CRC32(ByVal data As IReadableStream,
@@ -435,16 +478,16 @@ Public Module PoorlyCategorizedFunctions
         Dim xorTable = CRC32Table(poly, polyAlreadyReversed)
 
         'Direct Table Algorithm
-        Dim reg = UInteger.MaxValue
+        Dim result = UInteger.MaxValue
         Do
             Dim block = data.Read(1024)
-            If block.Count = 0 Then Return reg
+            If block.Count = 0 Then Return result
             For Each e In block
-                reg = (reg >> 8) Xor xorTable(e Xor CByte(reg And &HFF))
+                result = (result >> 8) Xor xorTable(e Xor CByte(result And &HFFUI))
             Next e
         Loop
 
-        Return Not reg
+        Return Not result
     End Function
 
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>

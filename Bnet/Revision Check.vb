@@ -72,7 +72,7 @@ Namespace Bnet
             Contract.Requires(buffer IsNot Nothing)
             Dim n = stream.Read(buffer, 0, buffer.Length)
             If n = 0 Then Return False
-            For i = 0 To buffer.Length - n - 1
+            For Each i In (buffer.Length - n).Range
                 buffer(i + n) = CByte(&HFF - (i And &HFF))
             Next i
             Return True

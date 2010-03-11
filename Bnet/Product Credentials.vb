@@ -206,15 +206,12 @@
                     New Byte() {&H3, &HA, &HC, &H4, &HD, &HB, &H9, &HE, &HF, &H6, &H1, &H7, &H2, &H0, &H5, &H8}
                 }
 
-        Private ReadOnly digitMap As Dictionary(Of Char, Byte) = MakeDigitMap()
-        Private Function MakeDigitMap() As Dictionary(Of Char, Byte)
-            Contract.Ensures(Contract.Result(Of Dictionary(Of Char, Byte))() IsNot Nothing)
-            Dim vals = New Dictionary(Of Char, Byte)
-            Dim chars = "246789BCDEFGHJKMNPRTVWXYZ"
-            For i = 0 To chars.Length - 1
-                vals(chars(i)) = CByte(i)
-            Next i
-            Return vals
+        Private Const CDKeyChars As String = "246789BCDEFGHJKMNPRTVWXYZ"
+        Private ReadOnly digitMap As IDictionary(Of Char, Byte) = MakeDigitMap()
+        Private Function MakeDigitMap() As IDictionary(Of Char, Byte)
+            Contract.Ensures(Contract.Result(Of IDictionary(Of Char, Byte))() IsNot Nothing)
+            Return CDKeyChars.Zip(CByte(CDKeyChars.Length).Range).ToDictionary(keySelector:=Function(e) e.Item1,
+                                                                               elementSelector:=Function(e) e.Item2)
         End Function
 #End Region
 
@@ -260,13 +257,13 @@
 
             'Xor-Permute nibbles
             Dim digits16 = digits5.ConvertFromBaseToBase(5, 16).PaddedTo(minimumLength:=NumDigitsBase16).ToArray
-            For i = NumDigitsBase16 - 1 To 0 Step -1
+            For Each i In NumDigitsBase16.Range.Reverse
                 Dim perm = nibblePermutations(i)
                 Contract.Assume(perm IsNot Nothing)
                 Dim c = perm(digits16(i))
 
                 'Xor-Permute
-                For j = NumDigitsBase16 - 1 To 0 Step -1
+                For Each j In NumDigitsBase16.Range.Reverse
                     If i = j Then Continue For
                     c = perm(perm(digits16(j) Xor c))
                 Next j

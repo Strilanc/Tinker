@@ -149,9 +149,9 @@
                     End If
                 Next player
                 'Bring sender up to the correct number of ticks
-                For i = 1 To _loadInGameTickCount
+                For Each repeat In _loadInGameTickCount.Range
                     sendingPlayer.QueueSendPacket(Protocol.MakeTick(0))
-                Next i
+                Next repeat
 
                 'Show lag screen with remaining loaders to sender
                 If VisibleUnreadyPlayers.Any Then

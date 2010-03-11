@@ -31,9 +31,9 @@
             Me._clock = clock
             Me._logger = If(logger, New Logger)
             _activeGameCount = 1
-            For i = 0 To gameSettings.InitialInstanceCount - 1
+            For Each repeat In gameSettings.InitialInstanceCount.Range
                 AddInstance()
-            Next i
+            Next repeat
             If Not gameSettings.UseInstanceOnDemand Then _activeGameCount -= 1
         End Sub
 

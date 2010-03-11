@@ -56,7 +56,7 @@ Namespace WC3
             descriptions.AsAggregateTask.QueueContinueWithAction(inQueue,
                 Sub()
                     If IsDisposed Then Return
-                    For i = 0 To descriptions.Length - 1
+                    For Each i In descriptions.Length.Range
                         lstSlots.Items(i) = descriptions(i).Result
                     Next i
                 End Sub

@@ -57,7 +57,7 @@ Public Class TestStream
                 Throw New IO.InvalidDataException("Not enough data written.")
             End If
             Dim result(0 To length - 1) As Byte
-            For i = 0 To length - 1
+            For Each i In length.Range
                 result(i) = writeBuffer.Dequeue()
             Next i
             Return result

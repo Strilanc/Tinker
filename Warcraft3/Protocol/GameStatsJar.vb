@@ -105,7 +105,7 @@ Namespace WC3.Protocol
             If p < 0 Then Throw New PicklingException("No null terminator on game statstring.")
             Contract.Assume(p < data.Count)
             Dim datum = data.SubView(0, p + 1)
-            Dim pickle = DataJar.Parse(DecodeStatStringData(datum))
+            Dim pickle = DataJar.Parse(DecodeStatStringData(datum).ToReadableList)
             Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
 
             'Decode settings
@@ -172,44 +172,23 @@ Namespace WC3.Protocol
             Return value.Pickled(datum, pickle.Description)
         End Function
 
-        Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)
+        Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-            Dim out As New List(Of Byte)
-            For Each block In data.EnumBlocks(7)
-                Contract.Assume(block IsNot Nothing)
-
-                'Place bits into a header byte
-                Dim head As Byte
-                For Each b In block.Reverse()
-                    head = head Or (b And CByte(&H1))
-                    head <<= 1
-                Next b
-
-                'Output block
-                out.Add(head Or CByte(&H1))
-                For Each b In block
-                    out.Add(b Or CByte(&H1))
-                Next b
-            Next block
-            Return out.AsReadableList
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+            Return From b In Concat(From plainBlock In data.EnumBlocks(7)
+                                    Let maskByte = plainBlock.Reverse.Aggregate(CByte(0), Function(acc, e) (acc Or (e And CByte(1))) << 1)
+                                    Select {maskByte}.Concat(plainBlock))
+                   Select b Or CByte(1)
         End Function
 
-        Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IReadableList(Of Byte)
+        Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-            Dim out As New List(Of Byte)
-            For Each block In data.EnumBlocks(8)
-                Contract.Assume(block IsNot Nothing)
-                For i = 1 To block.Count - 1
-                    Dim b = block(i)
-                    'Take bit from first byte
-                    If Not CBool((block(0) >> i) And &H1) Then b = b And CByte(&HFE)
-                    'Output
-                    out.Add(b)
-                Next i
-            Next block
-            Return out.AsReadableList
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+            Return From encodedBlock In data.EnumBlocks(8)
+                   From pair In encodedBlock.Zip(encodedBlock(0).Bits).Skip(1)
+                   Let encodedValue = pair.Item1
+                   Let maskBit = pair.Item2
+                   Select If(maskBit, encodedValue Or CByte(1), encodedValue And Not CByte(1))
         End Function
     End Class
 End Namespace

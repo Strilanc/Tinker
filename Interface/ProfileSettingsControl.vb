@@ -36,17 +36,14 @@ Public Class ProfileSettingsControl
         profile.CKLServerAddress = txtCKLServer.Text.AssumeNotNull
 
         Dim currentUsers = New List(Of InvariantString)
-        For i = 0 To gridUsers.RowCount - 1
-            With gridUsers.Rows(i)
-                If .Cells(0).Value Is Nothing Then Continue For
-                Dim s = CStr(.Cells(0).Value)
-                currentUsers.Add(s)
-                profile.Users.UpdateUser(New BotUser( _
-                            s,
-                            CStr(.Cells(1).Value),
-                            CStr(.Cells(2).Value)))
-            End With
-        Next i
+        For Each row As DataGridViewRow In gridUsers.Rows
+            If row.Cells(0).Value Is Nothing Then Continue For
+            Dim name = CStr(row.Cells(0).Value)
+            currentUsers.Add(name)
+            profile.Users.UpdateUser(New BotUser(name,
+                                                 CStr(row.Cells(1).Value),
+                                                 CStr(row.Cells(2).Value)))
+        Next row
         profile.Users.RemoveAllExcept(currentUsers)
     End Sub
 

@@ -554,12 +554,8 @@ Namespace WC3
                 Dim mapAuthor = stream.ReadNullTerminatedString(maxLength:=256)
                 Dim mapDescription = stream.ReadNullTerminatedString(maxLength:=256)
                 Dim recommendedPlayers = stream.ReadNullTerminatedString(maxLength:=256)
-                For repeat = 1 To 8
-                    stream.ReadSingle()  '"Camera Bounds" as defined in the JASS file
-                Next repeat
-                For repeat = 1 To 4
-                    stream.ReadUInt32() 'camera bounds complements
-                Next repeat
+                Dim cameraBounds = (From i In 8.Range Select stream.ReadSingle).ToArray
+                Dim cameraBoundComplements = (From i In 4.Range Select stream.ReadUInt32).ToArray
 
                 Dim playableWidth = stream.ReadUInt32()
                 Dim playableHeight = stream.ReadUInt32()
@@ -613,33 +609,45 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count > 0)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count <= 12)
+
+            'Read Slots
+            Dim rawSlotCount = stream.ReadUInt32()
+            CheckIOData(rawSlotCount > 0 AndAlso rawSlotCount <= 12, "Invalid number of slots.")
+            Dim slotData = (From index In rawSlotCount.Range
+                            Let colorData = CType(stream.ReadUInt32, Protocol.PlayerColor)
+                            Let typeData = stream.ReadUInt32
+                            Let raceData = stream.ReadUInt32
+                            Let fixedStartPosition = stream.ReadUInt32
+                            Let slotPlayerName = stream.ReadNullTerminatedString(maxLength:=256)
+                            Let startPositionX = stream.ReadSingle
+                            Let startPositionY = stream.ReadSingle
+                            Let allyPrioritiesLow = stream.ReadUInt32
+                            Let allyPrioritiesHigh = stream.ReadUInt32
+                            ).ToArray
+
+            'Read Forces
+            Dim forceCount = stream.ReadUInt32()
+            CheckIOData(forceCount > 0 AndAlso forceCount <= 12, "Invalid number of forces.")
+            Dim forceData = (From index In CByte(forceCount).Range
+                             Let flags = stream.ReadUInt32
+                             Let memberBitField = stream.ReadUInt32
+                             Let name = stream.ReadNullTerminatedString(maxLength:=256)
+                             ).ToArray
+
             Dim result = New List(Of Slot)()
 
-            'Slots
-            Dim numSlotsInFile = stream.ReadUInt32()
-            CheckIOData(numSlotsInFile > 0 AndAlso numSlotsInFile <= 12, "Invalid number of slots.")
-            For repeat = 0 To numSlotsInFile - 1
-                'Read
-                Dim colorData = CType(stream.ReadUInt32(), Protocol.PlayerColor)
-                Dim typeData = stream.ReadUInt32()
-                Dim raceData = stream.ReadUInt32()
-                Dim fixedStartPosition = stream.ReadUInt32()
-                Dim slotPlayerName = stream.ReadNullTerminatedString(maxLength:=256)
-                Dim startPositionX = stream.ReadSingle()
-                Dim startPositionY = stream.ReadSingle()
-                Dim allyPrioritiesLow = stream.ReadUInt32()
-                Dim allyPrioritiesHigh = stream.ReadUInt32()
-
+            'Setup slots
+            For Each item In slotData
                 'Check
-                CheckIOData(colorData.EnumValueIsDefined, "Unrecognized map slot color: {0}.".Frmt(colorData))
-                CheckIOData(raceData <= 4, "Unrecognized map slot race data: {0}.".Frmt(raceData))
-                CheckIOData(typeData >= 1 AndAlso typeData <= 3, "Unrecognized map slot type data: {0}.".Frmt(typeData))
+                CheckIOData(item.colorData.EnumValueIsDefined, "Unrecognized map slot color: {0}.".Frmt(item.colorData))
+                CheckIOData(item.raceData <= 4, "Unrecognized map slot race data: {0}.".Frmt(item.raceData))
+                CheckIOData(item.typeData >= 1 AndAlso item.typeData <= 3, "Unrecognized map slot type data: {0}.".Frmt(item.typeData))
 
                 'Use
                 Dim race = Protocol.Races.Random
                 Dim raceUnlocked = Not CBool(options And MapOptions.FixedPlayerSettings)
                 Dim contents As SlotContents
-                Select Case raceData
+                Select Case item.raceData
                     Case 0 : raceUnlocked = True
                     Case 1 : race = Protocol.Races.Human
                     Case 2 : race = Protocol.Races.Orc
@@ -647,7 +655,7 @@ Namespace WC3
                     Case 4 : race = Protocol.Races.NightElf
                     Case Else : Throw New UnreachableException
                 End Select
-                Select Case typeData
+                Select Case item.typeData
                     Case 1 : contents = New SlotContentsOpen()
                     Case 2 : contents = New SlotContentsComputer(Protocol.ComputerLevel.Normal)
                     Case 3 : Continue For 'neutral slots not shown in lobby
@@ -655,35 +663,27 @@ Namespace WC3
                 End Select
                 result.Add(New Slot(index:=CByte(result.Count),
                                     raceUnlocked:=raceUnlocked,
-                                    Color:=colorData,
+                                    Color:=item.colorData,
                                     contents:=contents,
                                     race:=race,
                                     team:=0))
-            Next repeat
-            Contract.Assert(result.Count <= numSlotsInFile)
+            Next item
+            Contract.Assert(result.Count <= rawSlotCount)
             CheckIOData(result.Count > 0, "Map contains no player slots.")
 
-            'Forces
-            Dim numForces = stream.ReadUInt32()
-            CheckIOData(numForces > 0 AndAlso numForces <= 12, "Invalid number of forces.")
-            For teamIndex As Byte = 0 To CByte(numForces - 1)
-                'Read
-                Dim forceFlags = stream.ReadUInt32()
-                Dim memberBitField = stream.ReadUInt32()
-                Dim forceName = stream.ReadNullTerminatedString(maxLength:=256)
-
-                'Apply
-                Dim teamIndex_ = teamIndex
-                result = (From slot In result
-                          Select If(CBool(memberBitField And (1UI << slot.Color)), slot.WithTeam(teamIndex_), slot)
-                          ).ToList
-            Next teamIndex
-            '(melee overrides forces and races)
+            'Setup Teams
             If CBool(options And MapOptions.Melee) Then
-                result = (From pair In result.Zip(result.Count.Range)
+                result = (From pair In result.ZipWithIndexes
                           Let slot = pair.Item1
                           Let team = pair.Item2
                           Select slot.WithTeam(CByte(team)).WithRace(Protocol.Races.Random)
+                          ).ToList
+            Else
+                result = (From slot In result
+                          Let team = (From force In forceData
+                                      Where force.memberBitField.Bits(slot.Color)
+                                      Select force.index).Single
+                          Select slot.WithTeam(team)
                           ).ToList
             End If
 

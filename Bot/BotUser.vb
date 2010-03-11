@@ -66,7 +66,6 @@ Public NotInheritable Class BotUser
     Public Shared Function UnpackPermissions(ByVal packedPermissions As String) As Dictionary(Of InvariantString, UInteger)
         Contract.Requires(packedPermissions IsNot Nothing)
         Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, UInteger))() IsNot Nothing)
-
         Dim permissionMap = New Dictionary(Of InvariantString, UInteger)
         For Each key In packedPermissions.Split(SEPARATION_CHAR)
             Contract.Assume(key IsNot Nothing)
@@ -152,12 +151,14 @@ Public NotInheritable Class BotUser
     Public Sub New(ByVal reader As IO.BinaryReader)
         Contract.Requires(reader IsNot Nothing)
         Me._name = reader.ReadString()
-        For i = 1 To reader.ReadUInt16()
+        Dim settingCount = reader.ReadUInt16()
+        For Each repeat In settingCount.Range
             SettingMap(reader.ReadString()) = reader.ReadString()
-        Next i
-        For i = 1 To reader.ReadUInt16()
+        Next repeat
+        Dim permissionCount = reader.ReadUInt16()
+        For Each repeat In permissionCount.Range
             PermissionMap(reader.ReadString()) = reader.ReadUInt32()
-        Next i
+        Next repeat
     End Sub
 
     Public Function Clone(Optional ByVal newName As InvariantString? = Nothing) As BotUser
@@ -317,9 +318,10 @@ Public NotInheritable Class BotUserSet
 
     Public Sub Load(ByVal reader As IO.BinaryReader)
         Contract.Requires(reader IsNot Nothing)
-        For i = 1 To reader.ReadUInt16()
+        Dim userCount = reader.ReadUInt16()
+        For Each repeat In userCount.Range
             AddUser(New BotUser(reader))
-        Next i
+        Next repeat
     End Sub
     Public Sub Save(ByVal bw As IO.BinaryWriter)
         Contract.Requires(bw IsNot Nothing)

@@ -55,7 +55,7 @@ Namespace Bnet.Protocol
                 pickles.Add(result.Pickled(data.SubView(4, 4), New Lazy(Of String)(Function() "result: {0}".Frmt(result))))
             Else
                 'games matching query
-                For repeat = 1UI To count
+                For Each repeat In count.Range
                     Dim pickle = gameDataJar.Parse(data.SubView(offset))
                     pickles.Add(pickle)
                     offset += pickle.Data.Count

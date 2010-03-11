@@ -7,8 +7,8 @@
         Private ReadOnly _name As InvariantString
         Private ReadOnly _format As InvariantString
         Private ReadOnly _description As String
-        Private ReadOnly _permissions As Dictionary(Of InvariantString, UInteger)
-        Private ReadOnly _extraHelp As Dictionary(Of InvariantString, String)
+        Private ReadOnly _permissions As IDictionary(Of InvariantString, UInteger)
+        Private ReadOnly _extraHelp As IDictionary(Of InvariantString, String)
         Private ReadOnly _hasPrivateArguments As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -56,9 +56,9 @@
                 Return _format
             End Get
         End Property
-        Public Overridable ReadOnly Property HelpTopics As Dictionary(Of InvariantString, String)
+        Public Overridable ReadOnly Property HelpTopics As IDictionary(Of InvariantString, String)
             Get
-                Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, String))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IDictionary(Of InvariantString, String))() IsNot Nothing)
                 Return _extraHelp
             End Get
         End Property

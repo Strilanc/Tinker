@@ -25,7 +25,7 @@
         Public Overrides Function IsArgumentPrivate(ByVal argument As String) As Boolean
             Return _command.IsArgumentPrivate(argument)
         End Function
-        Public Overrides ReadOnly Property HelpTopics As Dictionary(Of InvariantString, String)
+        Public Overrides ReadOnly Property HelpTopics As IDictionary(Of InvariantString, String)
             Get
                 Return _command.HelpTopics
             End Get

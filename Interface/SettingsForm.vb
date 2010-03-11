@@ -91,10 +91,7 @@ Public Class SettingsForm
         Return ports
     End Function
     Private Function GetProfileWithName(ByVal name As InvariantString) As Bot.ClientProfile
-        For Each profile In _clientProfiles
-            If profile.name = name Then Return profile
-        Next profile
-        Return Nothing
+        Return (From profile In _clientProfiles Where profile.name = name).FirstOrDefault
     End Function
     Private Sub btnCreateNewProfile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnCreateNewProfile.Click
         Dim name = txtNewProfileName.Text

@@ -78,12 +78,14 @@ Namespace Bot
 
                 'Data
                 Dim clientProfiles = New List(Of ClientProfile)
-                For repeat = 1UI To reader.ReadUInt32()
+                Dim clientProfileCount = reader.ReadUInt32()
+                For Each repeat In clientProfileCount.Range
                     Dim p = New Bot.ClientProfile(reader)
                     clientProfiles.Add(p)
                 Next repeat
                 Dim pluginProfiles = New List(Of PluginProfile)
-                For repeat = 1UI To reader.ReadUInt32()
+                Dim pluginProfileCount = reader.ReadUInt32()
+                For Each repeat In pluginProfileCount.Range
                     Dim p = New Bot.PluginProfile(reader)
                     pluginProfiles.Add(p)
                 Next repeat
