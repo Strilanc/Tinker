@@ -110,35 +110,35 @@ Namespace WC3.Protocol
 
             'Decode settings
             Dim settings = CType(CUInt(vals("settings")), GameSettings)
-            Dim randomHero = CBool(settings And GameSettings.OptionRandomHero)
-            Dim randomRace = CBool(settings And GameSettings.OptionRandomRace)
-            Dim allowFullSharedControl = CBool(settings And GameSettings.OptionAllowFullSharedControl)
-            Dim lockTeams = CBool(settings And GameSettings.OptionLockTeams)
-            Dim teamsTogether = CBool(settings And GameSettings.OptionTeamsTogether)
+            Dim randomHero = settings.EnumIncludes(GameSettings.OptionRandomHero)
+            Dim randomRace = settings.EnumIncludes(GameSettings.OptionRandomRace)
+            Dim allowFullSharedControl = settings.EnumIncludes(GameSettings.OptionAllowFullSharedControl)
+            Dim lockTeams = settings.EnumIncludes(GameSettings.OptionLockTeams)
+            Dim teamsTogether = settings.EnumIncludes(GameSettings.OptionTeamsTogether)
             Dim observers As GameObserverOption
-            If CBool(settings And GameSettings.ObserversOnDefeat) Then
+            If settings.EnumIncludes(GameSettings.ObserversOnDefeat) Then
                 observers = GameObserverOption.ObsOnDefeat
-            ElseIf CBool(settings And GameSettings.ObserversFull) Then
+            ElseIf settings.EnumIncludes(GameSettings.ObserversFull) Then
                 observers = GameObserverOption.FullObservers
-            ElseIf CBool(settings And GameSettings.ObserversReferees) Then
+            ElseIf settings.EnumIncludes(GameSettings.ObserversReferees) Then
                 observers = GameObserverOption.Referees
             Else
                 observers = GameObserverOption.NoObservers
             End If
             Dim visibility As GameVisibilityOption
-            If CBool(settings And GameSettings.VisibilityAlwaysVisible) Then
+            If settings.EnumIncludes(GameSettings.VisibilityAlwaysVisible) Then
                 visibility = GameVisibilityOption.AlwaysVisible
-            ElseIf CBool(settings And GameSettings.VisibilityExplored) Then
+            ElseIf settings.EnumIncludes(GameSettings.VisibilityExplored) Then
                 visibility = GameVisibilityOption.Explored
-            ElseIf CBool(settings And GameSettings.VisibilityHideTerrain) Then
+            ElseIf settings.EnumIncludes(GameSettings.VisibilityHideTerrain) Then
                 visibility = GameVisibilityOption.HideTerrain
             Else
                 visibility = GameVisibilityOption.MapDefault
             End If
             Dim speed As GameSpeedOption
-            If CBool(settings And GameSettings.SpeedMedium) Then
+            If settings.EnumIncludes(GameSettings.SpeedMedium) Then
                 speed = GameSpeedOption.Medium
-            ElseIf CBool(settings And GameSettings.SpeedFast) Then
+            ElseIf settings.EnumIncludes(GameSettings.SpeedFast) Then
                 speed = GameSpeedOption.Fast
             Else
                 speed = GameSpeedOption.Slow
@@ -185,10 +185,8 @@ Namespace WC3.Protocol
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
             Return From encodedBlock In data.Partitioned(partitionSize:=8)
-                   From pair In encodedBlock.Zip(encodedBlock(0).Bits).Skip(1)
-                   Let encodedValue = pair.Item1
-                   Let maskBit = pair.Item2
-                   Select If(maskBit, encodedValue Or CByte(1), encodedValue And Not CByte(1))
+                   From valueMaskBitPair In encodedBlock.Zip(encodedBlock.First.Bits).Skip(1)
+                   Select decodedValue = valueMaskBitPair.Item1.WithBitSetTo(bitPosition:=0, bitValue:=valueMaskBitPair.Item2)
         End Function
     End Class
 End Namespace

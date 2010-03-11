@@ -119,28 +119,77 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
+    Public Function HasBitSet(ByVal value As Byte, ByVal bitPosition As Integer) As Boolean
+        Return ((value >> bitPosition) And CByte(1)) <> 0
+    End Function
+    <Extension()> <Pure()>
+    Public Function HasBitSet(ByVal value As UInt16, ByVal bitPosition As Integer) As Boolean
+        Return ((value >> bitPosition) And 1US) <> 0
+    End Function
+    <Extension()> <Pure()>
+    Public Function HasBitSet(ByVal value As UInt32, ByVal bitPosition As Integer) As Boolean
+        Return ((value >> bitPosition) And 1UI) <> 0
+    End Function
+    <Extension()> <Pure()>
+    Public Function HasBitSet(ByVal value As UInt64, ByVal bitPosition As Integer) As Boolean
+        Return ((value >> bitPosition) And 1UL) <> 0
+    End Function
+
+    <Extension()> <Pure()>
+    Public Function WithBitSetTo(ByVal value As Byte, ByVal bitPosition As Integer, ByVal bitValue As Boolean) As Byte
+        Dim bit = CByte(1) << bitPosition
+        Return If(bitValue, value Or bit, value And Not bit)
+    End Function
+    <Extension()> <Pure()>
+    Public Function WithBitSetTo(ByVal value As UInt16, ByVal bitPosition As Integer, ByVal bitValue As Boolean) As UInt16
+        Dim bit = 1US << bitPosition
+        Return If(bitValue, value Or bit, value And Not bit)
+    End Function
+    <Extension()> <Pure()>
+    Public Function WithBitSetTo(ByVal value As UInt32, ByVal bitPosition As Integer, ByVal bitValue As Boolean) As UInt32
+        Dim bit = 1UI << bitPosition
+        Return If(bitValue, value Or bit, value And Not bit)
+    End Function
+    <Extension()> <Pure()>
+    Public Function WithBitSetTo(ByVal value As UInt64, ByVal bitPosition As Integer, ByVal bitValue As Boolean) As UInt64
+        Dim bit = 1UL << bitPosition
+        Return If(bitValue, value Or bit, value And Not bit)
+    End Function
+
+    <Extension()> <Pure()>
+    Public Function EnumIncludes(Of T)(ByVal value As T, ByVal [option] As UInt32) As Boolean
+        Return (CUInt(CType(value, Object)) And [option]) = [option]
+    End Function
+    <Extension()> <Pure()>
+    Public Function EnumWithSet(Of T)(ByVal value As T, ByVal [option] As UInt32, ByVal include As Boolean) As T
+        Dim v = CUInt(CType(value, Object))
+        v = If(include, v Or [option], v And Not [option])
+        Return CType(CType(v, Object), T)
+    End Function
+
+    <Extension()> <Pure()>
     Public Function Bits(ByVal value As UInt64) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 64)
-        Return From i In 64.Range Select CBool((value >> i) And 1UI)
+        Return From i In 64.Range Select value.HasBitSet(i)
     End Function
     <Extension()> <Pure()>
     Public Function Bits(ByVal value As UInt32) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 32)
-        Return From i In 32.Range Select CBool((value >> i) And 1UI)
+        Return From i In 32.Range Select value.HasBitSet(i)
     End Function
     <Extension()> <Pure()>
     Public Function Bits(ByVal value As UInt16) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 16)
-        Return From i In 16.Range Select CBool((value >> i) And CByte(1))
+        Return From i In 16.Range Select value.HasBitSet(i)
     End Function
     <Extension()> <Pure()>
     Public Function Bits(ByVal value As Byte) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 8)
-        Return From i In 8.Range Select CBool((value >> i) And CByte(1))
+        Return From i In 8.Range Select value.HasBitSet(i)
     End Function
 
     <Extension()> <Pure()>
@@ -188,7 +237,7 @@ Public Module PoorlyCategorizedFunctions
         Dim dirQuery As InvariantString = "*"
         If fileQuery.Contains(IO.Path.DirectorySeparatorChar) Then
             Dim words = fileQuery.Split(IO.Path.DirectorySeparatorChar)
-            Dim filePattern = words(words.Length - 1)
+            Dim filePattern = words.Last
             Contract.Assume(filePattern IsNot Nothing)
             Contract.Assume(fileQuery.Length > filePattern.Length)
             dirQuery = fileQuery.Substring(0, fileQuery.Length - filePattern.Length) + "*"
@@ -287,12 +336,12 @@ Public Module PoorlyCategorizedFunctions
             Dim result = New BigInteger(0)
             Contract.Assume(result >= 0)
             Return result
-        ElseIf (digits(digits.Length - 1) And &H80) = 0 Then
-            Dim result = New BigInteger(digits)
+        ElseIf digits.Last.Bits.Last Then 'BigInteger will misinterpret the last bit as a negative sign, so append 0 first
+            Dim result = New BigInteger(digits.Append(0).ToArray)
             Contract.Assume(result >= 0)
             Return result
         Else
-            Dim result = New BigInteger(digits.Append(0).ToArray)
+            Dim result = New BigInteger(digits)
             Contract.Assume(result >= 0)
             Return result
         End If
@@ -348,7 +397,7 @@ Public Module PoorlyCategorizedFunctions
         For Each i In xorTable.Count.Range
             Dim accumulator = CUInt(i)
             For Each repeat In 8.Range
-                Dim useXor = CBool(accumulator And 1UI)
+                Dim useXor = accumulator.Bits.First
                 accumulator >>= 1
                 If useXor Then accumulator = accumulator Xor poly
             Next repeat

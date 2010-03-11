@@ -99,7 +99,7 @@ Namespace Bnet
             Dim commandPrefix = My.Settings.commandPrefix.AssumeNotNull
             If user Is Nothing Then
                 Return 'user not allowed
-            ElseIf id <> Bnet.Protocol.ChatEventId.Talk And id <> Bnet.Protocol.ChatEventId.Whisper Then
+            ElseIf id <> Bnet.Protocol.ChatEventId.Talk AndAlso id <> Bnet.Protocol.ChatEventId.Whisper Then
                 Return 'not a message
             ElseIf text = Tinker.Bot.MainBot.TriggerCommandText Then '?trigger command
                 If user.Name.Length <= 0 Then Throw New InvalidStateException("Empty user name.")

@@ -97,24 +97,12 @@ Namespace Bnet
             Public ReadOnly Property UpdatedGameDescription(ByVal clock As IClock) As WC3.LocalGameDescription
                 Get
                     Dim useFull = False
-                    Dim gameState = Protocol.GameStates.Unknown0x10
-                    If IsPrivate Then gameState = gameState Or Protocol.GameStates.Private
-                    If useFull Then
-                        gameState = gameState Or Protocol.GameStates.Full
-                    Else
-                        gameState = gameState And Not Protocol.GameStates.Full
-                    End If
-                    'If in_progress Then gameState = gameState Or BnetPacket.GameStateFlags.InProgress
-                    'If Not empty Then game_state_flags = game_state_flags Or FLAG_NOT_EMPTY [causes problems: why?]
 
-                    Dim gameType = WC3.Protocol.GameTypes.CreateGameUnknown0 Or BaseGameDescription.GameType
-                    If IsPrivate Then
-                        gameState = gameState Or Protocol.GameStates.Private
-                        gameType = gameType Or WC3.Protocol.GameTypes.PrivateGame
-                    Else
-                        gameState = gameState And Not Protocol.GameStates.Private
-                        gameType = gameType And Not WC3.Protocol.GameTypes.PrivateGame
-                    End If
+                    Dim gameState = Protocol.GameStates.Unknown0x10.EnumWithSet(Protocol.GameStates.Full, useFull
+                                                                  ).EnumWithSet(Protocol.GameStates.Private, IsPrivate)
+
+                    Dim gameType = BaseGameDescription.GameType Or WC3.Protocol.GameTypes.CreateGameUnknown0
+                    gameType = gameType.EnumWithSet(WC3.Protocol.GameTypes.PrivateGame, IsPrivate)
                     Select Case BaseGameDescription.GameStats.Observers
                         Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
                             gameType = gameType Or WC3.Protocol.GameTypes.ObsFull

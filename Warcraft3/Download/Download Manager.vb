@@ -213,8 +213,7 @@ Namespace WC3.Download
             If _defaultClient IsNot Nothing Then client.Links.Add(_defaultClient)
             client.Links.AddRange(From peer In _playerClients.Values
                                   Where peer IsNot client
-                                  Let pidFlag = 1UI << (peer.Player.Id.Index - 1)
-                                  Where (flags And pidFlag) <> 0
+                                  Where flags.HasBitSet(peer.Player.Id.Index - 1)
                                   Select peer)
         End Sub
 

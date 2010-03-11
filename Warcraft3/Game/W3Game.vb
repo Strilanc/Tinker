@@ -576,7 +576,7 @@ Namespace WC3
 
             Dim numPlayers = (From q In _kernel.Players Where Not q.isFake).Count
             Dim numInFavor = (From q In _kernel.Players Where Not q.isFake AndAlso q.hasVotedToStart).Count
-            If numPlayers >= 2 And numInFavor * 3 >= numPlayers * 2 Then
+            If numPlayers >= 2 AndAlso numInFavor * 3 >= numPlayers * 2 Then
                 TryStartCountdown()
             End If
         End Sub

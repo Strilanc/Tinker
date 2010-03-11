@@ -119,12 +119,11 @@ Public Class SettingsForm
         cntrl.LoadFromProfile(profile)
         tab.Controls.Add(cntrl)
         cntrl.Dock = DockStyle.Fill
-        With tabsSettings.TabPages
-            .Add(tab)
-            Dim t = .Item(.Count - 1)
-            .Item(.Count - 1) = .Item(.Count - 2)
-            .Item(.Count - 2) = t
-        End With
+        Dim page = tabsSettings.TabPages
+        page.Add(tab)
+        Dim t = page.Item(page.Count - 1)
+        page.Item(page.Count - 1) = page.Item(page.Count - 2)
+        page.Item(page.Count - 2) = t
         AddHandler cntrl.Delete, AddressOf remove_profile_tab
     End Sub
     Private Sub remove_profile_tab(ByVal sender As ProfileSettingsControl)
