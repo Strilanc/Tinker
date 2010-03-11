@@ -175,7 +175,7 @@ Namespace WC3.Protocol
         Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
-            Return From b In Concat(From plainBlock In data.EnumBlocks(7)
+            Return From b In Concat(From plainBlock In data.Partitioned(partitionSize:=7)
                                     Let maskByte = plainBlock.Reverse.Aggregate(CByte(0), Function(acc, e) (acc Or (e And CByte(1))) << 1)
                                     Select {maskByte}.Concat(plainBlock))
                    Select b Or CByte(1)
@@ -184,7 +184,7 @@ Namespace WC3.Protocol
         Private Shared Function DecodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
-            Return From encodedBlock In data.EnumBlocks(8)
+            Return From encodedBlock In data.Partitioned(partitionSize:=8)
                    From pair In encodedBlock.Zip(encodedBlock(0).Bits).Skip(1)
                    Let encodedValue = pair.Item1
                    Let maskBit = pair.Item2

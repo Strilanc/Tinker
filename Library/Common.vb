@@ -119,12 +119,6 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
-    Public Function ZipWithIndexes(Of T)(ByVal sequence As IEnumerable(Of T)) As IEnumerable(Of Tuple(Of T, Integer))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Tuple(Of T, Integer)))() IsNot Nothing)
-        Return sequence.Zip(Int32.MaxValue.Range)
-    End Function
-    <Extension()> <Pure()>
     Public Function Bits(ByVal value As UInt64) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 64)
@@ -150,18 +144,6 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
-    Public Function IndexesOf(Of T)(ByVal sequence As IEnumerable(Of T), ByVal value As T) As IEnumerable(Of Integer)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(value IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Integer))() IsNot Nothing)
-        Return From pair In sequence.ZipWithIndexes
-               Let item = pair.Item1
-               Let position = pair.Item2
-               Where value.Equals(item)
-               Select position
-    End Function
-
-    <Extension()> <Pure()>
     Public Function Summarize(ByVal ex As Exception) As String
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         If ex Is Nothing Then
@@ -178,86 +160,6 @@ Public Module PoorlyCategorizedFunctions
         Else
             Return "({0}) {1}".Frmt(ex.GetType.Name, ex.Message)
         End If
-    End Function
-
-    <Extension()> <Pure()>
-    Public Function Interleaved(Of T)(ByVal sequences As IEnumerable(Of IEnumerable(Of T))) As IEnumerable(Of T)
-        Contract.Requires(sequences IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-        Dim result = New List(Of T)
-        Dim enumerators = (From sequence In sequences Select sequence.GetEnumerator).ToList
-        Dim index = 0
-        Do
-            While Not enumerators(index).MoveNext
-                enumerators.RemoveAt(index)
-                If enumerators.Count = 0 Then Exit Do
-                index = index Mod enumerators.Count
-            End While
-
-            result.Add(enumerators(index).Current)
-            index = (index + 1) Mod enumerators.Count
-        Loop
-        Return result
-    End Function
-    <Extension()> <Pure()>
-    Public Function Deinterleaved(Of T)(ByVal sequence As IEnumerable(Of T), ByVal sequenceCount As Integer) As IEnumerable(Of IEnumerable(Of T))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(sequenceCount >= 1)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of T)))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of T)))().Count = sequenceCount)
-        Return sequence.ZipWithIndexes.GroupBy(keySelector:=Function(pair) pair.Item2 Mod sequenceCount,
-                                               elementSelector:=Function(pair) pair.Item1)
-    End Function
-
-    '''<summary>Returns a sequence of non-negative integers less than the limit, starting at 0 and incrementing.</summary>
-    <Pure()> <Extension()>
-    Public Function Range(ByVal limit As Int32) As IEnumerable(Of Int32)
-        Contract.Requires(limit >= 0)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))().Count = limit)
-        Return Enumerable.Range(0, limit)
-    End Function
-    '''<summary>Returns a sequence of unsigned integers less than the limit, starting at 0 and incrementing.</summary>
-    <Pure()> <Extension()>
-    Public Function Range(ByVal limit As UInt32) As IEnumerable(Of UInt32)
-        Contract.Requires(limit >= 0)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of UInt32))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of UInt32))().Count = limit)
-        Return From i In CInt(limit).Range Select CUInt(i)
-    End Function
-    '''<summary>Returns a sequence of unsigned integers less than the limit, starting at 0 and incrementing.</summary>
-    <Pure()> <Extension()>
-    Public Function Range(ByVal limit As UInt16) As IEnumerable(Of UInt16)
-        Contract.Requires(limit >= 0)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of UInt16))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of UInt16))().Count = limit)
-        Return From i In CInt(limit).Range Select CUShort(i)
-    End Function
-    '''<summary>Returns a sequence of the bytes less than the limit, starting at 0 and incrementing.</summary>
-    <Pure()> <Extension()>
-    Public Function Range(ByVal limit As Byte) As IEnumerable(Of Byte)
-        Contract.Requires(limit >= 0)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))().Count = limit)
-        Return From i In CInt(limit).Range Select CByte(i)
-    End Function
-
-    '''<summary>Returns a sequence with items equal to the given sequence's items offset by the given amount.</summary>
-    <Pure()> <Extension()>
-    Public Function OffsetBy(ByVal sequence As IEnumerable(Of Int32), ByVal offset As Int32) As IEnumerable(Of Int32)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Int32))().Count = sequence.Count)
-        Return From i In sequence Select i + offset
-    End Function
-
-    '''<summary>Returns a sequence consisting of a repeated value.</summary>
-    <Pure()> <Extension()>
-    Public Function Repeated(Of T)(ByVal value As T, ByVal count As Integer) As IEnumerable(Of T)
-        Contract.Requires(count >= 0)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))().Count = count)
-        Return Enumerable.Repeat(value, count)
     End Function
 
     <Extension()>
