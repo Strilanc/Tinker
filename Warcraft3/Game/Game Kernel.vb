@@ -26,22 +26,44 @@ Namespace WC3
     Public NotInheritable Class GameKernel
         Inherits DisposableWithTask
 
-        Private _state As GameState = GameState.AcceptingPlayers
-        Private ReadOnly _players As New AsyncViewableCollection(Of Player)
         Private ReadOnly _clock As IClock
+        Private ReadOnly _inQueue As CallQueue
+        Private ReadOnly _outQueue As CallQueue
+        Private ReadOnly _players As New AsyncViewableCollection(Of Player)
+        Private _state As GameState = GameState.AcceptingPlayers
 
         Public Event ChangedState(ByVal sender As GameKernel, ByVal oldState As GameState, ByVal newState As GameState)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_players IsNot Nothing)
             Contract.Invariant(_clock IsNot Nothing)
+            Contract.Invariant(_inQueue IsNot Nothing)
+            Contract.Invariant(_outQueue IsNot Nothing)
+            Contract.Invariant(_players IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal clock As IClock)
+        Public Sub New(ByVal clock As IClock,
+                       ByVal inQueue As CallQueue,
+                       ByVal outQueue As CallQueue)
             Contract.Assume(clock IsNot Nothing)
+            Contract.Assume(inQueue IsNot Nothing)
+            Contract.Assume(outQueue IsNot Nothing)
             Me._clock = clock
+            Me._inQueue = inQueue
+            Me._outQueue = outQueue
         End Sub
 
+        Public ReadOnly Property InQueue As CallQueue
+            Get
+                Contract.Ensures(Contract.Result(Of CallQueue)() IsNot Nothing)
+                Return _inQueue
+            End Get
+        End Property
+        Public ReadOnly Property OutQueue As CallQueue
+            Get
+                Contract.Ensures(Contract.Result(Of CallQueue)() IsNot Nothing)
+                Return _outQueue
+            End Get
+        End Property
         Public ReadOnly Property Clock As IClock
             Get
                 Contract.Ensures(Contract.Result(Of IClock)() IsNot Nothing)

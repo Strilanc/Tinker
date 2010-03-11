@@ -46,7 +46,7 @@ Namespace WC3
                                           Select "DL={0}".Frmt(dlText).Padded(9) + _
                                                  "EB={0}".Frmt(rateDescription)
                         Case PlayerState.Loading
-                            contextInfo = "Ready={0}".Frmt(Ready).AsTask
+                            contextInfo = "Ready={0}".Frmt(IsReady).AsTask
                         Case PlayerState.Playing
                             contextInfo = "DT={0}gms".Frmt(Me.maxTockTime - Me.totalTockTime).AsTask
                         Case Else

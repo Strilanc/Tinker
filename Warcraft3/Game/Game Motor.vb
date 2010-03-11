@@ -2,7 +2,6 @@
     Public Class GameMotor
         Inherits DisposableWithTask
 
-        Private ReadOnly inQueue As CallQueue
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _lobby As GameLobby
         Private ReadOnly _gameDataQueue As New Queue(Of Tuple(Of Player, IReadableList(Of Protocol.GameAction)))
@@ -27,7 +26,6 @@
             Contract.Invariant(_init IsNot Nothing)
             Contract.Invariant(_tickPeriod.Ticks > 0)
             Contract.Invariant(_lagLimit.Ticks >= 0)
-            Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_kernel IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
             Contract.Invariant(_gameTime >= 0)
@@ -37,19 +35,16 @@
         Public Sub New(ByVal defaultSpeedFactor As Double,
                        ByVal defaultTickPeriod As TimeSpan,
                        ByVal defaultLagLimit As TimeSpan,
-                       ByVal inQueue As CallQueue,
                        ByVal kernel As GameKernel,
                        ByVal lobby As GameLobby)
             Contract.Requires(defaultSpeedFactor > 0)
             Contract.Requires(defaultTickPeriod.Ticks > 0)
             Contract.Requires(defaultLagLimit.Ticks >= 0)
-            Contract.Requires(inQueue IsNot Nothing)
             Contract.Requires(kernel IsNot Nothing)
             Contract.Requires(lobby IsNot Nothing)
             Me._speedFactor = defaultSpeedFactor
             Me._tickPeriod = defaultTickPeriod
             Me._lagLimit = defaultLagLimit
-            Me.inQueue = inQueue
             Me._kernel = kernel
             Me._lobby = lobby
         End Sub
@@ -59,8 +54,8 @@
 
             _lobby.StartPlayerHoldPoint.IncludeActionHandler(
                 Sub(newPlayer)
-                    AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() inQueue.QueueAction(Sub() OnDropLagger(newPlayer))
-                    AddHandler newPlayer.ReceivedGameActions, Sub(sender, actions) inQueue.QueueAction(Sub() OnReceiveGameActions(sender, actions))
+                    AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() _kernel.InQueue.QueueAction(Sub() OnDropLagger(newPlayer))
+                    AddHandler newPlayer.ReceivedGameActions, Sub(sender, actions) _kernel.InQueue.QueueAction(Sub() OnReceiveGameActions(sender, actions))
                 End Sub)
         End Sub
 
@@ -73,11 +68,11 @@
             OnTick()
         End Sub
         Public Function QueueStart() As Task
-            Return inQueue.QueueAction(AddressOf Start)
+            Return _kernel.InQueue.QueueAction(AddressOf Start)
         End Function
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
-            Return inQueue.QueueAction(Sub() _tickClock = Nothing)
+            Return _kernel.InQueue.QueueAction(Sub() _tickClock = Nothing)
         End Function
 
         Private _asyncWaitTriggered As Boolean
@@ -120,7 +115,7 @@
             'Stop for laggers
             UpdateLagScreen()
             If _laggingPlayers.Count > 0 Then
-                _kernel.Clock.AsyncWait(_tickPeriod).QueueContinueWithAction(inQueue, AddressOf OnTick)
+                _kernel.Clock.AsyncWait(_tickPeriod).QueueContinueWithAction(_kernel.InQueue, AddressOf OnTick)
                 Return
             End If
 
@@ -128,7 +123,7 @@
             _leftoverGameTime += dt - dgt
             _leftoverGameTime = _leftoverGameTime.Between(-dgt * 10, dgt * 10)
             Dim nextTickTime = CLng(dgt - _leftoverGameTime).Between(dgt \ 2US, dgt * 2US).Milliseconds
-            _kernel.Clock.AsyncWait(nextTickTime).QueueContinueWithAction(inQueue, AddressOf OnTick)
+            _kernel.Clock.AsyncWait(nextTickTime).QueueContinueWithAction(_kernel.InQueue, AddressOf OnTick)
 
             'Send
             SendQueuedGameData(New TickRecord(dgt, _gameTime))
@@ -206,31 +201,31 @@
 
         Public Function QueueGetTickPeriod() As Task(Of TimeSpan)
             Contract.Ensures(Contract.Result(Of Task(Of TimeSpan))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _tickPeriod)
+            Return _kernel.InQueue.QueueFunc(Function() _tickPeriod)
         End Function
         Public Function QueueGetSpeedFactor() As Task(Of Double)
             Contract.Ensures(Contract.Result(Of Task(Of Double))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _speedFactor)
+            Return _kernel.InQueue.QueueFunc(Function() _speedFactor)
         End Function
         Public Function QueueGetLagLimit() As Task(Of TimeSpan)
             Contract.Ensures(Contract.Result(Of Task(Of TimeSpan))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() _lagLimit)
+            Return _kernel.InQueue.QueueFunc(Function() _lagLimit)
         End Function
 
         Public Function QueueSetTickPeriod(ByVal value As TimeSpan) As Task
             Contract.Requires(value.Ticks > 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() _tickPeriod = value)
+            Return _kernel.InQueue.QueueAction(Sub() _tickPeriod = value)
         End Function
         Public Function QueueSetSpeedFactor(ByVal value As Double) As Task
             Contract.Requires(value > 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() _speedFactor = value)
+            Return _kernel.InQueue.QueueAction(Sub() _speedFactor = value)
         End Function
         Public Function QueueSetLagLimit(ByVal value As TimeSpan) As Task
             Contract.Requires(value.Ticks >= 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() _lagLimit = value)
+            Return _kernel.InQueue.QueueAction(Sub() _lagLimit = value)
         End Function
     End Class
 End Namespace

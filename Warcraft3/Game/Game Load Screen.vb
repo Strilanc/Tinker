@@ -2,54 +2,43 @@
     Public NotInheritable Class GameLoadScreen
         Private Shared ReadOnly LoadInGameTickPeriod As TimeSpan = 30.Seconds
 
-        Private ReadOnly inQueue As CallQueue
-        Private ReadOnly readyPlayers As New HashSet(Of Player)
-        Private ReadOnly unreadyPlayers As New HashSet(Of Player)
-        Private ReadOnly visibleReadyPlayers As New HashSet(Of Player)
-        Private ReadOnly visibleUnreadyPlayers As New HashSet(Of Player)
-        Private _loadInGameTickCount As Integer
-        Private _loadInGameTicker As IDisposable
+        Private ReadOnly _readyPlayers As New HashSet(Of Player)
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _startLock As New OnetimeLock
         Private ReadOnly _lobby As GameLobby
         Private ReadOnly _logger As Logger
         Private ReadOnly _settings As GameSettings
-        Private ReadOnly _motor As GameMotor
 
-        Public Event Launched(ByVal sender As GameLoadScreen, ByVal usingLoadInGame As Boolean)
+        Private _loadInGameTickCount As Integer
+        Private _loadInGameTicker As IDisposable
+
+        Public Event RecordGameStarted(ByVal sender As GameLoadScreen)
+        Public Event EmptyTick(ByVal sender As GameLoadScreen)
+        Public Event Finished(ByVal sender As GameLoadScreen)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(inQueue IsNot Nothing)
             Contract.Invariant(_settings IsNot Nothing)
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_kernel IsNot Nothing)
             Contract.Invariant(_startLock IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
-            Contract.Invariant(_motor IsNot Nothing)
-            Contract.Invariant(readyPlayers IsNot Nothing)
-            Contract.Invariant(unreadyPlayers IsNot Nothing)
-            Contract.Invariant(visibleReadyPlayers IsNot Nothing)
-            Contract.Invariant(visibleUnreadyPlayers IsNot Nothing)
+            Contract.Invariant(_readyPlayers IsNot Nothing)
+            Contract.Invariant(UnreadyPlayers IsNot Nothing)
+            Contract.Invariant(_loadInGameTickCount >= 0)
         End Sub
 
         Public Sub New(ByVal kernel As GameKernel,
-                       ByVal inQueue As CallQueue,
                        ByVal lobby As GameLobby,
                        ByVal logger As Logger,
-                       ByVal settings As GameSettings,
-                       ByVal motor As GameMotor)
+                       ByVal settings As GameSettings)
             Contract.Assume(kernel IsNot Nothing)
             Contract.Assume(lobby IsNot Nothing)
             Contract.Assume(logger IsNot Nothing)
             Contract.Assume(settings IsNot Nothing)
-            Contract.Assume(motor IsNot Nothing)
-            Contract.Assume(inQueue IsNot Nothing)
             Me._kernel = kernel
             Me._lobby = lobby
             Me._logger = logger
             Me._settings = settings
-            Me._motor = motor
-            Me.inQueue = inQueue
         End Sub
 
         Public Sub Start()
@@ -57,9 +46,8 @@
 
             For Each player In _kernel.Players
                 Contract.Assume(player IsNot Nothing)
+                AddHandler player.ReceivedReady, Sub(sender) _kernel.InQueue.QueueAction(Sub() OnReceiveReady(sender))
                 player.QueueStartLoading()
-                unreadyPlayers.Add(player)
-                If _lobby.IsPlayerVisible(player) Then visibleUnreadyPlayers.Add(player)
             Next player
 
             'Load
@@ -71,19 +59,34 @@
                                Where _lobby.IsPlayerVisible(p)
                                Where _lobby.Slots.TryFindPlayerSlot(p).Contents.Moveable
                 Contract.Assume(player IsNot Nothing)
-                readyPlayers.Add(player)
-                unreadyPlayers.Remove(player)
-                visibleReadyPlayers.Add(player)
-                visibleUnreadyPlayers.Remove(player)
-                player.Ready = True
+                _readyPlayers.Add(player)
                 _lobby.BroadcastPacket(Protocol.MakeOtherPlayerReady(player.Id), Nothing)
             Next player
 
             If _settings.UseLoadInGame Then
-                RaiseEvent Launched(Me, usingloadInGame:=True)
-                _loadInGameTicker = _kernel.Clock.AsyncRepeat(LoadInGameTickPeriod, Sub() inQueue.QueueAction(AddressOf OnLoadInGameTick))
+                RaiseEvent RecordGameStarted(Me)
+                _loadInGameTicker = _kernel.Clock.AsyncRepeat(LoadInGameTickPeriod, Sub() _kernel.InQueue.QueueAction(AddressOf OnLoadInGameTick))
             End If
         End Sub
+
+        Private ReadOnly Property UnreadyPlayers As IEnumerable(Of Player)
+            Get
+                Contract.Ensures(Contract.Result(Of IEnumerable(Of Player))() IsNot Nothing)
+                Return From player In _kernel.Players Where Not _readyPlayers.Contains(player)
+            End Get
+        End Property
+        Private ReadOnly Property VisibleUnreadyPlayers As IEnumerable(Of Player)
+            Get
+                Contract.Ensures(Contract.Result(Of IEnumerable(Of Player))() IsNot Nothing)
+                Return From player In unreadyPlayers Where _lobby.IsPlayerVisible(player)
+            End Get
+        End Property
+        Private ReadOnly Property VisibleReadyPlayers As IEnumerable(Of Player)
+            Get
+                Contract.Ensures(Contract.Result(Of IEnumerable(Of Player))() IsNot Nothing)
+                Return From player In _readyPlayers Where _lobby.IsPlayerVisible(player)
+            End Get
+        End Property
 
         Public Sub OnRemovedPlayer()
             TryLaunch()
@@ -91,9 +94,8 @@
 
         '''<summary>Starts the in-game play if all players are ready</summary>
         Private Function TryLaunch() As Boolean
-            If (From x In _kernel.Players Where Not x.Ready AndAlso Not x.isFake).Any Then
-                Return False
-            End If
+            If (From p In _kernel.Players Where Not p.IsReady).Any Then Return False
+
             _kernel.State = GameState.Playing
             _logger.Log("Launching", LogMessageType.Positive)
 
@@ -102,10 +104,10 @@
                 _loadInGameTicker.Dispose()
                 _loadInGameTicker = Nothing
             End If
-            _motor.QueueStart()
             If Not _settings.UseLoadInGame Then
-                RaiseEvent Launched(Me, usingloadInGame:=False)
+                RaiseEvent RecordGameStarted(Me)
             End If
+            RaiseEvent Finished(Me)
             Return True
         End Function
 
@@ -116,62 +118,62 @@
             End If
         End Sub
 
-        Public Sub OnReceiveReady(ByVal sendingPlayer As Player)
+        Private Sub OnReceiveReady(ByVal sendingPlayer As Player)
             Contract.Requires(sendingPlayer IsNot Nothing)
+            If Not unreadyPlayers.Contains(sendingPlayer) Then Return
 
-            'Get if there is a visible readied player
-            Dim visibleReadiedPlayer As Player = Nothing
-            If _lobby.IsPlayerVisible(sendingPlayer) Then
-                visibleReadiedPlayer = sendingPlayer
-            Else
+            'Make the sending player ready
+            _readyPlayers.Add(sendingPlayer)
+            If Not _lobby.IsPlayerVisible(sendingPlayer) Then
                 sendingPlayer.QueueSendPacket(Protocol.MakeOtherPlayerReady(sendingPlayer.Id))
-                readyPlayers.Add(sendingPlayer)
-                unreadyPlayers.Remove(sendingPlayer)
-
-                Dim slot = _lobby.Slots.TryFindPlayerSlot(sendingPlayer)
-                Contract.Assume(slot IsNot Nothing)
-                If (From p In slot.Contents.EnumPlayers Where Not p.isFake AndAlso Not p.Ready).None Then
-                    visibleReadiedPlayer = slot.Contents.EnumPlayers.First
-                End If
             End If
 
-            If visibleReadiedPlayer IsNot Nothing Then
-                readyPlayers.Add(visibleReadiedPlayer)
-                unreadyPlayers.Remove(visibleReadiedPlayer)
-                visibleReadyPlayers.Add(visibleReadiedPlayer)
-                visibleUnreadyPlayers.Remove(visibleReadiedPlayer)
+            'Make the visible player ready once all covered players are ready
+            Dim visibleSender = _lobby.GetVisiblePlayer(sendingPlayer)
+            Dim visibleSenderReady = (From p In _kernel.Players
+                                      Where p IsNot visibleSender
+                                      Where Not p.IsReady
+                                      Where _lobby.GetVisiblePlayer(p) Is visibleSender
+                                      ).None
+            If visibleSenderReady Then
+                _readyPlayers.Add(visibleSender)
             End If
 
+            'Inform players of current ready-state
             If _settings.UseLoadInGame Then
+                'Pretend to sender that all players are ready
                 For Each player In _kernel.Players
                     Contract.Assume(player IsNot Nothing)
                     If _lobby.IsPlayerVisible(player) Then
                         sendingPlayer.QueueSendPacket(Protocol.MakeOtherPlayerReady(player.Id))
                     End If
                 Next player
+                'Bring sender up to the correct number of ticks
                 For i = 1 To _loadInGameTickCount
                     sendingPlayer.QueueSendPacket(Protocol.MakeTick(0))
                 Next i
 
+                'Show lag screen with remaining loaders to sender
+                If VisibleUnreadyPlayers.Any Then
+                    sendingPlayer.QueueSendPacket(Protocol.MakeShowLagScreen(From p In VisibleUnreadyPlayers Select p.Id))
+                End If
+                'Inform sender that load-in-game is occuring
                 If unreadyPlayers.Any Then
                     _lobby.SendMessageTo("{0} players still loading.".Frmt(unreadyPlayers.Count), sendingPlayer)
                 End If
-                For Each player In readyPlayers
+                'Inform others that sender is ready
+                For Each player In From p In _readyPlayers
+                                   Where p IsNot sendingPlayer
                     Contract.Assume(player IsNot Nothing)
-                    If player IsNot sendingPlayer Then
-                        _lobby.SendMessageTo("{0} is ready.".Frmt(sendingPlayer.Name), player)
-                        If visibleReadiedPlayer IsNot Nothing Then
-                            player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(visibleReadiedPlayer.Id, 0))
-                        End If
+                    _lobby.SendMessageTo("{0} finished loading.".Frmt(sendingPlayer.Name), player)
+                    If visibleSenderReady Then
+                        player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(visibleSender.Id, 0))
                     End If
                 Next player
-
-                If visibleUnreadyPlayers.Count > 0 Then
-                    sendingPlayer.QueueSendPacket(Protocol.MakeShowLagScreen(From p In visibleUnreadyPlayers Select p.Id))
-                End If
             Else
-                If visibleReadiedPlayer IsNot Nothing Then
-                    _lobby.BroadcastPacket(Protocol.MakeOtherPlayerReady(visibleReadiedPlayer.Id), Nothing)
+                'Inform everyone that the sender is ready
+                If visibleSenderReady Then
+                    _lobby.BroadcastPacket(Protocol.MakeOtherPlayerReady(visibleSender.Id), Nothing)
                 End If
             End If
 
@@ -179,20 +181,26 @@
         End Sub
 
         Private Sub OnLoadInGameTick()
-            If _loadInGameTicker Is Nothing Then Return
-            If _kernel.State > GameState.Loading Then Return
-            If readyPlayers.Count = 0 Then Return
+            If _kernel.State > GameState.Loading Then Return 'dangling call
+            If _readyPlayers.None Then Return 'no danger of tick timeouts during load
+            Contract.Assume(_loadInGameTicker IsNot Nothing)
 
+            'Send an empty tick (refreshing the lag screen) to avoid timeouts
             _loadInGameTickCount += 1
-            For Each player In readyPlayers
+            For Each player In _readyPlayers
                 Contract.Assume(player IsNot Nothing)
+                'Hide lag screen for tick
                 For Each other In visibleUnreadyPlayers
                     Contract.Assume(other IsNot Nothing)
                     player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(other.Id, 0))
                 Next other
+                'Empty tick
                 player.QueueSendPacket(Protocol.MakeTick(0))
+                'Reshow lag screen
                 player.QueueSendPacket(Protocol.MakeShowLagScreen(From p In visibleUnreadyPlayers Select p.Id))
             Next player
+
+            RaiseEvent EmptyTick(Me)
         End Sub
     End Class
 End Namespace

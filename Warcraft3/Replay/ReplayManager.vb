@@ -29,18 +29,18 @@
                     Sub(sender, speaker, text, receivers) inQueue.QueueAction(Sub() OnChat(speaker, text, receivers))
             Dim leaveHandler As Game.PlayerLeftEventHandler =
                     Sub(sender, gameState, leaver, leaveType, reason) inQueue.QueueAction(Sub() Onleave(leaver, leaveType))
-            Dim launchHandler As Game.LaunchedEventHandler =
-                    Sub(sender, usingLoadInGame) inQueue.QueueAction(Sub() _writer.AddGameStarted())
+            Dim launchHandler As Game.RecordGameStartedEventHandler =
+                    Sub(sender) inQueue.QueueAction(Sub() _writer.AddGameStarted())
 
             AddHandler game.Tick, tickHandler
             AddHandler game.PlayerTalked, chatHandler
             AddHandler game.PlayerLeft, leaveHandler
-            AddHandler game.Launched, launchHandler
+            AddHandler game.RecordGameStarted, launchHandler
 
             Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.Tick, tickHandler))
             Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.PlayerTalked, chatHandler))
             Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.PlayerLeft, leaveHandler))
-            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.Launched, launchHandler))
+            Me._hooks.Add(New DelegatedDisposable(Sub() RemoveHandler game.RecordGameStarted, launchHandler))
 
             game.DisposalTask.ContinueWithAction(Sub() Me.Dispose())
         End Sub
