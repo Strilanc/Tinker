@@ -61,7 +61,7 @@ Namespace Bnet
             Public Sub New(ByVal gameDescription As WC3.LocalGameDescription, ByVal isPrivate As Boolean)
                 Me.BaseGameDescription = gameDescription
                 Me.IsPrivate = isPrivate
-                _initialGameDescription.SetHandled()
+                _initialGameDescription.IgnoreExceptions()
             End Sub
 
             Public Sub SetNameFailed()
@@ -173,8 +173,8 @@ Namespace Bnet
             Contract.Assume(externalProvider IsNot Nothing)
             Contract.Assume(clock IsNot Nothing)
             Contract.Assume(productAuthenticator IsNot Nothing)
-            Me._futureConnected.SetHandled()
-            Me._futureLoggedIn.SetHandled()
+            Me._futureConnected.IgnoreExceptions()
+            Me._futureLoggedIn.IgnoreExceptions()
 
             'Pass values
             Me._clock = clock
@@ -407,7 +407,7 @@ Namespace Bnet
             'Reset the class future for the connection outcome
             Me._futureConnected.TrySetException(New InvalidStateException("Another connection was initiated."))
             Me._futureConnected = New TaskCompletionSource(Of Boolean)
-            Me._futureConnected.SetHandled()
+            Me._futureConnected.IgnoreExceptions()
 
             'Introductions
             socket.SubStream.Write({1}, 0, 1) 'protocol version
@@ -441,7 +441,7 @@ Namespace Bnet
 
             Me._futureLoggedIn.TrySetException(New InvalidStateException("Another login was initiated."))
             Me._futureLoggedIn = New TaskCompletionSource(Of Boolean)
-            Me._futureLoggedIn.SetHandled()
+            Me._futureLoggedIn.IgnoreExceptions()
 
             Me._userCredentials = credentials
             ChangeState(ClientState.WaitingForUserAuthenticationBegin)
@@ -778,7 +778,7 @@ Namespace Bnet
             Contract.Requires(pickle IsNot Nothing)
             If _state < ClientState.WaitingForEnterChat Then Throw New IO.InvalidDataException("Warden packet in unexpected place.")
             Dim encryptedData = pickle.Value
-            _wardenClient.QueueSendWardenData(encryptedData)
+            _wardenClient.QueueSendWardenData(encryptedData).IgnoreExceptions()
         End Sub
         Private Sub OnWardenReceivedResponseData(ByVal sender As Warden.Client, ByVal data As IReadableList(Of Byte)) Handles _wardenClient.ReceivedWardenData
             Contract.Requires(data IsNot Nothing)
@@ -788,7 +788,7 @@ Namespace Bnet
             Contract.Requires(exception IsNot Nothing)
             sender.Activated.ContinueWithAction(Sub()
                                                     QueueDisconnect(expected:=False, reason:="Warden/BNLS Error: {0}.".Frmt(exception.Summarize))
-                                                End Sub).SetHandled()
+                                                End Sub).IgnoreExceptions()
             If sender.Activated.Status <> TaskStatus.RanToCompletion AndAlso sender.Activated.Status <> TaskStatus.Faulted Then
                 Logger.Log("Lost connection to BNLS server: {0}".Frmt(exception.Summarize), LogMessageType.Problem)
             End If

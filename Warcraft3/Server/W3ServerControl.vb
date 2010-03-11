@@ -26,7 +26,7 @@ Namespace WC3
         Private Shadows Sub OnDisposed(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Disposed
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
             Next hook
         End Sub
 

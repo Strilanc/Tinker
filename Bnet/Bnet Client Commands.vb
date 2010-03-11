@@ -263,7 +263,7 @@ Namespace Bnet
                                                                             isPrivate:=gameSet.GameSettings.IsPrivate)
                         If user IsNot Nothing Then
                             target.QueueSetUserGameSet(user, gameSet)
-                            gameSet.DisposalTask.ContinueWithAction(Sub() target.QueueResetUserGameSet(user, gameSet)).SetHandled()
+                            gameSet.DisposalTask.ContinueWithAction(Sub() target.QueueResetUserGameSet(user, gameSet)).IgnoreExceptions()
                         End If
                         Dim onStarted As WC3.GameSet.StateChangedEventHandler
                         onStarted = Sub(sender, active)

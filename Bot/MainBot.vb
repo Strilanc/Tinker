@@ -109,7 +109,7 @@ Namespace Bot
                                'async remove when view is disposed
                                hooks.Add(gameSetLink)
                                'async auto-remove when server is disposed
-                               Call {gameSetLink, manager.Server.DisposalTask}.AsAggregateTask.QueueContinueWithAction(inQueue, Sub() gameSetLink.Result.Dispose()).SetHandled()
+                               Call {gameSetLink, manager.Server.DisposalTask}.AsAggregateTask.QueueContinueWithAction(inQueue, Sub() gameSetLink.Result.Dispose()).IgnoreExceptions()
                            End Sub),
                 remover:=Sub(sender, server)
                              'no action needed
@@ -121,7 +121,7 @@ Namespace Bot
                 Sub()
                     If hooks Is Nothing Then Return
                     For Each hook In hooks
-                        hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
+                        hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
                     Next hook
                     hooks = Nothing
                 End Sub)))

@@ -47,9 +47,11 @@ Public Class TestStream
     End Function
 
     Public Function RetrieveWriteData(ByVal length As Integer, Optional ByVal millisecondsTimeout As Integer = 10000) As Byte()
-        If writeBuffer.Count < length Then
-            writeLock.WaitOne(millisecondsTimeout)
-        End If
+        Dim n = writeBuffer.Count
+        While n < length AndAlso writeLock.WaitOne(millisecondsTimeout)
+            If writeBuffer.Count = n Then Throw New InvalidOperationException("Expected more stream data.")
+            n = writeBuffer.Count
+        End While
 
         SyncLock lock
             If writeBuffer.Count < length Then

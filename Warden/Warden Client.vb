@@ -24,17 +24,18 @@
                        Optional ByVal logger As Logger = Nothing)
             Contract.Assume(clock IsNot Nothing)
             logger = If(logger, New Logger)
-            _activated.SetHandled()
             Me._clock = clock
 
             If remoteHost = "" Then
-                Dim result = New TaskCompletionSource(Of Warden.Socket)
-                result.SetException(New ArgumentException("No remote host specified."))
-                result.SetHandled()
+                'Mock a socket connection failure
+                Dim failedSocketTask = New TaskCompletionSource(Of Warden.Socket)
+                failedSocketTask.SetException(New ArgumentException("No remote host specified for bnls server."))
+                _socket = failedSocketTask.Task.AssumeNotNull
+                _socket.IgnoreExceptions()
+                'Show an error message only when the owner actually tries to send data
                 Contract.Assume(_activated.Task IsNot Nothing)
-                Contract.Assume(result.Task IsNot Nothing)
-                _activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem)).SetHandled()
-                _socket = result.Task
+                _activated.Task.ContinueWithAction(Sub() logger.Log("Warning: No BNLS server set, but received a Warden packet.", LogMessageType.Problem))
+
                 Return
             End If
             logger.Log("Connecting to bnls server at {0}:{1}...".Frmt(remoteHost, remotePort), LogMessageType.Positive)
@@ -92,14 +93,12 @@
             Contract.Requires(wardenData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             _activated.TrySetResult(True)
-            Return _socket.Select(Function(wardenClient) wardenClient.QueueSendWardenData(wardenData))
+            Return _socket.ContinueWithFunc(Function(wardenClient) wardenClient.QueueSendWardenData(wardenData))
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
-            Dim result = _socket.ContinueWithAction(Sub(wardenClient) wardenClient.Dispose())
-            result.SetHandled()
-            Return result
+            Return _socket.ContinueWithAction(Sub(wardenClient) wardenClient.Dispose()).IgnoreExceptions()
         End Function
     End Class
 End Namespace

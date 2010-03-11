@@ -40,7 +40,7 @@ Namespace Bot
                     Contract.Assume(profileName IsNot Nothing)
                     'Create and connect
                     Dim futureManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
-                    futureManager.ContinueWithAction(Sub(manager) manager.QueueSetAutomatic(True)).SetHandled()
+                    futureManager.ContinueWithAction(Sub(manager) manager.QueueSetAutomatic(True)).IgnoreExceptions()
                     Dim futureAdded = (From manager In futureManager Select target.Components.QueueAddComponent(manager)).Unwrap.AssumeNotNull
                     Dim futureClient = futureAdded.ContinueWithFunc(Function() futureManager.Result.Client)
                     Dim futureConnected = (From client In futureClient
@@ -50,7 +50,7 @@ Namespace Bot
                                                         ).Unwrap.AssumeNotNull
 
                     'Cleanup on failure
-                    futureManager.ContinueWithAction(Sub(manager) futureConnected.Catch(Sub() manager.Dispose())).SetHandled()
+                    futureManager.ContinueWithAction(Sub(manager) futureConnected.Catch(Sub() manager.Dispose())).IgnoreExceptions()
                     'Store
                     futureManagers.Add(futureConnected.ContinueWithFunc(Function() futureManager.Result))
                 Next profileName

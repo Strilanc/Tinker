@@ -86,7 +86,7 @@ Namespace Lan
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
             Next hook
             _advertiser.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose())
@@ -99,11 +99,11 @@ Namespace Lan
             If slaved = (_autoHook IsNot Nothing) Then Return
             If slaved Then
                 _autoHook = _bot.QueueCreateActiveGameSetsAsyncView(
-                        adder:=Sub(sender, server, gameSet) _advertiser.QueueAddGame(gameSet.GameSettings.GameDescription).SetHandled(),
-                        remover:=Sub(sender, server, gameSet) _advertiser.QueueRemoveGame(gameSet.GameSettings.GameDescription.GameId).SetHandled())
+                        adder:=Sub(sender, server, gameSet) _advertiser.QueueAddGame(gameSet.GameSettings.GameDescription).IgnoreExceptions(),
+                        remover:=Sub(sender, server, gameSet) _advertiser.QueueRemoveGame(gameSet.GameSettings.GameDescription.GameId).IgnoreExceptions())
             Else
                 Contract.Assume(_autoHook IsNot Nothing)
-                _autoHook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
+                _autoHook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
                 _autoHook = Nothing
             End If
         End Sub

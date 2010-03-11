@@ -291,7 +291,7 @@
 
             'Effects
             RaiseEvent ChangedPublicState(Me)
-            _startPlayerHoldPoint.Hold(newPlayer).ContinueWithAction(Sub() newPlayer.QueueStart()).SetHandled()
+            _startPlayerHoldPoint.Hold(newPlayer).ContinueWithAction(Sub() newPlayer.QueueStart()).IgnoreExceptions()
 
             Return newPlayer
         End Function

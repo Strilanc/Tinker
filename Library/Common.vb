@@ -212,14 +212,14 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()>
-    Public Sub SetHandled(Of T)(ByVal task As TaskCompletionSource(Of T))
-        task.Task.SetHandled()
-    End Sub
+    Public Function IgnoreExceptions(Of T)(ByVal task As TaskCompletionSource(Of T)) As task
+        Return task.Task.IgnoreExceptions()
+    End Function
     <Extension()>
-    Public Sub SetHandled(ByVal task As Task)
-        task.Catch(Sub()
-                   End Sub)
-    End Sub
+    Public Function IgnoreExceptions(ByVal task As Task) As task
+        Return task.Catch(Sub()
+                          End Sub)
+    End Function
 
     Public Function FindFilesMatching(ByVal fileQuery As String,
                                       ByVal likeQuery As InvariantString,

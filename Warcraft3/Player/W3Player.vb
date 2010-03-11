@@ -66,7 +66,7 @@
             Dim hostFail = New TaskCompletionSource(Of Boolean)
             hostFail.SetException(New ArgumentException("Fake players can't host."))
             Me.testCanHost = hostFail.Task
-            Me.testCanHost.SetHandled()
+            Me.testCanHost.IgnoreExceptions()
         End Sub
 
         '''<summary>Creates a real player.</summary>
@@ -105,7 +105,7 @@
 
             'Test hosting
             Me.testCanHost = AsyncTcpConnect(socket.RemoteEndPoint.Address, ListenPort)
-            Me.testCanHost.SetHandled()
+            Me.testCanHost.IgnoreExceptions()
 
             'Pings
             pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
@@ -174,7 +174,7 @@
         End Sub
         Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
             Dim result = inQueue.QueueAction(Sub() SendPacket(packet))
-            result.SetHandled()
+            result.IgnoreExceptions()
             Return result
         End Function
 

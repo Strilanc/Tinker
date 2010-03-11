@@ -152,7 +152,7 @@ Namespace Bnet
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             For Each hook In _hooks
                 Contract.Assume(hook IsNot Nothing)
-                hook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
+                hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
             Next hook
             _client.Dispose()
             _control.AsyncInvokedAction(Sub() _control.Dispose())
@@ -171,14 +171,14 @@ Namespace Bnet
                         adder:=Sub(sender, server, gameSet)
                                    If gameSet.GameSettings.IsAdminGame Then Return
                                    _client.QueueAddAdvertisableGame(gameDescription:=gameSet.GameSettings.GameDescription,
-                                                                     isPrivate:=gameSet.GameSettings.IsPrivate).SetHandled()
+                                                                     isPrivate:=gameSet.GameSettings.IsPrivate).IgnoreExceptions()
                                End Sub,
                         remover:=Sub(sender, server, gameSet)
-                                     _client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription).SetHandled()
+                                     _client.QueueRemoveAdvertisableGame(gameSet.GameSettings.GameDescription).IgnoreExceptions()
                                  End Sub)
             Else
                 Contract.Assume(_autoHook IsNot Nothing)
-                _autoHook.ContinueWithAction(Sub(value) value.Dispose()).SetHandled()
+                _autoHook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
                 _autoHook = Nothing
             End If
         End Sub
