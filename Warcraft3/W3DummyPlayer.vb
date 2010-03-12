@@ -54,12 +54,26 @@ Namespace WC3
         End Sub
 
 #Region "Networking"
+        Private Function AddPacketHandler(ByVal packet As Protocol.Packets.Definition,
+                                          ByVal handler As Func(Of ISimplePickle, Task)) As IDisposable
+            Contract.Requires(packet IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return _packetHandler.AddHandler(packet.Id, Function(data) handler(packet.Jar.Parse(data)))
+        End Function
         Private Function AddPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
                                                 ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
             Contract.Requires(packet IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             Return _packetHandler.AddHandler(packet.Id, Function(data) handler(packet.Jar.Parse(data)))
+        End Function
+        Private Function AddQueuedPacketHandler(ByVal packet As Protocol.Packets.Definition,
+                                                ByVal handler As Action(Of ISimplePickle)) As IDisposable
+            Contract.Requires(packet IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            Return AddPacketHandler(packet, Function(pickle) inQueue.QueueAction(Sub() handler(pickle)))
         End Function
         Private Function AddQueuedPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
                                                       ByVal handler As Action(Of IPickle(Of T))) As IDisposable
@@ -151,7 +165,7 @@ Namespace WC3
                 _playerHooks.Remove(player)
             End If
         End Sub
-        Private Sub OnReceiveStartLoading(ByVal pickle As IPickle(Of Object))
+        Private Sub OnReceiveStartLoading(ByVal pickle As ISimplePickle)
             If mode = DummyPlayerMode.DownloadMap Then
                 Disconnect(expected:=False, reason:="Dummy player is in download mode but game is starting.")
             ElseIf mode = DummyPlayerMode.EnterGame Then

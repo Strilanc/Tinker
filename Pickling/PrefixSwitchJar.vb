@@ -1,6 +1,6 @@
 Namespace Pickling
-    Public NotInheritable Class PrefixPickle(Of T)
-        Private ReadOnly _key As T
+    Public NotInheritable Class PrefixPickle(Of TKey)
+        Private ReadOnly _key As TKey
         Private ReadOnly _payload As ISimplePickle
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -8,15 +8,15 @@ Namespace Pickling
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal key As T, ByVal payload As ISimplePickle)
+        Public Sub New(ByVal key As TKey, ByVal payload As ISimplePickle)
             Contract.Requires(key IsNot Nothing)
             Contract.Requires(payload IsNot Nothing)
             Me._key = key
             Me._payload = payload
         End Sub
-        Public ReadOnly Property Key As T
+        Public ReadOnly Property Key As TKey
             Get
-                Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of TKey)() IsNot Nothing)
                 Return _key
             End Get
         End Property
@@ -26,53 +26,39 @@ Namespace Pickling
                 Return _payload
             End Get
         End Property
+
+        Public Overrides Function ToString() As String
+            Return "{0}: {1}".Frmt(Key, Payload.Description.Value)
+        End Function
     End Class
-    Public NotInheritable Class PrefixSwitchJar(Of T)
-        Inherits BaseJar(Of PrefixPickle(Of T))
-        Private ReadOnly packers(0 To 255) As ISimplePackJar
-        Private ReadOnly parsers(0 To 255) As ISimpleParseJar
+    Public NotInheritable Class PrefixSwitchJar(Of TKey)
+        Implements IParseJar(Of PrefixPickle(Of TKey))
+        Private ReadOnly parsers As New Dictionary(Of TKey, ISimpleParseJar)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(packers IsNot Nothing)
             Contract.Invariant(parsers IsNot Nothing)
         End Sub
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PrefixPickle(Of T))
+        Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PrefixPickle(Of TKey)) Implements IParseJar(Of PrefixPickle(Of TKey)).Parse
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
-            Dim index = CByte(data(0))
-            Dim vindex = CType(CType(index, Object), T)
-            Contract.Assume(vindex IsNot Nothing)
-            If parsers(index) Is Nothing Then Throw New PicklingException("No parser registered to " + vindex.ToString())
-            Dim value = New PrefixPickle(Of T)(vindex, parsers(index).Parse(data.SubView(1)))
-            Dim datum = data.SubView(0, value.Payload.Data.Count + 1)
-            Return value.Pickled(datum, Function() value.ToString)
+            Dim key = CType(CType(data(0), Object), TKey)
+            If Not parsers.ContainsKey(key) Then Throw New PicklingException("No parser for key {0}".Frmt(key))
+
+            Dim pickle = parsers(key).Parse(data.SubView(1))
+            Dim datum = data.SubView(0, pickle.Data.Count + 1)
+            Return New PrefixPickle(Of TKey)(key, pickle).Pickled(datum)
         End Function
-        Public Overrides Function Pack(Of TValue As PrefixPickle(Of T))(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Dim index = CByte(CType(value.Key, Object))
-            If packers(index) Is Nothing Then Throw New PicklingException("No packer registered to " + value.Key.ToString())
-            Dim data = {index}.Concat(packers(index).Pack(value.Payload.Value).Data).ToReadableList
-            Return value.Pickled(data, Function() value.ToString)
+        Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
+            Return Parse(data)
         End Function
 
-        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As ISimpleJar)
-            Contract.Requires(jar IsNot Nothing)
-            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
-            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
-            parsers(index) = jar
-            packers(index) = jar
-        End Sub
-        Public Sub AddParser(ByVal index As Byte, ByVal parser As ISimpleParseJar)
+        Public Sub AddParser(ByVal key As TKey, ByVal parser As ISimpleParseJar)
+            Contract.Requires(key IsNot Nothing)
             Contract.Requires(parser IsNot Nothing)
-            If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
-            parsers(index) = parser
-        End Sub
-        Public Sub AddPacker(ByVal index As Byte, ByVal packer As ISimplePackJar)
-            Contract.Requires(packer IsNot Nothing)
-            If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
-            packers(index) = packer
+            If parsers.ContainsKey(key) Then Throw New InvalidOperationException("Parser already registered for key {0}.".Frmt(key))
+            parsers.Add(key, parser)
         End Sub
     End Class
 End Namespace

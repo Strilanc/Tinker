@@ -3,7 +3,7 @@ Namespace Pickling
     Public Class TupleJar
         Inherits BaseJar(Of Dictionary(Of InvariantString, Object))
 
-        Private ReadOnly _subJars As IEnumerable(Of INamedJar(Of Object))
+        Private ReadOnly _subJars As IEnumerable(Of ISimpleNamedJar)
         Private ReadOnly _useSingleLineDescription As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -11,12 +11,12 @@ Namespace Pickling
         End Sub
 
         Public Sub New(ByVal useSingleLineDescription As Boolean,
-                       ByVal ParamArray subJars() As INamedJar(Of Object))
+                       ByVal ParamArray subJars() As ISimpleNamedJar)
             Contract.Requires(subJars IsNot Nothing)
             Me._subJars = subJars
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
-        Public Sub New(ByVal ParamArray subJars() As INamedJar(Of Object))
+        Public Sub New(ByVal ParamArray subJars() As ISimpleNamedJar)
             Me.New(False, subJars)
             Contract.Requires(subJars IsNot Nothing)
         End Sub

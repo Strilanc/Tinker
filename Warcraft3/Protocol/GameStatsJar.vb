@@ -28,15 +28,15 @@ Namespace WC3.Protocol
         End Enum
 
         Private Shared ReadOnly DataJar As New TupleJar(
-                    New EnumUInt32Jar(Of GameSettings)().Named("settings").Weaken,
-                    New ByteJar().Named("unknown1").Weaken,
-                    New UInt16Jar().Named("playable width").Weaken,
-                    New UInt16Jar().Named("playable height").Weaken,
-                    New UInt32Jar(showHex:=True).Named("xoro checksum").Weaken,
-                    New StringJar().NullTerminated.Named("relative path").Weaken,
-                    New StringJar().NullTerminated.Named("host name").Weaken,
-                    New StringJar().NullTerminated.Named("unknown2").Weaken,
-                    New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum").Weaken)
+                    New EnumUInt32Jar(Of GameSettings)().Named("settings"),
+                    New ByteJar().Named("unknown1"),
+                    New UInt16Jar().Named("playable width"),
+                    New UInt16Jar().Named("playable height"),
+                    New UInt32Jar(showHex:=True).Named("xoro checksum"),
+                    New StringJar().NullTerminated.Named("relative path"),
+                    New StringJar().NullTerminated.Named("host name"),
+                    New StringJar().NullTerminated.Named("unknown2"),
+                    New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum"))
 
         Public Overrides Function Pack(Of TValue As GameStats)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

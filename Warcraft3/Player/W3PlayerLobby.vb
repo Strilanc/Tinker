@@ -8,6 +8,14 @@ Namespace WC3
         Public Event StateUpdated(ByVal sender As Player)
         Private _reportedDownloadPosition As UInt32? = Nothing
 
+        Private Function AddQueuedLocalPacketHandler(ByVal packetDefinition As Protocol.Packets.Definition,
+                                                     ByVal handler As Action(Of ISimplePickle)) As IDisposable
+            Contract.Requires(packetDefinition IsNot Nothing)
+            Contract.Requires(handler IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
+            packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
+            Return packetHandler.AddHandler(packetDefinition.Id, Function(data) inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data))))
+        End Function
         Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                            ByVal handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)

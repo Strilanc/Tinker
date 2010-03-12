@@ -1,13 +1,5 @@
 ﻿Namespace Pickling
     Public Module PicklingExtensions
-        '''<summary>Weakens the type of an IJar from T to Object.</summary>
-        <Extension()> <Pure()>
-        Public Function Weaken(Of T)(ByVal jar As INamedJar(Of T)) As INamedJar(Of Object)
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of INamedJar(Of Object))() IsNot Nothing)
-            Return New WeakNamedJar(Of T)(jar)
-        End Function
-
         <Extension()> <Pure()>
         Public Function Pickled(Of T)(ByVal value As T,
                                       ByVal data As IReadableList(Of Byte),
@@ -40,38 +32,6 @@
                 Return {"{", descriptions.StringJoin(Environment.NewLine).Indent("    "), "}"}.StringJoin(Environment.NewLine)
             End If
         End Function
-
-        '''<summary>Exposes an IJar of arbitrary type as an IJar(Of Object).</summary>
-        Private NotInheritable Class WeakNamedJar(Of T)
-            Inherits BaseJar(Of Object)
-            Implements INamedJar(Of Object)
-
-            Private ReadOnly _subJar As INamedJar(Of T)
-
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(_subJar IsNot Nothing)
-            End Sub
-
-            Public Sub New(ByVal jar As INamedJar(Of T))
-                Me._subJar = jar
-                Contract.Requires(jar IsNot Nothing)
-            End Sub
-
-            Public ReadOnly Property Name As InvariantString Implements IJarInfo.Name
-                Get
-                    Return _subJar.Name
-                End Get
-            End Property
-            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
-                Dim p = _subJar.Parse(data)
-                Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
-            End Function
-            Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
-                Contract.Assume(value IsNot Nothing)
-                Dim p = _subJar.Pack(CType(CType(value, Object), T).AssumeNotNull)
-                Return value.Pickled(p.Data, p.Description)
-            End Function
-        End Class
 
         Private NotInheritable Class NamedJar(Of T)
             Inherits BaseJar(Of T)

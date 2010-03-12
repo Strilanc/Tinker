@@ -18,7 +18,7 @@ Namespace WC3
         End Sub
 
         Public Event ReceivedReady(ByVal sender As Player)
-        Private Sub ReceiveReady(ByVal pickle As IPickle(Of Object))
+        Private Sub ReceiveReady(ByVal pickle As ISimplePickle)
             Contract.Requires(pickle IsNot Nothing)
             _ready = True
             logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)

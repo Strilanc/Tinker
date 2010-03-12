@@ -213,10 +213,15 @@ Public Module PoorlyCategorizedFunctions
 
     <Extension()>
     Public Function IgnoreExceptions(Of T)(ByVal task As TaskCompletionSource(Of T)) As task
+        Contract.Requires(task IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+        Contract.Assume(task.Task IsNot Nothing)
         Return task.Task.IgnoreExceptions()
     End Function
     <Extension()>
     Public Function IgnoreExceptions(ByVal task As Task) As task
+        Contract.Requires(task IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
         Return task.Catch(Sub()
                           End Sub)
     End Function

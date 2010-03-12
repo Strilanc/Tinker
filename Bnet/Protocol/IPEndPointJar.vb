@@ -5,10 +5,10 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of Net.IPEndPoint)
 
         Private Shared ReadOnly DataJar As TupleJar = New TupleJar(
-                    New UInt16Jar().Named("protocol").Weaken,
-                    New UInt16Jar(ByteOrder:=ByteOrder.BigEndian).Named("port").Weaken,
-                    New IPAddressJar().Named("ip").Weaken,
-                    New DataJar().Fixed(exactDataCount:=8).Named("unknown").Weaken)
+                    New UInt16Jar().Named("protocol"),
+                    New UInt16Jar(ByteOrder:=ByteOrder.BigEndian).Named("port"),
+                    New IPAddressJar().Named("ip"),
+                    New DataJar().Fixed(exactDataCount:=8).Named("unknown"))
 
         Public Overrides Function Pack(Of TValue As Net.IPEndPoint)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

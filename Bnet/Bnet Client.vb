@@ -198,12 +198,11 @@ Namespace Bnet
             AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.CreateGame3, AddressOf ReceiveCreateGame3)
             AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Warden, AddressOf ReceiveWarden)
             AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Ping, AddressOf ReceivePing)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.Null, AddressOf IgnorePacket)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.GetFileTime, AddressOf IgnorePacket)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.GetIconData, AddressOf IgnorePacket)
-
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.QueryGamesList, AddressOf IgnorePacket)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ServerToClient.FriendsUpdate, AddressOf IgnorePacket)
+            AddPacketLogger(Protocol.Packets.ServerToClient.Null)
+            AddPacketLogger(Protocol.Packets.ServerToClient.GetFileTime)
+            AddPacketLogger(Protocol.Packets.ServerToClient.GetIconData)
+            AddPacketLogger(Protocol.Packets.ServerToClient.QueryGamesList)
+            AddPacketLogger(Protocol.Packets.ServerToClient.FriendsUpdate)
         End Sub
 
         Public ReadOnly Property Profile As Bot.ClientProfile
@@ -229,6 +228,10 @@ Namespace Bnet
             Return inQueue.QueueFunc(Function() _state)
         End Function
 
+        Private Sub AddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition)
+            Contract.Requires(packetDefinition IsNot Nothing)
+            _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
+        End Sub
         Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                            ByVal handler As Action(Of IPickle(Of T))) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
@@ -835,9 +838,6 @@ Namespace Bnet
                         SendPacket(Protocol.MakeCreateGame3(_curAdvertisement.UpdatedGameDescription(_clock)))
                     End If
             End Select
-        End Sub
-        Private Sub IgnorePacket(ByVal value As Object)
-            Contract.Requires(value IsNot Nothing)
         End Sub
 #End Region
 

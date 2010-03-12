@@ -58,7 +58,7 @@ Namespace WC3
             Return inQueue.QueueAction(Sub() SendTick(record, actions))
         End Function
 
-        Private Sub ReceiveRequestDropLaggers(ByVal pickle As IPickle(Of Object))
+        Private Sub ReceiveRequestDropLaggers(ByVal pickle As ISimplePickle)
             RaiseEvent ReceivedRequestDropLaggers(Me)
         End Sub
 

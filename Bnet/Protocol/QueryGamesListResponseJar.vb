@@ -31,16 +31,16 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of QueryGamesListResponse)
 
         Private Shared ReadOnly gameDataJar As New TupleJar(
-                New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type").Weaken,
-                New UInt32Jar().Named("language id").Weaken,
-                New IPEndPointJar().Named("host address").Weaken,
-                New EnumUInt32Jar(Of GameStates)().Named("game state").Weaken,
-                New UInt32Jar().Named("elapsed seconds").Weaken,
-                New StringJar().NullTerminated.Named("game name").Weaken,
-                New StringJar().NullTerminated.Named("game password").Weaken,
-                New TextHexValueJar(digitCount:=1).Named("num free slots").Weaken,
-                New TextHexValueJar(digitCount:=8).Named("game id").Weaken,
-                New WC3.Protocol.GameStatsJar().Named("game statstring").Weaken)
+                New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type"),
+                New UInt32Jar().Named("language id"),
+                New IPEndPointJar().Named("host address"),
+                New EnumUInt32Jar(Of GameStates)().Named("game state"),
+                New UInt32Jar().Named("elapsed seconds"),
+                New StringJar().NullTerminated.Named("game name"),
+                New StringJar().NullTerminated.Named("game password"),
+                New TextHexValueJar(digitCount:=1).Named("num free slots"),
+                New TextHexValueJar(digitCount:=8).Named("game id"),
+                New WC3.Protocol.GameStatsJar().Named("game statstring"))
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
             Dim count = data.SubView(0, 4).ToUInt32

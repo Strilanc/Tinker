@@ -3,7 +3,7 @@
 Namespace WC3.Protocol
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class GameAction
-        Private Shared ReadOnly ActionJar As INamedJar(Of PrefixPickle(Of GameActionId)) = MakeJar()
+        Private Shared ReadOnly ActionJar As PrefixSwitchJar(Of GameActionId) = MakeJar()
         Private ReadOnly _id As GameActionId
         Private ReadOnly _payload As ISimplePickle
 
@@ -21,6 +21,12 @@ Namespace WC3.Protocol
             Contract.Requires(payload IsNot Nothing)
         End Sub
 
+        Public Shared Function FromEmpty(ByVal actionDefinition As GameActions.Definition) As GameAction
+            Contract.Requires(actionDefinition IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
+            If Not TypeOf actionDefinition.Jar Is EmptyJar Then Throw New ArgumentException("Packet definition isn't empty")
+            Return New GameAction(actionDefinition.Id, actionDefinition.Jar.Pack(New Object))
+        End Function
         Public Shared Function FromValue(Of T)(ByVal actionDefinition As GameActions.Definition(Of T),
                                                ByVal value As T) As GameAction
             Contract.Requires(actionDefinition IsNot Nothing)
@@ -41,79 +47,13 @@ Namespace WC3.Protocol
             End Get
         End Property
 
-        Private Shared Sub reg(Of T)(ByVal jar As PrefixSwitchJar(Of GameActionId),
-                                     ByVal definition As GameActions.Definition(Of T))
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(definition IsNot Nothing)
-            jar.AddPackerParser(definition.Id, definition.Jar)
-        End Sub
-
-        Private Shared Function MakeJar() As INamedJar(Of PrefixPickle(Of GameActionId))
-            Contract.Ensures(Contract.Result(Of INamedJar(Of PrefixPickle(Of GameActionId)))() IsNot Nothing)
+        Private Shared Function MakeJar() As PrefixSwitchJar(Of GameActionId)
+            Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of GameActionId))() IsNot Nothing)
             Dim jar = New PrefixSwitchJar(Of GameActionId)()
-            reg(jar, GameActions.PauseGame)
-            reg(jar, GameActions.ResumeGame)
-            reg(jar, GameActions.SetGameSpeed)
-            reg(jar, GameActions.IncreaseGameSpeed)
-            reg(jar, GameActions.DecreaseGameSpeed)
-            reg(jar, GameActions.SaveGameStarted)
-            reg(jar, GameActions.SaveGameFinished)
-            reg(jar, GameActions.SelfOrder)
-            reg(jar, GameActions.PointOrder)
-            reg(jar, GameActions.ObjectOrder)
-            reg(jar, GameActions.DropOrGiveItem)
-            reg(jar, GameActions.FogObjectOrder)
-            reg(jar, GameActions.EnterChooseHeroSkillSubmenu)
-            reg(jar, GameActions.EnterChooseBuildingSubmenu)
-            reg(jar, GameActions.PressedEscape)
-            reg(jar, GameActions.CancelHeroRevive)
-            reg(jar, GameActions.DequeueBuildingOrder)
-            reg(jar, GameActions.MinimapPing)
-            reg(jar, GameActions.ChangeAllyOptions)
-            reg(jar, GameActions.TransferResources)
-            reg(jar, GameActions.ChangeSelection)
-            reg(jar, GameActions.AssignGroupHotkey)
-            reg(jar, GameActions.SelectGroupHotkey)
-            reg(jar, GameActions.SelectSubGroup)
-            reg(jar, GameActions.PreSubGroupSelection)
-            reg(jar, GameActions.SelectGroundItem)
-            reg(jar, GameActions.CheatDisableTechRequirements)
-            reg(jar, GameActions.CheatDisableVictoryConditions)
-            reg(jar, GameActions.CheatEnableResearch)
-            reg(jar, GameActions.CheatFastCooldown)
-            reg(jar, GameActions.CheatFastDeathDecay)
-            reg(jar, GameActions.CheatGodMode)
-            reg(jar, GameActions.CheatInstantDefeat)
-            reg(jar, GameActions.CheatInstantVictory)
-            reg(jar, GameActions.CheatNoDefeat)
-            reg(jar, GameActions.CheatNoFoodLimit)
-            reg(jar, GameActions.CheatRemoveFogOfWar)
-            reg(jar, GameActions.CheatResearchUpgrades)
-            reg(jar, GameActions.CheatSpeedConstruction)
-            reg(jar, GameActions.CheatUnlimitedMana)
-            reg(jar, GameActions.CheatSetTimeOfDay)
-            reg(jar, GameActions.CheatGold)
-            reg(jar, GameActions.CheatGoldAndLumber)
-            reg(jar, GameActions.CheatLumber)
-            reg(jar, GameActions.TriggerChatEvent)
-            reg(jar, GameActions.TriggerWaitFinished)
-            reg(jar, GameActions.TriggerMouseTouchedTrackable)
-            reg(jar, GameActions.TriggerMouseClickedTrackable)
-            reg(jar, GameActions.DialogAnyButtonClicked)
-            reg(jar, GameActions.DialogButtonClicked)
-            reg(jar, GameActions.TriggerArrowKeyEvent)
-            reg(jar, GameActions.TriggerSelectionEvent)
-            reg(jar, GameActions.GameCacheSyncInteger)
-            reg(jar, GameActions.GameCacheSyncBoolean)
-            reg(jar, GameActions.GameCacheSyncReal)
-            reg(jar, GameActions.GameCacheSyncUnit)
-            reg(jar, GameActions.GameCacheSyncString)
-            reg(jar, GameActions.GameCacheSyncEmptyInteger)
-            reg(jar, GameActions.GameCacheSyncEmptyBoolean)
-            reg(jar, GameActions.GameCacheSyncEmptyReal)
-            reg(jar, GameActions.GameCacheSyncEmptyUnit)
-            reg(jar, GameActions.GameCacheSyncEmptyString)
-            Return jar.Named("W3GameAction")
+            For Each definition In GameActions.AllDefintions
+                jar.AddParser(definition.Id, definition.Jar)
+            Next definition
+            Return jar
         End Function
 
         Public Shared Function FromData(ByVal data As IReadableList(Of Byte)) As GameAction
@@ -190,8 +130,8 @@ Namespace WC3.Protocol
         Inherits BaseJar(Of PlayerActionSet)
 
         Private Shared ReadOnly DataJar As New TupleJar(
-                New PlayerIdJar().Named("source").Weaken,
-                New GameActionJar().Repeated.DataSizePrefixed(prefixSize:=2).Named("actions").Weaken)
+                New PlayerIdJar().Named("source"),
+                New GameActionJar().Repeated.DataSizePrefixed(prefixSize:=2).Named("actions"))
 
         Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

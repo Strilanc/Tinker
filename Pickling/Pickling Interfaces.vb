@@ -128,6 +128,11 @@
         Inherits IParseJar(Of T)
     End Interface
 
+    Public Interface ISimpleNamedJar
+        Inherits ISimpleJar
+        Inherits IJarInfo
+    End Interface
+
     Public Interface INamedPackJar(Of In T)
         Inherits IJarInfo
         Inherits IPackJar(Of T)
@@ -138,6 +143,7 @@
     End Interface
     '''<summary>Packs values or parses data to create pickles.</summary>
     Public Interface INamedJar(Of T)
+        Inherits ISimpleNamedJar
         Inherits INamedParseJar(Of T)
         Inherits INamedPackJar(Of T)
         Inherits IJar(Of T)

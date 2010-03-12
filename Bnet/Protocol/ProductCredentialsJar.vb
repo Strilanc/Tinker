@@ -5,11 +5,11 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of ProductCredentials)
 
         Private Shared ReadOnly DataJar As New TupleJar(
-                New UInt32Jar().Named("length").Weaken,
-                New EnumUInt32Jar(Of ProductType)().Named("product").Weaken,
-                New UInt32Jar().Named("public key").Weaken,
-                New UInt32Jar().Named("unknown").Weaken,
-                New DataJar().Fixed(exactDataCount:=20).Named("proof").Weaken)
+                New UInt32Jar().Named("length"),
+                New EnumUInt32Jar(Of ProductType)().Named("product"),
+                New UInt32Jar().Named("public key"),
+                New UInt32Jar().Named("unknown"),
+                New DataJar().Fixed(exactDataCount:=20).Named("proof"))
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>

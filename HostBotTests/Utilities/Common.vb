@@ -45,10 +45,8 @@ Friend Module TestingCommon
         Assert.IsTrue(Not task.Wait(millisecondsTimeout:=10))
     End Sub
 
-    Friend Sub EmptyJarTest(ByVal jar As IJar(Of Object))
-        Assert.IsTrue(jar.Parse(New Byte() {}.AsReadableList).Value.GetType() Is GetType(Object))
-        Assert.IsTrue(jar.Parse(New Byte() {1}.AsReadableList).Value.GetType() Is GetType(Object))
-        Assert.IsTrue(jar.Parse(New Byte() {1}.AsReadableList).Data.Count = 0)
+    Friend Sub EmptyJarTest(ByVal jar As ISimpleJar)
+        Assert.IsTrue(jar.GetType() = GetType(EmptyJar))
     End Sub
     Friend Sub JarTest(Of T)(ByVal jar As IJar(Of T),
                              ByVal equater As Func(Of T, T, Boolean),
