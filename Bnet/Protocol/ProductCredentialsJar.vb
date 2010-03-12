@@ -9,7 +9,7 @@ Namespace Bnet.Protocol
                 New EnumUInt32Jar(Of ProductType)().Named("product").Weaken,
                 New UInt32Jar().Named("public key").Weaken,
                 New UInt32Jar().Named("unknown").Weaken,
-                New RawDataJar(Size:=20).Named("proof").Weaken)
+                New DataJar().Fixed(exactDataCount:=20).Named("proof").Weaken)
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>

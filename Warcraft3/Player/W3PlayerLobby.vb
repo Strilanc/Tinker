@@ -13,7 +13,7 @@ Namespace WC3
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar.Weaken)
+            packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
             Return packetHandler.AddHandler(packetDefinition.Id, Function(data) inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data))))
         End Function
 
@@ -22,7 +22,7 @@ Namespace WC3
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar.Weaken)
+            packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
             Return packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data)))
         End Function
         Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),

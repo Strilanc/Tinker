@@ -1,14 +1,14 @@
 Namespace Pickling
     Public NotInheritable Class PrefixPickle(Of T)
         Private ReadOnly _key As T
-        Private ReadOnly _payload As IPickle(Of Object)
+        Private ReadOnly _payload As ISimplePickle
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_key IsNot Nothing)
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal key As T, ByVal payload As IPickle(Of Object))
+        Public Sub New(ByVal key As T, ByVal payload As ISimplePickle)
             Contract.Requires(key IsNot Nothing)
             Contract.Requires(payload IsNot Nothing)
             Me._key = key
@@ -20,17 +20,17 @@ Namespace Pickling
                 Return _key
             End Get
         End Property
-        Public ReadOnly Property Payload As IPickle(Of Object)
+        Public ReadOnly Property Payload As ISimplePickle
             Get
-                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
                 Return _payload
             End Get
         End Property
     End Class
     Public NotInheritable Class PrefixSwitchJar(Of T)
         Inherits BaseJar(Of PrefixPickle(Of T))
-        Private ReadOnly packers(0 To 255) As IPackJar(Of Object)
-        Private ReadOnly parsers(0 To 255) As IParseJar(Of Object)
+        Private ReadOnly packers(0 To 255) As ISimplePackJar
+        Private ReadOnly parsers(0 To 255) As ISimpleParseJar
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(packers IsNot Nothing)
@@ -57,19 +57,19 @@ Namespace Pickling
             Return value.Pickled(data, Function() value.ToString)
         End Function
 
-        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As IJar(Of Object))
+        Public Sub AddPackerParser(ByVal index As Byte, ByVal jar As ISimpleJar)
             Contract.Requires(jar IsNot Nothing)
             If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
             If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
             parsers(index) = jar
             packers(index) = jar
         End Sub
-        Public Sub AddParser(ByVal index As Byte, ByVal parser As IParseJar(Of Object))
+        Public Sub AddParser(ByVal index As Byte, ByVal parser As ISimpleParseJar)
             Contract.Requires(parser IsNot Nothing)
             If parsers(index) IsNot Nothing Then Throw New InvalidOperationException("Parser already registered to index {0}.".Frmt(index))
             parsers(index) = parser
         End Sub
-        Public Sub AddPacker(ByVal index As Byte, ByVal packer As IPackJar(Of Object))
+        Public Sub AddPacker(ByVal index As Byte, ByVal packer As ISimplePackJar)
             Contract.Requires(packer IsNot Nothing)
             If packers(index) IsNot Nothing Then Throw New InvalidOperationException("Packer already registered to index {0}.".Frmt(index))
             packers(index) = packer

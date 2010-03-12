@@ -33,10 +33,10 @@ Namespace WC3.Protocol
                     New UInt16Jar().Named("playable width").Weaken,
                     New UInt16Jar().Named("playable height").Weaken,
                     New UInt32Jar(showHex:=True).Named("xoro checksum").Weaken,
-                    New NullTerminatedStringJar().Named("relative path").Weaken,
-                    New NullTerminatedStringJar().Named("host name").Weaken,
-                    New NullTerminatedStringJar().Named("unknown2").Weaken,
-                    New RawDataJar(Size:=20).Named("sha1 checksum").Weaken)
+                    New StringJar().NullTerminated.Named("relative path").Weaken,
+                    New StringJar().NullTerminated.Named("host name").Weaken,
+                    New StringJar().NullTerminated.Named("unknown2").Weaken,
+                    New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum").Weaken)
 
         Public Overrides Function Pack(Of TValue As GameStats)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)

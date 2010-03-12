@@ -716,13 +716,13 @@
         End Function
 
         '''<summary>Broadcasts a packet to all players. Requires a packer for the packet, and values matching the packer.</summary>
-        Public Sub BroadcastPacket(ByVal pk As Protocol.Packet,
+        Public Sub BroadcastPacket(ByVal packet As Protocol.Packet,
                                    Optional ByVal source As Player = Nothing)
-            Contract.Requires(pk IsNot Nothing)
+            Contract.Requires(packet IsNot Nothing)
             For Each player In From p In _kernel.Players
                                Where p IsNot source
                 Contract.Assume(player IsNot Nothing)
-                player.QueueSendPacket(pk)
+                player.QueueSendPacket(packet)
             Next player
         End Sub
 

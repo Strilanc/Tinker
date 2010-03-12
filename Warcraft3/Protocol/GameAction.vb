@@ -45,7 +45,7 @@ Namespace WC3.Protocol
                                      ByVal definition As GameActions.Definition(Of T))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(definition IsNot Nothing)
-            jar.AddPackerParser(definition.Id, definition.Jar.Weaken)
+            jar.AddPackerParser(definition.Id, definition.Jar)
         End Sub
 
         Private Shared Function MakeJar() As INamedJar(Of PrefixPickle(Of GameActionId))

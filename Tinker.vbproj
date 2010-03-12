@@ -201,16 +201,12 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Library\HoldPoint.vb" />
-    <Compile Include="Pickling\ChecksumPrefixedJar.vb" />
+    <Compile Include="Pickling\Framing Jars.vb" />
     <Compile Include="Pickling\EmptyJar.vb" />
-    <Compile Include="Pickling\OptionalJar.vb" />
-    <Compile Include="Pickling\DataSizePrefixedJar.vb" />
-    <Compile Include="Pickling\Text Jars.vb" />
-    <Compile Include="Pickling\RemainingDataJar.vb" />
+    <Compile Include="Pickling\StringJar.vb" />
+    <Compile Include="Pickling\DataJar.vb" />
     <Compile Include="Pickling\PrefixSwitchJar.vb" />
     <Compile Include="Pickling\InteriorSwitchJar.vb" />
-    <Compile Include="Pickling\RawDataJar.vb" />
-    <Compile Include="Pickling\RepeatingJar.vb" />
     <Compile Include="Pickling\ListJar.vb" />
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />

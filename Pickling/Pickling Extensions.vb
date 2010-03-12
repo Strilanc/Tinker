@@ -8,22 +8,6 @@
             Return New WeakNamedJar(Of T)(jar)
         End Function
 
-        '''<summary>Weakens the type of an IPackJar from T to Object.</summary>
-        <Extension()> <Pure()>
-        Public Function Weaken(Of T)(ByVal jar As IPackJar(Of T)) As IPackJar(Of Object)
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IPackJar(Of Object))() IsNot Nothing)
-            Return New WeakPackJar(Of T)(jar)
-        End Function
-
-        '''<summary>Weakens the type of an IParseJar from T to Object.</summary>
-        <Extension()> <Pure()>
-        Public Function Weaken(Of T)(ByVal jar As IParseJar(Of T)) As IParseJar(Of Object)
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IParseJar(Of Object))() IsNot Nothing)
-            Return New WeakParseJar(Of T)(jar)
-        End Function
-
         <Extension()> <Pure()>
         Public Function Pickled(Of T)(ByVal value As T,
                                       ByVal data As IReadableList(Of Byte),
@@ -88,41 +72,9 @@
                 Return value.Pickled(p.Data, p.Description)
             End Function
         End Class
-        '''<summary>Exposes an IPackJar of arbitrary type as an IPackJar(Of Object).</summary>
-        Private NotInheritable Class WeakPackJar(Of T)
-            Inherits BasePackJar(Of Object)
-            Private ReadOnly subJar As IPackJar(Of T)
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(subJar IsNot Nothing)
-            End Sub
-            Public Sub New(ByVal jar As IPackJar(Of T))
-                Contract.Requires(jar IsNot Nothing)
-                Me.subJar = jar
-            End Sub
-            Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
-                Contract.Assume(value IsNot Nothing)
-                Dim p = subJar.Pack(CType(CType(value, Object), T).AssumeNotNull)
-                Return value.Pickled(p.Data, p.Description)
-            End Function
-        End Class
-        '''<summary>Exposes an IParseJar of arbitrary type as an IParseJar(Of Object).</summary>
-        Private NotInheritable Class WeakParseJar(Of T)
-            Implements IParseJar(Of Object)
-            Private ReadOnly subJar As IParseJar(Of T)
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(subJar IsNot Nothing)
-            End Sub
-            Public Sub New(ByVal jar As IParseJar(Of T))
-                Contract.Requires(jar IsNot Nothing)
-                Me.subJar = jar
-            End Sub
-            Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object) Implements IParseJar(Of Object).Parse
-                Dim p = subJar.Parse(data)
-                Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
-            End Function
-        End Class
 
         Private NotInheritable Class NamedJar(Of T)
+            Inherits BaseJar(Of T)
             Implements INamedJar(Of T)
             Private ReadOnly _name As InvariantString
             Private ReadOnly _subjar As IJar(Of T)
@@ -143,29 +95,50 @@
                 End Get
             End Property
 
-            Public Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
+            Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
                 Dim pickle = _subjar.Pack(value)
                 Return value.Pickled(pickle.Data, Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
 
-            Public Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
                 Dim pickle = _subjar.Parse(data)
                 Return pickle.Value.Pickled(pickle.Data, Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
         End Class
 
+#Region "Framing Jars"
         <Extension()> <Pure()>
-        Public Function Repeated(Of T)(ByVal jar As IJar(Of T)) As RepeatingJar(Of T)
+        Public Function Fixed(Of T)(ByVal jar As IJar(Of T), ByVal exactDataCount As Integer) As FixedSizeFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of RepeatingJar(Of T))() IsNot Nothing)
-            Return New RepeatingJar(Of T)(subJar:=jar)
+            Contract.Requires(exactDataCount >= 0)
+            Contract.Ensures(Contract.Result(Of FixedSizeFramingJar(Of T))() IsNot Nothing)
+            Return New FixedSizeFramingJar(Of T)(subJar:=jar, dataSize:=exactDataCount)
         End Function
         <Extension()> <Pure()>
-        Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T), ByVal prefixSize As Integer) As DataSizePrefixedJar(Of T)
+        Public Function Limited(Of T)(ByVal jar As IJar(Of T), ByVal maxDataCount As Integer) As LimitedSizeFramingJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(maxDataCount >= 0)
+            Contract.Ensures(Contract.Result(Of LimitedSizeFramingJar(Of T))() IsNot Nothing)
+            Return New LimitedSizeFramingJar(Of T)(subJar:=jar, maxDataCount:=maxDataCount)
+        End Function
+        <Extension()> <Pure()>
+        Public Function NullTerminated(Of T)(ByVal jar As IJar(Of T)) As NullTerminatedFramingJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of NullTerminatedFramingJar(Of T))() IsNot Nothing)
+            Return New NullTerminatedFramingJar(Of T)(subJar:=jar)
+        End Function
+        <Extension()> <Pure()>
+        Public Function Repeated(Of T)(ByVal jar As IJar(Of T)) As RepeatedFramingJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of RepeatedFramingJar(Of T))() IsNot Nothing)
+            Return New RepeatedFramingJar(Of T)(subJar:=jar)
+        End Function
+        <Extension()> <Pure()>
+        Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T), ByVal prefixSize As Integer) As SizePrefixedFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
-            Contract.Ensures(Contract.Result(Of DataSizePrefixedJar(Of T))() IsNot Nothing)
-            Return New DataSizePrefixedJar(Of T)(subjar:=jar, prefixSize:=prefixSize)
+            Contract.Ensures(Contract.Result(Of SizePrefixedFramingJar(Of T))() IsNot Nothing)
+            Return New SizePrefixedFramingJar(Of T)(subjar:=jar, prefixSize:=prefixSize)
         End Function
         <Extension()> <Pure()>
         Public Function RepeatedWithCountPrefix(Of T)(ByVal jar As IJar(Of T),
@@ -177,20 +150,20 @@
             Return New ListJar(Of T)(jar, prefixSize, useSingleLineDescription)
         End Function
         <Extension()> <Pure()>
-        Public Function [Optional](Of T)(ByVal jar As IJar(Of T)) As OptionalJar(Of T)
+        Public Function [Optional](Of T)(ByVal jar As IJar(Of T)) As OptionalFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of OptionalJar(Of T))() IsNot Nothing)
-            Return New OptionalJar(Of T)(jar)
+            Contract.Ensures(Contract.Result(Of OptionalFramingJar(Of T))() IsNot Nothing)
+            Return New OptionalFramingJar(Of T)(jar)
         End Function
         '''<summary>Prefixes serialized data with a crc32 checksum.</summary>
         '''<param name="prefixSize">Determines how many bytes of the crc32 are used (starting at index 0) (min 1, max 4).</param>
         <Extension()> <Pure()>
         Public Function CRC32ChecksumPrefixed(Of T)(ByVal jar As IJar(Of T),
-                                                    Optional ByVal prefixSize As Integer = 4) As ChecksumPrefixedJar(Of T)
+                                                    Optional ByVal prefixSize As Integer = 4) As ChecksumPrefixedFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
             Contract.Requires(prefixSize <= 4)
-            Return New ChecksumPrefixedJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToReadableList)
+            Return New ChecksumPrefixedFramingJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToReadableList)
         End Function
         <Extension()> <Pure()>
         Public Function Named(Of T)(ByVal jar As IJar(Of T), ByVal name As InvariantString) As INamedJar(Of T)
@@ -198,34 +171,6 @@
             Contract.Ensures(Contract.Result(Of INamedJar(Of T))() IsNot Nothing)
             Return New NamedJar(Of T)(name, jar)
         End Function
-
-        <Extension()> <Pure()>
-        Public Function Weaken(Of T)(ByVal jar As IJar(Of T)) As IJar(Of Object)
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IJar(Of Object))() IsNot Nothing)
-            Return New WeakJar(Of T)(jar)
-        End Function
-        Private NotInheritable Class WeakJar(Of T)
-            Inherits BaseJar(Of Object)
-            Private ReadOnly subJar As IJar(Of T)
-
-            <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(subJar IsNot Nothing)
-            End Sub
-
-            Public Sub New(ByVal jar As IJar(Of T))
-                Contract.Requires(jar IsNot Nothing)
-                Me.subJar = jar
-            End Sub
-            Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
-                Dim p = subJar.Parse(data)
-                Return New Pickle(Of Object)(p.Value, p.Data, p.Description)
-            End Function
-            Public Overrides Function Pack(Of R As Object)(ByVal value As R) As IPickle(Of R)
-                Contract.Assume(value IsNot Nothing)
-                Dim p = subJar.Pack(CType(CType(value, Object), T).AssumeNotNull)
-                Return value.Pickled(p.Data, p.Description)
-            End Function
-        End Class
+#End Region
     End Module
 End Namespace

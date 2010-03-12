@@ -1,6 +1,6 @@
 Namespace Pickling
-    '''<summary>Pickles the remaining bytes in data.</summary>
-    Public Class RemainingDataJar
+    '''<summary>The identity jar. Pickles data as itself.</summary>
+    Public Class DataJar
         Inherits BaseJar(Of IReadableList(Of Byte))
 
         Public Overrides Function Pack(Of TValue As IReadableList(Of Byte))(ByVal value As TValue) As IPickle(Of TValue)

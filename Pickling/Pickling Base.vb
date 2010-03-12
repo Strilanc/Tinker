@@ -17,15 +17,19 @@
         End Sub
     End Class
 
-    Public MustInherit Class BasePackJar(Of T)
-        Implements IPackJar(Of T)
-        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
-    End Class
     Public MustInherit Class BaseJar(Of T)
         Implements IJar(Of T)
 
         Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+
+        Private Function SimplePack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
+            Dim pickle = Pack(CType(CType(value, Object), T))
+            Return value.Pickled(pickle.Data, pickle.Description)
+        End Function
+        Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
+            Return Parse(data)
+        End Function
     End Class
 
     '''<summary>A base implementation of an IPickle(Of T).</summary>
@@ -69,6 +73,11 @@
             End Get
         End Property
         Public ReadOnly Property Value As T Implements IPickle(Of T).Value
+            Get
+                Return _value
+            End Get
+        End Property
+        Private ReadOnly Property SimpleValue As Object Implements ISimplePickle.Value
             Get
                 Return _value
             End Get

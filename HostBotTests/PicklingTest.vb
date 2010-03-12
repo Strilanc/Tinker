@@ -321,19 +321,8 @@ Public Class PicklingTest
 #End Region
 
     <TestMethod()>
-    Public Sub RawDataJarTest()
-        Dim jar = New RawDataJar(size:=0)
-        Dim equater As Func(Of IReadableList(Of Byte), IReadableList(Of Byte), Boolean) = Function(x, y) x.SequenceEqual(y)
-        JarTest(jar, equater, New Byte() {}.AsReadableList, {})
-
-        jar = New RawDataJar(size:=3)
-        JarTest(jar, equater, New Byte() {1, 2, 3}.AsReadableList, {1, 2, 3})
-        JarTest(jar, equater, New Byte() {7, 6, 5}.AsReadableList, {7, 6, 5})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1, 0}.AsReadableList))
-    End Sub
-    <TestMethod()>
-    Public Sub RemainingDataJarTest()
-        Dim jar = New RemainingDataJar()
+    Public Sub DataJarTest()
+        Dim jar = New DataJar()
         Dim equater As Func(Of IReadableList(Of Byte), IReadableList(Of Byte), Boolean) = Function(x, y) x.SequenceEqual(y)
         JarTest(jar, equater, New Byte() {}.AsReadableList, {}, appendSafe:=False)
         JarTest(jar, equater, New Byte() {1}.AsReadableList, {1}, appendSafe:=False)
@@ -362,7 +351,7 @@ Public Class PicklingTest
     End Sub
     <TestMethod()>
     Public Sub RepeatingJarTest()
-        Dim jar = New RepeatingJar(Of UInt16)(New UInt16Jar())
+        Dim jar = New RepeatedFramingJar(Of UInt16)(New UInt16Jar())
         Dim equater As Func(Of IReadableList(Of UInt16), IReadableList(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
         JarTest(jar, equater, New UInt16() {}.AsReadableList, {}, appendSafe:=False)
         JarTest(jar, equater, New UInt16() {0}.AsReadableList, {0, 0}, appendSafe:=False)
@@ -373,26 +362,22 @@ Public Class PicklingTest
     End Sub
 
     <TestMethod()>
-    Public Sub NullTerminatedStringJarTest()
-        Dim jar = New NullTerminatedStringJar()
-        JarTest(jar, "", {0})
-        JarTest(jar, "a", {Asc("a"), 0})
-        JarTest(jar, "ab", {Asc("a"), Asc("b"), 0})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {Asc("a"), Asc("b")}.AsReadableList))
-        jar = New NullTerminatedStringJar(maximumContentSize:=1)
-        JarTest(jar, "", {0})
-        JarTest(jar, "a", {Asc("a"), 0})
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {Asc("a"), Asc("b"), 0}.AsReadableList))
-    End Sub
-    <TestMethod()>
-    Public Sub FixedSizeStringJarTest()
-        Dim jar = New FixedSizeStringJar(size:=1)
-        JarTest(jar, "1", {Asc("1")})
+    Public Sub StringJarTest()
+        Dim jar = New StringJar()
+        JarTest(jar, "", {})
         JarTest(jar, "a", {Asc("a")})
-        Assert.IsTrue(jar.Parse(New Byte() {Asc("a"), Asc("b")}.AsReadableList).Data.Count = 1)
+        JarTest(jar, "ab", {Asc("a"), Asc("b")})
+        jar = New StringJar(minCharCount:=2)
+        ExpectException(Of PicklingException)(Sub() jar.Pack(""))
+        ExpectException(Of PicklingException)(Sub() jar.Pack("a"))
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {Asc("a")}.AsReadableList))
+        JarTest(jar, "abc", {Asc("a"), Asc("b"), Asc("c")})
+        jar = New StringJar(maxCharCount:=1)
+        ExpectException(Of PicklingException)(Sub() jar.Pack("ab"))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {Asc("a"), Asc("b")}.AsReadableList))
+        JarTest(jar, "", {})
+        JarTest(jar, "a", {Asc("a")})
     End Sub
 
     <TestMethod()>
@@ -408,11 +393,11 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub DataSizePrefixedJarTest()
-        Dim jar = New DataSizePrefixedJar(Of Byte)(New ByteJar(), prefixSize:=2)
+        Dim jar = New SizePrefixedFramingJar(Of Byte)(New ByteJar(), prefixSize:=2)
         JarTest(jar, 5, {1, 0, 5})
         JarTest(jar, 3, {1, 0, 3})
 
-        Dim jar2 = New DataSizePrefixedJar(Of String)(New NullTerminatedStringJar(), prefixSize:=1)
+        Dim jar2 = New SizePrefixedFramingJar(Of String)(New StringJar().NullTerminated, prefixSize:=1)
         JarTest(jar2, "", {1, 0})
         JarTest(jar2, "A", {2, Asc("A"), 0})
         JarTest(jar2, New String("A"c, 254), New Byte() {255}.Concat(CByte(Asc("A")).Repeated(254)).Concat({0}).ToList)
@@ -421,12 +406,12 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub OptionalJarTest()
-        Dim jar = New OptionalJar(Of Byte)(New ByteJar())
+        Dim jar = New OptionalFramingJar(Of Byte)(New ByteJar())
         Dim equater = Function(e1 As Tuple(Of Boolean, Byte), e2 As Tuple(Of Boolean, Byte)) e1.Equals(e2)
         JarTest(jar, equater, Tuple.Create(True, CByte(5)), {5})
         JarTest(jar, equater, Tuple.Create(False, CByte(0)), {}, appendSafe:=False)
 
-        Dim jar2 = New OptionalJar(Of String)(New NullTerminatedStringJar())
+        Dim jar2 = New OptionalFramingJar(Of String)(New StringJar().NullTerminated)
         Dim equater2 = Function(e1 As Tuple(Of Boolean, String), e2 As Tuple(Of Boolean, String)) e1.Equals(e2)
         JarTest(jar2, equater2, Tuple.Create(True, ""), {0})
         JarTest(jar2, equater2, Tuple.Create(False, CStr(Nothing)), {}, appendSafe:=False)
@@ -436,7 +421,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub ChecksumPrefixedJarTest()
-        Dim jar = New ChecksumPrefixedJar(Of Byte)(New ByteJar(), checksumSize:=1, checksumFunction:=Function(a) {a(0) Xor CByte(1)}.AsReadableList)
+        Dim jar = New ChecksumPrefixedFramingJar(Of Byte)(New ByteJar(), checksumSize:=1, checksumFunction:=Function(a) {a(0) Xor CByte(1)}.AsReadableList)
         JarTest(jar, 5, {4, 5})
         JarTest(jar, 3, {2, 3})
         JarTest(jar, 2, {3, 2})

@@ -84,14 +84,14 @@ Namespace Warden
             Public Shared ReadOnly FullServerConnect As New TupleJar(
                     New UInt32Jar(showHex:=True).Named("cookie").Weaken,
                     New EnumUInt32Jar(Of ClientType)().Named("client type").Weaken,
-                    New RemainingDataJar().DataSizePrefixed(prefixSize:=2).Named("seed").Weaken,
-                    New NullTerminatedStringJar().Named("username").Weaken,
-                    New RemainingDataJar().DataSizePrefixed(prefixSize:=2).Named("password").Weaken,
-                    New RemainingDataJar().Named("unspecified").Weaken)
+                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("seed").Weaken,
+                    New StringJar().NullTerminated.Named("username").Weaken,
+                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("password").Weaken,
+                    New DataJar().Named("unspecified").Weaken)
             Public Shared ReadOnly FullServiceHandleWardenPacket As New TupleJar(
                     New UInt32Jar(showHex:=True).Named("cookie").Weaken,
-                    New RemainingDataJar().DataSizePrefixed(prefixSize:=2).Named("raw warden packet data").Weaken,
-                    New RemainingDataJar().Named("unspecified").Weaken)
+                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("raw warden packet data").Weaken,
+                    New DataJar().Named("unspecified").Weaken)
         End Class
 
         Public Shared Function MakeFullServiceConnect(ByVal cookie As UInteger, ByVal seed As UInteger) As ClientPacket
@@ -119,8 +119,8 @@ Namespace Warden
                     New EnumByteJar(Of WardenPacketId)().Named("type").Weaken,
                     New UInt32Jar().Named("cookie").Weaken,
                     New ByteJar().Named("result").Weaken,
-                    New RemainingDataJar().DataSizePrefixed(prefixSize:=2).Named("data").Weaken,
-                    New RemainingDataJar().Named("unspecified").Weaken)
+                    New DataJar().DataSizePrefixed(prefixSize:=2).Named("data").Weaken,
+                    New DataJar().Named("unspecified").Weaken)
 
         Private ReadOnly _id As WardenPacketId
         Private ReadOnly _cookie As UInt32

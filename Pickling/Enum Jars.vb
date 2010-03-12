@@ -4,13 +4,10 @@
         Inherits BaseJar(Of T)
         Private Const ValueByteCount As Integer = 1
         Private Const ValueBitCount As Integer = ValueByteCount * 8
-        Private ReadOnly _byteOrder As ByteOrder
         Private ReadOnly _isFlagEnum As Boolean
         Private ReadOnly _checkDefined As Boolean
 
-        Public Sub New(Optional ByVal checkDefined As Boolean = True,
-                       Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian)
-            Me._byteOrder = byteOrder
+        Public Sub New(Optional ByVal checkDefined As Boolean = True)
             Me._checkDefined = checkDefined
             Me._isFlagEnum = GetType(T).GetCustomAttributes(GetType(FlagsAttribute), inherit:=False).Any
         End Sub
