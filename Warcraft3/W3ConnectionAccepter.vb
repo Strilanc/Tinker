@@ -135,14 +135,14 @@ Namespace WC3
             End If
 
             Dim pickle = Protocol.Packets.Knock.Jar.Parse(packetData.SubView(4))
-            Dim vals = pickle.Value.AssumeNotNull
-            Dim player = New W3ConnectingPlayer(CStr(vals("name")).AssumeNotNull,
+            Dim vals = pickle.Value
+            Dim player = New W3ConnectingPlayer(CStr(vals("name")),
                                                 CUInt(vals("game id")),
                                                 CUInt(vals("entry key")),
                                                 CUInt(vals("peer key")),
-                                                CType(vals("peer data"), IReadableList(Of Byte)).AssumeNotNull,
+                                                CType(vals("peer data"), IReadableList(Of Byte)),
                                                 CUShort(vals("listen port")),
-                                                CType(vals("internal address"), Net.IPEndPoint).AssumeNotNull,
+                                                CType(vals("internal address"), Net.IPEndPoint),
                                                 socket)
 
             socket.Name = player.Name

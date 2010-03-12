@@ -22,7 +22,7 @@
 
         <Extension()> <Pure()>
         Public Function MakeListDescription(ByVal pickles As IEnumerable(Of ISimplePickle),
-                                            Optional ByVal useSingleLineDescription As Boolean = False) As String
+                                            ByVal useSingleLineDescription As Boolean) As String
             Contract.Requires(pickles IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Dim descriptions = From e In pickles Select e.Description.Value
@@ -68,14 +68,16 @@
 
 #Region "Framing Jars"
         <Extension()> <Pure()>
-        Public Function Fixed(Of T)(ByVal jar As IJar(Of T), ByVal exactDataCount As Integer) As FixedSizeFramingJar(Of T)
+        Public Function Fixed(Of T)(ByVal jar As IJar(Of T),
+                                    ByVal exactDataCount As Integer) As FixedSizeFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(exactDataCount >= 0)
             Contract.Ensures(Contract.Result(Of FixedSizeFramingJar(Of T))() IsNot Nothing)
             Return New FixedSizeFramingJar(Of T)(subJar:=jar, dataSize:=exactDataCount)
         End Function
         <Extension()> <Pure()>
-        Public Function Limited(Of T)(ByVal jar As IJar(Of T), ByVal maxDataCount As Integer) As LimitedSizeFramingJar(Of T)
+        Public Function Limited(Of T)(ByVal jar As IJar(Of T),
+                                      ByVal maxDataCount As Integer) As LimitedSizeFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(maxDataCount >= 0)
             Contract.Ensures(Contract.Result(Of LimitedSizeFramingJar(Of T))() IsNot Nothing)
@@ -88,13 +90,15 @@
             Return New NullTerminatedFramingJar(Of T)(subJar:=jar)
         End Function
         <Extension()> <Pure()>
-        Public Function Repeated(Of T)(ByVal jar As IJar(Of T)) As RepeatedFramingJar(Of T)
+        Public Function Repeated(Of T)(ByVal jar As IJar(Of T),
+                                       Optional ByVal useSingleLineDescription As Boolean = False) As RepeatedFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of RepeatedFramingJar(Of T))() IsNot Nothing)
-            Return New RepeatedFramingJar(Of T)(subJar:=jar)
+            Return New RepeatedFramingJar(Of T)(subJar:=jar, useSingleLineDescription:=useSingleLineDescription)
         End Function
         <Extension()> <Pure()>
-        Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T), ByVal prefixSize As Integer) As SizePrefixedFramingJar(Of T)
+        Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T),
+                                               ByVal prefixSize As Integer) As SizePrefixedFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
             Contract.Ensures(Contract.Result(Of SizePrefixedFramingJar(Of T))() IsNot Nothing)
@@ -103,11 +107,11 @@
         <Extension()> <Pure()>
         Public Function RepeatedWithCountPrefix(Of T)(ByVal jar As IJar(Of T),
                                                       ByVal prefixSize As Integer,
-                                                      Optional ByVal useSingleLineDescription As Boolean = False) As ListJar(Of T)
+                                                      Optional ByVal useSingleLineDescription As Boolean = False) As ItemCountPrefixedFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(prefixSize > 0)
-            Contract.Ensures(Contract.Result(Of ListJar(Of T))() IsNot Nothing)
-            Return New ListJar(Of T)(jar, prefixSize, useSingleLineDescription)
+            Contract.Ensures(Contract.Result(Of ItemCountPrefixedFramingJar(Of T))() IsNot Nothing)
+            Return New ItemCountPrefixedFramingJar(Of T)(jar, prefixSize, useSingleLineDescription)
         End Function
         <Extension()> <Pure()>
         Public Function [Optional](Of T)(ByVal jar As IJar(Of T)) As OptionalFramingJar(Of T)

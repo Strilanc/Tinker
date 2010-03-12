@@ -28,7 +28,7 @@ Namespace Bnet.Protocol
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Net.IPEndPoint)
             Dim pickle = DataJar.Parse(data)
             Dim vals = pickle.Value
-            Dim value = New Net.IPEndPoint(CType(vals("ip"), Net.IPAddress).AssumeNotNull, CUShort(vals("port")))
+            Dim value = New Net.IPEndPoint(CType(vals("ip"), Net.IPAddress), CUShort(vals("port")))
             Return value.Pickled(pickle.Data)
         End Function
     End Class

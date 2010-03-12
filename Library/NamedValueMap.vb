@@ -17,6 +17,7 @@
 
     Default Public ReadOnly Property Item(ByVal key As InvariantString) As Object
         Get
+            Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
             If Not _dictionary.ContainsKey(key) Then Throw New InvalidOperationException("No item with key '{0}'".Frmt(key))
             Dim result = _dictionary(key)
             Contract.Assume(result IsNot Nothing)

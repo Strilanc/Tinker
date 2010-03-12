@@ -312,13 +312,13 @@ Namespace WC3
             'Player Chat
             Select Case commandType
                 Case Protocol.NonGameAction.GameChat, Protocol.NonGameAction.LobbyChat
-                    Dim message = CStr(vals("message")).AssumeNotNull
+                    Dim message = CStr(vals("message"))
                     Dim chatType = If(commandType = Protocol.NonGameAction.GameChat, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
                     Dim receivingGroup As Protocol.ChatGroup
                     If chatType = Protocol.ChatType.Game Then
                         receivingGroup = CType(vals("receiving group"), Protocol.ChatGroup)
                     End If
-                    Dim requestedReceivers = CType(vals("requested receivers"), IReadableList(Of PlayerId)).AssumeNotNull
+                    Dim requestedReceivers = CType(vals("requested receivers"), IReadableList(Of PlayerId))
 
                     ReceiveChat(sender, message, chatType, receivingGroup, requestedReceivers)
 

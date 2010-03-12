@@ -91,13 +91,13 @@ Namespace WC3
             'Parse
             Dim pickle = Protocol.Packets.Knock.Jar.Parse(data.SubView(4))
             Dim vals = pickle.Value
-            Dim player = New W3ConnectingPlayer(Name:=CStr(vals("name")).AssumeNotNull,
+            Dim player = New W3ConnectingPlayer(Name:=CStr(vals("name")),
                                                 gameid:=CUInt(vals("game id")),
                                                 entrykey:=CUInt(vals("entry key")),
                                                 peerkey:=CUInt(vals("peer key")),
-                                                peerData:=CType(vals("peer data"), IReadableList(Of Byte)).AssumeNotNull,
+                                                peerData:=CType(vals("peer data"), IReadableList(Of Byte)),
                                                 listenport:=CUShort(vals("listen port")),
-                                                remoteendpoint:=CType(vals("internal address"), Net.IPEndPoint).AssumeNotNull,
+                                                remoteendpoint:=CType(vals("internal address"), Net.IPEndPoint),
                                                 socket:=socket)
 
             'Handle

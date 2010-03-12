@@ -23,8 +23,8 @@
         Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
 
+        <ContractVerification(False)>
         Private Function SimplePack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
-            Contract.Assume(value IsNot Nothing)
             Dim pickle = Pack(CType(CType(value, Object), T))
             Return value.Pickled(pickle.Data, pickle.Description)
         End Function

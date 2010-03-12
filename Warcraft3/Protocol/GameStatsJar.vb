@@ -147,9 +147,9 @@ Namespace WC3.Protocol
             Dim playableWidth = CUInt(vals("playable width"))
             Dim playableHeight = CUInt(vals("playable height"))
             Dim xoroChecksum = CUInt(vals("xoro checksum"))
-            Dim sha1Checksum = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
-            Dim relativePath As InvariantString = CStr(vals("relative path")).AssumeNotNull
-            Dim hostName As InvariantString = CStr(vals("host name")).AssumeNotNull
+            Dim sha1Checksum = CType(vals("sha1 checksum"), IReadableList(Of Byte))
+            Dim relativePath As InvariantString = CStr(vals("relative path"))
+            Dim hostName As InvariantString = CStr(vals("host name"))
             Contract.Assume(sha1Checksum.Count = 20)
             If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
 

@@ -156,8 +156,8 @@ Namespace Warden
             Return New ServerPacket(Id:=CType(vals("type"), WardenPacketId),
                                     Cookie:=CUInt(vals("cookie")),
                                     Result:=CByte(vals("result")),
-                                    ResponseData:=CType(vals("data"), IReadableList(Of Byte)).AssumeNotNull,
-                                    UnspecifiedData:=CType(vals("unspecified"), IReadableList(Of Byte)).AssumeNotNull)
+                                    ResponseData:=CType(vals("data"), IReadableList(Of Byte)),
+                                    UnspecifiedData:=CType(vals("unspecified"), IReadableList(Of Byte)))
         End Function
 
         Public ReadOnly Property Id As WardenPacketId

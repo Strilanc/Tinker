@@ -62,9 +62,9 @@ Namespace Bnet.Protocol
                     Dim vals = pickle.Value
                     Dim totalSlots = CInt(vals("num free slots"))
                     Dim usedSlots = 0
-                    games.Add(New WC3.RemoteGameDescription(Name:=CStr(vals("game name")).AssumeNotNull,
-                                                            gamestats:=CType(vals("game statstring"), WC3.GameStats).AssumeNotNull,
-                                                            location:=CType(vals("host address"), Net.IPEndPoint).AssumeNotNull,
+                    games.Add(New WC3.RemoteGameDescription(Name:=CStr(vals("game name")),
+                                                            gamestats:=CType(vals("game statstring"), WC3.GameStats),
+                                                            location:=CType(vals("host address"), Net.IPEndPoint),
                                                             gameid:=CUInt(vals("game id")),
                                                             entryKey:=0,
                                                             totalSlotCount:=totalSlots,
@@ -76,7 +76,8 @@ Namespace Bnet.Protocol
                 Next repeat
             End If
 
-            Return New QueryGamesListResponse(result, games).Pickled(data.SubView(0, offset), Function() pickles.MakeListDescription())
+            Return New QueryGamesListResponse(result, games).Pickled(data.SubView(0, offset),
+                                                                     Function() pickles.MakeListDescription(useSingleLineDescription:=False))
         End Function
 
         Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As Pickling.IPickle(Of TValue)

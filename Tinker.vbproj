@@ -208,7 +208,6 @@
     <Compile Include="Pickling\DataJar.vb" />
     <Compile Include="Pickling\PrefixSwitchJar.vb" />
     <Compile Include="Pickling\InteriorSwitchJar.vb" />
-    <Compile Include="Pickling\ListJar.vb" />
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
     <Compile Include="Library\Stream Extensions.vb" />

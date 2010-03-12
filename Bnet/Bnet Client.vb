@@ -712,8 +712,8 @@ Namespace Bnet
                     Throw New IO.InvalidDataException("User authentication failed with error: {0}".Frmt(result))
                 End If
 
-                Dim accountPasswordSalt = CType(vals("account password salt"), IReadableList(Of Byte)).AssumeNotNull
-                Dim serverPublicKey = CType(vals("server public key"), IReadableList(Of Byte)).AssumeNotNull
+                Dim accountPasswordSalt = CType(vals("account password salt"), IReadableList(Of Byte))
+                Dim serverPublicKey = CType(vals("server public key"), IReadableList(Of Byte))
 
                 If Me._userCredentials Is Nothing Then Throw New InvalidStateException("Received AccountLogOnBegin before credentials specified.")
                 Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
@@ -734,7 +734,7 @@ Namespace Bnet
             Try
                 Dim vals = value.Value
                 Dim result = CType(vals("result"), Protocol.UserAuthenticationFinishResult)
-                Dim serverProof = CType(vals("server password proof"), IReadableList(Of Byte)).AssumeNotNull
+                Dim serverProof = CType(vals("server password proof"), IReadableList(Of Byte))
 
                 'validate
                 If _state <> ClientState.WaitingForUserAuthenticationFinish Then

@@ -332,7 +332,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub ListJarTest()
-        Dim jar = New ListJar(Of UInt16)(New UInt16Jar(), prefixSize:=1)
+        Dim jar = New ItemCountPrefixedFramingJar(Of UInt16)(New UInt16Jar(), prefixSize:=1)
         Dim equater As Func(Of IReadableList(Of UInt16), IReadableList(Of UInt16), Boolean) = Function(x, y) x.SequenceEqual(y)
         JarTest(jar, equater, New UShort() {}.ToReadableList, {0})
         JarTest(jar, equater, New UShort() {0}.ToReadableList, {1, 0, 0})
@@ -341,7 +341,7 @@ Public Class PicklingTest
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {}.AsReadableList))
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {1}.AsReadableList))
 
-        jar = New ListJar(Of UInt16)(New UInt16Jar(), prefixSize:=4)
+        jar = New ItemCountPrefixedFramingJar(Of UInt16)(New UInt16Jar(), prefixSize:=4)
         JarTest(jar, equater, New UShort() {}.ToReadableList, {0, 0, 0, 0})
         JarTest(jar, equater, New UShort() {0}.ToReadableList, {1, 0, 0, 0, 0, 0})
         JarTest(jar, equater, New UShort() {1}.ToReadableList, {1, 0, 0, 0, 1, 0})

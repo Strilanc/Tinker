@@ -27,7 +27,7 @@ Namespace Bnet.Protocol
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ProductCredentials)
             Dim pickle = DataJar.Parse(data)
             Dim vals = pickle.Value
-            Dim proof = CType(vals("proof"), IReadableList(Of Byte)).AssumeNotNull
+            Dim proof = CType(vals("proof"), IReadableList(Of Byte))
             Contract.Assume(proof.Count = 20)
             Dim value = New ProductCredentials(
                     product:=CType(vals("product"), ProductType),

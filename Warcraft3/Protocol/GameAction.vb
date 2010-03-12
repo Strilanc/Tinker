@@ -146,7 +146,7 @@ Namespace WC3.Protocol
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
             Dim pickle = DataJar.Parse(data)
             Dim id = CType(pickle.Value("source"), PlayerId)
-            Dim actions = CType(pickle.Value("actions"), IReadableList(Of GameAction)).AssumeNotNull
+            Dim actions = CType(pickle.Value("actions"), IReadableList(Of GameAction))
             If id.Index < 1 OrElse id.Index > 12 Then Throw New IO.InvalidDataException("Invalid pid.")
             Dim value = New PlayerActionSet(id, actions)
             Return value.Pickled(pickle.Data, pickle.Description)

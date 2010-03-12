@@ -114,11 +114,11 @@ Namespace WC3
                 Dim vals = Protocol.Packets.HostMapInfo.Jar.Parse(hexData.ToReadableList).Value
 
                 'Extract values
-                Dim path As InvariantString = CStr(vals("path")).AssumeNotNull
+                Dim path As InvariantString = CStr(vals("path"))
                 Dim size = CUInt(vals("size"))
                 Dim crc32 = CUInt(vals("crc32"))
                 Dim xoro = CUInt(vals("xoro checksum"))
-                Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte)).AssumeNotNull
+                Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte))
                 Dim slot1 = New Slot(index:=0,
                                      raceUnlocked:=False,
                                      Color:=Protocol.PlayerColor.Red,
