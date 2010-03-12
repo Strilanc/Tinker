@@ -14,12 +14,12 @@ Namespace Bnet.Protocol
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As ProductCredentials)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim vals = New Dictionary(Of InvariantString, Object) From {
+            Dim vals = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"length", value.Length},
                     {"product", value.Product},
                     {"public key", value.PublicKey},
                     {"unknown", 0},
-                    {"proof", value.AuthenticationProof}}
+                    {"proof", value.AuthenticationProof}})
             Dim pickle = DataJar.Pack(vals)
             Return value.Pickled(pickle.Data, pickle.Description)
         End Function

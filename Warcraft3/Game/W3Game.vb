@@ -304,7 +304,7 @@ Namespace WC3
                 End If
             Next receiver
         End Sub
-        Private Sub ReceiveNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of InvariantString, Object))
+        Private Sub ReceiveNonGameAction(ByVal sender As Player, ByVal vals As NamedValueMap)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Dim commandType = CType(vals("command type"), Protocol.NonGameAction)

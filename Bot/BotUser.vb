@@ -148,6 +148,7 @@ Public NotInheritable Class BotUser
             writer.Write(pair.Value)
         Next pair
     End Sub
+    <ContractVerification(False)>
     Public Sub New(ByVal reader As IO.BinaryReader)
         Contract.Requires(reader IsNot Nothing)
         Me._name = reader.ReadString()
@@ -316,6 +317,7 @@ Public NotInheritable Class BotUserSet
         _userMap(user.Name) = user
     End Sub
 
+    <ContractVerification(False)>
     Public Sub Load(ByVal reader As IO.BinaryReader)
         Contract.Requires(reader IsNot Nothing)
         Dim userCount = reader.ReadUInt16()

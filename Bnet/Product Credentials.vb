@@ -218,6 +218,7 @@
         '''<summary>Permutes the items in a list by assigning items to positions which have been offset and scaled.</summary>
         '''<remarks>This transformation is reversible if and only if the factor is coprime to the number of items.</remarks>
         <Extension()> <Pure()>
+        <ContractVerification(False)>
         Private Function Permute(Of T)(ByVal items As IReadableList(Of T), ByVal offset As Integer, ByVal factor As Integer) As IReadableList(Of T)
             Contract.Requires(items IsNot Nothing)
             Contract.Requires(offset >= 0)

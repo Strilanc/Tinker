@@ -185,7 +185,7 @@ Public Class WC3ProtocolTest
                        3,
                        12},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"slots", New List(Of Dictionary(Of InvariantString, Object))().ToReadableList},
+                        {"slots", New List(Of NamedValueMap)().ToReadableList},
                         {"random seed", 13},
                         {"layout style", LobbyLayoutStyle.FixedPlayerSettings},
                         {"num player slots", 12}
@@ -447,15 +447,12 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ShowLagScreenTest()
-        Dim lagger = New Dictionary(Of InvariantString, Object) From {
+        Dim lagger = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                              {"id", New PlayerId(2)},
                              {"initial milliseconds used", 25}
-                         }
+                         })
         JarTest(Packets.ShowLagScreen.Jar,
-                equater:=Function(e1 As IReadableList(Of Dictionary(Of InvariantString, Object)),
-                                  e2 As IReadableList(Of Dictionary(Of InvariantString, Object)))
-                             Return ObjectEqual(e1, e2)
-                         End Function,
+                equater:=Function(e1 As IReadableList(Of NamedValueMap), e2 As IReadableList(Of NamedValueMap)) ObjectEqual(e1, e2),
                 data:={2,
                        2, 25, 0, 0, 0,
                        2, 25, 0, 0, 0},
@@ -500,7 +497,7 @@ Public Class WC3ProtocolTest
     Public Sub TickTest()
         JarTest(Packets.Tick.Jar,
                 appendSafe:=False,
-                equater:=Function(e1 As Dictionary(Of InvariantString, Object), e2 As Dictionary(Of InvariantString, Object))
+                equater:=Function(e1 As NamedValueMap, e2 As NamedValueMap)
                              If e1.Count <> 2 Then Return False
                              If e2.Count <> 2 Then Return False
                              If Not ObjectEqual(e1("time span"), e2("time span")) Then Return False
@@ -509,8 +506,7 @@ Public Class WC3ProtocolTest
                              If Not ObjectEqual(a1.Item1, a2.Item1) Then Return False
                              If Not ObjectEqual(a1.Item2, a2.Item2) Then Return False
                              Return True
-                         End Function,
-                data:={250, 0,
+                         End Function, data:={250, 0,
                        208, 15,
                             1,
                                 6, 0,

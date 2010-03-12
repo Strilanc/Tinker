@@ -88,7 +88,7 @@ Namespace Bnet
             Return ClientCommands.Invoke(Me, user, argument)
         End Function
 
-        Private Sub OnReceivedChatEvent(ByVal vals As Dictionary(Of InvariantString, Object))
+        Private Sub OnReceivedChatEvent(ByVal vals As NamedValueMap)
             Contract.Requires(vals IsNot Nothing)
 
             Dim id = CType(vals("event id"), Bnet.Protocol.ChatEventId)

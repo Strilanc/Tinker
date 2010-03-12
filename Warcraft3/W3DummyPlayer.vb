@@ -122,10 +122,10 @@ Namespace WC3
 
             socket.SendPacket(Protocol.MakeKnock(name, listenPort, CUShort(socket.LocalEndPoint.Port)))
         End Sub
-        Private Sub OnReceiveGreet(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub OnReceiveGreet(ByVal pickle As IPickle(Of NamedValueMap))
             index = New PlayerId(CByte(pickle.Value("player index")))
         End Sub
-        Private Sub OnReceiveHostMapInfo(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub OnReceiveHostMapInfo(ByVal pickle As IPickle(Of NamedValueMap))
             If mode = DummyPlayerMode.DownloadMap Then
                 dl = New MapDownload(CStr(pickle.Value("path")),
                                      CUInt(pickle.Value("size")),
@@ -140,7 +140,7 @@ Namespace WC3
         Private Sub OnReceivePing(ByVal pickle As IPickle(Of UInt32))
             socket.SendPacket(Protocol.MakePong(pickle.Value))
         End Sub
-        Private Sub OnReceiveOtherPlayerJoined(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub OnReceiveOtherPlayerJoined(ByVal pickle As IPickle(Of NamedValueMap))
             Dim ext_addr = CType(pickle.Value("external address"), Dictionary(Of InvariantString, Object))
             Dim player = New W3Peer(CStr(pickle.Value("name")),
                                     New PlayerId(CByte(pickle.Value("index"))),
@@ -155,7 +155,7 @@ Namespace WC3
             hooks.Add(New DelegatedDisposable(Sub() RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect))
             _playerHooks(player) = hooks
         End Sub
-        Private Sub OnReceiveOtherPlayerLeft(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub OnReceiveOtherPlayerLeft(ByVal pickle As IPickle(Of NamedValueMap))
             Dim player = (From p In otherPlayers Where p.Id.Index = CByte(pickle.Value("player index"))).FirstOrDefault
             If player IsNot Nothing Then
                 otherPlayers.Remove(player)
@@ -172,12 +172,12 @@ Namespace WC3
                 Call New SystemClock().AsyncWait(readyDelay).ContinueWithAction(Sub() socket.SendPacket(Protocol.MakeReady()))
             End If
         End Sub
-        Private Sub OnReceiveTick(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub OnReceiveTick(ByVal pickle As IPickle(Of NamedValueMap))
             If CUShort(pickle.Value("time span")) > 0 Then
                 socket.SendPacket(Protocol.MakeTock(0, 0))
             End If
         End Sub
-        Private Sub OnReceiveMapFileData(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub OnReceiveMapFileData(ByVal pickle As IPickle(Of NamedValueMap))
             Dim pos = CUInt(dl.file.Position)
             If ReceiveDLMapChunk(pickle.Value) Then
                 Disconnect(expected:=True, reason:="Download finished.")
@@ -186,7 +186,7 @@ Namespace WC3
             End If
         End Sub
 
-        Private Function ReceiveDLMapChunk(ByVal vals As Dictionary(Of InvariantString, Object)) As Boolean
+        Private Function ReceiveDLMapChunk(ByVal vals As NamedValueMap) As Boolean
             Contract.Requires(vals IsNot Nothing)
             If dl Is Nothing OrElse dl.file Is Nothing Then Throw New InvalidOperationException()
             Dim position = CInt(CUInt(vals("file position")))
@@ -266,7 +266,7 @@ Namespace WC3
         End Sub
 
         Private Sub OnPeerReceivePeerPing(ByVal sender As W3Peer,
-                                          ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+                                          ByVal pickle As IPickle(Of NamedValueMap))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = pickle.Value
@@ -274,7 +274,7 @@ Namespace WC3
             sender.Socket.SendPacket(Protocol.MakePeerPong(CUInt(vals("salt"))))
         End Sub
         Private Sub OnPeerReceiveMapFileData(ByVal sender As W3Peer,
-                                             ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+                                             ByVal pickle As IPickle(Of NamedValueMap))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
             Dim vals = pickle.Value

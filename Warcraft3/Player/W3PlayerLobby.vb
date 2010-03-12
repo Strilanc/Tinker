@@ -58,7 +58,7 @@ Namespace WC3
             Contract.Assume(_numPeerConnections <= 12)
             RaiseEvent SuperficialStateUpdated(Me)
         End Sub
-        Private Sub OnReceiveClientMapInfo(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub OnReceiveClientMapInfo(ByVal pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
             _reportedDownloadPosition = CUInt(pickle.Value("total downloaded"))
             outQueue.QueueAction(Sub() RaiseEvent StateUpdated(Me))

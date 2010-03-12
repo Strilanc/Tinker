@@ -84,7 +84,7 @@
 
             '[async lag -wait command detection]
             If (From action In actions Where action.Id = Protocol.GameActionId.GameCacheSyncInteger
-                                       Select vals = CType(action.Payload, Pickling.IPickle(Of Dictionary(Of InvariantString, Object))).Value
+                                       Select vals = CType(action.Payload, Pickling.IPickle(Of NamedValueMap)).Value
                                        Where CStr(vals("filename")) = "HostBot.AsyncLag" AndAlso CStr(vals("mission key")) = "wait").Any Then
                 _asyncWaitTriggered = True
             End If
@@ -217,6 +217,7 @@
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return _kernel.InQueue.QueueAction(Sub() _tickPeriod = value)
         End Function
+        <ContractVerification(False)>
         Public Function QueueSetSpeedFactor(ByVal value As Double) As Task
             Contract.Requires(value > 0)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

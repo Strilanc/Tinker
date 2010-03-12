@@ -201,6 +201,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Library\HoldPoint.vb" />
+    <Compile Include="Library\NamedValueMap.vb" />
     <Compile Include="Pickling\Framing Jars.vb" />
     <Compile Include="Pickling\EmptyJar.vb" />
     <Compile Include="Pickling\StringJar.vb" />

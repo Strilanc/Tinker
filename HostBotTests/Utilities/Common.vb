@@ -103,14 +103,25 @@ Friend Module TestingCommon
                                                  Optional ByVal description As String = Nothing)
         JarTest(jar, Function(a As T, b As T) a.Equals(b), value, data, appendSafe, requireAllData, description)
     End Sub
-    Friend Sub JarTest(ByVal jar As IJar(Of Dictionary(Of InvariantString, Object)),
+    Friend Sub JarTest(ByVal jar As IJar(Of NamedValueMap),
+                       ByVal value As NamedValueMap,
+                       ByVal data As IEnumerable(Of Byte),
+                       Optional ByVal appendSafe As Boolean = True,
+                       Optional ByVal requireAllData As Boolean = True)
+        JarTest(jar,
+                Function(e1 As NamedValueMap, e2 As NamedValueMap) ObjectEqual(e1, e2),
+                value,
+                data,
+                requireAllData:=requireAllData,
+                appendSafe:=appendSafe)
+    End Sub
+    Friend Sub JarTest(ByVal jar As IJar(Of NamedValueMap),
                        ByVal value As Dictionary(Of InvariantString, Object),
                        ByVal data As IEnumerable(Of Byte),
                        Optional ByVal appendSafe As Boolean = True,
                        Optional ByVal requireAllData As Boolean = True)
         JarTest(jar,
-                Function(d1, d2) DictionaryEqual(d1, d2),
-                value,
+                New NamedValueMap(value),
                 data,
                 requireAllData:=requireAllData,
                 appendSafe:=appendSafe)
@@ -131,6 +142,8 @@ Friend Module TestingCommon
     Public Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
         Dim n1 = TryCastToBigInteger(v1)
         Dim n2 = TryCastToBigInteger(v2)
+        If TypeOf v1 Is NamedValueMap Then v1 = CType(v1, NamedValueMap).ToDictionary
+        If TypeOf v2 Is NamedValueMap Then v2 = CType(v2, NamedValueMap).ToDictionary
         If n1 IsNot Nothing AndAlso n2 IsNot Nothing Then
             Return n1.Value = n2.Value
         ElseIf TypeOf v1 Is Dictionary(Of InvariantString, Object) AndAlso TypeOf v2 Is Dictionary(Of InvariantString, Object) Then

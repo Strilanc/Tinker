@@ -18,10 +18,10 @@ Namespace WC3.Protocol
         End Sub
 
         Public Shared Function PackSlot(ByVal slot As Slot,
-                                        Optional ByVal receiver As Player = Nothing) As Dictionary(Of InvariantString, Object)
+                                        Optional ByVal receiver As Player = Nothing) As NamedValueMap
             Contract.Requires(slot IsNot Nothing)
             Contract.Requires(receiver IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Dictionary(Of InvariantString, Object))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
             Dim pid = slot.Contents.DataPlayerIndex(receiver)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"pid", If(pid Is Nothing, 0, pid.Value.Index)},

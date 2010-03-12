@@ -7,9 +7,9 @@ Namespace WC3.Protocol
             Contract.Requires(laggers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ShowLagScreen, (From lagger In laggers
-                                                            Select New Dictionary(Of InvariantString, Object) From {
+                                                            Select New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                                                     {"id", lagger},
-                                                                    {"initial milliseconds used", 2000}}).ToReadableList)
+                                                                    {"initial milliseconds used", 2000}})).ToReadableList)
         End Function
         <Pure()>
         Public Function MakeRemovePlayerFromLagScreen(ByVal lagger As PlayerId,

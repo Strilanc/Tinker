@@ -51,6 +51,7 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of GameActionId))() IsNot Nothing)
             Dim jar = New PrefixSwitchJar(Of GameActionId)()
             For Each definition In GameActions.AllDefintions
+                Contract.Assume(definition IsNot Nothing)
                 jar.AddParser(definition.Id, definition.Jar)
             Next definition
             Return jar
@@ -135,10 +136,10 @@ Namespace WC3.Protocol
 
         Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Dim pickle = DataJar.Pack(New Dictionary(Of InvariantString, Object) From {
+            Dim pickle = DataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                             {"source", value.Id},
                                             {"actions", value.Actions}
-                                       })
+                                       }))
             Return value.Pickled(pickle.Data, pickle.Description)
         End Function
 

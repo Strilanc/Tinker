@@ -20,7 +20,6 @@
         End Sub
 
         Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
             Dim pickle = _subJar.Pack(value)
             If pickle.Data.Count <> _dataSize Then Throw New PicklingException("Packed data did not take exactly {0} bytes.".Frmt(_dataSize))
             Return pickle
@@ -66,7 +65,6 @@
         End Sub
 
         Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
             Dim pickle = _subJar.Pack(value)
             If pickle.Data.Count > _maxDataCount Then Throw New PicklingException("Packed data did not fit in {0} bytes.".Frmt(_maxDataCount))
             Return pickle
@@ -146,7 +144,6 @@
         End Sub
 
         Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
             Dim pickle = _subJar.Pack(value)
             Return pickle.Value.Pickled(pickle.Data.Append(0).ToReadableList, pickle.Description)
         End Function

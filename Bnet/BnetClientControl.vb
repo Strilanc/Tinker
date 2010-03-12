@@ -68,7 +68,7 @@ Namespace Bnet
                 lstState.Items.Add(game.GameStats.AdvertisedPath.ToString.Split("\"c).Last)
             Next game
         End Sub
-        Private Sub OnClientReceivedChatEvent(ByVal sender As Bnet.Client, ByVal vals As Dictionary(Of InvariantString, Object))
+        Private Sub OnClientReceivedChatEvent(ByVal sender As Bnet.Client, ByVal vals As NamedValueMap)
             If IsDisposed Then Return
             If sender IsNot Me._client Then Return
             Dim id = CType(vals("event id"), ChatEventId)

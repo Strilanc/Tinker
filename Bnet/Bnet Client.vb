@@ -596,7 +596,7 @@ Namespace Bnet
         End Function
 
 #Region "Networking (Connect)"
-        Private Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Const LOGON_TYPE_WC3 As UInteger = 2
@@ -681,7 +681,7 @@ Namespace Bnet
                                               clock:=_clock)
         End Sub
 
-        Private Sub ReceiveProgramAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveProgramAuthenticationFinish(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
@@ -701,7 +701,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Private Sub ReceiveUserAuthenticationBegin(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveUserAuthenticationBegin(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
@@ -729,7 +729,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Private Sub ReceiveUserAuthenticationFinish(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveUserAuthenticationFinish(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
@@ -768,7 +768,7 @@ Namespace Bnet
             End Try
         End Sub
 
-        Private Sub ReceiveEnterChat(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveEnterChat(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Logger.Log("Entered chat", LogMessageType.Typical)
@@ -842,7 +842,7 @@ Namespace Bnet
 #End Region
 
 #Region "Networking (Misc)"
-        Private Sub ReceiveChatEvent(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveChatEvent(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Dim eventId = CType(vals("event id"), Protocol.ChatEventId)
@@ -855,7 +855,7 @@ Namespace Bnet
             SendPacket(Protocol.MakePing(salt:=value.Value))
         End Sub
 
-        Private Sub ReceiveMessageBox(ByVal value As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveMessageBox(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
             Dim msg = "MESSAGE BOX FROM BNET: " + CStr(vals("caption")) + ": " + CStr(vals("text"))

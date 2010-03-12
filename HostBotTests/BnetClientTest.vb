@@ -72,7 +72,7 @@ Public Class BnetClientTest
         stream.EnqueuedReadPacket(
             preheader:={&HFF, Protocol.PacketId.ProgramAuthenticationBegin},
             sizeByteCount:=2,
-            body:=Protocol.Packets.ServerToClient.ProgramAuthenticationBegin.Jar.Pack(New Dictionary(Of InvariantString, Object) From {
+            body:=Protocol.Packets.ServerToClient.ProgramAuthenticationBegin.Jar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"logon type", Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3},
                     {"server cd key salt", serverCdKeySalt},
                     {"udp value", 0},
@@ -80,7 +80,7 @@ Public Class BnetClientTest
                     {"revision check seed", "[not tested]"},
                     {"revision check challenge", "[not tested]"},
                     {"server signature", CByte(128).Range.ToReadableList}
-                }).Data)
+                })).Data)
 
         'program auth finish (C->S)
         packet = stream.RetrieveWritePacket()
@@ -102,10 +102,10 @@ Public Class BnetClientTest
         stream.EnqueuedReadPacket(
             preheader:={&HFF, Protocol.PacketId.ProgramAuthenticationFinish},
             sizeByteCount:=2,
-            body:=Protocol.Packets.ServerToClient.ProgramAuthenticationFinish.Jar.Pack(New Dictionary(Of InvariantString, Object) From {
+            body:=Protocol.Packets.ServerToClient.ProgramAuthenticationFinish.Jar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"result", Protocol.ProgramAuthenticationFinishResult.Passed},
                     {"info", ""}
-                }).Data)
+                })).Data)
         WaitUntilTaskSucceeds(fConnect)
         Dim credentials = New Bnet.ClientCredentials(profile.userName, profile.password, privateKey:=2)
         client.QueueLogOn(credentials)
@@ -123,11 +123,11 @@ Public Class BnetClientTest
         stream.EnqueuedReadPacket(
             preheader:={&HFF, Protocol.PacketId.UserAuthenticationBegin},
             sizeByteCount:=2,
-            body:=Protocol.Packets.ServerToClient.UserAuthenticationBegin.Jar.Pack(New Dictionary(Of InvariantString, Object) From {
+            body:=Protocol.Packets.ServerToClient.UserAuthenticationBegin.Jar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"result", Protocol.UserAuthenticationBeginResult.Passed},
                     {"account password salt", accountSalt},
                     {"server public key", serverPublicKey}
-                }).Data)
+                })).Data)
 
         'user auth finish (C->S)
         packet = stream.RetrieveWritePacket()
@@ -138,11 +138,11 @@ Public Class BnetClientTest
         stream.EnqueuedReadPacket(
             preheader:={&HFF, Protocol.PacketId.UserAuthenticationFinish},
             sizeByteCount:=2,
-            body:=Protocol.Packets.ServerToClient.UserAuthenticationFinish.Jar.Pack(New Dictionary(Of InvariantString, Object) From {
+            body:=Protocol.Packets.ServerToClient.UserAuthenticationFinish.Jar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"result", Protocol.UserAuthenticationFinishResult.Passed},
                     {"server password proof", credentials.ServerPasswordProof(accountSalt, serverPublicKey)},
                     {"custom error info", Tuple.Create(False, CStr(Nothing))}
-                }).Data)
+                })).Data)
 
         'clan info (S->C)
         stream.EnqueueRead({&HFF, &H75, &HA, &H0, &H0, &H44, &H45, &H6F, &H47, &H2})

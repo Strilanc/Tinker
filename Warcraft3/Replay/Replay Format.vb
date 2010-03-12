@@ -84,10 +84,10 @@ Namespace WC3.Replay
                 New UInt32Jar().Named("unknown"))
         Public Shared ReadOnly ReplayEntryGameStarted As New TupleJar(
                 New UInt32Jar().Named("unknown"))
-        Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of Dictionary(Of InvariantString, Object)) = MakeTextJar()
-        Private Shared Function MakeTextJar() As IJar(Of Dictionary(Of InvariantString, Object))
-            Contract.Ensures(Contract.Result(Of IJar(Of Dictionary(Of InvariantString, Object)))() IsNot Nothing)
-            Dim jar = New InteriorSwitchJar(Of WC3.Protocol.ChatType, Dictionary(Of InvariantString, Object))(
+        Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of NamedValueMap) = MakeTextJar()
+        Private Shared Function MakeTextJar() As IJar(Of NamedValueMap)
+            Contract.Ensures(Contract.Result(Of IJar(Of NamedValueMap))() IsNot Nothing)
+            Dim jar = New InteriorSwitchJar(Of WC3.Protocol.ChatType, NamedValueMap)(
                     valueKeyExtractor:=Function(val) CType(val("type"), WC3.Protocol.ChatType),
                     dataKeyExtractor:=Function(data) CType(data(3), WC3.Protocol.ChatType))
             jar.AddPackerParser(WC3.Protocol.ChatType.Game, New TupleJar(
@@ -114,8 +114,8 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryTournamentForcedCountdown As New TupleJar(
                 New UInt32Jar().Named("counter state"),
                 New UInt32Jar().Named("counter time"))
-        Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of Dictionary(Of InvariantString, Object)) = WC3.Protocol.Packets.LobbyState.Jar
-        Public Shared ReadOnly ReplayEntryTick As IJar(Of Dictionary(Of InvariantString, Object)) = New TupleJar(
+        Public Shared ReadOnly ReplayEntryLobbyState As IJar(Of NamedValueMap) = WC3.Protocol.Packets.LobbyState.Jar
+        Public Shared ReadOnly ReplayEntryTick As IJar(Of NamedValueMap) = New TupleJar(
                 New UInt16Jar().Named("time span"),
                 New Protocol.PlayerActionSetJar().Repeated.Named("player action sets")
             ).DataSizePrefixed(prefixSize:=2)

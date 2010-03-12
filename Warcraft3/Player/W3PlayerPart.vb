@@ -2,15 +2,14 @@ Imports Tinker.Pickling
 
 Namespace WC3
     Partial Public NotInheritable Class Player
-        Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As Dictionary(Of InvariantString, Object))
+        Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As NamedValueMap)
 
-        Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
-            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
-            RaiseEvent ReceivedNonGameAction(Me, vals)
+            RaiseEvent ReceivedNonGameAction(Me, pickle.Value)
         End Sub
 
-        Private Sub IgnorePacket(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub IgnorePacket(ByVal pickle As IPickle(Of NamedValueMap))
         End Sub
 
         Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Protocol.PlayerLeaveReason))

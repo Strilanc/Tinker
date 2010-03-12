@@ -1,7 +1,7 @@
 Namespace Pickling
     '''<summary>Pickles tuples of values as dictionaries keyed by jar name.</summary>
     Public Class TupleJar
-        Inherits BaseJar(Of Dictionary(Of InvariantString, Object))
+        Inherits BaseJar(Of NamedValueMap)
 
         Private ReadOnly _subJars As IEnumerable(Of ISimpleNamedJar)
         Private ReadOnly _useSingleLineDescription As Boolean
@@ -21,9 +21,9 @@ Namespace Pickling
             Contract.Requires(subJars IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(Of TValue As Dictionary(Of InvariantString, Object))(ByVal value As TValue) As IPickle(Of TValue)
+        Public Overrides Function Pack(Of TValue As NamedValueMap)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            If value.Keys.Count > _subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
+            If value.Count > _subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
 
             'Pack
             Dim pickles = New List(Of IPickle(Of Object))
@@ -37,7 +37,7 @@ Namespace Pickling
                                  Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Dictionary(Of InvariantString, Object))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of NamedValueMap)
             'Parse
             Dim vals = New Dictionary(Of InvariantString, Object)
             Dim pickles = New List(Of ISimplePickle)
@@ -57,8 +57,7 @@ Namespace Pickling
             Next j
 
             Dim datum = data.SubView(0, curOffset)
-            Return vals.Pickled(datum,
-                                Function() pickles.MakeListDescription(_useSingleLineDescription))
+            Return New NamedValueMap(vals).Pickled(datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
     End Class
 End Namespace

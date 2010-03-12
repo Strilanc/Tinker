@@ -7,13 +7,13 @@ Namespace Pickling
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_minCharCount >= 0)
-            Contract.Invariant(Not _maxCharCount.HasValue OrElse _maxCharCount.Value >= _minCharCount)
+            'Contract.Invariant(Not _maxCharCount.HasValue OrElse _maxCharCount.Value >= _minCharCount)
         End Sub
 
         Public Sub New(Optional ByVal minCharCount As Integer = 0,
                        Optional ByVal maxCharCount As Integer? = Nothing)
             Contract.Requires(minCharCount >= 0)
-            Contract.Requires(Not maxCharCount.HasValue OrElse maxCharCount.Value >= minCharCount)
+            Contract.Assume(Not maxCharCount.HasValue OrElse maxCharCount.Value >= minCharCount)
             Me._minCharCount = minCharCount
             Me._maxCharCount = maxCharCount
         End Sub

@@ -3,7 +3,6 @@ Namespace Pickling
         Implements ISimpleJar
 
         Public Function Pack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
-            Contract.Assume(value IsNot Nothing)
             Return value.Pickled(New Byte() {}.AsReadableList, Function() "[No Data]")
         End Function
 

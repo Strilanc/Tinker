@@ -186,7 +186,7 @@ Namespace WC3.Download
 #End Region
 
 #Region "Communication-Triggered"
-        Private Function QueueOnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object))) As Task
+        Private Function QueueOnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of NamedValueMap)) As Task
             Contract.Requires(player IsNot Nothing)
             Contract.Requires(pickle IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)

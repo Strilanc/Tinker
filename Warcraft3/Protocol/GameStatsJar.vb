@@ -85,7 +85,7 @@ Namespace WC3.Protocol
             If value.AllowFullSharedControl Then settings = settings Or GameSettings.OptionAllowFullSharedControl
 
             'Pack
-            Dim rawPickle = DataJar.Pack(New Dictionary(Of InvariantString, Object) From {
+            Dim rawPickle = DataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"playable width", value.PlayableWidth},
                     {"playable height", value.PlayableHeight},
                     {"settings", settings},
@@ -94,8 +94,7 @@ Namespace WC3.Protocol
                     {"relative path", value.AdvertisedPath.ToString},
                     {"host name", value.HostName.ToString},
                     {"unknown1", 0},
-                    {"unknown2", ""}
-                })
+                    {"unknown2", ""}}))
             Dim data = EncodeStatStringData(rawPickle.Data).Append(0).ToReadableList
             Return value.Pickled(data, rawPickle.Description)
         End Function
@@ -106,7 +105,7 @@ Namespace WC3.Protocol
             Contract.Assume(p < data.Count)
             Dim datum = data.SubView(0, p + 1)
             Dim pickle = DataJar.Parse(DecodeStatStringData(datum).ToReadableList)
-            Dim vals = CType(pickle.Value, Dictionary(Of InvariantString, Object))
+            Dim vals = pickle.Value
 
             'Decode settings
             Dim settings = CType(CUInt(vals("settings")), GameSettings)

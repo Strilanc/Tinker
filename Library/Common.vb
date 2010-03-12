@@ -168,24 +168,28 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
+    <ContractVerification(False)>
     Public Function Bits(ByVal value As UInt64) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 64)
         Return From i In 64.Range Select value.HasBitSet(i)
     End Function
     <Extension()> <Pure()>
+    <ContractVerification(False)>
     Public Function Bits(ByVal value As UInt32) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 32)
         Return From i In 32.Range Select value.HasBitSet(i)
     End Function
     <Extension()> <Pure()>
+    <ContractVerification(False)>
     Public Function Bits(ByVal value As UInt16) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 16)
         Return From i In 16.Range Select value.HasBitSet(i)
     End Function
     <Extension()> <Pure()>
+    <ContractVerification(False)>
     Public Function Bits(ByVal value As Byte) As IEnumerable(Of Boolean)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IEnumerable(Of Boolean))().Count = 8)

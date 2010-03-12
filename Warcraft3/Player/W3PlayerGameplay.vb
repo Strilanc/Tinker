@@ -66,7 +66,7 @@ Namespace WC3
             Contract.Requires(pickle IsNot Nothing)
             outQueue.QueueAction(Sub() RaiseEvent ReceivedGameActions(Me, pickle.Value))
         End Sub
-        Private Sub ReceiveTock(ByVal pickle As IPickle(Of Dictionary(Of InvariantString, Object)))
+        Private Sub ReceiveTock(ByVal pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
             If tickQueue.Count <= 0 Then
                 logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(Name), LogMessageType.Problem)
