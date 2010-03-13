@@ -322,7 +322,7 @@ Namespace WC3.Protocol
         End Sub
         Public Const PacketPrefix As Byte = &HF7
 
-        Public Class Definition
+        Public MustInherit Class Definition
             Private ReadOnly _id As PacketId
             Private ReadOnly _jar As ISimpleJar
 
@@ -370,9 +370,6 @@ Namespace WC3.Protocol
             End Property
         End Class
 
-        Private Shared Function Define(ByVal id As PacketId) As Definition
-            Return New Definition(id, New EmptyJar())
-        End Function
         Private Shared Function Define(Of T)(ByVal id As PacketId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
@@ -455,9 +452,12 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly OtherPlayerReady As Definition(Of PlayerId) = Define(PacketId.OtherPlayerReady,
                 New PlayerIdJar().Named("readied player"))
-        Public Shared ReadOnly StartLoading As Definition = Define(PacketId.StartLoading)
-        Public Shared ReadOnly StartCountdown As Definition = Define(PacketId.StartCountdown)
-        Public Shared ReadOnly Ready As Definition = Define(PacketId.Ready)
+        Public Shared ReadOnly StartLoading As Definition(Of Object) = Define(PacketId.StartLoading,
+                New EmptyJar())
+        Public Shared ReadOnly StartCountdown As Definition(Of Object) = Define(PacketId.StartCountdown,
+                New EmptyJar())
+        Public Shared ReadOnly Ready As Definition(Of Object) = Define(PacketId.Ready,
+                New EmptyJar())
         Public Shared ReadOnly LobbyState As Definition(Of NamedValueMap) = Define(PacketId.LobbyState,
                 New TupleJar(
                         New SlotJar().RepeatedWithCountPrefix(prefixSize:=1).Named("slots"),
@@ -516,7 +516,8 @@ Namespace WC3.Protocol
         Public Shared ReadOnly RemovePlayerFromLagScreen As Definition(Of NamedValueMap) = Define(PacketId.RemovePlayerFromLagScreen,
                 New PlayerIdJar().Named("lagger"),
                 New UInt32Jar().Named("marginal milliseconds used"))
-        Public Shared ReadOnly RequestDropLaggers As Definition = Define(PacketId.RequestDropLaggers)
+        Public Shared ReadOnly RequestDropLaggers As Definition(Of Object) = Define(PacketId.RequestDropLaggers,
+                New EmptyJar())
         Public Shared ReadOnly Tick As Definition(Of NamedValueMap) = Define(PacketId.Tick,
                 New UInt16Jar().Named("time span"),
                 New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Optional.Named("player action sets"))
@@ -527,8 +528,10 @@ Namespace WC3.Protocol
                 New GameActionJar().Repeated.CRC32ChecksumPrefixed.Named("actions"))
         Public Shared ReadOnly NewHost As Definition(Of PlayerId) = Define(PacketId.NewHost,
                 New PlayerIdJar().Named("player"))
-        Public Shared ReadOnly ClientConfirmHostLeaving As Definition = Define(PacketId.ClientConfirmHostLeaving)
-        Public Shared ReadOnly HostConfirmHostLeaving As Definition = Define(PacketId.HostConfirmHostLeaving)
+        Public Shared ReadOnly ClientConfirmHostLeaving As Definition(Of Object) = Define(PacketId.ClientConfirmHostLeaving,
+                New EmptyJar())
+        Public Shared ReadOnly HostConfirmHostLeaving As Definition(Of Object) = Define(PacketId.HostConfirmHostLeaving,
+                New EmptyJar())
 
         Public Shared ReadOnly LanRequestGame As Definition(Of NamedValueMap) = Define(PacketId.LanRequestGame,
                 New Bnet.Protocol.DwordStringJar().Named("product id"),
@@ -603,7 +606,8 @@ Namespace WC3.Protocol
         Public Shared ReadOnly TournamentCountdown As Definition(Of NamedValueMap) = Define(PacketId.TournamentCountdown,
                 New UInt32Jar().Named("unknown"),
                 New UInt32Jar().Named("time left"))
-        Public Shared ReadOnly GameEnd As Definition = Define(PacketId.GameEnd)
+        Public Shared ReadOnly GameEnd As Definition(Of Object) = Define(PacketId.GameEnd,
+                New EmptyJar())
         Public Shared ReadOnly EncryptedServerMeleeData As Definition(Of IReadableList(Of Byte)) = Define(PacketId.EncryptedServerMeleeData,
                 New DataJar().Named("encrypted data"))
         Public Shared ReadOnly EncryptedClientMeleeData As Definition(Of IReadableList(Of Byte)) = Define(PacketId.EncryptedClientMeleeData,

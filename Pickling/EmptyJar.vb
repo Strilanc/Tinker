@@ -1,12 +1,12 @@
 Namespace Pickling
     Public NotInheritable Class EmptyJar
-        Implements ISimpleJar
+        Inherits BaseJar(Of Object)
 
-        Public Function Pack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
+        Public Overrides Function Pack(Of TValue As Object)(ByVal value As TValue) As IPickle(Of TValue)
             Return value.Pickled(New Byte() {}.AsReadableList, Function() "[No Data]")
         End Function
 
-        Public Function Parse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
             Return New Pickle(Of Object)(New Object(), New Byte() {}.AsReadableList, New Lazy(Of String)(Function() "[No Data]"))
         End Function
     End Class

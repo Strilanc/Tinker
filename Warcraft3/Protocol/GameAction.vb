@@ -21,12 +21,6 @@ Namespace WC3.Protocol
             Contract.Requires(payload IsNot Nothing)
         End Sub
 
-        Public Shared Function FromEmpty(ByVal actionDefinition As GameActions.Definition) As GameAction
-            Contract.Requires(actionDefinition IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
-            If Not TypeOf actionDefinition.Jar Is EmptyJar Then Throw New ArgumentException("Packet definition isn't empty")
-            Return New GameAction(actionDefinition.Id, actionDefinition.Jar.Pack(New Object))
-        End Function
         Public Shared Function FromValue(Of T)(ByVal actionDefinition As GameActions.Definition(Of T),
                                                ByVal value As T) As GameAction
             Contract.Requires(actionDefinition IsNot Nothing)

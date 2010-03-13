@@ -15,12 +15,6 @@ Namespace WC3.Protocol
             Me._payload = payload
         End Sub
 
-        Public Shared Function FromEmpty(ByVal packetDefinition As Packets.Definition) As Packet
-            Contract.Requires(packetDefinition IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            If Not TypeOf packetDefinition.Jar Is EmptyJar Then Throw New ArgumentException("Packet definition isn't empty")
-            Return New Packet(packetDefinition.Id, packetDefinition.Jar.Pack(New Object))
-        End Function
         Public Shared Function FromValue(Of T)(ByVal packetDefinition As Packets.Definition(Of T),
                                                ByVal value As T) As Packet
             Contract.Requires(packetDefinition IsNot Nothing)

@@ -133,17 +133,17 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeStartCountdown() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromEmpty(Packets.StartCountdown)
+            Return Packet.FromValue(Packets.StartCountdown, New Object)
         End Function
         <Pure()>
         Public Function MakeStartLoading() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromEmpty(Packets.StartLoading)
+            Return Packet.FromValue(Packets.StartLoading, New Object)
         End Function
         <Pure()>
         Public Function MakeHostConfirmHostLeaving() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromEmpty(Packets.HostConfirmHostLeaving)
+            Return Packet.FromValue(Packets.HostConfirmHostLeaving, New Object)
         End Function
         <Pure()>
         Public Function MakeTick(ByVal timeSpan As UShort,
@@ -285,7 +285,7 @@ Namespace WC3.Protocol
         <Pure()>
         Public Function MakeReady() As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromEmpty(Packets.Ready)
+            Return Packet.FromValue(Packets.Ready, New Object)
         End Function
         <Pure()>
         Public Function MakePong(ByVal salt As UInteger) As Packet

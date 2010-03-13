@@ -244,7 +244,7 @@ Namespace WC3.Protocol
             End Get
         End Property
 
-        Public Class Definition
+        Public MustInherit Class Definition
             Private ReadOnly _id As GameActionId
             Private ReadOnly _jar As ISimpleJar
 
@@ -298,10 +298,6 @@ Namespace WC3.Protocol
             _allDefinitions.Add(def)
             Return def
         End Function
-        Private Shared Function Define(ByVal id As GameActionId) As Definition
-            Contract.Ensures(Contract.Result(Of Definition)() IsNot Nothing)
-            Return IncludeDefinitionInAll(New Definition(id, New EmptyJar()))
-        End Function
         Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
@@ -318,10 +314,14 @@ Namespace WC3.Protocol
             Return Define(id, New TupleJar(jars.Prepend(jar1, jar2).ToArray))
         End Function
 
-        Public Shared ReadOnly DecreaseGameSpeed As Definition = Define(GameActionId.DecreaseGameSpeed)
-        Public Shared ReadOnly IncreaseGameSpeed As Definition = Define(GameActionId.IncreaseGameSpeed)
-        Public Shared ReadOnly PauseGame As Definition = Define(GameActionId.PauseGame)
-        Public Shared ReadOnly ResumeGame As Definition = Define(GameActionId.ResumeGame)
+        Public Shared ReadOnly DecreaseGameSpeed As Definition(Of Object) = Define(GameActionId.DecreaseGameSpeed,
+                    New EmptyJar())
+        Public Shared ReadOnly IncreaseGameSpeed As Definition(Of Object) = Define(GameActionId.IncreaseGameSpeed,
+                    New EmptyJar())
+        Public Shared ReadOnly PauseGame As Definition(Of Object) = Define(GameActionId.PauseGame,
+                    New EmptyJar())
+        Public Shared ReadOnly ResumeGame As Definition(Of Object) = Define(GameActionId.ResumeGame,
+                    New EmptyJar())
         Public Shared ReadOnly SaveGameFinished As Definition(Of UInt32) = Define(GameActionId.SaveGameFinished,
                     New UInt32Jar().Named("unknown"))
         Public Shared ReadOnly SaveGameStarted As Definition(Of String) = Define(GameActionId.SaveGameStarted,
@@ -366,9 +366,12 @@ Namespace WC3.Protocol
                     New Float32Jar().Named("target x"),
                     New Float32Jar().Named("target y"))
 
-        Public Shared ReadOnly EnterChooseHeroSkillSubmenu As Definition = Define(GameActionId.EnterChooseHeroSkillSubmenu)
-        Public Shared ReadOnly EnterChooseBuildingSubmenu As Definition = Define(GameActionId.EnterChooseBuildingSubmenu)
-        Public Shared ReadOnly PressedEscape As Definition = Define(GameActionId.PressedEscape)
+        Public Shared ReadOnly EnterChooseHeroSkillSubmenu As Definition(Of Object) = Define(GameActionId.EnterChooseHeroSkillSubmenu,
+                    New EmptyJar())
+        Public Shared ReadOnly EnterChooseBuildingSubmenu As Definition(Of Object) = Define(GameActionId.EnterChooseBuildingSubmenu,
+                    New EmptyJar())
+        Public Shared ReadOnly PressedEscape As Definition(Of Object) = Define(GameActionId.PressedEscape,
+                    New EmptyJar())
         Public Shared ReadOnly CancelHeroRevive As Definition(Of GameObjectId) = Define(GameActionId.CancelHeroRevive,
                     New GameObjectIdJar().Named("target"))
         Public Shared ReadOnly DequeueBuildingOrder As Definition(Of NamedValueMap) = Define(GameActionId.DequeueBuildingOrder,
@@ -393,7 +396,8 @@ Namespace WC3.Protocol
         Public Shared ReadOnly ChangeSelection As Definition(Of NamedValueMap) = Define(GameActionId.ChangeSelection,
                     New EnumByteJar(Of SelectionOperation)().Named("operation"),
                     New GameObjectIdJar().RepeatedWithCountPrefix(prefixSize:=2).Named("targets"))
-        Public Shared ReadOnly PreSubGroupSelection As Definition = Define(GameActionId.PreSubGroupSelection)
+        Public Shared ReadOnly PreSubGroupSelection As Definition(Of Object) = Define(GameActionId.PreSubGroupSelection,
+                    New EmptyJar())
         Public Shared ReadOnly SelectGroundItem As Definition(Of NamedValueMap) = Define(GameActionId.SelectGroundItem,
                     New ByteJar().Named("unknown"),
                     New GameObjectIdJar().Named("target"))
@@ -404,31 +408,45 @@ Namespace WC3.Protocol
                     New ObjectTypeJar().Named("unit type"),
                     New GameObjectIdJar().Named("target"))
 
-        Public Shared ReadOnly CheatDisableTechRequirements As Definition = Define(GameActionId.CheatDisableTechRequirements)
-        Public Shared ReadOnly CheatDisableVictoryConditions As Definition = Define(GameActionId.CheatDisableVictoryConditions)
-        Public Shared ReadOnly CheatEnableResearch As Definition = Define(GameActionId.CheatEnableResearch)
-        Public Shared ReadOnly CheatFastCooldown As Definition = Define(GameActionId.CheatFastCooldown)
-        Public Shared ReadOnly CheatFastDeathDecay As Definition = Define(GameActionId.CheatFastDeathDecay)
-        Public Shared ReadOnly CheatGodMode As Definition = Define(GameActionId.CheatGodMode)
+        Public Shared ReadOnly CheatDisableTechRequirements As Definition(Of Object) = Define(GameActionId.CheatDisableTechRequirements,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatDisableVictoryConditions As Definition(Of Object) = Define(GameActionId.CheatDisableVictoryConditions,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatEnableResearch As Definition(Of Object) = Define(GameActionId.CheatEnableResearch,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatFastCooldown As Definition(Of Object) = Define(GameActionId.CheatFastCooldown,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatFastDeathDecay As Definition(Of Object) = Define(GameActionId.CheatFastDeathDecay,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatGodMode As Definition(Of Object) = Define(GameActionId.CheatGodMode,
+                    New EmptyJar())
         Public Shared ReadOnly CheatGold As Definition(Of NamedValueMap) = Define(GameActionId.CheatGold,
                     New ByteJar().Named("unknown"),
                     New UInt32Jar().Named("amount"))
         Public Shared ReadOnly CheatGoldAndLumber As Definition(Of NamedValueMap) = Define(GameActionId.CheatGoldAndLumber,
                     New ByteJar().Named("unknown"),
                     New UInt32Jar().Named("amount"))
-        Public Shared ReadOnly CheatInstantDefeat As Definition = Define(GameActionId.CheatInstantDefeat)
-        Public Shared ReadOnly CheatInstantVictory As Definition = Define(GameActionId.CheatInstantVictory)
+        Public Shared ReadOnly CheatInstantDefeat As Definition(Of Object) = Define(GameActionId.CheatInstantDefeat,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatInstantVictory As Definition(Of Object) = Define(GameActionId.CheatInstantVictory,
+                    New EmptyJar())
         Public Shared ReadOnly CheatLumber As Definition(Of NamedValueMap) = Define(GameActionId.CheatLumber,
                     New ByteJar().Named("unknown"),
                     New UInt32Jar().Named("amount"))
-        Public Shared ReadOnly CheatNoDefeat As Definition = Define(GameActionId.CheatNoDefeat)
-        Public Shared ReadOnly CheatNoFoodLimit As Definition = Define(GameActionId.CheatNoFoodLimit)
-        Public Shared ReadOnly CheatRemoveFogOfWar As Definition = Define(GameActionId.CheatRemoveFogOfWar)
-        Public Shared ReadOnly CheatResearchUpgrades As Definition = Define(GameActionId.CheatResearchUpgrades)
+        Public Shared ReadOnly CheatNoDefeat As Definition(Of Object) = Define(GameActionId.CheatNoDefeat,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatNoFoodLimit As Definition(Of Object) = Define(GameActionId.CheatNoFoodLimit,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatRemoveFogOfWar As Definition(Of Object) = Define(GameActionId.CheatRemoveFogOfWar,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatResearchUpgrades As Definition(Of Object) = Define(GameActionId.CheatResearchUpgrades,
+                    New EmptyJar())
         Public Shared ReadOnly CheatSetTimeOfDay As Definition(Of Single) = Define(GameActionId.CheatSetTimeOfDay,
                     New Float32Jar().Named("time"))
-        Public Shared ReadOnly CheatSpeedConstruction As Definition = Define(GameActionId.CheatSpeedConstruction)
-        Public Shared ReadOnly CheatUnlimitedMana As Definition = Define(GameActionId.CheatUnlimitedMana)
+        Public Shared ReadOnly CheatSpeedConstruction As Definition(Of Object) = Define(GameActionId.CheatSpeedConstruction,
+                    New EmptyJar())
+        Public Shared ReadOnly CheatUnlimitedMana As Definition(Of Object) = Define(GameActionId.CheatUnlimitedMana,
+                    New EmptyJar())
 
         Public Shared ReadOnly TriggerArrowKeyEvent As Definition(Of ArrowKeyEvent) = Define(GameActionId.TriggerArrowKeyEvent,
                     New EnumByteJar(Of ArrowKeyEvent)().Named("event type"))
