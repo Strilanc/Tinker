@@ -381,9 +381,9 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
         Using sha = New System.Security.Cryptography.SHA1Managed()
-            Dim hash = sha.ComputeHash(MPQ.Library.AsStream(data.GetEnumerator).AsStream)
+            Dim hash = sha.ComputeHash(data.AsReadableStream.AsStream)
             Contract.Assume(hash IsNot Nothing)
-            Dim result = hash.AsReadableList()
+            Dim result = hash.AsReadableList
             Contract.Assume(result.Count = 20)
             Return result
         End Using
@@ -415,21 +415,6 @@ Public Module PoorlyCategorizedFunctions
 
         Return xorTable
     End Function
-    <Extension()> <Pure()>
-    Public Function CRC32(ByVal data As IEnumerable(Of Byte),
-                          Optional ByVal poly As UInteger = &H4C11DB7,
-                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
-        Contract.Requires(data IsNot Nothing)
-        Dim xorTable = CRC32Table(poly, polyAlreadyReversed)
-
-        'Direct Table Algorithm
-        Dim result = UInteger.MaxValue
-        For Each e In data
-            result = (result >> 8) Xor xorTable(e Xor CByte(result And &HFFUI))
-        Next e
-
-        Return Not result
-    End Function
     <Extension()>
     Public Function CRC32(ByVal data As IReadableStream,
                           Optional ByVal poly As UInteger = &H4C11DB7,
@@ -441,13 +426,20 @@ Public Module PoorlyCategorizedFunctions
         Dim result = UInteger.MaxValue
         Do
             Dim block = data.Read(1024)
-            If block.Count = 0 Then Return result
+            If block.Count = 0 Then Exit Do
             For Each e In block
                 result = (result >> 8) Xor xorTable(e Xor CByte(result And &HFFUI))
             Next e
         Loop
 
         Return Not result
+    End Function
+    <Extension()> <Pure()>
+    Public Function CRC32(ByVal data As IEnumerable(Of Byte),
+                          Optional ByVal poly As UInteger = &H4C11DB7,
+                          Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
+        Contract.Requires(data IsNot Nothing)
+        Return data.AsReadableStream.CRC32
     End Function
 
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>

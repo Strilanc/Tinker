@@ -1,6 +1,6 @@
 Namespace WC3
     Public NotInheritable Class Map
-        Private ReadOnly _streamFactory As Func(Of IRandomReadableStream)
+        Private ReadOnly _streamFactory As Func(Of NonNull(Of IRandomReadableStream))
         Private ReadOnly _advertisedPath As InvariantString
         Private ReadOnly _fileSize As UInteger
         Private ReadOnly _fileChecksumCRC32 As UInt32
@@ -26,7 +26,7 @@ Namespace WC3
             Contract.Invariant(_playableHeight > 0)
         End Sub
 
-        Public Sub New(ByVal streamFactory As Func(Of IRandomReadableStream),
+        Public Sub New(ByVal streamFactory As Func(Of NonNull(Of IRandomReadableStream)),
                        ByVal advertisedPath As InvariantString,
                        ByVal fileSize As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
@@ -68,7 +68,7 @@ Namespace WC3
                                         ByVal wc3MapFolder As InvariantString,
                                         ByVal wc3PatchMPQFolder As InvariantString) As Map
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
-            Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream
+            Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream.AsNonNull
             Dim mapArchive = MPQ.Archive.FromStreamFactory(factory)
             Dim war3PatchArchive = OpenWar3PatchArchive(wc3PatchMPQFolder)
             Dim info = ReadMapInfo(mapArchive)
@@ -82,7 +82,7 @@ Namespace WC3
                 relPath = IO.Path.GetFileName(relPath)
             End If
 
-            Using crcStream = factory()
+            Using crcStream = factory().Value
                 Return New Map(streamFactory:=factory,
                                AdvertisedPath:="Maps\" + relPath.ToString.Replace(IO.Path.DirectorySeparatorChar, "\"),
                                FileSize:=CUInt(crcStream.Length),
@@ -283,7 +283,7 @@ Namespace WC3
             If Not FileAvailable Then Throw New InvalidOperationException("Attempted to read map file data when no file available.")
             Contract.Assume(_streamFactory IsNot Nothing)
 
-            Using stream = _streamFactory()
+            Using stream = _streamFactory().Value
                 If stream Is Nothing Then Throw New InvalidStateException("Invalid steam factory.")
                 stream.Position = pos
                 Return stream.Read(CInt(size))
@@ -330,7 +330,7 @@ Namespace WC3
             Next filename
 
             'Magic value
-            streams.Add(New IO.MemoryStream(New Byte() {&H9E, &H37, &HF1, &H3}).AsReadableStream)
+            streams.Add(New Byte() {&H9E, &H37, &HF1, &H3}.AsReadableStream)
 
             'Important map files
             For Each fileset In {"war3map.j|scripts\war3map.j",

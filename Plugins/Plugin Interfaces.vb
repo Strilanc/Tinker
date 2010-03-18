@@ -30,7 +30,7 @@ Namespace Plugins
             End Sub
             Public ReadOnly Property Control As Control Implements IPlugin.Control
                 Get
-                    Contract.Requires(Me.HasControl)
+                    Contract.Requires(CType(Me, IPlugin).HasControl)
                     Contract.Ensures(Contract.Result(Of Control)() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get

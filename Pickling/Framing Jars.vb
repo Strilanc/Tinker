@@ -348,4 +348,32 @@
             Return pickle.Value.Pickled(datum, pickle.Description)
         End Function
     End Class
+
+    '''<summary>Pickles values with reversed data.</summary>
+    Public Class ReversedFramingJar(Of T)
+        Inherits BaseJar(Of T)
+
+        Private ReadOnly _subJar As IJar(Of T)
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_subJar IsNot Nothing)
+        End Sub
+
+        Public Sub New(ByVal subJar As IJar(Of T))
+            Contract.Requires(subJar IsNot Nothing)
+            Me._subJar = subJar
+        End Sub
+
+        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
+            Dim pickle = _subJar.Pack(value)
+            Dim data = pickle.Data.Reverse.ToReadableList
+            Return pickle.Value.Pickled(data, pickle.Description)
+        End Function
+
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+            Dim pickle = _subJar.Parse(data.Reverse.ToReadableList)
+            If pickle.Data.Count <> data.Count Then Throw New PicklingException("Leftover reversed data.")
+            Return pickle.Value.Pickled(data, pickle.Description)
+        End Function
+    End Class
 End Namespace

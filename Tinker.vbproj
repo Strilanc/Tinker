@@ -189,7 +189,6 @@
     <Compile Include="Bnet\Protocol\QueryGamesListResponseJar.vb" />
     <Compile Include="Bnet\Protocol\ProductCredentialsJar.vb" />
     <Compile Include="Bnet\Protocol\FileTimeJar.vb" />
-    <Compile Include="Bnet\Protocol\DwordStringJar.vb" />
     <Compile Include="Bnet\Protocol\TextHexValueJar.vb" />
     <Compile Include="Bnet\Product Credentials.vb" />
     <Compile Include="Bnet\Client Credentials.vb" />

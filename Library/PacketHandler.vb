@@ -76,7 +76,7 @@ Public MustInherit Class PacketHandler(Of TKey)
 
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As TKey
             Contract.Requires(header IsNot Nothing)
-            Contract.Requires(header.Count = HeaderSize)
+            Contract.Requires(header.Count = CType(Me, PacketHandler(Of TKey)).HeaderSize)
             Contract.Ensures(Contract.Result(Of TKey)() IsNot Nothing)
             Throw New NotSupportedException
         End Function

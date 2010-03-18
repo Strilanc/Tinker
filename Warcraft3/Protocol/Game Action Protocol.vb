@@ -325,7 +325,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly SaveGameFinished As Definition(Of UInt32) = Define(GameActionId.SaveGameFinished,
                     New UInt32Jar().Named("unknown"))
         Public Shared ReadOnly SaveGameStarted As Definition(Of String) = Define(GameActionId.SaveGameStarted,
-                    New StringJar().NullTerminated.Named("filename"))
+                    New UTF8Jar().NullTerminated.Named("filename"))
         Public Shared ReadOnly SetGameSpeed As Definition(Of GameSpeedSetting) = Define(GameActionId.SetGameSpeed,
                     New EnumByteJar(Of GameSpeedSetting)().Named("speed"))
 
@@ -452,7 +452,7 @@ Namespace WC3.Protocol
                     New EnumByteJar(Of ArrowKeyEvent)().Named("event type"))
         Public Shared ReadOnly TriggerChatEvent As Definition(Of NamedValueMap) = Define(GameActionId.TriggerChatEvent,
                     New GameObjectIdJar().Named("trigger event"),
-                    New StringJar().NullTerminated.Named("text"))
+                    New UTF8Jar().NullTerminated.Named("text"))
         Public Shared ReadOnly DialogAnyButtonClicked As Definition(Of NamedValueMap) = Define(GameActionId.DialogAnyButtonClicked,
                     New GameObjectIdJar().Named("dialog"),
                     New GameObjectIdJar().Named("button"))
@@ -471,24 +471,24 @@ Namespace WC3.Protocol
                     New UInt32Jar().Named("thread wait count"))
 
         Public Shared ReadOnly GameCacheSyncInteger As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncInteger,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"),
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"),
                     New UInt32Jar().Named("value"))
         Public Shared ReadOnly GameCacheSyncBoolean As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncBoolean,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"),
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"),
                     New UInt32Jar().Named("value"))
         Public Shared ReadOnly GameCacheSyncReal As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncReal,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"),
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"),
                     New Float32Jar().Named("value"))
         Public Shared ReadOnly GameCacheSyncUnit As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncUnit,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"),
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"),
                     New ObjectTypeJar().Named("unit type"),
                     New TupleJar(True,
                             New ObjectTypeJar().Named("item"),
@@ -522,32 +522,32 @@ Namespace WC3.Protocol
                     New UInt16Jar(showhex:=True).Named("hotkey flags"))
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         Public Shared ReadOnly GameCacheSyncString As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncString,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"),
-                    New StringJar().NullTerminated.Named("value"))
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"),
+                    New UTF8Jar().NullTerminated.Named("value"))
 
         Public Shared ReadOnly GameCacheSyncEmptyInteger As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyInteger,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"))
         Public Shared ReadOnly GameCacheSyncEmptyBoolean As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyBoolean,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"))
         Public Shared ReadOnly GameCacheSyncEmptyReal As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyReal,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"))
         Public Shared ReadOnly GameCacheSyncEmptyUnit As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyUnit,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"))
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         Public Shared ReadOnly GameCacheSyncEmptyString As Definition(Of NamedValueMap) = Define(GameActionId.GameCacheSyncEmptyString,
-                    New StringJar().NullTerminated.Named("filename"),
-                    New StringJar().NullTerminated.Named("mission key"),
-                    New StringJar().NullTerminated.Named("key"))
+                    New UTF8Jar().NullTerminated.Named("filename"),
+                    New UTF8Jar().NullTerminated.Named("mission key"),
+                    New UTF8Jar().NullTerminated.Named("key"))
 
         <Pure()>
         Public Shared Function TypeIdString(ByVal value As UInt32) As String

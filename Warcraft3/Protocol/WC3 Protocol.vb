@@ -405,7 +405,7 @@ Namespace WC3.Protocol
                 New ByteJar().Named("unknown value"),
                 New UInt16Jar().Named("listen port"),
                 New UInt32Jar(showhex:=True).Named("peer key"),
-                New StringJar().NullTerminated.Limited(maxDataCount:=MaxSerializedPlayerNameLength).Named("name"),
+                New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedPlayerNameLength).Named("name"),
                 New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data"),
                 New Bnet.Protocol.IPEndPointJar().Named("internal address"))
         Public Shared ReadOnly Greet As Definition(Of NamedValueMap) = Define(PacketId.Greet,
@@ -414,7 +414,7 @@ Namespace WC3.Protocol
                 New Bnet.Protocol.IPEndPointJar().Named("external address"))
         Public Shared ReadOnly HostMapInfo As Definition(Of NamedValueMap) = Define(PacketId.HostMapInfo,
                 New UInt32Jar().Named("map transfer key"),
-                New StringJar().NullTerminated.Named("path"),
+                New UTF8Jar().NullTerminated.Named("path"),
                 New UInt32Jar().Named("size"),
                 New UInt32Jar(showhex:=True).Named("crc32"),
                 New UInt32Jar(showhex:=True).Named("xoro checksum"),
@@ -424,7 +424,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly OtherPlayerJoined As Definition(Of NamedValueMap) = Define(PacketId.OtherPlayerJoined,
                 New UInt32Jar(showhex:=True).Named("peer key"),
                 New PlayerIdJar().Named("joiner id"),
-                New StringJar().NullTerminated.Limited(maxDataCount:=MaxSerializedPlayerNameLength).Named("name"),
+                New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedPlayerNameLength).Named("name"),
                 New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data"),
                 New Bnet.Protocol.IPEndPointJar().Named("external address"),
                 New Bnet.Protocol.IPEndPointJar().Named("internal address"))
@@ -441,12 +441,12 @@ Namespace WC3.Protocol
                     New PlayerIdJar().Named("speaker"),
                     New EnumByteJar(Of ChatType)().Named("type"),
                     New EnumUInt32Jar(Of ChatGroup)(checkDefined:=False).Named("receiving group"),
-                    New StringJar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
+                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
             jar.AddPackerParser(ChatType.Lobby, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("speaker"),
                     New EnumByteJar(Of ChatType)().Named("type"),
-                    New StringJar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
+                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
             Return jar
         End Function
 
@@ -479,12 +479,12 @@ Namespace WC3.Protocol
                     New PlayerIdJar().Named("speaker"),
                     New EnumByteJar(Of NonGameAction)().Named("command type"),
                     New EnumUInt32Jar(Of ChatGroup)().Named("receiving group"),
-                    New StringJar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
+                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
             commandJar.AddPackerParser(Protocol.NonGameAction.LobbyChat, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("speaker"),
                     New EnumByteJar(Of NonGameAction)().Named("command type"),
-                    New StringJar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
+                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
             commandJar.AddPackerParser(Protocol.NonGameAction.SetTeam, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("sender"),
@@ -534,7 +534,7 @@ Namespace WC3.Protocol
                 New EmptyJar())
 
         Public Shared ReadOnly LanRequestGame As Definition(Of NamedValueMap) = Define(PacketId.LanRequestGame,
-                New Bnet.Protocol.DwordStringJar().Named("product id"),
+                New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("product id"),
                 New UInt32Jar().Named("major version"),
                 New UInt32Jar().Named("unknown1"))
         Public Shared ReadOnly LanRefreshGame As Definition(Of NamedValueMap) = Define(PacketId.LanRefreshGame,
@@ -542,18 +542,18 @@ Namespace WC3.Protocol
                 New UInt32Jar().Named("num players"),
                 New UInt32Jar().Named("free slots"))
         Public Shared ReadOnly LanCreateGame As Definition(Of NamedValueMap) = Define(PacketId.LanCreateGame,
-                New Bnet.Protocol.DwordStringJar().Named("product id"),
+                New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("product id"),
                 New UInt32Jar().Named("major version"),
                 New UInt32Jar().Named("game id"))
         Public Shared ReadOnly LanDestroyGame As Definition(Of UInt32) = Define(PacketId.LanDestroyGame,
                 New UInt32Jar().Named("game id"))
         Public Shared ReadOnly LanGameDetails As Definition(Of NamedValueMap) = Define(PacketId.LanGameDetails,
-                New Bnet.Protocol.DwordStringJar().Named("product id"),
+                New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("product id"),
                 New UInt32Jar().Named("major version"),
                 New UInt32Jar().Named("game id"),
                 New UInt32Jar(showhex:=True).Named("entry key"),
-                New StringJar().NullTerminated.Named("name"),
-                New StringJar().NullTerminated.Named("password"),
+                New UTF8Jar().NullTerminated.Named("name"),
+                New UTF8Jar().NullTerminated.Named("password"),
                 New GameStatsJar().Named("statstring"),
                 New UInt32Jar().Named("num slots"),
                 New EnumUInt32Jar(Of GameTypes)().Named("game type"),

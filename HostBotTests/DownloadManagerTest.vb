@@ -17,7 +17,7 @@ Public Class DownloadManagerTest
         Private Shared ReadOnly _data As Byte() = CByte(1).Repeated(5000).ToArray
         Private ReadOnly _startPlayerHoldPoint As New HoldPoint(Of Download.IPlayerDownloadAspect)()
         Private Shared ReadOnly SharedMap As New Map(
-            streamFactory:=Function() New IO.MemoryStream(_data, writable:=False).AsRandomReadableStream,
+            streamFactory:=Function() New IO.MemoryStream(_data, writable:=False).AsRandomReadableStream.AsNonNull,
             advertisedPath:="TestMap",
             fileSize:=CUInt(_data.Length),
             fileChecksumCRC32:=_data.CRC32,

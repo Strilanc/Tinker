@@ -67,6 +67,7 @@
         End Class
 
 #Region "Framing Jars"
+        '''<summary>Frames a jar so that it uses a fixed amount of data.</summary>
         <Extension()> <Pure()>
         Public Function Fixed(Of T)(ByVal jar As IJar(Of T),
                                     ByVal exactDataCount As Integer) As FixedSizeFramingJar(Of T)
@@ -75,6 +76,7 @@
             Contract.Ensures(Contract.Result(Of FixedSizeFramingJar(Of T))() IsNot Nothing)
             Return New FixedSizeFramingJar(Of T)(subJar:=jar, dataSize:=exactDataCount)
         End Function
+        '''<summary>Frames a jar so that it uses a limited amount of data.</summary>
         <Extension()> <Pure()>
         Public Function Limited(Of T)(ByVal jar As IJar(Of T),
                                       ByVal maxDataCount As Integer) As LimitedSizeFramingJar(Of T)
@@ -83,12 +85,14 @@
             Contract.Ensures(Contract.Result(Of LimitedSizeFramingJar(Of T))() IsNot Nothing)
             Return New LimitedSizeFramingJar(Of T)(subJar:=jar, maxDataCount:=maxDataCount)
         End Function
+        '''<summary>Frames a jar so that it uses data terminated by a zero value.</summary>
         <Extension()> <Pure()>
         Public Function NullTerminated(Of T)(ByVal jar As IJar(Of T)) As NullTerminatedFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of NullTerminatedFramingJar(Of T))() IsNot Nothing)
             Return New NullTerminatedFramingJar(Of T)(subJar:=jar)
         End Function
+        '''<summary>Frames a jar so that it is repeatedly applied until there is no more data.</summary>
         <Extension()> <Pure()>
         Public Function Repeated(Of T)(ByVal jar As IJar(Of T),
                                        Optional ByVal useSingleLineDescription As Boolean = False) As RepeatedFramingJar(Of T)
@@ -96,6 +100,7 @@
             Contract.Ensures(Contract.Result(Of RepeatedFramingJar(Of T))() IsNot Nothing)
             Return New RepeatedFramingJar(Of T)(subJar:=jar, useSingleLineDescription:=useSingleLineDescription)
         End Function
+        '''<summary>Frames a jar so that it uses data prefixed by a size.</summary>
         <Extension()> <Pure()>
         Public Function DataSizePrefixed(Of T)(ByVal jar As IJar(Of T),
                                                ByVal prefixSize As Integer) As SizePrefixedFramingJar(Of T)
@@ -104,6 +109,7 @@
             Contract.Ensures(Contract.Result(Of SizePrefixedFramingJar(Of T))() IsNot Nothing)
             Return New SizePrefixedFramingJar(Of T)(subjar:=jar, prefixSize:=prefixSize)
         End Function
+        '''<summary>Frames a jar so that it uses data prefixed by a count.</summary>
         <Extension()> <Pure()>
         Public Function RepeatedWithCountPrefix(Of T)(ByVal jar As IJar(Of T),
                                                       ByVal prefixSize As Integer,
@@ -113,11 +119,19 @@
             Contract.Ensures(Contract.Result(Of ItemCountPrefixedFramingJar(Of T))() IsNot Nothing)
             Return New ItemCountPrefixedFramingJar(Of T)(jar, prefixSize, useSingleLineDescription)
         End Function
+        '''<summary>Frames a jar so that it is not used if there is no more data.</summary>
         <Extension()> <Pure()>
         Public Function [Optional](Of T)(ByVal jar As IJar(Of T)) As OptionalFramingJar(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of OptionalFramingJar(Of T))() IsNot Nothing)
             Return New OptionalFramingJar(Of T)(jar)
+        End Function
+        '''<summary>Frames a jar so that it uses reversed data.</summary>
+        <Extension()> <Pure()>
+        Public Function Reversed(Of T)(ByVal jar As IJar(Of T)) As ReversedFramingJar(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ReversedFramingJar(Of T))() IsNot Nothing)
+            Return New ReversedFramingJar(Of T)(subjar:=jar)
         End Function
         '''<summary>Prefixes serialized data with a crc32 checksum.</summary>
         '''<param name="prefixSize">Determines how many bytes of the crc32 are used (starting at index 0) (min 1, max 4).</param>
@@ -129,6 +143,7 @@
             Contract.Requires(prefixSize <= 4)
             Return New ChecksumPrefixedFramingJar(Of T)(jar, prefixSize, Function(data) data.CRC32.Bytes.Take(prefixSize).ToReadableList)
         End Function
+        '''<summary>Exposes the jar as an INamedJar with the given name.</summary>
         <Extension()> <Pure()>
         Public Function Named(Of T)(ByVal jar As IJar(Of T), ByVal name As InvariantString) As INamedJar(Of T)
             Contract.Requires(jar IsNot Nothing)

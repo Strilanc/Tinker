@@ -10,13 +10,6 @@ Imports Tinker.Bnet.Protocol
 <TestClass()>
 Public Class BnetProtocolJarsTest
     <TestMethod()>
-    Public Sub DwordStringJarTest()
-        Dim jar = New DwordStringJar()
-        JarTest(jar, "test", {Asc("t"), Asc("s"), Asc("e"), Asc("t")})
-        JarTest(jar, "a", {Asc("a"), 0, 0, 0})
-        ExpectException(Of PicklingException)(Sub() jar.Pack("12345"))
-    End Sub
-    <TestMethod()>
     Public Sub TextHexValueJarTest()
         Dim jar = New TextHexValueJar(digitCount:=8, ByteOrder:=ByteOrder.BigEndian)
         JarTest(jar, &HDEADBEEFUI, "deadbeef".ToAscBytes)
