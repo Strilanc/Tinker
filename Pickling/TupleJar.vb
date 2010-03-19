@@ -26,7 +26,7 @@ Namespace Pickling
             If value.Count > _subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
 
             'Pack
-            Dim pickles = New List(Of IPickle(Of Object))
+            Dim pickles = New List(Of ISimplePickle)
             For Each subJar In _subJars
                 Contract.Assume(subJar IsNot Nothing)
                 If Not value.ContainsKey(subJar.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(subJar.Name))

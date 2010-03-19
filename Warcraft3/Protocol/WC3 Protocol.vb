@@ -436,13 +436,13 @@ Namespace WC3.Protocol
             Dim jar = New InteriorSwitchJar(Of ChatType, NamedValueMap)(
                     valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
                     dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType))
-            jar.AddPackerParser(ChatType.Game, New TupleJar(
+            jar.AddSubJar(ChatType.Game, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("speaker"),
                     New EnumByteJar(Of ChatType)().Named("type"),
                     New EnumUInt32Jar(Of ChatGroup)(checkDefined:=False).Named("receiving group"),
                     New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
-            jar.AddPackerParser(ChatType.Lobby, New TupleJar(
+            jar.AddSubJar(ChatType.Lobby, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("speaker"),
                     New EnumByteJar(Of ChatType)().Named("type"),
@@ -474,33 +474,33 @@ Namespace WC3.Protocol
             Dim commandJar = New InteriorSwitchJar(Of NonGameAction, NamedValueMap)(
                     Function(val) CType(val("command type"), NonGameAction),
                     Function(data) CType(data(data(0) + 2), NonGameAction))
-            commandJar.AddPackerParser(Protocol.NonGameAction.GameChat, New TupleJar(
+            commandJar.AddSubJar(Protocol.NonGameAction.GameChat, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("speaker"),
                     New EnumByteJar(Of NonGameAction)().Named("command type"),
                     New EnumUInt32Jar(Of ChatGroup)().Named("receiving group"),
                     New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
-            commandJar.AddPackerParser(Protocol.NonGameAction.LobbyChat, New TupleJar(
+            commandJar.AddSubJar(Protocol.NonGameAction.LobbyChat, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("speaker"),
                     New EnumByteJar(Of NonGameAction)().Named("command type"),
                     New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
-            commandJar.AddPackerParser(Protocol.NonGameAction.SetTeam, New TupleJar(
+            commandJar.AddSubJar(Protocol.NonGameAction.SetTeam, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("sender"),
                     New EnumByteJar(Of NonGameAction)().Named("command type"),
                     New ByteJar().Named("new value")))
-            commandJar.AddPackerParser(Protocol.NonGameAction.SetHandicap, New TupleJar(
+            commandJar.AddSubJar(Protocol.NonGameAction.SetHandicap, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("sender"),
                     New EnumByteJar(Of NonGameAction)().Named("command type"),
                     New ByteJar().Named("new value")))
-            commandJar.AddPackerParser(Protocol.NonGameAction.SetRace, New TupleJar(
+            commandJar.AddSubJar(Protocol.NonGameAction.SetRace, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("sender"),
                     New EnumByteJar(Of NonGameAction)().Named("command type"),
                     New EnumByteJar(Of Protocol.Races)().Named("new value")))
-            commandJar.AddPackerParser(Protocol.NonGameAction.SetColor, New TupleJar(
+            commandJar.AddSubJar(Protocol.NonGameAction.SetColor, New TupleJar(
                     New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
                     New PlayerIdJar().Named("sender"),
                     New EnumByteJar(Of NonGameAction)().Named("command type"),

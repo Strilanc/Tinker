@@ -49,13 +49,13 @@ Namespace Warden
 
     Public NotInheritable Class ClientPacket
         Private ReadOnly _id As WardenPacketId
-        Private ReadOnly _payload As IPickle(Of Object)
+        Private ReadOnly _payload As ISimplePickle
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal id As WardenPacketId, ByVal payload As IPickle(Of Object))
+        Private Sub New(ByVal id As WardenPacketId, ByVal payload As ISimplePickle)
             Contract.Requires(payload IsNot Nothing)
             Me._payload = payload
             Me._id = id
@@ -66,9 +66,9 @@ Namespace Warden
                 Return _id
             End Get
         End Property
-        Public ReadOnly Property Payload As IPickle(Of Object)
+        Public ReadOnly Property Payload As ISimplePickle
             Get
-                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
                 Return _payload
             End Get
         End Property

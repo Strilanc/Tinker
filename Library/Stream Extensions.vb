@@ -70,10 +70,7 @@ Public Module StreamExtensions
 
         <ContractVerification(False)>
         Public Function IndexOf(ByVal item As Byte) As Integer Implements IReadableList(Of Byte).IndexOf
-            Return (From i In Count.Range
-                    Where Me(i) = item
-                    Select i + 1
-                    ).FirstOrDefault - 1
+            Return (From i In Count.Range Where Me.Item(i) = item).OffsetBy(1).FirstOrDefault - 1
         End Function
         Default Public ReadOnly Property Item(ByVal index As Integer) As Byte Implements IReadableList(Of Byte).Item
             <ContractVerification(False)>
@@ -84,8 +81,7 @@ Public Module StreamExtensions
         End Property
 
         Public Function GetEnumerator() As IEnumerator(Of Byte) Implements IEnumerable(Of Byte).GetEnumerator
-            Return (From i In Count.Range
-                    Select Item(i)).GetEnumerator
+            Return (From i In Count.Range Select Me.Item(i)).GetEnumerator
         End Function
         Private Function GetEnumeratorObj() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator
             Return GetEnumerator()
@@ -100,18 +96,26 @@ Public Module StreamExtensions
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
-            If _takeOwnershipofStream Then _stream.Dispose()
-            Return MyBase.PerformDispose(finalizing)
+            If Not finalizing AndAlso _takeOwnershipofStream Then _stream.Dispose()
+            Return Nothing
         End Function
     End Class
 
     <Extension()>
-    <ContractVerification(False)>
     Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IParseJar(Of T)) As IPickle(Of T)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
         Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of IPickle(Of T)).Data.Count)
+        Return DirectCast(stream.ReadPickle(DirectCast(jar, ISimpleParseJar)), IPickle(Of T))
+    End Function
+    <Extension()>
+    <ContractVerification(False)>
+    Public Function ReadPickle(ByVal stream As IRandomReadableStream, ByVal jar As ISimpleParseJar) As ISimplePickle
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Requires(jar IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
+        Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of ISimplePickle).Data.Count)
         Try
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)

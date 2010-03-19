@@ -19,13 +19,13 @@ Namespace WC3.Replay
     <DebuggerDisplay("{ToString}")>
     Public Class ReplayEntry
         Private _id As ReplayEntryId
-        Private _payload As IPickle(Of Object)
+        Private _payload As ISimplePickle
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal id As ReplayEntryId, ByVal payload As IPickle(Of Object))
+        Public Sub New(ByVal id As ReplayEntryId, ByVal payload As ISimplePickle)
             Contract.Requires(payload IsNot Nothing)
             Me._id = id
             Me._payload = payload
@@ -36,9 +36,9 @@ Namespace WC3.Replay
                 Return _id
             End Get
         End Property
-        Public ReadOnly Property Payload As IPickle(Of Object)
+        Public ReadOnly Property Payload As ISimplePickle
             Get
-                Contract.Ensures(Contract.Result(Of IPickle(Of Object))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
                 Return _payload
             End Get
         End Property
@@ -90,13 +90,13 @@ Namespace WC3.Replay
             Dim jar = New InteriorSwitchJar(Of WC3.Protocol.ChatType, NamedValueMap)(
                     valueKeyExtractor:=Function(val) CType(val("type"), WC3.Protocol.ChatType),
                     dataKeyExtractor:=Function(data) CType(data(3), WC3.Protocol.ChatType))
-            jar.AddPackerParser(WC3.Protocol.ChatType.Game, New TupleJar(
+            jar.AddSubJar(WC3.Protocol.ChatType.Game, New TupleJar(
                     New PlayerIdJar().Named("speaker"),
                     New UInt16Jar().Named("size"),
                     New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type"),
                     New EnumUInt32Jar(Of WC3.Protocol.ChatGroup)(checkDefined:=False).Named("receiving group"),
                     New UTF8Jar().NullTerminated.Named("message")))
-            jar.AddPackerParser(WC3.Protocol.ChatType.Lobby, New TupleJar(
+            jar.AddSubJar(WC3.Protocol.ChatType.Lobby, New TupleJar(
                     New PlayerIdJar().Named("speaker"),
                     New UInt16Jar().Named("size"),
                     New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type"),
