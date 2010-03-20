@@ -3,7 +3,12 @@
 Namespace WC3.Protocol
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class GameAction
-        Private Shared ReadOnly ActionJar As PrefixSwitchJar(Of GameActionId) = MakeJar()
+        Private Shared ReadOnly ActionJar As New KeyPrefixedJar(Of GameActionId)(
+            keyJar:=New EnumByteJar(Of GameActionId)(),
+            valueJars:=GameActions.AllDefinitions.ToDictionary(
+                keySelector:=Function(e) e.Id,
+                elementSelector:=Function(e) CType(e.Jar, ISimpleJar).AsNonNull))
+
         Private ReadOnly _id As GameActionId
         Private ReadOnly _payload As ISimplePickle
 
@@ -15,10 +20,6 @@ Namespace WC3.Protocol
             Contract.Requires(payload IsNot Nothing)
             Me._id = id
             Me._payload = payload
-        End Sub
-        Private Sub New(ByVal payload As IPickle(Of PrefixPickle(Of GameActionId)))
-            Me.New(payload.Value.Key, payload.Value.Payload)
-            Contract.Requires(payload IsNot Nothing)
         End Sub
 
         Public Shared Function FromValue(Of T)(ByVal actionDefinition As GameActions.Definition(Of T),
@@ -41,20 +42,11 @@ Namespace WC3.Protocol
             End Get
         End Property
 
-        Private Shared Function MakeJar() As PrefixSwitchJar(Of GameActionId)
-            Contract.Ensures(Contract.Result(Of PrefixSwitchJar(Of GameActionId))() IsNot Nothing)
-            Dim jar = New PrefixSwitchJar(Of GameActionId)()
-            For Each definition In GameActions.AllDefintions
-                Contract.Assume(definition IsNot Nothing)
-                jar.AddParser(definition.Id, definition.Jar)
-            Next definition
-            Return jar
-        End Function
-
         Public Shared Function FromData(ByVal data As IReadableList(Of Byte)) As GameAction
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
-            Return New GameAction(ActionJar.Parse(data))
+            Dim pickle = ActionJar.Parse(data)
+            Return New GameAction(pickle.Value.Key, pickle.Value.Value)
         End Function
 
         Public Overrides Function ToString() As String

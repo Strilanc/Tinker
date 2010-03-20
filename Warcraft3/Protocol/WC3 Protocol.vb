@@ -428,27 +428,23 @@ Namespace WC3.Protocol
                 New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data"),
                 New Bnet.Protocol.IPEndPointJar().Named("external address"),
                 New Bnet.Protocol.IPEndPointJar().Named("internal address"))
-        Public Shared ReadOnly Text As Definition(Of NamedValueMap) = Define(PacketId.Text, MakeTextJar())
+        Public Shared ReadOnly Text As Definition(Of NamedValueMap) = Define(PacketId.Text, New InteriorSwitchJar(Of ChatType, NamedValueMap)(
+                valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
+                dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType),
+                subjars:=New Dictionary(Of ChatType, NonNull(Of IJar(Of NamedValueMap))) From {
+                    {ChatType.Game, New TupleJar(
+                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                        New PlayerIdJar().Named("speaker"),
+                        New EnumByteJar(Of ChatType)().Named("type"),
+                        New EnumUInt32Jar(Of ChatGroup)(checkDefined:=False).Named("receiving group"),
+                        New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message"))},
+                    {ChatType.Lobby, New TupleJar(
+                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                        New PlayerIdJar().Named("speaker"),
+                        New EnumByteJar(Of ChatType)().Named("type"),
+                        New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message"))}}))
         Public Const MaxSerializedChatTextLength As Integer = 221
         Public Const MaxChatTextLength As Integer = MaxSerializedChatTextLength - 1
-        Private Shared Function MakeTextJar() As IJar(Of NamedValueMap)
-            Contract.Ensures(Contract.Result(Of IJar(Of NamedValueMap))() IsNot Nothing)
-            Dim jar = New InteriorSwitchJar(Of ChatType, NamedValueMap)(
-                    valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
-                    dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType))
-            jar.AddSubJar(ChatType.Game, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("speaker"),
-                    New EnumByteJar(Of ChatType)().Named("type"),
-                    New EnumUInt32Jar(Of ChatGroup)(checkDefined:=False).Named("receiving group"),
-                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
-            jar.AddSubJar(ChatType.Lobby, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("speaker"),
-                    New EnumByteJar(Of ChatType)().Named("type"),
-                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
-            Return jar
-        End Function
 
         Public Shared ReadOnly OtherPlayerReady As Definition(Of PlayerId) = Define(PacketId.OtherPlayerReady,
                 New PlayerIdJar().Named("readied player"))
@@ -468,45 +464,41 @@ Namespace WC3.Protocol
         Public Shared ReadOnly PeerConnectionInfo As Definition(Of UInt16) = Define(PacketId.PeerConnectionInfo,
                 New UInt16Jar(showhex:=True).Named("player bitflags"))
 
-        Public Shared ReadOnly NonGameAction As Definition(Of NamedValueMap) = Define(PacketId.NonGameAction, MakeNonGameActionJar())
-        Private Shared Function MakeNonGameActionJar() As IJar(Of NamedValueMap)
-            Contract.Ensures(Contract.Result(Of IJar(Of NamedValueMap))() IsNot Nothing)
-            Dim commandJar = New InteriorSwitchJar(Of NonGameAction, NamedValueMap)(
-                    Function(val) CType(val("command type"), NonGameAction),
-                    Function(data) CType(data(data(0) + 2), NonGameAction))
-            commandJar.AddSubJar(Protocol.NonGameAction.GameChat, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("speaker"),
-                    New EnumByteJar(Of NonGameAction)().Named("command type"),
-                    New EnumUInt32Jar(Of ChatGroup)().Named("receiving group"),
-                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
-            commandJar.AddSubJar(Protocol.NonGameAction.LobbyChat, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("speaker"),
-                    New EnumByteJar(Of NonGameAction)().Named("command type"),
-                    New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
-            commandJar.AddSubJar(Protocol.NonGameAction.SetTeam, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("sender"),
-                    New EnumByteJar(Of NonGameAction)().Named("command type"),
-                    New ByteJar().Named("new value")))
-            commandJar.AddSubJar(Protocol.NonGameAction.SetHandicap, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("sender"),
-                    New EnumByteJar(Of NonGameAction)().Named("command type"),
-                    New ByteJar().Named("new value")))
-            commandJar.AddSubJar(Protocol.NonGameAction.SetRace, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("sender"),
-                    New EnumByteJar(Of NonGameAction)().Named("command type"),
-                    New EnumByteJar(Of Protocol.Races)().Named("new value")))
-            commandJar.AddSubJar(Protocol.NonGameAction.SetColor, New TupleJar(
-                    New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                    New PlayerIdJar().Named("sender"),
-                    New EnumByteJar(Of NonGameAction)().Named("command type"),
-                    New EnumByteJar(Of Protocol.PlayerColor)().Named("new value")))
-            Return commandJar
-        End Function
+        Public Shared ReadOnly NonGameAction As Definition(Of NamedValueMap) = Define(PacketId.NonGameAction, New InteriorSwitchJar(Of NonGameAction, NamedValueMap)(
+                valueKeyExtractor:=Function(val) CType(val("command type"), NonGameAction),
+                dataKeyExtractor:=Function(data) CType(data(data(0) + 2), NonGameAction),
+                subjars:=New Dictionary(Of NonGameAction, NonNull(Of IJar(Of NamedValueMap))) From {
+                    {Protocol.NonGameAction.GameChat, New TupleJar(
+                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                        New PlayerIdJar().Named("speaker"),
+                        New EnumByteJar(Of NonGameAction)().Named("command type"),
+                        New EnumUInt32Jar(Of ChatGroup)().Named("receiving group"),
+                        New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message"))},
+                    {Protocol.NonGameAction.LobbyChat, New TupleJar(
+                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                        New PlayerIdJar().Named("speaker"),
+                        New EnumByteJar(Of NonGameAction)().Named("command type"),
+                        New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message"))},
+                    {Protocol.NonGameAction.SetTeam, New TupleJar(
+                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                        New PlayerIdJar().Named("sender"),
+                        New EnumByteJar(Of NonGameAction)().Named("command type"),
+                        New ByteJar().Named("new value"))},
+                    {Protocol.NonGameAction.SetHandicap, New TupleJar(
+                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                        New PlayerIdJar().Named("sender"),
+                        New EnumByteJar(Of NonGameAction)().Named("command type"),
+                        New ByteJar().Named("new value"))},
+                    {Protocol.NonGameAction.SetRace, New TupleJar(
+                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                        New PlayerIdJar().Named("sender"),
+                        New EnumByteJar(Of NonGameAction)().Named("command type"),
+                        New EnumByteJar(Of Protocol.Races)().Named("new value"))},
+                    {Protocol.NonGameAction.SetColor, New TupleJar(
+                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                        New PlayerIdJar().Named("sender"),
+                        New EnumByteJar(Of NonGameAction)().Named("command type"),
+                        New EnumByteJar(Of Protocol.PlayerColor)().Named("new value"))}}))
 
         Public Shared ReadOnly ShowLagScreen As Definition(Of IReadableList(Of NamedValueMap)) = Define(PacketId.ShowLagScreen,
                 New TupleJar(True,

@@ -84,25 +84,21 @@ Namespace WC3.Replay
                 New UInt32Jar().Named("unknown"))
         Public Shared ReadOnly ReplayEntryGameStarted As New TupleJar(
                 New UInt32Jar().Named("unknown"))
-        Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of NamedValueMap) = MakeTextJar()
-        Private Shared Function MakeTextJar() As IJar(Of NamedValueMap)
-            Contract.Ensures(Contract.Result(Of IJar(Of NamedValueMap))() IsNot Nothing)
-            Dim jar = New InteriorSwitchJar(Of WC3.Protocol.ChatType, NamedValueMap)(
-                    valueKeyExtractor:=Function(val) CType(val("type"), WC3.Protocol.ChatType),
-                    dataKeyExtractor:=Function(data) CType(data(3), WC3.Protocol.ChatType))
-            jar.AddSubJar(WC3.Protocol.ChatType.Game, New TupleJar(
-                    New PlayerIdJar().Named("speaker"),
-                    New UInt16Jar().Named("size"),
-                    New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type"),
-                    New EnumUInt32Jar(Of WC3.Protocol.ChatGroup)(checkDefined:=False).Named("receiving group"),
-                    New UTF8Jar().NullTerminated.Named("message")))
-            jar.AddSubJar(WC3.Protocol.ChatType.Lobby, New TupleJar(
-                    New PlayerIdJar().Named("speaker"),
-                    New UInt16Jar().Named("size"),
-                    New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type"),
-                    New UTF8Jar().NullTerminated.Named("message")))
-            Return jar.Named(ReplayEntryId.ChatMessage.ToString)
-        End Function
+        Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of NamedValueMap) = New InteriorSwitchJar(Of WC3.Protocol.ChatType, NamedValueMap)(
+                valueKeyExtractor:=Function(val) CType(val("type"), WC3.Protocol.ChatType),
+                dataKeyExtractor:=Function(data) CType(data(3), WC3.Protocol.ChatType),
+                subJars:=New Dictionary(Of WC3.Protocol.ChatType, NonNull(Of IJar(Of NamedValueMap))) From {
+                    {WC3.Protocol.ChatType.Game, New TupleJar(
+                        New PlayerIdJar().Named("speaker"),
+                        New UInt16Jar().Named("size"),
+                        New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type"),
+                        New EnumUInt32Jar(Of WC3.Protocol.ChatGroup)(checkDefined:=False).Named("receiving group"),
+                        New UTF8Jar().NullTerminated.Named("message"))},
+                    {WC3.Protocol.ChatType.Lobby, New TupleJar(
+                        New PlayerIdJar().Named("speaker"),
+                        New UInt16Jar().Named("size"),
+                        New EnumByteJar(Of WC3.Protocol.ChatType)().Named("type"),
+                        New UTF8Jar().NullTerminated.Named("message"))}})
         Public Shared ReadOnly ReplayEntryGameStateChecksum As New TupleJar(
                 New ByteJar().Named("unknown"),
                 New UInt32Jar(showhex:=True).Named("checksum"))

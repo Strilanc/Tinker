@@ -237,7 +237,7 @@ Namespace WC3.Protocol
         End Sub
 
         Private Shared ReadOnly _allDefinitions As New List(Of Definition)
-        Public Shared ReadOnly Property AllDefintions As IEnumerable(Of Definition)
+        Public Shared ReadOnly Property AllDefinitions As IEnumerable(Of Definition)
             Get
                 Contract.Ensures(Contract.Result(Of IEnumerable(Of Definition))() IsNot Nothing)
                 Return _allDefinitions.AsReadOnly

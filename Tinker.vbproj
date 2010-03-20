@@ -205,7 +205,7 @@
     <Compile Include="Pickling\EmptyJar.vb" />
     <Compile Include="Pickling\StringJar.vb" />
     <Compile Include="Pickling\DataJar.vb" />
-    <Compile Include="Pickling\PrefixSwitchJar.vb" />
+    <Compile Include="Pickling\KeyPrefixedJar.vb" />
     <Compile Include="Pickling\InteriorSwitchJar.vb" />
     <Compile Include="Pickling\TupleJar.vb" />
     <Compile Include="Pickling\Pickling Extensions.vb" />
@@ -349,8 +349,6 @@
     <Compile Include="Library\Networking.vb" />
     <Compile Include="Pickling\Enum Jars.vb" />
     <Compile Include="Pickling\Pickling Base.vb" />
-    <Compile Include="Pickling\Pickling Interfaces.vb" />
-    <Compile Include="Pickling\ManualSwitchJar.vb" />
     <Compile Include="Pickling\Numeric Jars.vb" />
     <Compile Include="Library\PacketStream.vb" />
     <Compile Include="Library\ThrottledWriteStream.vb" />
