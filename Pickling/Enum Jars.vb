@@ -1,5 +1,5 @@
 ﻿Namespace Pickling
-    '''<summary>Pickles enumeration values.</summary>
+    '''<summary>Pickles Enum values.</summary>
     Public Class EnumJar(Of TEnum)
         Inherits BaseJar(Of TEnum)
 
@@ -37,11 +37,7 @@
 
         <Pure()>
         Private Function IsDefined(ByVal value As TEnum) As Boolean
-            If _isFlagEnum Then
-                Return value.EnumFlags().All(Function(flag) flag.EnumValueIsDefined())
-            Else
-                Return value.EnumValueIsDefined()
-            End If
+            Return If(_isFlagEnum, value.EnumFlagsAreDefined(), value.EnumValueIsDefined())
         End Function
         <Pure()>
         Protected Overridable Function ValueToString(ByVal value As TEnum) As String
@@ -49,7 +45,7 @@
         End Function
     End Class
 
-    '''<summary>Pickles byte enumeration types.</summary>
+    '''<summary>Pickles byte Enum types.</summary>
     Public Class EnumByteJar(Of T)
         Inherits EnumJar(Of T)
         Public Sub New(Optional ByVal checkDefined As Boolean = True)
@@ -57,7 +53,7 @@
         End Sub
     End Class
 
-    '''<summary>Pickles UInt16 enumeration types.</summary>
+    '''<summary>Pickles UInt16 Enum types.</summary>
     Public Class EnumUInt16Jar(Of T)
         Inherits EnumJar(Of T)
         Public Sub New(Optional ByVal checkDefined As Boolean = True,
@@ -66,7 +62,7 @@
         End Sub
     End Class
 
-    '''<summary>Pickles UInt32 enumeration types.</summary>
+    '''<summary>Pickles UInt32 Enum types.</summary>
     Public Class EnumUInt32Jar(Of T)
         Inherits EnumJar(Of T)
         Public Sub New(Optional ByVal checkDefined As Boolean = True,
@@ -75,7 +71,7 @@
         End Sub
     End Class
 
-    '''<summary>Pickles UInt64 enumeration types.</summary>
+    '''<summary>Pickles UInt64 Enum types.</summary>
     Public Class EnumUInt64Jar(Of T)
         Inherits EnumJar(Of T)
         Public Sub New(Optional ByVal checkDefined As Boolean = True,

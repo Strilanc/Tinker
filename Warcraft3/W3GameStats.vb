@@ -193,21 +193,20 @@
                 Me._observers = GameObserverOption.NoObservers
             End If
             'Speed
-            If argument.TryGetOptionalNamedValue("Speed") Is Nothing Then
-                Me._speed = GameSpeedOption.Fast
+            If argument.HasOptionalNamedValue("Speed") Then
+                Dim speed = argument.OptionalNamedValue("Speed").EnumTryParse(Of GameSpeedOption)(ignoreCase:=True)
+                If Not speed.HasValue Then Throw New ArgumentException("Invalid game speed value: {0}".Frmt(argument.OptionalNamedValue("Speed")))
+                Me._speed = speed.Value
             Else
-                'Parse
-                If Not argument.TryGetOptionalNamedValue("Speed").EnumTryParse(ignoreCase:=True, result:=Me._speed) Then
-                    Throw New ArgumentException("Invalid game speed value: {0}".Frmt(argument.TryGetOptionalNamedValue("Speed")))
-                End If
+                Me._speed = GameSpeedOption.Fast
             End If
             'Visibility
-            If argument.TryGetOptionalNamedValue("Visibility") Is Nothing Then
-                Me._visibility = GameVisibilityOption.MapDefault
+            If argument.HasOptionalNamedValue("Visibility") Then
+                Dim visibility = argument.OptionalNamedValue("Visibility").EnumTryParse(Of GameVisibilityOption)(ignoreCase:=True)
+                If Not visibility.HasValue Then Throw New ArgumentException("Invalid map visibility value: {0}".Frmt(argument.OptionalNamedValue("Visibility")))
+                Me._visibility = visibility.Value
             Else
-                If Not argument.TryGetOptionalNamedValue("Visibility").EnumTryParse(ignoreCase:=True, result:=Me._visibility) Then
-                    Throw New ArgumentException("Invalid map visibility value: {0}".Frmt(argument.TryGetOptionalNamedValue("Visibility")))
-                End If
+                Me._visibility = GameVisibilityOption.MapDefault
             End If
         End Sub
 

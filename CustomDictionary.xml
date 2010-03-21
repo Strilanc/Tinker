@@ -52,6 +52,8 @@
       <Acronym>HCL</Acronym>
       <Acronym>SHA</Acronym>
       <Acronym>PID</Acronym>
+      <Acronym>UTF</Acronym>
+      <Acronym>ASCII</Acronym>
     </CasingExceptions>
   </Acronyms>
 </Dictionary>

@@ -132,13 +132,13 @@ Namespace WC3
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim arg_slot = argument.RawValue(0)
-                Dim arg_color = argument.RawValue(1)
-                Dim ret_color As WC3.Protocol.PlayerColor
-                If EnumTryParse(Of WC3.Protocol.PlayerColor)(arg_color, True, ret_color) Then
-                    Return target.QueueSetSlotColor(arg_slot, ret_color).ContinueWithFunc(Function() "Set Color")
+                Dim argSlot = argument.RawValue(0)
+                Dim argColor = argument.RawValue(1)
+                Dim color = argColor.EnumTryParse(Of Protocol.PlayerColor)(ignoreCase:=True)
+                If color.HasValue Then
+                    Return target.QueueSetSlotColor(argSlot, color.Value).ContinueWithFunc(Function() "Set Color")
                 Else
-                    Throw New InvalidOperationException("Unrecognized color: '{0}'.".Frmt(arg_color))
+                    Throw New InvalidOperationException("Unrecognized color: '{0}'.".Frmt(argColor))
                 End If
             End Function
         End Class
@@ -152,13 +152,13 @@ Namespace WC3
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim arg_slot = argument.RawValue(0)
-                Dim arg_difficulty = If(argument.RawValueCount >= 2, argument.RawValue(1), WC3.Protocol.ComputerLevel.Normal.ToString)
-                Dim ret_difficulty As WC3.Protocol.ComputerLevel
-                If arg_difficulty.EnumTryParse(ignoreCase:=True, result:=ret_difficulty) Then
-                    Return target.QueueSetSlotCpu(arg_slot, ret_difficulty).ContinueWithFunc(Function() "Set {0} to Computer ({1})".Frmt(arg_slot, arg_difficulty))
+                Dim argSlot = argument.RawValue(0)
+                Dim argDifficulty = If(argument.RawValueCount >= 2, argument.RawValue(1), WC3.Protocol.ComputerLevel.Normal.ToString)
+                Dim difficulty = argDifficulty.EnumTryParse(Of Protocol.ComputerLevel)(ignoreCase:=True)
+                If difficulty.HasValue Then
+                    Return target.QueueSetSlotCpu(argSlot, difficulty.Value).ContinueWithFunc(Function() "Set {0} to Computer ({1})".Frmt(argSlot, argDifficulty))
                 Else
-                    Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(arg_difficulty))
+                    Throw New InvalidOperationException("Unrecognized difficulty: '{0}'.".Frmt(argDifficulty))
                 End If
             End Function
         End Class
@@ -294,11 +294,11 @@ Namespace WC3
             End Sub
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim arg_slot = argument.RawValue(0)
+                Dim argSlot = argument.RawValue(0)
                 Dim argRace = argument.RawValue(1)
-                Dim ret_race As WC3.Protocol.Races
-                If EnumTryParse(Of WC3.Protocol.Races)(argRace, True, ret_race) Then
-                    Return target.QueueSetSlotRace(arg_slot, ret_race).ContinueWithFunc(Function() "Set Race")
+                Dim race = argRace.EnumTryParse(Of Protocol.Races)(ignoreCase:=True)
+                If race.HasValue Then
+                    Return target.QueueSetSlotRace(argSlot, race.Value).ContinueWithFunc(Function() "Set Race")
                 Else
                     Throw New InvalidOperationException("Unrecognized race: '{0}'.".Frmt(argRace))
                 End If
