@@ -157,14 +157,43 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
+    Private Function EnumFlagsHelper(Of TEnum, TUnderlying)(ByVal value As TEnum,
+                                                            ByVal allFlags As IEnumerable(Of TUnderlying),
+                                                            ByVal hasFlag As Func(Of TUnderlying, TUnderlying, Boolean)) As IEnumerable(Of TEnum)
+        Contract.Requires(allFlags IsNot Nothing)
+        Contract.Requires(hasFlag IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of TEnum))() IsNot Nothing)
+        Dim val = value.DynamicDirectCastTo(Of TUnderlying)()
+        Return From v In allFlags
+               Where hasFlag(val, v)
+               Select v.DynamicDirectCastTo(Of TEnum)()
+    End Function
+    <Extension()> <Pure()>
+    Public Function EnumFlags(Of TEnum)(ByVal value As TEnum) As IEnumerable(Of TEnum)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of TEnum))() IsNot Nothing)
+        Select Case [Enum].GetUnderlyingType(GetType(TEnum))
+            Case GetType(SByte) : Return value.EnumFlagsHelper((From i In 8.Range Select CSByte(1) << i), Function(e1, e2) (e1 And e2) <> 0)
+            Case GetType(Int16) : Return value.EnumFlagsHelper((From i In 16.Range Select 1S << i), Function(e1, e2) (e1 And e2) <> 0)
+            Case GetType(Int32) : Return value.EnumFlagsHelper((From i In 32.Range Select 1 << i), Function(e1, e2) (e1 And e2) <> 0)
+            Case GetType(Int64) : Return value.EnumFlagsHelper((From i In 64.Range Select 1L << i), Function(e1, e2) (e1 And e2) <> 0)
+            Case GetType(Byte) : Return value.EnumFlagsHelper((From i In 8.Range Select CByte(1) << i), Function(e1, e2) (e1 And e2) <> 0)
+            Case GetType(UInt16) : Return value.EnumFlagsHelper((From i In 16.Range Select 1US << i), Function(e1, e2) (e1 And e2) <> 0)
+            Case GetType(UInt32) : Return value.EnumFlagsHelper((From i In 32.Range Select 1UI << i), Function(e1, e2) (e1 And e2) <> 0)
+            Case GetType(UInt64) : Return value.EnumFlagsHelper((From i In 64.Range Select 1UL << i), Function(e1, e2) (e1 And e2) <> 0)
+            Case Else
+                Throw New InvalidOperationException("{0} does not have a recognized underlying enum type.".Frmt(GetType(TEnum)))
+        End Select
+    End Function
+
+    <Extension()> <Pure()>
     Public Function EnumIncludes(Of T)(ByVal value As T, ByVal [option] As UInt32) As Boolean
-        Return (CUInt(CType(value, Object)) And [option]) = [option]
+        Return (value.DynamicDirectCastTo(Of UInt32)() And [option]) = [option]
     End Function
     <Extension()> <Pure()>
     Public Function EnumWithSet(Of T)(ByVal value As T, ByVal [option] As UInt32, ByVal include As Boolean) As T
-        Dim v = CUInt(CType(value, Object))
+        Dim v = value.DynamicDirectCastTo(Of UInt32)()
         v = If(include, v Or [option], v And Not [option])
-        Return CType(CType(v, Object), T)
+        Return v.DynamicDirectCastTo(Of T)()
     End Function
 
     <Extension()> <Pure()>
@@ -196,13 +225,26 @@ Public Module PoorlyCategorizedFunctions
         Return From i In 8.Range Select value.HasBitSet(i)
     End Function
 
+    '''<summary>Casts a value's type to a type, using information only available at run-time.</summary>
+    <Extension()> <Pure()>
+    Public Function DynamicDirectCastTo(Of TInput, TResult)(ByVal value As TInput) As TResult
+        Contract.Ensures((Contract.Result(Of TResult)() IsNot Nothing) = (value IsNot Nothing))
+        Return DirectCast(DirectCast(value, Object), TResult)
+    End Function
+    '''<summary>Converts a value to a type, using information only available at run-time.</summary>
+    <Extension()> <Pure()>
+    Public Function DynamicCastTo(Of TInput, TResult)(ByVal value As TInput) As TResult
+        Contract.Ensures((Contract.Result(Of TResult)() IsNot Nothing) = (value IsNot Nothing))
+        Return CType(DirectCast(value, Object), TResult)
+    End Function
+
     <Extension()> <Pure()>
     Public Function Summarize(ByVal ex As Exception) As String
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
         If ex Is Nothing Then
             Return "Null Exception"
         ElseIf TypeOf ex Is AggregateException Then
-            Dim ax = CType(ex, AggregateException)
+            Dim ax = DirectCast(ex, AggregateException)
             Contract.Assume(ax.InnerExceptions IsNot Nothing)
             Select Case ax.InnerExceptions.Count
                 Case 0 : Return "Empty AggregateException"
@@ -439,7 +481,7 @@ Public Module PoorlyCategorizedFunctions
                           Optional ByVal poly As UInteger = &H4C11DB7,
                           Optional ByVal polyAlreadyReversed As Boolean = False) As UInteger
         Contract.Requires(data IsNot Nothing)
-        Return data.AsReadableStream.CRC32
+        Return data.AsReadableStream.CRC32(poly, polyAlreadyReversed)
     End Function
 
     '''<summary>Converts versus strings to a list of the team sizes (eg. 1v3v2 -> {1,3,2}).</summary>

@@ -22,9 +22,9 @@ Public Class WC3ProtocolTest
                        3,
                        128, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"map transfer key", 1},
+                        {"map transfer key", 1UI},
                         {"transfer state", MapTransferState.Downloading},
-                        {"total downloaded", 128}
+                        {"total downloaded", 128UI}
                     })
     End Sub
     <TestMethod()>
@@ -63,11 +63,11 @@ Public Class WC3ProtocolTest
                        13, 0, 0, 0}.Concat(
                        sha1).ToArray,
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"map transfer key", 0},
+                        {"map transfer key", 0UI},
                         {"path", "test"},
-                        {"size", 15},
-                        {"crc32", 32},
-                        {"xoro checksum", 13},
+                        {"size", 15UI},
+                        {"crc32", 32UI},
+                        {"xoro checksum", 13UI},
                         {"sha1 checksum", sha1}
                     })
     End Sub
@@ -83,11 +83,11 @@ Public Class WC3ProtocolTest
                        1, 0,
                        2, 0, &H17, &HE1, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"game id", 42},
-                        {"entry key", 99},
-                        {"unknown value", 0},
-                        {"listen port", 6112},
-                        {"peer key", 16},
+                        {"game id", 42UI},
+                        {"entry key", 99UI},
+                        {"unknown value", CByte(0)},
+                        {"listen port", 6112US},
+                        {"peer key", 16UI},
                         {"name", "test"},
                         {"peer data", New Byte() {0}.AsReadableList},
                         {"internal address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)}
@@ -101,8 +101,8 @@ Public Class WC3ProtocolTest
                        42, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"product id", "war3"},
-                        {"major version", 20},
-                        {"game id", 42}
+                        {"major version", 20UI},
+                        {"game id", 42UI}
                     })
     End Sub
     <TestMethod()>
@@ -124,18 +124,18 @@ Public Class WC3ProtocolTest
                        &HE0, &H17}).ToArray,
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"product id", "war3"},
-                        {"major version", 20},
-                        {"game id", 42},
-                        {"entry key", 16},
+                        {"major version", 20UI},
+                        {"game id", 42UI},
+                        {"entry key", 16UI},
                         {"name", "test"},
                         {"password", ""},
                         {"statstring", TestStats},
-                        {"num slots", 12},
+                        {"num slots", 12UI},
                         {"game type", GameTypes.AuthenticatedMakerBlizzard},
-                        {"num players + 1", 2},
-                        {"free slots + 1", 12},
-                        {"age", 25},
-                        {"listen port", 6112}
+                        {"num players + 1", 2UI},
+                        {"free slots + 1", 12UI},
+                        {"age", 25UI},
+                        {"listen port", 6112US}
                     })
     End Sub
     <TestMethod()>
@@ -151,9 +151,9 @@ Public Class WC3ProtocolTest
                        2, 0, 0, 0,
                        1, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"game id", 42},
-                        {"num players", 2},
-                        {"free slots", 1}
+                        {"game id", 42UI},
+                        {"num players", 2UI},
+                        {"free slots", 1UI}
                     })
     End Sub
     <TestMethod()>
@@ -164,8 +164,8 @@ Public Class WC3ProtocolTest
                        0, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"product id", "war3"},
-                        {"major version", 20},
-                        {"unknown1", 0}
+                        {"major version", 20UI},
+                        {"unknown1", 0UI}
                     })
     End Sub
     <TestMethod()>
@@ -186,9 +186,9 @@ Public Class WC3ProtocolTest
                        12},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"slots", New List(Of NamedValueMap)().ToReadableList},
-                        {"random seed", 13},
+                        {"random seed", 13UI},
                         {"layout style", LobbyLayoutStyle.FixedPlayerSettings},
-                        {"num player slots", 12}
+                        {"num player slots", CByte(12)}
                     })
     End Sub
     <TestMethod()>
@@ -204,8 +204,8 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"downloader", New PlayerId(2)},
                         {"uploader", New PlayerId(3)},
-                        {"map transfer key", 0},
-                        {"file position", 128},
+                        {"map transfer key", 0UI},
+                        {"file position", 128UI},
                         {"file data", New Byte() {1, 2, 3, 4}.AsReadableList}
                     })
     End Sub
@@ -218,7 +218,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"downloader", New PlayerId(2)},
                         {"uploader", New PlayerId(3)},
-                        {"map transfer key", 0}
+                        {"map transfer key", 0UI}
                     })
     End Sub
     <TestMethod()>
@@ -231,8 +231,8 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"downloader", New PlayerId(2)},
                         {"uploader", New PlayerId(3)},
-                        {"map transfer key", 0},
-                        {"total downloaded", 128}
+                        {"map transfer key", 0UI},
+                        {"total downloaded", 128UI}
                     })
     End Sub
     <TestMethod()>
@@ -276,7 +276,7 @@ Public Class WC3ProtocolTest
                         {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
                         {"command type", NonGameAction.SetTeam},
-                        {"new value", 1}
+                        {"new value", CByte(1)}
                     })
         JarTest(Packets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
@@ -287,7 +287,7 @@ Public Class WC3ProtocolTest
                         {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
                         {"command type", NonGameAction.SetHandicap},
-                        {"new value", 100}
+                        {"new value", CByte(100)}
                     })
         JarTest(Packets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
@@ -313,7 +313,7 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub OtherPlayerJoinedTestTest()
+    Public Sub OtherPlayerJoinedTest()
         JarTest(Packets.OtherPlayerJoined.Jar,
                 data:={27, 0, 0, 0,
                        1,
@@ -322,7 +322,7 @@ Public Class WC3ProtocolTest
                        2, 0, &H17, &HE0, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
                        2, 0, &H17, &HE1, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"peer key", 27},
+                        {"peer key", 27UI},
                         {"joiner id", New PlayerId(1)},
                         {"name", "test"},
                         {"peer data", New Byte() {42}.AsReadableList},
@@ -361,11 +361,11 @@ Public Class WC3ProtocolTest
                        0,
                        7, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"receiver peer key", 42},
-                        {"unknown1", 0},
+                        {"receiver peer key", 42UI},
+                        {"unknown1", 0UI},
                         {"sender id", New PlayerId(1)},
-                        {"unknown3", 0},
-                        {"sender peer connection flags", 7}
+                        {"unknown3", CByte(0)},
+                        {"sender peer connection flags", 7UI}
                     })
     End Sub
     <TestMethod()>
@@ -376,8 +376,8 @@ Public Class WC3ProtocolTest
                        1, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"salt", &HDEADBEEFUI},
-                        {"sender peer connection flags", 7},
-                        {"unknown2", 1}
+                        {"sender peer connection flags", 7UI},
+                        {"unknown2", 1UI}
                     })
     End Sub
     <TestMethod()>
@@ -416,7 +416,7 @@ Public Class WC3ProtocolTest
                        23, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"lagger", New PlayerId(4)},
-                        {"marginal milliseconds used", 23}
+                        {"marginal milliseconds used", 23UI}
                     })
     End Sub
     <TestMethod()>
@@ -429,7 +429,7 @@ Public Class WC3ProtocolTest
                 data:={0, 0, 0, 0,
                        2},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"map transfer key", 0},
+                        {"map transfer key", 0UI},
                         {"uploader", New PlayerId(2)}
                     })
     End Sub
@@ -440,16 +440,16 @@ Public Class WC3ProtocolTest
                        3,
                        128, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"map transfer key", 0},
+                        {"map transfer key", 0UI},
                         {"downloader", New PlayerId(3)},
-                        {"starting file pos", 128}
+                        {"starting file pos", 128UI}
                     })
     End Sub
     <TestMethod()>
     Public Sub ShowLagScreenTest()
         Dim lagger = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                              {"id", New PlayerId(2)},
-                             {"initial milliseconds used", 25}
+                             {"initial milliseconds used", 25UI}
                          })
         JarTest(Packets.ShowLagScreen.Jar,
                 equater:=Function(e1 As IReadableList(Of NamedValueMap), e2 As IReadableList(Of NamedValueMap)) ObjectEqual(e1, e2),
@@ -500,9 +500,9 @@ Public Class WC3ProtocolTest
                 equater:=Function(e1 As NamedValueMap, e2 As NamedValueMap)
                              If e1.Count <> 2 Then Return False
                              If e2.Count <> 2 Then Return False
-                             If Not ObjectEqual(e1("time span"), e2("time span")) Then Return False
-                             Dim a1 = CType(e1("player action sets"), Tuple(Of Boolean, IReadableList(Of PlayerActionSet)))
-                             Dim a2 = CType(e2("player action sets"), Tuple(Of Boolean, IReadableList(Of PlayerActionSet)))
+                             If e1.ItemAs(Of UShort)("time span") <> e2.ItemAs(Of UShort)("time span") Then Return False
+                             Dim a1 = e1.ItemAs(Of Tuple(Of Boolean, IReadableList(Of PlayerActionSet)))("player action sets")
+                             Dim a2 = e2.ItemAs(Of Tuple(Of Boolean, IReadableList(Of PlayerActionSet)))("player action sets")
                              If Not ObjectEqual(a1.Item1, a2.Item1) Then Return False
                              If Not ObjectEqual(a1.Item2, a2.Item2) Then Return False
                              Return True
@@ -514,12 +514,12 @@ Public Class WC3ProtocolTest
                                 2,
                                 100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"time span", 250},
+                        {"time span", 250US},
                         {"player action sets", Tuple.Create(True, {New PlayerActionSet(New PlayerId(1),
                                            {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
-                                                                     {"amount", 100},
-                                                                     {"unknown", 2}})
+                                                                     {"amount", 100UI},
+                                                                     {"unknown", CByte(2)}})
                                             }.AsReadableList)
                                      }.AsReadableList)}
                     })
@@ -527,7 +527,7 @@ Public Class WC3ProtocolTest
                 appendSafe:=False,
                 data:={100, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"time span", 100},
+                        {"time span", 100US},
                         {"player action sets", Tuple.Create(False, CType(Nothing, IReadableList(Of PlayerActionSet)))}})
     End Sub
     <TestMethod()>
@@ -535,7 +535,7 @@ Public Class WC3ProtocolTest
         JarTest(Packets.Tock.Jar,
                 data:={1, 2, 3, 4, 5},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 1},
+                        {"unknown", CByte(1)},
                         {"game state checksum", &H5040302UI}
                     })
     End Sub

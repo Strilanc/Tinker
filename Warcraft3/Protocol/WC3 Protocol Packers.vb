@@ -9,7 +9,7 @@ Namespace WC3.Protocol
             Return Packet.FromValue(Packets.ShowLagScreen, (From lagger In laggers
                                                             Select New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                                                     {"id", lagger},
-                                                                    {"initial milliseconds used", 2000}})).ToReadableList)
+                                                                    {"initial milliseconds used", 2000UI}})).ToReadableList)
         End Function
         <Pure()>
         Public Function MakeRemovePlayerFromLagScreen(ByVal lagger As PlayerId,
@@ -109,7 +109,7 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.OtherPlayerLeft, New Dictionary(Of InvariantString, Object) From {
                                 {"leaver", leaver},
-                                {"reason", CByte(reportedReason)}})
+                                {"reason", reportedReason}})
         End Function
         <Pure()>
         Public Function MakeLobbyState(ByVal layoutStyle As LobbyLayoutStyle,
@@ -119,7 +119,7 @@ Namespace WC3.Protocol
                                        Optional ByVal hideSlots As Boolean = False) As Packet
             Contract.Requires(slots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim reportedPlayerSlots = slots.Count
+            Dim reportedPlayerSlots = CByte(slots.Count)
             If hideSlots Then
                 reportedPlayerSlots = 13 '[making the reported count larger than the true count causes wc3 to not update the slot layout]
             End If
@@ -229,8 +229,8 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.LanRefreshGame, New Dictionary(Of InvariantString, Object) From {
                     {"game id", gameId},
-                    {"num players", 0},
-                    {"free slots", game.TotalSlotCount - game.UsedSlotCount}})
+                    {"num players", 0UI},
+                    {"free slots", CUInt(game.TotalSlotCount - game.UsedSlotCount)}})
         End Function
         <Pure()>
         Public Function MakeLanGameDetails(ByVal majorVersion As UInteger,
@@ -245,10 +245,10 @@ Namespace WC3.Protocol
                     {"name", game.Name.ToString},
                     {"password", ""},
                     {"statstring", game.GameStats},
-                    {"num slots", game.TotalSlotCount()},
+                    {"num slots", CUInt(game.TotalSlotCount)},
                     {"game type", game.GameType},
-                    {"num players + 1", 1},
-                    {"free slots + 1", game.TotalSlotCount + 1 - game.UsedSlotCount},
+                    {"num players + 1", 1UI},
+                    {"free slots + 1", CUInt(game.TotalSlotCount + 1 - game.UsedSlotCount)},
                     {"age", CUInt(game.Age.TotalMilliseconds)},
                     {"listen port", game.Port}})
         End Function
@@ -275,7 +275,7 @@ Namespace WC3.Protocol
             Return Packet.FromValue(Packets.Knock, New Dictionary(Of InvariantString, Object) From {
                     {"game id", gameId},
                     {"entry key", entryKey},
-                    {"unknown value", 0},
+                    {"unknown value", CByte(0)},
                     {"listen port", listenPort},
                     {"peer key", peerKey},
                     {"name", name.ToString},
@@ -314,12 +314,12 @@ Namespace WC3.Protocol
                                       ByVal connectedPeers As IEnumerable(Of PlayerId)) As Packet
             Contract.Requires(connectedPeers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim peerFlags = (From pid In connectedPeers Select 1US << (pid.Index - 1)).Aggregate(0US, Function(flag1, flag2) flag1 Or flag2)
+            Dim peerFlags = (From pid In connectedPeers Select 1UI << (pid.Index - 1)).Aggregate(0UI, Function(flag1, flag2) flag1 Or flag2)
             Return Packet.FromValue(Packets.PeerKnock, New Dictionary(Of InvariantString, Object) From {
                     {"receiver peer key", receiverPeerKey},
-                    {"unknown1", 0},
+                    {"unknown1", 0UI},
                     {"sender id", sender},
-                    {"unknown3", &HFF},
+                    {"unknown3", CByte(&HFF)},
                     {"sender peer connection flags", peerFlags}})
         End Function
         <Pure()>
@@ -327,11 +327,11 @@ Namespace WC3.Protocol
                                      ByVal senderConnectedPeers As IEnumerable(Of PlayerId)) As Packet
             Contract.Requires(senderConnectedPeers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Dim peerFlags = (From pid In senderConnectedPeers Select 1US << (pid.Index - 1)).Aggregate(0US, Function(flag1, flag2) flag1 Or flag2)
+            Dim peerFlags = (From pid In senderConnectedPeers Select 1UI << (pid.Index - 1)).Aggregate(0UI, Function(flag1, flag2) flag1 Or flag2)
             Return Packet.FromValue(Packets.PeerPing, New Dictionary(Of InvariantString, Object) From {
                     {"salt", salt},
                     {"sender peer connection flags", peerFlags},
-                    {"unknown2", 0}})
+                    {"unknown2", 0UI}})
         End Function
         <Pure()>
         Public Function MakePeerPong(ByVal salt As UInt32) As Packet

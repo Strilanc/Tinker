@@ -35,7 +35,7 @@ Namespace WC3.Protocol
                     New UInt32Jar(showHex:=True).Named("xoro checksum"),
                     New UTF8Jar().NullTerminated.Named("relative path"),
                     New UTF8Jar().NullTerminated.Named("host name"),
-                    New UTF8Jar().NullTerminated.Named("unknown2"),
+                    New ByteJar().Named("unknown2"),
                     New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum"))
 
         Public Overrides Function Pack(Of TValue As GameStats)(ByVal value As TValue) As IPickle(Of TValue)
@@ -93,8 +93,8 @@ Namespace WC3.Protocol
                     {"sha1 checksum", value.MapChecksumSHA1},
                     {"relative path", value.AdvertisedPath.ToString},
                     {"host name", value.HostName.ToString},
-                    {"unknown1", 0},
-                    {"unknown2", ""}}))
+                    {"unknown1", CByte(0)},
+                    {"unknown2", CByte(0)}}))
             Dim data = EncodeStatStringData(rawPickle.Data).Append(0).ToReadableList
             Return value.Pickled(data, rawPickle.Description)
         End Function
@@ -108,7 +108,7 @@ Namespace WC3.Protocol
             Dim vals = pickle.Value
 
             'Decode settings
-            Dim settings = CType(CUInt(vals("settings")), GameSettings)
+            Dim settings = vals.ItemAs(Of GameSettings)("settings")
             Dim randomHero = settings.EnumIncludes(GameSettings.OptionRandomHero)
             Dim randomRace = settings.EnumIncludes(GameSettings.OptionRandomRace)
             Dim allowFullSharedControl = settings.EnumIncludes(GameSettings.OptionAllowFullSharedControl)
@@ -144,12 +144,12 @@ Namespace WC3.Protocol
             End If
 
             'Decode rest
-            Dim playableWidth = CUInt(vals("playable width"))
-            Dim playableHeight = CUInt(vals("playable height"))
-            Dim xoroChecksum = CUInt(vals("xoro checksum"))
-            Dim sha1Checksum = CType(vals("sha1 checksum"), IReadableList(Of Byte))
-            Dim relativePath As InvariantString = CStr(vals("relative path"))
-            Dim hostName As InvariantString = CStr(vals("host name"))
+            Dim playableWidth = vals.ItemAs(Of UInt16)("playable width")
+            Dim playableHeight = vals.ItemAs(Of UInt16)("playable height")
+            Dim xoroChecksum = vals.ItemAs(Of UInt32)("xoro checksum")
+            Dim sha1Checksum = vals.ItemAs(Of IReadableList(Of Byte))("sha1 checksum")
+            Dim relativePath As InvariantString = vals.ItemAs(Of String)("relative path")
+            Dim hostName As InvariantString = vals.ItemAs(Of String)("host name")
             Contract.Assume(sha1Checksum.Count = 20)
             If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
 

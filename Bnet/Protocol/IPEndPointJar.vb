@@ -15,9 +15,9 @@ Namespace Bnet.Protocol
             Contract.Assume(value.Address IsNot Nothing)
             Dim addrBytes = value.Address.GetAddressBytes
             Dim vals = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                    {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0, 2)},
+                    {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0US, 2US)},
                     {"ip", value.Address},
-                    {"port", value.Port},
+                    {"port", CUShort(value.Port)},
                     {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsReadableList}})
             Dim pickle = DataJar.Pack(vals)
             Return value.Pickled(pickle.Data)
@@ -28,7 +28,7 @@ Namespace Bnet.Protocol
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Net.IPEndPoint)
             Dim pickle = DataJar.Parse(data)
             Dim vals = pickle.Value
-            Dim value = New Net.IPEndPoint(CType(vals("ip"), Net.IPAddress), CUShort(vals("port")))
+            Dim value = New Net.IPEndPoint(vals.ItemAs(Of Net.IPAddress)("ip"), vals.ItemAs(Of UInt16)("port"))
             Return value.Pickled(pickle.Data)
         End Function
     End Class

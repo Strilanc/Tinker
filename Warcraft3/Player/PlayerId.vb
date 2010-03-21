@@ -40,7 +40,7 @@ Namespace WC3
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             If Not TypeOf obj Is PlayerId Then Return False
-            Return Me = CType(obj, PlayerId)
+            Return Me = DirectCast(obj, PlayerId)
         End Function
         Public Overloads Function Equals(ByVal other As PlayerId) As Boolean Implements IEquatable(Of PlayerId).Equals
             Return Me = other
@@ -55,7 +55,7 @@ Namespace WC3
         Inherits BaseJar(Of PlayerId)
 
         Public Overrides Function Pack(Of TValue As PlayerId)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim data = {CType(value, PlayerId).Index}.ToReadableList
+            Dim data = {DirectCast(value, PlayerId).Index}.ToReadableList
             Return value.Pickled(data)
         End Function
         <ContractVerification(False)>

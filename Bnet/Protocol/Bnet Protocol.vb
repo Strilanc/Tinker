@@ -135,21 +135,21 @@ Namespace Bnet.Protocol
         ClanMemberInformation = &H82
     End Enum
 
-    Public Enum ProgramAuthenticationBeginLogOnType As Byte
+    Public Enum ProgramAuthenticationBeginLogOnType As UInt32
         Warcraft3 = 2
     End Enum
-    Public Enum UserAuthenticationFinishResult As UInteger
+    Public Enum UserAuthenticationFinishResult As UInt32
         Passed = 0
         IncorrectPassword = 2
         NeedEmail = 14
         CustomError = 15
     End Enum
-    Public Enum UserAuthenticationBeginResult As UInteger
+    Public Enum UserAuthenticationBeginResult As UInt32
         Passed = 0
         BadUserName = 1
         UpgradeAccount = 5
     End Enum
-    Public Enum ProgramAuthenticationFinishResult As UInteger
+    Public Enum ProgramAuthenticationFinishResult As UInt32
         Passed = 0
 
         OldVersion = &H101
@@ -166,7 +166,7 @@ Namespace Bnet.Protocol
         BannedCDKeyTFT = &H212
         WrongProductTFT = &H213
     End Enum
-    Public Enum ChatEventId
+    Public Enum ChatEventId As UInt32
         ShowUser = &H1
         UserJoined = &H2
         UserLeft = &H3
@@ -184,21 +184,21 @@ Namespace Bnet.Protocol
         Emote = &H17
     End Enum
     <Flags()>
-    Public Enum GameStates As UInteger
+    Public Enum GameStates As UInt32
         [Private] = 1 << 0
         Full = 1 << 1
         NotEmpty = 1 << 2 'really unsure about this one
         InProgress = 1 << 3
         Unknown0x10 = 1 << 4
     End Enum
-    Public Enum JoinChannelType As UInteger
+    Public Enum JoinChannelType As UInt32
         NoCreate = 0
         FirstJoin = 1
         ForcedJoin = 2
         Diablo2Join = 3
     End Enum
     <CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1027:MarkEnumsWithFlags")>
-    Public Enum QueryGameResponse As UInteger
+    Public Enum QueryGameResponse As UInt32
         Ok = 0
         NotFound = 1
         IncorrectPassword = 2
@@ -326,7 +326,7 @@ Namespace Bnet.Protocol
                     New ByteJar().Named("entry number"),
                     New ByteJar().Named("location id"),
                     New ByteJar().Named("status"),
-                    New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("product id"),
+                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
                     New UTF8Jar().NullTerminated.Named("location"))
             Public Shared ReadOnly QueryGamesList As Definition(Of QueryGamesListResponse) = Define(PacketId.QueryGamesList,
                     New QueryGamesListResponseJar())
@@ -355,7 +355,7 @@ Namespace Bnet.Protocol
                     New UTF8Jar().NullTerminated.Named("filename"))
             Public Shared ReadOnly ClanInfo As Definition(Of NamedValueMap) = Define(PacketId.ClanInfo,
                     New ByteJar().Named("unknown"),
-                    New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("clan tag"),
+                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("clan tag"),
                     New EnumByteJar(Of ClanRank)().Named("rank"))
         End Class
 
@@ -365,8 +365,8 @@ Namespace Bnet.Protocol
 
             Public Shared ReadOnly ProgramAuthenticationBegin As Definition(Of NamedValueMap) = Define(PacketId.ProgramAuthenticationBegin,
                     New UInt32Jar().Named("protocol"),
-                    New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("platform"),
-                    New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("product"),
+                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("platform"),
+                    New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product"),
                     New UInt32Jar().Named("product major version"),
                     New ASCIIJar().Fixed(exactDataCount:=4).Named("product language"),
                     New IPAddressJar().Named("internal ip"),
@@ -417,8 +417,8 @@ Namespace Bnet.Protocol
                     New UInt32Jar().Named("is ladder"),
                     New UTF8Jar().NullTerminated.Limited(MaxSerializedGameNameLength).Named("name"),
                     New UTF8Jar().NullTerminated.Named("password"),
-                    New TextHexValueJar(digitCount:=1).Named("num free slots"),
-                    New TextHexValueJar(digitCount:=8).Named("game id"),
+                    New TextHexUInt32Jar(digitCount:=1).Named("num free slots"),
+                    New TextHexUInt32Jar(digitCount:=8).Named("game id"),
                     New WC3.Protocol.GameStatsJar().Named("statstring"))
             Public Shared ReadOnly CloseGame3 As Definition(Of Object) = Define(PacketId.CloseGame3,
                     New EmptyJar())

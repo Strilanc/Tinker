@@ -58,7 +58,7 @@ Namespace CKL
 
                     'Read body
                     Dim body = packetData.SubView(4)
-                    Select Case CType(id, CKLPacketId)
+                    Select Case DirectCast(id, CKLPacketId)
                         Case CKLPacketId.[Error]
                             Throw New IO.IOException("CKL server returned an error: {0}.".Frmt(System.Text.UTF8Encoding.UTF8.GetString(body.ToArray)))
                         Case CKLPacketId.Keys

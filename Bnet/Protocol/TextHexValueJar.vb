@@ -1,8 +1,8 @@
 Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
-    Public NotInheritable Class TextHexValueJar
-        Inherits BaseJar(Of ULong)
+    Public NotInheritable Class TextHexUInt32Jar
+        Inherits BaseJar(Of UInt32)
         Private ReadOnly digitCount As Integer
         Private ReadOnly byteOrder As ByteOrder
 
@@ -18,9 +18,9 @@ Namespace Bnet.Protocol
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(Of TValue As ULong)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim u = CULng(value)
-            Dim digits As IList(Of Byte) = CULng(value).ToString("x{0}".Frmt(digitCount), CultureInfo.InvariantCulture).ToAscBytes
+        Public Overrides Function Pack(Of TValue As UInt32)(ByVal value As TValue) As IPickle(Of TValue)
+            Dim u = DirectCast(value, UInt32)
+            Dim digits As IList(Of Byte) = u.ToString("x{0}".Frmt(digitCount), CultureInfo.InvariantCulture).ToAscBytes
             Contract.Assume(digits.Count >= digitCount)
             If digits.Count > digitCount Then Throw New PicklingException("Value {0} is too large to fit into {1} hex digits.".Frmt(value, digitCount))
 
@@ -36,11 +36,11 @@ Namespace Bnet.Protocol
             Return value.Pickled(digits.AsReadableList)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ULong)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
             If data.Count < digitCount Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, digitCount)
             Dim value = datum.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder)
-            Return value.Pickled(datum)
+            Return CUInt(value).Pickled(datum)
         End Function
     End Class
 End Namespace

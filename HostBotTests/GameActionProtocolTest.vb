@@ -18,7 +18,7 @@ Public Class GameActionProtocolTest
                        1, 0,
                        1, 0, 0, 0, 2, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"group index", 1},
+                        {"group index", CByte(1)},
                         {"targets", {New GameObjectId(1, 2)}.ToReadableList}
                     })
     End Sub
@@ -34,7 +34,7 @@ Public Class GameActionProtocolTest
                 data:={1,
                        1 << 5, 1 << (10 - 8), 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"player slot id", 1},
+                        {"player slot id", CByte(1)},
                         {"flags", AllianceTypes.AlliedVictory Or AllianceTypes.SharedVision}
                     })
     End Sub
@@ -79,8 +79,8 @@ Public Class GameActionProtocolTest
                 data:={0,
                        100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 0},
-                        {"amount", 100}
+                        {"unknown", CByte(0)},
+                        {"amount", 100UI}
                     })
     End Sub
     <TestMethod()>
@@ -89,8 +89,8 @@ Public Class GameActionProtocolTest
                 data:={0,
                        100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 0},
-                        {"amount", 100}
+                        {"unknown", CByte(0)},
+                        {"amount", 100UI}
                     })
     End Sub
     <TestMethod()>
@@ -107,8 +107,8 @@ Public Class GameActionProtocolTest
                 data:={0,
                        100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 0},
-                        {"amount", 100}
+                        {"unknown", CByte(0)},
+                        {"amount", 100UI}
                     })
     End Sub
     <TestMethod()>
@@ -151,8 +151,8 @@ Public Class GameActionProtocolTest
                 data:={1,
                        &HFE, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"slot number", 1},
-                        {"type", &HFE}
+                        {"slot number", CByte(1)},
+                        {"type", &HFEUI}
                     })
     End Sub
     <TestMethod()>
@@ -204,9 +204,9 @@ Public Class GameActionProtocolTest
                         {"unknown", New GameObjectId(2, 3)},
                         {"x", CSng(5.0)},
                         {"y", CSng(6.0)},
-                        {"target type", &HFEED},
-                        {"target flags", 1},
-                        {"target owner", 2},
+                        {"target type", &HFEEDUI},
+                        {"target flags", 1UL},
+                        {"target owner", CByte(2)},
                         {"target x", CSng(7.0)},
                         {"target y", CSng(8.0)}
                     })
@@ -222,7 +222,7 @@ Public Class GameActionProtocolTest
                         {"filename", "test"},
                         {"mission key", "est"},
                         {"key", "tes"},
-                        {"value", 1}
+                        {"value", 1UI}
                     })
     End Sub
     <TestMethod()>
@@ -236,7 +236,7 @@ Public Class GameActionProtocolTest
                         {"filename", "test"},
                         {"mission key", "est"},
                         {"key", "tes"},
-                        {"value", 1}
+                        {"value", 1UI}
                     })
     End Sub
     <TestMethod()>
@@ -331,40 +331,40 @@ Public Class GameActionProtocolTest
                         {"mission key", "h"},
                         {"key", "u"},
                         {"unit type", "Obla".ToAscBytes.Reverse.ToUInt32},
-                        {"inventory", {New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ratf".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}}),
-                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ckng".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}}),
-                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "desc".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3700}}),
-                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "modt".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}}),
-                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ofro".ToAscBytes.Reverse.ToUInt32}, {"charges", 0}, {"unknown", &H3500}}),
-                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", 0}, {"charges", 0}, {"unknown", 0}})
+                        {"inventory", {New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ratf".ToAscBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
+                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ckng".ToAscBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
+                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "desc".ToAscBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3700UI}}),
+                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "modt".ToAscBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
+                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", "ofro".ToAscBytes.Reverse.ToUInt32}, {"charges", 0UI}, {"unknown", &H3500UI}}),
+                                       New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"item", 0UI}, {"charges", 0UI}, {"unknown", 0UI}})
                                        }.ToReadableList},
-                        {"experience", 2700},
-                        {"level ups", 6},
-                        {"skill points", 2},
-                        {"proper name index", 7},
-                        {"unknown1", 1},
-                        {"base strength", 18},
+                        {"experience", 2700UI},
+                        {"level ups", 6UI},
+                        {"skill points", 2UI},
+                        {"proper name index", 7US},
+                        {"unknown1", 1US},
+                        {"base strength", 18UI},
                         {"bonus strength per level", CSng(2.0)},
-                        {"base agility", 23},
+                        {"base agility", 23UI},
                         {"bonus move speed", CSng(0.0)},
                         {"bonus attack speed", CSng(0.68)},
                         {"bonus agility per level", CSng(1.75000012)},
-                        {"base intelligence", 16},
+                        {"base intelligence", 16UI},
                         {"bonus intelligence per level", CSng(2.25)},
-                        {"hero skills", {New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOwk".ToAscBytes.Reverse.ToUInt32}, {"level", 2}}),
-                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOcr".ToAscBytes.Reverse.ToUInt32}, {"level", 1}}),
-                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOmi".ToAscBytes.Reverse.ToUInt32}, {"level", 1}}),
-                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOww".ToAscBytes.Reverse.ToUInt32}, {"level", 1}}),
-                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", 0}, {"level", 0}})
+                        {"hero skills", {New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOwk".ToAscBytes.Reverse.ToUInt32}, {"level", 2UI}}),
+                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOcr".ToAscBytes.Reverse.ToUInt32}, {"level", 1UI}}),
+                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOmi".ToAscBytes.Reverse.ToUInt32}, {"level", 1UI}}),
+                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", "AOww".ToAscBytes.Reverse.ToUInt32}, {"level", 1UI}}),
+                                         New NamedValueMap(New Dictionary(Of InvariantString, Object) From {{"ability", 0UI}, {"level", 0UI}})
                                          }.ToReadableList},
                         {"bonus health", CSng(0)},
                         {"bonus mana", CSng(0)},
                         {"sight radius (day)", CSng(1800)},
-                        {"unknown2", 2},
+                        {"unknown2", 2UI},
                         {"unknown3", New Byte() {0, 0, 0, 0}.AsReadableList},
                         {"unknown4", New Byte() {0, 0, 0, 0}.AsReadableList},
                         {"unknown5", New Byte() {0, 0, 0, 0}.AsReadableList},
-                        {"hotkey flags", 0}
+                        {"hotkey flags", 0US}
                     })
     End Sub
     <TestMethod()>
@@ -513,7 +513,7 @@ Public Class GameActionProtocolTest
                 data:={1,
                        2, 0, 0, 0, 3, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", 1},
+                        {"unknown", CByte(1)},
                         {"target", New GameObjectId(2, 3)}
                     })
     End Sub
@@ -522,8 +522,8 @@ Public Class GameActionProtocolTest
         JarTest(GameActions.SelectGroupHotkey.Jar,
                 data:={1, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"group index", 1},
-                        {"unknown", 0}
+                        {"group index", CByte(1)},
+                        {"unknown", CByte(0)}
                     })
     End Sub
     <TestMethod()>
@@ -562,9 +562,9 @@ Public Class GameActionProtocolTest
                        100, 0, 0, 0,
                        200, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"player slot id", 1},
-                        {"gold", 100},
-                        {"lumber", 200}
+                        {"player slot id", CByte(1)},
+                        {"gold", 100UI},
+                        {"lumber", 200UI}
                     })
     End Sub
     <TestMethod()>
@@ -633,7 +633,7 @@ Public Class GameActionProtocolTest
                        1, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"trigger thread", New GameObjectId(2, 3)},
-                        {"thread wait count", 1}
+                        {"thread wait count", 1UI}
                     })
     End Sub
 End Class

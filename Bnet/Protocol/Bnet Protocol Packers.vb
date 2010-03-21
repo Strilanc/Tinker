@@ -21,14 +21,14 @@ Namespace Bnet.Protocol
             Contract.Requires(localIPAddress IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.ProgramAuthenticationBegin, New Dictionary(Of InvariantString, Object) From {
-                    {"protocol", 0},
+                    {"protocol", 0UI},
                     {"platform", "IX86"},
                     {"product", "W3XP"},
                     {"product major version", majorVersion},
                     {"product language", "SUne"},
                     {"internal ip", localIPAddress},
-                    {"time zone offset", 240},
-                    {"location id", 1033},
+                    {"time zone offset", 240UI},
+                    {"location id", 1033UI},
                     {"language id", MPQ.LanguageId.English},
                     {"country abrev", "USA"},
                     {"country name", "United States"}
@@ -52,8 +52,8 @@ Namespace Bnet.Protocol
                     {"client cd key salt", clientCDKeySalt},
                     {"exe version", version},
                     {"revision check response", revisionCheckResponse},
-                    {"# cd keys", 2},
-                    {"is spawn", 0},
+                    {"# cd keys", 2UI},
+                    {"is spawn", 0UI},
                     {"ROC cd key", productAuthentication.AuthenticationROC},
                     {"TFT cd key", productAuthentication.AuthenticationTFT},
                     {"exe info", exeInformation},
@@ -67,7 +67,7 @@ Namespace Bnet.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.GetFileTime, New Dictionary(Of InvariantString, Object) From {
                     {"request id", requestId},
-                    {"unknown", 0},
+                    {"unknown", 0UI},
                     {"filename", fileName.ToString}
                 })
         End Function
@@ -110,9 +110,9 @@ Namespace Bnet.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.ClientToServer.QueryGamesList, New Dictionary(Of InvariantString, Object) From {
                     {"filter", WC3.Protocol.GameTypes.MaskFilterable},
-                    {"filter mask", 0},
-                    {"unknown0", 0},
-                    {"list count", listCount},
+                    {"filter mask", WC3.Protocol.GameTypes.None},
+                    {"unknown0", 0UI},
+                    {"list count", CUInt(listCount)},
                     {"game name", specificGameName},
                     {"game password", ""},
                     {"game stats", ""}})
@@ -136,11 +136,11 @@ Namespace Bnet.Protocol
                     {"game state", game.GameState},
                     {"seconds since creation", CUInt(game.Age.TotalSeconds)},
                     {"game type", game.GameType},
-                    {"unknown1=1023", 1023},
-                    {"is ladder", 0},
+                    {"unknown1=1023", 1023UI},
+                    {"is ladder", 0UI},
                     {"name", game.Name.ToString},
                     {"password", ""},
-                    {"num free slots", game.TotalSlotCount - game.UsedSlotCount},
+                    {"num free slots", CUInt(game.TotalSlotCount - game.UsedSlotCount)},
                     {"game id", game.GameId},
                     {"statstring", game.GameStats}})
         End Function

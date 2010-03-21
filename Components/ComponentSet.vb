@@ -70,7 +70,7 @@ Namespace Components
             Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
             Return From component In _components
                    Where TypeOf component Is T
-                   Select CType(component, T)
+                   Select DirectCast(component, T)
         End Function
         ''' <summary>Asynchronously determines a list of all components of a type in the set.</summary>
         Public Function QueueGetAllComponents(Of T As IBotComponent)() As Task(Of IReadableList(Of T))
@@ -220,8 +220,8 @@ Namespace Components
             Contract.Requires(remover IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of IDisposable))() IsNot Nothing)
             Return Me.QueueCreateAsyncView(
-                    adder:=Sub(sender, component) If TypeOf component Is T Then adder(sender, CType(component, T)),
-                    remover:=Sub(sender, component) If TypeOf component Is T Then remover(sender, CType(component, T)))
+                    adder:=Sub(sender, component) If TypeOf component Is T Then adder(sender, DirectCast(component, T)),
+                    remover:=Sub(sender, component) If TypeOf component Is T Then remover(sender, DirectCast(component, T)))
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

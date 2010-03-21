@@ -307,32 +307,32 @@ Namespace WC3
         Private Sub ReceiveNonGameAction(ByVal sender As Player, ByVal vals As NamedValueMap)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
-            Dim commandType = CType(vals("command type"), Protocol.NonGameAction)
+            Dim commandType = vals.ItemAs(Of Protocol.NonGameAction)("command type")
 
             'Player Chat
             Select Case commandType
                 Case Protocol.NonGameAction.GameChat, Protocol.NonGameAction.LobbyChat
-                    Dim message = CStr(vals("message"))
+                    Dim message = vals.ItemAs(Of String)("message")
                     Dim chatType = If(commandType = Protocol.NonGameAction.GameChat, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
                     Dim receivingGroup As Protocol.ChatGroup
                     If chatType = Protocol.ChatType.Game Then
-                        receivingGroup = CType(vals("receiving group"), Protocol.ChatGroup)
+                        receivingGroup = vals.ItemAs(Of Protocol.ChatGroup)("receiving group")
                     End If
-                    Dim requestedReceivers = CType(vals("requested receivers"), IReadableList(Of PlayerId))
+                    Dim requestedReceivers = vals.ItemAs(Of IReadableList(Of PlayerId))("requested receivers")
 
                     ReceiveChat(sender, message, chatType, receivingGroup, requestedReceivers)
 
                 Case Protocol.NonGameAction.SetTeam
-                    _lobby.OnPlayerSetTeam(sender, CByte(vals("new value")))
+                    _lobby.OnPlayerSetTeam(sender, vals.ItemAs(Of Byte)("new value"))
 
                 Case Protocol.NonGameAction.SetHandicap
-                    _lobby.OnPlayerSetHandicap(sender, CByte(vals("new value")))
+                    _lobby.OnPlayerSetHandicap(sender, vals.ItemAs(Of Byte)("new value"))
 
                 Case Protocol.NonGameAction.SetRace
-                    _lobby.OnPlayerSetRace(sender, CType(vals("new value"), Protocol.Races))
+                    _lobby.OnPlayerSetRace(sender, vals.ItemAs(Of Protocol.Races)("new value"))
 
                 Case Protocol.NonGameAction.SetColor
-                    _lobby.OnPlayerSetColor(sender, CType(vals("new value"), Protocol.PlayerColor))
+                    _lobby.OnPlayerSetColor(sender, vals.ItemAs(Of Protocol.PlayerColor)("new value"))
 
                 Case Else
                     RemovePlayer(sender, True, Protocol.PlayerLeaveReason.Disconnect, "Sent unrecognized client command type: {0}".Frmt(commandType))

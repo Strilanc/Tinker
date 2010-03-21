@@ -18,7 +18,7 @@ Namespace Bnet.Protocol
                     {"length", value.Length},
                     {"product", value.Product},
                     {"public key", value.PublicKey},
-                    {"unknown", 0},
+                    {"unknown", 0UI},
                     {"proof", value.AuthenticationProof}})
             Dim pickle = DataJar.Pack(vals)
             Return value.Pickled(pickle.Data, pickle.Description)
@@ -27,12 +27,12 @@ Namespace Bnet.Protocol
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ProductCredentials)
             Dim pickle = DataJar.Parse(data)
             Dim vals = pickle.Value
-            Dim proof = CType(vals("proof"), IReadableList(Of Byte))
+            Dim proof = vals.ItemAs(Of IReadableList(Of Byte))("proof")
             Contract.Assume(proof.Count = 20)
             Dim value = New ProductCredentials(
-                    product:=CType(vals("product"), ProductType),
-                    publicKey:=CUInt(vals("public key")),
-                    length:=CUInt(vals("length")),
+                    product:=vals.ItemAs(Of ProductType)("product"),
+                    publicKey:=vals.ItemAs(Of UInt32)("public key"),
+                    length:=vals.ItemAs(Of UInt32)("length"),
                     proof:=proof)
             Return value.Pickled(pickle.Data, pickle.Description)
         End Function

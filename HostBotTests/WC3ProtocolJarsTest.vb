@@ -16,15 +16,15 @@ Public Class WC3ProtocolJarsTest
         JarTest(jar,
                 data:={1, 255, 0, 0, 1, 2, 2, 1, 100},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"pid", 1},
-                        {"dl", 255},
+                        {"pid", CByte(1)},
+                        {"dl", CByte(255)},
                         {"state", SlotState.Open},
-                        {"cpu", 0},
-                        {"team", 1},
+                        {"cpu", CByte(0)},
+                        {"team", CByte(1)},
                         {"color", PlayerColor.Teal},
                         {"race", Races.Orc},
                         {"difficulty", ComputerLevel.Normal},
-                        {"handicap", 100}
+                        {"handicap", CByte(100)}
                     })
 
         Dim g = WC3.Game.FromSettings(TestSettings, "test", New ManualClock())

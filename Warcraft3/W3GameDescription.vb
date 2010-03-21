@@ -134,9 +134,7 @@
             Return GameId.GetHashCode Xor Name.GetHashCode
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
-            Dim other = TryCast(obj, GameDescription)
-            If other Is Nothing Then Return False
-            Return Me.Equals(other)
+            Return Me.Equals(TryCast(obj, GameDescription))
         End Function
         Public Overloads Function Equals(ByVal other As GameDescription) As Boolean Implements IEquatable(Of GameDescription).Equals
             If other Is Nothing Then Return False
@@ -237,9 +235,7 @@
             Return Port.GetHashCode Xor MyBase.GetHashCode
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
-            Dim other = TryCast(obj, LocalGameDescription)
-            If other Is Nothing Then Return False
-            Return Me.Equals(other)
+            Return Me.Equals(TryCast(obj, LocalGameDescription))
         End Function
         Public Overloads Function Equals(ByVal other As LocalGameDescription) As Boolean Implements IEquatable(Of LocalGameDescription).Equals
             If other Is Nothing Then Return False
@@ -293,9 +289,7 @@
             Return MyBase.GetHashCode
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
-            Dim other = TryCast(obj, RemoteGameDescription)
-            If other Is Nothing Then Return False
-            Return Me.Equals(other)
+            Return Me.Equals(TryCast(obj, RemoteGameDescription))
         End Function
         Public Overloads Function Equals(ByVal other As RemoteGameDescription) As Boolean Implements IEquatable(Of RemoteGameDescription).Equals
             If other Is Nothing Then Return False

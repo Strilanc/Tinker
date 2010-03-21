@@ -70,7 +70,7 @@ Namespace Bnet.Protocol
         <ContractVerification(False)>
         Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As PacketId
             If header(0) <> Packets.PacketPrefixValue Then Throw New IO.InvalidDataException("Invalid packet header.")
-            Return CType(header(1), PacketId)
+            Return DirectCast(header(1), PacketId)
         End Function
     End Class
 End Namespace

@@ -192,8 +192,8 @@ Namespace WC3.Download
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Dim vals = pickle.Value
             Return inQueue.QueueAction(Sub() OnReceiveClientMapInfo(player:=player,
-                                                                    state:=CType(vals("transfer state"), Protocol.MapTransferState),
-                                                                    position:=CUInt(vals("total downloaded"))))
+                                                                    state:=vals.ItemAs(Of Protocol.MapTransferState)("transfer state"),
+                                                                    position:=vals.ItemAs(Of UInt32)("total downloaded")))
         End Function
         Private Function QueueOnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of UInt16)) As Task
             Contract.Requires(player IsNot Nothing)

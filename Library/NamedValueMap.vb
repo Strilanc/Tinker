@@ -15,7 +15,7 @@
         Me._dictionary = dictionary
     End Sub
 
-    Default Public ReadOnly Property Item(ByVal key As InvariantString) As Object
+    Public ReadOnly Property ItemRaw(ByVal key As InvariantString) As Object
         Get
             Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
             If Not _dictionary.ContainsKey(key) Then Throw New InvalidOperationException("No item with key '{0}'".Frmt(key))
@@ -24,6 +24,19 @@
             Return result
         End Get
     End Property
+    <Pure()>
+    Public Function ItemAs(Of TResult)(ByVal key As InvariantString) As TResult
+        Contract.Ensures(Contract.Result(Of TResult)() IsNot Nothing)
+        Dim item = Me.ItemRaw(key)
+        Try
+            Return DirectCast(item, TResult)
+        Catch ex As InvalidCastException
+            Throw New InvalidOperationException("Value with key '{0}' has type {1}, not {2}".Frmt(key,
+                                                                                                  item.GetType,
+                                                                                                  GetType(TResult)),
+                                                innerException:=ex)
+        End Try
+    End Function
 
     Public ReadOnly Property ContainsKey(ByVal key As InvariantString) As Boolean
         Get

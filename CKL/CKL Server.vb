@@ -78,11 +78,11 @@ Namespace CKL
             Contract.Requires(acceptedClient IsNot Nothing)
             Contract.Assume(acceptedClient.Client IsNot Nothing)
             Dim socket = New PacketSocket(stream:=acceptedClient.GetStream,
-                                          localendpoint:=CType(acceptedClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                          remoteendpoint:=CType(acceptedClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                          localEndPoint:=DirectCast(acceptedClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                          remoteEndPoint:=DirectCast(acceptedClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                           timeout:=10.Seconds,
                                           clock:=_clock,
-                                          logger:=Me.logger)
+                                          Logger:=Me.Logger)
             logger.Log("Connection from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 
             AsyncProduceConsumeUntilError(
@@ -105,7 +105,7 @@ Namespace CKL
             If flag <> PacketPrefixValue Then
                 errorMessage = "Invalid header id."
             Else
-                Select Case CType(id, CKLPacketId)
+                Select Case DirectCast(id, CKLPacketId)
                     Case CKLPacketId.[Error]
                         'ignore
                     Case CKLPacketId.Keys

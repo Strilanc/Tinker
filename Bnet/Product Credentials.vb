@@ -64,8 +64,7 @@
             Return _publicKey.GetHashCode()
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
-            Dim other = TryCast(obj, ProductCredentials)
-            Return other IsNot Nothing AndAlso Me.Equals(other)
+            Return Me.Equals(TryCast(obj, ProductCredentials))
         End Function
         Public Overloads Function Equals(ByVal other As ProductCredentials) As Boolean Implements IEquatable(Of ProductCredentials).Equals
             If other Is Nothing Then Return False
@@ -278,7 +277,7 @@
 
             'Extract keys
             Dim digits = digits2.ConvertFromBaseToBase(2, 256).PaddedTo(minimumLength:=NumDigitsBase256)
-            Dim product = CType({digits(13) >> &H2, CByte(0), CByte(0), CByte(0)}.ToUInt32, ProductType)
+            Dim product = DirectCast({digits(13) >> &H2, CByte(0), CByte(0), CByte(0)}.ToUInt32, ProductType)
             Dim publicKey = {digits(10), digits(11), digits(12), CByte(0)}.ToUInt32
             Dim privateKey = {digits(8), digits(9),
                               digits(4), digits(5), digits(6), digits(7),

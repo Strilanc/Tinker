@@ -211,7 +211,7 @@ Namespace WC3.Protocol
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             If Not TypeOf obj Is GameObjectId Then Return False
-            Return Me.Equals(CType(obj, GameObjectId))
+            Return Me.Equals(DirectCast(obj, GameObjectId))
         End Function
         Public Overloads Function Equals(ByVal other As GameObjectId) As Boolean Implements IEquatable(Of GameObjectId).Equals
             Return Me.AllocatedId = other.AllocatedId AndAlso Me.CounterId = other.CounterId

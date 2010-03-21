@@ -364,8 +364,8 @@ Namespace Bnet
                                                                      costRecoveredPerMillisecond:=0.048,
                                                                      clock:=_clock)
                                Select New PacketSocket(stream:=stream,
-                                                       localEndPoint:=CType(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
-                                                       remoteEndPoint:=CType(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
+                                                       localEndPoint:=DirectCast(tcpClient.Client.LocalEndPoint, Net.IPEndPoint),
+                                                       remoteEndPoint:=DirectCast(tcpClient.Client.RemoteEndPoint, Net.IPEndPoint),
                                                        clock:=_clock,
                                                        timeout:=60.Seconds,
                                                        Logger:=Logger,
@@ -599,27 +599,26 @@ Namespace Bnet
         Private Sub ReceiveProgramAuthenticationBegin(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            Const LOGON_TYPE_WC3 As UInteger = 2
             If _state <> ClientState.WaitingForProgramAuthenticationBegin Then
                 Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.ProgramAuthenticationBegin))
             End If
 
             'Check
-            If CType(vals("logon type"), UInteger) <> LOGON_TYPE_WC3 Then
+            If vals.ItemAs(Of Protocol.ProgramAuthenticationBeginLogOnType)("logon type") <> Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3 Then
                 _futureConnected.TrySetException(New IO.InvalidDataException("Failed to connect: Unrecognized logon type from server."))
                 Throw New IO.InvalidDataException("Unrecognized logon type")
             End If
 
             'Salts
-            Dim serverCdKeySalt = CUInt(vals("server cd key salt"))
+            Dim serverCdKeySalt = vals.ItemAs(Of UInt32)("server cd key salt")
             Dim clientCdKeySalt = _clientCdKeySalt
 
             'Async Enter Keys
             ChangeState(ClientState.EnterCDKeys)
             _productAuthenticator.AsyncAuthenticate(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).QueueContinueWithAction(inQueue,
                 Sub(keys) EnterKeys(keys:=keys,
-                                    revisionCheckSeed:=CStr(vals("revision check seed")),
-                                    revisionCheckInstructions:=CStr(vals("revision check challenge")),
+                                    revisionCheckSeed:=vals.ItemAs(Of String)("revision check seed"),
+                                    revisionCheckInstructions:=vals.ItemAs(Of String)("revision check challenge"),
                                     clientCdKeySalt:=clientCdKeySalt)
             ).Catch(
                 Sub(exception)
@@ -685,11 +684,11 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
-                Dim result = CType(CUInt(vals("result")), Protocol.ProgramAuthenticationFinishResult)
+                Dim result = vals.ItemAs(Of Protocol.ProgramAuthenticationFinishResult)("result")
                 If _state <> ClientState.WaitingForProgramAuthenticationFinish Then
                     Throw New IO.InvalidDataException("Invalid state for receiving {0}: {1}".Frmt(Protocol.PacketId.ProgramAuthenticationFinish, _state))
                 ElseIf result <> Protocol.ProgramAuthenticationFinishResult.Passed Then
-                    Throw New IO.InvalidDataException("Program authentication failed with error: {0} {1}.".Frmt(result, vals("info")))
+                    Throw New IO.InvalidDataException("Program authentication failed with error: {0} {1}.".Frmt(result, vals.ItemAs(Of String)("info")))
                 End If
 
                 ChangeState(ClientState.EnterUserCredentials)
@@ -705,15 +704,15 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
-                Dim result = CType(vals("result"), Protocol.UserAuthenticationBeginResult)
+                Dim result = vals.ItemAs(Of Protocol.UserAuthenticationBeginResult)("result")
                 If _state <> ClientState.WaitingForUserAuthenticationBegin Then
                     Throw New IO.InvalidDataException("Invalid state for receiving {0}".Frmt(Protocol.PacketId.UserAuthenticationBegin))
                 ElseIf result <> Protocol.UserAuthenticationBeginResult.Passed Then
                     Throw New IO.InvalidDataException("User authentication failed with error: {0}".Frmt(result))
                 End If
 
-                Dim accountPasswordSalt = CType(vals("account password salt"), IReadableList(Of Byte))
-                Dim serverPublicKey = CType(vals("server public key"), IReadableList(Of Byte))
+                Dim accountPasswordSalt = vals.ItemAs(Of IReadableList(Of Byte))("account password salt")
+                Dim serverPublicKey = vals.ItemAs(Of IReadableList(Of Byte))("server public key")
 
                 If Me._userCredentials Is Nothing Then Throw New InvalidStateException("Received AccountLogOnBegin before credentials specified.")
                 Dim clientProof = Me._userCredentials.ClientPasswordProof(accountPasswordSalt, serverPublicKey)
@@ -733,8 +732,8 @@ Namespace Bnet
             Contract.Requires(value IsNot Nothing)
             Try
                 Dim vals = value.Value
-                Dim result = CType(vals("result"), Protocol.UserAuthenticationFinishResult)
-                Dim serverProof = CType(vals("server password proof"), IReadableList(Of Byte))
+                Dim result = vals.ItemAs(Of Protocol.UserAuthenticationFinishResult)("result")
+                Dim serverProof = vals.ItemAs(Of IReadableList(Of Byte))("server password proof")
 
                 'validate
                 If _state <> ClientState.WaitingForUserAuthenticationFinish Then
@@ -745,7 +744,7 @@ Namespace Bnet
                         Case Protocol.UserAuthenticationFinishResult.IncorrectPassword
                             errorInfo = "(Note: This can happen due to a bnet bug. You might want to try again.):"
                         Case Protocol.UserAuthenticationFinishResult.CustomError
-                            errorInfo = "({0})".Frmt(CType(vals("custom error info"), Tuple(Of Boolean, String)).Item2)
+                            errorInfo = "({0})".Frmt(vals.ItemAs(Of Tuple(Of Boolean, String))("custom error info").Item2)
                     End Select
                     Throw New IO.InvalidDataException("User authentication failed with error: {0} {1}".Frmt(result, errorInfo))
                 ElseIf _expectedServerPasswordProof Is Nothing Then
@@ -845,8 +844,8 @@ Namespace Bnet
         Private Sub ReceiveChatEvent(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            Dim eventId = CType(vals("event id"), Protocol.ChatEventId)
-            Dim text = CStr(vals("text"))
+            Dim eventId = vals.ItemAs(Of Protocol.ChatEventId)("event id")
+            Dim text = vals.ItemAs(Of String)("text")
             If eventId = Protocol.ChatEventId.Channel Then _lastChannel = text
         End Sub
 
@@ -858,7 +857,7 @@ Namespace Bnet
         Private Sub ReceiveMessageBox(ByVal value As IPickle(Of NamedValueMap))
             Contract.Requires(value IsNot Nothing)
             Dim vals = value.Value
-            Dim msg = "MESSAGE BOX FROM BNET: " + CStr(vals("caption")) + ": " + CStr(vals("text"))
+            Dim msg = "MESSAGE BOX FROM BNET: {0}: {1}".Frmt(vals.ItemAs(Of String)("caption"), vals.ItemAs(Of String)("text"))
             Logger.Log(msg, LogMessageType.Problem)
         End Sub
 #End Region

@@ -192,6 +192,7 @@ Namespace WC3.Protocol
 
     <Flags()>
     Public Enum GameTypes As UInteger
+        None = 0
         CreateGameUnknown0 = 1 << 0 'this bit always seems to be set by wc3
 
         '''<summary>Setting this bit causes wc3 to check the map and disc if it is not signed by Blizzard</summary>
@@ -218,7 +219,7 @@ Namespace WC3.Protocol
 
         MaskFilterable = MaskObs Or MaskMaker Or MaskType Or MaskSize
     End Enum
-    Public Enum PlayerLeaveReason As Byte
+    Public Enum PlayerLeaveReason As UInt32
         Disconnect = 1
         ProgramClosed = 4
         Quit = 7
@@ -227,7 +228,7 @@ Namespace WC3.Protocol
         Tie = 10
         NeutralOrEndOfGame = 11
     End Enum
-    Public Enum LobbyLayoutStyle
+    Public Enum LobbyLayoutStyle As Byte
         Melee = 0
         CustomForces = 1
         FixedPlayerSettings = 3
@@ -429,7 +430,7 @@ Namespace WC3.Protocol
                 New Bnet.Protocol.IPEndPointJar().Named("external address"),
                 New Bnet.Protocol.IPEndPointJar().Named("internal address"))
         Public Shared ReadOnly Text As Definition(Of NamedValueMap) = Define(PacketId.Text, New InteriorSwitchJar(Of ChatType, NamedValueMap)(
-                valueKeyExtractor:=Function(val) CType(val("type"), ChatType),
+                valueKeyExtractor:=Function(val) val.ItemAs(Of ChatType)("type"),
                 dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType),
                 subjars:=New Dictionary(Of ChatType, NonNull(Of IJar(Of NamedValueMap))) From {
                     {ChatType.Game, New TupleJar(
@@ -465,7 +466,7 @@ Namespace WC3.Protocol
                 New UInt16Jar(showhex:=True).Named("player bitflags"))
 
         Public Shared ReadOnly NonGameAction As Definition(Of NamedValueMap) = Define(PacketId.NonGameAction, New InteriorSwitchJar(Of NonGameAction, NamedValueMap)(
-                valueKeyExtractor:=Function(val) CType(val("command type"), NonGameAction),
+                valueKeyExtractor:=Function(val) val.ItemAs(Of NonGameAction)("command type"),
                 dataKeyExtractor:=Function(data) CType(data(data(0) + 2), NonGameAction),
                 subjars:=New Dictionary(Of NonGameAction, NonNull(Of IJar(Of NamedValueMap))) From {
                     {Protocol.NonGameAction.GameChat, New TupleJar(
@@ -526,7 +527,7 @@ Namespace WC3.Protocol
                 New EmptyJar())
 
         Public Shared ReadOnly LanRequestGame As Definition(Of NamedValueMap) = Define(PacketId.LanRequestGame,
-                New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("product id"),
+                New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
                 New UInt32Jar().Named("major version"),
                 New UInt32Jar().Named("unknown1"))
         Public Shared ReadOnly LanRefreshGame As Definition(Of NamedValueMap) = Define(PacketId.LanRefreshGame,
@@ -534,13 +535,13 @@ Namespace WC3.Protocol
                 New UInt32Jar().Named("num players"),
                 New UInt32Jar().Named("free slots"))
         Public Shared ReadOnly LanCreateGame As Definition(Of NamedValueMap) = Define(PacketId.LanCreateGame,
-                New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("product id"),
+                New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
                 New UInt32Jar().Named("major version"),
                 New UInt32Jar().Named("game id"))
         Public Shared ReadOnly LanDestroyGame As Definition(Of UInt32) = Define(PacketId.LanDestroyGame,
                 New UInt32Jar().Named("game id"))
         Public Shared ReadOnly LanGameDetails As Definition(Of NamedValueMap) = Define(PacketId.LanGameDetails,
-                New ASCIIJar().Fixed(exactDataCount:=4).Reversed.Named("product id"),
+                New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
                 New UInt32Jar().Named("major version"),
                 New UInt32Jar().Named("game id"),
                 New UInt32Jar(showhex:=True).Named("entry key"),

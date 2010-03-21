@@ -91,9 +91,9 @@ Namespace Bnet
         Private Sub OnReceivedChatEvent(ByVal vals As NamedValueMap)
             Contract.Requires(vals IsNot Nothing)
 
-            Dim id = CType(vals("event id"), Bnet.Protocol.ChatEventId)
-            Dim user = _client.Profile.Users(CStr(vals("username")))
-            Dim text = CStr(vals("text"))
+            Dim id = vals.ItemAs(Of Bnet.Protocol.ChatEventId)("event id")
+            Dim user = _client.Profile.Users(vals.ItemAs(Of String)("username"))
+            Dim text = vals.ItemAs(Of String)("text")
 
             'Check
             Dim commandPrefix = My.Settings.commandPrefix.AssumeNotNull

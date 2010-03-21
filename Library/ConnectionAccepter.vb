@@ -57,7 +57,7 @@ Public NotInheritable Class ConnectionAccepter
             For Each listener In listeners
                 Contract.Assume(listener IsNot Nothing)
                 Contract.Assume(listener.LocalEndpoint IsNot Nothing)
-                ports.Add(CUShort(CType(listener.LocalEndpoint, Net.IPEndPoint).Port))
+                ports.Add(CUShort(DirectCast(listener.LocalEndpoint, Net.IPEndPoint).Port))
             Next listener
         End SyncLock
         Return ports
@@ -93,7 +93,7 @@ Public NotInheritable Class ConnectionAccepter
     Private Function TryGetListenerOnPort(ByVal port As UShort) As TcpListener
         SyncLock lock
             Return (From listener In listeners
-                    Where CType(listener.LocalEndpoint, Net.IPEndPoint).Port = port).
+                    Where DirectCast(listener.LocalEndpoint, Net.IPEndPoint).Port = port).
                     FirstOrDefault
         End SyncLock
     End Function

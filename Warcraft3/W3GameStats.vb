@@ -31,8 +31,8 @@
         Private ReadOnly _observers As GameObserverOption
         Private ReadOnly _visibility As GameVisibilityOption
         Private ReadOnly _speed As GameSpeedOption
-        Private ReadOnly _playableWidth As UInteger
-        Private ReadOnly _playableHeight As UInteger
+        Private ReadOnly _playableWidth As UInt16
+        Private ReadOnly _playableHeight As UInt16
         Private ReadOnly _mapChecksumXORO As UInt32
         Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Private ReadOnly _advertisedPath As InvariantString
@@ -105,15 +105,15 @@
                 Return _speed
             End Get
         End Property
-        Public ReadOnly Property PlayableWidth As UInteger
+        Public ReadOnly Property PlayableWidth As UInt16
             Get
-                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
+                Contract.Ensures(Contract.Result(Of UInt16)() > 0)
                 Return _playableWidth
             End Get
         End Property
-        Public ReadOnly Property PlayableHeight As UInteger
+        Public ReadOnly Property PlayableHeight As UInt16
             Get
-                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
+                Contract.Ensures(Contract.Result(Of UInt16)() > 0)
                 Return _playableHeight
             End Get
         End Property
@@ -135,8 +135,8 @@
                        ByVal observers As GameObserverOption,
                        ByVal visibility As GameVisibilityOption,
                        ByVal speed As GameSpeedOption,
-                       ByVal playableWidth As UInteger,
-                       ByVal playableHeight As UInteger,
+                       ByVal playableWidth As UInt16,
+                       ByVal playableHeight As UInt16,
                        ByVal mapChecksumXORO As UInt32,
                        ByVal mapChecksumSHA1 As IReadableList(Of Byte),
                        ByVal advertisedPath As InvariantString,
@@ -243,9 +243,7 @@
             Return AdvertisedPath.GetHashCode Xor HostName.GetHashCode Xor MapChecksumXORO.GetHashCode
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
-            Dim other = TryCast(obj, GameStats)
-            If other Is Nothing Then Return False
-            Return Me.Equals(other)
+            Return Me.Equals(TryCast(obj, GameStats))
         End Function
         Public Overloads Function Equals(ByVal other As GameStats) As Boolean Implements IEquatable(Of GameStats).Equals
             If other Is Nothing Then Return False

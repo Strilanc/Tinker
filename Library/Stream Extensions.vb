@@ -102,14 +102,6 @@ Public Module StreamExtensions
     End Class
 
     <Extension()>
-    Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IParseJar(Of T)) As IPickle(Of T)
-        Contract.Requires(stream IsNot Nothing)
-        Contract.Requires(jar IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-        Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of IPickle(Of T)).Data.Count)
-        Return DirectCast(stream.ReadPickle(DirectCast(jar, ISimpleParseJar)), IPickle(Of T))
-    End Function
-    <Extension()>
     <ContractVerification(False)>
     Public Function ReadPickle(ByVal stream As IRandomReadableStream, ByVal jar As ISimpleParseJar) As ISimplePickle
         Contract.Requires(stream IsNot Nothing)

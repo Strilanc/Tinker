@@ -38,14 +38,14 @@ Public Class BnetProtocolTest
                     }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats).Data),
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"game state", GameStates.Full},
-                        {"seconds since creation", 25},
+                        {"seconds since creation", 25UI},
                         {"game type", Tinker.WC3.Protocol.GameTypes.PrivateGame},
-                        {"unknown1=1023", 1023},
-                        {"is ladder", 0},
+                        {"unknown1=1023", 1023UI},
+                        {"is ladder", 0UI},
                         {"name", "test"},
                         {"password", "a"},
-                        {"num free slots", 3},
-                        {"game id", 33},
+                        {"num free slots", 3UI},
+                        {"game id", 33UI},
                         {"statstring", TestStats}
                     })
     End Sub
@@ -66,8 +66,8 @@ Public Class BnetProtocolTest
                        0, 0, 0, 0,
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"request id", 4},
-                        {"unknown", 0},
+                        {"request id", 4UI},
+                        {"unknown", 0UI},
                         {"filename", "test"}
                     })
     End Sub
@@ -116,14 +116,14 @@ Public Class BnetProtocolTest
                        117, 115, 97, 0,
                        85, 110, 105, 116, 101, 100, 32, 83, 116, 97, 116, 101, 115, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"protocol", 1},
+                        {"protocol", 1UI},
                         {"platform", "ix86"},
                         {"product", "war3"},
-                        {"product major version", 20},
+                        {"product major version", 20UI},
                         {"product language", "usen"},
                         {"internal ip", Net.IPAddress.Loopback},
-                        {"time zone offset", 10},
-                        {"location id", 52},
+                        {"time zone offset", 10UI},
+                        {"location id", 52UI},
                         {"language id", MPQ.LanguageId.English},
                         {"country abrev", "usa"},
                         {"country name", "United States"}
@@ -146,11 +146,11 @@ Public Class BnetProtocolTest
                        {105, 110, 102, 111, 0,
                         66, 111, 116, 0}),
                 value:=New Dictionary(Of InvariantString, Object) From {
-                        {"client cd key salt", 76},
+                        {"client cd key salt", 76UI},
                         {"exe version", New Byte() {1, 2, 3, 4}.AsReadableList},
-                        {"revision check response", 42},
-                        {"# cd keys", 2},
-                        {"is spawn", 0},
+                        {"revision check response", 42UI},
+                        {"# cd keys", 2UI},
+                        {"is spawn", 0UI},
                         {"ROC cd key", rocCred},
                         {"TFT cd key", tftCred},
                         {"exe info", "info"},
@@ -170,8 +170,8 @@ Public Class BnetProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"filter", WC3.Protocol.GameTypes.PrivateGame},
                         {"filter mask", WC3.Protocol.GameTypes.SizeLarge},
-                        {"unknown0", 0},
-                        {"list count", 20},
+                        {"unknown0", 0UI},
+                        {"list count", 20UI},
                         {"game name", "test"},
                         {"game password", "pass"},
                         {"game stats", "stats"}

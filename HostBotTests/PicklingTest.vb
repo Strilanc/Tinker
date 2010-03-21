@@ -382,11 +382,11 @@ Public Class PicklingTest
         JarTest(jar, "", {}, appendSafe:=False, requireAllData:=True)
         JarTest(jar, "a", {Asc("a")}, appendSafe:=False, requireAllData:=True)
         JarTest(jar, "ab", {Asc("a"), Asc("b")}, appendSafe:=False, requireAllData:=True)
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {127}.AsReadableList))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {128}.AsReadableList))
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {255}.AsReadableList))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {31}.AsReadableList))
-        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {0}.AsReadableList))
+        ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {128}.AsReadableList))
+        jar.Parse(New Byte() {127}.AsReadableList)
+        jar.Parse(New Byte() {31}.AsReadableList)
+        jar.Parse(New Byte() {0}.AsReadableList)
     End Sub
 
     <TestMethod()>

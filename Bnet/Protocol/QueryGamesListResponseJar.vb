@@ -38,8 +38,8 @@ Namespace Bnet.Protocol
                 New UInt32Jar().Named("elapsed seconds"),
                 New UTF8Jar().NullTerminated.Named("game name"),
                 New UTF8Jar().NullTerminated.Named("game password"),
-                New TextHexValueJar(digitCount:=1).Named("num free slots"),
-                New TextHexValueJar(digitCount:=8).Named("game id"),
+                New TextHexUInt32Jar(digitCount:=1).Named("num free slots"),
+                New TextHexUInt32Jar(digitCount:=8).Named("game id"),
                 New WC3.Protocol.GameStatsJar().Named("game statstring"))
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
@@ -50,7 +50,7 @@ Namespace Bnet.Protocol
             Dim offset = 4
             If count = 0 Then
                 'result of single-game query
-                result = CType(data.SubView(4, 4).ToUInt32, QueryGameResponse)
+                result = DirectCast(data.SubView(4, 4).ToUInt32, QueryGameResponse)
                 offset += 4
                 pickles.Add(result.Pickled(data.SubView(4, 4), New Lazy(Of String)(Function() "result: {0}".Frmt(result))))
             Else
@@ -60,18 +60,18 @@ Namespace Bnet.Protocol
                     pickles.Add(pickle)
                     offset += pickle.Data.Count
                     Dim vals = pickle.Value
-                    Dim totalSlots = CInt(vals("num free slots"))
+                    Dim totalSlots = CInt(vals.ItemAs(Of UInt32)("num free slots"))
                     Dim usedSlots = 0
-                    games.Add(New WC3.RemoteGameDescription(Name:=CStr(vals("game name")),
-                                                            gamestats:=CType(vals("game statstring"), WC3.GameStats),
-                                                            location:=CType(vals("host address"), Net.IPEndPoint),
-                                                            gameid:=CUInt(vals("game id")),
+                    games.Add(New WC3.RemoteGameDescription(Name:=vals.ItemAs(Of String)("game name"),
+                                                            gamestats:=vals.ItemAs(Of WC3.GameStats)("game statstring"),
+                                                            location:=vals.ItemAs(Of Net.IPEndPoint)("host address"),
+                                                            gameId:=CUInt(vals.ItemAs(Of UInt32)("game id")),
                                                             entryKey:=0,
                                                             totalSlotCount:=totalSlots,
-                                                            gameType:=CType(vals("game type"), WC3.Protocol.GameTypes),
-                                                            state:=CType(vals("game state"), GameStates),
+                                                            gameType:=vals.ItemAs(Of WC3.Protocol.GameTypes)("game type"),
+                                                            state:=vals.ItemAs(Of GameStates)("game state"),
                                                             usedSlotCount:=usedSlots,
-                                                            baseAge:=CUInt(vals("elapsed seconds")).Seconds,
+                                                            baseAge:=vals.ItemAs(Of UInt32)("elapsed seconds").Seconds,
                                                             clock:=New SystemClock()))
                 Next repeat
             End If

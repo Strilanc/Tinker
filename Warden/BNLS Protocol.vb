@@ -153,11 +153,11 @@ Namespace Warden
             Contract.Requires(packetData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ServerPacket)() IsNot Nothing)
             Dim vals = dataJar.Parse(packetData).Value
-            Return New ServerPacket(Id:=CType(vals("type"), WardenPacketId),
-                                    Cookie:=CUInt(vals("cookie")),
-                                    Result:=CByte(vals("result")),
-                                    ResponseData:=CType(vals("data"), IReadableList(Of Byte)),
-                                    UnspecifiedData:=CType(vals("unspecified"), IReadableList(Of Byte)))
+            Return New ServerPacket(Id:=vals.ItemAs(Of WardenPacketId)("type"),
+                                    Cookie:=vals.ItemAs(Of UInt32)("cookie"),
+                                    Result:=vals.ItemAs(Of Byte)("result"),
+                                    ResponseData:=vals.ItemAs(Of IReadableList(Of Byte))("data"),
+                                    UnspecifiedData:=vals.ItemAs(Of IReadableList(Of Byte))("unspecified"))
         End Function
 
         Public ReadOnly Property Id As WardenPacketId

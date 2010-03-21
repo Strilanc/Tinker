@@ -97,8 +97,8 @@ Public NotInheritable Class PacketSocket
         Contract.Ensures(Contract.Result(Of Task(Of PacketSocket))() IsNot Nothing)
         Return From socket In AsyncTcpConnect(remoteHost, remotePort)
                Select New PacketSocket(socket.GetStream,
-                                       CType(socket.Client.LocalEndPoint, Net.IPEndPoint),
-                                       CType(socket.Client.RemoteEndPoint, Net.IPEndPoint),
+                                       DirectCast(socket.Client.LocalEndPoint, Net.IPEndPoint),
+                                       DirectCast(socket.Client.RemoteEndPoint, Net.IPEndPoint),
                                        clock,
                                        timeout,
                                        logger,

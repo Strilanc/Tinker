@@ -7,8 +7,8 @@ Namespace WC3
         Private ReadOnly _mapChecksumXORO As UInt32
         Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
         Private ReadOnly _slots As IReadableList(Of Slot)
-        Private ReadOnly _playableWidth As UInteger
-        Private ReadOnly _playableHeight As UInteger
+        Private ReadOnly _playableWidth As UInt16
+        Private ReadOnly _playableHeight As UInt16
         Private ReadOnly _isMelee As Boolean
         Private ReadOnly _name As InvariantString
         Private ReadOnly _usesFixedPlayerSettings As Boolean
@@ -33,8 +33,8 @@ Namespace WC3
                        ByVal mapChecksumXORO As UInt32,
                        ByVal mapChecksumSHA1 As IReadableList(Of Byte),
                        ByVal slots As IReadableList(Of Slot),
-                       ByVal playableWidth As UInteger,
-                       ByVal playableHeight As UInteger,
+                       ByVal playableWidth As UInt16,
+                       ByVal playableHeight As UInt16,
                        ByVal isMelee As Boolean,
                        ByVal usesCustomForces As Boolean,
                        ByVal usesFixedPlayerSettings As Boolean,
@@ -114,11 +114,11 @@ Namespace WC3
                 Dim vals = Protocol.Packets.HostMapInfo.Jar.Parse(hexData.ToReadableList).Value
 
                 'Extract values
-                Dim path As InvariantString = CStr(vals("path"))
-                Dim size = CUInt(vals("size"))
-                Dim crc32 = CUInt(vals("crc32"))
-                Dim xoro = CUInt(vals("xoro checksum"))
-                Dim sha1 = CType(vals("sha1 checksum"), IReadableList(Of Byte))
+                Dim path As InvariantString = vals.ItemAs(Of String)("path")
+                Dim size = vals.ItemAs(Of UInt32)("size")
+                Dim crc32 = vals.ItemAs(Of UInt32)("crc32")
+                Dim xoro = vals.ItemAs(Of UInt32)("xoro checksum")
+                Dim sha1 = vals.ItemAs(Of IReadableList(Of Byte))("sha1 checksum")
                 Dim slot1 = New Slot(index:=0,
                                      raceUnlocked:=False,
                                      Color:=Protocol.PlayerColor.Red,
@@ -190,15 +190,15 @@ Namespace WC3
                 Return _slots
             End Get
         End Property
-        Public ReadOnly Property PlayableWidth As UInteger
+        Public ReadOnly Property PlayableWidth As UInt16
             Get
-                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
+                Contract.Ensures(Contract.Result(Of UInt16)() > 0)
                 Return _playableWidth
             End Get
         End Property
-        Public ReadOnly Property PlayableHeight As UInteger
+        Public ReadOnly Property PlayableHeight As UInt16
             Get
-                Contract.Ensures(Contract.Result(Of UInteger)() > 0)
+                Contract.Ensures(Contract.Result(Of UInt16)() > 0)
                 Return _playableHeight
             End Get
         End Property
@@ -502,8 +502,8 @@ Namespace WC3
             TFT = 25
         End Enum
         Private Class ReadMapInfoResult
-            Public ReadOnly playableWidth As UInteger
-            Public ReadOnly playableHeight As UInteger
+            Public ReadOnly playableWidth As UInt16
+            Public ReadOnly playableHeight As UInt16
             Public ReadOnly options As MapOptions
             Public ReadOnly slots As IReadableList(Of Slot)
             Public ReadOnly name As InvariantString
@@ -517,8 +517,8 @@ Namespace WC3
             End Sub
 
             Public Sub New(ByVal name As InvariantString,
-                           ByVal playableWidth As UInteger,
-                           ByVal playableHeight As UInteger,
+                           ByVal playableWidth As UInt16,
+                           ByVal playableHeight As UInt16,
                            ByVal options As MapOptions,
                            ByVal slots As IReadableList(Of Slot))
                 Contract.Requires(playableWidth > 0)
@@ -559,8 +559,9 @@ Namespace WC3
 
                 Dim playableWidth = stream.ReadUInt32()
                 Dim playableHeight = stream.ReadUInt32()
-                If playableWidth <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable width.")
-                If playableHeight <= 0 Then Throw New IO.InvalidDataException("Non-positive map playable height.")
+                CheckIOData(playableWidth > 0 AndAlso playableWidth <= UInt16.MaxValue, "Invalid map playable width.")
+                CheckIOData(playableWidth > 0 AndAlso playableWidth <= UInt16.MaxValue, "Invalid map playable width.")
+                CheckIOData(playableHeight > 0 AndAlso playableHeight <= UInt16.MaxValue, "Invalid map playable height.")
                 Dim options = CType(stream.ReadUInt32(), MapOptions)
 
                 Dim mainGoundType = stream.ReadByte()
@@ -600,7 +601,7 @@ Namespace WC3
 
                 '... more data in the file but it isn't needed ...
 
-                Return New ReadMapInfoResult(mapName, playableWidth, playableHeight, options, slots)
+                Return New ReadMapInfoResult(mapName, CUShort(playableWidth), CUShort(playableHeight), options, slots)
             End Using
         End Function
         <ContractVerification(False)>

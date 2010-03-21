@@ -59,7 +59,7 @@ Public Class BnetClientTest
         Dim packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.ProgramAuthenticationBegin)
         Dim body = Protocol.Packets.ClientToServer.ProgramAuthenticationBegin.Jar.Parse(packet.Skip(4).ToReadableList)
-        Assert.IsTrue(CUInt(body.Value("protocol")) = 0)
+        Assert.IsTrue(body.Value.ItemAs(Of UInt32)("protocol") = 0)
 
         'ping
         stream.EnqueueRead({&HFF, &H25, &H8, &H0, &H6A, &H55, &H70, &H1C})
@@ -75,7 +75,7 @@ Public Class BnetClientTest
             body:=Protocol.Packets.ServerToClient.ProgramAuthenticationBegin.Jar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"logon type", Protocol.ProgramAuthenticationBeginLogOnType.Warcraft3},
                     {"server cd key salt", serverCdKeySalt},
-                    {"udp value", 0},
+                    {"udp value", 0UI},
                     {"mpq filetime", Now()},
                     {"revision check seed", "[not tested]"},
                     {"revision check challenge", "[not tested]"},
@@ -86,17 +86,17 @@ Public Class BnetClientTest
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.ProgramAuthenticationFinish)
         body = Protocol.Packets.ClientToServer.ProgramAuthenticationFinish.Jar.Parse(packet.Skip(4).ToReadableList)
-        Assert.IsTrue(CUInt(body.Value("client cd key salt")) = 13)
-        Assert.IsTrue(CUInt(body.Value("# cd keys")) = 2)
-        Assert.IsTrue(CUInt(body.Value("is spawn")) = 0)
-        Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).Product = Bnet.ProductType.Warcraft3ROC)
-        Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).Length = 26)
-        Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).PublicKey = 1208212)
-        Assert.IsTrue(CType(body.Value("ROC cd key"), Bnet.ProductCredentials).AuthenticationProof.SequenceEqual(keyRoc.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
-        Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).Product = Bnet.ProductType.Warcraft3TFT)
-        Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).Length = 26)
-        Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).PublicKey = 2818526)
-        Assert.IsTrue(CType(body.Value("TFT cd key"), Bnet.ProductCredentials).AuthenticationProof.SequenceEqual(keyTft.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
+        Assert.IsTrue(body.Value.ItemAs(Of UInt32)("client cd key salt") = 13)
+        Assert.IsTrue(body.Value.ItemAs(Of UInt32)("# cd keys") = 2)
+        Assert.IsTrue(body.Value.ItemAs(Of UInt32)("is spawn") = 0)
+        Assert.IsTrue(body.Value.ItemAs(Of Bnet.ProductCredentials)("ROC cd key").Product = Bnet.ProductType.Warcraft3ROC)
+        Assert.IsTrue(body.Value.ItemAs(Of Bnet.ProductCredentials)("ROC cd key").Length = 26)
+        Assert.IsTrue(body.Value.ItemAs(Of Bnet.ProductCredentials)("ROC cd key").PublicKey = 1208212)
+        Assert.IsTrue(body.Value.ItemAs(Of Bnet.ProductCredentials)("ROC cd key").AuthenticationProof.SequenceEqual(keyRoc.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
+        Assert.IsTrue(body.Value.ItemAs(Of Bnet.ProductCredentials)("TFT cd key").Product = Bnet.ProductType.Warcraft3TFT)
+        Assert.IsTrue(body.Value.ItemAs(Of Bnet.ProductCredentials)("TFT cd key").Length = 26)
+        Assert.IsTrue(body.Value.ItemAs(Of Bnet.ProductCredentials)("TFT cd key").PublicKey = 2818526)
+        Assert.IsTrue(body.Value.ItemAs(Of Bnet.ProductCredentials)("TFT cd key").AuthenticationProof.SequenceEqual(keyTft.ToWC3CDKeyCredentials(clientCdKeySalt.Bytes, serverCdKeySalt.Bytes).AuthenticationProof))
 
         'program auth finish (S->C)
         stream.EnqueuedReadPacket(
@@ -114,8 +114,8 @@ Public Class BnetClientTest
         packet = stream.RetrieveWritePacket()
         Assert.IsTrue(packet(1) = Protocol.PacketId.UserAuthenticationBegin)
         body = Protocol.Packets.ClientToServer.UserAuthenticationBegin.Jar.Parse(packet.Skip(4).ToReadableList)
-        Assert.IsTrue(CType(body.Value("client public key"), IReadableList(Of Byte)).SequenceEqual(credentials.PublicKeyBytes))
-        Assert.IsTrue(CStr(body.Value("username")) = profile.userName)
+        Assert.IsTrue(body.Value.ItemAs(Of IReadableList(Of Byte))("client public key").SequenceEqual(credentials.PublicKeyBytes))
+        Assert.IsTrue(body.Value.ItemAs(Of String)("username") = profile.userName)
 
         'user auth begin (S->C)
         Dim accountSalt = CByte(1).Repeated(32).ToReadableList

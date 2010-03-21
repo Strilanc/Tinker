@@ -77,8 +77,8 @@ Public Class WC3ProtocolPackersTest
         MakeTick(250, {New PlayerActionSet(New PlayerId(1),
                                            {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
-                                                                     {"amount", 100},
-                                                                     {"unknown", 0}})
+                                                                     {"amount", 100UI},
+                                                                     {"unknown", CByte(0)}})
                                             }.AsReadableList)
                        }.AsReadableList)
     End Sub

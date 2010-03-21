@@ -10,17 +10,17 @@ Imports Tinker.Bnet.Protocol
 <TestClass()>
 Public Class BnetProtocolJarsTest
     <TestMethod()>
-    Public Sub TextHexValueJarTest()
-        Dim jar = New TextHexValueJar(digitCount:=8, ByteOrder:=ByteOrder.BigEndian)
+    Public Sub TextHexUInt32JarTest()
+        Dim jar = New TextHexUInt32Jar(digitCount:=8, ByteOrder:=ByteOrder.BigEndian)
         JarTest(jar, &HDEADBEEFUI, "deadbeef".ToAscBytes)
         JarTest(jar, 1, "00000001".ToAscBytes)
         JarTest(jar, 0, "00000000".ToAscBytes)
-        ExpectException(Of PicklingException)(Sub() jar.Pack(&H100000000UL))
-        jar = New TextHexValueJar(digitCount:=6, ByteOrder:=ByteOrder.LittleEndian)
+        JarTest(jar, &HDEADBEEFUI, "deadbeef".ToAscBytes)
+        jar = New TextHexUInt32Jar(digitCount:=6, ByteOrder:=ByteOrder.LittleEndian)
         JarTest(jar, &HDEADBEUI, "ebdaed".ToAscBytes)
         JarTest(jar, 1, "100000".ToAscBytes)
         JarTest(jar, 0, "000000".ToAscBytes)
-        ExpectException(Of PicklingException)(Sub() jar.Pack(&HDEADBEEFUL))
+        ExpectException(Of PicklingException)(Sub() jar.Pack(&HDEADBEEFUI))
     End Sub
     <TestMethod()>
     Public Sub FileTimeJarTest()

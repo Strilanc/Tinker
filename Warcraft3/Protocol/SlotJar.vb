@@ -24,10 +24,10 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
             Dim pid = slot.Contents.DataPlayerIndex(receiver)
             Return New Dictionary(Of InvariantString, Object) From {
-                    {"pid", If(pid Is Nothing, 0, pid.Value.Index)},
+                    {"pid", If(pid Is Nothing, CByte(0), pid.Value.Index)},
                     {"dl", slot.Contents.DataDownloadPercent(receiver)},
                     {"state", slot.Contents.DataState(receiver)},
-                    {"cpu", If(slot.Contents.ContentType = SlotContents.Type.Computer, 1, 0)},
+                    {"cpu", If(slot.Contents.ContentType = SlotContents.Type.Computer, CByte(1), CByte(0))},
                     {"team", slot.Team},
                     {"color", If(slot.Team = slot.ObserverTeamIndex, Protocol.PlayerColor.Observer, slot.Color)},
                     {"race", If(slot.RaceUnlocked, slot.Race Or Protocol.Races.Unlocked, slot.Race)},

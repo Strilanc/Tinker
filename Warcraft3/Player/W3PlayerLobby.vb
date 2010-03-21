@@ -52,7 +52,7 @@ Namespace WC3
         End Sub
         Private Sub OnReceiveClientMapInfo(ByVal pickle As IPickle(Of NamedValueMap))
             Contract.Requires(pickle IsNot Nothing)
-            _reportedDownloadPosition = CUInt(pickle.Value("total downloaded"))
+            _reportedDownloadPosition = pickle.Value.ItemAs(Of UInt32)("total downloaded")
             outQueue.QueueAction(Sub() RaiseEvent StateUpdated(Me))
         End Sub
     End Class

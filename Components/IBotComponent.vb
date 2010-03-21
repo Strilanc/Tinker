@@ -29,7 +29,7 @@
             End Property
             Public ReadOnly Property Control() As Control Implements IBotComponent.Control
                 Get
-                    Contract.Requires(CType(Me, IBotComponent).HasControl)
+                    Contract.Requires(DirectCast(Me, IBotComponent).HasControl)
                     Contract.Ensures(Contract.Result(Of Control)() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get

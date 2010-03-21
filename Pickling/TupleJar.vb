@@ -30,7 +30,7 @@ Namespace Pickling
             For Each subJar In _subJars
                 Contract.Assume(subJar IsNot Nothing)
                 If Not value.ContainsKey(subJar.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(subJar.Name))
-                pickles.Add(subJar.Pack(value(subJar.Name)))
+                pickles.Add(subJar.Pack(value.ItemRaw(subJar.Name)))
             Next subJar
             Return value.Pickled(Concat(From p In pickles Select (p.Data)).ToReadableList,
                                  Function() pickles.MakeListDescription(_useSingleLineDescription))

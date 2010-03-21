@@ -88,11 +88,11 @@ Namespace WC3
         Public ReadOnly socket As W3Socket
         Public ReadOnly receiverPeerKey As Byte
         Public ReadOnly id As PlayerId
-        Public ReadOnly connectionOptions As UShort
+        Public ReadOnly connectionOptions As UInt32
         Public Sub New(ByVal socket As W3Socket,
                        ByVal receiverPeerKey As Byte,
                        ByVal id As PlayerId,
-                       ByVal connectionOptions As UShort)
+                       ByVal connectionOptions As UInt32)
             Me.socket = socket
             Me.receiverPeerKey = receiverPeerKey
             Me.id = id

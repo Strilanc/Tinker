@@ -214,6 +214,7 @@
     <Compile Include="Warcraft3\Download\IPlayerDownloadAspect.vb" />
     <Compile Include="Warcraft3\Download\Download Client.vb" />
     <Compile Include="Warcraft3\Game\Game Kernel.vb" />
+    <Compile Include="Warcraft3\Protocol\PlayerActionSet.vb" />
     <Compile Include="Warcraft3\SlotContents.vb" />
     <Compile Include="Warcraft3\SlotSet.vb" />
     <Compile Include="Warcraft3\Game\Game Lobby.vb" />

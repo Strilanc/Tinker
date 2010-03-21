@@ -85,8 +85,8 @@ Namespace WC3.Replay
         Public Shared ReadOnly ReplayEntryGameStarted As New TupleJar(
                 New UInt32Jar().Named("unknown"))
         Public Shared ReadOnly ReplayEntryChatMessage As IJar(Of NamedValueMap) = New InteriorSwitchJar(Of WC3.Protocol.ChatType, NamedValueMap)(
-                valueKeyExtractor:=Function(val) CType(val("type"), WC3.Protocol.ChatType),
-                dataKeyExtractor:=Function(data) CType(data(3), WC3.Protocol.ChatType),
+                valueKeyExtractor:=Function(val) val.ItemAs(Of Protocol.ChatType)("type"),
+                dataKeyExtractor:=Function(data) CType(data(3), Protocol.ChatType),
                 subJars:=New Dictionary(Of WC3.Protocol.ChatType, NonNull(Of IJar(Of NamedValueMap))) From {
                     {WC3.Protocol.ChatType.Game, New TupleJar(
                         New PlayerIdJar().Named("speaker"),

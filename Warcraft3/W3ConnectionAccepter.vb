@@ -136,13 +136,13 @@ Namespace WC3
 
             Dim pickle = Protocol.Packets.Knock.Jar.Parse(packetData.SubView(4))
             Dim vals = pickle.Value
-            Dim player = New W3ConnectingPlayer(CStr(vals("name")),
-                                                CUInt(vals("game id")),
-                                                CUInt(vals("entry key")),
-                                                CUInt(vals("peer key")),
-                                                CType(vals("peer data"), IReadableList(Of Byte)),
-                                                CUShort(vals("listen port")),
-                                                CType(vals("internal address"), Net.IPEndPoint),
+            Dim player = New W3ConnectingPlayer(vals.ItemAs(Of String)("name"),
+                                                vals.ItemAs(Of UInt32)("game id"),
+                                                vals.ItemAs(Of UInt32)("entry key"),
+                                                vals.ItemAs(Of UInt32)("peer key"),
+                                                vals.ItemAs(Of IReadableList(Of Byte))("peer data"),
+                                                vals.ItemAs(Of UInt16)("listen port"),
+                                                vals.ItemAs(Of Net.IPEndPoint)("internal address"),
                                                 socket)
 
             socket.Name = player.Name
@@ -171,9 +171,9 @@ Namespace WC3
             Dim pickle = Protocol.Packets.PeerKnock.Jar.Parse(packetData.SubView(4))
             Dim vals = pickle.Value.AssumeNotNull
             Dim player = New W3ConnectingPeer(socket,
-                                              CByte(vals("receiver peer key")),
-                                              New PlayerId(CByte(vals("sender player id"))),
-                                              CUShort(vals("sender peer connection flags")))
+                                              vals.ItemAs(Of Byte)("receiver peer key"),
+                                              vals.ItemAs(Of PlayerId)("sender id"),
+                                              vals.ItemAs(Of UInt32)("sender peer connection flags"))
             RaiseEvent Connection(Me, player)
             Return pickle
         End Function

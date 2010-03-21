@@ -71,9 +71,9 @@ Namespace Bnet
         Private Sub OnClientReceivedChatEvent(ByVal sender As Bnet.Client, ByVal vals As NamedValueMap)
             If IsDisposed Then Return
             If sender IsNot Me._client Then Return
-            Dim id = CType(vals("event id"), ChatEventId)
-            Dim user = CStr(vals("username"))
-            Dim text = CStr(vals("text"))
+            Dim id = vals.ItemAs(Of ChatEventId)("event id")
+            Dim user = vals.ItemAs(Of String)("username")
+            Dim text = vals.ItemAs(Of String)("text")
             Select Case id
                 Case ChatEventId.ShowUser, ChatEventId.UserJoined
                     If Not lstState.Items.Contains(user) OrElse lstState.Items.IndexOf(user) >= numPrimaryStates Then

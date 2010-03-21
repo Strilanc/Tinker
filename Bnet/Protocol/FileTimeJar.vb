@@ -5,7 +5,7 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of Date)
 
         Public Overrides Function Pack(Of TValue As Date)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
-            Dim data = CType(value, Date).ToFileTime.BitwiseToUInt64.Bytes().AsReadableList
+            Dim data = DirectCast(value, Date).ToFileTime.BitwiseToUInt64.Bytes().AsReadableList
             Return value.Pickled(data)
         End Function
 
