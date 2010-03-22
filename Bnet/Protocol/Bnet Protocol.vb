@@ -329,7 +329,7 @@ Namespace Bnet.Protocol
                     New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),
                     New UTF8Jar().NullTerminated.Named("location"))
             Public Shared ReadOnly QueryGamesList As Definition(Of QueryGamesListResponse) = Define(PacketId.QueryGamesList,
-                    New QueryGamesListResponseJar())
+                    New QueryGamesListResponseJar(New SystemClock()))
 
             Public Shared ReadOnly EnterChat As Definition(Of NamedValueMap) = Define(PacketId.EnterChat,
                     New UTF8Jar().NullTerminated.Named("chat username"),

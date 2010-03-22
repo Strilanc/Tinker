@@ -435,4 +435,21 @@ Public Class PicklingTest
         JarTest(jar, 2, {3, 2})
         ExpectException(Of PicklingException)(Sub() jar.Parse(New Byte() {3, 3}.AsReadableList))
     End Sub
+
+    <TestMethod()>
+    Public Sub KeyPrefixedJarTest()
+        Dim jar = New KeyPrefixedJar(Of UInt32)(keyJar:=New UInt32Jar(), valueJars:=New Dictionary(Of UInt32, NonNull(Of ISimpleJar)) From {
+                                                    {3, New ByteJar()},
+                                                    {5, New UInt16Jar()}})
+        JarTest(jar,
+                equater:=Function(e1, e2) e1.Key = e2.Key AndAlso ObjectEqual(e1.Value.Value, e2.Value.Value),
+                value:=New KeyValuePair(Of UInt32, ISimplePickle)(3UI, CByte(10).Pickled(New Byte() {}.AsReadableList)),
+                data:={3, 0, 0, 0,
+                       10})
+        JarTest(jar,
+                equater:=Function(e1, e2) e1.Key = e2.Key AndAlso ObjectEqual(e1.Value.Value, e2.Value.Value),
+                value:=New KeyValuePair(Of UInt32, ISimplePickle)(5UI, 10US.Pickled(New Byte() {}.AsReadableList)),
+                data:={5, 0, 0, 0,
+                       10, 0})
+    End Sub
 End Class

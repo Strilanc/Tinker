@@ -22,7 +22,7 @@ Namespace Pickling
             Dim v = CType(value, KeyValuePair(Of TKey, ISimplePickle))
             If Not _valueJars.ContainsKey(v.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(v.Key))
             Dim keyPickle = _keyJar.Pack(v.Key)
-            Dim valuePickle = _valueJars(v.Key).Value.Pack(v.Value)
+            Dim valuePickle = _valueJars(v.Key).Value.Pack(v.Value.Value)
 
             Dim data = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
             Dim desc = Function() "{0}: {1}".Frmt(keyPickle.Description.Value, valuePickle.Description.Value)
@@ -36,7 +36,7 @@ Namespace Pickling
             Dim value = New KeyValuePair(Of TKey, ISimplePickle)(keyPickle.Value, valuePickle)
             Dim datum = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
             Dim desc = Function() "{0}: {1}".Frmt(keyPickle.Description.Value, valuePickle.Description.Value)
-            Return value.Pickled(data, desc)
+            Return value.Pickled(datum, desc)
         End Function
     End Class
 End Namespace

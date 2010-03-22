@@ -2,6 +2,8 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public Class QueryGamesListResponse
+        Implements IEquatable(Of QueryGamesListResponse)
+
         Private ReadOnly _games As IReadableList(Of WC3.RemoteGameDescription)
         Private ReadOnly _result As QueryGameResponse
 
@@ -26,10 +28,24 @@ Namespace Bnet.Protocol
                 Return _result
             End Get
         End Property
+
+        Public Overloads Function Equals(ByVal other As QueryGamesListResponse) As Boolean Implements IEquatable(Of QueryGamesListResponse).Equals
+            If other Is Nothing Then Return False
+            If Me._result <> other._result Then Return False
+            If Not Me._games.SequenceEqual(other._games) Then Return False
+            Return True
+        End Function
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Return Me.Equals(TryCast(obj, QueryGamesListResponse))
+        End Function
+        Public Overrides Function GetHashCode() As Integer
+            Return _result.GetHashCode Xor _games.Aggregate(0, Function(acc, e) acc Xor e.GetHashCode)
+        End Function
     End Class
     Public Class QueryGamesListResponseJar
         Inherits BaseJar(Of QueryGamesListResponse)
 
+        Private Shared ReadOnly queryResultJar As INamedJar(Of QueryGameResponse) = New EnumUInt32Jar(Of QueryGameResponse)().Named("result")
         Private Shared ReadOnly gameDataJar As New TupleJar(
                 New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type"),
                 New UInt32Jar().Named("language id"),
@@ -42,7 +58,19 @@ Namespace Bnet.Protocol
                 New TextHexUInt32Jar(digitCount:=8).Named("game id"),
                 New WC3.Protocol.GameStatsJar().Named("game statstring"))
 
+        Private ReadOnly _clock As IClock
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_clock IsNot Nothing)
+        End Sub
+
+        Public Sub New(ByVal clock As IClock)
+            Contract.Requires(clock IsNot Nothing)
+            Me._clock = clock
+        End Sub
+
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
+            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             Dim count = data.SubView(0, 4).ToUInt32
             Dim games = New List(Of WC3.RemoteGameDescription)(capacity:=CInt(count))
             Dim pickles = New List(Of ISimplePickle)(capacity:=CInt(count + 1))
@@ -50,9 +78,10 @@ Namespace Bnet.Protocol
             Dim offset = 4
             If count = 0 Then
                 'result of single-game query
+                If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
                 result = DirectCast(data.SubView(4, 4).ToUInt32, QueryGameResponse)
                 offset += 4
-                pickles.Add(result.Pickled(data.SubView(4, 4), New Lazy(Of String)(Function() "result: {0}".Frmt(result))))
+                pickles.Add(queryResultJar.Pack(result))
             Else
                 'games matching query
                 For Each repeat In count.Range
@@ -72,7 +101,7 @@ Namespace Bnet.Protocol
                                                             state:=vals.ItemAs(Of GameStates)("game state"),
                                                             usedSlotCount:=usedSlots,
                                                             baseAge:=vals.ItemAs(Of UInt32)("elapsed seconds").Seconds,
-                                                            clock:=New SystemClock()))
+                                                            clock:=_clock))
                 Next repeat
             End If
 
@@ -80,8 +109,26 @@ Namespace Bnet.Protocol
                                                                      Function() pickles.MakeListDescription(useSingleLineDescription:=False))
         End Function
 
-        Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
-            Throw New NotImplementedException
+        Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As IPickle(Of TValue)
+            Dim pickles = New List(Of ISimplePickle)
+            If value.Games.Count = 0 Then
+                pickles.Add(queryResultJar.Pack(value.Result))
+            Else
+                pickles.AddRange(From game In value.Games
+                                 Select gameDataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                                     {"game type", game.GameType},
+                                     {"language id", 0UI},
+                                     {"host address", New Net.IPEndPoint(game.Address, game.Port)},
+                                     {"game state", game.GameState},
+                                     {"elapsed seconds", CUInt(game.Age.TotalSeconds)},
+                                     {"game name", game.Name.ToString},
+                                     {"game password", ""},
+                                     {"num free slots", CUInt(game.TotalSlotCount - game.UsedSlotCount)},
+                                     {"game id", game.GameId},
+                                     {"game statstring", game.GameStats}})))
+            End If
+            Dim data = CUInt(value.Games.Count).Bytes.Concat(Concat(From pickle In pickles Select (pickle.Data))).ToReadableList
+            Return value.Pickled(data, Function() pickles.MakeListDescription(useSingleLineDescription:=False))
         End Function
     End Class
 End Namespace
