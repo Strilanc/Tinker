@@ -215,7 +215,6 @@ Namespace WC3.Download
         Public Sub ClearTransfer()
             Contract.Requires(Me.Transfer IsNot Nothing)
             Contract.Ensures(Me.Transfer Is Nothing)
-            Contract.Assume(_transfer IsNot Nothing)
             _totalPastProgress += _transfer.TotalProgress
             _totalPastTransferTime += _transfer.Duration
             _expectedState = Protocol.MapTransferState.Idle

@@ -127,7 +127,9 @@ Namespace WC3
                                      team:=0)
                 Dim slot2 = slot1.WithIndex(1).WithColor(Protocol.PlayerColor.Blue)
                 Dim slot3 = slot1.WithIndex(2).WithColor(Protocol.PlayerColor.Teal).WithContents(New SlotContentsComputer(Protocol.ComputerLevel.Normal))
+                Dim slots = {slot1, slot2, slot3}.AsReadableList
                 Contract.Assume(sha1.Count = 20)
+                Contract.Assume(slots.Count = 3)
                 If Not path.StartsWith("Maps\") Then Throw New IO.InvalidDataException("Invalid map path.")
                 If size <= 0 Then Throw New IO.InvalidDataException("Invalid file size.")
 
@@ -137,7 +139,7 @@ Namespace WC3
                                FileChecksumCRC32:=crc32,
                                MapChecksumXORO:=xoro,
                                MapChecksumSHA1:=sha1,
-                               Slots:={slot1, slot2, slot3}.AsReadableList,
+                               slots:=slots,
                                PlayableWidth:=256,
                                PlayableHeight:=256,
                                IsMelee:=True,
@@ -538,7 +540,7 @@ Namespace WC3
         <ContractVerification(False)>
         Private Shared Function ReadMapInfo(ByVal mapArchive As MPQ.Archive) As ReadMapInfoResult
             Contract.Requires(mapArchive IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
+            'Contract.Ensures(Contract.Result(Of ReadMapInfoResult)() IsNot Nothing)
 
             Using stream = mapArchive.OpenFileByName("war3map.w3i")
                 Dim fileFormat = CType(stream.ReadUInt32(), MapInfoFormatVersion)

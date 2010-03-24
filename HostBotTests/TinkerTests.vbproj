@@ -74,6 +74,7 @@
     <Compile Include="BnetProtocolTest.vb" />
     <Compile Include="BnetProtocolJarsTest.vb" />
     <Compile Include="BnetProtocolPackersTest.vb" />
+    <Compile Include="CommandTests.vb" />
     <Compile Include="GameLobbyTest.vb" />
     <Compile Include="HoldPointTest.vb" />
     <Compile Include="DownloadManagerTest.vb" />

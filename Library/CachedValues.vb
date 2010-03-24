@@ -83,7 +83,7 @@ Public Interface IExternalValues
     Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInt32
 
     <ContractClassFor(GetType(IExternalValues))>
-    Class ContractClass
+    MustInherit Class ContractClass
         Implements IExternalValues
 
         Public Function GenerateRevisionCheck(ByVal folder As String, ByVal challengeSeed As String, ByVal challengeInstructions As String) As UInteger Implements IExternalValues.GenerateRevisionCheck

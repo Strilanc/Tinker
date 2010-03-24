@@ -382,9 +382,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
         Using sha = New System.Security.Cryptography.SHA1Managed()
-            Dim hash = sha.ComputeHash(data.AsReadableStream.AsStream)
-            Contract.Assume(hash IsNot Nothing)
-            Dim result = hash.AsReadableList
+            Dim result = sha.ComputeHash(data.AsReadableStream.AsStream).AsReadableList
             Contract.Assume(result.Count = 20)
             Return result
         End Using

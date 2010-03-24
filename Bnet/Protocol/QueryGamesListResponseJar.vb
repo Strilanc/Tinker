@@ -31,8 +31,8 @@ Namespace Bnet.Protocol
 
         Public Overloads Function Equals(ByVal other As QueryGamesListResponse) As Boolean Implements IEquatable(Of QueryGamesListResponse).Equals
             If other Is Nothing Then Return False
-            If Me._result <> other._result Then Return False
-            If Not Me._games.SequenceEqual(other._games) Then Return False
+            If Me.Result <> other.Result Then Return False
+            If Not Me.Games.SequenceEqual(other.Games) Then Return False
             Return True
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
@@ -110,6 +110,7 @@ Namespace Bnet.Protocol
         End Function
 
         Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Dim pickles = New List(Of ISimplePickle)
             If value.Games.Count = 0 Then
                 pickles.Add(queryResultJar.Pack(value.Result))

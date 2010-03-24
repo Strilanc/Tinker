@@ -4,15 +4,16 @@ Imports Tinker.Commands
 
 <TestClass()>
 Public Class HelpCommandTest
-    Private Shared ReadOnly TestCommandFactory As Func(Of Command(Of Object)) = Function() New DelegatedTemplatedCommand(Of Object)(
-        name:="Test",
-        template:="arg -option",
-        description:="A test command.",
-        permissions:="root:1",
-        func:=Function(target, user, arg)
-                  Return "".AsTask
-              End Function,
-        extraHelp:="x=test")
+    Private Class TestCommand
+        Inherits Command(Of Object)
+        Public Sub New()
+            MyBase.New("Test", "arg -option", "A test command.", "root:1", "x=test")
+        End Sub
+        Protected Overrides Function PerformInvoke(ByVal target As Object, ByVal user As Tinker.BotUser, ByVal argument As String) As System.Threading.Tasks.Task(Of String)
+            Return "".AsTask
+        End Function
+    End Class
+    Private Shared ReadOnly TestCommandFactory As Func(Of Command(Of Object)) = Function() New TestCommand()
     Private Shared Function BlockingInvoke(ByVal command As Command(Of Object), ByVal arg As String) As Task(Of String)
         Return BlockOnTaskValue(command.Invoke(New Object, Nothing, arg))
     End Function
@@ -29,6 +30,12 @@ Public Class HelpCommandTest
     <TestMethod()>
     Public Sub FixedContentTest()
         Dim help = New HelpCommand(Of Object)
+        Assert.IsTrue(BlockingInvoke(help, "").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "*").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "+").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "?").Status = TaskStatus.RanToCompletion)
+        Assert.IsTrue(BlockingInvoke(help, "!").Status = TaskStatus.Faulted)
+        help.AddCommand(TestCommandFactory())
         Assert.IsTrue(BlockingInvoke(help, "").Status = TaskStatus.RanToCompletion)
         Assert.IsTrue(BlockingInvoke(help, "*").Status = TaskStatus.RanToCompletion)
         Assert.IsTrue(BlockingInvoke(help, "+").Status = TaskStatus.RanToCompletion)

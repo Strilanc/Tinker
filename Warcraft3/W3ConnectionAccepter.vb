@@ -60,7 +60,7 @@ Namespace WC3
                                                        localendpoint:=CType(client.Client.LocalEndPoint, Net.IPEndPoint),
                                                        remoteendpoint:=CType(client.Client.RemoteEndPoint, Net.IPEndPoint),
                                                        timeout:=60.Seconds,
-                                                       logger:=_logger,
+                                                       Logger:=_logger,
                                                        clock:=_clock))
             _logger.Log("New player connecting from {0}.".Frmt(socket.Name), LogMessageType.Positive)
 

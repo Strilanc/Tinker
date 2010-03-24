@@ -3,6 +3,7 @@ Namespace Pickling
         Inherits BaseJar(Of Object)
 
         Public Overrides Function Pack(Of TValue As Object)(ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Assume(value IsNot Nothing)
             Return value.Pickled(New Byte() {}.AsReadableList, Function() "[No Data]")
         End Function
 

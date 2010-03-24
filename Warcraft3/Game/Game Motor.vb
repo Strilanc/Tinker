@@ -37,11 +37,11 @@
                        ByVal defaultLagLimit As TimeSpan,
                        ByVal kernel As GameKernel,
                        ByVal lobby As GameLobby)
-            Contract.Requires(defaultSpeedFactor > 0)
-            Contract.Requires(defaultTickPeriod.Ticks > 0)
-            Contract.Requires(defaultLagLimit.Ticks >= 0)
-            Contract.Requires(kernel IsNot Nothing)
-            Contract.Requires(lobby IsNot Nothing)
+            Contract.Assume(defaultSpeedFactor > 0)
+            Contract.Assume(defaultTickPeriod.Ticks > 0)
+            Contract.Assume(defaultLagLimit.Ticks >= 0)
+            Contract.Assume(kernel IsNot Nothing)
+            Contract.Assume(lobby IsNot Nothing)
             Me._speedFactor = defaultSpeedFactor
             Me._tickPeriod = defaultTickPeriod
             Me._lagLimit = defaultLagLimit

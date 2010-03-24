@@ -28,7 +28,7 @@
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of TEnum)
             Dim pickle = _subJar.Parse(data)
-            Dim value = DirectCast(pickle.Value, TEnum)
+            Dim value = DirectCast(pickle.Value, TEnum).AssumeNotNull
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(TEnum)))
             End If

@@ -102,7 +102,6 @@ Namespace WC3.Protocol
             'StatString is null-terminated
             Dim p = data.IndexOf(0)
             If p < 0 Then Throw New PicklingException("No null terminator on game statstring.")
-            Contract.Assume(p < data.Count)
             Dim datum = data.SubView(0, p + 1)
             Dim pickle = DataJar.Parse(DecodeStatStringData(datum).ToReadableList)
             Dim vals = pickle.Value
@@ -152,6 +151,8 @@ Namespace WC3.Protocol
             Dim hostName As InvariantString = vals.ItemAs(Of String)("host name")
             Contract.Assume(sha1Checksum.Count = 20)
             If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
+            Contract.Assume(playableWidth > 0)
+            Contract.Assume(playableHeight > 0)
 
             'Finish
             Dim value = New GameStats(randomHero:=randomHero,

@@ -18,6 +18,7 @@ Namespace Pickling
             Me._valueJars = valueJars
         End Sub
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As KeyValuePair(Of TKey, ISimplePickle))(ByVal value As TValue) As IPickle(Of TValue)
             Dim v = CType(value, KeyValuePair(Of TKey, ISimplePickle))
             If Not _valueJars.ContainsKey(v.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(v.Key))
@@ -28,6 +29,7 @@ Namespace Pickling
             Dim desc = Function() "{0}: {1}".Frmt(keyPickle.Description.Value, valuePickle.Description.Value)
             Return value.Pickled(data, desc)
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of KeyValuePair(Of TKey, ISimplePickle))
             Dim keyPickle = _keyJar.Parse(data)
             If Not _valueJars.ContainsKey(keyPickle.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(keyPickle.Value))

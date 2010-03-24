@@ -144,6 +144,8 @@
             Contract.Requires(advertisedPath.StartsWith("Maps\"))
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
+            Contract.Requires(playableWidth > 0)
+            Contract.Requires(playableHeight > 0)
 
             Me._randomHero = randomHero
             Me._randomRace = randomRace

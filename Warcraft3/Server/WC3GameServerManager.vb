@@ -236,7 +236,6 @@ Namespace WC3
         Public Function QueueAddGameFromArguments(ByVal argument As Commands.CommandArgument,
                                                   ByVal user As BotUser) As Task(Of WC3.GameSet)
             Contract.Requires(argument IsNot Nothing)
-            Contract.Requires(user IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of WC3.GameSet))() IsNot Nothing)
             Return inQueue.QueueFunc(Function() AsyncAddGameFromArguments(argument, user)).Unwrap.AssumeNotNull
         End Function

@@ -29,7 +29,7 @@
         Contract.Ensures(Contract.Result(Of TResult)() IsNot Nothing)
         Dim item = Me.ItemRaw(key)
         Try
-            Return DirectCast(item, TResult)
+            Return DirectCast(item, TResult).AssumeNotNull
         Catch ex As InvalidCastException
             Throw New InvalidOperationException("Value with key '{0}' has type {1}, not {2}".Frmt(key,
                                                                                                   item.GetType,

@@ -13,7 +13,7 @@ Namespace WC3.Download
         Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As Task
 
         <ContractClassFor(GetType(IPlayerDownloadAspect))>
-        NotInheritable Shadows Class ContractClass
+        MustInherit Shadows Class ContractClass
             Inherits IDisposableWithTask.ContractClass
             Implements IPlayerDownloadAspect
             Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements IPlayerDownloadAspect.MakePacketOtherPlayerJoined

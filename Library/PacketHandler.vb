@@ -1,6 +1,6 @@
 ﻿Imports Tinker.Pickling
 
-<ContractClass(GetType(PacketHandler(Of ).ContractClass))>
+<ContractClass(GetType(ContractClassPacketHandler(Of )))>
 Public MustInherit Class PacketHandler(Of TKey)
     Private ReadOnly handlers As New KeyedEvent(Of TKey, IReadableList(Of Byte))
     Private ReadOnly logger As Logger
@@ -65,27 +65,26 @@ Public MustInherit Class PacketHandler(Of TKey)
                                End Function)
         Return result.Task.Unwrap.AssumeNotNull
     End Function
+End Class
+<ContractClassFor(GetType(PacketHandler(Of )))>
+MustInherit Class ContractClassPacketHandler(Of TKey)
+    Inherits PacketHandler(Of TKey)
 
-    <ContractClassFor(GetType(PacketHandler(Of )))>
-    MustInherit Class ContractClass
-        Inherits PacketHandler(Of TKey)
+    Protected Sub New()
+        MyBase.New(Nothing, Nothing)
+    End Sub
 
-        Protected Sub New()
-            MyBase.New(Nothing, Nothing)
-        End Sub
+    Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As TKey
+        Contract.Requires(header IsNot Nothing)
+        Contract.Requires(header.Count = DirectCast(Me, PacketHandler(Of TKey)).HeaderSize)
+        Contract.Ensures(Contract.Result(Of TKey)() IsNot Nothing)
+        Throw New NotSupportedException
+    End Function
 
-        Protected Overrides Function ExtractKey(ByVal header As IReadableList(Of Byte)) As TKey
-            Contract.Requires(header IsNot Nothing)
-            Contract.Requires(header.Count = DirectCast(Me, PacketHandler(Of TKey)).HeaderSize)
-            Contract.Ensures(Contract.Result(Of TKey)() IsNot Nothing)
+    Public Overrides ReadOnly Property HeaderSize As Integer
+        Get
+            Contract.Ensures(Contract.Result(Of Integer)() > 0)
             Throw New NotSupportedException
-        End Function
-
-        Public Overrides ReadOnly Property HeaderSize As Integer
-            Get
-                Contract.Ensures(Contract.Result(Of Integer)() > 0)
-                Throw New NotSupportedException
-            End Get
-        End Property
-    End Class
+        End Get
+    End Property
 End Class

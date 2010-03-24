@@ -5,8 +5,8 @@
 Public NotInheritable Class DeadManSwitch
     Private ReadOnly _period As TimeSpan
     Private _isArmed As Boolean
-    Private _wasReset As Boolean
     Private _timer As RelativeClock
+    Private _waitRunning As Boolean
     Private ReadOnly inQueue As CallQueue = New TaskedCallQueue()
 
     Public Event Triggered(ByVal sender As DeadManSwitch)
@@ -28,60 +28,59 @@ Public NotInheritable Class DeadManSwitch
     ''' Starts the countdown timer.
     ''' No effect if the timer is already started.
     ''' </summary>
-    Public Function Arm() As Task
-        Return inQueue.QueueAction(
-            Sub()
-                If _isArmed Then Return
-                _isArmed = True
-                _timer = _timer.Restarted
-                _wasReset = True
-                OnTimeout()
-            End Sub)
+    Public Function QueueArm() As Task
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+        Return inQueue.QueueAction(AddressOf Arm)
     End Function
+    Private Sub Arm()
+        If _isArmed Then Return
+        _isArmed = True
+        _timer = _timer.Restarted
+        If Not _waitRunning Then
+            _waitRunning = True
+            _timer.AsyncWaitUntil(_period).QueueContinueWithAction(inQueue, Sub() OnTimeout())
+        End If
+    End Sub
     ''' <summary>
     ''' Resets the countdown timer.
     ''' No effect if the timer is stopped.
     ''' </summary>
-    Public Function Reset() As Task
-        Return inQueue.QueueAction(
-            Sub()
-                _timer = _timer.Restarted
-                _wasReset = True
-            End Sub)
+    Public Function QueueReset() As Task
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+        Return inQueue.QueueAction(AddressOf Reset)
     End Function
+    Private Sub Reset()
+        If _timer.ElapsedTime < _period Then '[Prevent Resets occuring after the timeout from racing the OnTimeout callback]
+            _timer = _timer.Restarted
+        End If
+    End Sub
     ''' <summary>
     ''' Cancels the countdown timer.
     ''' No effect if the timer is already stopped.
     ''' </summary>
-    Public Function Disarm() As Task
-        Return inQueue.QueueAction(
-            Sub()
-                _isArmed = False
-            End Sub)
+    Public Function QueueDisarm() As Task
+        Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
+        Return inQueue.QueueAction(AddressOf Disarm)
     End Function
+    Private Sub Disarm()
+        _isArmed = False
+    End Sub
 
     Private Sub OnTimeout()
-        If Not _isArmed Then Return
-
-        If _wasReset Then
-            _wasReset = False
-            _timer = _timer.Restarted
-            Dim dt = _timer.StartingTimeOnParentClock
-            _timer.AsyncWait(_period - dt).QueueContinueWithAction(inQueue, Sub() OnTimeout())
-        Else
+        If Not _isArmed Then 'the switch has been disarmed
+            _waitRunning = False
+        ElseIf _timer.ElapsedTime < _period Then 'the timer has been reset (or the switch has been disarmed/armed)
+            _timer.AsyncWaitUntil(_period).QueueContinueWithAction(inQueue, AddressOf OnTimeout)
+        Else 'the timer has run out
             _isArmed = False
             RaiseEvent Triggered(Me)
+            _waitRunning = False
         End If
     End Sub
 
     Public Overrides Function ToString() As String
         If _isArmed Then
-            Dim t = _timer.ElapsedTime
-            If t >= _period Then
-                Return "Probably Firing: {0}".Frmt(_period)
-            Else
-                Return "Armed: {0} of {1}".Frmt(_period - _timer.ElapsedTime, _period)
-            End If
+            Return "Armed: {0} remaining out of {1}".Frmt(Max(0.Seconds, _timer.ElapsedTime - _period), _period)
         Else
             Return "Disarmed: {0}".Frmt(_period)
         End If

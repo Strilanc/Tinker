@@ -62,7 +62,7 @@ Public NotInheritable Class PacketSocket
         Me.bufferSize = bufferSize
         If timeout IsNot Nothing Then
             Me.deadManSwitch = New DeadManSwitch(timeout.Value, clock)
-            Me.deadManSwitch.Arm()
+            Me.deadManSwitch.QueueArm()
         End If
         Me._logger = If(logger, New Logger)
         Me.packetStreamer = New PacketStreamer(Me._stream, preheaderLength, sizeHeaderLength, maxPacketSize:=bufferSize)
@@ -138,7 +138,7 @@ Public NotInheritable Class PacketSocket
         Contract.Requires(reason IsNot Nothing)
         If Not _isConnected Then Return
         _isConnected = False
-        If deadManSwitch IsNot Nothing Then deadManSwitch.Disarm()
+        If deadManSwitch IsNot Nothing Then deadManSwitch.QueueDisarm()
         _stream.Close()
         outQueue.QueueAction(Sub() RaiseEvent Disconnected(Me, expected, reason))
     End Sub
@@ -158,7 +158,7 @@ Public NotInheritable Class PacketSocket
         'Handle
         result.QueueContinueWithAction(inQueue,
             Sub(data)
-                If deadManSwitch IsNot Nothing Then deadManSwitch.Reset()
+                If deadManSwitch IsNot Nothing Then deadManSwitch.QueueReset()
                 Logger.Log(Function() "Received from {0}: {1}".Frmt(Name, data.ToHexString), LogMessageType.DataRaw)
             End Sub
         ).QueueCatch(inQueue,

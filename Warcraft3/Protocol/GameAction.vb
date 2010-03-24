@@ -42,6 +42,7 @@ Namespace WC3.Protocol
             End Get
         End Property
 
+        <ContractVerification(False)>
         Public Shared Function FromData(ByVal data As IReadableList(Of Byte)) As GameAction
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)

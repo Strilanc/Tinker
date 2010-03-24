@@ -211,7 +211,6 @@
             'Find terminator
             Dim p = data.IndexOf(0)
             If p < 0 Then Throw New PicklingException("No null terminator found.")
-            Contract.Assume(p < data.Count)
             'Parse
             Dim pickle = _subJar.Parse(data.SubView(0, p))
             If pickle.Data.Count <> p Then Throw New PicklingException("Leftover data before null terminator.")

@@ -2,7 +2,7 @@
     ''' <summary>
     ''' Performs actions specified by text arguments.
     ''' </summary>
-    <ContractClass(GetType(Command(Of ).ContractClass))>
+    <ContractClass(GetType(ContractClassCommand(Of )))>
     Public MustInherit Class Command(Of TTarget)
         Private ReadOnly _name As InvariantString
         Private ReadOnly _format As InvariantString
@@ -98,19 +98,18 @@
         End Function
 
         Protected MustOverride Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
-
-        <ContractClassFor(GetType(Command(Of )))>
-        MustInherit Class ContractClass
-            Inherits Command(Of TTarget)
-            Protected Sub New()
-                MyBase.New("", "", "")
-            End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
-                Contract.Requires(target IsNot Nothing)
-                Contract.Requires(argument IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
-                Throw New NotSupportedException
-            End Function
-        End Class
+    End Class
+    <ContractClassFor(GetType(Command(Of )))>
+    MustInherit Class ContractClassCommand(Of TTarget)
+        Inherits Command(Of TTarget)
+        Protected Sub New()
+            MyBase.New("", "", "")
+        End Sub
+        Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As String) As Task(Of String)
+            Contract.Requires(target IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
     End Class
 End Namespace

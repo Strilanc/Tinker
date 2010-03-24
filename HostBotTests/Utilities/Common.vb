@@ -1,4 +1,5 @@
-﻿Imports Strilbrary.Threading
+﻿Imports System.Runtime.CompilerServices
+Imports Strilbrary.Threading
 Imports Strilbrary.Collections
 Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Strilbrary.Values
@@ -7,6 +8,11 @@ Imports Tinker
 Imports System.Collections.Generic
 
 Friend Module TestingCommon
+    <Extension()>
+    Public Function WaitValue(Of T)(ByVal task As Task(Of T)) As T
+        task.Wait()
+        Return task.Result
+    End Function
     Public Sub ExpectException(Of E As Exception)(ByVal action As Action)
         Try
             Call action()

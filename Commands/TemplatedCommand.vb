@@ -2,7 +2,7 @@
     ''' <summary>
     ''' A command which processes arguments matching a template.
     ''' </summary>
-    <ContractClass(GetType(TemplatedCommand(Of ).ContractClass))>
+    <ContractClass(GetType(ContractClassTemplatedCommand(Of )))>
     Public MustInherit Class TemplatedCommand(Of TTarget)
         Inherits Command(Of TTarget)
 
@@ -32,19 +32,18 @@
 
         '''<summary>Uses a parsed argument to processes the command.</summary>
         Protected MustOverride Overloads Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-
-        <ContractClassFor(GetType(TemplatedCommand(Of )))>
-        MustInherit Shadows Class ContractClass
-            Inherits TemplatedCommand(Of TTarget)
-            Protected Sub New()
-                MyBase.New("", "", "")
-            End Sub
-            Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-                Contract.Requires(target IsNot Nothing)
-                Contract.Requires(argument IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
-                Throw New NotSupportedException
-            End Function
-        End Class
+    End Class
+    <ContractClassFor(GetType(TemplatedCommand(Of )))>
+    Public MustInherit Class ContractClassTemplatedCommand(Of TTarget)
+        Inherits TemplatedCommand(Of TTarget)
+        Protected Sub New()
+            MyBase.New("", "", "")
+        End Sub
+        Protected Overrides Function PerformInvoke(ByVal target As TTarget, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
+            Contract.Requires(target IsNot Nothing)
+            Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Task(Of String))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
     End Class
 End Namespace

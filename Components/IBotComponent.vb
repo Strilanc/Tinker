@@ -12,7 +12,7 @@
         Function InvokeCommand(ByVal user As BotUser, ByVal argument As String) As Task(Of String)
 
         <ContractClassFor(GetType(IBotComponent))>
-        NotInheritable Shadows Class ContractClass
+        MustInherit Shadows Class ContractClass
             Implements IBotComponent
 
             Public ReadOnly Property Logger As Logger Implements IBotComponent.Logger

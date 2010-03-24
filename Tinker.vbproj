@@ -29,9 +29,10 @@
     <TargetFrameworkSubset>
     </TargetFrameworkSubset>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>HostBot_TemporaryKey.pfx</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>StrilancWeak.snk</AssemblyOriginatorKeyFile>
     <TargetFrameworkProfile />
     <LangVersion />
+    <CodeContractsAssemblyMode>0</CodeContractsAssemblyMode>
     <PublishUrl>C:\Users\Craig\Desktop\Installer\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -50,7 +51,6 @@
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
-    <CodeContractsAssemblyMode>0</CodeContractsAssemblyMode>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -287,7 +287,6 @@
     </Compile>
     <Compile Include="Library\CachedValues.vb" />
     <Compile Include="Commands\CommandTemplate.vb" />
-    <Compile Include="Commands\Delegated Commands.vb" />
     <Compile Include="Commands\PartialCommand.vb" />
     <Compile Include="Commands\ProjectedCommand.vb" />
     <Compile Include="Commands\TemplatedCommand.vb" />
@@ -468,6 +467,7 @@
       <CustomToolNamespace>My</CustomToolNamespace>
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
+    <None Include="StrilancWeak.snk" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
@@ -510,7 +510,6 @@
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />
     <Content Include="Docs.txt" />
     <None Include="Resources\Tinker.ico" />
-    <None Include="HostBot_TemporaryKey.pfx" />
   </ItemGroup>
   <ItemGroup>
     <PublishFile Include="Docs.txt">
