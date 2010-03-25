@@ -471,4 +471,12 @@ Public Module PoorlyCategorizedFunctions
     Public Function Max(Of T As IComparable(Of T))(ByVal val1 As T, ByVal val2 As T) As T
         Return If(val1.CompareTo(val2) >= 0, val1, val2)
     End Function
+
+    <Extension()>
+    Public Function TakeLast(Of T)(ByVal sequence As IEnumerable(Of T), ByVal count As Integer) As IEnumerable(Of T)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(count >= 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
+        Return sequence.Skip(Math.Max(0, sequence.Count - count))
+    End Function
 End Module

@@ -25,7 +25,7 @@ Namespace CKL
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             _server.Stop()
-            _control.AsyncInvokedAction(Sub() _control.Dispose())
+            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
             Return Nothing
         End Function
 

@@ -153,7 +153,7 @@ Namespace WC3
                 hook.Dispose()
             Next hook
             _gameServer.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose())
+            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
             Return Nothing
         End Function
 

@@ -158,11 +158,11 @@ Namespace WC3
             AddHandler gameSet.StateChanged, activeAdder
 
             Dim gameLink = gameSet.QueueCreateGamesAsyncView(
-                    adder:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Add(New Tuple(Of GameSet, Game)(gameSet, game))),
-                    remover:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Remove(New Tuple(Of GameSet, Game)(gameSet, game))))
+                    adder:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Add(Tuple.Create(gameSet, game))),
+                    remover:=Sub(sender, game) inQueue.QueueAction(Sub() _viewGames.Remove(Tuple.Create(gameSet, game))))
             Dim playerLink = gameSet.QueueCreatePlayersAsyncView(
-                    adder:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Add(New Tuple(Of GameSet, Game, Player)(gameSet, game, player))),
-                    remover:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(New Tuple(Of GameSet, Game, Player)(gameSet, game, player))))
+                    adder:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Add(Tuple.Create(gameSet, game, player))),
+                    remover:=Sub(sender, game, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(gameSet, game, player))))
 
             'Automatic removal
             gameSet.DisposalTask.QueueContinueWithAction(inQueue,

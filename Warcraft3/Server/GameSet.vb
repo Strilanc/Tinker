@@ -108,8 +108,8 @@
 
             'SetAdvertiserOptions(private:=False)
             Dim playerLink = game.QueueCreatePlayersAsyncView(
-                    adder:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Add(New Tuple(Of Game, Player)(game, player))),
-                    remover:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(New Tuple(Of Game, Player)(game, player))))
+                    adder:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Add(Tuple.Create(game, player))),
+                    remover:=Sub(sender, player) inQueue.QueueAction(Sub() _viewPlayers.Remove(Tuple.Create(game, player))))
 
             'Automatic removal
             game.DisposalTask.QueueContinueWithAction(inQueue,

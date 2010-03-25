@@ -89,7 +89,7 @@ Namespace Lan
                 hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
             Next hook
             _advertiser.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose())
+            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
             QueueSetAutomatic(False)
             Return Nothing
         End Function

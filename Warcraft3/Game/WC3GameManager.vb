@@ -115,7 +115,7 @@ Namespace WC3
                 hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
             Next hook
             _game.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose())
+            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
             Return Nothing
         End Function
     End Class

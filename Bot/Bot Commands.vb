@@ -35,37 +35,36 @@ Namespace Bot
                 If profileNames.None Then Throw New ArgumentException("No profiles specified.")
 
                 'Attempt to connect to each listed profile
-                Dim futureManagers = New List(Of Task(Of Bnet.ClientManager))()
+                Dim asyncManagers = New List(Of Task(Of Bnet.ClientManager))()
                 For Each profileName In profileNames
                     Contract.Assume(profileName IsNot Nothing)
                     'Create and connect
-                    Dim futureManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
-                    futureManager.ContinueWithAction(Sub(manager) manager.QueueSetAutomatic(True)).IgnoreExceptions()
-                    Dim futureAdded = (From manager In futureManager Select target.Components.QueueAddComponent(manager)).Unwrap.AssumeNotNull
-                    Dim futureClient = futureAdded.ContinueWithFunc(Function() futureManager.Result.Client)
-                    Dim futureConnected = (From client In futureClient
-                                           Select client.QueueConnectAndLogOn(
-                                                            remoteHost:=client.Profile.server.Split(" "c)(0),
-                                                            credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
-                                                        ).Unwrap.AssumeNotNull
+                    Dim asyncManager = Bnet.ClientManager.AsyncCreateFromProfile(profileName, profileName, target)
+                    asyncManager.ContinueWithAction(Sub(manager) manager.QueueSetAutomatic(True)).IgnoreExceptions()
+                    Dim asyncAdd = (From manager In asyncManager
+                                    Select target.Components.QueueAddComponent(manager)
+                                    ).Unwrap.AssumeNotNull
+                    Dim asyncClient = asyncAdd.ContinueWithFunc(Function() asyncManager.Result.Client)
+                    Dim asyncConnected = (From client In asyncClient
+                                          Select client.QueueConnectAndLogOn(
+                                                           remoteHost:=client.Profile.server.Split(" "c).First,
+                                                           credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
+                                                       ).Unwrap.AssumeNotNull
 
                     'Cleanup on failure
-                    futureManager.ContinueWithAction(Sub(manager) futureConnected.Catch(Sub() manager.Dispose())).IgnoreExceptions()
+                    asyncManager.ContinueWithAction(Sub(manager) asyncConnected.Catch(Sub() manager.Dispose())).IgnoreExceptions()
                     'Store
-                    futureManagers.Add(futureConnected.ContinueWithFunc(Function() futureManager.Result))
+                    asyncManagers.Add(asyncConnected.ContinueWithFunc(Function() asyncManager.Result))
                 Next profileName
 
                 'Link connected clients when connections completed
                 Dim result = New TaskCompletionSource(Of String)()
-                futureManagers.AsAggregateTask.ContinueWithAction(
-                    Sub()
-                        'Links.AdvertisingLink.CreateMultiWayLink(clients)
-                        result.SetResult("Connected")
-                    End Sub
+                asyncManagers.AsAggregateTask.ContinueWithAction(
+                    Sub() result.SetResult("Connected")
                 ).Catch(
                     Sub(exception)
                         'Dispose all upon failure
-                        For Each futureManager In futureManagers
+                        For Each futureManager In asyncManagers
                             If futureManager.Status = TaskStatus.RanToCompletion Then
                                 futureManager.Result.Dispose()
                             End If
@@ -94,7 +93,7 @@ Namespace Bot
                 Dim name = argument.RawValue(0)
                 Dim password = argument.NamedValue("password")
                 Return From server In target.QueueGetOrConstructGameServer()
-                       Select server.QueueAddAdminGame(name, password)
+                       From game In server.QueueAddAdminGame(name, password)
                        Select "Added admin game to server. Use Lan Advertiser on auto to advertise it."
             End Function
         End Class

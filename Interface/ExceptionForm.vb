@@ -17,12 +17,20 @@ Public Class ExceptionForm
     End Property
 
     Private Sub AddException(ByVal ex As Exception, ByVal context As String)
+        'Unwrap simple aggregated exceptions
+        Dim ax = TryCast(ex, AggregateException)
+        If ax IsNot Nothing AndAlso ax.InnerExceptions.Count = 1 AndAlso ax.Message = "One or more errors occurred." Then
+            AddException(ax.InnerExceptions.Single, context)
+            Return
+        End If
+
         'Skip double-reported exceptions
-        If (From entry In _exceptions.Skip(Math.Max(0, _exceptions.Count - 5))
+        If (From entry In _exceptions.TakeLast(5)
             Where entry.Item2 Is ex
             Where entry.Item1 = context).Any Then Return
 
-        _exceptions.Add(New Tuple(Of String, Exception)(context, ex))
+        'Log exception
+        _exceptions.Add(Tuple.Create(context, ex))
         If Me.Visible Then
             If txtExceptions.SelectionStart < txtExceptions.TextLength Then
                 btnUpdate.Visible = True

@@ -155,7 +155,7 @@ Namespace Bnet
                 hook.ContinueWithAction(Sub(value) value.Dispose()).IgnoreExceptions()
             Next hook
             _client.Dispose()
-            _control.AsyncInvokedAction(Sub() _control.Dispose())
+            _control.AsyncInvokedAction(Sub() _control.Dispose()).IgnoreExceptions()
             Return Nothing
         End Function
 
