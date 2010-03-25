@@ -191,7 +191,6 @@ Partial Class SettingsForm
         'txtGreeting
         '
         Me.txtGreeting.Location = New System.Drawing.Point(6, 253)
-        Me.txtGreeting.MaxLength = 15
         Me.txtGreeting.Multiline = True
         Me.txtGreeting.Name = "txtGreeting"
         Me.txtGreeting.ScrollBars = System.Windows.Forms.ScrollBars.Both
@@ -207,8 +206,7 @@ Partial Class SettingsForm
         Me.numReplayBuildNumber.Name = "numReplayBuildNumber"
         Me.numReplayBuildNumber.Size = New System.Drawing.Size(119, 20)
         Me.numReplayBuildNumber.TabIndex = 65
-        Me.tipNormal.SetToolTip(Me.numReplayBuildNumber, "The build number used in replay files." & Global.Microsoft.VisualBasic.ChrW(13) & Global.Microsoft.VisualBasic.ChrW(10) & "Used by warcraft to determine if the repl" & _
-                "ay is compatible with the current version.")
+        Me.tipNormal.SetToolTip(Me.numReplayBuildNumber, resources.GetString("numReplayBuildNumber.ToolTip"))
         '
         'tabsSettings
         '

@@ -142,6 +142,20 @@ Example: 6113, 6115-6116</value>
 The server is not given your user name, password, or CD Keys.
 However, if the server accidentally or purposefully returns incorrect responses, bnet will think you are cheating.</value>
   </data>
+  <data name="numReplayBuildNumber.ToolTip" xml:space="preserve">
+    <value>The 'version' used when saving replay files.
+Used by warcraft to determine if the replay is compatible with the current version.
+If this value is wrong, warcraft will refuse to play replays saved by the bot.</value>
+  </data>
+  <metadata name="colName.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
+  <metadata name="colAccess.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
+  <metadata name="colSettings.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
+    <value>True</value>
+  </metadata>
   <metadata name="colName.UserAddedColumn" type="System.Boolean, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089">
     <value>True</value>
   </metadata>

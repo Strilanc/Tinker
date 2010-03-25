@@ -37,11 +37,13 @@ Public NotInheritable Class BotUser
         value = value.Replace(Environment.NewLine, "\n")
         value = value.Replace(Microsoft.VisualBasic.vbTab, "\t")
         value = value.Replace("=", "\eq/")
+        value = value.Replace(":", "\colon/")
         Return value
     End Function
     Public Shared Function Unpack(ByVal value As String) As String
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+        value = value.Replace("\colon/", ":")
         value = value.Replace("\eq/", "=")
         value = value.Replace("\t", Microsoft.VisualBasic.vbTab)
         value = value.Replace("\n", Environment.NewLine)
@@ -52,14 +54,14 @@ Public NotInheritable Class BotUser
 
     Public Function PackPermissions() As String
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return (From pair In permissionMap
-                Select "{0}={1}".Frmt(Pack(pair.Key), pair.Value)
+        Return (From pair In PermissionMap
+                Select "{0}:{1}".Frmt(Pack(pair.Key), pair.Value)
                 ).StringJoin(SEPARATION_CHAR)
     End Function
     Public Function PackSettings() As String
         Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-        Return (From pair In settingMap
-                Select "{0}={1}".Frmt(Pack(pair.Key), Pack(pair.Value))
+        Return (From pair In SettingMap
+                Select "{0}:{1}".Frmt(Pack(pair.Key), Pack(pair.Value))
                 ).StringJoin(SEPARATION_CHAR)
     End Function
 
@@ -69,7 +71,7 @@ Public NotInheritable Class BotUser
         Dim permissionMap = New Dictionary(Of InvariantString, UInteger)
         For Each key In packedPermissions.Split(SEPARATION_CHAR)
             Contract.Assume(key IsNot Nothing)
-            Dim pair = key.Split("="c)
+            Dim pair = key.Split("="c, ":"c)
             If pair.Length <> 2 Then Continue For
             Dim value As UInteger
             If Not UInteger.TryParse(pair(1), value) Then Continue For
@@ -85,7 +87,7 @@ Public NotInheritable Class BotUser
         Dim settingMap As New Dictionary(Of InvariantString, String)
         For Each key In packedSettings.Split(SEPARATION_CHAR)
             Contract.Assume(key IsNot Nothing)
-            Dim pair = key.Split("="c)
+            Dim pair = key.Split("="c, ":"c)
             If pair.Length <> 2 Then Continue For
             Contract.Assume(pair(1) IsNot Nothing)
             settingMap(Unpack(pair(0))) = Unpack(pair(1))
@@ -213,9 +215,9 @@ Public NotInheritable Class BotUser
     End Operator
 
     Public Overrides Function ToString() As String
-        Return "{0}: {1}".Frmt(Name, (From pair In permissionMap
+        Return "{0}: {1}".Frmt(Name, (From pair In PermissionMap
                                       Where pair.Value <> 0
-                                      Select "{0}={1}".Frmt(pair.Key, pair.Value)
+                                      Select "{0}:{1}".Frmt(pair.Key, pair.Value)
                                       ).StringJoin(", "))
     End Function
 End Class

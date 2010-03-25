@@ -125,17 +125,16 @@ Namespace Bnet
             If _client Is Nothing Then Return
             e.Handled = True
             e.SuppressKeyPress = True
+            Dim msg = txtTalk.Text
+            txtTalk.Text = ""
             _client.QueueSendText(txtTalk.Text).ContinueWithAction(
-                Sub()
-                    logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, txtTalk.Text), Color.DarkBlue)
-                End Sub
+                Sub() logClient.LogMessage("{0}: {1}".Frmt(_client.UserName, msg), Color.DarkBlue)
             ).Catch(
                 Sub(ex)
                     logClient.LogMessage("Error sending text: {0}".Frmt(ex.Summarize), Color.Red)
                     ex.RaiseAsUnexpected("Sending bnet client text.")
                 End Sub
             )
-            txtTalk.Text = ""
         End Sub
 
         Private Sub OnClientStateChanged(ByVal sender As Bnet.Client,
