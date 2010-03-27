@@ -53,7 +53,7 @@ Namespace WC3.Protocol
             Dim pickle = DataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                             {"source", value.Id},
                                             {"actions", value.Actions}}))
-            Return value.Pickled(pickle.Data, pickle.Description)
+            Return pickle.WithValue(value)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
@@ -62,7 +62,7 @@ Namespace WC3.Protocol
             Dim actions = pickle.Value.ItemAs(Of IReadableList(Of GameAction))("actions")
             If id.Index < 1 OrElse id.Index > 12 Then Throw New IO.InvalidDataException("Invalid pid.")
             Dim value = New PlayerActionSet(id, actions)
-            Return value.Pickled(pickle.Data, pickle.Description)
+            Return pickle.WithValue(value)
         End Function
     End Class
 End Namespace

@@ -112,7 +112,7 @@
             Dim sizeBytes = CULng(pickle.Data.Count).Bytes.Take(_prefixSize)
             If sizeBytes.Take(_prefixSize).ToUValue <> pickle.Data.Count Then Throw New PicklingException("Unable to fit byte count into size prefix.")
             Dim data = sizeBytes.Concat(pickle.Data).ToReadableList
-            Return value.Pickled(data, pickle.Description)
+            Return pickle.WithData(data)
         End Function
 
         <ContractVerification(False)>
@@ -124,7 +124,7 @@
             Dim datum = data.SubView(0, CInt(_prefixSize + dataSize))
             Dim pickle = _subJar.Parse(datum.SubView(_prefixSize))
             If pickle.Data.Count < dataSize Then Throw New PicklingException("Fragmented data.")
-            Return pickle.Value.Pickled(datum, pickle.Description)
+            Return pickle.WithData(datum)
         End Function
     End Class
 
@@ -204,7 +204,7 @@
 
         Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
             Dim pickle = _subJar.Pack(value)
-            Return pickle.Value.Pickled(pickle.Data.Append(0).ToReadableList, pickle.Description)
+            Return pickle.WithData(pickle.Data.Append(0).ToReadableList)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
@@ -214,7 +214,7 @@
             'Parse
             Dim pickle = _subJar.Parse(data.SubView(0, p))
             If pickle.Data.Count <> p Then Throw New PicklingException("Leftover data before null terminator.")
-            Return pickle.Value.Pickled(data.SubView(0, p + 1), pickle.Description)
+            Return pickle.WithData(data.SubView(0, p + 1))
         End Function
     End Class
 
@@ -238,7 +238,7 @@
             If value.Item1 Then
                 Contract.Assume(value.Item2 IsNot Nothing)
                 Dim pickle = _subJar.Pack(value.Item2)
-                Return value.Pickled(pickle.Data, pickle.Description)
+                Return pickle.WithValue(value)
             Else
                 Return value.Pickled(New Byte() {}.AsReadableList, Function() "[Not Included]")
             End If
@@ -248,7 +248,7 @@
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Tuple(Of Boolean, T))
             If data.Count > 0 Then
                 Dim pickle = _subJar.Parse(data)
-                Return Tuple.Create(True, pickle.Value).Pickled(pickle.Data, pickle.Description)
+                Return pickle.WithValue(Tuple.Create(True, pickle.Value))
             Else
                 Return Tuple.Create(False, CType(Nothing, T)).Pickled(data, Function() "[Not Included]")
             End If
@@ -334,7 +334,7 @@
             Contract.Assume(checksum IsNot Nothing)
             Contract.Assume(checksum.Count = _checksumSize)
             Dim data = checksum.Concat(pickle.Data).ToReadableList
-            Return value.Pickled(data, pickle.Description)
+            Return pickle.WithData(data)
         End Function
 
         <ContractVerification(False)>
@@ -344,7 +344,7 @@
             Dim pickle = _subJar.Parse(data.SubView(_checksumSize))
             If Not _checksumFunction(pickle.Data).SequenceEqual(checksum) Then Throw New PicklingException("Checksum didn't match.")
             Dim datum = data.SubView(0, _checksumSize + pickle.Data.Count)
-            Return pickle.Value.Pickled(datum, pickle.Description)
+            Return pickle.WithData(datum)
         End Function
     End Class
 
@@ -366,13 +366,13 @@
         Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
             Dim pickle = _subJar.Pack(value)
             Dim data = pickle.Data.Reverse.ToReadableList
-            Return pickle.Value.Pickled(data, pickle.Description)
+            Return pickle.WithData(data)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
             Dim pickle = _subJar.Parse(data.Reverse.ToReadableList)
             If pickle.Data.Count <> data.Count Then Throw New PicklingException("Leftover reversed data.")
-            Return pickle.Value.Pickled(data, pickle.Description)
+            Return pickle.WithData(data)
         End Function
     End Class
 End Namespace

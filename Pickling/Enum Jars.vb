@@ -22,8 +22,7 @@
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(TEnum)))
             End If
-            Dim pickle = _subJar.Pack(value)
-            Return value.Pickled(pickle.Data, Function() ValueToString(value))
+            Return _subJar.Pack(value).WithDescription(Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of TEnum)
@@ -32,7 +31,7 @@
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(TEnum)))
             End If
-            Return value.Pickled(pickle.Data, Function() ValueToString(value))
+            Return pickle.WithValue(value).WithDescription(Function() ValueToString(value))
         End Function
 
         <Pure()>

@@ -206,8 +206,7 @@
 
         <ContractVerification(False)>
         Private Function SimplePack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
-            Dim pickle = Pack(value.DynamicDirectCastTo(Of T)())
-            Return value.Pickled(pickle.Data, pickle.Description)
+            Return Pack(value.DynamicDirectCastTo(Of T)()).WithValue(value)
         End Function
         Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
             Return Parse(data)
