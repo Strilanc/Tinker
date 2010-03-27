@@ -42,8 +42,6 @@
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(_mapChecksumSHA1.Count = 20)
             Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
-            Contract.Invariant(_playableWidth > 0)
-            Contract.Invariant(_playableHeight > 0)
         End Sub
 
 #Region "Properties"
@@ -107,13 +105,11 @@
         End Property
         Public ReadOnly Property PlayableWidth As UInt16
             Get
-                Contract.Ensures(Contract.Result(Of UInt16)() > 0)
                 Return _playableWidth
             End Get
         End Property
         Public ReadOnly Property PlayableHeight As UInt16
             Get
-                Contract.Ensures(Contract.Result(Of UInt16)() > 0)
                 Return _playableHeight
             End Get
         End Property
@@ -144,8 +140,6 @@
             Contract.Requires(advertisedPath.StartsWith("Maps\"))
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
-            Contract.Requires(playableWidth > 0)
-            Contract.Requires(playableHeight > 0)
 
             Me._randomHero = randomHero
             Me._randomRace = randomRace

@@ -278,7 +278,7 @@ Public Class SettingsForm
             OpenFileDialog.InitialDirectory = IO.Path.Combine(My.Settings.war3path, "Replay")
             OpenFileDialog.Filter = "Replays (*.w3g)|*.w3g"
             If OpenFileDialog.ShowDialog() = Windows.Forms.DialogResult.OK Then
-                Dim buildNumber = WC3.Replay.ReplayReader.FromFile(OpenFileDialog.FileName).BuildNumber
+                Dim buildNumber = WC3.Replay.ReplayReader.FromFile(OpenFileDialog.FileName).ReplayVersion
                 If numReplayBuildNumber.Value = buildNumber Then
                     MessageBox.Show("That replay's build number matches the current setting: {0}".Frmt(buildNumber),
                                     "Notice",

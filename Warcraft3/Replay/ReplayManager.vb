@@ -30,7 +30,7 @@
             Dim leaveHandler As Game.PlayerLeftEventHandler =
                     Sub(sender, gameState, leaver, leaveType, reason) inQueue.QueueAction(Sub() Onleave(leaver, leaveType))
             Dim launchHandler As Game.RecordGameStartedEventHandler =
-                    Sub(sender) inQueue.QueueAction(Sub() _writer.AddGameStarted())
+                    Sub(sender) inQueue.QueueAction(Sub() _writer.WriteEntry(MakeGameStarted()))
 
             AddHandler game.Tick, tickHandler
             AddHandler game.PlayerTalked, chatHandler
@@ -70,7 +70,7 @@
             Dim i = 1
             While IO.File.Exists(filename)
                 i += 1
-                filename = IO.Path.Combine(folder, defaultFileName + " - {0}.w3g".Frmt(i))
+                filename = IO.Path.Combine(folder, "{0} - {1}.w3g".Frmt(defaultFileName, i))
             End While
 
             'Start
@@ -78,14 +78,31 @@
             Contract.Assume(file.CanWrite)
             Contract.Assume(file.CanSeek)
             Dim writer = New Replay.ReplayWriter(stream:=file.AsRandomWritableStream,
+                                                 settings:=ReplaySettings.Online,
                                                  wc3Version:=New CachedExternalValues().WC3MajorVersion,
-                                                 wc3BuildNumber:=My.Settings.ReplayBuildNumber,
-                                                 primaryPlayer:=players.First.AssumeNotNull,
-                                                 secondaryPlayers:=players.Skip(1),
-                                                 GameDescription:=game.Settings.GameDescription,
-                                                 Map:=game.Settings.Map,
-                                                 slots:=slots,
-                                                 randomSeed:=randomSeed)
+                                                 wc3BuildNumber:=My.Settings.ReplayBuildNumber)
+
+            Dim primaryPlayer = players.First.AssumeNotNull
+            Dim secondaryPlayers = players.Skip(1)
+            writer.WriteEntry(MakeStartOfReplay(primaryPlayer.Id,
+                                                primaryPlayer.Name,
+                                                primaryPlayer.PeerData,
+                                                game.Settings.GameDescription.Name,
+                                                game.Settings.GameDescription.GameStats,
+                                                CUInt(secondaryPlayers.Count + 1),
+                                                game.Settings.GameDescription.GameType))
+
+            For Each player In secondaryPlayers
+                writer.WriteEntry(MakePlayerJoined(player.Id, player.Name, player.PeerData))
+            Next player
+
+            writer.WriteEntry(MakeLobbyState(slots,
+                                             randomSeed,
+                                             game.Settings.Map.LayoutStyle,
+                                             CUInt(game.Settings.Map.Slots.Count)))
+
+            writer.WriteEntry(MakeLoadStarted1())
+            writer.WriteEntry(MakeLoadStarted2())
 
             'Construct
             Dim result = New ReplayManager(writer)
@@ -96,7 +113,7 @@
         Private Sub OnTick(ByVal duration As UShort,
                            ByVal actions As IReadableList(Of Tuple(Of Player, Protocol.PlayerActionSet)))
             Contract.Requires(actions IsNot Nothing)
-            _writer.AddTick(duration, (From action In actions Select action.Item2).ToReadableList)
+            _writer.WriteEntry(MakeTick(duration, (From action In actions Select action.Item2).ToReadableList))
         End Sub
         Private Sub OnChat(ByVal speaker As Player,
                            ByVal text As String,
@@ -104,15 +121,15 @@
             Contract.Requires(speaker IsNot Nothing)
             Contract.Requires(text IsNot Nothing)
             If receivingGroup Is Nothing Then
-                _writer.AddLobbyChatMessage(speaker.Id, text)
+                _writer.WriteEntry(MakeLobbyChatMessage(speaker.Id, text))
             Else
-                _writer.AddGameChatMessage(speaker.Id, text, receivingGroup.Value)
+                _writer.WriteEntry(MakeGameChatMessage(speaker.Id, text, receivingGroup.Value))
             End If
         End Sub
         Private Sub Onleave(ByVal leaver As Player,
                             ByVal reportedResult As Protocol.PlayerLeaveReason)
             Contract.Requires(leaver IsNot Nothing)
-            _writer.AddPlayerLeft(0, leaver.Id, reportedResult, 0)
+            _writer.WriteEntry(MakePlayerLeft(0, leaver.Id, reportedResult, 0))
         End Sub
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

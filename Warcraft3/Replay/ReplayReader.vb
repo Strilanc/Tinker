@@ -2,30 +2,43 @@
 
 Namespace WC3.Replay
     Public Class ReplayReader
-        Private ReadOnly _blockCount As UInt32
-        Private ReadOnly _firstBlockOffset As UInt32
-        Private ReadOnly _dataSize As UInt32
-        Private ReadOnly _buildNumber As UInt16
-        Private ReadOnly _gameDuration As TimeSpan
         Private ReadOnly _streamFactory As Func(Of IRandomReadableStream)
+        Private ReadOnly _description As Lazy(Of String)
+        Private ReadOnly _headerSize As UInt32
+        Private ReadOnly _dataDecompressedSize As UInt32
+        Private ReadOnly _dataBlockCount As UInt32
+        Private ReadOnly _wc3Version As UInt32
+        Private ReadOnly _replayVersion As UInt16
+        Private ReadOnly _settings As ReplaySettings
+        Private ReadOnly _gameDuration As TimeSpan
 
         <ContractInvariantMethod()> Private Shadows Sub ObjectInvariant()
             Contract.Invariant(_streamFactory IsNot Nothing)
+            Contract.Invariant(_description IsNot Nothing)
+            Contract.Invariant(_gameDuration.Ticks >= 0)
         End Sub
 
         Public Sub New(ByVal streamFactory As Func(Of IRandomReadableStream),
-                       ByVal blockCount As UInt32,
-                       ByVal firstBlockOffset As UInt32,
+                       ByVal description As Lazy(Of String),
+                       ByVal headerSize As UInt32,
                        ByVal dataDecompressedSize As UInt32,
-                       ByVal buildNumber As UInt16,
-                       ByVal gameDurationMilliseconds As UInt32)
+                       ByVal dataBlockCount As UInt32,
+                       ByVal wc3Version As UInt32,
+                       ByVal replayVersion As UInt16,
+                       ByVal settings As ReplaySettings,
+                       ByVal gameDuration As TimeSpan)
             Contract.Requires(streamFactory IsNot Nothing)
+            Contract.Requires(description IsNot Nothing)
+            Contract.Requires(gameDuration.Ticks >= 0)
             Me._streamFactory = streamFactory
-            Me._firstBlockOffset = firstBlockOffset
-            Me._dataSize = dataDecompressedSize
-            Me._blockCount = blockCount
-            Me._buildNumber = buildNumber
-            Me._gameDuration = gameDurationMilliseconds.Milliseconds
+            Me._description = description
+            Me._headerSize = headerSize
+            Me._dataDecompressedSize = dataDecompressedSize
+            Me._dataBlockCount = dataBlockCount
+            Me._wc3Version = wc3Version
+            Me._replayVersion = replayVersion
+            Me._settings = settings
+            Me._gameDuration = gameDuration
         End Sub
 
         Public Shared Function FromFile(ByVal path As String) As ReplayReader
@@ -41,46 +54,72 @@ Namespace WC3.Replay
             Using stream = streamFactory()
                 If stream Is Nothing Then Throw New InvalidStateException("Invalid streamFactory")
                 'Read header values
-                Dim magic = stream.ReadNullTerminatedString(maxLength:=28)
-                Dim headerSize = stream.ReadUInt32()
-                Dim compressedSize = stream.ReadUInt32()
-                Dim headerVersion = stream.ReadUInt32()
-                Dim decompressedSize = stream.ReadUInt32()
-                Dim blockCount = stream.ReadUInt32()
-                Dim productId = stream.ReadExact(4).ParseChrString(nullTerminated:=False)
-                Dim wc3Version = stream.ReadUInt32()
-                Dim wc3ReplayBuildNumber = stream.ReadUInt16()
-                Dim flags = stream.ReadUInt16()
-                Dim gameDurationMilliseconds = stream.ReadUInt32()
-                Dim headerCRC32 = stream.ReadUInt32()
+                Dim pickle = stream.ReadPickle(Format.ReplayHeader)
+                Dim header = pickle.Value
+                Dim headerSize = header.ItemAs(Of UInt32)("header size")
                 Contract.Assume(stream.Position = Format.HeaderSize)
 
                 'Check header values
-                If magic <> Format.HeaderMagicValue Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect magic value).")
-                If productId <> "PX3W" Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect product id).")
-                If headerVersion <> Format.HeaderVersion Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
+                If header.ItemAs(Of String)("magic") <> Format.HeaderMagicValue Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect magic value).")
+                If header.ItemAs(Of String)("product id") <> "W3XP" Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect product id).")
+                If header.ItemAs(Of UInt32)("header version") <> Format.HeaderVersion Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
                 If headerSize <> Format.HeaderSize Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect header size).")
 
                 'Check header checksum
                 Dim actualChecksum = stream.ReadExactAt(position:=0, exactCount:=CInt(headerSize - 4)).Concat({0, 0, 0, 0}).CRC32
-                If actualChecksum <> headerCRC32 Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect checksum).")
+                If actualChecksum <> header.ItemAs(Of UInt32)("header crc32") Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect checksum).")
 
                 Return New ReplayReader(streamFactory:=streamFactory,
-                                        blockCount:=blockCount,
-                                        firstBlockOffset:=headerSize,
-                                        dataDecompressedSize:=decompressedSize,
-                                        BuildNumber:=wc3ReplayBuildNumber,
-                                        gameDurationMilliseconds:=gameDurationMilliseconds)
+                                        Description:=pickle.Description,
+                                        headerSize:=headerSize,
+                                        DataDecompressedSize:=header.ItemAs(Of UInt32)("data decompressed size"),
+                                        DataBlockCount:=header.ItemAs(Of UInt32)("data block count"),
+                                        WC3Version:=header.ItemAs(Of UInt32)("wc3 version"),
+                                        ReplayVersion:=header.ItemAs(Of UInt16)("replay version"),
+                                        Settings:=header.ItemAs(Of ReplaySettings)("settings"),
+                                        GameDuration:=header.ItemAs(Of UInt32)("duration in game milliseconds").Milliseconds)
             End Using
         End Function
 
-        Public ReadOnly Property BuildNumber As UInt16
+        Public ReadOnly Property Description As Lazy(Of String)
             Get
-                Return _buildNumber
+                Contract.Ensures(Contract.Result(Of Lazy(Of String))() IsNot Nothing)
+                Return _description
+            End Get
+        End Property
+        Public ReadOnly Property HeaderSize As UInt32
+            Get
+                Return _headerSize
+            End Get
+        End Property
+        Public ReadOnly Property DataDecompressedSize As UInt32
+            Get
+                Return _dataDecompressedSize
+            End Get
+        End Property
+        Public ReadOnly Property DataBlockCount As UInt32
+            Get
+                Return _dataBlockCount
+            End Get
+        End Property
+        Public ReadOnly Property WC3Version As UInt32
+            Get
+                Return _wc3Version
+            End Get
+        End Property
+        Public ReadOnly Property ReplayVersion As UInt16
+            Get
+                Return _replayVersion
+            End Get
+        End Property
+        Public ReadOnly Property Settings As ReplaySettings
+            Get
+                Return _settings
             End Get
         End Property
         Public ReadOnly Property GameDuration As TimeSpan
             Get
+                Contract.Ensures(Contract.Result(Of TimeSpan)().Ticks >= 0)
                 Return _gameDuration
             End Get
         End Property
@@ -90,7 +129,7 @@ Namespace WC3.Replay
             Contract.Ensures(Contract.Result(Of IRandomReadableStream)() IsNot Nothing)
             Dim stream = _streamFactory()
             If stream Is Nothing Then Throw New InvalidStateException("Invalid stream factory.")
-            Return New ReplayDataReader(stream, _blockCount, _firstBlockOffset, _dataSize)
+            Return New ReplayDataReader(stream, _dataBlockCount, _headerSize, _dataDecompressedSize)
         End Function
 
         Public ReadOnly Property Entries() As IEnumerable(Of ReplayEntry)
@@ -102,30 +141,12 @@ Namespace WC3.Replay
         Private Function EnumerateEntries() As IEnumerator(Of ReplayEntry)
             Contract.Ensures(Contract.Result(Of IEnumerator(Of ReplayEntry))() IsNot Nothing)
 
-            Dim blockJars = New Dictionary(Of ReplayEntryId, ISimpleJar)() From {
-                        {ReplayEntryId.ChatMessage, Format.ReplayEntryChatMessage},
-                        {ReplayEntryId.GameStarted, Format.ReplayEntryGameStarted},
-                        {ReplayEntryId.GameStateChecksum, Format.ReplayEntryGameStateChecksum},
-                        {ReplayEntryId.LoadStarted1, Format.ReplayEntryLoadStarted1},
-                        {ReplayEntryId.LoadStarted2, Format.ReplayEntryLoadStarted2},
-                        {ReplayEntryId.LobbyState, Format.ReplayEntryLobbyState},
-                        {ReplayEntryId.PlayerJoined, Format.ReplayEntryPlayerJoined},
-                        {ReplayEntryId.PlayerLeft, Format.ReplayEntryPlayerLeft},
-                        {ReplayEntryId.StartOfReplay, Format.ReplayEntryStartOfReplay},
-                        {ReplayEntryId.Tick, Format.ReplayEntryTick},
-                        {ReplayEntryId.TournamentForcedCountdown, Format.ReplayEntryTournamentForcedCountdown},
-                        {ReplayEntryId.Unknown0x23, Format.ReplayEntryUnknown0x23}
-                    }
-
+            Dim jar = New ReplayEntryJar()
             Dim stream = MakeDataStream()
             Return New Enumerator(Of ReplayEntry)(
                 Function(controller)
                     If stream.Position >= stream.Length Then Return controller.Break
-                    Dim blockId = CType(stream.ReadByte(), ReplayEntryId)
-                    If Not blockJars.ContainsKey(blockId) Then
-                        Throw New IO.InvalidDataException("Unrecognized {0}: {1}".Frmt(GetType(ReplayEntryId), blockId))
-                    End If
-                    Return New ReplayEntry(blockId, stream.ReadPickle(blockJars(blockId)))
+                    Return stream.ReadPickle(jar).Value
                 End Function,
                 disposer:=AddressOf stream.Dispose)
         End Function

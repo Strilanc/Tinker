@@ -124,6 +124,28 @@ Public Module StreamExtensions
             Throw New IO.InvalidDataException(ex.Summarize, ex)
         End Try
     End Function
+    <Extension()>
+    <ContractVerification(False)>
+    Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IParseJar(Of T)) As IPickle(Of T)
+        Contract.Requires(stream IsNot Nothing)
+        Contract.Requires(jar IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
+        Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of ISimplePickle).Data.Count)
+        Try
+            Dim oldPosition = stream.Position
+            Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
+                '[first parse: learn needed data]
+                Dim result = jar.Parse(view)
+                '[second parse: work with copied data, to avoid accessing the disposed StreamAsList later]
+                result = jar.Parse(result.Data.Cache.ToReadableList)
+                'Place position after used data, as if it had been read normally
+                stream.Position = oldPosition + result.Data.Count
+                Return result
+            End Using
+        Catch ex As PicklingException
+            Throw New IO.InvalidDataException(ex.Summarize, ex)
+        End Try
+    End Function
 
     <Extension()>
     <ContractVerification(False)>

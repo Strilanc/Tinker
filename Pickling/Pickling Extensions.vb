@@ -33,6 +33,7 @@
             End If
         End Function
 
+        <DebuggerDisplay("{ToString}")>
         Private NotInheritable Class NamedJar(Of T)
             Inherits BaseJar(Of T)
             Implements INamedJar(Of T)
@@ -63,6 +64,10 @@
             Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
                 Dim pickle = _subjar.Parse(data)
                 Return pickle.Value.Pickled(pickle.Data, Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
+            End Function
+
+            Public Overrides Function ToString() As String
+                Return _name
             End Function
         End Class
 

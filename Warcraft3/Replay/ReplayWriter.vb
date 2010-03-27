@@ -4,6 +4,7 @@ Namespace WC3.Replay
     Public Class ReplayWriter
         Inherits DisposableWithTask
 
+        Private Shared ReadOnly entryJar As New ReplayEntryJar()
         Private Const BlockSize As Integer = 8192
 
         Private ReadOnly _wc3Version As UInt32
@@ -11,13 +12,15 @@ Namespace WC3.Replay
         Private ReadOnly _stream As IRandomWritableStream
         Private ReadOnly _blockDataBuffer As New IO.MemoryStream
         Private ReadOnly _startPosition As Long
+        Private ReadOnly _providedDuration As UInt32?
+        Private ReadOnly _settings As ReplaySettings
         Private _dataCompressor As IWritableStream
         Private _blockSizeRemaining As Integer
 
         Private _decompressedSize As UInt32
         Private _compressedSize As UInt32
         Private _blockCount As UInt32
-        Private _duration As UInt32
+        Private _measuredDuration As UInt32
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_stream IsNot Nothing)
@@ -29,82 +32,21 @@ Namespace WC3.Replay
         End Sub
 
         Public Sub New(ByVal stream As IRandomWritableStream,
+                       ByVal settings As ReplaySettings,
                        ByVal wc3Version As UInt32,
                        ByVal wc3BuildNumber As UInt16,
-                       ByVal primaryPlayer As Player,
-                       ByVal secondaryPlayers As IEnumerable(Of Player),
-                       ByVal gameDescription As GameDescription,
-                       ByVal map As Map,
-                       ByVal slots As IEnumerable(Of Slot),
-                       ByVal randomSeed As UInt32,
-                       Optional ByVal language As UInt32 = &H18F8B0)
+                       Optional ByVal duration As UInt32? = Nothing)
             Contract.Requires(stream IsNot Nothing)
-            Contract.Requires(primaryPlayer IsNot Nothing)
-            Contract.Requires(secondaryPlayers IsNot Nothing)
-            Contract.Requires(gameDescription IsNot Nothing)
 
             Me._stream = stream
             Me._startPosition = stream.Position
             Me._wc3Version = wc3Version
             Me._wc3BuildNumber = wc3BuildNumber
-
-            Start(primaryPlayer, secondaryPlayers, gameDescription, language, map, slots, randomSeed)
-        End Sub
-
-        Private Sub Start(ByVal primaryPlayer As Player,
-                          ByVal secondaryPlayers As IEnumerable(Of Player),
-                          ByVal gameDesc As GameDescription,
-                          ByVal language As UInt32,
-                          ByVal map As Map,
-                          ByVal slots As IEnumerable(Of Slot),
-                          ByVal randomSeed As UInt32)
-            Contract.Requires(primaryPlayer IsNot Nothing)
-            Contract.Requires(secondaryPlayers IsNot Nothing)
-            Contract.Requires(gameDesc IsNot Nothing)
+            Me._settings = settings
+            Me._providedDuration = duration
 
             _stream.WriteAt(_startPosition, CByte(0).Repeated(CInt(Format.HeaderSize)).ToReadableList)
             StartBlock()
-
-            WriteReplayEntryPickle(ReplayEntryId.StartOfReplay,
-                                   Format.ReplayEntryStartOfReplay,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                           {"unknown1", 1},
-                                           {"primary player id", primaryPlayer.Id},
-                                           {"primary player name", primaryPlayer.Name.ToString},
-                                           {"primary player shared data", primaryPlayer.PeerData},
-                                           {"game name", gameDesc.Name.ToString},
-                                           {"unknown2", 0},
-                                           {"game stats", gameDesc.GameStats},
-                                           {"player count", secondaryPlayers.Count + 1},
-                                           {"game type", gameDesc.GameType},
-                                           {"language", language}})
-
-            For Each player In secondaryPlayers
-                WriteReplayEntryPickle(ReplayEntryId.PlayerJoined,
-                                       Format.ReplayEntryPlayerJoined,
-                                       New Dictionary(Of InvariantString, Object) From {
-                                               {"joiner id", player.Id},
-                                               {"name", player.Name.ToString},
-                                               {"shared data", player.PeerData},
-                                               {"unknown", 0}})
-            Next player
-
-            WriteReplayEntryPickle(ReplayEntryId.LobbyState,
-                                   Format.ReplayEntryLobbyState,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                        {"slots", (From slot In slots Select Protocol.SlotJar.PackSlot(slot)).ToReadableList},
-                                        {"random seed", randomSeed},
-                                        {"layout style", map.LayoutStyle},
-                                        {"num player slots", map.Slots.Count}})
-
-            WriteReplayEntryPickle(ReplayEntryId.LoadStarted1,
-                                   Format.ReplayEntryLoadStarted1,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                        {"unknown", 1}})
-            WriteReplayEntryPickle(ReplayEntryId.LoadStarted2,
-                                   Format.ReplayEntryLoadStarted2,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                        {"unknown", 1}})
         End Sub
 
         <ContractVerification(False)>
@@ -148,7 +90,7 @@ Namespace WC3.Replay
             _blockCount += 1UI
         End Sub
 
-        Private Sub WriteData(ByVal data As IReadableList(Of Byte))
+        Public Sub WriteData(ByVal data As IReadableList(Of Byte))
             Contract.Requires(data IsNot Nothing)
             If Me.IsDisposed Then Throw New ObjectDisposedException(Me.GetType.Name)
 
@@ -166,71 +108,9 @@ Namespace WC3.Replay
             End If
             Contract.Assume(_blockSizeRemaining >= 0)
         End Sub
-        Private Sub WriteReplayEntryPickle(Of T)(ByVal id As ReplayEntryId,
-                                                 ByVal jar As IJar(Of T),
-                                                 ByVal value As T)
-            Contract.Requires(jar IsNot Nothing)
-            Contract.Requires(value IsNot Nothing)
-            WriteData(New Byte() {id}.AsReadableList)
-            WriteData(jar.Pack(value).Data)
-        End Sub
-
-        Public Sub AddGameStarted()
-            WriteReplayEntryPickle(ReplayEntryId.GameStarted,
-                                   Format.ReplayEntryGameStarted,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                        {"unknown", 1}})
-        End Sub
-        Public Sub AddPlayerLeft(ByVal unknown1 As UInt32,
-                                 ByVal leaver As PlayerId,
-                                 ByVal reportedReason As Protocol.PlayerLeaveReason,
-                                 ByVal leaveCount As UInt32)
-            WriteReplayEntryPickle(ReplayEntryId.PlayerLeft,
-                                   Format.ReplayEntryPlayerLeft,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                        {"unknown1", unknown1},
-                                        {"leaver", leaver},
-                                        {"reason", reportedReason},
-                                        {"session leave count", leaveCount}})
-        End Sub
-        Public Sub AddGameStateChecksum(ByVal checksum As UInt32)
-            WriteReplayEntryPickle(ReplayEntryId.GameStateChecksum,
-                                   Format.ReplayEntryGameStateChecksum,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                        {"unknown", 4},
-                                        {"checksum", checksum}})
-        End Sub
-        Public Sub AddLobbyChatMessage(ByVal sender As PlayerId, ByVal message As String)
-            Contract.Requires(message IsNot Nothing)
-            WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
-                                   Format.ReplayEntryChatMessage,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                        {"speaker", sender},
-                                        {"size", 1 + message.Length + 1},
-                                        {"type", Protocol.ChatType.Lobby},
-                                        {"message", message}})
-        End Sub
-        Public Sub AddGameChatMessage(ByVal sender As PlayerId, ByVal message As String, ByVal receivingGroup As WC3.Protocol.ChatGroup)
-            Contract.Requires(message IsNot Nothing)
-            WriteReplayEntryPickle(ReplayEntryId.ChatMessage,
-                                   Format.ReplayEntryChatMessage,
-                                   New Dictionary(Of InvariantString, Object) From {
-                                        {"speaker", sender},
-                                        {"size", 1 + 4 + message.Length + 1},
-                                        {"type", Protocol.ChatType.Game},
-                                        {"receiving group", receivingGroup},
-                                        {"message", message}})
-        End Sub
-        Public Sub AddTick(ByVal duration As UInt16, ByVal actions As IReadableList(Of Protocol.PlayerActionSet))
-            Contract.Requires(actions IsNot Nothing)
-            _duration += duration
-
-            WriteReplayEntryPickle(
-                ReplayEntryId.Tick,
-                Format.ReplayEntryTick,
-                New Dictionary(Of InvariantString, Object) From {
-                        {"time span", duration},
-                        {"player action sets", actions}})
+        Public Sub WriteEntry(ByVal entry As ReplayEntry)
+            Contract.Requires(entry IsNot Nothing)
+            WriteData(entryJar.Pack(entry).Data)
         End Sub
 
         <ContractVerification(False)>
@@ -248,8 +128,8 @@ Namespace WC3.Replay
                 header.Write("PX3W".ToAscBytes.AsReadableList)
                 header.Write(_wc3Version)
                 header.Write(_wc3BuildNumber)
-                header.Write(1US << 15) 'flags
-                header.Write(_duration)
+                header.Write(_settings)
+                header.Write(If(_providedDuration, _measuredDuration))
 
                 'checksum
                 Contract.Assume(header.Length = Format.HeaderSize - 4)

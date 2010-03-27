@@ -151,8 +151,6 @@ Namespace WC3.Protocol
             Dim hostName As InvariantString = vals.ItemAs(Of String)("host name")
             Contract.Assume(sha1Checksum.Count = 20)
             If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
-            Contract.Assume(playableWidth > 0)
-            Contract.Assume(playableHeight > 0)
 
             'Finish
             Dim value = New GameStats(randomHero:=randomHero,
