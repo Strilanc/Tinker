@@ -209,7 +209,7 @@ Namespace WC3
 
             Dim hostName = If(user Is Nothing, Application.ProductName, user.Name.Value)
             Contract.Assume(hostName IsNot Nothing)
-            Dim gameStats = New WC3.GameStats(map, hostName, argument)
+            Dim gameStats = WC3.GameStats.FromMapAndArgument(map, hostName, argument)
 
             Dim totalSlotCount = map.Slots.Count
             Select Case gameStats.observers
@@ -282,7 +282,7 @@ Namespace WC3
             Contract.Assume(hostName IsNot Nothing)
             Dim gameDescription = New WC3.LocalGameDescription(
                                           name:=name,
-                                          GameStats:=New WC3.GameStats(map, hostName, New Commands.CommandArgument("")),
+                                          GameStats:=WC3.GameStats.FromMapAndArgument(map, hostName, New Commands.CommandArgument("")),
                                           gameid:=AllocateGameId(),
                                           entryKey:=0,
                                           totalSlotCount:=map.Slots.Count,

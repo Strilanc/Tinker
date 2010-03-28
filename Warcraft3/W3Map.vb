@@ -70,7 +70,7 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
             Dim factory = Function() New IO.FileStream(filePath, IO.FileMode.Open, IO.FileAccess.Read, IO.FileShare.Read).AsRandomReadableStream.AsNonNull
             Dim mapArchive = MPQ.Archive.FromStreamFactory(factory)
-            Dim war3PatchArchive = OpenWar3PatchArchive(wc3PatchMPQFolder)
+            Dim war3PatchArchive = MPQ.Archive.FromFile(IO.Path.Combine(wc3PatchMPQFolder, "War3Patch.mpq"))
             Dim info = ReadMapInfo(mapArchive)
 
             Dim basePath As InvariantString = wc3MapFolder.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
@@ -292,25 +292,6 @@ Namespace WC3
             End Using
         End Function
 
-        Private Shared Function OpenWar3PatchArchive(ByVal war3PatchFolder As String) As MPQ.Archive
-            Contract.Requires(war3PatchFolder IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of MPQ.Archive)() IsNot Nothing)
-            Dim normalPath = IO.Path.Combine(war3PatchFolder, "War3Patch.mpq")
-            Dim copyPath = IO.Path.Combine(war3PatchFolder, "TinkerTempCopyWar3Patch{0}.mpq".Frmt(New CachedExternalValues().WC3ExeVersion.StringJoin(".")))
-            If IO.File.Exists(copyPath) Then
-                Return MPQ.Archive.FromFile(copyPath)
-            ElseIf IO.File.Exists(normalPath) Then
-                Try
-                    Return MPQ.Archive.FromFile(normalPath)
-                Catch e As IO.IOException
-                    IO.File.Copy(normalPath, copyPath)
-                    Return MPQ.Archive.FromFile(copyPath)
-                End Try
-            Else
-                Throw New IO.IOException("Couldn't find War3Patch.mpq")
-            End If
-        End Function
-
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
         <ContractVerification(False)>
         Private Shared Function ComputeMapSha1Checksum(ByVal mapArchive As MPQ.Archive,
@@ -429,15 +410,32 @@ Namespace WC3
             Return result
         End Function
 
+        Private Shared Function NormalizeMapStringKey(ByVal key As InvariantString) As InvariantString
+            For Each prefix In {"TRIGSTR_", "STRING "}
+                If key.StartsWith(prefix) Then
+                    Return NormalizeMapStringKey(key.Substring(prefix.Length))
+                End If
+            Next prefix
+
+            Dim u As UInt32
+            If UInt32.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, u) Then
+                Return u.ToString(CultureInfo.InvariantCulture)
+            Else
+                Return key
+            End If
+        End Function
+
         '''<summary>Finds a string in the war3map.wts file. Returns null if the string is not found.</summary>
         Private Shared Function TryGetMapString(ByVal mapArchive As MPQ.Archive,
                                                 ByVal key As InvariantString) As String
             Contract.Requires(mapArchive IsNot Nothing)
+            key = NormalizeMapStringKey(key)
 
             'Open strings file and search for given key
             Using sr = New IO.StreamReader(mapArchive.OpenFileByName("war3map.wts").AsStream)
                 Do Until sr.EndOfStream
-                    Dim itemKey = sr.ReadLine()
+                    Dim itemKey = NormalizeMapStringKey(sr.ReadLine())
+                    If itemKey = "" Then Continue Do
                     If sr.ReadLine <> "{" Then Continue Do
                     Dim itemLines = New List(Of String)
                     Do
@@ -450,16 +448,6 @@ Namespace WC3
                     End If
                 Loop
             End Using
-
-            'Alternate key
-            If key.StartsWith("TRIGSTR_") Then
-                Contract.Assume(key.Length >= "TRIGSTR_".Length)
-                Dim suffix = key.Substring("TRIGSTR_".Length)
-                Dim id As UInteger
-                If UInt32.TryParse(suffix, id) Then
-                    Return TryGetMapString(mapArchive, "STRING {0}".Frmt(id))
-                End If
-            End If
 
             'Not found
             Return Nothing

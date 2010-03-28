@@ -30,8 +30,8 @@ Namespace WC3.Protocol
         Private Shared ReadOnly DataJar As New TupleJar(
                     New EnumUInt32Jar(Of GameSettings)().Named("settings"),
                     New ByteJar().Named("unknown1"),
-                    New UInt16Jar().Named("playable width"),
                     New UInt16Jar().Named("playable height"),
+                    New UInt16Jar().Named("playable width"),
                     New UInt32Jar(showHex:=True).Named("xoro checksum"),
                     New UTF8Jar().NullTerminated.Named("relative path"),
                     New UTF8Jar().NullTerminated.Named("host name"),
@@ -55,7 +55,7 @@ Namespace WC3.Protocol
             End Select
             Select Case value.Observers
                 Case GameObserverOption.FullObservers
-                    settings = settings Or GameSettings.ObserversFull
+                    settings = settings Or GameSettings.ObserversFull Or GameSettings.ObserversOnDefeat
                 Case GameObserverOption.NoObservers
                     'no flags set
                 Case GameObserverOption.ObsOnDefeat
@@ -114,10 +114,10 @@ Namespace WC3.Protocol
             Dim lockTeams = settings.EnumIncludes(GameSettings.OptionLockTeams)
             Dim teamsTogether = settings.EnumIncludes(GameSettings.OptionTeamsTogether)
             Dim observers As GameObserverOption
-            If settings.EnumIncludes(GameSettings.ObserversOnDefeat) Then
-                observers = GameObserverOption.ObsOnDefeat
-            ElseIf settings.EnumIncludes(GameSettings.ObserversFull) Then
+            If settings.EnumIncludes(GameSettings.ObserversFull) Then
                 observers = GameObserverOption.FullObservers
+            ElseIf settings.EnumIncludes(GameSettings.ObserversOnDefeat) Then
+                observers = GameObserverOption.ObsOnDefeat
             ElseIf settings.EnumIncludes(GameSettings.ObserversReferees) Then
                 observers = GameObserverOption.Referees
             Else

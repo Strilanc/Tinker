@@ -30,8 +30,8 @@ Friend Module SharedTestObjects
                          team:=0,
                          contents:=New SlotContentsOpen)}.AsReadableList)
     Friend ReadOnly TestArgument As New Tinker.Commands.CommandArgument("")
-    Friend ReadOnly TestStats As New GameStats(
-            Map:=TestMap,
+    Friend ReadOnly TestStats As GameStats = GameStats.FromMapAndArgument(
+            map:=TestMap,
             hostName:="StrilancHost",
             argument:=TestArgument)
     Friend ReadOnly TestDesc As New RemoteGameDescription(

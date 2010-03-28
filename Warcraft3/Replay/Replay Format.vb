@@ -15,6 +15,7 @@ Namespace WC3.Replay
         Unknown0x23 = &H23
         TournamentForcedCountdown = &H2F
     End Enum
+    <Flags()>
     Public Enum ReplaySettings As UInt16
         Online = 1US << 15
     End Enum

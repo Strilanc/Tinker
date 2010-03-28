@@ -8,7 +8,7 @@ Namespace WC3.Replay
         Private Const BlockSize As Integer = 8192
 
         Private ReadOnly _wc3Version As UInt32
-        Private ReadOnly _wc3BuildNumber As UInt16
+        Private ReadOnly _replayVersion As UInt16
         Private ReadOnly _stream As IRandomWritableStream
         Private ReadOnly _blockDataBuffer As New IO.MemoryStream
         Private ReadOnly _startPosition As Long
@@ -34,14 +34,14 @@ Namespace WC3.Replay
         Public Sub New(ByVal stream As IRandomWritableStream,
                        ByVal settings As ReplaySettings,
                        ByVal wc3Version As UInt32,
-                       ByVal wc3BuildNumber As UInt16,
+                       ByVal replayVersion As UInt16,
                        Optional ByVal duration As UInt32? = Nothing)
             Contract.Requires(stream IsNot Nothing)
 
             Me._stream = stream
             Me._startPosition = stream.Position
             Me._wc3Version = wc3Version
-            Me._wc3BuildNumber = wc3BuildNumber
+            Me._replayVersion = replayVersion
             Me._settings = settings
             Me._providedDuration = duration
 
@@ -127,7 +127,7 @@ Namespace WC3.Replay
                 header.Write(_blockCount)
                 header.Write("PX3W".ToAscBytes.AsReadableList)
                 header.Write(_wc3Version)
-                header.Write(_wc3BuildNumber)
+                header.Write(_replayVersion)
                 header.Write(_settings)
                 header.Write(If(_providedDuration, _measuredDuration))
 

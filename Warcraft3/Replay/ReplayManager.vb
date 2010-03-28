@@ -80,7 +80,7 @@
             Dim writer = New Replay.ReplayWriter(stream:=file.AsRandomWritableStream,
                                                  settings:=ReplaySettings.Online,
                                                  wc3Version:=New CachedExternalValues().WC3MajorVersion,
-                                                 wc3BuildNumber:=My.Settings.ReplayBuildNumber)
+                                                 replayVersion:=My.Settings.ReplayBuildNumber)
 
             Dim primaryPlayer = players.First.AssumeNotNull
             Dim secondaryPlayers = players.Skip(1)

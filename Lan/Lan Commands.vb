@@ -51,7 +51,7 @@ Namespace Lan
                 Contract.Assume(target IsNot Nothing)
                 Dim name = argument.NamedValue("name")
                 Dim map = WC3.Map.FromArgument(argument.NamedValue("map"))
-                Dim gameStats = New WC3.GameStats(map, If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value), argument)
+                Dim gameStats = WC3.GameStats.FromMapAndArgument(map, If(user Is Nothing, Application.ProductName.AssumeNotNull, user.Name.Value), argument)
                 Dim gameDescription = WC3.LocalGameDescription.FromArguments(name, map, gameStats, clock:=New SystemClock())
 
                 Return target.QueueAddGame(gameDescription).ContinueWithFunc(Function() "Started advertising game '{0}' for map '{1}'.".Frmt(name, gameStats.AdvertisedPath))

@@ -120,9 +120,6 @@
         End Property
 #End Region
 
-        ''' <summary>
-        ''' Constructs the game stats directly.
-        ''' </summary>
         Public Sub New(ByVal randomHero As Boolean,
                        ByVal randomRace As Boolean,
                        ByVal allowFullSharedControl As Boolean,
@@ -158,53 +155,82 @@
         End Sub
 
         ''' <summary>
+        ''' Constructs the game stats using some values from a map.
+        ''' </summary>
+        Public Shared Function FromMapAndSettings(ByVal map As Map,
+                                                  ByVal randomHero As Boolean,
+                                                  ByVal randomRace As Boolean,
+                                                  ByVal allowFullSharedControl As Boolean,
+                                                  ByVal lockTeams As Boolean,
+                                                  ByVal teamsTogether As Boolean,
+                                                  ByVal observers As GameObserverOption,
+                                                  ByVal visibility As GameVisibilityOption,
+                                                  ByVal speed As GameSpeedOption,
+                                                  ByVal hostName As InvariantString) As GameStats
+            Contract.Requires(map IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
+            Return New GameStats(randomHero:=randomHero,
+                                 randomRace:=randomRace,
+                                 allowFullSharedControl:=allowFullSharedControl,
+                                 lockTeams:=lockTeams,
+                                 teamsTogether:=teamsTogether,
+                                 observers:=observers,
+                                 visibility:=visibility,
+                                 speed:=speed,
+                                 PlayableWidth:=map.PlayableWidth,
+                                 PlayableHeight:=map.PlayableHeight,
+                                 MapChecksumXORO:=map.MapChecksumXORO,
+                                 MapChecksumSHA1:=map.MapChecksumSHA1,
+                                 AdvertisedPath:=map.AdvertisedPath,
+                                 hostName:=hostName)
+        End Function
+
+        ''' <summary>
         ''' Constructs the game stats based on a map and arguments.
         ''' </summary>
-        Public Sub New(ByVal map As Map,
-                       ByVal hostName As InvariantString,
-                       ByVal argument As Commands.CommandArgument)
+        Public Shared Function FromMapAndArgument(ByVal map As Map,
+                                                  ByVal hostName As InvariantString,
+                                                  ByVal argument As Commands.CommandArgument) As GameStats
             Contract.Requires(map IsNot Nothing)
             Contract.Requires(argument IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
 
-            Me._playableWidth = map.PlayableWidth
-            Me._playableHeight = map.PlayableHeight
-            Me._mapChecksumXORO = map.MapChecksumXORO
-            Me._mapChecksumSHA1 = map.MapChecksumSHA1
-            Me._advertisedPath = map.AdvertisedPath
-            Me._hostName = hostName
-
-            Me._randomHero = argument.HasOptionalSwitch("RandomHero")
-            Me._randomRace = argument.HasOptionalSwitch("RandomRace")
-            Me._lockTeams = Not argument.HasOptionalSwitch("UnlockTeams")
-            Me._allowFullSharedControl = argument.HasOptionalSwitch("FullShare")
-            Me._teamsTogether = Not argument.HasOptionalSwitch("TeamsApart")
+            Dim randomHero = argument.HasOptionalSwitch("RandomHero")
+            Dim randomRace = argument.HasOptionalSwitch("RandomRace")
+            Dim lockTeams = Not argument.HasOptionalSwitch("UnlockTeams")
+            Dim allowFullSharedControl = argument.HasOptionalSwitch("FullShare")
+            Dim teamsTogether = Not argument.HasOptionalSwitch("TeamsApart")
             'Observers
+            Dim observers = GameObserverOption.NoObservers
             If argument.HasOptionalSwitch("Referees") OrElse argument.HasOptionalSwitch("ref") Then
-                Me._observers = GameObserverOption.Referees
+                observers = GameObserverOption.Referees
             ElseIf argument.HasOptionalSwitch("Obs") OrElse argument.HasOptionalSwitch("MultiObs") OrElse argument.HasOptionalNamedValue("Obs") Then
-                Me._observers = GameObserverOption.FullObservers
+                observers = GameObserverOption.FullObservers
             ElseIf argument.HasOptionalSwitch("ObsOnDefeat") OrElse argument.HasOptionalSwitch("od") Then
-                Me._observers = GameObserverOption.ObsOnDefeat
-            Else
-                Me._observers = GameObserverOption.NoObservers
+                observers = GameObserverOption.ObsOnDefeat
             End If
             'Speed
+            Dim speed = GameSpeedOption.Fast
             If argument.HasOptionalNamedValue("Speed") Then
-                Dim speed = argument.OptionalNamedValue("Speed").EnumTryParse(Of GameSpeedOption)(ignoreCase:=True)
-                If Not speed.HasValue Then Throw New ArgumentException("Invalid game speed value: {0}".Frmt(argument.OptionalNamedValue("Speed")))
-                Me._speed = speed.Value
-            Else
-                Me._speed = GameSpeedOption.Fast
+                speed = argument.OptionalNamedValue("Speed").EnumParse(Of GameSpeedOption)(ignoreCase:=True)
             End If
             'Visibility
+            Dim visibility = GameVisibilityOption.MapDefault
             If argument.HasOptionalNamedValue("Visibility") Then
-                Dim visibility = argument.OptionalNamedValue("Visibility").EnumTryParse(Of GameVisibilityOption)(ignoreCase:=True)
-                If Not visibility.HasValue Then Throw New ArgumentException("Invalid map visibility value: {0}".Frmt(argument.OptionalNamedValue("Visibility")))
-                Me._visibility = visibility.Value
-            Else
-                Me._visibility = GameVisibilityOption.MapDefault
+                visibility = argument.OptionalNamedValue("Visibility").EnumParse(Of GameVisibilityOption)(ignoreCase:=True)
             End If
-        End Sub
+
+            Return FromMapAndSettings(map:=map,
+                                      randomHero:=randomHero,
+                                      randomRace:=randomRace,
+                                      allowFullSharedControl:=allowFullSharedControl,
+                                      lockTeams:=lockTeams,
+                                      teamsTogether:=teamsTogether,
+                                      observers:=observers,
+                                      visibility:=visibility,
+                                      speed:=speed,
+                                      hostName:=hostName)
+        End Function
 
         Public Shared ReadOnly PartialArgumentTemplates As IEnumerable(Of String) = {
                 "-Obs",
