@@ -44,7 +44,7 @@ Namespace WC3.Replay
         Public Function MakeLobbyState(ByVal slots As IEnumerable(Of Slot),
                                        ByVal randomSeed As UInt32,
                                        ByVal layoutStyle As Protocol.LobbyLayoutStyle,
-                                       ByVal defaultPlayerSlotCount As UInt32) As ReplayEntry
+                                       ByVal defaultPlayerSlotCount As Byte) As ReplayEntry
             Contract.Requires(slots IsNot Nothing)
             Contract.Requires(defaultPlayerSlotCount > 0)
             Contract.Requires(defaultPlayerSlotCount <= 12)

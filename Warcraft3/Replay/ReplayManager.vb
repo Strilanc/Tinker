@@ -99,7 +99,7 @@
             writer.WriteEntry(MakeLobbyState(slots,
                                              randomSeed,
                                              game.Settings.Map.LayoutStyle,
-                                             CUInt(game.Settings.Map.Slots.Count)))
+                                             CByte(game.Settings.Map.Slots.Count)))
 
             writer.WriteEntry(MakeLoadStarted1())
             writer.WriteEntry(MakeLoadStarted2())

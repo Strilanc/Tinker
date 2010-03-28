@@ -20,7 +20,7 @@ Namespace Bnet.Protocol
                     {"public key", value.PublicKey},
                     {"unknown", 0UI},
                     {"proof", value.AuthenticationProof}})
-            Return DataJar.Pack(vals).WithValue(value)
+            Return DataJar.Pack(vals).With(jar:=Me, value:=value)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ProductCredentials)
@@ -33,7 +33,7 @@ Namespace Bnet.Protocol
                     publicKey:=vals.ItemAs(Of UInt32)("public key"),
                     length:=vals.ItemAs(Of UInt32)("length"),
                     proof:=proof)
-            Return pickle.WithValue(value)
+            Return pickle.With(jar:=Me, value:=value)
         End Function
     End Class
 End Namespace

@@ -60,7 +60,7 @@ Namespace WC3.Replay
 
         Public Overrides Function Pack(Of TValue As ReplayEntry)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Return value.Pickled(New Byte() {value.Id}.Concat(value.Payload.Data).ToReadableList)
+            Return value.Pickled(Me, New Byte() {value.Id}.Concat(value.Payload.Data).ToReadableList)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -68,7 +68,7 @@ Namespace WC3.Replay
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ReplayEntry)
             Dim value = ReplayEntry.FromData(data)
             Dim datum = data.SubView(0, value.Payload.Data.Count + 1) 'include the id
-            Return value.Pickled(datum)
+            Return value.Pickled(Me, datum)
         End Function
     End Class
 End Namespace

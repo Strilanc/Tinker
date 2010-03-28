@@ -27,7 +27,7 @@ Namespace Pickling
 
             Dim data = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
             Dim desc = Function() "{0}: {1}".Frmt(keyPickle.Description.Value, valuePickle.Description.Value)
-            Return value.Pickled(data, desc)
+            Return value.Pickled(Me, data, desc)
         End Function
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of KeyValuePair(Of TKey, ISimplePickle))
@@ -38,7 +38,7 @@ Namespace Pickling
             Dim value = New KeyValuePair(Of TKey, ISimplePickle)(keyPickle.Value, valuePickle)
             Dim datum = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
             Dim desc = Function() "{0}: {1}".Frmt(keyPickle.Description.Value, valuePickle.Description.Value)
-            Return value.Pickled(datum, desc)
+            Return value.Pickled(Me, datum, desc)
         End Function
     End Class
 End Namespace

@@ -443,12 +443,12 @@ Public Class PicklingTest
                                                     {5, New UInt16Jar()}})
         JarTest(jar,
                 equater:=Function(e1, e2) e1.Key = e2.Key AndAlso ObjectEqual(e1.Value.Value, e2.Value.Value),
-                value:=New KeyValuePair(Of UInt32, ISimplePickle)(3UI, CByte(10).Pickled(New Byte() {}.AsReadableList)),
+                value:=New KeyValuePair(Of UInt32, ISimplePickle)(3UI, CByte(10).Pickled(New ByteJar(), New Byte() {}.AsReadableList)),
                 data:={3, 0, 0, 0,
                        10})
         JarTest(jar,
                 equater:=Function(e1, e2) e1.Key = e2.Key AndAlso ObjectEqual(e1.Value.Value, e2.Value.Value),
-                value:=New KeyValuePair(Of UInt32, ISimplePickle)(5UI, 10US.Pickled(New Byte() {}.AsReadableList)),
+                value:=New KeyValuePair(Of UInt32, ISimplePickle)(5UI, 10US.Pickled(New UInt16Jar(), New Byte() {}.AsReadableList)),
                 data:={5, 0, 0, 0,
                        10, 0})
     End Sub

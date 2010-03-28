@@ -32,7 +32,8 @@ Namespace Pickling
                 If Not value.ContainsKey(subJar.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(subJar.Name))
                 pickles.Add(subJar.Pack(value.ItemRaw(subJar.Name)))
             Next subJar
-            Return value.Pickled(Concat(From p In pickles Select (p.Data)).ToReadableList,
+            Return value.Pickled(Me,
+                                 Concat(From p In pickles Select (p.Data)).ToReadableList,
                                  Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 
@@ -55,8 +56,9 @@ Namespace Pickling
                 If curCount < 0 Then Throw New InvalidStateException("subJar lied about data used.")
             Next j
 
+            Dim value = New NamedValueMap(vals)
             Dim datum = data.SubView(0, curOffset)
-            Return New NamedValueMap(vals).Pickled(datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
+            Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
     End Class
 End Namespace

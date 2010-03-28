@@ -105,8 +105,9 @@ Namespace Bnet.Protocol
                 Next repeat
             End If
 
-            Return New QueryGamesListResponse(result, games).Pickled(data.SubView(0, offset),
-                                                                     Function() pickles.MakeListDescription(useSingleLineDescription:=False))
+            Dim value = New QueryGamesListResponse(result, games)
+            Dim datum = data.SubView(0, offset)
+            Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(useSingleLineDescription:=False))
         End Function
 
         Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As IPickle(Of TValue)
@@ -129,7 +130,7 @@ Namespace Bnet.Protocol
                                      {"game statstring", game.GameStats}})))
             End If
             Dim data = CUInt(value.Games.Count).Bytes.Concat(Concat(From pickle In pickles Select (pickle.Data))).ToReadableList
-            Return value.Pickled(data, Function() pickles.MakeListDescription(useSingleLineDescription:=False))
+            Return value.Pickled(Me, data, Function() pickles.MakeListDescription(useSingleLineDescription:=False))
         End Function
     End Class
 End Namespace

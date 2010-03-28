@@ -73,6 +73,8 @@ Friend Module TestingCommon
         Else
             Assert.IsTrue(packed.Description.Value = parsed.Description.Value)
         End If
+        Assert.IsTrue(packed.Jar Is jar)
+        Assert.IsTrue(parsed.Jar Is jar)
 
         If data.Count > 0 Then
             Try

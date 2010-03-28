@@ -33,14 +33,14 @@ Namespace Bnet.Protocol
                     Throw byteOrder.MakeImpossibleValueException()
             End Select
 
-            Return value.Pickled(digits.AsReadableList)
+            Return value.Pickled(Me, digits.AsReadableList)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
             If data.Count < digitCount Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, digitCount)
-            Dim value = datum.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder)
-            Return CUInt(value).Pickled(datum)
+            Dim value = CUInt(datum.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder))
+            Return value.Pickled(Me, datum)
         End Function
     End Class
 End Namespace

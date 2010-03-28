@@ -9,7 +9,7 @@
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As Byte)(ByVal value As TValue) As IPickle(Of TValue)
-            Return value.Pickled({CByte(value)}.AsReadableList(), Function() ValueToString(value))
+            Return value.Pickled(Me, {CByte(value)}.AsReadableList(), Function() ValueToString(value))
         End Function
 
         <ContractVerification(False)>
@@ -17,7 +17,7 @@
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 1)
             Dim value = datum(0)
-            Return value.Pickled(datum, Function() ValueToString(value))
+            Return value.Pickled(Me, datum, Function() ValueToString(value))
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As Byte) As String
@@ -42,14 +42,14 @@
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As UInt16)(ByVal value As TValue) As IPickle(Of TValue)
-            Return value.Pickled(value.Bytes(byteOrder).AsReadableList, Function() ValueToString(value))
+            Return value.Pickled(Me, value.Bytes(byteOrder).AsReadableList, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt16)
             If data.Count < 2 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 2)
             Dim value = datum.ToUInt16(byteOrder)
-            Return value.Pickled(datum, Function() ValueToString(value))
+            Return value.Pickled(Me, datum, Function() ValueToString(value))
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As UInt16) As String
@@ -74,14 +74,14 @@
         End Sub
 
         Public NotOverridable Overrides Function Pack(Of TValue As UInt32)(ByVal value As TValue) As IPickle(Of TValue)
-            Return value.Pickled(value.Bytes(byteOrder).AsReadableList(), Function() ValueToString(value))
+            Return value.Pickled(Me, value.Bytes(byteOrder).AsReadableList(), Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 4)
             Dim value = datum.ToUInt32(byteOrder)
-            Return value.Pickled(datum, Function() ValueToString(value))
+            Return value.Pickled(Me, datum, Function() ValueToString(value))
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As UInt32) As String
@@ -107,14 +107,14 @@
 
         Public NotOverridable Overrides Function Pack(Of TValue As UInt64)(ByVal value As TValue) As IPickle(Of TValue)
             Dim datum = value.Bytes(byteOrder).AsReadableList
-            Return value.Pickled(datum, Function() ValueToString(value))
+            Return value.Pickled(Me, datum, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt64)
             If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 8)
             Dim value = datum.ToUInt64(byteOrder)
-            Return value.Pickled(datum, Function() ValueToString(value))
+            Return value.Pickled(Me, datum, Function() ValueToString(value))
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As UInt64) As String
@@ -132,14 +132,14 @@
 
         Public NotOverridable Overrides Function Pack(Of TValue As Single)(ByVal value As TValue) As IPickle(Of TValue)
             Dim data = BitConverter.GetBytes(value).AsReadableList
-            Return value.Pickled(data, Function() ValueToString(value))
+            Return value.Pickled(Me, data, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Single)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 4)
             Dim value = BitConverter.ToSingle(datum.ToArray, 0)
-            Return value.Pickled(datum, Function() ValueToString(value))
+            Return value.Pickled(Me, datum, Function() ValueToString(value))
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As Single) As String
@@ -153,14 +153,14 @@
 
         Public NotOverridable Overrides Function Pack(Of TValue As Double)(ByVal value As TValue) As IPickle(Of TValue)
             Dim data = BitConverter.GetBytes(value).AsReadableList
-            Return value.Pickled(data, Function() ValueToString(value))
+            Return value.Pickled(Me, data, Function() ValueToString(value))
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Double)
             If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
             Dim datum = data.SubView(0, 8)
             Dim value = BitConverter.ToDouble(datum.ToArray, 0)
-            Return value.Pickled(datum, Function() ValueToString(value))
+            Return value.Pickled(Me, datum, Function() ValueToString(value))
         End Function
 
         Protected Overridable Function ValueToString(ByVal value As Double) As String

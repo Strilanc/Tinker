@@ -164,7 +164,7 @@ Namespace Lan
                 'Log
                 _logger.Log(Function() "Sending to {0}: {1}".Frmt(pk.id, data.ToHexString), LogMessageType.DataRaw)
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(pk.id, targetHost), LogMessageType.DataEvent)
-                _logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(pk.id, targetHost, pk.Payload.Description.Value), LogMessageType.DataParsed)
+                _logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(pk.Id, targetHost, pk.Payload.Description.Value), LogMessageType.DataParsed)
 
                 'Send
                 _socket.Send(data, data.Length, targetHost, targetPort)

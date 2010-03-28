@@ -22,6 +22,7 @@
         ReadOnly Property Data As IReadableList(Of Byte)
         ReadOnly Property Description As Lazy(Of String)
         ReadOnly Property Value As Object
+        ReadOnly Property Jar As ISimpleJar
 
         <ContractClassFor(GetType(ISimplePickle))>
         Class ContractClass
@@ -41,6 +42,12 @@
             Public ReadOnly Property Description As Lazy(Of String) Implements ISimplePickle.Description
                 Get
                     Contract.Ensures(Contract.Result(Of Lazy(Of String))() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public ReadOnly Property Jar As ISimpleJar Implements ISimplePickle.Jar
+                Get
+                    Contract.Ensures(Contract.Result(Of ISimpleJar)() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get
             End Property
@@ -68,24 +75,29 @@
     Public NotInheritable Class Pickle(Of T)
         Implements IPickle(Of T)
 
+        Private ReadOnly _jar As ISimpleJar
         Private ReadOnly _data As IReadableList(Of Byte)
         Private ReadOnly _value As T
         Private ReadOnly _description As Lazy(Of String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_jar IsNot Nothing)
             Contract.Invariant(_data IsNot Nothing)
             Contract.Invariant(_value IsNot Nothing)
             Contract.Invariant(_description IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal value As T,
+        Public Sub New(ByVal jar As ISimpleJar,
+                       ByVal value As T,
                        ByVal data As IReadableList(Of Byte),
                        ByVal description As Lazy(Of String))
+            Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Requires(description IsNot Nothing)
             Contract.Ensures(Me.Description Is description)
             Contract.Ensures(Me.Data Is data)
+            Me._jar = jar
             Me._data = data
             Me._value = value
             Me._description = description
@@ -111,6 +123,12 @@
         Private ReadOnly Property SimpleValue As Object Implements ISimplePickle.Value
             Get
                 Return _value
+            End Get
+        End Property
+        Public ReadOnly Property Jar As ISimpleJar Implements ISimplePickle.Jar
+            Get
+                Contract.Ensures(Contract.Result(Of ISimpleJar)() IsNot Nothing)
+                Return _jar
             End Get
         End Property
 
@@ -206,7 +224,7 @@
 
         <ContractVerification(False)>
         Private Function SimplePack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
-            Return Pack(value.DynamicDirectCastTo(Of T)()).WithValue(value)
+            Return Pack(value.DynamicDirectCastTo(Of T)()).With(jar:=Me, value:=value)
         End Function
         Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
             Return Parse(data)

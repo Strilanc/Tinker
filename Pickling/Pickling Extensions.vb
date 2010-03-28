@@ -2,48 +2,43 @@
     Public Module PicklingExtensions
         <Extension()> <Pure()>
         Public Function Pickled(Of T)(ByVal value As T,
+                                      ByVal jar As ISimpleJar,
                                       ByVal data As IReadableList(Of Byte),
                                       Optional ByVal description As Func(Of String) = Nothing) As IPickle(Of T)
+            Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-            Return New Pickle(Of T)(value, data, New Lazy(Of String)(If(description, Function() value.ToString)))
+            Return New Pickle(Of T)(jar, value, data, New Lazy(Of String)(If(description, Function() value.ToString)))
         End Function
 
         <Extension()> <Pure()>
-        Public Function WithData(Of T)(ByVal pickle As IPickle(Of T), ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+        Public Function [With](Of T)(ByVal pickle As IPickle(Of T),
+                                     ByVal jar As ISimpleJar,
+                                     Optional ByVal data As IReadableList(Of Byte) = Nothing,
+                                     Optional ByVal description As Func(Of String) = Nothing) As IPickle(Of T)
             Contract.Requires(pickle IsNot Nothing)
-            Contract.Requires(data IsNot Nothing)
+            Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
-            Return New Pickle(Of T)(pickle.Value, data, pickle.Description)
+            Return New Pickle(Of T)(jar,
+                                    pickle.Value,
+                                    If(data, pickle.Data),
+                                    If(description IsNot Nothing, New Lazy(Of String)(description), pickle.Description))
         End Function
         <Extension()> <Pure()>
-        Public Function WithValue(Of T)(ByVal pickle As ISimplePickle, ByVal value As T) As IPickle(Of T)
+        Public Function [With](Of T)(ByVal pickle As ISimplePickle,
+                                     ByVal jar As ISimpleJar,
+                                     ByVal value As T,
+                                     Optional ByVal data As IReadableList(Of Byte) = Nothing,
+                                     Optional ByVal description As Func(Of String) = Nothing) As IPickle(Of T)
             Contract.Requires(pickle IsNot Nothing)
+            Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
-            Return New Pickle(Of T)(value, pickle.Data, pickle.Description)
-        End Function
-        <Extension()> <Pure()>
-        Public Function WithValueDesc(Of T)(ByVal pickle As ISimplePickle, ByVal value As T) As IPickle(Of T)
-            Contract.Requires(pickle IsNot Nothing)
-            Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
-            Return value.Pickled(pickle.Data, Nothing)
-        End Function
-        <Extension()> <Pure()>
-        Public Function WithDescription(Of T)(ByVal pickle As IPickle(Of T), ByVal description As Lazy(Of String)) As IPickle(Of T)
-            Contract.Requires(pickle IsNot Nothing)
-            Contract.Requires(description IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
-            Return New Pickle(Of T)(pickle.Value, pickle.Data, description)
-        End Function
-        <Extension()> <Pure()>
-        Public Function WithDescription(Of T)(ByVal pickle As IPickle(Of T), ByVal description As Func(Of String)) As IPickle(Of T)
-            Contract.Requires(pickle IsNot Nothing)
-            Contract.Requires(description IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
-            Return pickle.WithDescription(New Lazy(Of String)(description))
+            Return New Pickle(Of T)(jar,
+                                    value,
+                                    If(data, pickle.Data),
+                                    If(description IsNot Nothing, New Lazy(Of String)(description), pickle.Description))
         End Function
 
         <Extension()> <Pure()>
@@ -84,12 +79,12 @@
 
             Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
                 Dim pickle = _subjar.Pack(value)
-                Return pickle.WithDescription(Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
+                Return pickle.With(jar:=Me, description:=Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
 
             Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
                 Dim pickle = _subjar.Parse(data)
-                Return pickle.WithDescription(Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
+                Return pickle.With(jar:=Me, description:=Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
 
             Public Overrides Function ToString() As String
