@@ -66,5 +66,16 @@ Namespace WC3
             Dim value = New PlayerId(datum(0))
             Return value.Pickled(Me, datum)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As PlayerId) As Control
+            Dim control = New NumericUpDown()
+            control.Minimum = 1
+            control.Maximum = 12
+            control.Value = value.Index
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As PlayerId
+            Return New PlayerId(CByte(DirectCast(control, NumericUpDown).Value))
+        End Function
     End Class
 End Namespace

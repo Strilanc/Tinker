@@ -32,9 +32,9 @@ Namespace Pickling
                 If Not value.ContainsKey(subJar.Name) Then Throw New PicklingException("Key '{0}' missing from tuple dictionary.".Frmt(subJar.Name))
                 pickles.Add(subJar.Pack(value.ItemRaw(subJar.Name)))
             Next subJar
-            Return value.Pickled(Me,
-                                 Concat(From p In pickles Select (p.Data)).ToReadableList,
-                                 Function() pickles.MakeListDescription(_useSingleLineDescription))
+
+            Dim data = Concat(From p In pickles Select (p.Data)).ToReadableList
+            Return value.Pickled(Me, data, Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of NamedValueMap)
@@ -59,6 +59,28 @@ Namespace Pickling
             Dim value = New NamedValueMap(vals)
             Dim datum = data.SubView(0, curOffset)
             Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As NamedValueMap) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 1
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+            control.BorderStyle = BorderStyle.FixedSingle
+
+            For Each subJar In _subJars
+                Dim c = subJar.ValueToControl(value.ItemRaw(subJar.Name))
+                control.Controls.Add(c)
+                c.Width = control.Width
+                c.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
+            Next subJar
+
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As NamedValueMap
+            Return _subJars.Zip(From i In control.Controls.Count.Range Select control.Controls(i)).ToDictionary(
+                        keySelector:=Function(e) e.Item1.Name,
+                        elementSelector:=Function(e) e.Item1.ControlToValue(e.Item2))
         End Function
     End Class
 End Namespace

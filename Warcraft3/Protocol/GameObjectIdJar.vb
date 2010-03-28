@@ -17,5 +17,22 @@ Namespace WC3.Protocol
                                          datum.SubView(4, 4).ToUInt32)
             Return value.Pickled(Me, datum)
         End Function
+
+
+        Public Overrides Function ValueToControl(ByVal value As GameObjectId) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 2
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+
+            control.Controls.Add(New UInt32Jar().Named("allocated id").ValueToControl(value.AllocatedId))
+            control.Controls.Add(New UInt32Jar().Named("counter id").ValueToControl(value.CounterId))
+
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As GameObjectId
+            Return New GameObjectId(New UInt32Jar().Named("allocated id").ControlToValue(control.Controls(0)),
+                                    New UInt32Jar().Named("counter id").ControlToValue(control.Controls(1)))
+        End Function
     End Class
 End Namespace

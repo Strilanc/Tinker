@@ -76,6 +76,9 @@ Friend Module TestingCommon
         Assert.IsTrue(packed.Jar Is jar)
         Assert.IsTrue(parsed.Jar Is jar)
 
+        Dim controlled = jar.ControlToValue(jar.ValueToControl(value))
+        Assert.IsTrue(equater(controlled, value))
+
         If data.Count > 0 Then
             Try
                 jar.Parse(data.Take(data.Count - 1).ToReadableList)

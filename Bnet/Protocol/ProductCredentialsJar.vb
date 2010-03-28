@@ -35,5 +35,24 @@ Namespace Bnet.Protocol
                     proof:=proof)
             Return pickle.With(jar:=Me, value:=value)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As ProductCredentials) As Control
+            Return DataJar.ValueToControl(New Dictionary(Of InvariantString, Object) From {
+                    {"length", value.Length},
+                    {"product", value.Product},
+                    {"public key", value.PublicKey},
+                    {"unknown", 0UI},
+                    {"proof", value.AuthenticationProof}})
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As ProductCredentials
+            Dim vals = DataJar.ControlToValue(control)
+            Dim proof = vals.ItemAs(Of IReadableList(Of Byte))("proof")
+            Contract.Assume(proof.Count = 20)
+            Return New ProductCredentials(
+                    product:=vals.ItemAs(Of ProductType)("product"),
+                    publicKey:=vals.ItemAs(Of UInt32)("public key"),
+                    length:=vals.ItemAs(Of UInt32)("length"),
+                    proof:=proof)
+        End Function
     End Class
 End Namespace

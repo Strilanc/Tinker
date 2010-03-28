@@ -88,20 +88,7 @@ Namespace Bnet.Protocol
                     Dim pickle = gameDataJar.Parse(data.SubView(offset))
                     pickles.Add(pickle)
                     offset += pickle.Data.Count
-                    Dim vals = pickle.Value
-                    Dim totalSlots = CInt(vals.ItemAs(Of UInt32)("num free slots"))
-                    Dim usedSlots = 0
-                    games.Add(New WC3.RemoteGameDescription(Name:=vals.ItemAs(Of String)("game name"),
-                                                            gamestats:=vals.ItemAs(Of WC3.GameStats)("game statstring"),
-                                                            location:=vals.ItemAs(Of Net.IPEndPoint)("host address"),
-                                                            gameId:=CUInt(vals.ItemAs(Of UInt32)("game id")),
-                                                            entryKey:=0,
-                                                            totalSlotCount:=totalSlots,
-                                                            gameType:=vals.ItemAs(Of WC3.Protocol.GameTypes)("game type"),
-                                                            state:=vals.ItemAs(Of GameStates)("game state"),
-                                                            usedSlotCount:=usedSlots,
-                                                            baseAge:=vals.ItemAs(Of UInt32)("elapsed seconds").Seconds,
-                                                            clock:=_clock))
+                    games.Add(ParseRawGameDescription(pickle.Value, _clock))
                 Next repeat
             End If
 
@@ -117,20 +104,65 @@ Namespace Bnet.Protocol
                 pickles.Add(queryResultJar.Pack(value.Result))
             Else
                 pickles.AddRange(From game In value.Games
-                                 Select gameDataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                                     {"game type", game.GameType},
-                                     {"language id", 0UI},
-                                     {"host address", New Net.IPEndPoint(game.Address, game.Port)},
-                                     {"game state", game.GameState},
-                                     {"elapsed seconds", CUInt(game.Age.TotalSeconds)},
-                                     {"game name", game.Name.ToString},
-                                     {"game password", ""},
-                                     {"num free slots", CUInt(game.TotalSlotCount - game.UsedSlotCount)},
-                                     {"game id", game.GameId},
-                                     {"game statstring", game.GameStats}})))
+                                 Select gameDataJar.Pack(PackRawGameDescription(game)))
             End If
             Dim data = CUInt(value.Games.Count).Bytes.Concat(Concat(From pickle In pickles Select (pickle.Data))).ToReadableList
             Return value.Pickled(Me, data, Function() pickles.MakeListDescription(useSingleLineDescription:=False))
+        End Function
+
+        Private Shared Function PackRawGameDescription(ByVal game As WC3.RemoteGameDescription) As NamedValueMap
+            Contract.Requires(game IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
+            Return New Dictionary(Of InvariantString, Object) From {
+                    {"game type", game.GameType},
+                    {"language id", 0UI},
+                    {"host address", New Net.IPEndPoint(game.Address, game.Port)},
+                    {"game state", game.GameState},
+                    {"elapsed seconds", CUInt(game.Age.TotalSeconds)},
+                    {"game name", game.Name.ToString},
+                    {"game password", ""},
+                    {"num free slots", CUInt(game.TotalSlotCount - game.UsedSlotCount)},
+                    {"game id", game.GameId},
+                    {"game statstring", game.GameStats}}
+        End Function
+        Private Shared Function ParseRawGameDescription(ByVal vals As NamedValueMap, ByVal clock As IClock) As WC3.RemoteGameDescription
+            Contract.Requires(vals IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of WC3.RemoteGameDescription)() IsNot Nothing)
+            Dim totalSlots = CInt(vals.ItemAs(Of UInt32)("num free slots"))
+            Dim usedSlots = 0
+            Return New WC3.RemoteGameDescription(Name:=vals.ItemAs(Of String)("game name"),
+                                                 gamestats:=vals.ItemAs(Of WC3.GameStats)("game statstring"),
+                                                 location:=vals.ItemAs(Of Net.IPEndPoint)("host address"),
+                                                 gameId:=CUInt(vals.ItemAs(Of UInt32)("game id")),
+                                                 entryKey:=0,
+                                                 totalSlotCount:=totalSlots,
+                                                 gameType:=vals.ItemAs(Of WC3.Protocol.GameTypes)("game type"),
+                                                 state:=vals.ItemAs(Of GameStates)("game state"),
+                                                 usedSlotCount:=usedSlots,
+                                                 baseAge:=vals.ItemAs(Of UInt32)("elapsed seconds").Seconds,
+                                                 clock:=clock)
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As QueryGamesListResponse) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 1
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+            control.BorderStyle = BorderStyle.FixedSingle
+
+            control.Controls.Add(queryResultJar.ValueToControl(value.Result))
+            For Each game In value.Games
+                control.Controls.Add(gameDataJar.ValueToControl(PackRawGameDescription(game)))
+            Next game
+
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As QueryGamesListResponse
+            Dim queryResult = queryResultJar.ControlToValue(control.Controls(0))
+            Dim gameResults = (From i In control.Controls.Count.Range.Skip(1)
+                               Select ParseRawGameDescription(gameDataJar.ControlToValue(control.Controls(i)), _clock)
+                               ).Cache
+            Return New QueryGamesListResponse(queryResult, gameResults)
         End Function
     End Class
 End Namespace

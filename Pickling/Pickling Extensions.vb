@@ -59,16 +59,16 @@
             Inherits BaseJar(Of T)
             Implements INamedJar(Of T)
             Private ReadOnly _name As InvariantString
-            Private ReadOnly _subjar As IJar(Of T)
+            Private ReadOnly _subJar As IJar(Of T)
 
             <ContractInvariantMethod()> Private Sub ObjectInvariant()
-                Contract.Invariant(_subjar IsNot Nothing)
+                Contract.Invariant(_subJar IsNot Nothing)
             End Sub
 
             Public Sub New(ByVal name As InvariantString, ByVal subJar As IJar(Of T))
                 Contract.Requires(subJar IsNot Nothing)
                 Me._name = name
-                Me._subjar = subJar
+                Me._subJar = subJar
             End Sub
 
             Public ReadOnly Property Name As InvariantString Implements INamedJar(Of T).Name
@@ -78,17 +78,40 @@
             End Property
 
             Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-                Dim pickle = _subjar.Pack(value)
+                Dim pickle = _subJar.Pack(value)
                 Return pickle.With(jar:=Me, description:=Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
 
             Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
-                Dim pickle = _subjar.Parse(data)
+                Dim pickle = _subJar.Parse(data)
                 Return pickle.With(jar:=Me, description:=Function() "{0}: {1}".Frmt(Name, pickle.Description.Value))
             End Function
 
             Public Overrides Function ToString() As String
                 Return _name
+            End Function
+
+            Public Overrides Function ValueToControl(ByVal value As T) As Control
+            Dim control = New TableLayoutPanel()
+                control.ColumnCount = 1
+                control.AutoSize = True
+                control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+
+                Dim subControl = _subJar.ValueToControl(value)
+                subControl.Width = control.Width
+                subControl.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
+                Dim label = New Label()
+                label.AutoSize = True
+                label.Text = Me.Name
+                label.Margin = New Padding(0)
+                subControl.Padding = New Padding(0)
+
+                control.Controls.Add(label)
+                control.Controls.Add(subControl)
+                Return control
+            End Function
+            Public Overrides Function ControlToValue(ByVal control As Control) As T
+                Return _subJar.ControlToValue(control.Controls(1))
             End Function
         End Class
 

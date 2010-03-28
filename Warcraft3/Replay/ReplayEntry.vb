@@ -3,12 +3,6 @@
 Namespace WC3.Replay
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class ReplayEntry
-        Private Shared ReadOnly EntryJar As New KeyPrefixedJar(Of ReplayEntryId)(
-            keyJar:=New EnumByteJar(Of ReplayEntryId)(),
-            valueJars:=Replay.Format.AllDefinitions.ToDictionary(
-                keySelector:=Function(e) e.Id,
-                elementSelector:=Function(e) DirectCast(e.Jar, ISimpleJar).AsNonNull))
-
         Private ReadOnly _id As ReplayEntryId
         Private ReadOnly _payload As ISimplePickle
 
@@ -42,33 +36,47 @@ Namespace WC3.Replay
             End Get
         End Property
 
-        <ContractVerification(False)>
-        Public Shared Function FromData(ByVal data As IReadableList(Of Byte)) As ReplayEntry
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Dim pickle = EntryJar.Parse(data)
-            Return New ReplayEntry(pickle.Value.Key, pickle.Value.Value)
+        Public Overrides Function ToString() As String
+            Return "{0}: {1}".Frmt(Id, Payload.Description.Value())
         End Function
 
-        Public Overrides Function ToString() As String
-            Return "{0}: {1}".Frmt(id, Payload.Description.Value())
-        End Function
+        Public Shared Widening Operator CType(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, ISimplePickle)
+            Contract.Requires(value IsNot Nothing)
+            Return New KeyValuePair(Of ReplayEntryId, ISimplePickle)(value.Id, value.Payload)
+        End Operator
+        Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of ReplayEntryId, ISimplePickle)) As ReplayEntry
+            Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
+            Return New ReplayEntry(value.Key, value.Value)
+        End Operator
     End Class
 
     Public NotInheritable Class ReplayEntryJar
         Inherits BaseJar(Of ReplayEntry)
 
+        Private Shared ReadOnly SubJar As New KeyPrefixedJar(Of ReplayEntryId)(
+            keyJar:=New EnumByteJar(Of ReplayEntryId)(),
+            valueJars:=Replay.Format.AllDefinitions.ToDictionary(
+                keySelector:=Function(e) e.Id,
+                elementSelector:=Function(e) DirectCast(e.Jar, ISimpleJar).AsNonNull))
+
         Public Overrides Function Pack(Of TValue As ReplayEntry)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Return value.Pickled(Me, New Byte() {value.Id}.Concat(value.Payload.Data).ToReadableList)
+            Dim pickle = SubJar.Pack(CType(value, KeyValuePair(Of ReplayEntryId, ISimplePickle)))
+            Return pickle.With(jar:=Me, value:=value)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ReplayEntry)
-            Dim value = ReplayEntry.FromData(data)
-            Dim datum = data.SubView(0, value.Payload.Data.Count + 1) 'include the id
-            Return value.Pickled(Me, datum)
+            Dim pickle = SubJar.Parse(data)
+            Return pickle.With(jar:=Me, value:=CType(pickle.Value, ReplayEntry))
+        End Function
+
+        Public Overrides Function ControlToValue(ByVal control As Control) As ReplayEntry
+            Return SubJar.ControlToValue(control)
+        End Function
+        Public Overrides Function ValueToControl(ByVal value As ReplayEntry) As Control
+            Return SubJar.ValueToControl(value)
         End Function
     End Class
 End Namespace

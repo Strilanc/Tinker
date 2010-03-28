@@ -59,10 +59,20 @@ Namespace WC3.Protocol
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
             Dim pickle = DataJar.Parse(data)
             Dim id = pickle.Value.ItemAs(Of PlayerId)("source")
-            Dim actions = pickle.Value.ItemAs(Of IReadableList(Of GameAction))("actions")
-            If id.Index < 1 OrElse id.Index > 12 Then Throw New IO.InvalidDataException("Invalid pid.")
-            Dim value = New PlayerActionSet(id, actions)
+            Dim value = New PlayerActionSet(pickle.Value.ItemAs(Of PlayerId)("source"),
+                                            pickle.Value.ItemAs(Of IReadableList(Of GameAction))("actions"))
             Return pickle.With(jar:=Me, value:=value)
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As PlayerActionSet) As Control
+            Return DataJar.ValueToControl(New Dictionary(Of InvariantString, Object) From {
+                    {"source", value.Id},
+                    {"actions", value.Actions}})
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As PlayerActionSet
+            Dim value = DataJar.ControlToValue(control)
+            Return New PlayerActionSet(value.ItemAs(Of PlayerId)("source"),
+                                       value.ItemAs(Of IReadableList(Of GameAction))("actions"))
         End Function
     End Class
 End Namespace

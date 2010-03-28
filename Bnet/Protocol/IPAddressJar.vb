@@ -15,5 +15,26 @@ Namespace Bnet.Protocol
             Dim value = New Net.IPAddress(datum.ToArray)
             Return value.Pickled(Me, datum)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As Net.IPAddress) As Control
+            Dim control = New TextBox()
+            control.Text = value.ToString()
+            AddHandler control.TextChanged, Sub()
+                                                If Net.IPAddress.TryParse(control.Text, Nothing) Then
+                                                    control.BackColor = SystemColors.Window
+                                                Else
+                                                    control.BackColor = Color.Pink
+                                                End If
+                                            End Sub
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As Net.IPAddress
+            Dim result As Net.IPAddress = Nothing
+            Dim text = DirectCast(control, TextBox).Text
+            If Not Net.IPAddress.TryParse(control.Text, result) Then
+                Throw New PicklingException("'{0}' is not parsable as a Date.".Frmt(text))
+            End If
+            Return result
+        End Function
     End Class
 End Namespace

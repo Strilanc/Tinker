@@ -104,39 +104,101 @@ Namespace WC3.Protocol
             If p < 0 Then Throw New PicklingException("No null terminator on game statstring.")
             Dim datum = data.SubView(0, p + 1)
             Dim pickle = DataJar.Parse(DecodeStatStringData(datum).ToReadableList)
-            Dim vals = pickle.Value
+            Dim value = ParseDataValue(pickle.Value)
+            Return pickle.With(jar:=Me, value:=value, data:=datum)
+        End Function
 
-            'Decode settings
+        Private Shared Function PackDataValue(ByVal value As GameStats) As NamedValueMap
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
+            'Encode settings
+            Dim settings As GameSettings
+            Select Case value.Speed
+                Case GameSpeedOption.Slow
+                    'no flags set
+                Case GameSpeedOption.Medium
+                    settings = settings Or GameSettings.SpeedMedium
+                Case GameSpeedOption.Fast
+                    settings = settings Or GameSettings.SpeedFast
+                Case Else
+                    Throw value.Speed.MakeImpossibleValueException()
+            End Select
+            Select Case value.Observers
+                Case GameObserverOption.FullObservers
+                    settings = settings Or GameSettings.ObserversFull Or GameSettings.ObserversOnDefeat
+                Case GameObserverOption.NoObservers
+                    'no flags set
+                Case GameObserverOption.ObsOnDefeat
+                    settings = settings Or GameSettings.ObserversOnDefeat
+                Case GameObserverOption.Referees
+                    settings = settings Or GameSettings.ObserversReferees
+                Case Else
+                    Throw value.Observers.MakeImpossibleValueException()
+            End Select
+            Select Case value.Visibility
+                Case GameVisibilityOption.AlwaysVisible
+                    settings = settings Or GameSettings.VisibilityAlwaysVisible
+                Case GameVisibilityOption.Explored
+                    settings = settings Or GameSettings.VisibilityExplored
+                Case GameVisibilityOption.HideTerrain
+                    settings = settings Or GameSettings.VisibilityHideTerrain
+                Case GameVisibilityOption.MapDefault
+                    settings = settings Or GameSettings.VisibilityDefault
+                Case Else
+                    Throw value.Visibility.MakeImpossibleValueException()
+            End Select
+            If value.TeamsTogether Then settings = settings Or GameSettings.OptionTeamsTogether
+            If value.LockTeams Then settings = settings Or GameSettings.OptionLockTeams
+            If value.LockTeams Then settings = settings Or GameSettings.OptionLockTeams2
+            If value.RandomHero Then settings = settings Or GameSettings.OptionRandomHero
+            If value.RandomRace Then settings = settings Or GameSettings.OptionRandomRace
+            If value.AllowFullSharedControl Then settings = settings Or GameSettings.OptionAllowFullSharedControl
+
+            'Pack
+            Return New Dictionary(Of InvariantString, Object) From {
+                    {"playable width", value.PlayableWidth},
+                    {"playable height", value.PlayableHeight},
+                    {"settings", settings},
+                    {"xoro checksum", value.MapChecksumXORO},
+                    {"sha1 checksum", value.MapChecksumSHA1},
+                    {"relative path", value.AdvertisedPath.ToString},
+                    {"host name", value.HostName.ToString},
+                    {"unknown1", CByte(0)},
+                    {"unknown2", CByte(0)}}
+        End Function
+        Private Shared Function ParseDataValue(ByVal vals As NamedValueMap) As GameStats
+            Contract.Requires(vals IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
             Dim settings = vals.ItemAs(Of GameSettings)("settings")
-            Dim randomHero = settings.EnumIncludes(GameSettings.OptionRandomHero)
-            Dim randomRace = settings.EnumIncludes(GameSettings.OptionRandomRace)
-            Dim allowFullSharedControl = settings.EnumIncludes(GameSettings.OptionAllowFullSharedControl)
-            Dim lockTeams = settings.EnumIncludes(GameSettings.OptionLockTeams)
-            Dim teamsTogether = settings.EnumIncludes(GameSettings.OptionTeamsTogether)
+            Dim randomHero = settings.EnumUInt32Includes(GameSettings.OptionRandomHero)
+            Dim randomRace = settings.EnumUInt32Includes(GameSettings.OptionRandomRace)
+            Dim allowFullSharedControl = settings.EnumUInt32Includes(GameSettings.OptionAllowFullSharedControl)
+            Dim lockTeams = settings.EnumUInt32Includes(GameSettings.OptionLockTeams)
+            Dim teamsTogether = settings.EnumUInt32Includes(GameSettings.OptionTeamsTogether)
             Dim observers As GameObserverOption
-            If settings.EnumIncludes(GameSettings.ObserversFull) Then
+            If settings.EnumUInt32Includes(GameSettings.ObserversFull) Then
                 observers = GameObserverOption.FullObservers
-            ElseIf settings.EnumIncludes(GameSettings.ObserversOnDefeat) Then
+            ElseIf settings.EnumUInt32Includes(GameSettings.ObserversOnDefeat) Then
                 observers = GameObserverOption.ObsOnDefeat
-            ElseIf settings.EnumIncludes(GameSettings.ObserversReferees) Then
+            ElseIf settings.EnumUInt32Includes(GameSettings.ObserversReferees) Then
                 observers = GameObserverOption.Referees
             Else
                 observers = GameObserverOption.NoObservers
             End If
             Dim visibility As GameVisibilityOption
-            If settings.EnumIncludes(GameSettings.VisibilityAlwaysVisible) Then
+            If settings.EnumUInt32Includes(GameSettings.VisibilityAlwaysVisible) Then
                 visibility = GameVisibilityOption.AlwaysVisible
-            ElseIf settings.EnumIncludes(GameSettings.VisibilityExplored) Then
+            ElseIf settings.EnumUInt32Includes(GameSettings.VisibilityExplored) Then
                 visibility = GameVisibilityOption.Explored
-            ElseIf settings.EnumIncludes(GameSettings.VisibilityHideTerrain) Then
+            ElseIf settings.EnumUInt32Includes(GameSettings.VisibilityHideTerrain) Then
                 visibility = GameVisibilityOption.HideTerrain
             Else
                 visibility = GameVisibilityOption.MapDefault
             End If
             Dim speed As GameSpeedOption
-            If settings.EnumIncludes(GameSettings.SpeedMedium) Then
+            If settings.EnumUInt32Includes(GameSettings.SpeedMedium) Then
                 speed = GameSpeedOption.Medium
-            ElseIf settings.EnumIncludes(GameSettings.SpeedFast) Then
+            ElseIf settings.EnumUInt32Includes(GameSettings.SpeedFast) Then
                 speed = GameSpeedOption.Fast
             Else
                 speed = GameSpeedOption.Slow
@@ -153,21 +215,20 @@ Namespace WC3.Protocol
             If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
 
             'Finish
-            Dim value = New GameStats(randomHero:=randomHero,
-                                      randomRace:=randomRace,
-                                      allowFullSharedControl:=allowFullSharedControl,
-                                      lockTeams:=lockTeams,
-                                      teamsTogether:=teamsTogether,
-                                      observers:=observers,
-                                      visibility:=visibility,
-                                      speed:=speed,
-                                      playableWidth:=playableWidth,
-                                      playableHeight:=playableHeight,
-                                      mapChecksumXORO:=xoroChecksum,
-                                      mapchecksumsha1:=sha1Checksum,
-                                      advertisedPath:=relativePath,
-                                      hostName:=hostName)
-            Return pickle.With(jar:=Me, value:=value, data:=datum)
+            Return New GameStats(randomHero:=randomHero,
+                                 randomRace:=randomRace,
+                                 allowFullSharedControl:=allowFullSharedControl,
+                                 lockTeams:=lockTeams,
+                                 teamsTogether:=teamsTogether,
+                                 observers:=observers,
+                                 visibility:=visibility,
+                                 speed:=speed,
+                                 playableWidth:=playableWidth,
+                                 playableHeight:=playableHeight,
+                                 mapChecksumXORO:=xoroChecksum,
+                                 mapchecksumsha1:=sha1Checksum,
+                                 advertisedPath:=relativePath,
+                                 hostName:=hostName)
         End Function
 
         Private Shared Function EncodeStatStringData(ByVal data As IEnumerable(Of Byte)) As IEnumerable(Of Byte)
@@ -185,6 +246,13 @@ Namespace WC3.Protocol
             Return From encodedBlock In data.Partitioned(partitionSize:=8)
                    From valueMaskBitPair In encodedBlock.Zip(encodedBlock.First.Bits).Skip(1)
                    Select decodedValue = valueMaskBitPair.Item1.WithBitSetTo(bitPosition:=0, bitValue:=valueMaskBitPair.Item2)
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As GameStats) As Control
+            Return DataJar.ValueToControl(PackDataValue(value))
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As GameStats
+            Return ParseDataValue(DataJar.ControlToValue(control))
         End Function
     End Class
 End Namespace

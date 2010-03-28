@@ -42,6 +42,13 @@
             If result.Data.Count <> _dataSize Then Throw New PicklingException("Parsed value did not use exactly {0} bytes.".Frmt(_dataSize))
             Return result
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As T) As Control
+            Return _subJar.ValueToControl(value)
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As T
+            Return _subJar.ControlToValue(control)
+        End Function
     End Class
 
     '''<summary>Pickles values with data up to a maximum size.</summary>
@@ -82,6 +89,13 @@
                 End Try
                 Throw
             End Try
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As T) As Control
+            Return _subJar.ValueToControl(value)
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As T
+            Return _subJar.ControlToValue(control)
         End Function
     End Class
 
@@ -125,6 +139,13 @@
             Dim pickle = _subJar.Parse(datum.SubView(_prefixSize))
             If pickle.Data.Count < dataSize Then Throw New PicklingException("Fragmented data.")
             Return pickle.With(jar:=Me, data:=datum)
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As T) As Control
+            Return _subJar.ValueToControl(value)
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As T
+            Return _subJar.ControlToValue(control)
         End Function
     End Class
 
@@ -185,6 +206,28 @@
             Dim desc = Function() pickles.MakeListDescription(_useSingleLineDescription)
             Return value.Pickled(Me, datum, desc)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As IReadableList(Of T)) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 1
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+            control.BorderStyle = BorderStyle.FixedSingle
+
+            For Each item In value
+                Dim c = _subJar.ValueToControl(item)
+                control.Controls.Add(c)
+                c.Width = control.Width
+                c.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
+            Next item
+
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As IReadableList(Of T)
+            Return (From i In control.Controls.Count.Range
+                    Select _subJar.ControlToValue(control.Controls(i))
+                    ).ToReadableList
+        End Function
     End Class
 
     '''<summary>Pickles values with data followed by a null terminator.</summary>
@@ -215,6 +258,13 @@
             Dim pickle = _subJar.Parse(data.SubView(0, p))
             If pickle.Data.Count <> p Then Throw New PicklingException("Leftover data before null terminator.")
             Return pickle.With(jar:=Me, data:=data.SubView(0, p + 1))
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As T) As Control
+            Return _subJar.ValueToControl(value)
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As T
+            Return _subJar.ControlToValue(control)
         End Function
     End Class
 
@@ -252,6 +302,35 @@
             Else
                 Dim value = Tuple.Create(False, CType(Nothing, T))
                 Return value.Pickled(Me, data, Function() "[Not Included]")
+            End If
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As Tuple(Of Boolean, T)) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 1
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+            control.BorderStyle = BorderStyle.FixedSingle
+
+            If value.Item1 Then
+                Dim c = _subJar.ValueToControl(value.Item2)
+                control.Controls.Add(c)
+                c.Width = control.Width
+                c.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
+            Else
+                Dim label = New Label()
+                label.Text = "[Not Included]"
+                label.AutoSize = True
+                control.Controls.Add(label)
+            End If
+
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As Tuple(Of Boolean, T)
+            If TypeOf control.Controls(0) Is Label Then
+                Return Tuple.Create(False, DirectCast(Nothing, T))
+            Else
+                Return Tuple.Create(True, _subJar.ControlToValue(control.Controls(0)))
             End If
         End Function
     End Class
@@ -302,6 +381,28 @@
             Dim value = (From p In pickles Select (p.Value)).ToReadableList
             Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As IReadableList(Of T)) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 1
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+            control.BorderStyle = BorderStyle.FixedSingle
+
+            For Each item In value
+                Dim c = _subJar.ValueToControl(item)
+                control.Controls.Add(c)
+                c.Width = control.Width
+                c.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
+            Next item
+
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As IReadableList(Of T)
+            Return (From i In control.Controls.Count.Range
+                    Select _subJar.ControlToValue(control.Controls(i))
+                    ).ToReadableList
+        End Function
     End Class
 
     '''<summary>Pickles values with data prefixed by a checksum.</summary>
@@ -347,6 +448,13 @@
             Dim datum = data.SubView(0, _checksumSize + pickle.Data.Count)
             Return pickle.With(jar:=Me, data:=datum)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As T) As Control
+            Return _subJar.ValueToControl(value)
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As T
+            Return _subJar.ControlToValue(control)
+        End Function
     End Class
 
     '''<summary>Pickles values with reversed data.</summary>
@@ -374,6 +482,13 @@
             Dim pickle = _subJar.Parse(data.Reverse.ToReadableList)
             If pickle.Data.Count <> data.Count Then Throw New PicklingException("Leftover reversed data.")
             Return pickle.With(jar:=Me, data:=data)
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As T) As Control
+            Return _subJar.ValueToControl(value)
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As T
+            Return _subJar.ControlToValue(control)
         End Function
     End Class
 End Namespace

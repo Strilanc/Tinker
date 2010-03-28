@@ -15,5 +15,26 @@ Namespace Bnet.Protocol
             Dim value = Date.FromFileTime(datum.ToUInt64.BitwiseToInt64)
             Return value.Pickled(Me, datum)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As Date) As Control
+            Dim control = New TextBox()
+            control.Text = value.ToString(CultureInfo.InvariantCulture)
+            AddHandler control.TextChanged, Sub()
+                                                If Date.TryParse(control.Text, CultureInfo.InvariantCulture, DateTimeStyles.None, Nothing) Then
+                                                    control.BackColor = SystemColors.Window
+                                                Else
+                                                    control.BackColor = Color.Pink
+                                                End If
+                                            End Sub
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As Date
+            Dim result As Date
+            Dim text = DirectCast(control, TextBox).Text
+            If Not Date.TryParse(control.Text, CultureInfo.InvariantCulture, DateTimeStyles.None, result) Then
+                Throw New PicklingException("'{0}' is not parsable as a Date.".Frmt(text))
+            End If
+            Return result
+        End Function
     End Class
 End Namespace

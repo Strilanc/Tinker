@@ -40,5 +40,29 @@ Namespace Pickling
             Dim desc = Function() "{0}: {1}".Frmt(keyPickle.Description.Value, valuePickle.Description.Value)
             Return value.Pickled(Me, datum, desc)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As KeyValuePair(Of TKey, ISimplePickle)) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 1
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+            control.BorderStyle = BorderStyle.FixedSingle
+
+            Dim keyControl = _keyJar.ValueToControl(value.Key)
+            keyControl.Enabled = False
+            Dim subControl = _valueJars(value.Key).Value.ValueToControl(value.Value.Value)
+            subControl.Width = control.Width
+            subControl.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
+
+            control.Controls.Add(keyControl)
+            control.Controls.Add(subControl)
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As KeyValuePair(Of TKey, ISimplePickle)
+            Dim key = _keyJar.ControlToValue(control.Controls(0))
+            Dim value = _valueJars(key).Value.ControlToValue(control.Controls(1))
+            Dim pickle = _valueJars(key).Value.Pack(value)
+            Return New KeyValuePair(Of TKey, ISimplePickle)(key, Pickle)
+        End Function
     End Class
 End Namespace

@@ -92,9 +92,9 @@ Namespace WC3
                                Slots:=info.slots,
                                PlayableWidth:=info.playableWidth,
                                PlayableHeight:=info.playableHeight,
-                               IsMelee:=info.options.EnumIncludes(MapOptions.Melee),
-                               UsesCustomForces:=info.options.EnumIncludes(MapOptions.CustomForces),
-                               UsesFixedPlayerSettings:=info.options.EnumIncludes(MapOptions.FixedPlayerSettings),
+                               IsMelee:=info.options.EnumUInt32Includes(MapOptions.Melee),
+                               UsesCustomForces:=info.options.EnumUInt32Includes(MapOptions.CustomForces),
+                               UsesFixedPlayerSettings:=info.options.EnumUInt32Includes(MapOptions.FixedPlayerSettings),
                                Name:=info.name)
             End Using
         End Function
@@ -636,7 +636,7 @@ Namespace WC3
 
                 'Use
                 Dim race = Protocol.Races.Random
-                Dim raceUnlocked = Not options.EnumIncludes(MapOptions.FixedPlayerSettings)
+                Dim raceUnlocked = Not options.EnumUInt32Includes(MapOptions.FixedPlayerSettings)
                 Dim contents As SlotContents
                 Select Case item.raceData
                     Case 0 : raceUnlocked = True
@@ -663,7 +663,7 @@ Namespace WC3
             CheckIOData(result.Count > 0, "Map contains no player slots.")
 
             'Setup Teams
-            If options.EnumIncludes(MapOptions.Melee) Then
+            If options.EnumUInt32Includes(MapOptions.Melee) Then
                 result = (From pair In result.ZipWithIndexes
                           Let slot = pair.Item1
                           Let team = pair.Item2

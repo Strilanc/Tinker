@@ -208,12 +208,16 @@
     Public Interface ISimpleJar
         Inherits ISimpleParseJar
         Inherits ISimplePackJar
+        Function ValueToControl(ByVal value As Object) As Control
+        Function ControlToValue(ByVal control As Control) As Object
     End Interface
     '''<summary>Parses data and packs values into pickles.</summary>
     Public Interface IJar(Of T)
         Inherits ISimpleJar
         Inherits IPackJar(Of T)
         Inherits IParseJar(Of T)
+        Shadows Function ValueToControl(ByVal value As T) As Control
+        Shadows Function ControlToValue(ByVal control As Control) As T
     End Interface
     '''<summary>Parses data and packs values into pickles.</summary>
     Public MustInherit Class BaseJar(Of T)
@@ -221,7 +225,15 @@
 
         Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+        Public MustOverride Function ValueToControl(ByVal value As T) As Control Implements IJar(Of T).ValueToControl
+        Public MustOverride Function ControlToValue(ByVal control As Control) As T Implements IJar(Of T).ControlToValue
 
+        Private Function SimpleValueToControl(ByVal value As Object) As Control Implements ISimpleJar.ValueToControl
+            Return ValueToControl(DirectCast(value, T))
+        End Function
+        Private Function SimpleControlToValue(ByVal control As Control) As Object Implements ISimpleJar.ControlToValue
+            Return ControlToValue(control)
+        End Function
         <ContractVerification(False)>
         Private Function SimplePack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
             Return Pack(value.DynamicDirectCastTo(Of T)()).With(jar:=Me, value:=value)

@@ -32,5 +32,30 @@ Namespace Pickling
             If Not _subJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
             Return _subJars(key).Value.Pack(value).With(jar:=Me)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As TValue) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 1
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+            control.BorderStyle = BorderStyle.FixedSingle
+
+            Dim key = _valueKeyExtractor(value)
+            Dim keyControl = New ComboBox()
+            keyControl.Items.Add(key)
+            keyControl.Visible = False
+
+            Dim valueControl = _subJars(key).Value.ValueToControl(value)
+            valueControl.Enabled = False
+
+            control.Controls.Add(keyControl)
+            control.Controls.Add(valueControl)
+
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As TValue
+            Dim key = DirectCast(DirectCast(control.Controls(0), ComboBox).Items(0), TKey)
+            Return _subJars(key).Value.ControlToValue(control.Controls(1))
+        End Function
     End Class
 End Namespace

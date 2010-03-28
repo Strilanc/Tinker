@@ -42,6 +42,15 @@ Namespace Pickling
             If Not _encoding.GetBytes(value).SequenceEqual(data) Then Throw New PicklingException("[{0}] is not decodable using {1}.".Frmt(data.ToHexString, _encoding.GetType))
             Return value.Pickled(Me, data, Function() """{0}""".Frmt(value))
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As String) As Control
+            Dim control = New TextBox()
+            control.Text = value
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As String
+            Return DirectCast(control, TextBox).Text
+        End Function
     End Class
 
     '''<summary>Pickles strings using a System.Text.UTF8Encoding.</summary>

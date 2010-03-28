@@ -42,5 +42,16 @@ Namespace Bnet.Protocol
             Dim value = CUInt(datum.ParseChrString(nullTerminated:=False).FromHexToUInt64(byteOrder))
             Return value.Pickled(Me, datum)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As UInt32) As Control
+            Dim control = New NumericUpDown()
+            control.Minimum = UInt32.MinValue
+            control.Maximum = UInt32.MaxValue
+            control.Value = value
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As UInt32
+            Return CUInt(DirectCast(control, NumericUpDown).Value)
+        End Function
     End Class
 End Namespace

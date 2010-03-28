@@ -27,6 +27,17 @@
                 Return value.ToString(CultureInfo.InvariantCulture)
             End If
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As Byte) As Control
+            Dim control = New NumericUpDown()
+            control.Minimum = Byte.MinValue
+            control.Maximum = Byte.MaxValue
+            control.Value = value
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As Byte
+            Return CByte(DirectCast(control, NumericUpDown).Value)
+        End Function
     End Class
 
     '''<summary>Pickles 16-bit unsigned integers.</summary>
@@ -59,6 +70,17 @@
                 Return value.ToString(CultureInfo.InvariantCulture)
             End If
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As UInt16) As Control
+            Dim control = New NumericUpDown()
+            control.Minimum = UInt16.MinValue
+            control.Maximum = UInt16.MaxValue
+            control.Value = value
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As UInt16
+            Return CUShort(DirectCast(control, NumericUpDown).Value)
+        End Function
     End Class
 
     '''<summary>Pickles 32-bit unsigned integers.</summary>
@@ -90,6 +112,17 @@
             Else
                 Return value.ToString(CultureInfo.InvariantCulture)
             End If
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As UInt32) As Control
+            Dim control = New NumericUpDown()
+            control.Minimum = UInt32.MinValue
+            control.Maximum = UInt32.MaxValue
+            control.Value = value
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As UInt32
+            Return CUInt(DirectCast(control, NumericUpDown).Value)
         End Function
     End Class
 
@@ -124,6 +157,17 @@
                 Return value.ToString(CultureInfo.InvariantCulture)
             End If
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As UInt64) As Control
+            Dim control = New NumericUpDown()
+            control.Minimum = UInt64.MinValue
+            control.Maximum = UInt64.MaxValue
+            control.Value = value
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As UInt64
+            Return CULng(DirectCast(control, NumericUpDown).Value)
+        End Function
     End Class
 
     '''<summary>Pickles 32-bit floating point values (singles).</summary>
@@ -145,6 +189,27 @@
         Protected Overridable Function ValueToString(ByVal value As Single) As String
             Return value.ToString(CultureInfo.InvariantCulture)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As Single) As Control
+            Dim control = New TextBox()
+            control.Text = value.ToString("r", CultureInfo.InvariantCulture)
+            AddHandler control.TextChanged, Sub()
+                                                If Single.TryParse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture, 0) Then
+                                                    control.BackColor = SystemColors.Window
+                                                Else
+                                                    control.BackColor = Color.Pink
+                                                End If
+                                            End Sub
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As Single
+            Dim result As Single
+            Dim text = DirectCast(control, TextBox).Text
+            If Not Single.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, result) Then
+                Throw New PicklingException("'{0}' is not parsable as a Single.".Frmt(text))
+            End If
+            Return result
+        End Function
     End Class
 
     '''<summary>Pickles 64-bit floating point values (doubles).</summary>
@@ -165,6 +230,27 @@
 
         Protected Overridable Function ValueToString(ByVal value As Double) As String
             Return value.ToString(CultureInfo.InvariantCulture)
+        End Function
+
+        Public Overrides Function ValueToControl(ByVal value As Double) As Control
+            Dim control = New TextBox()
+            control.Text = value.ToString("r", CultureInfo.InvariantCulture)
+            AddHandler control.TextChanged, Sub()
+                                                If Double.TryParse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture, 0) Then
+                                                    control.BackColor = SystemColors.Window
+                                                Else
+                                                    control.BackColor = Color.Pink
+                                                End If
+                                            End Sub
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As Double
+            Dim result As Double
+            Dim text = DirectCast(control, TextBox).Text
+            If Not Double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, result) Then
+                Throw New PicklingException("'{0}' is not parsable as a Double.".Frmt(text))
+            End If
+            Return result
         End Function
     End Class
 End Namespace

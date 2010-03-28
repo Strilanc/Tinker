@@ -157,14 +157,44 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
-    Public Function EnumIncludes(Of T)(ByVal value As T, ByVal [option] As UInt32) As Boolean
+    Public Function EnumUInt32Includes(Of T)(ByVal value As T, ByVal [option] As UInt32) As Boolean
         Return (value.DynamicDirectCastTo(Of UInt32)() And [option]) = [option]
     End Function
     <Extension()> <Pure()>
-    Public Function EnumWithSet(Of T)(ByVal value As T, ByVal [option] As UInt32, ByVal include As Boolean) As T
+    Public Function EnumIncludes(Of TEnum)(ByVal value As TEnum, ByVal [option] As TEnum) As Boolean
+        Select Case [Enum].GetUnderlyingType(GetType(TEnum))
+            Case GetType(SByte) : Return (value.DynamicDirectCastTo(Of SByte)() And [option].DynamicDirectCastTo(Of SByte)()) <> 0
+            Case GetType(Int16) : Return (value.DynamicDirectCastTo(Of Int16)() And [option].DynamicDirectCastTo(Of Int16)()) <> 0
+            Case GetType(Int32) : Return (value.DynamicDirectCastTo(Of Int32)() And [option].DynamicDirectCastTo(Of Int32)()) <> 0
+            Case GetType(Int64) : Return (value.DynamicDirectCastTo(Of Int64)() And [option].DynamicDirectCastTo(Of Int64)()) <> 0
+            Case GetType(Byte) : Return (value.DynamicDirectCastTo(Of Byte)() And [option].DynamicDirectCastTo(Of Byte)()) <> 0
+            Case GetType(UInt16) : Return (value.DynamicDirectCastTo(Of UInt16)() And [option].DynamicDirectCastTo(Of UInt16)()) <> 0
+            Case GetType(UInt32) : Return (value.DynamicDirectCastTo(Of UInt32)() And [option].DynamicDirectCastTo(Of UInt32)()) <> 0
+            Case GetType(UInt64) : Return (value.DynamicDirectCastTo(Of UInt64)() And [option].DynamicDirectCastTo(Of UInt64)()) <> 0
+            Case Else
+                Throw New InvalidOperationException("{0} does not have a recognized underlying enum type.".Frmt(GetType(TEnum)))
+        End Select
+    End Function
+    <Extension()> <Pure()>
+    Public Function EnumUInt32WithSet(Of T)(ByVal value As T, ByVal [option] As UInt32, ByVal include As Boolean) As T
         Dim v = value.DynamicDirectCastTo(Of UInt32)()
         v = If(include, v Or [option], v And Not [option])
         Return v.DynamicDirectCastTo(Of T)()
+    End Function
+    <Extension()> <Pure()>
+    Public Function EnumWith(Of TEnum)(ByVal value As TEnum, ByVal [option] As TEnum) As Tenum
+        Select Case [Enum].GetUnderlyingType(GetType(TEnum))
+            Case GetType(SByte) : Return (value.DynamicDirectCastTo(Of SByte)() Or [option].DynamicDirectCastTo(Of SByte)()).DynamicDirectCastTo(Of TEnum)()
+            Case GetType(Int16) : Return (value.DynamicDirectCastTo(Of Int16)() Or [option].DynamicDirectCastTo(Of Int16)()).DynamicDirectCastTo(Of TEnum)()
+            Case GetType(Int32) : Return (value.DynamicDirectCastTo(Of Int32)() Or [option].DynamicDirectCastTo(Of Int32)()).DynamicDirectCastTo(Of TEnum)()
+            Case GetType(Int64) : Return (value.DynamicDirectCastTo(Of Int64)() Or [option].DynamicDirectCastTo(Of Int64)()).DynamicDirectCastTo(Of TEnum)()
+            Case GetType(Byte) : Return (value.DynamicDirectCastTo(Of Byte)() Or [option].DynamicDirectCastTo(Of Byte)()).DynamicDirectCastTo(Of TEnum)()
+            Case GetType(UInt16) : Return (value.DynamicDirectCastTo(Of UInt16)() Or [option].DynamicDirectCastTo(Of UInt16)()).DynamicDirectCastTo(Of TEnum)()
+            Case GetType(UInt32) : Return (value.DynamicDirectCastTo(Of UInt32)() Or [option].DynamicDirectCastTo(Of UInt32)()).DynamicDirectCastTo(Of TEnum)()
+            Case GetType(UInt64) : Return (value.DynamicDirectCastTo(Of UInt64)() Or [option].DynamicDirectCastTo(Of UInt64)()).DynamicDirectCastTo(Of TEnum)()
+            Case Else
+                Throw New InvalidOperationException("{0} does not have a recognized underlying enum type.".Frmt(GetType(TEnum)))
+        End Select
     End Function
 
     <Extension()> <Pure()>

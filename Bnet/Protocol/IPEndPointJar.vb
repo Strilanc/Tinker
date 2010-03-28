@@ -31,5 +31,21 @@ Namespace Bnet.Protocol
             Dim value = New Net.IPEndPoint(vals.ItemAs(Of Net.IPAddress)("ip"), vals.ItemAs(Of UInt16)("port"))
             Return pickle.With(jar:=Me, value:=value, description:=Function() value.ToString)
         End Function
+
+        Public Overrides Function ValueToControl(ByVal value As Net.IPEndPoint) As Control
+            Dim control = New TableLayoutPanel()
+            control.ColumnCount = 2
+            control.AutoSize = True
+            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
+
+            control.Controls.Add(New IPAddressJar().Named("address").ValueToControl(value.Address))
+            control.Controls.Add(New UInt16Jar().Named("port").ValueToControl(CUShort(value.Port)))
+
+            Return control
+        End Function
+        Public Overrides Function ControlToValue(ByVal control As Control) As Net.IPEndPoint
+            Return New Net.IPEndPoint(New IPAddressJar().Named("address").ControlToValue(control.Controls(0)),
+                                      New UInt16Jar().Named("port").ControlToValue(control.Controls(1)))
+        End Function
     End Class
 End Namespace
