@@ -208,20 +208,8 @@
         End Function
 
         Public Overrides Function ValueToControl(ByVal value As IReadableList(Of T)) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 1
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-            control.BorderStyle = BorderStyle.FixedSingle
-
-            For Each item In value
-                Dim c = _subJar.ValueToControl(item)
-                control.Controls.Add(c)
-                c.Width = control.Width
-                c.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
-            Next item
-
-            Return control
+            Return PanelWithControls((From item In value Select _subJar.ValueToControl(item)),
+                                     borderStyle:=BorderStyle.FixedSingle)
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As IReadableList(Of T)
             Return (From i In control.Controls.Count.Range
@@ -306,31 +294,21 @@
         End Function
 
         Public Overrides Function ValueToControl(ByVal value As Tuple(Of Boolean, T)) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 1
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-            control.BorderStyle = BorderStyle.FixedSingle
-
             If value.Item1 Then
-                Dim c = _subJar.ValueToControl(value.Item2)
-                control.Controls.Add(c)
-                c.Width = control.Width
-                c.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
+                Return _subJar.ValueToControl(value.Item2)
             Else
                 Dim label = New Label()
                 label.Text = "[Not Included]"
+                label.Tag = "Empty"
                 label.AutoSize = True
-                control.Controls.Add(label)
+                Return label
             End If
-
-            Return control
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As Tuple(Of Boolean, T)
-            If TypeOf control.Controls(0) Is Label Then
+            If TypeOf control Is Label AndAlso TypeOf control.Tag Is String AndAlso DirectCast(control.Tag, String) = "Empty" Then
                 Return Tuple.Create(False, DirectCast(Nothing, T))
             Else
-                Return Tuple.Create(True, _subJar.ControlToValue(control.Controls(0)))
+                Return Tuple.Create(True, _subJar.ControlToValue(control))
             End If
         End Function
     End Class
@@ -383,20 +361,8 @@
         End Function
 
         Public Overrides Function ValueToControl(ByVal value As IReadableList(Of T)) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 1
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-            control.BorderStyle = BorderStyle.FixedSingle
-
-            For Each item In value
-                Dim c = _subJar.ValueToControl(item)
-                control.Controls.Add(c)
-                c.Width = control.Width
-                c.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
-            Next item
-
-            Return control
+            Return PanelWithControls((From item In value Select _subJar.ValueToControl(item)),
+                                     borderStyle:=BorderStyle.FixedSingle)
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As IReadableList(Of T)
             Return (From i In control.Controls.Count.Range

@@ -92,23 +92,13 @@
             End Function
 
             Public Overrides Function ValueToControl(ByVal value As T) As Control
-            Dim control = New TableLayoutPanel()
-                control.ColumnCount = 1
-                control.AutoSize = True
-                control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-
-                Dim subControl = _subJar.ValueToControl(value)
-                subControl.Width = control.Width
-                subControl.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
                 Dim label = New Label()
+                Dim subControl = _subJar.ValueToControl(value)
                 label.AutoSize = True
                 label.Text = Me.Name
-                label.Margin = New Padding(0)
-                subControl.Padding = New Padding(0)
 
-                control.Controls.Add(label)
-                control.Controls.Add(subControl)
-                Return control
+                Return PanelWithControls({label, subControl},
+                                         spacing:=0)
             End Function
             Public Overrides Function ControlToValue(ByVal control As Control) As T
                 Return _subJar.ControlToValue(control.Controls(1))

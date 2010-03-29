@@ -20,15 +20,10 @@ Namespace WC3.Protocol
 
 
         Public Overrides Function ValueToControl(ByVal value As GameObjectId) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 2
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-
-            control.Controls.Add(New UInt32Jar().Named("allocated id").ValueToControl(value.AllocatedId))
-            control.Controls.Add(New UInt32Jar().Named("counter id").ValueToControl(value.CounterId))
-
-            Return control
+            Dim allocControl = New UInt32Jar().Named("allocated id").ValueToControl(value.AllocatedId)
+            Dim counterControl = New UInt32Jar().Named("counter id").ValueToControl(value.CounterId)
+            Return PanelWithControls({allocControl, counterControl},
+                                     leftToRight:=True)
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As GameObjectId
             Return New GameObjectId(New UInt32Jar().Named("allocated id").ControlToValue(control.Controls(0)),

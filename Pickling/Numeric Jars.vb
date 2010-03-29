@@ -33,6 +33,7 @@
             control.Minimum = Byte.MinValue
             control.Maximum = Byte.MaxValue
             control.Value = value
+            control.MaximumSize = New Size(50, control.PreferredSize.Height)
             Return control
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As Byte
@@ -75,6 +76,7 @@
             Dim control = New NumericUpDown()
             control.Minimum = UInt16.MinValue
             control.Maximum = UInt16.MaxValue
+            control.MaximumSize = New Size(70, control.PreferredSize.Height)
             control.Value = value
             Return control
         End Function
@@ -119,6 +121,7 @@
             control.Minimum = UInt32.MinValue
             control.Maximum = UInt32.MaxValue
             control.Value = value
+            control.MaximumSize = New Size(100, control.PreferredSize.Height)
             Return control
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As UInt32
@@ -162,6 +165,7 @@
             Dim control = New NumericUpDown()
             control.Minimum = UInt64.MinValue
             control.Maximum = UInt64.MaxValue
+            control.MaximumSize = New Size(200, control.PreferredSize.Height)
             control.Value = value
             Return control
         End Function

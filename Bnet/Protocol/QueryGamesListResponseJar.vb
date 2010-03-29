@@ -144,18 +144,11 @@ Namespace Bnet.Protocol
         End Function
 
         Public Overrides Function ValueToControl(ByVal value As QueryGamesListResponse) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 1
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-            control.BorderStyle = BorderStyle.FixedSingle
-
-            control.Controls.Add(queryResultJar.ValueToControl(value.Result))
-            For Each game In value.Games
-                control.Controls.Add(gameDataJar.ValueToControl(PackRawGameDescription(game)))
-            Next game
-
-            Return control
+            Dim resultControl = queryResultJar.ValueToControl(value.Result)
+            Dim gameControls = From game In value.Games
+                               Select gameDataJar.ValueToControl(PackRawGameDescription(game))
+            Return PanelWithControls({resultControl}.Concat(gameControls),
+                                     borderStyle:=BorderStyle.FixedSingle)
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As QueryGamesListResponse
             Dim queryResult = queryResultJar.ControlToValue(control.Controls(0))

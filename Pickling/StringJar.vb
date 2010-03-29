@@ -46,6 +46,7 @@ Namespace Pickling
         Public Overrides Function ValueToControl(ByVal value As String) As Control
             Dim control = New TextBox()
             control.Text = value
+            If _maxCharCount.HasValue Then control.MaxLength = _maxCharCount.Value
             Return control
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As String

@@ -33,15 +33,9 @@ Namespace Bnet.Protocol
         End Function
 
         Public Overrides Function ValueToControl(ByVal value As Net.IPEndPoint) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 2
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-
-            control.Controls.Add(New IPAddressJar().Named("address").ValueToControl(value.Address))
-            control.Controls.Add(New UInt16Jar().Named("port").ValueToControl(CUShort(value.Port)))
-
-            Return control
+            Dim addressControl = New IPAddressJar().Named("address").ValueToControl(value.Address)
+            Dim portControl = New UInt16Jar().Named("port").ValueToControl(CUShort(value.Port))
+            Return PanelWithControls({addressControl, portControl}, leftToRight:=True)
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As Net.IPEndPoint
             Return New Net.IPEndPoint(New IPAddressJar().Named("address").ControlToValue(control.Controls(0)),

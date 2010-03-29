@@ -62,20 +62,8 @@ Namespace Pickling
         End Function
 
         Public Overrides Function ValueToControl(ByVal value As NamedValueMap) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 1
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-            control.BorderStyle = BorderStyle.FixedSingle
-
-            For Each subJar In _subJars
-                Dim c = subJar.ValueToControl(value.ItemRaw(subJar.Name))
-                control.Controls.Add(c)
-                c.Width = control.Width
-                c.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
-            Next subJar
-
-            Return control
+            Return PanelWithControls((From subJar In _subJars Select subJar.ValueToControl(value.ItemRaw(subJar.Name))),
+                                     borderStyle:=BorderStyle.FixedSingle)
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As NamedValueMap
             Return _subJars.Zip(From i In control.Controls.Count.Range Select control.Controls(i)).ToDictionary(

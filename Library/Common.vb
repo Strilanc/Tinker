@@ -509,4 +509,62 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
         Return sequence.Skip(Math.Max(0, sequence.Count - count))
     End Function
+
+    <Extension()>
+    Public Function PanelWithControls(ByVal controls As IEnumerable(Of Control),
+                                      Optional ByVal leftToRight As Boolean = False,
+                                      Optional ByVal spacing As Int32 = 3,
+                                      Optional ByVal margin As Int32 = 3,
+                                      Optional ByVal borderStyle As BorderStyle = BorderStyle.None) As Panel
+        Contract.Requires(controls IsNot Nothing)
+        Contract.Requires(controls.Any)
+        Contract.Ensures(Contract.Result(Of Panel)() IsNot Nothing)
+
+        Dim result = New Panel()
+        result.Controls.AddRange(controls.ToArray)
+        result.BorderStyle = borderStyle
+
+        'Position controls
+        result.Controls(0).Top = margin
+        result.Controls(0).Left = margin
+        For Each i In result.Controls.Count.Range.Skip(1)
+            Dim c = result.Controls(i)
+            Dim p = result.Controls(i - 1)
+            If leftToRight Then
+                c.Left = p.Right + spacing
+                c.Top = margin
+            Else
+                c.Left = margin
+                c.Top = p.Bottom + spacing
+            End If
+        Next i
+        result.Height = result.Controls(result.Controls.Count - 1).Bottom + margin
+
+        'Size controls
+        Dim maxWidth = 0
+        For Each c As Control In result.Controls
+            If leftToRight Then
+                If result.Width < c.Right + margin Then
+                    result.Width = c.Right + margin
+                End If
+                If result.Height < c.Bottom + margin Then
+                    result.Height = c.Bottom + margin
+                End If
+            Else
+                c.Width = result.Width - margin * 2
+                If c.MaximumSize.Width = 0 Then
+                    c.Anchor = AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Top
+                End If
+            End If
+            If c.Width > maxWidth Then maxWidth = c.Width
+        Next c
+        maxWidth += margin * 2
+
+        'Shrink if all subcontrols are smaller
+        If Not leftToRight AndAlso maxWidth < result.Width Then
+            result.Width = maxWidth
+        End If
+
+        Return result
+    End Function
 End Module

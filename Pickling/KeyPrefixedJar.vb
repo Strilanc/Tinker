@@ -42,21 +42,11 @@ Namespace Pickling
         End Function
 
         Public Overrides Function ValueToControl(ByVal value As KeyValuePair(Of TKey, ISimplePickle)) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 1
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-            control.BorderStyle = BorderStyle.FixedSingle
-
             Dim keyControl = _keyJar.ValueToControl(value.Key)
             keyControl.Enabled = False
             Dim subControl = _valueJars(value.Key).Value.ValueToControl(value.Value.Value)
-            subControl.Width = control.Width
-            subControl.Anchor = AnchorStyles.Left Or AnchorStyles.Top Or AnchorStyles.Right
-
-            control.Controls.Add(keyControl)
-            control.Controls.Add(subControl)
-            Return control
+            Return PanelWithControls({keyControl, subControl},
+                                     borderStyle:=BorderStyle.FixedSingle)
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As KeyValuePair(Of TKey, ISimplePickle)
             Dim key = _keyJar.ControlToValue(control.Controls(0))

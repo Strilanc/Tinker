@@ -34,12 +34,6 @@ Namespace Pickling
         End Function
 
         Public Overrides Function ValueToControl(ByVal value As TValue) As Control
-            Dim control = New TableLayoutPanel()
-            control.ColumnCount = 1
-            control.AutoSize = True
-            control.AutoSizeMode = AutoSizeMode.GrowAndShrink
-            control.BorderStyle = BorderStyle.FixedSingle
-
             Dim key = _valueKeyExtractor(value)
             Dim keyControl = New ComboBox()
             keyControl.Items.Add(key)
@@ -48,10 +42,8 @@ Namespace Pickling
             Dim valueControl = _subJars(key).Value.ValueToControl(value)
             valueControl.Enabled = False
 
-            control.Controls.Add(keyControl)
-            control.Controls.Add(valueControl)
-
-            Return control
+            Return PanelWithControls({keyControl, valueControl},
+                                     borderStyle:=BorderStyle.FixedSingle)
         End Function
         Public Overrides Function ControlToValue(ByVal control As Control) As TValue
             Dim key = DirectCast(DirectCast(control.Controls(0), ComboBox).Items(0), TKey)
