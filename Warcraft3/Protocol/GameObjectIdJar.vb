@@ -18,16 +18,21 @@ Namespace WC3.Protocol
             Return value.Pickled(Me, datum)
         End Function
 
-
-        Public Overrides Function ValueToControl(ByVal value As GameObjectId) As Control
-            Dim allocControl = New UInt32Jar().Named("allocated id").ValueToControl(value.AllocatedId)
-            Dim counterControl = New UInt32Jar().Named("counter id").ValueToControl(value.CounterId)
-            Return PanelWithControls({allocControl, counterControl},
-                                     leftToRight:=True)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As GameObjectId
-            Return New GameObjectId(New UInt32Jar().Named("allocated id").ControlToValue(control.Controls(0)),
-                                    New UInt32Jar().Named("counter id").ControlToValue(control.Controls(1)))
+        Public Overrides Function MakeControl() As IValueEditor(Of GameObjectId)
+            Dim allocControl = New UInt32Jar().Named("allocated id").MakeControl()
+            Dim counterControl = New UInt32Jar().Named("counter id").MakeControl()
+            Dim panel = PanelWithControls({allocControl.Control, counterControl.Control}, leftToRight:=True, margin:=0)
+            Return New DelegatedValueEditor(Of GameObjectId)(
+                Control:=panel,
+                eventAdder:=Sub(action)
+                                AddHandler allocControl.ValueChanged, Sub() action()
+                                AddHandler counterControl.ValueChanged, Sub() action()
+                            End Sub,
+                getter:=Function() New GameObjectId(allocControl.Value, counterControl.Value),
+                setter:=Sub(value)
+                            allocControl.Value = value.AllocatedId
+                            counterControl.Value = value.CounterId
+                        End Sub)
         End Function
     End Class
 End Namespace

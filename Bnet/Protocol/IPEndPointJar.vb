@@ -32,14 +32,21 @@ Namespace Bnet.Protocol
             Return pickle.With(jar:=Me, value:=value, description:=Function() value.ToString)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As Net.IPEndPoint) As Control
-            Dim addressControl = New IPAddressJar().Named("address").ValueToControl(value.Address)
-            Dim portControl = New UInt16Jar().Named("port").ValueToControl(CUShort(value.Port))
-            Return PanelWithControls({addressControl, portControl}, leftToRight:=True)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As Net.IPEndPoint
-            Return New Net.IPEndPoint(New IPAddressJar().Named("address").ControlToValue(control.Controls(0)),
-                                      New UInt16Jar().Named("port").ControlToValue(control.Controls(1)))
+        Public Overrides Function MakeControl() As IValueEditor(Of Net.IPEndPoint)
+            Dim addressControl = New IPAddressJar().Named("address").MakeControl()
+            Dim portControl = New UInt16Jar().Named("port").MakeControl()
+            Dim panel = PanelWithControls({addressControl.Control, portControl.Control}, leftToRight:=True)
+            Return New DelegatedValueEditor(Of Net.IPEndPoint)(
+                Control:=panel,
+                eventAdder:=Sub(action)
+                                AddHandler addressControl.ValueChanged, Sub() action()
+                                AddHandler portControl.ValueChanged, Sub() action()
+                            End Sub,
+                getter:=Function() New Net.IPEndPoint(addressControl.Value, portControl.Value),
+                setter:=Sub(value)
+                            addressControl.Value = value.Address
+                            portControl.Value = CUShort(value.Port)
+                        End Sub)
         End Function
     End Class
 End Namespace

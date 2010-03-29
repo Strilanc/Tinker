@@ -14,38 +14,16 @@ Namespace Bnet.Protocol
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
         Public Overrides Function Pack(Of TValue As ProductCredentials)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim vals = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                    {"length", value.Length},
-                    {"product", value.Product},
-                    {"public key", value.PublicKey},
-                    {"unknown", 0UI},
-                    {"proof", value.AuthenticationProof}})
-            Return DataJar.Pack(vals).With(jar:=Me, value:=value)
+            Return DataJar.Pack(PackRawValue(value)).With(jar:=Me, value:=value)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ProductCredentials)
             Dim pickle = DataJar.Parse(data)
-            Dim vals = pickle.Value
-            Dim proof = vals.ItemAs(Of IReadableList(Of Byte))("proof")
-            Contract.Assume(proof.Count = 20)
-            Dim value = New ProductCredentials(
-                    product:=vals.ItemAs(Of ProductType)("product"),
-                    publicKey:=vals.ItemAs(Of UInt32)("public key"),
-                    length:=vals.ItemAs(Of UInt32)("length"),
-                    proof:=proof)
+            Dim value = ParseRawValue(pickle.Value)
             Return pickle.With(jar:=Me, value:=value)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As ProductCredentials) As Control
-            Return DataJar.ValueToControl(New Dictionary(Of InvariantString, Object) From {
-                    {"length", value.Length},
-                    {"product", value.Product},
-                    {"public key", value.PublicKey},
-                    {"unknown", 0UI},
-                    {"proof", value.AuthenticationProof}})
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As ProductCredentials
-            Dim vals = DataJar.ControlToValue(control)
+        Private Shared Function ParseRawValue(ByVal vals As NamedValueMap) As ProductCredentials
             Dim proof = vals.ItemAs(Of IReadableList(Of Byte))("proof")
             Contract.Assume(proof.Count = 20)
             Return New ProductCredentials(
@@ -53,6 +31,23 @@ Namespace Bnet.Protocol
                     publicKey:=vals.ItemAs(Of UInt32)("public key"),
                     length:=vals.ItemAs(Of UInt32)("length"),
                     proof:=proof)
+        End Function
+        Private Shared Function PackRawValue(ByVal value As ProductCredentials) As NamedValueMap
+            Return New Dictionary(Of InvariantString, Object) From {
+                    {"length", value.Length},
+                    {"product", value.Product},
+                    {"public key", value.PublicKey},
+                    {"unknown", 0UI},
+                    {"proof", value.AuthenticationProof}}
+        End Function
+
+        Public Overrides Function MakeControl() As IValueEditor(Of ProductCredentials)
+            Dim subControl = DataJar.MakeControl()
+            Return New DelegatedValueEditor(Of ProductCredentials)(
+                Control:=subControl.Control,
+                eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
+                getter:=Function() ParseRawValue(subControl.Value),
+                setter:=Sub(value) subControl.Value = PackRawValue(value))
         End Function
     End Class
 End Namespace

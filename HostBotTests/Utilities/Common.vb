@@ -76,8 +76,9 @@ Friend Module TestingCommon
         Assert.IsTrue(packed.Jar Is jar)
         Assert.IsTrue(parsed.Jar Is jar)
 
-        Dim controlled = jar.ControlToValue(jar.ValueToControl(value))
-        Assert.IsTrue(equater(controlled, value))
+        Dim control = jar.MakeControl()
+        control.Value = value
+        Assert.IsTrue(equater(control.Value, value))
 
         If data.Count > 0 Then
             Try

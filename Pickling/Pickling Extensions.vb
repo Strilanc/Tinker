@@ -91,17 +91,18 @@
                 Return _name
             End Function
 
-            Public Overrides Function ValueToControl(ByVal value As T) As Control
+            Public Overrides Function MakeControl() As IValueEditor(Of T)
                 Dim label = New Label()
-                Dim subControl = _subJar.ValueToControl(value)
+                Dim subControl = _subJar.MakeControl()
                 label.AutoSize = True
                 label.Text = Me.Name
-
-                Return PanelWithControls({label, subControl},
-                                         spacing:=0)
-            End Function
-            Public Overrides Function ControlToValue(ByVal control As Control) As T
-                Return _subJar.ControlToValue(control.Controls(1))
+                Dim panel = PanelWithControls({label, subControl.Control}, spacing:=0)
+                AddHandler subControl.ValueChanged, Sub() LayoutPanel(panel, spacing:=0)
+                Return New DelegatedValueEditor(Of T)(
+                    Control:=panel,
+                    eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
+                    getter:=Function() subControl.Value,
+                    setter:=Sub(value) subControl.Value = value)
             End Function
         End Class
 

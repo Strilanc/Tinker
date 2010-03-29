@@ -208,16 +208,14 @@
     Public Interface ISimpleJar
         Inherits ISimpleParseJar
         Inherits ISimplePackJar
-        Function ValueToControl(ByVal value As Object) As Control
-        Function ControlToValue(ByVal control As Control) As Object
+        Function MakeControl() As ISimpleValueEditor
     End Interface
     '''<summary>Parses data and packs values into pickles.</summary>
     Public Interface IJar(Of T)
         Inherits ISimpleJar
         Inherits IPackJar(Of T)
         Inherits IParseJar(Of T)
-        Shadows Function ValueToControl(ByVal value As T) As Control
-        Shadows Function ControlToValue(ByVal control As Control) As T
+        Shadows Function MakeControl() As IValueEditor(Of T)
     End Interface
     '''<summary>Parses data and packs values into pickles.</summary>
     Public MustInherit Class BaseJar(Of T)
@@ -225,14 +223,10 @@
 
         Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
-        Public MustOverride Function ValueToControl(ByVal value As T) As Control Implements IJar(Of T).ValueToControl
-        Public MustOverride Function ControlToValue(ByVal control As Control) As T Implements IJar(Of T).ControlToValue
+        Public MustOverride Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
 
-        Private Function SimpleValueToControl(ByVal value As Object) As Control Implements ISimpleJar.ValueToControl
-            Return ValueToControl(DirectCast(value, T))
-        End Function
-        Private Function SimpleControlToValue(ByVal control As Control) As Object Implements ISimpleJar.ControlToValue
-            Return ControlToValue(control)
+        Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
+            Return MakeControl()
         End Function
         <ContractVerification(False)>
         Private Function SimplePack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
@@ -255,4 +249,71 @@
         Inherits IPackJar(Of T)
         Inherits IJar(Of T)
     End Interface
+
+    Public Interface ISimpleValueEditor
+        ReadOnly Property Control As Control
+        Property Value As Object
+        Event ValueChanged(ByVal sender As ISimpleValueEditor)
+    End Interface
+    Public Interface IValueEditor(Of T)
+        Inherits ISimpleValueEditor
+        Shadows Property Value As T
+        Shadows Event ValueChanged(ByVal sender As IValueEditor(Of T))
+    End Interface
+    Public Class DelegatedValueEditor(Of T)
+        Implements IValueEditor(Of T)
+
+        Private ReadOnly _getter As Func(Of T)
+        Private ReadOnly _setter As Action(Of T)
+        Private ReadOnly _control As Control
+
+        Private _blockEvents As Boolean
+
+        Public Event ValueChanged(ByVal sender As IValueEditor(Of T)) Implements IValueEditor(Of T).ValueChanged
+        Private Event ValueChangedSimple(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
+
+        Public Sub New(ByVal control As Control,
+                       ByVal getter As Func(Of T),
+                       ByVal setter As Action(Of T),
+                       ByVal eventAdder As Action(Of Action))
+            Me._control = control
+            Me._getter = getter
+            Me._setter = setter
+            Call eventAdder(AddressOf RaiseValueChanged)
+        End Sub
+        Private Sub RaiseValueChanged()
+            If _blockEvents Then Return
+            RaiseEvent ValueChanged(Me)
+            RaiseEvent ValueChangedSimple(Me)
+        End Sub
+
+        Public ReadOnly Property Control As System.Windows.Forms.Control Implements ISimpleValueEditor.Control
+            Get
+                Return _control
+            End Get
+        End Property
+
+        Public Property Value As T Implements IValueEditor(Of T).Value
+            Get
+                Return _getter()
+            End Get
+            Set(ByVal value As T)
+                Try
+                    _blockEvents = True
+                    _setter(value)
+                Finally
+                    _blockEvents = False
+                End Try
+                RaiseValueChanged()
+            End Set
+        End Property
+        Private Property ValueSimple As Object Implements ISimpleValueEditor.Value
+            Get
+                Return Me.Value
+            End Get
+            Set(ByVal value As Object)
+                Me.Value = DirectCast(value, T)
+            End Set
+        End Property
+    End Class
 End Namespace

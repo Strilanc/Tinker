@@ -33,21 +33,28 @@ Namespace Pickling
             Return _subJars(key).Value.Pack(value).With(jar:=Me)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As TValue) As Control
-            Dim key = _valueKeyExtractor(value)
+        Public Overrides Function MakeControl() As IValueEditor(Of TValue)
             Dim keyControl = New ComboBox()
-            keyControl.Items.Add(key)
+            If DirectCast(Nothing, TKey) IsNot Nothing Then
+                keyControl.Items.Add(DirectCast(Nothing, TKey))
+            Else
+                keyControl.Items.Add(New Object())
+            End If
             keyControl.Visible = False
+            Dim valueControl = New Label()
+            valueControl.Text = "[No Value Entered]"
 
-            Dim valueControl = _subJars(key).Value.ValueToControl(value)
-            valueControl.Enabled = False
-
-            Return PanelWithControls({keyControl, valueControl},
-                                     borderStyle:=BorderStyle.FixedSingle)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As TValue
-            Dim key = DirectCast(DirectCast(control.Controls(0), ComboBox).Items(0), TKey)
-            Return _subJars(key).Value.ControlToValue(control.Controls(1))
+            Dim panel = PanelWithControls({keyControl, valueControl})
+            panel.AutoScroll = True
+            Return New DelegatedValueEditor(Of TValue)(
+                Control:=panel,
+                eventAdder:=Sub()
+                            End Sub,
+                getter:=Function() DirectCast(keyControl.Items(0), TValue),
+                setter:=Sub(value)
+                            keyControl.Items(0) = value
+                            valueControl.Text = Pack(value).Description.Value
+                        End Sub)
         End Function
     End Class
 End Namespace

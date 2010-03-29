@@ -16,25 +16,23 @@ Namespace Bnet.Protocol
             Return value.Pickled(Me, datum)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As Net.IPAddress) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of Net.IPAddress)
             Dim control = New TextBox()
-            control.Text = value.ToString()
-            AddHandler control.TextChanged, Sub()
-                                                If Net.IPAddress.TryParse(control.Text, Nothing) Then
-                                                    control.BackColor = SystemColors.Window
-                                                Else
-                                                    control.BackColor = Color.Pink
-                                                End If
-                                            End Sub
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As Net.IPAddress
-            Dim result As Net.IPAddress = Nothing
-            Dim text = DirectCast(control, TextBox).Text
-            If Not Net.IPAddress.TryParse(control.Text, result) Then
-                Throw New PicklingException("'{0}' is not parsable as a Date.".Frmt(text))
-            End If
-            Return result
+            control.Text = DateTime.Now().ToString(CultureInfo.InvariantCulture)
+            AddHandler control.TextChanged, Sub() control.BackColor = If(Net.IPAddress.TryParse(control.Text, Nothing),
+                                                                         SystemColors.Window,
+                                                                         Color.Pink)
+            Return New DelegatedValueEditor(Of Net.IPAddress)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
+                getter:=Function()
+                            Try
+                                Return Net.IPAddress.Parse(control.Text)
+                            Catch ex As ArgumentException
+                                Throw New PicklingException("'{0}' is not an IPAddress.".Frmt(control.Text), ex)
+                            End Try
+                        End Function,
+                setter:=Sub(value) control.Text = value.ToString())
         End Function
     End Class
 End Namespace

@@ -143,19 +143,22 @@ Namespace Bnet.Protocol
                                                  clock:=clock)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As QueryGamesListResponse) As Control
-            Dim resultControl = queryResultJar.ValueToControl(value.Result)
-            Dim gameControls = From game In value.Games
-                               Select gameDataJar.ValueToControl(PackRawGameDescription(game))
-            Return PanelWithControls({resultControl}.Concat(gameControls),
-                                     borderStyle:=BorderStyle.FixedSingle)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As QueryGamesListResponse
-            Dim queryResult = queryResultJar.ControlToValue(control.Controls(0))
-            Dim gameResults = (From i In control.Controls.Count.Range.Skip(1)
-                               Select ParseRawGameDescription(gameDataJar.ControlToValue(control.Controls(i)), _clock)
-                               ).Cache
-            Return New QueryGamesListResponse(queryResult, gameResults)
+        Public Overrides Function MakeControl() As IValueEditor(Of QueryGamesListResponse)
+            Dim resultControl = queryResultJar.MakeControl()
+            Dim gamesControl = gameDataJar.Repeated.MakeControl()
+            Dim panel = PanelWithControls({resultControl.Control, gamesControl.Control})
+            Return New DelegatedValueEditor(Of QueryGamesListResponse)(
+                Control:=panel,
+                eventAdder:=Sub(action)
+                                AddHandler resultControl.ValueChanged, Sub() action()
+                                AddHandler gamesControl.ValueChanged, Sub() action()
+                            End Sub,
+                getter:=Function() New QueryGamesListResponse(resultControl.Value,
+                                                              From vals In gamesControl.Value Select ParseRawGameDescription(vals, _clock)),
+                setter:=Sub(value)
+                            resultControl.Value = value.Result
+                            gamesControl.Value = (From game In value.Games Select PackRawGameDescription(game)).ToReadableList
+                        End Sub)
         End Function
     End Class
 End Namespace

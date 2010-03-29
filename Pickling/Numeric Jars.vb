@@ -28,16 +28,17 @@
             End If
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As Byte) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of Byte)
             Dim control = New NumericUpDown()
             control.Minimum = Byte.MinValue
             control.Maximum = Byte.MaxValue
-            control.Value = value
             control.MaximumSize = New Size(50, control.PreferredSize.Height)
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As Byte
-            Return CByte(DirectCast(control, NumericUpDown).Value)
+            control.Value = 0
+            Return New DelegatedValueEditor(Of Byte)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
+                getter:=Function() CByte(control.Value),
+                setter:=Sub(value) control.Value = value)
         End Function
     End Class
 
@@ -72,16 +73,17 @@
             End If
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As UInt16) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of UInt16)
             Dim control = New NumericUpDown()
             control.Minimum = UInt16.MinValue
             control.Maximum = UInt16.MaxValue
             control.MaximumSize = New Size(70, control.PreferredSize.Height)
-            control.Value = value
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As UInt16
-            Return CUShort(DirectCast(control, NumericUpDown).Value)
+            control.Value = 0
+            Return New DelegatedValueEditor(Of UInt16)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
+                getter:=Function() CUShort(control.Value),
+                setter:=Sub(value) control.Value = value)
         End Function
     End Class
 
@@ -116,16 +118,17 @@
             End If
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As UInt32) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of UInt32)
             Dim control = New NumericUpDown()
             control.Minimum = UInt32.MinValue
             control.Maximum = UInt32.MaxValue
-            control.Value = value
             control.MaximumSize = New Size(100, control.PreferredSize.Height)
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As UInt32
-            Return CUInt(DirectCast(control, NumericUpDown).Value)
+            control.Value = 0
+            Return New DelegatedValueEditor(Of UInt32)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
+                getter:=Function() CUInt(control.Value),
+                setter:=Sub(value) control.Value = value)
         End Function
     End Class
 
@@ -161,16 +164,17 @@
             End If
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As UInt64) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of UInt64)
             Dim control = New NumericUpDown()
             control.Minimum = UInt64.MinValue
             control.Maximum = UInt64.MaxValue
             control.MaximumSize = New Size(200, control.PreferredSize.Height)
-            control.Value = value
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As UInt64
-            Return CULng(DirectCast(control, NumericUpDown).Value)
+            control.Value = 0
+            Return New DelegatedValueEditor(Of UInt64)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
+                getter:=Function() CULng(control.Value),
+                setter:=Sub(value) control.Value = value)
         End Function
     End Class
 
@@ -194,25 +198,23 @@
             Return value.ToString(CultureInfo.InvariantCulture)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As Single) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of Single)
             Dim control = New TextBox()
-            control.Text = value.ToString("r", CultureInfo.InvariantCulture)
-            AddHandler control.TextChanged, Sub()
-                                                If Single.TryParse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture, 0) Then
-                                                    control.BackColor = SystemColors.Window
-                                                Else
-                                                    control.BackColor = Color.Pink
-                                                End If
-                                            End Sub
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As Single
-            Dim result As Single
-            Dim text = DirectCast(control, TextBox).Text
-            If Not Single.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, result) Then
-                Throw New PicklingException("'{0}' is not parsable as a Single.".Frmt(text))
-            End If
-            Return result
+            control.Text = CSng(0).ToString("r", CultureInfo.InvariantCulture)
+            AddHandler control.TextChanged, Sub() control.BackColor = If(Single.TryParse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture, 0),
+                                                                         SystemColors.Window,
+                                                                         Color.Pink)
+            Return New DelegatedValueEditor(Of Single)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
+                getter:=Function()
+                            Try
+                                Return Single.Parse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture)
+                            Catch ex As ArgumentException
+                                Throw New PicklingException("'{0}' is not a Single-precision value.".Frmt(control.Text), ex)
+                            End Try
+                        End Function,
+                setter:=Sub(value) control.Text = value.ToString("r", CultureInfo.InvariantCulture))
         End Function
     End Class
 
@@ -236,25 +238,23 @@
             Return value.ToString(CultureInfo.InvariantCulture)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As Double) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of Double)
             Dim control = New TextBox()
-            control.Text = value.ToString("r", CultureInfo.InvariantCulture)
-            AddHandler control.TextChanged, Sub()
-                                                If Double.TryParse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture, 0) Then
-                                                    control.BackColor = SystemColors.Window
-                                                Else
-                                                    control.BackColor = Color.Pink
-                                                End If
-                                            End Sub
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As Double
-            Dim result As Double
-            Dim text = DirectCast(control, TextBox).Text
-            If Not Double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, result) Then
-                Throw New PicklingException("'{0}' is not parsable as a Double.".Frmt(text))
-            End If
-            Return result
+            control.Text = CDbl(0).ToString("r", CultureInfo.InvariantCulture)
+            AddHandler control.TextChanged, Sub() control.BackColor = If(Double.TryParse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture, 0),
+                                                                         SystemColors.Window,
+                                                                         Color.Pink)
+            Return New DelegatedValueEditor(Of Double)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
+                getter:=Function()
+                            Try
+                                Return Double.Parse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture)
+                            Catch ex As ArgumentException
+                                Throw New PicklingException("'{0}' is not a Double-precision value.".Frmt(control.Text), ex)
+                            End Try
+                        End Function,
+                setter:=Sub(value) control.Text = value.ToString("r", CultureInfo.InvariantCulture))
         End Function
     End Class
 End Namespace

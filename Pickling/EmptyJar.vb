@@ -11,13 +11,16 @@ Namespace Pickling
             Return New Pickle(Of Object)(Me, New Object(), New Byte() {}.AsReadableList, New Lazy(Of String)(Function() "[No Data]"))
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As Object) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of Object)
             Dim control = New Label()
             control.Text = "[No Data]"
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As Object
-            Return New Object
+            Return New DelegatedValueEditor(Of Object)(
+                control:=control,
+                eventAdder:=Sub(action)
+                            End Sub,
+                getter:=Function() New Object(),
+                setter:=Sub(value)
+                        End Sub)
         End Function
     End Class
 End Namespace

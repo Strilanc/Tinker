@@ -64,15 +64,16 @@ Namespace WC3.Protocol
             Return pickle.With(jar:=Me, value:=value)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As PlayerActionSet) As Control
-            Return DataJar.ValueToControl(New Dictionary(Of InvariantString, Object) From {
-                    {"source", value.Id},
-                    {"actions", value.Actions}})
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As PlayerActionSet
-            Dim value = DataJar.ControlToValue(control)
-            Return New PlayerActionSet(value.ItemAs(Of PlayerId)("source"),
-                                       value.ItemAs(Of IReadableList(Of GameAction))("actions"))
+        Public Overrides Function MakeControl() As IValueEditor(Of PlayerActionSet)
+            Dim subControl = DataJar.MakeControl()
+            Return New DelegatedValueEditor(Of PlayerActionSet)(
+                Control:=subControl.Control,
+                eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
+                getter:=Function() New PlayerActionSet(subControl.Value.ItemAs(Of PlayerId)("source"),
+                                                       subControl.Value.ItemAs(Of IReadableList(Of GameAction))("actions")),
+                setter:=Sub(value) subControl.Value = New Dictionary(Of InvariantString, Object) From {
+                            {"source", value.Id},
+                            {"actions", value.Actions}})
         End Function
     End Class
 End Namespace

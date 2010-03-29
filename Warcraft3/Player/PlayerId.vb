@@ -67,15 +67,20 @@ Namespace WC3
             Return value.Pickled(Me, datum)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As PlayerId) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of PlayerId)
+            Dim label = New Label()
             Dim control = New NumericUpDown()
             control.Minimum = 1
             control.Maximum = 12
-            control.Value = value.Index
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As PlayerId
-            Return New PlayerId(CByte(DirectCast(control, NumericUpDown).Value))
+            control.Value = 1
+            label.AutoSize = True
+            label.Text = "pid"
+            Dim panel = PanelWithControls({label, control}, leftToRight:=True)
+            Return New DelegatedValueEditor(Of PlayerId)(
+                control:=panel,
+                eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
+                getter:=Function() New PlayerId(CByte(control.Value)),
+                setter:=Sub(value) control.Value = value.Index)
         End Function
     End Class
 End Namespace

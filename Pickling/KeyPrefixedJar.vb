@@ -41,18 +41,37 @@ Namespace Pickling
             Return value.Pickled(Me, datum, desc)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As KeyValuePair(Of TKey, ISimplePickle)) As Control
-            Dim keyControl = _keyJar.ValueToControl(value.Key)
-            keyControl.Enabled = False
-            Dim subControl = _valueJars(value.Key).Value.ValueToControl(value.Value.Value)
-            Return PanelWithControls({keyControl, subControl},
-                                     borderStyle:=BorderStyle.FixedSingle)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As KeyValuePair(Of TKey, ISimplePickle)
-            Dim key = _keyJar.ControlToValue(control.Controls(0))
-            Dim value = _valueJars(key).Value.ControlToValue(control.Controls(1))
-            Dim pickle = _valueJars(key).Value.Pack(value)
-            Return New KeyValuePair(Of TKey, ISimplePickle)(key, Pickle)
+        Public Overrides Function MakeControl() As IValueEditor(Of KeyValuePair(Of TKey, ISimplePickle))
+            Dim keyControl = _keyJar.MakeControl()
+            Dim valueControl = _valueJars(keyControl.Value).Value.MakeControl()
+            Dim panel = PanelWithControls({keyControl.Control, valueControl.Control}, borderStyle:=BorderStyle.FixedSingle)
+            Dim handlers = New List(Of Action)
+
+            Dim updateValueControl = Sub()
+                                         valueControl = _valueJars(keyControl.Value).Value.MakeControl()
+                                         panel.Controls.RemoveAt(1)
+                                         panel.Controls.Add(valueControl.Control)
+                                         LayoutPanel(panel, borderStyle:=BorderStyle.FixedSingle)
+                                         For Each handler In handlers
+                                             Dim h = handler
+                                             AddHandler valueControl.ValueChanged, Sub() h()
+                                         Next handler
+                                         AddHandler valueControl.ValueChanged, Sub() LayoutPanel(panel, borderStyle:=BorderStyle.FixedSingle)
+                                     End Sub
+            AddHandler keyControl.ValueChanged, Sub() updateValueControl()
+
+            Return New DelegatedValueEditor(Of KeyValuePair(Of TKey, ISimplePickle))(
+                Control:=panel,
+                eventAdder:=Sub(action)
+                                AddHandler keyControl.ValueChanged, Sub() action()
+                                AddHandler valueControl.ValueChanged, Sub() action()
+                                handlers.Add(action)
+                            End Sub,
+                getter:=Function() New KeyValuePair(Of TKey, ISimplePickle)(keyControl.Value, _valueJars(keyControl.Value).Value.Pack(valueControl.Value)),
+                setter:=Sub(value)
+                            keyControl.Value = value.Key
+                            valueControl.Value = value.Value.Value
+                        End Sub)
         End Function
     End Class
 End Namespace

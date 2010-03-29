@@ -43,11 +43,8 @@
             Return result
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As T) As Control
-            Return _subJar.ValueToControl(value)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As T
-            Return _subJar.ControlToValue(control)
+        Public Overrides Function MakeControl() As IValueEditor(Of T)
+            Return _subJar.MakeControl()
         End Function
     End Class
 
@@ -91,11 +88,8 @@
             End Try
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As T) As Control
-            Return _subJar.ValueToControl(value)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As T
-            Return _subJar.ControlToValue(control)
+        Public Overrides Function MakeControl() As IValueEditor(Of T)
+            Return _subJar.MakeControl()
         End Function
     End Class
 
@@ -141,11 +135,8 @@
             Return pickle.With(jar:=Me, data:=datum)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As T) As Control
-            Return _subJar.ValueToControl(value)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As T
-            Return _subJar.ControlToValue(control)
+        Public Overrides Function MakeControl() As IValueEditor(Of T)
+            Return _subJar.MakeControl()
         End Function
     End Class
 
@@ -207,14 +198,8 @@
             Return value.Pickled(Me, datum, desc)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As IReadableList(Of T)) As Control
-            Return PanelWithControls((From item In value Select _subJar.ValueToControl(item)),
-                                     borderStyle:=BorderStyle.FixedSingle)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As IReadableList(Of T)
-            Return (From i In control.Controls.Count.Range
-                    Select _subJar.ControlToValue(control.Controls(i))
-                    ).ToReadableList
+        Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
+            Return New ListValueEditor(Of T)(_subJar)
         End Function
     End Class
 
@@ -248,11 +233,8 @@
             Return pickle.With(jar:=Me, data:=data.SubView(0, p + 1))
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As T) As Control
-            Return _subJar.ValueToControl(value)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As T
-            Return _subJar.ControlToValue(control)
+        Public Overrides Function MakeControl() As IValueEditor(Of T)
+            Return _subJar.MakeControl()
         End Function
     End Class
 
@@ -293,23 +275,26 @@
             End If
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As Tuple(Of Boolean, T)) As Control
-            If value.Item1 Then
-                Return _subJar.ValueToControl(value.Item2)
-            Else
-                Dim label = New Label()
-                label.Text = "[Not Included]"
-                label.Tag = "Empty"
-                label.AutoSize = True
-                Return label
-            End If
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As Tuple(Of Boolean, T)
-            If TypeOf control Is Label AndAlso TypeOf control.Tag Is String AndAlso DirectCast(control.Tag, String) = "Empty" Then
-                Return Tuple.Create(False, DirectCast(Nothing, T))
-            Else
-                Return Tuple.Create(True, _subJar.ControlToValue(control))
-            End If
+        Public Overrides Function MakeControl() As IValueEditor(Of Tuple(Of Boolean, T))
+            Dim checkControl = New CheckBox()
+            checkControl.Text = "Included"
+            checkControl.Checked = True
+            Dim valueControl = _subJar.MakeControl()
+            Dim panel = PanelWithControls({checkControl, valueControl.Control})
+            AddHandler checkControl.CheckedChanged, Sub() valueControl.Control.Enabled = checkControl.Checked
+            AddHandler valueControl.ValueChanged, Sub() LayoutPanel(panel)
+
+            Return New DelegatedValueEditor(Of Tuple(Of Boolean, T))(
+                Control:=panel,
+                eventAdder:=Sub(action)
+                                AddHandler checkControl.CheckedChanged, Sub() action()
+                                AddHandler valueControl.ValueChanged, Sub() action()
+                            End Sub,
+                getter:=Function() If(checkControl.Checked, Tuple.Create(True, valueControl.Value), Tuple.Create(False, DirectCast(Nothing, T))),
+                setter:=Sub(value)
+                            checkControl.Checked = value.Item1
+                            If value.Item1 Then valueControl.Value = value.Item2
+                        End Sub)
         End Function
     End Class
 
@@ -360,15 +345,130 @@
             Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As IReadableList(Of T)) As Control
-            Return PanelWithControls((From item In value Select _subJar.ValueToControl(item)),
-                                     borderStyle:=BorderStyle.FixedSingle)
+        Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
+            Return New ListValueEditor(Of T)(_subJar)
         End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As IReadableList(Of T)
-            Return (From i In control.Controls.Count.Range
-                    Select _subJar.ControlToValue(control.Controls(i))
-                    ).ToReadableList
+    End Class
+    Public Class ListValueEditor(Of T)
+        Implements IValueEditor(Of IReadableList(Of T))
+
+        Private ReadOnly subControls As New List(Of Entry)
+        Private ReadOnly mainControl As New Panel()
+        Private ReadOnly addButton As New Button() With {.Text = "Add"}
+        Private ReadOnly _subJar As IJar(Of T)
+        Private _ignoreValueChanged As Boolean
+
+        Public Event ValueChanged(ByVal sender As IValueEditor(Of IReadableList(Of T))) Implements IValueEditor(Of IReadableList(Of T)).ValueChanged
+        Public Event ValueChangedSimple(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
+
+        Private Class Entry
+            Public ReadOnly SubControl As IValueEditor(Of T)
+            Public ReadOnly RemoveControl As New Button() With {.Text = "Remove"}
+            Public ReadOnly InsertControl As New Button() With {.Text = "Insert"}
+            Public ReadOnly MoveUpControl As New Button() With {.Text = "Move Up"}
+            Public ReadOnly CommandPanel As Panel = PanelWithControls({RemoveControl, InsertControl, MoveUpControl}, leftToRight:=True, margin:=0)
+            Public ReadOnly FullPanel As Panel
+
+            Public Sub New(ByVal jar As IJar(Of T))
+                Me.SubControl = jar.MakeControl()
+                Me.FullPanel = PanelWithControls({SubControl.Control, CommandPanel}, borderStyle:=BorderStyle.FixedSingle)
+            End Sub
+        End Class
+
+        Private Sub RaiseValueChanged()
+            If _ignoreValueChanged Then Return
+            RaiseEvent ValueChanged(Me)
+            RaiseEvent ValueChangedSimple(Me)
+        End Sub
+
+        Private Sub RefreshLayout(Optional ByVal controlsChanged As Boolean = True,
+                                  Optional ByVal raise As Boolean = True)
+            If controlsChanged Then
+                mainControl.Controls.Clear()
+                For Each e In subControls
+                    mainControl.Controls.Add(e.FullPanel)
+                Next e
+                mainControl.Controls.Add(addButton)
+            End If
+            LayoutPanel(mainControl, margin:=6, spacing:=0)
+            If raise Then
+                RaiseValueChanged()
+            End If
+        End Sub
+        Private Sub ChangedValueSubControl(ByVal entry As Entry)
+            LayoutPanel(entry.FullPanel, borderStyle:=BorderStyle.FixedSingle)
+            RefreshLayout(controlsChanged:=False)
+        End Sub
+        Private Sub RemoveSubControl(ByVal entry As Entry)
+            subControls.Remove(entry)
+            RefreshLayout()
+        End Sub
+        Private Sub MoveUpSubControl(ByVal entry As Entry)
+            Dim p = subControls.IndexOf(entry)
+            subControls(p) = subControls(p - 1)
+            subControls(p - 1) = entry
+            subControls(p).MoveUpControl.Enabled = True
+            entry.MoveUpControl.Enabled = p > 1
+            RefreshLayout()
+        End Sub
+        Private Sub InsertAboveSubControl(ByVal entry As Entry)
+            Dim r = AddEntry(layout:=False)
+            Dim p = subControls.IndexOf(entry)
+            subControls(subControls.Count - 1) = subControls(p)
+            subControls(p) = r
+            RefreshLayout()
+        End Sub
+
+        Private Function AddEntry(ByVal layout As Boolean) As Entry
+            Dim entry = New Entry(_subJar)
+
+            AddHandler entry.SubControl.ValueChanged, Sub() ChangedValueSubControl(entry)
+            AddHandler entry.RemoveControl.Click, Sub() RemoveSubControl(entry)
+            AddHandler entry.InsertControl.Click, Sub() InsertAboveSubControl(entry)
+            AddHandler entry.MoveUpControl.Click, Sub() MoveUpSubControl(entry)
+            entry.MoveUpControl.Enabled = subControls.Count > 0
+            subControls.Add(entry)
+            If layout Then RefreshLayout()
+
+            Return entry
         End Function
+
+        Public Sub New(ByVal subJar As IJar(Of T))
+            Me._subJar = subJar
+            Me.mainControl = PanelWithControls({Me.addButton}, margin:=0)
+            AddHandler addButton.Click, Sub() AddEntry(layout:=True)
+        End Sub
+        Public ReadOnly Property Control As Control Implements ISimpleValueEditor.Control
+            Get
+                Return mainControl
+            End Get
+        End Property
+
+        Public Property Value As IReadableList(Of T) Implements IValueEditor(Of IReadableList(Of T)).Value
+            Get
+                Return (From e In subControls Select (e.SubControl.Value)).ToReadableList
+            End Get
+            Set(ByVal value As IReadableList(Of T))
+                Try
+                    _ignoreValueChanged = True
+                    subControls.Clear()
+                    For Each item In value
+                        AddEntry(layout:=False).SubControl.Value = item
+                    Next item
+                Finally
+                    _ignoreValueChanged = False
+                End Try
+                RefreshLayout()
+            End Set
+        End Property
+        Private Property ValueSimple As Object Implements ISimpleValueEditor.Value
+            Get
+                Return Me.Value
+            End Get
+            Set(ByVal value As Object)
+                Me.Value = DirectCast(value, IReadableList(Of T))
+            End Set
+        End Property
     End Class
 
     '''<summary>Pickles values with data prefixed by a checksum.</summary>
@@ -415,11 +515,8 @@
             Return pickle.With(jar:=Me, data:=datum)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As T) As Control
-            Return _subJar.ValueToControl(value)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As T
-            Return _subJar.ControlToValue(control)
+        Public Overrides Function MakeControl() As IValueEditor(Of T)
+            Return _subJar.MakeControl()
         End Function
     End Class
 
@@ -450,11 +547,8 @@
             Return pickle.With(jar:=Me, data:=data)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As T) As Control
-            Return _subJar.ValueToControl(value)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As T
-            Return _subJar.ControlToValue(control)
+        Public Overrides Function MakeControl() As IValueEditor(Of T)
+            Return _subJar.MakeControl()
         End Function
     End Class
 End Namespace

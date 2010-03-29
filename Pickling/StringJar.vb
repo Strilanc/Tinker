@@ -43,14 +43,15 @@ Namespace Pickling
             Return value.Pickled(Me, data, Function() """{0}""".Frmt(value))
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As String) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of String)
             Dim control = New TextBox()
-            control.Text = value
             If _maxCharCount.HasValue Then control.MaxLength = _maxCharCount.Value
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As String
-            Return DirectCast(control, TextBox).Text
+            control.Text = ""
+            Return New DelegatedValueEditor(Of String)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
+                getter:=Function() control.Text,
+                setter:=Sub(value) control.Text = value)
         End Function
     End Class
 

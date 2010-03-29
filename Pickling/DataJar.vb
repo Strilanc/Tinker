@@ -12,9 +12,9 @@ Namespace Pickling
             Return data.Pickled(Me, data, Function() "[{0}]".Frmt(data.ToHexString))
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As IReadableList(Of Byte)) As Control
+        Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of Byte))
             Dim control = New TextBox()
-            control.Text = value.ToHexString()
+            control.Text = ""
             AddHandler control.TextChanged, Sub()
                                                 Try
                                                     Dim v = (From word In DirectCast(control, TextBox).Text.Split(" "c)
@@ -27,17 +27,20 @@ Namespace Pickling
                                                     control.BackColor = Color.Pink
                                                 End Try
                                             End Sub
-            Return control
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As IReadableList(Of Byte)
-            Try
-                Return (From word In DirectCast(control, TextBox).Text.Split(" "c)
-                        Where word <> ""
-                        Select CByte(word.FromHexToUInt64(ByteOrder.BigEndian))
-                        ).ToReadableList
-            Catch ex As ArgumentException
-                Throw New PicklingException("Invalid hex data.", ex)
-            End Try
+            Return New DelegatedValueEditor(Of IReadableList(Of Byte))(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
+                getter:=Function()
+                            Try
+                                Return (From word In DirectCast(control, TextBox).Text.Split(" "c)
+                                        Where word <> ""
+                                        Select CByte(word.FromHexToUInt64(ByteOrder.BigEndian))
+                                        ).ToReadableList
+                            Catch ex As ArgumentException
+                                Throw New PicklingException("Invalid hex data.", ex)
+                            End Try
+                        End Function,
+                setter:=Sub(value) control.Text = value.ToHexString)
         End Function
     End Class
 End Namespace

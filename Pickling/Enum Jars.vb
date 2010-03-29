@@ -43,45 +43,78 @@
             Return If(_isFlagEnum, value.EnumFlagsToString(), value.ToString)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As TEnum) As Control
-            If _isFlagEnum Then
-                Dim control = New CheckedListBox()
-                For Each e In EnumAllFlags(Of TEnum)(onlyDefined:=_checkDefined)
-                    control.Items.Add(e.EnumFlagsToString(), isChecked:=value.EnumIncludes(e))
-                Next e
-                control.Height = control.GetItemHeight(0) * control.Items.Count
-                Return control
-            Else
-                Dim control = New ComboBox()
-                control.DropDownStyle = If(_checkDefined, ComboBoxStyle.DropDownList, ComboBoxStyle.DropDown)
-                For Each e In EnumValues(Of TEnum)()
-                    control.Items.Add(e)
-                Next e
-                If _checkDefined Then
-                    control.SelectedItem = value
-                Else
-                    control.Text = value.ToString
-                End If
-                Return control
-            End If
+        Private Function MakeFlagsControl() As IValueEditor(Of TEnum)
+            Contract.Requires(_isFlagEnum)
+
+            Dim flags = EnumAllFlags(Of TEnum)(onlyDefined:=_checkDefined).ZipWithIndexes()
+            Dim control = New CheckedListBox()
+            For Each e In flags
+                control.Items.Add(e.Item1.EnumFlagsToString())
+            Next e
+            control.Height = control.GetItemHeight(0) * control.Items.Count
+
+            Return New DelegatedValueEditor(Of TEnum)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.ItemCheck, Sub() action(),
+                getter:=Function() flags.Aggregate(Of TEnum)(Nothing, Function(e1, e2) If(control.GetItemChecked(e2.Item2),
+                                                                                          e1.EnumWith(e2.Item1),
+                                                                                          e1)),
+                setter:=Sub(value)
+                            For Each pair In flags
+                                control.SetItemChecked(pair.Item2, value.EnumIncludes(pair.Item1))
+                            Next pair
+                        End Sub)
         End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As TEnum
+        Private Function MakeDefinedValueControl() As IValueEditor(Of TEnum)
+            Contract.Requires(Not _isFlagEnum)
+            Contract.Requires(_checkDefined)
+
+            Dim control = New ComboBox()
+            control.DropDownStyle = ComboBoxStyle.DropDownList
+            For Each e In From v In EnumValues(Of TEnum)()
+                          Order By v.ToString()
+                control.Items.Add(e)
+            Next e
+            control.SelectedIndex = 0
+
+            Return New DelegatedValueEditor(Of TEnum)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.SelectedIndexChanged, Sub() action(),
+                getter:=Function() DirectCast(control.SelectedItem, TEnum),
+                setter:=Sub(value) control.SelectedItem = value)
+        End Function
+        Private Function MakeUndefinedValueControl() As IValueEditor(Of TEnum)
+            Contract.Requires(Not _isFlagEnum)
+            Contract.Requires(_checkDefined)
+
+            Dim control = New ComboBox()
+            control.DropDownStyle = ComboBoxStyle.DropDown
+            For Each e In From v In EnumValues(Of TEnum)()
+                          Order By v.ToString()
+                control.Items.Add(e)
+            Next e
+            control.SelectedIndex = 0
+
+            Return New DelegatedValueEditor(Of TEnum)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
+                getter:=Function()
+                            Try
+                                Return control.Text.EnumParse(Of TEnum)(ignoreCase:=True)
+                            Catch ex As ArgumentException
+                                Throw New PicklingException("'{0}' is not a valid {1}".Frmt(control.Text, GetType(TEnum)), ex)
+                            End Try
+                        End Function,
+                setter:=Sub(value) control.Text = value.ToString)
+        End Function
+
+        Public Overrides Function MakeControl() As IValueEditor(Of TEnum)
             If _isFlagEnum Then
-                Dim c = DirectCast(control, CheckedListBox)
-                Dim i = 0
-                Dim result As TEnum
-                For Each e In EnumAllFlags(Of TEnum)(onlyDefined:=_checkDefined)
-                    If c.GetItemChecked(i) Then result = result.EnumWith(e)
-                    i += 1
-                Next e
-                Return result
+                Return MakeFlagsControl()
+            ElseIf _checkDefined Then
+                Return MakeDefinedValueControl()
             Else
-                Dim c = DirectCast(control, ComboBox)
-                If _checkDefined Then
-                    Return DirectCast(c.SelectedItem, TEnum)
-                Else
-                    Return c.Text.EnumParse(Of TEnum)(ignoreCase:=True)
-                End If
+                Return MakeUndefinedValueControl()
             End If
         End Function
     End Class

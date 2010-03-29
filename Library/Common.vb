@@ -517,19 +517,34 @@ Public Module PoorlyCategorizedFunctions
                                       Optional ByVal margin As Int32 = 3,
                                       Optional ByVal borderStyle As BorderStyle = BorderStyle.None) As Panel
         Contract.Requires(controls IsNot Nothing)
-        Contract.Requires(controls.Any)
         Contract.Ensures(Contract.Result(Of Panel)() IsNot Nothing)
 
         Dim result = New Panel()
         result.Controls.AddRange(controls.ToArray)
-        result.BorderStyle = borderStyle
+        LayoutPanel(result, leftToRight, spacing, margin, borderStyle)
+        Return result
+    End Function
+    <Extension()>
+    Public Sub LayoutPanel(ByVal panel As Panel,
+                           Optional ByVal leftToRight As Boolean = False,
+                           Optional ByVal spacing As Int32 = 3,
+                           Optional ByVal margin As Int32 = 3,
+                           Optional ByVal borderStyle As BorderStyle = BorderStyle.None)
+        Contract.Requires(panel IsNot Nothing)
+
+        panel.BorderStyle = borderStyle
+        If panel.Controls.Count = 0 Then
+            panel.Height = margin * 2
+            panel.Width = margin * 2
+            Return
+        End If
 
         'Position controls
-        result.Controls(0).Top = margin
-        result.Controls(0).Left = margin
-        For Each i In result.Controls.Count.Range.Skip(1)
-            Dim c = result.Controls(i)
-            Dim p = result.Controls(i - 1)
+        panel.Controls(0).Top = margin
+        panel.Controls(0).Left = margin
+        For Each i In panel.Controls.Count.Range.Skip(1)
+            Dim c = panel.Controls(i)
+            Dim p = panel.Controls(i - 1)
             If leftToRight Then
                 c.Left = p.Right + spacing
                 c.Top = margin
@@ -538,20 +553,20 @@ Public Module PoorlyCategorizedFunctions
                 c.Top = p.Bottom + spacing
             End If
         Next i
-        result.Height = result.Controls(result.Controls.Count - 1).Bottom + margin
+        panel.Height = panel.Controls(panel.Controls.Count - 1).Bottom + margin
 
         'Size controls
         Dim maxWidth = 0
-        For Each c As Control In result.Controls
+        For Each c As Control In panel.Controls
             If leftToRight Then
-                If result.Width < c.Right + margin Then
-                    result.Width = c.Right + margin
+                If panel.Width < c.Right + margin Then
+                    panel.Width = c.Right + margin
                 End If
-                If result.Height < c.Bottom + margin Then
-                    result.Height = c.Bottom + margin
+                If panel.Height < c.Bottom + margin Then
+                    panel.Height = c.Bottom + margin
                 End If
             Else
-                c.Width = result.Width - margin * 2
+                c.Width = panel.Width - margin * 2
                 If c.MaximumSize.Width = 0 Then
                     c.Anchor = AnchorStyles.Left Or AnchorStyles.Right Or AnchorStyles.Top
                 End If
@@ -561,10 +576,8 @@ Public Module PoorlyCategorizedFunctions
         maxWidth += margin * 2
 
         'Shrink if all subcontrols are smaller
-        If Not leftToRight AndAlso maxWidth < result.Width Then
-            result.Width = maxWidth
+        If Not leftToRight AndAlso maxWidth < panel.Width Then
+            panel.Width = maxWidth
         End If
-
-        Return result
-    End Function
+    End Sub
 End Module

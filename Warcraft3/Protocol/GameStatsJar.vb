@@ -211,7 +211,7 @@ Namespace WC3.Protocol
             Dim sha1Checksum = vals.ItemAs(Of IReadableList(Of Byte))("sha1 checksum")
             Dim relativePath As InvariantString = vals.ItemAs(Of String)("relative path")
             Dim hostName As InvariantString = vals.ItemAs(Of String)("host name")
-            Contract.Assume(sha1Checksum.Count = 20)
+            If sha1Checksum.Count <> 20 Then Throw New PicklingException("sha1 checksum must have have 20 bytes.")
             If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
 
             'Finish
@@ -248,11 +248,13 @@ Namespace WC3.Protocol
                    Select decodedValue = valueMaskBitPair.Item1.WithBitSetTo(bitPosition:=0, bitValue:=valueMaskBitPair.Item2)
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As GameStats) As Control
-            Return DataJar.ValueToControl(PackDataValue(value))
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As GameStats
-            Return ParseDataValue(DataJar.ControlToValue(control))
+        Public Overrides Function MakeControl() As IValueEditor(Of GameStats)
+            Dim subControl = DataJar.MakeControl()
+            Return New DelegatedValueEditor(Of GameStats)(
+                Control:=subControl.Control,
+                eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
+                getter:=Function() ParseDataValue(subControl.Value),
+                setter:=Sub(value) subControl.Value =PackDataValue(value))
         End Function
     End Class
 End Namespace

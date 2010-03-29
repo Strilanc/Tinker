@@ -61,14 +61,26 @@ Namespace Pickling
             Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
         End Function
 
-        Public Overrides Function ValueToControl(ByVal value As NamedValueMap) As Control
-            Return PanelWithControls((From subJar In _subJars Select subJar.ValueToControl(value.ItemRaw(subJar.Name))),
-                                     borderStyle:=BorderStyle.FixedSingle)
-        End Function
-        Public Overrides Function ControlToValue(ByVal control As Control) As NamedValueMap
-            Return _subJars.Zip(From i In control.Controls.Count.Range Select control.Controls(i)).ToDictionary(
-                        keySelector:=Function(e) e.Item1.Name,
-                        elementSelector:=Function(e) e.Item1.ControlToValue(e.Item2))
+        Public Overrides Function MakeControl() As IValueEditor(Of NamedValueMap)
+            Dim subControls = (From subJar In _subJars Select (subJar.MakeControl())).Cache
+            Dim panel = PanelWithControls((From c In subControls Select c.Control),
+                                          borderStyle:=BorderStyle.FixedSingle)
+            For Each subControl In subControls
+                AddHandler subControl.ValueChanged, Sub() LayoutPanel(panel)
+            Next subControl
+            Return New DelegatedValueEditor(Of NamedValueMap)(
+                Control:=panel,
+                eventAdder:=Sub(action)
+                                For Each subControl In subControls
+                                    AddHandler subControl.ValueChanged, Sub() action()
+                                Next subControl
+                            End Sub,
+                getter:=Function() _subJars.Zip(subControls).ToDictionary(Function(e) e.Item1.Name, Function(e) e.Item2.Value),
+                setter:=Sub(value)
+                            For Each pair In _subJars.Zip(subControls)
+                                pair.Item2.Value = value.ItemRaw(pair.Item1.Name)
+                            Next pair
+                        End Sub)
         End Function
     End Class
 End Namespace
