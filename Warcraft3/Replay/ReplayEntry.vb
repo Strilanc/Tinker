@@ -3,14 +3,17 @@
 Namespace WC3.Replay
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class ReplayEntry
+        Implements IEquatable(Of ReplayEntry)
+
+        Private Shared ReadOnly SharedJar As New ReplayEntryJar()
         Private ReadOnly _id As ReplayEntryId
-        Private ReadOnly _payload As ISimplePickle
+        Private ReadOnly _payload As Object
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Private Sub New(ByVal id As ReplayEntryId, ByVal payload As ISimplePickle)
+        Public Sub New(ByVal id As ReplayEntryId, ByVal payload As Object)
             Contract.Requires(payload IsNot Nothing)
             Me._id = id
             Me._payload = payload
@@ -21,7 +24,7 @@ Namespace WC3.Replay
             Contract.Requires(definition IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return New ReplayEntry(definition.Id, definition.Jar.Pack(value))
+            Return New ReplayEntry(definition.Id, definition.Jar.Pack(value).Value)
         End Function
 
         Public ReadOnly Property Id As ReplayEntryId
@@ -29,25 +32,35 @@ Namespace WC3.Replay
                 Return _id
             End Get
         End Property
-        Public ReadOnly Property Payload As ISimplePickle
+        Public ReadOnly Property Payload As Object
             Get
-                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
                 Return _payload
             End Get
         End Property
 
-        Public Overrides Function ToString() As String
-            Return "{0}: {1}".Frmt(Id, Payload.Description)
-        End Function
-
-        Public Shared Widening Operator CType(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, ISimplePickle)
+        Public Shared Widening Operator CType(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
             Contract.Requires(value IsNot Nothing)
-            Return New KeyValuePair(Of ReplayEntryId, ISimplePickle)(value.Id, value.Payload)
+            Return New KeyValuePair(Of ReplayEntryId, Object)(value.Id, value.Payload)
         End Operator
-        Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of ReplayEntryId, ISimplePickle)) As ReplayEntry
+        Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
             Return New ReplayEntry(value.Key, value.Value)
         End Operator
+
+        Public Overloads Function Equals(ByVal other As ReplayEntry) As Boolean Implements System.IEquatable(Of ReplayEntry).Equals
+            If other Is Nothing Then Return False
+            Return SharedJar.Pack(Me).Data.SequenceEqual(SharedJar.Pack(other).Data)
+        End Function
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Return Me.Equals(TryCast(obj, ReplayEntry))
+        End Function
+        Public Overrides Function GetHashCode() As Integer
+            Return _id.GetHashCode()
+        End Function
+        Public Overrides Function ToString() As String
+            Return SharedJar.Describe(Me)
+        End Function
     End Class
 
     Public NotInheritable Class ReplayEntryJar
@@ -61,7 +74,7 @@ Namespace WC3.Replay
 
         Public Overrides Function Pack(Of TValue As ReplayEntry)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Dim pickle = SubJar.Pack(CType(value, KeyValuePair(Of ReplayEntryId, ISimplePickle)))
+            Dim pickle = SubJar.Pack(CType(value, KeyValuePair(Of ReplayEntryId, Object)))
             Return pickle.With(jar:=Me, value:=value)
         End Function
 

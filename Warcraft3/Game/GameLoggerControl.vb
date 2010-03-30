@@ -30,7 +30,7 @@ Namespace WC3
             If mode = CallbackMode.Off Then Return
             For Each action In actions
                 Dim action_ = action
-                LogMessage(New Lazy(Of String)(Function() "Action by {0}: {1}: {2}".Frmt(player.Name, action_.Id, action_.Payload.Description)),
+                LogMessage(New Lazy(Of String)(Function() "Action by {0}: {1}".Frmt(player.Name, action_)),
                            Color.DarkBlue,
                            mode = CallbackMode.File)
             Next action

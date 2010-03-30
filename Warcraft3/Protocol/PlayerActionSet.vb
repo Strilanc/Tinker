@@ -37,8 +37,41 @@ Namespace WC3.Protocol
             If Me.Id <> other.Id Then Return False
             If Me.Actions.Count <> other.Actions.Count Then Return False
             If (From pair In Me.Actions.Zip(other.Actions)
-                Where Not pair.Item1.Payload.Data.SequenceEqual(pair.Item2.Payload.Data)).Any Then Return False
+                Where Not pair.Item1.Equals(pair.Item2)).Any Then Return False
             Return True
+        End Function
+    End Class
+    Public Class SpecificPlayerActionSet
+        Inherits PlayerActionSet
+        Implements IEquatable(Of SpecificPlayerActionSet)
+
+        Private ReadOnly _player As Player
+        Private ReadOnly _actions As IReadableList(Of GameAction)
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_player IsNot Nothing)
+            Contract.Invariant(_actions IsNot Nothing)
+        End Sub
+        Public Sub New(ByVal player As Player, ByVal actions As IReadableList(Of GameAction))
+            MyBase.New(player.Id, actions)
+            Contract.Requires(player IsNot Nothing)
+            Contract.Requires(actions IsNot Nothing)
+            Me._player = player
+        End Sub
+        Public ReadOnly Property Player As Player
+            Get
+                Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
+                Return _player
+            End Get
+        End Property
+
+        Public Overrides Function GetHashCode() As Integer
+            Return _player.GetHashCode
+        End Function
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Return Me.Equals(TryCast(obj, SpecificPlayerActionSet))
+        End Function
+        Public Overloads Function Equals(ByVal other As SpecificPlayerActionSet) As Boolean Implements IEquatable(Of SpecificPlayerActionSet).Equals
+            Return MyBase.Equals(DirectCast(other, PlayerActionSet)) AndAlso Me.Player Is other.Player
         End Function
     End Class
     Public Class PlayerActionSetJar

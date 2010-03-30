@@ -3,14 +3,17 @@
 Namespace WC3.Protocol
     <DebuggerDisplay("{ToString}")>
     Public NotInheritable Class GameAction
+        Implements IEquatable(Of GameAction)
+
+        Private Shared ReadOnly SharedJar As New GameActionJar()
         Private ReadOnly _id As GameActionId
-        Private ReadOnly _payload As ISimplePickle
+        Private ReadOnly _payload As Object
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal id As GameActionId, ByVal payload As ISimplePickle)
+        Public Sub New(ByVal id As GameActionId, ByVal payload As Object)
             Contract.Requires(payload IsNot Nothing)
             Me._id = id
             Me._payload = payload
@@ -21,7 +24,7 @@ Namespace WC3.Protocol
             Contract.Requires(actionDefinition IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
-            Return New GameAction(actionDefinition.Id, actionDefinition.Jar.Pack(value))
+            Return New GameAction(actionDefinition.Id, actionDefinition.Jar.Pack(value).Value)
         End Function
 
         Public ReadOnly Property Id As GameActionId
@@ -29,25 +32,35 @@ Namespace WC3.Protocol
                 Return _id
             End Get
         End Property
-        Public ReadOnly Property Payload As ISimplePickle
+        Public ReadOnly Property Payload As Object
             Get
-                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
                 Return _payload
             End Get
         End Property
 
-        Public Overrides Function ToString() As String
-            Return "{0}: {1}".Frmt(Id, Payload.Description)
-        End Function
-
-        Public Shared Widening Operator CType(ByVal value As GameAction) As KeyValuePair(Of GameActionId, ISimplePickle)
+        Public Shared Widening Operator CType(ByVal value As GameAction) As KeyValuePair(Of GameActionId, Object)
             Contract.Requires(value IsNot Nothing)
-            Return New KeyValuePair(Of GameActionId, ISimplePickle)(value.Id, value.Payload)
+            Return New KeyValuePair(Of GameActionId, Object)(value.Id, value.Payload)
         End Operator
-        Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of GameActionId, ISimplePickle)) As GameAction
+        Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of GameActionId, Object)) As GameAction
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
             Return New GameAction(value.Key, value.Value)
         End Operator
+
+        Public Overloads Function Equals(ByVal other As GameAction) As Boolean Implements System.IEquatable(Of GameAction).Equals
+            If other Is Nothing Then Return False
+            Return SharedJar.Pack(Me).Data.SequenceEqual(SharedJar.Pack(other).Data)
+        End Function
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Return Me.Equals(TryCast(obj, GameAction))
+        End Function
+        Public Overrides Function GetHashCode() As Integer
+            Return _id.GetHashCode()
+        End Function
+        Public Overrides Function ToString() As String
+            Return SharedJar.Describe(Me)
+        End Function
     End Class
 
     Public NotInheritable Class GameActionJar
@@ -61,7 +74,7 @@ Namespace WC3.Protocol
 
         Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Dim pickle = SubJar.Pack(CType(value, KeyValuePair(Of GameActionId, ISimplePickle)))
+            Dim pickle = SubJar.Pack(CType(value, KeyValuePair(Of GameActionId, Object)))
             Return pickle.With(jar:=Me, value:=value)
         End Function
 

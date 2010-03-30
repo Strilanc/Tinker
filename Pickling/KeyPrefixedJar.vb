@@ -1,6 +1,6 @@
 Namespace Pickling
     Public NotInheritable Class KeyPrefixedJar(Of TKey)
-        Inherits BaseJar(Of KeyValuePair(Of TKey, ISimplePickle))
+        Inherits BaseJar(Of KeyValuePair(Of TKey, Object))
 
         Private ReadOnly _keyJar As IJar(Of TKey)
         Private ReadOnly _valueJars As New Dictionary(Of TKey, NonNull(Of ISimpleJar))
@@ -19,31 +19,31 @@ Namespace Pickling
         End Sub
 
         <ContractVerification(False)>
-        Public Overrides Function Pack(Of TValue As KeyValuePair(Of TKey, ISimplePickle))(ByVal value As TValue) As IPickle(Of TValue)
-            Dim v = CType(value, KeyValuePair(Of TKey, ISimplePickle))
+        Public Overrides Function Pack(Of TValue As KeyValuePair(Of TKey, Object))(ByVal value As TValue) As IPickle(Of TValue)
+            Dim v = DirectCast(value, KeyValuePair(Of TKey, Object))
             If Not _valueJars.ContainsKey(v.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(v.Key))
             Dim keyPickle = _keyJar.Pack(v.Key)
-            Dim valuePickle = _valueJars(v.Key).Value.Pack(v.Value.Value)
+            Dim valuePickle = _valueJars(v.Key).Value.Pack(v.Value)
 
             Dim data = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
             Return value.Pickled(Me, data)
         End Function
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of KeyValuePair(Of TKey, ISimplePickle))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of KeyValuePair(Of TKey, Object))
             Dim keyPickle = _keyJar.Parse(data)
             If Not _valueJars.ContainsKey(keyPickle.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(keyPickle.Value))
             Dim valuePickle = _valueJars(keyPickle.Value).Value.Parse(data.SubView(keyPickle.Data.Count))
 
-            Dim value = New KeyValuePair(Of TKey, ISimplePickle)(keyPickle.Value, valuePickle)
+            Dim value = New KeyValuePair(Of TKey, Object)(keyPickle.Value, valuePickle.Value)
             Dim datum = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
             Return value.Pickled(Me, datum)
         End Function
 
-        Public Overrides Function Describe(ByVal value As KeyValuePair(Of TKey, ISimplePickle)) As String
-            Return "{0}: {1}".Frmt(_keyJar.Describe(value.Key), _valueJars(value.Key).Value.Describe(value.Value.Value))
+        Public Overrides Function Describe(ByVal value As KeyValuePair(Of TKey, Object)) As String
+            Return "{0}: {1}".Frmt(_keyJar.Describe(value.Key), _valueJars(value.Key).Value.Describe(value.Value))
         End Function
 
-        Public Overrides Function MakeControl() As IValueEditor(Of KeyValuePair(Of TKey, ISimplePickle))
+        Public Overrides Function MakeControl() As IValueEditor(Of KeyValuePair(Of TKey, Object))
             Dim keyControl = _keyJar.MakeControl()
             If Not _valueJars.ContainsKey(keyControl.Value) Then
                 keyControl.Value = _valueJars.Keys.First
@@ -65,17 +65,18 @@ Namespace Pickling
                                      End Sub
             AddHandler keyControl.ValueChanged, Sub() updateValueControl()
 
-            Return New DelegatedValueEditor(Of KeyValuePair(Of TKey, ISimplePickle))(
+            Return New DelegatedValueEditor(Of KeyValuePair(Of TKey, Object))(
                 Control:=panel,
                 eventAdder:=Sub(action)
                                 AddHandler keyControl.ValueChanged, Sub() action()
                                 AddHandler valueControl.ValueChanged, Sub() action()
                                 handlers.Add(action)
                             End Sub,
-                getter:=Function() New KeyValuePair(Of TKey, ISimplePickle)(keyControl.Value, _valueJars(keyControl.Value).Value.Pack(valueControl.Value)),
+                getter:=Function() New KeyValuePair(Of TKey, Object)(keyControl.Value,
+                                                                     _valueJars(keyControl.Value).Value.Pack(valueControl.Value).Value),
                 setter:=Sub(value)
                             keyControl.Value = value.Key
-                            valueControl.Value = value.Value.Value
+                            valueControl.Value = value.Value
                         End Sub)
         End Function
     End Class

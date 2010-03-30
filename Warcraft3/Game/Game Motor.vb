@@ -4,7 +4,7 @@
 
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _lobby As GameLobby
-        Private ReadOnly _gameDataQueue As New Queue(Of Tuple(Of Player, IReadableList(Of Protocol.GameAction)))
+        Private ReadOnly _gameDataQueue As New Queue(Of Protocol.SpecificPlayerActionSet)
 
         Private _laggingPlayers As New List(Of Player)
         Private _gameTime As Integer
@@ -79,12 +79,12 @@
         Private Sub OnReceiveGameActions(ByVal sender As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(actions IsNot Nothing)
-            _gameDataQueue.Enqueue(Tuple.Create(sender, actions))
+            _gameDataQueue.Enqueue(New Protocol.SpecificPlayerActionSet(sender, actions))
             RaiseEvent ReceivedPlayerActions(Me, sender, actions)
 
             '[async lag -wait command detection]
             If (From action In actions Where action.Id = Protocol.GameActionId.GameCacheSyncInteger
-                                       Select vals = CType(action.Payload, Pickling.IPickle(Of NamedValueMap)).Value
+                                       Select vals = DirectCast(action.Payload, NamedValueMap)
                                        Where vals.ItemAs(Of String)("filename") = "HostBot.AsyncLag" AndAlso vals.ItemAs(Of String)("mission key") = "wait").Any Then
                 _asyncWaitTriggered = True
             End If
@@ -166,19 +166,18 @@
             'Include all the data we can fit in a packet
             Dim totalDataLength = 0
             Dim outgoingActions = New List(Of Tuple(Of Player, Protocol.PlayerActionSet))(capacity:=_gameDataQueue.Count)
+            Dim jar = New Protocol.PlayerActionSetJar()
             While _gameDataQueue.Count > 0
                 'peek
                 Dim e = _gameDataQueue.Peek()
                 Contract.Assume(e IsNot Nothing)
-                Contract.Assume(e.Item1 IsNot Nothing)
-                Contract.Assume(e.Item2 IsNot Nothing)
-                Dim actionDataLength = (From action In e.Item2 Select action.Payload.Data.Count).Aggregate(Function(e1, e2) e1 + e2)
+                Dim actionDataLength = jar.Pack(e).Data.Count
                 If totalDataLength + actionDataLength >= PacketSocket.DefaultBufferSize - 20 Then '[20 includes headers and a small safety margin]
                     Exit While
                 End If
 
                 _gameDataQueue.Dequeue()
-                outgoingActions.Add(Tuple.Create(e.Item1, New Protocol.PlayerActionSet(_lobby.GetVisiblePlayer(e.Item1).Id, e.Item2)))
+                outgoingActions.Add(Tuple.Create(e.Player, New Protocol.PlayerActionSet(_lobby.GetVisiblePlayer(e.Player).Id, e.Actions)))
                 totalDataLength += actionDataLength
             End While
 
