@@ -8,7 +8,7 @@
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-            Return New Pickle(Of T)(jar, value, data, New Lazy(Of String)(Function() jar.Describe(value)))
+            Return New Pickle(Of T)(jar, value, data)
         End Function
 
         <Extension()> <Pure()>
@@ -18,10 +18,7 @@
             Contract.Requires(pickle IsNot Nothing)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
-            Return New Pickle(Of T)(jar,
-                                    pickle.Value,
-                                    If(data, pickle.Data),
-                                    New Lazy(Of String)(Function() jar.Describe(pickle.Value)))
+            Return New Pickle(Of T)(jar, pickle.Value, If(data, pickle.Data))
         End Function
         <Extension()> <Pure()>
         Public Function [With](Of T)(ByVal pickle As ISimplePickle,
@@ -32,10 +29,7 @@
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
-            Return New Pickle(Of T)(jar,
-                                    value,
-                                    If(data, pickle.Data),
-                                    New Lazy(Of String)(Function() jar.Describe(value)))
+            Return New Pickle(Of T)(jar, value, If(data, pickle.Data))
         End Function
 
         <Extension()> <Pure()>
@@ -49,6 +43,19 @@
                 If descriptions.None Then Return "{}"
                 Return {"{", descriptions.StringJoin(Environment.NewLine).Indent("    "), "}"}.StringJoin(Environment.NewLine)
             End If
+        End Function
+
+        <Extension()> <Pure()>
+        Public Function Description(ByVal pickle As ISimplePickle) As String
+            Contract.Requires(pickle IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return pickle.Jar.Describe(pickle.Value)
+        End Function
+        <Extension()> <Pure()>
+        Public Function Description(Of T)(ByVal pickle As IPickle(Of T)) As String
+            Contract.Requires(pickle IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Return pickle.Jar.Describe(pickle.Value)
         End Function
 
         <DebuggerDisplay("{ToString}")>

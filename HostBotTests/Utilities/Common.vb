@@ -68,10 +68,10 @@ Friend Module TestingCommon
         Assert.IsTrue(packed.Data.SequenceEqual(data))
         Assert.IsTrue(parsed.Data.SequenceEqual(data))
         If description IsNot Nothing Then
-            Assert.IsTrue(packed.Description.Value = description)
-            Assert.IsTrue(parsed.Description.Value = description)
+            Assert.IsTrue(packed.Description = description)
+            Assert.IsTrue(parsed.Description = description)
         Else
-            Assert.IsTrue(packed.Description.Value = parsed.Description.Value)
+            Assert.IsTrue(packed.Description = parsed.Description)
         End If
         Assert.IsTrue(packed.Jar Is jar)
         Assert.IsTrue(parsed.Jar Is jar)
@@ -93,9 +93,9 @@ Friend Module TestingCommon
             Assert.IsTrue(equater(parsed2.Value, value))
             Assert.IsTrue(parsed2.Data.SequenceEqual(data))
             If description IsNot Nothing Then
-                Assert.IsTrue(parsed2.Description.Value = description)
+                Assert.IsTrue(parsed2.Description = description)
             Else
-                Assert.IsTrue(packed.Description.Value = parsed2.Description.Value)
+                Assert.IsTrue(packed.Description = parsed2.Description)
             End If
         Else
             Try

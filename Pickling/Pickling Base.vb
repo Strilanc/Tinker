@@ -20,7 +20,6 @@
     <ContractClass(GetType(ISimplePickle.ContractClass))>
     Public Interface ISimplePickle
         ReadOnly Property Data As IReadableList(Of Byte)
-        ReadOnly Property Description As Lazy(Of String)
         ReadOnly Property Value As Object
         ReadOnly Property Jar As ISimpleJar
 
@@ -36,12 +35,6 @@
             Public ReadOnly Property Data As IReadableList(Of Byte) Implements ISimplePickle.Data
                 Get
                     Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                    Throw New NotSupportedException
-                End Get
-            End Property
-            Public ReadOnly Property Description As Lazy(Of String) Implements ISimplePickle.Description
-                Get
-                    Contract.Ensures(Contract.Result(Of Lazy(Of String))() IsNot Nothing)
                     Throw New NotSupportedException
                 End Get
             End Property
@@ -78,37 +71,25 @@
         Private ReadOnly _jar As ISimpleJar
         Private ReadOnly _data As IReadableList(Of Byte)
         Private ReadOnly _value As T
-        Private ReadOnly _description As Lazy(Of String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_jar IsNot Nothing)
             Contract.Invariant(_data IsNot Nothing)
             Contract.Invariant(_value IsNot Nothing)
-            Contract.Invariant(_description IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal jar As ISimpleJar,
                        ByVal value As T,
-                       ByVal data As IReadableList(Of Byte),
-                       ByVal description As Lazy(Of String))
+                       ByVal data As IReadableList(Of Byte))
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(data IsNot Nothing)
-            Contract.Requires(description IsNot Nothing)
-            Contract.Ensures(Me.Description Is description)
             Contract.Ensures(Me.Data Is data)
             Me._jar = jar
             Me._data = data
             Me._value = value
-            Me._description = description
         End Sub
 
-        Public ReadOnly Property Description As Lazy(Of String) Implements ISimplePickle.Description
-            Get
-                Contract.Ensures(Contract.Result(Of Lazy(Of String))() Is _description)
-                Return _description
-            End Get
-        End Property
         Public ReadOnly Property Data As IReadableList(Of Byte) Implements ISimplePickle.Data
             Get
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() Is _data)
@@ -133,8 +114,7 @@
         End Property
 
         Public Overrides Function ToString() As String
-            Contract.Assume(Description.Value IsNot Nothing)
-            Return Description.Value
+            Return Me.Description()
         End Function
     End Class
 

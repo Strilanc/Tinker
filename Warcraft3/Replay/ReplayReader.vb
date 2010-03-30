@@ -70,7 +70,7 @@ Namespace WC3.Replay
                 If actualChecksum <> header.ItemAs(Of UInt32)("header crc32") Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect checksum).")
 
                 Return New ReplayReader(streamFactory:=streamFactory,
-                                        Description:=pickle.Description,
+                                        Description:=New Lazy(Of String)(Function() pickle.Description),
                                         headerSize:=headerSize,
                                         DataDecompressedSize:=header.ItemAs(Of UInt32)("data decompressed size"),
                                         DataBlockCount:=header.ItemAs(Of UInt32)("data block count"),

@@ -157,7 +157,7 @@ Public Class DownloadManagerTest
             If expected.id <> received.id Then
                 Throw New IO.InvalidDataException("Incorrect packet type: received {0} instead of {1}.".Frmt(received.id, expected.id))
             ElseIf Not expected.Payload.Data.SequenceEqual(received.Payload.Data) Then
-                Throw New IO.InvalidDataException("Incorrect packet contents: received {0} instead of {1}.".Frmt(received.Payload.Description.Value, expected.Payload.Description.Value))
+                Throw New IO.InvalidDataException("Incorrect packet contents: received {0} instead of {1}.".Frmt(received.Payload.Description, expected.Payload.Description))
             End If
         End Sub
         Public ReadOnly Property FailFuture As Task

@@ -59,7 +59,7 @@ Namespace Pickling
                 getter:=Function() DirectCast(keyControl.Items(0), TValue),
                 setter:=Sub(value)
                             keyControl.Items(0) = value
-                            valueControl.Text = Pack(value).Description.Value
+                            valueControl.Text = Pack(value).Description
                         End Sub)
         End Function
     End Class

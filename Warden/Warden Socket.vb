@@ -1,4 +1,6 @@
-﻿Namespace Warden
+﻿Imports Tinker.Pickling
+
+Namespace Warden
     Public NotInheritable Class Socket
         Inherits DisposableWithTask
 
@@ -93,7 +95,7 @@
 
             Try
                 _logger.Log(Function() "Sending {0} to {1}".Frmt(packet.Id, _socket.Name), LogMessageType.DataEvent)
-                _logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
+                _logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, _socket.Name, packet.Payload.Description), LogMessageType.DataParsed)
                 _socket.WritePacket({}, New Byte() {BNLSPacketId.Warden, packet.Id}.Concat(packet.Payload.Data))
 
             Catch e As Exception

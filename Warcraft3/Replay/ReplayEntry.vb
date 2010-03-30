@@ -37,7 +37,7 @@ Namespace WC3.Replay
         End Property
 
         Public Overrides Function ToString() As String
-            Return "{0}: {1}".Frmt(Id, Payload.Description.Value())
+            Return "{0}: {1}".Frmt(Id, Payload.Description)
         End Function
 
         Public Shared Widening Operator CType(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, ISimplePickle)

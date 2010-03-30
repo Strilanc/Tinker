@@ -74,7 +74,7 @@ Namespace WC3
                     Dim id = CType(packetData(1), Protocol.PacketId)
                     Dim pickle = ProcessConnectingPlayer(socket, packetData)
                     _logger.Log(Function() "Received {0} from {1}".Frmt(id, socket.Name), LogMessageType.DataEvent)
-                    _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description.Value), LogMessageType.DataParsed)
+                    _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(id, socket.Name, pickle.Description), LogMessageType.DataParsed)
                 End Sub
             ).Catch(
                 Sub(ex) socket.Disconnect(expected:=False, reason:=ex.Summarize)

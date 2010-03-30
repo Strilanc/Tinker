@@ -1,5 +1,6 @@
 ﻿Imports System.Net
 Imports System.Net.Sockets
+Imports Tinker.Pickling
 
 Namespace WC3
     Public NotInheritable Class W3Socket
@@ -75,7 +76,7 @@ Namespace WC3
 
                 'Log
                 Logger.Log(Function() "Sending {0} to {1}".Frmt(packet.id, Name), LogMessageType.DataEvent)
-                Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.id, Name, packet.Payload.Description.Value), LogMessageType.DataParsed)
+                Logger.Log(Function() "Sending {0} to {1}: {2}".Frmt(packet.Id, Name, packet.Payload.Description), LogMessageType.DataParsed)
 
                 'Send
                 _socket.WritePacket({Protocol.Packets.PacketPrefix, packet.Id}, packet.Payload.Data)
