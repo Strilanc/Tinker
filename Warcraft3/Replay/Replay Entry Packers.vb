@@ -96,9 +96,10 @@ Namespace WC3.Replay
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
             Return ReplayEntry.FromValue(Format.ReplayEntryChatMessage, New Dictionary(Of InvariantString, Object) From {
                     {"speaker", sender},
-                    {"size", CUShort(1 + message.Length + 1)},
-                    {"type", Protocol.ChatType.Lobby},
-                    {"message", message}})
+                    {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                        {"type group", New KeyValuePair(Of Protocol.ChatType, Object)(Protocol.ChatType.Lobby,
+                                                                                      New Object)},
+                        {"message", message}})}})
         End Function
         <Pure()>
         Public Function MakeGameChatMessage(ByVal sender As PlayerId,
@@ -108,10 +109,10 @@ Namespace WC3.Replay
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
             Return ReplayEntry.FromValue(Format.ReplayEntryChatMessage, New Dictionary(Of InvariantString, Object) From {
                     {"speaker", sender},
-                    {"size", CUShort(1 + 4 + message.Length + 1)},
-                    {"type", Protocol.ChatType.Game},
-                    {"receiving group", receivingGroup},
-                    {"message", message}})
+                    {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                        {"type group", New KeyValuePair(Of Protocol.ChatType, Object)(Protocol.ChatType.Game,
+                                                                                      receivingGroup)},
+                        {"message", message}})}})
         End Function
         <Pure()>
         Public Function MakeTick(ByVal duration As UInt16,

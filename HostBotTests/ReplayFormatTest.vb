@@ -20,9 +20,10 @@ Public Class ReplayFormatTest
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"speaker", New PlayerId(1)},
-                        {"size", 6US},
-                        {"type", Protocol.ChatType.Lobby},
-                        {"message", "test"}})
+                        {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                            {"type group", New KeyValuePair(Of Protocol.ChatType, Object)(Protocol.ChatType.Lobby,
+                                                                                          New Object)},
+                            {"message", "test"}})}})
         JarTest(Format.ReplayEntryChatMessage.Jar,
                 data:={1,
                        10, 0,
@@ -31,21 +32,21 @@ Public Class ReplayFormatTest
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"speaker", New PlayerId(1)},
-                        {"size", 10US},
-                        {"type", Protocol.ChatType.Game},
-                        {"receiving group", Protocol.ChatGroup.Observers},
-                        {"message", "test"}})
+                        {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                            {"type group", New KeyValuePair(Of Protocol.ChatType, Object)(Protocol.ChatType.Game,
+                                                                                          Protocol.ChatGroup.Observers)},
+                            {"message", "test"}})}})
     End Sub
     <TestMethod()>
     Public Sub ReplayEntryGameStartedTest()
         JarTest(Format.ReplayEntryGameStarted.Jar,
-                data:={1, 0, 0, 0},
+                Data:={1, 0, 0, 0},
                 value:=1UI)
     End Sub
     <TestMethod()>
     Public Sub ReplayEntryGameStateChecksumTest()
         JarTest(Format.ReplayEntryGameStateChecksum.Jar,
-                data:={1,
+                Data:={1,
                        2, 3, 4, 5},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"unknown", CByte(1)},
@@ -54,20 +55,20 @@ Public Class ReplayFormatTest
     <TestMethod()>
     Public Sub ReplayEntryLoadStarted1Test()
         JarTest(Format.ReplayEntryLoadStarted1.Jar,
-                data:={1, 0, 0, 0},
+                Data:={1, 0, 0, 0},
                 value:=1UI)
     End Sub
     <TestMethod()>
     Public Sub ReplayEntryLoadStarted2Test()
         JarTest(Format.ReplayEntryLoadStarted2.Jar,
-                data:={1, 0, 0, 0},
+                Data:={1, 0, 0, 0},
                 value:=1UI)
     End Sub
     <TestMethod()>
     Public Sub ReplayEntryLobbyStateTest()
         Dim slots = New List(Of Slot)()
         JarTest(Format.ReplayEntryLobbyState.Jar,
-                data:={7, 0,
+                Data:={7, 0,
                        0,
                        13, 0, 0, 0,
                        3,
@@ -82,7 +83,7 @@ Public Class ReplayFormatTest
     <TestMethod()>
     Public Sub ReplayEntryPlayerJoinedTest()
         JarTest(Format.ReplayEntryPlayerJoined.Jar,
-                data:={2,
+                Data:={2,
                        116, 101, 115, 116, 0,
                        1, 0,
                        5, 0, 0, 0},
@@ -95,7 +96,7 @@ Public Class ReplayFormatTest
     <TestMethod()>
     Public Sub ReplayEntryPlayerLeftTest()
         JarTest(Format.ReplayEntryPlayerLeft.Jar,
-                data:={6, 0, 0, 0,
+                Data:={6, 0, 0, 0,
                        2,
                        8, 0, 0, 0,
                        1, 0, 0, 0},
@@ -108,7 +109,7 @@ Public Class ReplayFormatTest
     <TestMethod()>
     Public Sub ReplayEntryStartOfReplayTest()
         JarTest(Format.ReplayEntryStartOfReplay.Jar,
-                data:=New Byte() {2, 0, 0, 0,
+                Data:=New Byte() {2, 0, 0, 0,
                        1,
                        116, 101, 115, 116, 0,
                        1, 1,
@@ -133,14 +134,14 @@ Public Class ReplayFormatTest
     <TestMethod()>
     Public Sub ReplayEntryTickTest()
         JarTest(Format.ReplayEntryTick.Jar,
-                data:={2, 0,
+                Data:={2, 0,
                        250, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250US},
                         {"player action sets", New Protocol.PlayerActionSet() {}.AsReadableList}})
 
         JarTest(Format.ReplayEntryTick.Jar,
-                data:={11, 0,
+                Data:={11, 0,
                        250, 0,
                        2,
                            6, 0,
@@ -159,7 +160,7 @@ Public Class ReplayFormatTest
     <TestMethod()>
     Public Sub ReplayEntryTournamentForcedCountdownTest()
         JarTest(Format.ReplayEntryTournamentForcedCountdown.Jar,
-                data:={2, 0, 0, 0,
+                Data:={2, 0, 0, 0,
                        3, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"counter state", 2UI},
