@@ -438,7 +438,7 @@ Public Class PicklingTest
 
     <TestMethod()>
     Public Sub KeyPrefixedJarTest()
-        Dim jar = New KeyPrefixedJar(Of UInt32)(keyJar:=New UInt32Jar(), valueJars:=New Dictionary(Of UInt32, NonNull(Of ISimpleJar)) From {
+        Dim jar = New KeyPrefixedJar(Of UInt32)(keyJar:=New UInt32Jar(), valueJars:=New Dictionary(Of UInt32, ISimpleJar) From {
                                                     {3, New ByteJar()},
                                                     {5, New UInt16Jar()}})
         JarTest(jar,

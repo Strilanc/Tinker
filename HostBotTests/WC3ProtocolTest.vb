@@ -477,8 +477,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"speaker", New PlayerId(1)},
-                        {"type", ChatType.Game},
-                        {"receiving group", ChatGroup.Allies},
+                        {"type group", New KeyValuePair(Of ChatType, Object)(ChatType.Game, ChatGroup.Allies)},
                         {"message", "test"}
                     })
         JarTest(Packets.Text.Jar,
@@ -489,7 +488,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"speaker", New PlayerId(1)},
-                        {"type", ChatType.Lobby},
+                        {"type group", New KeyValuePair(Of ChatType, Object)(ChatType.Lobby, New Object)},
                         {"message", "test"}
                     })
     End Sub

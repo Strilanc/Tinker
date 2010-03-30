@@ -429,21 +429,17 @@ Namespace WC3.Protocol
                 New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data"),
                 New Bnet.Protocol.IPEndPointJar().Named("external address"),
                 New Bnet.Protocol.IPEndPointJar().Named("internal address"))
-        Public Shared ReadOnly Text As Definition(Of NamedValueMap) = Define(PacketId.Text, New InteriorSwitchJar(Of ChatType, NamedValueMap)(
-                valueKeyExtractor:=Function(val) val.ItemAs(Of ChatType)("type"),
-                dataKeyExtractor:=Function(data) CType(data(data(0) + 2), ChatType),
-                subjars:=New Dictionary(Of ChatType, NonNull(Of IJar(Of NamedValueMap))) From {
-                    {ChatType.Game, New TupleJar(
-                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                        New PlayerIdJar().Named("speaker"),
-                        New EnumByteJar(Of ChatType)().Named("type"),
-                        New EnumUInt32Jar(Of ChatGroup)(checkDefined:=False).Named("receiving group"),
-                        New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message"))},
-                    {ChatType.Lobby, New TupleJar(
-                        New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
-                        New PlayerIdJar().Named("speaker"),
-                        New EnumByteJar(Of ChatType)().Named("type"),
-                        New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message"))}}))
+        Public Shared ReadOnly Text As Definition(Of NamedValueMap) = Define(PacketId.Text, New TupleJar(
+                New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("requested receivers"),
+                New PlayerIdJar().Named("speaker"),
+                New KeyPrefixedJar(Of ChatType)(
+                        useSingleLineDescription:=False,
+                        keyJar:=New EnumByteJar(Of ChatType)().Named("type"),
+                        valueJars:=New Dictionary(Of ChatType, ISimpleJar) From {
+                            {ChatType.Game, New EnumUInt32Jar(Of ChatGroup)().Named("receiving group")},
+                            {ChatType.Lobby, New EmptyJar().Named("receiving group")}}
+                    ).Named("type group"),
+                New UTF8Jar().NullTerminated.Limited(maxDataCount:=MaxSerializedChatTextLength).Named("message")))
         Public Const MaxSerializedChatTextLength As Integer = 221
         Public Const MaxChatTextLength As Integer = MaxSerializedChatTextLength - 1
 

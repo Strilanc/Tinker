@@ -146,6 +146,17 @@ Friend Module TestingCommon
         Return Nothing
     End Function
     Public Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
+        If v1.GetType Is v2.GetType Then
+            If v1.GetType Is GetType(Object) Then Return True
+            If v1.GetType.IsGenericType AndAlso v1.GetType.GetGenericTypeDefinition Is GetType(KeyValuePair(Of ,)) Then
+                Dim mKey = v1.GetType.GetProperty("Key")
+                Dim mValue = v1.GetType.GetProperty("Value")
+                If Not ObjectEqual(mKey.GetValue(v1, Nothing), mKey.GetValue(v2, Nothing)) Then Return False
+                If Not ObjectEqual(mValue.GetValue(v1, Nothing), mValue.GetValue(v2, Nothing)) Then Return False
+                Return True
+            End If
+        End If
+
         Dim n1 = TryCastToBigInteger(v1)
         Dim n2 = TryCastToBigInteger(v2)
         If TypeOf v1 Is NamedValueMap Then v1 = CType(v1, NamedValueMap).ToDictionary

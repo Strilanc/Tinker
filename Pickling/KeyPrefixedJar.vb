@@ -4,6 +4,7 @@ Namespace Pickling
 
         Private ReadOnly _keyJar As IJar(Of TKey)
         Private ReadOnly _valueJars As New Dictionary(Of TKey, NonNull(Of ISimpleJar))
+        Private ReadOnly _useSingleLineDescription As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_keyJar IsNot Nothing)
@@ -11,14 +12,16 @@ Namespace Pickling
         End Sub
 
         Public Sub New(ByVal keyJar As IJar(Of TKey),
-                       ByVal valueJars As Dictionary(Of TKey, NonNull(Of ISimpleJar)))
+                       ByVal valueJars As Dictionary(Of TKey, ISimpleJar),
+                       Optional ByVal useSingleLineDescription As Boolean = True)
             Contract.Requires(keyJar IsNot Nothing)
             Contract.Requires(valueJars IsNot Nothing)
             Me._keyJar = keyJar
-            Me._valueJars = valueJars
+            Me._valueJars = valueJars.ToDictionary(Function(e) e.Key, Function(e) e.Value.AsNonNull)
+            Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        Public Overrides Function Pack(ByVal value As System.Collections.Generic.KeyValuePair(Of TKey, Object)) As IEnumerable(Of Byte)
+        Public Overrides Function Pack(ByVal value As KeyValuePair(Of TKey, Object)) As IEnumerable(Of Byte)
             If Not _valueJars.ContainsKey(value.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(value.Key))
             Dim keyData = _keyJar.Pack(value.Key)
             Dim valueData = _valueJars(value.Key).Value.Pack(value.Value)
@@ -35,7 +38,9 @@ Namespace Pickling
         End Function
 
         Public Overrides Function Describe(ByVal value As KeyValuePair(Of TKey, Object)) As String
-            Return "{0}: {1}".Frmt(_keyJar.Describe(value.Key), _valueJars(value.Key).Value.Describe(value.Value))
+            Return If(_useSingleLineDescription,
+                      "{0}: {1}".Frmt(_keyJar.Describe(value.Key), _valueJars(value.Key).Value.Describe(value.Value)),
+                      {_keyJar.Describe(value.Key), _valueJars(value.Key).Value.Describe(value.Value)}.StringJoin(Environment.NewLine))
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of KeyValuePair(Of TKey, Object))

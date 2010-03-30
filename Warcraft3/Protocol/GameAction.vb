@@ -70,7 +70,7 @@ Namespace WC3.Protocol
             keyJar:=New EnumByteJar(Of GameActionId)(),
             valueJars:=GameActions.AllDefinitions.ToDictionary(
                 keySelector:=Function(e) e.Id,
-                elementSelector:=Function(e) DirectCast(e.Jar, ISimpleJar).AsNonNull))
+                elementSelector:=Function(e) e.Jar))
 
         Public Overrides Function Pack(ByVal value As GameAction) As IEnumerable(Of Byte)
             Return SubJar.Pack(value)
