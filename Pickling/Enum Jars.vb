@@ -18,11 +18,11 @@
             Me._checkDefined = checkDefined
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of TValue As TEnum)(ByVal value As TValue) As IPickle(Of TValue)
+        Public Overrides Function Pack(ByVal value As TEnum) As IEnumerable(Of Byte)
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(Describe(value), GetType(TEnum)))
             End If
-            Return _subJar.Pack(value).With(jar:=Me)
+            Return _subJar.Pack(value)
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of TEnum)

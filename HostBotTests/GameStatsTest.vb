@@ -35,7 +35,7 @@ Public Class GameStatsTest
 
         'Cycle back
         Dim weirdPos = testData.Length.FloorMultiple(8) 'the last block has undefined bits in the header
-        Assert.IsTrue(jar.Pack(stats).Data.Take(weirdPos).SequenceEqual(testData.Take(weirdPos)))
-        Assert.IsTrue(jar.Pack(stats).Data.Skip(weirdPos + 1).SequenceEqual(testData.Skip(weirdPos + 1)))
+        Assert.IsTrue(jar.Pack(stats).Take(weirdPos).SequenceEqual(testData.Take(weirdPos)))
+        Assert.IsTrue(jar.Pack(stats).Skip(weirdPos + 1).SequenceEqual(testData.Skip(weirdPos + 1)))
     End Sub
 End Class

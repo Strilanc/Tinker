@@ -24,7 +24,7 @@ Namespace WC3.Protocol
             Contract.Requires(actionDefinition IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
-            Return New GameAction(actionDefinition.Id, actionDefinition.Jar.Pack(value).Value)
+            Return New GameAction(actionDefinition.Id, value)
         End Function
 
         Public ReadOnly Property Id As GameActionId
@@ -50,7 +50,7 @@ Namespace WC3.Protocol
 
         Public Overloads Function Equals(ByVal other As GameAction) As Boolean Implements System.IEquatable(Of GameAction).Equals
             If other Is Nothing Then Return False
-            Return SharedJar.Pack(Me).Data.SequenceEqual(SharedJar.Pack(other).Data)
+            Return SharedJar.Pack(Me).SequenceEqual(SharedJar.Pack(other))
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, GameAction))
@@ -72,10 +72,8 @@ Namespace WC3.Protocol
                 keySelector:=Function(e) e.Id,
                 elementSelector:=Function(e) DirectCast(e.Jar, ISimpleJar).AsNonNull))
 
-        Public Overrides Function Pack(Of TValue As GameAction)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Dim pickle = SubJar.Pack(CType(value, KeyValuePair(Of GameActionId, Object)))
-            Return pickle.With(jar:=Me, value:=value)
+        Public Overrides Function Pack(ByVal value As GameAction) As IEnumerable(Of Byte)
+            Return SubJar.Pack(value)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)

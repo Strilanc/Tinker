@@ -15,12 +15,6 @@
                 Return _subJar
             End Get
         End Property
-        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Return _subJar.Pack(value)
-        End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
-            Return _subJar.Parse(data)
-        End Function
         Public Overrides Function Describe(ByVal value As T) As String
             Return _subJar.Describe(value)
         End Function
@@ -46,10 +40,10 @@
             Me._dataSize = dataSize
         End Sub
 
-        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim pickle = SubJar.Pack(value)
-            If pickle.Data.Count <> _dataSize Then Throw New PicklingException("Packed data did not take exactly {0} bytes.".Frmt(_dataSize))
-            Return pickle
+        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+            Dim data = SubJar.Pack(value).ToReadableList
+            If data.Count <> _dataSize Then Throw New PicklingException("Packed data did not take exactly {0} bytes.".Frmt(_dataSize))
+            Return data
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
@@ -89,10 +83,10 @@
             Me._maxDataCount = maxDataCount
         End Sub
 
-        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim pickle = SubJar.Pack(value)
-            If pickle.Data.Count > _maxDataCount Then Throw New PicklingException("Packed data did not fit in {0} bytes.".Frmt(_maxDataCount))
-            Return pickle
+        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+            Dim data = SubJar.Pack(value).ToReadableList
+            If data.Count > _maxDataCount Then Throw New PicklingException("Packed data did not fit in {0} bytes.".Frmt(_maxDataCount))
+            Return data
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
@@ -130,12 +124,11 @@
             Me._prefixSize = prefixSize
         End Sub
 
-        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim pickle = SubJar.Pack(value)
-            Dim sizeBytes = CULng(pickle.Data.Count).Bytes.Take(_prefixSize)
-            If sizeBytes.Take(_prefixSize).ToUValue <> pickle.Data.Count Then Throw New PicklingException("Unable to fit byte count into size prefix.")
-            Dim data = sizeBytes.Concat(pickle.Data).ToReadableList
-            Return pickle.With(jar:=Me, data:=data)
+        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+            Dim subData = SubJar.Pack(value).ToReadableList
+            Dim sizeBytes = CULng(subData.Count).Bytes.Take(_prefixSize)
+            If sizeBytes.Take(_prefixSize).ToUValue <> subData.Count Then Throw New PicklingException("Unable to fit byte count into size prefix.")
+            Return sizeBytes.Concat(subData)
         End Function
 
         <ContractVerification(False)>
@@ -160,9 +153,8 @@
             Contract.Requires(subJar IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim pickle = SubJar.Pack(value)
-            Return pickle.With(jar:=Me, data:=pickle.Data.Append(0).ToReadableList)
+        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+            Return SubJar.Pack(value).Append(0)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
@@ -191,14 +183,13 @@
             Me._subJar = subJar
         End Sub
 
-        Public Overrides Function Pack(Of TValue As Tuple(Of Boolean, T))(ByVal value As TValue) As IPickle(Of TValue)
+        Public Overrides Function Pack(ByVal value As System.Tuple(Of Boolean, T)) As IEnumerable(Of Byte)
             Contract.Assume(value IsNot Nothing)
             If value.Item1 Then
                 Contract.Assume(value.Item2 IsNot Nothing)
-                Dim pickle = _subJar.Pack(value.Item2)
-                Return pickle.With(jar:=Me, value:=value)
+                Return _subJar.Pack(value.Item2)
             Else
-                Return value.Pickled(Me, New Byte() {}.AsReadableList)
+                Return New Byte() {}
             End If
         End Function
 
@@ -264,13 +255,12 @@
             Me._checksumFunction = checksumFunction
         End Sub
 
-        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim pickle = SubJar.Pack(value)
-            Dim checksum = _checksumFunction(pickle.Data)
+        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+            Dim subData = SubJar.Pack(value).ToReadableList
+            Dim checksum = _checksumFunction(subData)
             Contract.Assume(checksum IsNot Nothing)
             Contract.Assume(checksum.Count = _checksumSize)
-            Dim data = checksum.Concat(pickle.Data).ToReadableList
-            Return pickle.With(jar:=Me, data:=data)
+            Return checksum.Concat(subData)
         End Function
 
         <ContractVerification(False)>
@@ -293,10 +283,8 @@
             Contract.Requires(subJar IsNot Nothing)
         End Sub
 
-        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim pickle = SubJar.Pack(value)
-            Dim data = pickle.Data.Reverse.ToReadableList
-            Return pickle.With(jar:=Me, data:=data)
+        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+            Return SubJar.Pack(value).Reverse
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)

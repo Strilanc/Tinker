@@ -26,13 +26,12 @@ Namespace Pickling
             Me._maxCharCount = maxCharCount
         End Sub
 
-        Public NotOverridable Overrides Function Pack(Of TValue As String)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
+        Public Overrides Function Pack(ByVal value As String) As IEnumerable(Of Byte)
             If value.Length < _minCharCount Then Throw New PicklingException("Need at least {0} characters.".Frmt(_minCharCount))
             If _maxCharCount.HasValue AndAlso value.Length > _maxCharCount Then Throw New PicklingException("Need at most {0} characters.".Frmt(_maxCharCount))
             Dim data = _encoding.GetBytes(value)
             If _encoding.GetChars(data) <> value Then Throw New PicklingException("""{0}"" is not encodable using {1}.".Frmt(value, _encoding.GetType))
-            Return value.Pickled(Me, data.AsReadableList)
+            Return data
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)

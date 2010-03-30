@@ -171,7 +171,7 @@
                 'peek
                 Dim e = _gameDataQueue.Peek()
                 Contract.Assume(e IsNot Nothing)
-                Dim actionDataLength = jar.Pack(e).Data.Count
+                Dim actionDataLength = jar.Pack(e).Count
                 If totalDataLength + actionDataLength >= PacketSocket.DefaultBufferSize - 20 Then '[20 includes headers and a small safety margin]
                     Exit While
                 End If

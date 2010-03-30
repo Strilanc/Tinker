@@ -115,7 +115,7 @@ Public Class WC3ProtocolTest
                        16, 0, 0, 0,
                        116, 101, 115, 116, 0,
                        0}.Concat(
-                       New GameStatsJar().Pack(TestStats).Data).Concat({
+                       New GameStatsJar().Pack(TestStats)).Concat({
                        12, 0, 0, 0,
                        8, 0, 0, 0,
                        2, 0, 0, 0,

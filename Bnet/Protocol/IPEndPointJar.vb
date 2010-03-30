@@ -10,17 +10,14 @@ Namespace Bnet.Protocol
                     New IPAddressJar().Named("ip"),
                     New DataJar().Fixed(exactDataCount:=8).Named("unknown"))
 
-        Public Overrides Function Pack(Of TValue As Net.IPEndPoint)(ByVal value As TValue) As Pickling.IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Contract.Assume(value.Address IsNot Nothing)
+        Public Overrides Function Pack(ByVal value As System.Net.IPEndPoint) As IEnumerable(Of Byte)
             Dim addrBytes = value.Address.GetAddressBytes
             Dim vals = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"protocol", If(addrBytes.SequenceEqual({0, 0, 0, 0}) AndAlso value.Port = 0, 0US, 2US)},
                     {"ip", value.Address},
                     {"port", CUShort(value.Port)},
                     {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsReadableList}})
-            Dim pickle = DataJar.Pack(vals)
-            Return pickle.With(jar:=Me, value:=value)
+            Return DataJar.Pack(vals)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)

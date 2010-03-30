@@ -69,6 +69,14 @@ Namespace Bnet.Protocol
             Me._clock = clock
         End Sub
 
+        Public Overrides Function Pack(ByVal value As QueryGamesListResponse) As IEnumerable(Of Byte)
+            If value.Games.Count = 0 Then
+                Return 0UI.Bytes.Concat(queryResultJar.Pack(value.Result))
+            Else
+                Return gameDataJar.Pack(PackRawGameDescriptions(value.Games))
+            End If
+        End Function
+
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             If data.SubView(0, 4).ToUInt32 = 0 Then
@@ -89,18 +97,6 @@ Namespace Bnet.Protocol
         Public Overrides Function Describe(ByVal value As QueryGamesListResponse) As String
             Return MakeListDescription({queryResultJar.Describe(value.Result),
                                         gameDataJar.Describe(PackRawGameDescriptions(value.Games))})
-        End Function
-
-        Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            If value.Games.Count = 0 Then
-                Dim pickle = queryResultJar.Pack(value.Result)
-                Dim data = New Byte() {0, 0, 0, 0}.Concat(pickle.Data).ToReadableList
-                Return value.Pickled(Me, data)
-            Else
-                Dim pickle = gameDataJar.Pack(PackRawGameDescriptions(value.Games))
-                Return pickle.With(jar:=Me, value:=value)
-            End If
         End Function
 
         Private Shared Function PackRawGameDescriptions(ByVal games As IEnumerable(Of WC3.RemoteGameDescription)) As IReadableList(Of NamedValueMap)

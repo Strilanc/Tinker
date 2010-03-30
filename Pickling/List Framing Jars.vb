@@ -16,11 +16,8 @@
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        Public Overrides Function Pack(Of TValue As IReadableList(Of T))(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Dim pickles = (From e In value Select CType(_subJar.Pack(e), IPickle(Of T))).Cache
-            Dim data = Concat(From p In pickles Select (p.Data)).ToReadableList
-            Return value.Pickled(Me, data)
+        Public Overrides Function Pack(ByVal value As IReadableList(Of T)) As IEnumerable(Of Byte)
+            Return Concat(From item In value Select _subJar.Pack(item))
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -79,13 +76,10 @@
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
-        Public Overrides Function Pack(Of TValue As IReadableList(Of T))(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Dim pickles = (From e In value Select _subJar.Pack(e)).Cache
+        Public Overrides Function Pack(ByVal value As IReadableList(Of T)) As IEnumerable(Of Byte)
             Dim sizeData = CULng(value.Count).Bytes.Take(_prefixSize)
-            Dim pickleData = Concat(From p In pickles Select (p.Data))
-            Dim data = Concat(sizeData, pickleData).ToReadableList
-            Return value.Pickled(Me, data)
+            Dim itemData = Concat(From item In value Select _subJar.Pack(item))
+            Return sizeData.Concat(itemData)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of T))

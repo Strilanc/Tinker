@@ -59,7 +59,7 @@ Public Class BnetProtocolJarsTest
                  0,
                  Asc("c"c),
                  Asc("a"c), Asc("2"c), Asc("0"c), Asc("0"c), Asc("0"c), Asc("0"c), Asc("0"c), Asc("0"c)
-                 }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats).Data))
+                 }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats)))
         JarTest(jar,
                 New QueryGamesListResponse(QueryGameResponse.NotFound, {}),
                 {0, 0, 0, 0,

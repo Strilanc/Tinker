@@ -80,7 +80,7 @@ Public Class BnetClientTest
                     {"revision check seed", "[not tested]"},
                     {"revision check challenge", "[not tested]"},
                     {"server signature", CByte(128).Range.ToReadableList}
-                })).Data)
+                })))
 
         'program auth finish (C->S)
         packet = stream.RetrieveWritePacket()
@@ -105,7 +105,7 @@ Public Class BnetClientTest
             body:=Protocol.Packets.ServerToClient.ProgramAuthenticationFinish.Jar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"result", Protocol.ProgramAuthenticationFinishResult.Passed},
                     {"info", ""}
-                })).Data)
+                })))
         WaitUntilTaskSucceeds(fConnect)
         Dim credentials = New Bnet.ClientCredentials(profile.userName, profile.password, privateKey:=2)
         client.QueueLogOn(credentials)
@@ -127,7 +127,7 @@ Public Class BnetClientTest
                     {"result", Protocol.UserAuthenticationBeginResult.Passed},
                     {"account password salt", accountSalt},
                     {"server public key", serverPublicKey}
-                })).Data)
+                })))
 
         'user auth finish (C->S)
         packet = stream.RetrieveWritePacket()
@@ -142,7 +142,7 @@ Public Class BnetClientTest
                     {"result", Protocol.UserAuthenticationFinishResult.Passed},
                     {"server password proof", credentials.ServerPasswordProof(accountSalt, serverPublicKey)},
                     {"custom error info", Tuple.Create(False, CStr(Nothing))}
-                })).Data)
+                })))
 
         'clan info (S->C)
         stream.EnqueueRead({&HFF, &H75, &HA, &H0, &H0, &H44, &H45, &H6F, &H47, &H2})

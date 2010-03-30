@@ -130,7 +130,7 @@ Public Module StreamExtensions
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-        Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of ISimplePickle).Data.Count)
+        Contract.Ensures(stream.Position = Contract.OldValue(stream.Position) + Contract.Result(Of IPickle(Of T)).Data.Count)
         Try
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
@@ -149,12 +149,12 @@ Public Module StreamExtensions
 
     <Extension()>
     <ContractVerification(False)>
-    Public Function WritePickle(Of T)(ByVal stream As IWritableStream, ByVal jar As IPackJar(Of T), ByVal value As T) As IPickle(Of T)
+    Public Function WritePickle(Of T)(ByVal stream As IWritableStream, ByVal jar As IJar(Of T), ByVal value As T) As IPickle(Of T)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Requires(value IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-        Dim result = jar.Pack(value)
+        Dim result = jar.PackPickle(value)
         stream.Write(result.Data)
         Return result
     End Function

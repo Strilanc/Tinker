@@ -8,8 +8,8 @@
             Me._showHex = showHex
         End Sub
 
-        Public Overrides Function Pack(Of TValue As Byte)(ByVal value As TValue) As IPickle(Of TValue)
-            Return value.Pickled(Me, {CByte(value)}.AsReadableList())
+        Public Overrides Function Pack(ByVal value As Byte) As IEnumerable(Of Byte)
+            Return {value}
         End Function
 
         <ContractVerification(False)>
@@ -52,8 +52,8 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(Of TValue As UInt16)(ByVal value As TValue) As IPickle(Of TValue)
-            Return value.Pickled(Me, value.Bytes(byteOrder).AsReadableList)
+        Public Overrides Function Pack(ByVal value As UShort) As IEnumerable(Of Byte)
+            Return value.Bytes(byteOrder)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt16)
@@ -95,8 +95,8 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(Of TValue As UInt32)(ByVal value As TValue) As IPickle(Of TValue)
-            Return value.Pickled(Me, value.Bytes(byteOrder).AsReadableList())
+        Public Overrides Function Pack(ByVal value As UInt32) As IEnumerable(Of Byte)
+            Return value.Bytes(byteOrder)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
@@ -138,9 +138,8 @@
             Me.byteOrder = byteOrder
         End Sub
 
-        Public Overrides Function Pack(Of TValue As UInt64)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim datum = value.Bytes(byteOrder).AsReadableList
-            Return value.Pickled(Me, datum)
+        Public Overrides Function Pack(ByVal value As UInt64) As IEnumerable(Of Byte)
+            Return value.Bytes(byteOrder)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt64)
@@ -174,9 +173,8 @@
     Public NotInheritable Class Float32Jar
         Inherits BaseJar(Of Single)
 
-        Public Overrides Function Pack(Of TValue As Single)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim data = BitConverter.GetBytes(value).AsReadableList
-            Return value.Pickled(Me, data)
+        Public Overrides Function Pack(ByVal value As Single) As IEnumerable(Of Byte)
+            Return BitConverter.GetBytes(value)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Single)
@@ -214,9 +212,8 @@
     Public NotInheritable Class Float64Jar
         Inherits BaseJar(Of Double)
 
-        Public Overrides Function Pack(Of TValue As Double)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim data = BitConverter.GetBytes(value).AsReadableList
-            Return value.Pickled(Me, data)
+        Public Overrides Function Pack(ByVal value As Double) As IEnumerable(Of Byte)
+            Return BitConverter.GetBytes(value)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Double)

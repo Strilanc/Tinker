@@ -11,10 +11,8 @@ Namespace Bnet.Protocol
                 New UInt32Jar().Named("unknown"),
                 New DataJar().Fixed(exactDataCount:=20).Named("proof"))
 
-        'verification disabled due to stupid verifier (1.2.30118.5)
-        <ContractVerification(False)>
-        Public Overrides Function Pack(Of TValue As ProductCredentials)(ByVal value As TValue) As IPickle(Of TValue)
-            Return DataJar.Pack(PackRawValue(value)).With(jar:=Me, value:=value)
+        Public Overrides Function Pack(ByVal value As ProductCredentials) As IEnumerable(Of Byte)
+            Return DataJar.Pack(PackRawValue(value))
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ProductCredentials)

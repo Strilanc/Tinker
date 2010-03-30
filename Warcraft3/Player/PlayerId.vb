@@ -54,9 +54,8 @@ Namespace WC3
     Public Class PlayerIdJar
         Inherits BaseJar(Of PlayerId)
 
-        Public Overrides Function Pack(Of TValue As PlayerId)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim data = {DirectCast(value, PlayerId).Index}.ToReadableList
-            Return value.Pickled(Me, data)
+        Public Overrides Function Pack(ByVal value As PlayerId) As IEnumerable(Of Byte)
+            Return {value.Index}
         End Function
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerId)

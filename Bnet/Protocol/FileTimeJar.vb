@@ -4,9 +4,8 @@ Namespace Bnet.Protocol
     Public NotInheritable Class FileTimeJar
         Inherits BaseJar(Of DateTime)
 
-        Public Overrides Function Pack(Of TValue As DateTime)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim data = DirectCast(value, Date).ToFileTime.BitwiseToUInt64.Bytes().AsReadableList
-            Return value.Pickled(Me, data)
+        Public Overrides Function Pack(ByVal value As DateTime) As IEnumerable(Of Byte)
+            Return value.ToFileTime.BitwiseToUInt64.Bytes()
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of DateTime)

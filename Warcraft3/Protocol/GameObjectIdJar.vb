@@ -4,10 +4,8 @@ Namespace WC3.Protocol
     Public NotInheritable Class GameObjectIdJar
         Inherits BaseJar(Of GameObjectId)
 
-        Public Overrides Function Pack(Of TValue As GameObjectId)(ByVal value As TValue) As IPickle(Of TValue)
-            Dim valued As GameObjectId = value
-            Dim data = valued.AllocatedId.Bytes.Concat(valued.CounterId.Bytes).ToReadableList
-            Return value.Pickled(Me, data)
+        Public Overrides Function Pack(ByVal value As GameObjectId) As IEnumerable(Of Byte)
+            Return value.AllocatedId.Bytes.Concat(value.CounterId.Bytes)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameObjectId)

@@ -20,7 +20,7 @@ Namespace WC3.Protocol
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return New Packet(packetDefinition.Id, packetDefinition.Jar.Pack(value))
+            Return New Packet(packetDefinition.Id, packetDefinition.Jar.PackPickle(value))
         End Function
 
         Public ReadOnly Property Payload As ISimplePickle

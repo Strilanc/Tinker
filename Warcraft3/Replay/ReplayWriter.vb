@@ -110,7 +110,7 @@ Namespace WC3.Replay
         End Sub
         Public Sub WriteEntry(ByVal entry As ReplayEntry)
             Contract.Requires(entry IsNot Nothing)
-            WriteData(entryJar.Pack(entry).Data)
+            WriteData(entryJar.Pack(entry).ToReadableList)
         End Sub
 
         <ContractVerification(False)>

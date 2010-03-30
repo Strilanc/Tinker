@@ -35,7 +35,7 @@ Public Class BnetProtocolTest
                      97, 0,
                      &H33,
                      &H31, &H32, &H30, &H30, &H30, &H30, &H30, &H30
-                    }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats).Data),
+                    }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats)),
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"game state", GameStates.Full},
                         {"seconds since creation", 25UI},
@@ -141,8 +141,8 @@ Public Class BnetProtocolTest
                        42, 0, 0, 0,
                        2, 0, 0, 0,
                        0, 0, 0, 0
-                       }.Concat(credJar.Pack(rocCred).Data
-                       ).Concat(credJar.Pack(tftCred).Data).Concat(New Byte() _
+                       }.Concat(credJar.Pack(rocCred)
+                       ).Concat(credJar.Pack(tftCred)).Concat(New Byte() _
                        {105, 110, 102, 111, 0,
                         66, 111, 116, 0}),
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -365,7 +365,7 @@ Public Class BnetProtocolTest
                      0,
                      67,
                      65, &H32, &H30, &H30, &H30, &H30, &H30, &H30
-                     }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats).Data
+                     }.Concat(New WC3.Protocol.GameStatsJar().Pack(TestStats)
                 ).ToReadableList
         Dim value = Packets.ServerToClient.QueryGamesList.Jar.Parse(New Byte() _
                     {2, 0, 0, 0}.

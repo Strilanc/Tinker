@@ -17,7 +17,7 @@
                                      Optional ByVal data As IReadableList(Of Byte) = Nothing) As IPickle(Of T)
             Contract.Requires(pickle IsNot Nothing)
             Contract.Requires(jar IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Return New Pickle(Of T)(jar, pickle.Value, If(data, pickle.Data))
         End Function
         <Extension()> <Pure()>
@@ -28,8 +28,13 @@
             Contract.Requires(pickle IsNot Nothing)
             Contract.Requires(jar IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Pickle(Of T))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Return New Pickle(Of T)(jar, value, If(data, pickle.Data))
+        End Function
+
+        <Extension()> <Pure()>
+        Public Function PackPickle(Of T, TValue As T)(ByVal jar As IJar(Of T), ByVal value As TValue) As IPickle(Of TValue)
+            Return value.Pickled(jar:=jar, data:=jar.Pack(value).ToReadableList)
         End Function
 
         <Extension()> <Pure()>

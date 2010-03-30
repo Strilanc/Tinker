@@ -38,65 +38,8 @@ Namespace WC3.Protocol
                     New ByteJar().Named("unknown2"),
                     New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum"))
 
-        Public Overrides Function Pack(Of TValue As GameStats)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-
-            'Encode settings
-            Dim settings As GameSettings
-            Select Case value.Speed
-                Case GameSpeedOption.Slow
-                    'no flags set
-                Case GameSpeedOption.Medium
-                    settings = settings Or GameSettings.SpeedMedium
-                Case GameSpeedOption.Fast
-                    settings = settings Or GameSettings.SpeedFast
-                Case Else
-                    Throw value.Speed.MakeImpossibleValueException()
-            End Select
-            Select Case value.Observers
-                Case GameObserverOption.FullObservers
-                    settings = settings Or GameSettings.ObserversFull Or GameSettings.ObserversOnDefeat
-                Case GameObserverOption.NoObservers
-                    'no flags set
-                Case GameObserverOption.ObsOnDefeat
-                    settings = settings Or GameSettings.ObserversOnDefeat
-                Case GameObserverOption.Referees
-                    settings = settings Or GameSettings.ObserversReferees
-                Case Else
-                    Throw value.Observers.MakeImpossibleValueException()
-            End Select
-            Select Case value.Visibility
-                Case GameVisibilityOption.AlwaysVisible
-                    settings = settings Or GameSettings.VisibilityAlwaysVisible
-                Case GameVisibilityOption.Explored
-                    settings = settings Or GameSettings.VisibilityExplored
-                Case GameVisibilityOption.HideTerrain
-                    settings = settings Or GameSettings.VisibilityHideTerrain
-                Case GameVisibilityOption.MapDefault
-                    settings = settings Or GameSettings.VisibilityDefault
-                Case Else
-                    Throw value.Visibility.MakeImpossibleValueException()
-            End Select
-            If value.TeamsTogether Then settings = settings Or GameSettings.OptionTeamsTogether
-            If value.LockTeams Then settings = settings Or GameSettings.OptionLockTeams
-            If value.LockTeams Then settings = settings Or GameSettings.OptionLockTeams2
-            If value.RandomHero Then settings = settings Or GameSettings.OptionRandomHero
-            If value.RandomRace Then settings = settings Or GameSettings.OptionRandomRace
-            If value.AllowFullSharedControl Then settings = settings Or GameSettings.OptionAllowFullSharedControl
-
-            'Pack
-            Dim rawPickle = DataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                    {"playable width", value.PlayableWidth},
-                    {"playable height", value.PlayableHeight},
-                    {"settings", settings},
-                    {"xoro checksum", value.MapChecksumXORO},
-                    {"sha1 checksum", value.MapChecksumSHA1},
-                    {"relative path", value.AdvertisedPath.ToString},
-                    {"host name", value.HostName.ToString},
-                    {"unknown1", CByte(0)},
-                    {"unknown2", CByte(0)}}))
-            Dim data = EncodeStatStringData(rawPickle.Data).Append(0).ToReadableList
-            Return rawPickle.With(jar:=Me, value:=value, data:=data)
+        Public Overrides Function Pack(ByVal value As GameStats) As IEnumerable(Of Byte)
+            Return EncodeStatStringData(DataJar.Pack(PackDataValue(value))).Append(0)
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameStats)
             'StatString is null-terminated

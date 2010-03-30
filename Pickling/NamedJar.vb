@@ -22,8 +22,8 @@ Namespace Pickling
             End Get
         End Property
 
-        Public Overrides Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-            Return _subJar.Pack(value).With(jar:=Me)
+        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+            Return _subJar.Pack(value)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)

@@ -118,38 +118,6 @@
         End Function
     End Class
 
-    '''<summary>Packs objects into pickles.</summary>
-    <ContractClass(GetType(ISimplePackJar.ContractClass))>
-    Public Interface ISimplePackJar
-        Function Pack(Of T)(ByVal value As T) As IPickle(Of T)
-
-        <ContractClassFor(GetType(ISimplePackJar))>
-        MustInherit Class ContractClass
-            Implements ISimplePackJar
-            Public Function Pack(Of T)(ByVal value As T) As IPickle(Of T) Implements ISimplePackJar.Pack
-                Contract.Requires(value IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-                Throw New NotSupportedException()
-            End Function
-        End Class
-    End Interface
-    '''<summary>Packs values into pickles.</summary>
-    <ContractClass(GetType(ContractClassIPackJar(Of )))>
-    Public Interface IPackJar(Of In T)
-        Inherits ISimplePackJar
-        Shadows Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue)
-    End Interface
-    <ContractClassFor(GetType(IPackJar(Of )))>
-    Public MustInherit Class ContractClassIPackJar(Of T)
-        Inherits ISimplePackJar.ContractClass
-        Implements IPackJar(Of T)
-        Public Shadows Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
-            Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IPickle(Of TValue))() IsNot Nothing)
-            Throw New NotSupportedException()
-        End Function
-    End Class
-
     '''<summary>Parses data into simple pickles.</summary>
     <ContractClass(GetType(ISimpleParseJar.ContractClass))>
     Public Interface ISimpleParseJar
@@ -185,25 +153,77 @@
     End Class
 
     '''<summary>Parses data into simple pickles and packs objects into pickles.</summary>
+    <ContractClass(GetType(ISimpleJar.ContractClass))>
     Public Interface ISimpleJar
         Inherits ISimpleParseJar
-        Inherits ISimplePackJar
+        Function Pack(ByVal value As Object) As IEnumerable(Of Byte)
         Function MakeControl() As ISimpleValueEditor
         Function Describe(ByVal value As Object) As String
+
+        <ContractClassFor(GetType(ISimpleJar))>
+        MustInherit Shadows Class ContractClass
+            Implements ISimpleJar
+            <Pure()>
+            Public Function Describe(ByVal value As Object) As String Implements ISimpleJar.Describe
+                Contract.Requires(value IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
+            <Pure()>
+            Public Function MakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
+                Contract.Ensures(Contract.Result(Of ISimpleValueEditor)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
+            Public Function Parse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
+                Throw New NotSupportedException
+            End Function
+            <Pure()>
+            Public Function Pack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
+                Contract.Requires(value IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
+        End Class
     End Interface
     '''<summary>Parses data and packs values into pickles.</summary>
+    <ContractClass(GetType(ContractClassIJar(Of )))>
     Public Interface IJar(Of T)
         Inherits ISimpleJar
-        Inherits IPackJar(Of T)
         Inherits IParseJar(Of T)
+        Shadows Function Pack(ByVal value As T) As IEnumerable(Of Byte)
         Shadows Function MakeControl() As IValueEditor(Of T)
         Shadows Function Describe(ByVal value As T) As String
     End Interface
+    <ContractClassFor(GetType(IJar(Of )))>
+    Public MustInherit Class ContractClassIJar(Of T)
+        Inherits ISimpleJar.ContractClass
+        Implements IJar(Of T)
+        <Pure()>
+        Public Shadows Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        <Pure()>
+        Public Shadows Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
+            Contract.Ensures(Contract.Result(Of IValueEditor(Of T))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        <Pure()>
+        Public Shadows Function Pack(ByVal value As T) As IEnumerable(Of Byte) Implements IJar(Of T).Pack
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+            Throw New NotSupportedException
+        End Function
+    End Class
+
     '''<summary>Parses data and packs values into pickles.</summary>
     Public MustInherit Class BaseJar(Of T)
         Implements IJar(Of T)
 
-        Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
+        Public MustOverride Function Pack(ByVal value As T) As IEnumerable(Of Byte) Implements IJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
         Public MustOverride Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
         Public Overridable Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
@@ -213,9 +233,8 @@
         Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
             Return MakeControl()
         End Function
-        <ContractVerification(False)>
-        Private Function SimplePack(Of TValue)(ByVal value As TValue) As IPickle(Of TValue) Implements ISimplePackJar.Pack
-            Return Pack(value.DynamicDirectCastTo(Of T)()).With(jar:=Me, value:=value)
+        Private Function SimplePack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
+            Return Pack(DirectCast(value, T))
         End Function
         Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
             Return Parse(data)
@@ -234,20 +253,60 @@
     Public Interface INamedJar(Of T)
         Inherits ISimpleNamedJar
         Inherits IParseJar(Of T)
-        Inherits IPackJar(Of T)
         Inherits IJar(Of T)
     End Interface
 
+    <ContractClass(GetType(ISimpleValueEditor.ContractClass))>
     Public Interface ISimpleValueEditor
         ReadOnly Property Control As Control
         Property Value As Object
         Event ValueChanged(ByVal sender As ISimpleValueEditor)
+
+        <ContractClassFor(GetType(ISimpleValueEditor))>
+        MustInherit Class ContractClass
+            Implements ISimpleValueEditor
+            Public Event ValueChanged(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
+            Public ReadOnly Property Control As System.Windows.Forms.Control Implements ISimpleValueEditor.Control
+                Get
+                    Contract.Ensures(Contract.Result(Of Control)() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+            End Property
+            Public Property Value As Object Implements ISimpleValueEditor.Value
+                Get
+                    Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
+                    Throw New NotSupportedException
+                End Get
+                Set(ByVal value As Object)
+                    Contract.Requires(value IsNot Nothing)
+                    Throw New NotSupportedException
+                End Set
+            End Property
+        End Class
     End Interface
+    <ContractClass(GetType(ContractClassIValueEditor(Of )))>
     Public Interface IValueEditor(Of T)
         Inherits ISimpleValueEditor
         Shadows Property Value As T
         Shadows Event ValueChanged(ByVal sender As IValueEditor(Of T))
     End Interface
+    <ContractClassFor(GetType(IValueEditor(Of )))>
+    MustInherit Class ContractClassIValueEditor(Of T)
+        Inherits ISimpleValueEditor.ContractClass
+        Implements IValueEditor(Of T)
+        Public Shadows Event ValueChanged(ByVal sender As IValueEditor(Of T)) Implements IValueEditor(Of T).ValueChanged
+        Public Shadows Property Value As T Implements IValueEditor(Of T).Value
+            Get
+                Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Get
+            Set(ByVal value As T)
+                Contract.Requires(value IsNot Nothing)
+                Throw New NotSupportedException
+            End Set
+        End Property
+    End Class
+
     Public Class DelegatedValueEditor(Of T)
         Implements IValueEditor(Of T)
 

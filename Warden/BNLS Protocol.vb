@@ -97,7 +97,7 @@ Namespace Warden
         Public Shared Function MakeFullServiceConnect(ByVal cookie As UInteger, ByVal seed As UInteger) As ClientPacket
             Contract.Ensures(Contract.Result(Of ClientPacket)() IsNot Nothing)
             Return New ClientPacket(WardenPacketId.FullServiceConnect,
-                                    ClientPackets.FullServerConnect.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                                    ClientPackets.FullServerConnect.PackPickle(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
                     {"client type", ClientType.Warcraft3TFT},
                     {"seed", seed.Bytes.AsReadableList},
@@ -108,7 +108,7 @@ Namespace Warden
         Public Shared Function MakeFullServiceHandleWardenPacket(ByVal cookie As UInteger, ByVal data As IReadableList(Of Byte)) As ClientPacket
             Contract.Ensures(Contract.Result(Of ClientPacket)() IsNot Nothing)
             Return New ClientPacket(WardenPacketId.FullServiceHandleWardenPacket,
-                                    ClientPackets.FullServiceHandleWardenPacket.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                                    ClientPackets.FullServiceHandleWardenPacket.PackPickle(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                     {"cookie", cookie},
                     {"raw warden packet data", data},
                     {"unspecified", New Byte() {}.AsReadableList}})))

@@ -22,15 +22,15 @@ Namespace Pickling
             Me._subJars = subJars
         End Sub
 
+        Public Overrides Function Pack(ByVal value As TValue) As IEnumerable(Of Byte)
+            Dim key = _valueKeyExtractor(value)
+            If Not _subJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
+            Return _subJars(key).Value.Pack(value)
+        End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of TValue)
             Dim key = _dataKeyExtractor(data)
             If Not _subJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
             Return _subJars(key).Value.Parse(data).With(jar:=Me)
-        End Function
-        Public Overrides Function Pack(Of T As TValue)(ByVal value As T) As IPickle(Of T)
-            Dim key = _valueKeyExtractor(value)
-            If Not _subJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
-            Return _subJars(key).Value.Pack(value).With(jar:=Me)
         End Function
 
         Public Overrides Function Describe(ByVal value As TValue) As String
@@ -59,7 +59,7 @@ Namespace Pickling
                 getter:=Function() DirectCast(keyControl.Items(0), TValue),
                 setter:=Sub(value)
                             keyControl.Items(0) = value
-                            valueControl.Text = Pack(value).Description
+                            valueControl.Text = Describe(value)
                         End Sub)
         End Function
     End Class

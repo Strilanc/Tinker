@@ -2,13 +2,11 @@ Namespace Pickling
     Public NotInheritable Class EmptyJar
         Inherits BaseJar(Of Object)
 
-        Public Overrides Function Pack(Of TValue As Object)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Return value.Pickled(Me, New Byte() {}.AsReadableList)
+        Public Overrides Function Pack(ByVal value As Object) As IEnumerable(Of Byte)
+            Return New Byte() {}
         End Function
-
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
-            Return Pack(New Object())
+            Return New Pickle(Of Object)(Me, New Object, data)
         End Function
 
         Public Overrides Function Describe(ByVal value As Object) As String

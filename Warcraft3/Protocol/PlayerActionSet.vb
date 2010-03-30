@@ -81,12 +81,10 @@ Namespace WC3.Protocol
                 New PlayerIdJar().Named("source"),
                 New GameActionJar().Repeated.DataSizePrefixed(prefixSize:=2).Named("actions"))
 
-        Public Overrides Function Pack(Of TValue As PlayerActionSet)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Dim pickle = DataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+        Public Overrides Function Pack(ByVal value As PlayerActionSet) As IEnumerable(Of Byte)
+            Return DataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                             {"source", value.Id},
                                             {"actions", value.Actions}}))
-            Return pickle.With(jar:=Me, value:=value)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)

@@ -18,15 +18,11 @@ Namespace Pickling
             Me._valueJars = valueJars
         End Sub
 
-        <ContractVerification(False)>
-        Public Overrides Function Pack(Of TValue As KeyValuePair(Of TKey, Object))(ByVal value As TValue) As IPickle(Of TValue)
-            Dim v = DirectCast(value, KeyValuePair(Of TKey, Object))
-            If Not _valueJars.ContainsKey(v.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(v.Key))
-            Dim keyPickle = _keyJar.Pack(v.Key)
-            Dim valuePickle = _valueJars(v.Key).Value.Pack(v.Value)
-
-            Dim data = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
-            Return value.Pickled(Me, data)
+        Public Overrides Function Pack(ByVal value As System.Collections.Generic.KeyValuePair(Of TKey, Object)) As IEnumerable(Of Byte)
+            If Not _valueJars.ContainsKey(value.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(value.Key))
+            Dim keyData = _keyJar.Pack(value.Key)
+            Dim valueData = _valueJars(value.Key).Value.Pack(value.Value)
+            Return keyData.Concat(valueData)
         End Function
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of KeyValuePair(Of TKey, Object))
@@ -72,8 +68,7 @@ Namespace Pickling
                                 AddHandler valueControl.ValueChanged, Sub() action()
                                 handlers.Add(action)
                             End Sub,
-                getter:=Function() New KeyValuePair(Of TKey, Object)(keyControl.Value,
-                                                                     _valueJars(keyControl.Value).Value.Pack(valueControl.Value).Value),
+                getter:=Function() New KeyValuePair(Of TKey, Object)(keyControl.Value, valueControl.Value),
                 setter:=Sub(value)
                             keyControl.Value = value.Key
                             valueControl.Value = value.Value

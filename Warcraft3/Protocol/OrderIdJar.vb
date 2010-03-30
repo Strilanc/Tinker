@@ -6,8 +6,8 @@ Namespace WC3.Protocol
 
         Private Shared ReadOnly DataJar As New EnumUInt32Jar(Of OrderId)(checkDefined:=False)
 
-        Public Overrides Function Pack(Of TValue As OrderId)(ByVal value As TValue) As IPickle(Of TValue)
-            Return DataJar.Pack(value).With(jar:=Me)
+        Public Overrides Function Pack(ByVal value As OrderId) As IEnumerable(Of Byte)
+            Return DataJar.Pack(value)
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of OrderId)
             Return DataJar.Parse(data).With(jar:=Me)

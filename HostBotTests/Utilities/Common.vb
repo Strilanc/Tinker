@@ -63,17 +63,13 @@ Friend Module TestingCommon
                              Optional ByVal description As String = Nothing)
         Dim packed = jar.Pack(value)
         Dim parsed = jar.Parse(data.ToReadableList)
-        Assert.IsTrue(equater(packed.Value, value))
         Assert.IsTrue(equater(parsed.Value, value))
-        Assert.IsTrue(packed.Data.SequenceEqual(data))
+        Assert.IsTrue(packed.SequenceEqual(data))
         Assert.IsTrue(parsed.Data.SequenceEqual(data))
         If description IsNot Nothing Then
-            Assert.IsTrue(packed.Description = description)
-            Assert.IsTrue(parsed.Description = description)
-        Else
-            Assert.IsTrue(packed.Description = parsed.Description)
+            Assert.IsTrue(jar.Describe(value) = description)
+            Assert.IsTrue(jar.Describe(parsed.Value) = description)
         End If
-        Assert.IsTrue(packed.Jar Is jar)
         Assert.IsTrue(parsed.Jar Is jar)
 
         Dim control = jar.MakeControl()
@@ -93,9 +89,7 @@ Friend Module TestingCommon
             Assert.IsTrue(equater(parsed2.Value, value))
             Assert.IsTrue(parsed2.Data.SequenceEqual(data))
             If description IsNot Nothing Then
-                Assert.IsTrue(parsed2.Description = description)
-            Else
-                Assert.IsTrue(packed.Description = parsed2.Description)
+                Assert.IsTrue(jar.Describe(parsed2.Value) = description)
             End If
         Else
             Try

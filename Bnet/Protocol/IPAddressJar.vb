@@ -4,10 +4,8 @@ Namespace Bnet.Protocol
     Public Class IPAddressJar
         Inherits BaseJar(Of Net.IPAddress)
 
-        Public Overrides Function Pack(Of TValue As Net.IPAddress)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Dim data = value.GetAddressBytes()
-            Return value.Pickled(Me, data.AsReadableList)
+        Public Overrides Function Pack(ByVal value As Net.IPAddress) As IEnumerable(Of Byte)
+            Return value.GetAddressBytes()
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of System.Net.IPAddress)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()

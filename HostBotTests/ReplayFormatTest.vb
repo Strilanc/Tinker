@@ -114,7 +114,7 @@ Public Class ReplayFormatTest
                        1, 1,
                        116, 101, 115, 0,
                        3
-                       }.Concat(New Protocol.GameStatsJar().Pack(TestStats).Data).Concat({
+                       }.Concat(New Protocol.GameStatsJar().Pack(TestStats)).Concat({
                        5, 0, 0, 0,
                        8, 0, 0, 0,
                        7, 0, 0, 0}),

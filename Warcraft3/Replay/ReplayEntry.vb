@@ -24,7 +24,7 @@ Namespace WC3.Replay
             Contract.Requires(definition IsNot Nothing)
             Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return New ReplayEntry(definition.Id, definition.Jar.Pack(value).Value)
+            Return New ReplayEntry(definition.Id, value)
         End Function
 
         Public ReadOnly Property Id As ReplayEntryId
@@ -50,7 +50,7 @@ Namespace WC3.Replay
 
         Public Overloads Function Equals(ByVal other As ReplayEntry) As Boolean Implements System.IEquatable(Of ReplayEntry).Equals
             If other Is Nothing Then Return False
-            Return SharedJar.Pack(Me).Data.SequenceEqual(SharedJar.Pack(other).Data)
+            Return SharedJar.Pack(Me).SequenceEqual(SharedJar.Pack(other))
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, ReplayEntry))
@@ -72,10 +72,8 @@ Namespace WC3.Replay
                 keySelector:=Function(e) e.Id,
                 elementSelector:=Function(e) DirectCast(e.Jar, ISimpleJar).AsNonNull))
 
-        Public Overrides Function Pack(Of TValue As ReplayEntry)(ByVal value As TValue) As IPickle(Of TValue)
-            Contract.Assume(value IsNot Nothing)
-            Dim pickle = SubJar.Pack(CType(value, KeyValuePair(Of ReplayEntryId, Object)))
-            Return pickle.With(jar:=Me, value:=value)
+        Public Overrides Function Pack(ByVal value As ReplayEntry) As IEnumerable(Of Byte)
+            Return SubJar.Pack(value)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
