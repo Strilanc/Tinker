@@ -118,44 +118,10 @@
         End Function
     End Class
 
-    '''<summary>Parses data into simple pickles.</summary>
-    <ContractClass(GetType(ISimpleParseJar.ContractClass))>
-    Public Interface ISimpleParseJar
-        Function Parse(ByVal data As IReadableList(Of Byte)) As ISimplePickle
-
-        <ContractClassFor(GetType(ISimpleParseJar))>
-        MustInherit Class ContractClass
-            Implements ISimpleParseJar
-            Public Function Parse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
-                Contract.Requires(data IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
-                'Contract.Ensures(Contract.Result(Of IPickle(Of T))().Data.Count <= data.Count) 'disabled because of stupid verifier
-                Throw New NotSupportedException()
-            End Function
-        End Class
-    End Interface
-    '''<summary>Parses data to into pickles.</summary>
-    <ContractClass(GetType(ContractClassIParseJar(Of )))>
-    Public Interface IParseJar(Of Out T)
-        Inherits ISimpleParseJar
-        Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
-    End Interface
-    <ContractClassFor(GetType(IParseJar(Of )))>
-    Public NotInheritable Class ContractClassIParseJar(Of T)
-        Inherits ISimpleParseJar.ContractClass
-        Implements IParseJar(Of T)
-        Public Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
-            Contract.Requires(data IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
-            'Contract.Ensures(Contract.Result(Of IPickle(Of T))().Data.Count <= data.Count) 'disabled because of stupid verifier
-            Throw New NotSupportedException()
-        End Function
-    End Class
-
     '''<summary>Parses data into simple pickles and packs objects into pickles.</summary>
     <ContractClass(GetType(ISimpleJar.ContractClass))>
     Public Interface ISimpleJar
-        Inherits ISimpleParseJar
+        Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object)
         Function Pack(ByVal value As Object) As IEnumerable(Of Byte)
         Function MakeControl() As ISimpleValueEditor
         Function Describe(ByVal value As Object) As String
@@ -174,8 +140,11 @@
                 Contract.Ensures(Contract.Result(Of ISimpleValueEditor)() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
-            Public Function Parse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
-                Throw New NotSupportedException
+            Public Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
+                Contract.Requires(data IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ParsedValue(Of Object))() IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of ParsedValue(Of Object))().UsedDataCount <= data.Count)
+                Throw New NotSupportedException()
             End Function
             <Pure()>
             Public Function Pack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
@@ -185,12 +154,43 @@
             End Function
         End Class
     End Interface
+
+    Public Class ParsedValue(Of T)
+        Private ReadOnly _value As T
+        Private ReadOnly _usedDataCount As Int32
+
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_value IsNot Nothing)
+            Contract.Invariant(_usedDataCount >= 0)
+        End Sub
+
+        Public Sub New(ByVal value As T, ByVal usedDataCount As Int32)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Requires(usedDataCount >= 0)
+            Me._value = value
+            Me._usedDataCount = usedDataCount
+        End Sub
+
+        Public ReadOnly Property Value As T
+            Get
+                Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
+                Return _value
+            End Get
+        End Property
+        Public ReadOnly Property UsedDataCount As Int32
+            Get
+                Contract.Ensures(Contract.Result(Of Int32)() >= 0)
+                Return _usedDataCount
+            End Get
+        End Property
+    End Class
+
     '''<summary>Parses data and packs values into pickles.</summary>
     <ContractClass(GetType(ContractClassIJar(Of )))>
     Public Interface IJar(Of T)
         Inherits ISimpleJar
-        Inherits IParseJar(Of T)
         Shadows Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+        Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
         Shadows Function MakeControl() As IValueEditor(Of T)
         Shadows Function Describe(ByVal value As T) As String
     End Interface
@@ -214,7 +214,10 @@
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
-        Public Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+        Public Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ParsedValue(Of T))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ParsedValue(Of T))().UsedDataCount <= data.Count)
             Throw New NotSupportedException
         End Function
     End Class
@@ -224,7 +227,7 @@
         Implements IJar(Of T)
 
         Public MustOverride Function Pack(ByVal value As T) As IEnumerable(Of Byte) Implements IJar(Of T).Pack
-        Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
+        Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
         Public MustOverride Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
         Public Overridable Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
             Return value.ToString()
@@ -236,8 +239,9 @@
         Private Function SimplePack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
             Return Pack(DirectCast(value, T))
         End Function
-        Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
-            Return Parse(data)
+        Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
+            Dim result = Parse(data)
+            Return New ParsedValue(Of Object)(result.Value, result.UsedDataCount)
         End Function
         Public Function SimpleDescribe(ByVal value As Object) As String Implements ISimpleJar.Describe
             Return Describe(DirectCast(value, T))
@@ -252,7 +256,6 @@
     '''<summary>A named jar which parses data and packs values into pickles.</summary>
     Public Interface INamedJar(Of T)
         Inherits ISimpleNamedJar
-        Inherits IParseJar(Of T)
         Inherits IJar(Of T)
     End Interface
 

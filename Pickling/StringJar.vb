@@ -34,12 +34,12 @@ Namespace Pickling
             Return data
         End Function
 
-        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
+        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of String)
             Dim value = New String(_encoding.GetChars(data.ToArray))
             If value.Length < _minCharCount Then Throw New PicklingException("Need at least {0} characters.".Frmt(_minCharCount))
             If _maxCharCount.HasValue AndAlso value.Length > _maxCharCount Then Throw New PicklingException("Need at most {0} characters.".Frmt(_maxCharCount))
             If Not _encoding.GetBytes(value).SequenceEqual(data) Then Throw New PicklingException("[{0}] is not decodable using {1}.".Frmt(data.ToHexString, _encoding.GetType))
-            Return value.Pickled(Me, data)
+            Return value.ParsedWithDataCount(data.Count)
         End Function
 
         Public Overrides Function Describe(ByVal value As String) As String

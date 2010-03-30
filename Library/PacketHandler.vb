@@ -23,11 +23,11 @@ Public MustInherit Class PacketHandler(Of TKey)
     End Sub
 
     Public Sub AddLogger(ByVal key As TKey,
-                         ByVal jar As ISimpleParseJar)
+                         ByVal jar As ISimpleJar)
         Contract.Requires(key IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Call [AddHandler](key, Function(data)
-                                   Dim pickle = jar.Parse(data)
+                                   Dim pickle = jar.ParsePickle(data)
                                    If pickle.Data.Count < data.Count Then Throw New PicklingException("Data left over after parsing.")
                                    If pickle.Data.Count > data.Count Then Throw New PicklingException("Pickle contains more data than was parsed.")
                                    logger.Log(Function() "Received {0} from {1}: {2}".Frmt(key, sourceName, pickle.Description), LogMessageType.DataParsed)

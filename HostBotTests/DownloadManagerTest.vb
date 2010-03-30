@@ -109,7 +109,7 @@ Public Class DownloadManagerTest
                                                      Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
             SyncLock Me
                 Return _handler.AddHandler(packetDefinition.Id, Function(data)
-                                                                    Dim result = handler(packetDefinition.Jar.Parse(data))
+                                                                    Dim result = handler(packetDefinition.Jar.ParsePickle(data))
                                                                     result.Catch(Sub(ex) _failFuture.TrySetException(ex.InnerExceptions))
                                                                     Return result
                                                                 End Function).AsTask

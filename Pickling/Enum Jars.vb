@@ -25,13 +25,13 @@
             Return _subJar.Pack(value)
         End Function
 
-        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of TEnum)
-            Dim pickle = _subJar.Parse(data)
-            Dim value = DirectCast(pickle.Value, TEnum).AssumeNotNull
+        Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of TEnum)
+            Dim parsed = _subJar.Parse(data)
+            Dim value = DirectCast(parsed.Value, TEnum).AssumeNotNull
             If _checkDefined AndAlso Not IsDefined(value) Then
                 Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(Describe(value), GetType(TEnum)))
             End If
-            Return pickle.With(jar:=Me, value:=value)
+            Return parsed.WithValue(value)
         End Function
 
         Public Overrides Function Describe(ByVal value As TEnum) As String

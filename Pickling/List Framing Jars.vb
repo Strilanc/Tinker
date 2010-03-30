@@ -22,25 +22,16 @@
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of T))
-            'Parse
-            Dim pickles = New List(Of IPickle(Of T))
-            Dim curCount = data.Count
-            Dim curOffset = 0
-            'List Elements
-            While curOffset < data.Count
-                'Value
-                Dim p = _subJar.Parse(data.SubView(curOffset, curCount))
-                pickles.Add(p)
-                'Size
-                Dim n = p.Data.Count
-                curCount -= n
-                curOffset += n
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of T))
+            Dim values = New List(Of T)
+            Dim usedDataCount = 0
+            While usedDataCount < data.Count
+                Dim subParsed = _subJar.Parse(data.SubView(usedDataCount))
+                values.Add(subParsed.Value)
+                usedDataCount += subParsed.UsedDataCount
             End While
 
-            Dim datum = data.SubView(0, curOffset)
-            Dim value = (From p In pickles Select (p.Value)).ToReadableList
-            Return value.Pickled(Me, datum)
+            Return values.ToReadableList.ParsedWithDataCount(usedDataCount)
         End Function
 
         Public Overrides Function Describe(ByVal value As IReadableList(Of T)) As String
@@ -55,6 +46,7 @@
     '''<summary>Pickles lists of values, where the serialized form is prefixed by the number of items.</summary>
     Public NotInheritable Class ItemCountPrefixedFramingJar(Of T)
         Inherits BaseJar(Of IReadableList(Of T))
+
         Private ReadOnly _subJar As IJar(Of T)
         Private ReadOnly _prefixSize As Integer
         Private ReadOnly _useSingleLineDescription As Boolean
@@ -82,28 +74,19 @@
             Return sizeData.Concat(itemData)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of T))
-            'Parse
-            Dim pickles = New List(Of IPickle(Of T))
-            Dim curOffset = 0
-            'List Size
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of T))
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
-            Dim numElements = data.SubView(0, _prefixSize).ToUValue
-            curOffset += _prefixSize
-            'List Elements
+            Dim numElements = data.Take(_prefixSize).ToUValue
+
+            Dim values = New List(Of T)
+            Dim usedDataCount = _prefixSize
             For repeat = 1UL To numElements
-                'Value
-                Dim p = _subJar.Parse(data.SubView(curOffset, data.Count - curOffset))
-                pickles.Add(p)
-                'Size
-                Dim n = p.Data.Count
-                curOffset += n
-                If curOffset > data.Count Then Throw New InvalidStateException("Subjar '{0}' reported taking more data than was available.".Frmt(_subJar.GetType.Name))
+                Dim subParsed = _subJar.Parse(data.SubView(usedDataCount))
+                values.Add(subParsed.Value)
+                usedDataCount += subParsed.UsedDataCount
             Next repeat
 
-            Dim value = (From p In pickles Select (p.Value)).ToReadableList
-            Dim datum = data.SubView(0, curOffset)
-            Return value.Pickled(Me, datum)
+            Return values.ToReadableList.ParsedWithDataCount(usedDataCount)
         End Function
 
         Public Overrides Function Describe(ByVal value As IReadableList(Of T)) As String

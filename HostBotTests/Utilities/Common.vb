@@ -61,16 +61,16 @@ Friend Module TestingCommon
                              Optional ByVal appendSafe As Boolean = True,
                              Optional ByVal requireAllData As Boolean = True,
                              Optional ByVal description As String = Nothing)
-        Dim packed = jar.Pack(value)
         Dim parsed = jar.Parse(data.ToReadableList)
         Assert.IsTrue(equater(parsed.Value, value))
-        Assert.IsTrue(packed.SequenceEqual(data))
-        Assert.IsTrue(parsed.Data.SequenceEqual(data))
+        Assert.IsTrue(parsed.UsedDataCount = data.Count)
         If description IsNot Nothing Then
             Assert.IsTrue(jar.Describe(value) = description)
             Assert.IsTrue(jar.Describe(parsed.Value) = description)
         End If
-        Assert.IsTrue(parsed.Jar Is jar)
+
+        Dim packed = jar.Pack(value)
+        Assert.IsTrue(packed.SequenceEqual(data))
 
         Dim control = jar.MakeControl()
         control.Value = value
@@ -78,7 +78,7 @@ Friend Module TestingCommon
 
         If data.Count > 0 Then
             Try
-                jar.Parse(data.Take(data.Count - 1).ToReadableList)
+                Dim parsed2 = jar.Parse(data.Take(data.Count - 1).ToReadableList)
                 Assert.IsTrue(Not requireAllData)
             Catch ex As Exception
                 Assert.IsTrue(requireAllData)
@@ -87,7 +87,7 @@ Friend Module TestingCommon
         If appendSafe Then
             Dim parsed2 = jar.Parse(data.Concat({1, 2, 3}).ToReadableList)
             Assert.IsTrue(equater(parsed2.Value, value))
-            Assert.IsTrue(parsed2.Data.SequenceEqual(data))
+            Assert.IsTrue(parsed2.UsedDataCount >= data.Count)
             If description IsNot Nothing Then
                 Assert.IsTrue(jar.Describe(parsed2.Value) = description)
             End If
@@ -95,7 +95,7 @@ Friend Module TestingCommon
             Try
                 Dim parsed2 = jar.Parse(data.Concat({1, 2, 3}).ToReadableList)
                 Assert.IsFalse(equater(parsed2.Value, value))
-                Assert.IsFalse(parsed2.Data.SequenceEqual(data))
+                Assert.IsTrue(parsed2.UsedDataCount >= data.Count)
             Catch ex As PicklingException
                 'caller indicated this might happen, so it's fine
             End Try

@@ -15,6 +15,12 @@
                 Return _subJar
             End Get
         End Property
+        Public Overrides Function Pack(ByVal value As T) As IEnumerable(Of Byte)
+            Return _subJar.Pack(value)
+        End Function
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+            Return _subJar.Parse(data)
+        End Function
         Public Overrides Function Describe(ByVal value As T) As String
             Return _subJar.Describe(value)
         End Function
@@ -46,9 +52,9 @@
             Return data
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
             If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException()
-            Dim result As IPickle(Of T)
+            Dim result As ParsedValue(Of T)
             Try
                 result = SubJar.Parse(data.SubView(0, _dataSize))
             Catch ex As PicklingException
@@ -60,7 +66,7 @@
                 End Try
                 Throw
             End Try
-            If result.Data.Count <> _dataSize Then Throw New PicklingException("Parsed value did not use exactly {0} bytes.".Frmt(_dataSize))
+            If result.UsedDataCount <> _dataSize Then Throw New PicklingException("Parsed value did not use exactly {0} bytes.".Frmt(_dataSize))
             Return result
         End Function
     End Class
@@ -89,7 +95,7 @@
             Return data
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
             Try
                 Return SubJar.Parse(data.SubView(0, Math.Min(data.Count, _maxDataCount)))
             Catch ex As PicklingException
@@ -132,15 +138,14 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
             Dim dataSize = data.SubView(0, _prefixSize).ToUValue
             If data.Count < _prefixSize + dataSize Then Throw New PicklingNotEnoughDataException()
 
-            Dim datum = data.SubView(0, CInt(_prefixSize + dataSize))
-            Dim pickle = SubJar.Parse(datum.SubView(_prefixSize))
-            If pickle.Data.Count < dataSize Then Throw New PicklingException("Fragmented data.")
-            Return pickle.With(jar:=Me, data:=datum)
+            Dim parsed = SubJar.Parse(data.SubView(_prefixSize, CInt(dataSize)))
+            If parsed.UsedDataCount < dataSize Then Throw New PicklingException("Fragmented data.")
+            Return parsed.Value.ParsedWithDataCount(_prefixSize + parsed.UsedDataCount)
         End Function
     End Class
 
@@ -157,14 +162,14 @@
             Return SubJar.Pack(value).Append(0)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
             'Find terminator
             Dim p = data.IndexOf(0)
             If p < 0 Then Throw New PicklingException("No null terminator found.")
             'Parse
-            Dim pickle = SubJar.Parse(data.SubView(0, p))
-            If pickle.Data.Count <> p Then Throw New PicklingException("Leftover data before null terminator.")
-            Return pickle.With(jar:=Me, data:=data.SubView(0, p + 1))
+            Dim parsed = SubJar.Parse(data.SubView(0, p))
+            If parsed.UsedDataCount <> p Then Throw New PicklingException("Leftover data before null terminator.")
+            Return parsed.Value.ParsedWithDataCount(parsed.UsedDataCount + 1)
         End Function
     End Class
 
@@ -194,13 +199,12 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Tuple(Of Boolean, T))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Tuple(Of Boolean, T))
             If data.Count > 0 Then
-                Dim pickle = _subJar.Parse(data)
-                Return pickle.With(jar:=Me, value:=Tuple.Create(True, pickle.Value))
+                Dim parsed = _subJar.Parse(data)
+                Return parsed.WithValue(Tuple.Create(True, parsed.Value))
             Else
-                Dim value = Tuple.Create(False, CType(Nothing, T))
-                Return value.Pickled(Me, data)
+                Return Tuple.Create(False, CType(Nothing, T)).ParsedWithDataCount(0)
             End If
         End Function
 
@@ -264,13 +268,14 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
             If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException()
             Dim checksum = data.SubView(0, _checksumSize)
-            Dim pickle = SubJar.Parse(data.SubView(_checksumSize))
-            If Not _checksumFunction(pickle.Data).SequenceEqual(checksum) Then Throw New PicklingException("Checksum didn't match.")
-            Dim datum = data.SubView(0, _checksumSize + pickle.Data.Count)
-            Return pickle.With(jar:=Me, data:=datum)
+            Dim parsed = SubJar.Parse(data.SubView(_checksumSize))
+            If Not _checksumFunction(data.SubView(_checksumSize, parsed.UsedDataCount)).SequenceEqual(checksum) Then
+                Throw New PicklingException("Checksum didn't match.")
+            End If
+            Return parsed.Value.ParsedWithDataCount(_checksumSize + parsed.UsedDataCount)
         End Function
     End Class
 
@@ -287,10 +292,10 @@
             Return SubJar.Pack(value).Reverse
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
-            Dim pickle = SubJar.Parse(data.Reverse.ToReadableList)
-            If pickle.Data.Count <> data.Count Then Throw New PicklingException("Leftover reversed data.")
-            Return pickle.With(jar:=Me, data:=data)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
+            Dim parsed = SubJar.Parse(data.Reverse.ToReadableList)
+            If parsed.UsedDataCount <> data.Count Then Throw New PicklingException("Leftover reversed data.")
+            Return parsed
         End Function
     End Class
 End Namespace

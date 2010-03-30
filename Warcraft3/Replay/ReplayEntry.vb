@@ -78,9 +78,9 @@ Namespace WC3.Replay
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ReplayEntry)
-            Dim pickle = SubJar.Parse(data)
-            Return pickle.With(jar:=Me, value:=CType(pickle.Value, ReplayEntry))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of ReplayEntry)
+            Dim parsed = SubJar.Parse(data)
+            Return parsed.WithValue(CType(parsed.Value, ReplayEntry))
         End Function
 
         Public Overrides Function Describe(ByVal value As ReplayEntry) As String

@@ -58,12 +58,10 @@ Namespace WC3
             Return {value.Index}
         End Function
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerId)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of PlayerId)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException
-            Dim datum = data.SubView(0, 1)
-            If datum(0) < 1 OrElse datum(0) > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(datum(0)))
-            Dim value = New PlayerId(datum(0))
-            Return value.Pickled(Me, datum)
+            If data.First < 1 OrElse data.First > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(data.First))
+            Return New PlayerId(data.First).ParsedWithDataCount(1)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of PlayerId)

@@ -22,11 +22,10 @@ Namespace Bnet.Protocol
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Net.IPEndPoint)
-            Dim pickle = DataJar.Parse(data)
-            Dim vals = pickle.Value
-            Dim value = New Net.IPEndPoint(vals.ItemAs(Of Net.IPAddress)("ip"), vals.ItemAs(Of UInt16)("port"))
-            Return pickle.With(jar:=Me, value:=value)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Net.IPEndPoint)
+            Dim parsed = DataJar.Parse(data)
+            Return parsed.WithValue(New Net.IPEndPoint(parsed.Value.ItemAs(Of Net.IPAddress)("ip"),
+                                                       parsed.Value.ItemAs(Of UInt16)("port")))
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of Net.IPEndPoint)

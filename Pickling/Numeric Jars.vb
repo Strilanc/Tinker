@@ -13,11 +13,9 @@
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Byte)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Byte)
             If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 1)
-            Dim value = datum(0)
-            Return value.Pickled(Me, datum)
+            Return data.First.ParsedWithDataCount(1)
         End Function
 
         Public Overrides Function Describe(ByVal value As Byte) As String
@@ -56,11 +54,9 @@
             Return value.Bytes(byteOrder)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt16)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt16)
             If data.Count < 2 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 2)
-            Dim value = datum.ToUInt16(byteOrder)
-            Return value.Pickled(Me, datum)
+            Return data.Take(2).ToUInt16(byteOrder).ParsedWithDataCount(2)
         End Function
 
         Public Overrides Function Describe(ByVal value As UInt16) As String
@@ -99,11 +95,9 @@
             Return value.Bytes(byteOrder)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt32)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 4)
-            Dim value = datum.ToUInt32(byteOrder)
-            Return value.Pickled(Me, datum)
+            Return data.Take(4).ToUInt32(byteOrder).ParsedWithDataCount(4)
         End Function
 
         Public Overrides Function Describe(ByVal value As UInt32) As String
@@ -142,11 +136,9 @@
             Return value.Bytes(byteOrder)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt64)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt64)
             If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 8)
-            Dim value = datum.ToUInt64(byteOrder)
-            Return value.Pickled(Me, datum)
+            Return data.Take(8).ToUInt64(byteOrder).ParsedWithDataCount(8)
         End Function
 
         Public Overrides Function Describe(ByVal value As UInt64) As String
@@ -177,11 +169,9 @@
             Return BitConverter.GetBytes(value)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Single)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Single)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 4)
-            Dim value = BitConverter.ToSingle(datum.ToArray, 0)
-            Return value.Pickled(Me, datum)
+            Return BitConverter.ToSingle(data.Take(4).ToArray, 0).ParsedWithDataCount(4)
         End Function
 
         Public Overrides Function Describe(ByVal value As Single) As String
@@ -216,11 +206,9 @@
             Return BitConverter.GetBytes(value)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Double)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Double)
             If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 8)
-            Dim value = BitConverter.ToDouble(datum.ToArray, 0)
-            Return value.Pickled(Me, datum)
+            Return BitConverter.ToDouble(data.Take(8).ToArray, 0).ParsedWithDataCount(8)
         End Function
 
         Public Overrides Function Describe(ByVal value As Double) As String

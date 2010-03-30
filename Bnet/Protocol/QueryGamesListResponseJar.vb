@@ -77,20 +77,17 @@ Namespace Bnet.Protocol
             End If
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of QueryGamesListResponse)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             If data.SubView(0, 4).ToUInt32 = 0 Then
                 'result of a single-game query
-                Dim pickle = queryResultJar.Parse(data.SubView(4))
-                Dim value = New QueryGamesListResponse(pickle.Value, {})
-                Dim datum = data.SubView(0, 8)
-                Return value.Pickled(Me, datum)
+                Dim parsed = queryResultJar.Parse(data.SubView(4))
+                Return New QueryGamesListResponse(queryResultJar.Parse(data.SubView(4)).Value, {}).ParsedWithDataCount(8)
             Else
                 'result of a game search
-                Dim pickle = gameDataJar.Parse(data)
-                Dim value = New QueryGamesListResponse(QueryGameResponse.Ok,
-                                                       ParseRawGameDescriptions(pickle.Value, _clock))
-                Return pickle.With(jar:=Me, value:=value)
+                Dim parsed = gameDataJar.Parse(data)
+                Return parsed.WithValue(New QueryGamesListResponse(QueryGameResponse.Ok,
+                                                                   ParseRawGameDescriptions(parsed.Value, _clock)))
             End If
         End Function
 

@@ -15,10 +15,9 @@ Namespace Bnet.Protocol
             Return DataJar.Pack(PackRawValue(value))
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of ProductCredentials)
-            Dim pickle = DataJar.Parse(data)
-            Dim value = ParseRawValue(pickle.Value)
-            Return pickle.With(jar:=Me, value:=value)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of ProductCredentials)
+            Dim parsed = DataJar.Parse(data)
+            Return parsed.WithValue(ParseRawValue(parsed.Value))
         End Function
 
         Private Shared Function ParseRawValue(ByVal vals As NamedValueMap) As ProductCredentials

@@ -8,11 +8,9 @@ Namespace Bnet.Protocol
             Return value.ToFileTime.BitwiseToUInt64.Bytes()
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of DateTime)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of DateTime)
             If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 8)
-            Dim value = Date.FromFileTime(datum.ToUInt64.BitwiseToInt64)
-            Return value.Pickled(Me, datum)
+            Return DateTime.FromFileTime(data.Take(8).ToUInt64.BitwiseToInt64).ParsedWithDataCount(8)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of DateTime)

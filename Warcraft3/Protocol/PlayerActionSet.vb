@@ -87,12 +87,11 @@ Namespace WC3.Protocol
                                             {"actions", value.Actions}}))
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of PlayerActionSet)
-            Dim pickle = DataJar.Parse(data)
-            Dim id = pickle.Value.ItemAs(Of PlayerId)("source")
-            Dim value = New PlayerActionSet(pickle.Value.ItemAs(Of PlayerId)("source"),
-                                            pickle.Value.ItemAs(Of IReadableList(Of GameAction))("actions"))
-            Return pickle.With(jar:=Me, value:=value)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of PlayerActionSet)
+            Dim parsed = DataJar.Parse(data)
+            Dim value = New PlayerActionSet(parsed.Value.ItemAs(Of PlayerId)("source"),
+                                            parsed.Value.ItemAs(Of IReadableList(Of GameAction))("actions"))
+            Return value.ParsedWithDataCount(parsed.UsedDataCount)
         End Function
 
         Public Overrides Function Describe(ByVal value As PlayerActionSet) As String

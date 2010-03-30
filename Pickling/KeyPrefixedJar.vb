@@ -25,14 +25,13 @@ Namespace Pickling
             Return keyData.Concat(valueData)
         End Function
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of KeyValuePair(Of TKey, Object))
-            Dim keyPickle = _keyJar.Parse(data)
-            If Not _valueJars.ContainsKey(keyPickle.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(keyPickle.Value))
-            Dim valuePickle = _valueJars(keyPickle.Value).Value.Parse(data.SubView(keyPickle.Data.Count))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of KeyValuePair(Of TKey, Object))
+            Dim parsedKey = _keyJar.Parse(data)
+            If Not _valueJars.ContainsKey(parsedKey.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(parsedKey.Value))
+            Dim parsedValue = _valueJars(parsedKey.Value).Value.Parse(data.SubView(parsedKey.UsedDataCount))
 
-            Dim value = New KeyValuePair(Of TKey, Object)(keyPickle.Value, valuePickle.Value)
-            Dim datum = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
-            Return value.Pickled(Me, datum)
+            Dim value = New KeyValuePair(Of TKey, Object)(parsedKey.Value, parsedValue.Value)
+            Return value.ParsedWithDataCount(parsedKey.UsedDataCount + parsedValue.UsedDataCount)
         End Function
 
         Public Overrides Function Describe(ByVal value As KeyValuePair(Of TKey, Object)) As String

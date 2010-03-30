@@ -5,8 +5,8 @@ Namespace Pickling
         Public Overrides Function Pack(ByVal value As Object) As IEnumerable(Of Byte)
             Return New Byte() {}
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of Object)
-            Return New Pickle(Of Object)(Me, New Object, data)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object)
+            Return New ParsedValue(Of Object)(New Object, 0)
         End Function
 
         Public Overrides Function Describe(ByVal value As Object) As String

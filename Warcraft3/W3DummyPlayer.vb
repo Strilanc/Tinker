@@ -59,7 +59,7 @@ Namespace WC3
             Contract.Requires(packet IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            Return _packetHandler.AddHandler(packet.Id, Function(data) handler(packet.Jar.Parse(data)))
+            Return _packetHandler.AddHandler(packet.Id, Function(data) handler(packet.Jar.ParsePickle(data)))
         End Function
         Private Function AddQueuedPacketHandler(Of T)(ByVal packet As Protocol.Packets.Definition(Of T),
                                                       ByVal handler As Action(Of IPickle(Of T))) As IDisposable

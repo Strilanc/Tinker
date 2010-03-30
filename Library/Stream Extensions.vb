@@ -104,7 +104,7 @@ Public Module StreamExtensions
 
     <Extension()>
     <ContractVerification(False)>
-    Public Function ReadPickle(ByVal stream As IRandomReadableStream, ByVal jar As ISimpleParseJar) As ISimplePickle
+    Public Function ReadPickle(ByVal stream As IRandomReadableStream, ByVal jar As ISimpleJar) As ISimplePickle
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
@@ -112,13 +112,8 @@ Public Module StreamExtensions
         Try
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
-                '[first parse: learn needed data]
-                Dim result = jar.Parse(view)
-                '[second parse: work with copied data, to avoid accessing the disposed StreamAsList later]
-                result = jar.Parse(result.Data.Cache.ToReadableList)
-                'Place position after used data, as if it had been read normally
-                stream.Position = oldPosition + result.Data.Count
-                Return result
+                Dim parsed = jar.Parse(view)
+                Return New Pickle(Of Object)(jar, parsed.Value, stream.ReadExactAt(oldPosition, parsed.UsedDataCount))
             End Using
         Catch ex As PicklingException
             Throw New IO.InvalidDataException(ex.Summarize, ex)
@@ -126,7 +121,7 @@ Public Module StreamExtensions
     End Function
     <Extension()>
     <ContractVerification(False)>
-    Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IParseJar(Of T)) As IPickle(Of T)
+    Public Function ReadPickle(Of T)(ByVal stream As IRandomReadableStream, ByVal jar As IJar(Of T)) As IPickle(Of T)
         Contract.Requires(stream IsNot Nothing)
         Contract.Requires(jar IsNot Nothing)
         Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
@@ -134,13 +129,8 @@ Public Module StreamExtensions
         Try
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
-                '[first parse: learn needed data]
-                Dim result = jar.Parse(view)
-                '[second parse: work with copied data, to avoid accessing the disposed StreamAsList later]
-                result = jar.Parse(result.Data.Cache.ToReadableList)
-                'Place position after used data, as if it had been read normally
-                stream.Position = oldPosition + result.Data.Count
-                Return result
+                Dim parsed = jar.Parse(view)
+                Return New Pickle(Of T)(jar, parsed.Value, stream.ReadExactAt(oldPosition, parsed.UsedDataCount))
             End Using
         Catch ex As PicklingException
             Throw New IO.InvalidDataException(ex.Summarize, ex)

@@ -28,28 +28,17 @@ Namespace Pickling
             Return Concat(From subJar In _subJars Select subJar.Pack(value.ItemRaw(subJar.Name)))
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of NamedValueMap)
-            'Parse
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of NamedValueMap)
             Dim vals = New Dictionary(Of InvariantString, Object)
-            Dim pickles = New List(Of ISimplePickle)
-            Dim curCount = data.Count
-            Dim curOffset = 0
-            For Each j In _subJars
-                Contract.Assume(j IsNot Nothing)
-                'Value
-                Dim p = j.Parse(data.SubView(curOffset, curCount))
-                vals(j.Name) = p.Value
-                pickles.Add(p)
-                'Size
-                Dim n = p.Data.Count
-                curCount -= n
-                curOffset += n
-                If curCount < 0 Then Throw New InvalidStateException("subJar lied about data used.")
-            Next j
+            Dim usedDataCount = 0
+            For Each subjar In _subJars
+                Contract.Assume(subjar IsNot Nothing)
+                Dim parsed = subjar.Parse(data.SubView(usedDataCount))
+                vals(subjar.Name) = parsed.Value
+                usedDataCount += parsed.UsedDataCount
+            Next subjar
 
-            Dim value = New NamedValueMap(vals)
-            Dim datum = data.SubView(0, curOffset)
-            Return value.Pickled(Me, datum)
+            Return New NamedValueMap(vals).ParsedWithDataCount(usedDataCount)
         End Function
 
         Public Overrides Function Describe(ByVal value As NamedValueMap) As String

@@ -41,14 +41,15 @@ Namespace WC3.Protocol
         Public Overrides Function Pack(ByVal value As GameStats) As IEnumerable(Of Byte)
             Return EncodeStatStringData(DataJar.Pack(PackDataValue(value))).Append(0)
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameStats)
-            'StatString is null-terminated
-            Dim p = data.IndexOf(0)
-            If p < 0 Then Throw New PicklingException("No null terminator on game statstring.")
-            Dim datum = data.SubView(0, p + 1)
-            Dim pickle = DataJar.Parse(DecodeStatStringData(datum).ToReadableList)
-            Dim value = ParseDataValue(pickle.Value)
-            Return pickle.With(jar:=Me, value:=value, data:=datum)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of GameStats)
+            'null-terminated
+            Dim usedDataCount = data.IndexOf(0) + 1
+            If usedDataCount <= 0 Then Throw New PicklingException("No null terminator on game statstring.")
+
+            Dim decodedData = DecodeStatStringData(data.Take(usedDataCount - 1)).ToReadableList
+            Dim parsed = DataJar.Parse(decodedData)
+            If parsed.UsedDataCount <> decodedData.Count Then Throw New PicklingException("Leftover data before null terminator.")
+            Return ParseDataValue(parsed.Value).ParsedWithDataCount(usedDataCount)
         End Function
 
         Private Shared Function PackDataValue(ByVal value As GameStats) As NamedValueMap

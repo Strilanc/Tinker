@@ -30,11 +30,10 @@ Namespace Bnet.Protocol
             Return digits
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt32)
             If data.Count < _digitCount Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, _digitCount)
-            Dim value = CUInt(datum.ParseChrString(nullTerminated:=False).FromHexToUInt64(_byteOrder))
-            Return value.Pickled(Me, datum)
+            Dim value = CUInt(data.Take(_digitCount).ParseChrString(nullTerminated:=False).FromHexToUInt64(_byteOrder))
+            Return value.ParsedWithDataCount(_digitCount)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of UInteger)

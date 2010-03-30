@@ -78,9 +78,9 @@ Namespace WC3.Protocol
 
         'verification disabled due to stupid verifier (1.2.30118.5)
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of GameAction)
-            Dim pickle = SubJar.Parse(data)
-            Return pickle.With(jar:=Me, value:=CType(pickle.Value, GameAction))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of GameAction)
+            Dim parsed = SubJar.Parse(data)
+            Return parsed.WithValue(CType(parsed.Value, GameAction))
         End Function
 
         Public Overrides Function Describe(ByVal value As GameAction) As String

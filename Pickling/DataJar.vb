@@ -6,8 +6,8 @@ Namespace Pickling
         Public Overrides Function Pack(ByVal value As IReadableList(Of Byte)) As IEnumerable(Of Byte)
             Return value
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of Byte))
-            Return data.Pickled(Me, data)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of Byte))
+            Return data.ParsedWithDataCount(data.Count)
         End Function
 
         Public Overrides Function Describe(ByVal value As IReadableList(Of Byte)) As String

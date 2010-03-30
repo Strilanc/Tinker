@@ -7,11 +7,9 @@ Namespace Bnet.Protocol
         Public Overrides Function Pack(ByVal value As Net.IPAddress) As IEnumerable(Of Byte)
             Return value.GetAddressBytes()
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of System.Net.IPAddress)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of System.Net.IPAddress)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
-            Dim datum = data.SubView(0, 4)
-            Dim value = New Net.IPAddress(datum.ToArray)
-            Return value.Pickled(Me, datum)
+            Return New Net.IPAddress(data.Take(4).ToArray).ParsedWithDataCount(4)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of Net.IPAddress)

@@ -9,9 +9,8 @@ Namespace WC3.Protocol
         Public Overrides Function Pack(ByVal value As UInteger) As IEnumerable(Of Byte)
             Return DataJar.Pack(value)
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
-            Dim pickle = DataJar.Parse(data)
-            Return pickle.With(jar:=Me)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt32)
+            Return DataJar.Parse(data)
         End Function
 
         Public Overrides Function Describe(ByVal value As UInteger) As String

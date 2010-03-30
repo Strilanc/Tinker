@@ -27,10 +27,10 @@ Namespace Pickling
             If Not _subJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
             Return _subJars(key).Value.Pack(value)
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of TValue)
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of TValue)
             Dim key = _dataKeyExtractor(data)
             If Not _subJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
-            Return _subJars(key).Value.Parse(data).With(jar:=Me)
+            Return _subJars(key).Value.Parse(data)
         End Function
 
         Public Overrides Function Describe(ByVal value As TValue) As String
