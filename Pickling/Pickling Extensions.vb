@@ -5,6 +5,10 @@
             Return New Pickle(Of TValue)(jar, value, jar.Pack(value).ToReadableList)
         End Function
         <Extension()> <Pure()>
+        Public Function PackPickle(Of T)(ByVal jar As ISimpleJar, ByVal value As T) As IPickle(Of T)
+            Return New Pickle(Of T)(jar, value, jar.Pack(value).ToReadableList)
+        End Function
+        <Extension()> <Pure()>
         Public Function ParsePickle(Of T)(ByVal jar As IJar(Of T), ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
             Dim parsed = jar.Parse(data)
             Return New Pickle(Of T)(jar, parsed.Value, data.SubView(0, parsed.UsedDataCount))

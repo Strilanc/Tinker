@@ -251,11 +251,12 @@ Public Class WC3ProtocolTest
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
-                        {"speaker", New PlayerId(4)},
-                        {"command type", NonGameAction.GameChat},
-                        {"receiving group", ChatGroup.Allies},
-                        {"message", "test"}
-                    })
+                        {"sender", New PlayerId(4)},
+                        {"value", New KeyValuePair(Of NonGameActionType, Object)(NonGameActionType.GameChat,
+                            New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                                    {"receiving group", ChatGroup.Allies},
+                                    {"message", "test"}
+                                }))}})
         JarTest(Packets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
                        4,
@@ -263,10 +264,11 @@ Public Class WC3ProtocolTest
                        116, 101, 115, 116, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
-                        {"speaker", New PlayerId(4)},
-                        {"command type", NonGameAction.LobbyChat},
-                        {"message", "test"}
-                    })
+                        {"sender", New PlayerId(4)},
+                        {"value", New KeyValuePair(Of NonGameActionType, Object)(NonGameActionType.LobbyChat,
+                            New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                                    {"message", "test"}
+                                }))}})
         JarTest(Packets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
                        4,
@@ -275,8 +277,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
-                        {"command type", NonGameAction.SetTeam},
-                        {"new value", CByte(1)}
+                        {"value", New KeyValuePair(Of NonGameActionType, Object)(NonGameActionType.SetTeam, CByte(1))}
                     })
         JarTest(Packets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
@@ -286,8 +287,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
-                        {"command type", NonGameAction.SetHandicap},
-                        {"new value", CByte(100)}
+                        {"value", New KeyValuePair(Of NonGameActionType, Object)(NonGameActionType.SetHandicap, CByte(100))}
                     })
         JarTest(Packets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
@@ -297,8 +297,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
-                        {"command type", NonGameAction.SetColor},
-                        {"new value", Protocol.PlayerColor.Blue}
+                        {"value", New KeyValuePair(Of NonGameActionType, Object)(NonGameActionType.SetColor, PlayerColor.Blue)}
                     })
         JarTest(Packets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
@@ -308,8 +307,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(1), New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"sender", New PlayerId(4)},
-                        {"command type", NonGameAction.SetRace},
-                        {"new value", Protocol.Races.Orc}
+                        {"value", New KeyValuePair(Of NonGameActionType, Object)(NonGameActionType.SetRace, Races.Orc)}
                     })
     End Sub
     <TestMethod()>

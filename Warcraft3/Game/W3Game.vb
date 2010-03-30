@@ -307,35 +307,38 @@ Namespace WC3
         Private Sub ReceiveNonGameAction(ByVal sender As Player, ByVal vals As NamedValueMap)
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
-            Dim commandType = vals.ItemAs(Of Protocol.NonGameAction)("command type")
+            Dim keyValue = vals.ItemAs(Of KeyValuePair(Of Protocol.NonGameActionType, Object))("value")
 
             'Player Chat
-            Select Case commandType
-                Case Protocol.NonGameAction.GameChat, Protocol.NonGameAction.LobbyChat
-                    Dim message = vals.ItemAs(Of String)("message")
-                    Dim chatType = If(commandType = Protocol.NonGameAction.GameChat, Protocol.ChatType.Game, Protocol.ChatType.Lobby)
+            Select Case keyValue.Key
+                Case Protocol.NonGameActionType.GameChat, Protocol.NonGameActionType.LobbyChat
+                    Dim value = DirectCast(keyValue.Value, NamedValueMap)
+                    Dim message = value.ItemAs(Of String)("message")
+                    Dim chatType = If(keyValue.Key = Protocol.NonGameActionType.GameChat,
+                                      Protocol.ChatType.Game,
+                                      Protocol.ChatType.Lobby)
                     Dim receivingGroup As Protocol.ChatGroup
                     If chatType = Protocol.ChatType.Game Then
-                        receivingGroup = vals.ItemAs(Of Protocol.ChatGroup)("receiving group")
+                        receivingGroup = value.ItemAs(Of Protocol.ChatGroup)("receiving group")
                     End If
                     Dim requestedReceivers = vals.ItemAs(Of IReadableList(Of PlayerId))("requested receivers")
 
                     ReceiveChat(sender, message, chatType, receivingGroup, requestedReceivers)
 
-                Case Protocol.NonGameAction.SetTeam
-                    _lobby.OnPlayerSetTeam(sender, vals.ItemAs(Of Byte)("new value"))
+                Case Protocol.NonGameActionType.SetTeam
+                    _lobby.OnPlayerSetTeam(sender, DirectCast(keyValue.Value, Byte))
 
-                Case Protocol.NonGameAction.SetHandicap
-                    _lobby.OnPlayerSetHandicap(sender, vals.ItemAs(Of Byte)("new value"))
+                Case Protocol.NonGameActionType.SetHandicap
+                    _lobby.OnPlayerSetHandicap(sender, DirectCast(keyValue.Value, Byte))
 
-                Case Protocol.NonGameAction.SetRace
-                    _lobby.OnPlayerSetRace(sender, vals.ItemAs(Of Protocol.Races)("new value"))
+                Case Protocol.NonGameActionType.SetRace
+                    _lobby.OnPlayerSetRace(sender, DirectCast(keyValue.Value, Protocol.Races))
 
-                Case Protocol.NonGameAction.SetColor
-                    _lobby.OnPlayerSetColor(sender, vals.ItemAs(Of Protocol.PlayerColor)("new value"))
+                Case Protocol.NonGameActionType.SetColor
+                    _lobby.OnPlayerSetColor(sender, DirectCast(keyValue.Value, Protocol.PlayerColor))
 
                 Case Else
-                    RemovePlayer(sender, True, Protocol.PlayerLeaveReason.Disconnect, "Sent unrecognized client command type: {0}".Frmt(commandType))
+                    RemovePlayer(sender, True, Protocol.PlayerLeaveReason.Disconnect, "Sent unrecognized client command type: {0}".Frmt(keyValue.Key))
             End Select
         End Sub
 
