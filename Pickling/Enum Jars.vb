@@ -120,7 +120,7 @@
     End Class
 
     '''<summary>Pickles byte Enum types.</summary>
-    Public Class EnumByteJar(Of T As Structure)
+    Public NotInheritable Class EnumByteJar(Of T As Structure)
         Inherits EnumJar(Of T)
         Public Sub New(Optional ByVal checkDefined As Boolean = True)
             MyBase.New(New ByteJar(), checkDefined)
@@ -128,7 +128,7 @@
     End Class
 
     '''<summary>Pickles UInt16 Enum types.</summary>
-    Public Class EnumUInt16Jar(Of T As Structure)
+    Public NotInheritable Class EnumUInt16Jar(Of T As Structure)
         Inherits EnumJar(Of T)
         Public Sub New(Optional ByVal checkDefined As Boolean = True,
                        Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian)
@@ -137,7 +137,7 @@
     End Class
 
     '''<summary>Pickles UInt32 Enum types.</summary>
-    Public Class EnumUInt32Jar(Of T As Structure)
+    Public NotInheritable Class EnumUInt32Jar(Of T As Structure)
         Inherits EnumJar(Of T)
         Public Sub New(Optional ByVal checkDefined As Boolean = True,
                        Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian)
@@ -146,7 +146,7 @@
     End Class
 
     '''<summary>Pickles UInt64 Enum types.</summary>
-    Public Class EnumUInt64Jar(Of T As Structure)
+    Public NotInheritable Class EnumUInt64Jar(Of T As Structure)
         Inherits EnumJar(Of T)
         Public Sub New(Optional ByVal checkDefined As Boolean = True,
                        Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian)
