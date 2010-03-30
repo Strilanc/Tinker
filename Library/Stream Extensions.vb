@@ -113,7 +113,7 @@ Public Module StreamExtensions
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
                 Dim parsed = jar.Parse(view)
-                Return New Pickle(Of Object)(jar, parsed.Value, stream.ReadExactAt(oldPosition, parsed.UsedDataCount))
+                Return jar.ParsePickle(stream.ReadExactAt(oldPosition, parsed.UsedDataCount))
             End Using
         Catch ex As PicklingException
             Throw New IO.InvalidDataException(ex.Summarize, ex)
@@ -130,7 +130,7 @@ Public Module StreamExtensions
             Dim oldPosition = stream.Position
             Using view = New StreamAsList(stream, oldPosition, takeOwnershipOfStream:=False)
                 Dim parsed = jar.Parse(view)
-                Return New Pickle(Of T)(jar, parsed.Value, stream.ReadExactAt(oldPosition, parsed.UsedDataCount))
+                Return jar.ParsePickle(stream.ReadExactAt(oldPosition, parsed.UsedDataCount))
             End Using
         Catch ex As PicklingException
             Throw New IO.InvalidDataException(ex.Summarize, ex)
