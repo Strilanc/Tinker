@@ -20,7 +20,7 @@ Namespace Bnet.Protocol
                     {"port", CUShort(value.Port)},
                     {"unknown", New Byte() {0, 0, 0, 0, 0, 0, 0, 0}.AsReadableList}})
             Dim pickle = DataJar.Pack(vals)
-            Return pickle.With(jar:=Me, value:=value, description:=Function() value.ToString)
+            Return pickle.With(jar:=Me, value:=value)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -29,7 +29,7 @@ Namespace Bnet.Protocol
             Dim pickle = DataJar.Parse(data)
             Dim vals = pickle.Value
             Dim value = New Net.IPEndPoint(vals.ItemAs(Of Net.IPAddress)("ip"), vals.ItemAs(Of UInt16)("port"))
-            Return pickle.With(jar:=Me, value:=value, description:=Function() value.ToString)
+            Return pickle.With(jar:=Me, value:=value)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of Net.IPEndPoint)

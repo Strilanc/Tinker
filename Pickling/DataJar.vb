@@ -5,11 +5,15 @@ Namespace Pickling
 
         Public Overrides Function Pack(Of TValue As IReadableList(Of Byte))(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Return value.Pickled(Me, value, Function() "[{0}]".Frmt(value.ToHexString))
+            Return value.Pickled(Me, value)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of Byte))
-            Return data.Pickled(Me, data, Function() "[{0}]".Frmt(data.ToHexString))
+            Return data.Pickled(Me, data)
+        End Function
+
+        Public Overrides Function Describe(ByVal value As IReadableList(Of Byte)) As String
+            Return "[{0}]".Frmt(value.ToHexString)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of Byte))

@@ -20,27 +20,26 @@
 
         Public NotOverridable Overrides Function Pack(Of TValue As TEnum)(ByVal value As TValue) As IPickle(Of TValue)
             If _checkDefined AndAlso Not IsDefined(value) Then
-                Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(TEnum)))
+                Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(Describe(value), GetType(TEnum)))
             End If
-            Return _subJar.Pack(value).With(jar:=Me, description:=Function() ValueToString(value))
+            Return _subJar.Pack(value).With(jar:=Me)
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of TEnum)
             Dim pickle = _subJar.Parse(data)
             Dim value = DirectCast(pickle.Value, TEnum).AssumeNotNull
             If _checkDefined AndAlso Not IsDefined(value) Then
-                Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(ValueToString(value), GetType(TEnum)))
+                Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(Describe(value), GetType(TEnum)))
             End If
-            Return pickle.With(jar:=Me, value:=value, description:=Function() ValueToString(value))
+            Return pickle.With(jar:=Me, value:=value)
         End Function
 
+        Public Overrides Function Describe(ByVal value As TEnum) As String
+            Return If(_isFlagEnum, value.EnumFlagsToString(), value.ToString)
+        End Function
         <Pure()>
         Private Function IsDefined(ByVal value As TEnum) As Boolean
             Return If(_isFlagEnum, value.EnumFlagsAreDefined(), value.EnumValueIsDefined())
-        End Function
-        <Pure()>
-        Protected Overridable Function ValueToString(ByVal value As TEnum) As String
-            Return If(_isFlagEnum, value.EnumFlagsToString(), value.ToString)
         End Function
 
         Private Function MakeFlagsControl() As IValueEditor(Of TEnum)

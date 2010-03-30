@@ -7,14 +7,13 @@ Namespace WC3.Protocol
         Private Shared ReadOnly DataJar As New EnumUInt32Jar(Of OrderId)(checkDefined:=False)
 
         Public Overrides Function Pack(Of TValue As OrderId)(ByVal value As TValue) As IPickle(Of TValue)
-            Return DataJar.Pack(value).With(jar:=Me, description:=Function() DescribeValue(value))
+            Return DataJar.Pack(value).With(jar:=Me)
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of OrderId)
-            Dim pickle = DataJar.Parse(data)
-            Return pickle.With(jar:=Me, description:=Function() DescribeValue(pickle.Value))
+            Return DataJar.Parse(data).With(jar:=Me)
         End Function
 
-        Private Function DescribeValue(ByVal value As OrderId) As String
+        Public Overrides Function Describe(ByVal value As OrderId) As String
             If value >= &HD0000 AndAlso value < &HE0000 Then
                 If value.EnumValueIsDefined() Then
                     Return value.ToString

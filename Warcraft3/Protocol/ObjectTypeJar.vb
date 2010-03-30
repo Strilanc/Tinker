@@ -7,12 +7,16 @@ Namespace WC3.Protocol
         Private Shared ReadOnly DataJar As New UInt32Jar()
 
         Public Overrides Function Pack(Of TValue As UInt32)(ByVal value As TValue) As IPickle(Of TValue)
-            Return DataJar.Pack(value).With(jar:=Me, description:=Function() GameActions.TypeIdString(value))
+            Return DataJar.Pack(value).With(jar:=Me)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of UInt32)
             Dim pickle = DataJar.Parse(data)
-            Return pickle.With(jar:=Me, description:=Function() GameActions.TypeIdString(pickle.Value))
+            Return pickle.With(jar:=Me)
+        End Function
+
+        Public Overrides Function Describe(ByVal value As UInteger) As String
+            Return GameActions.TypeIdString(value)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of UInt32)

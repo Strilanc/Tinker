@@ -32,7 +32,7 @@ Namespace Pickling
             If _maxCharCount.HasValue AndAlso value.Length > _maxCharCount Then Throw New PicklingException("Need at most {0} characters.".Frmt(_maxCharCount))
             Dim data = _encoding.GetBytes(value)
             If _encoding.GetChars(data) <> value Then Throw New PicklingException("""{0}"" is not encodable using {1}.".Frmt(value, _encoding.GetType))
-            Return value.Pickled(Me, data.AsReadableList, Function() """{0}""".Frmt(value))
+            Return value.Pickled(Me, data.AsReadableList)
         End Function
 
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of String)
@@ -40,7 +40,11 @@ Namespace Pickling
             If value.Length < _minCharCount Then Throw New PicklingException("Need at least {0} characters.".Frmt(_minCharCount))
             If _maxCharCount.HasValue AndAlso value.Length > _maxCharCount Then Throw New PicklingException("Need at most {0} characters.".Frmt(_maxCharCount))
             If Not _encoding.GetBytes(value).SequenceEqual(data) Then Throw New PicklingException("[{0}] is not decodable using {1}.".Frmt(data.ToHexString, _encoding.GetType))
-            Return value.Pickled(Me, data, Function() """{0}""".Frmt(value))
+            Return value.Pickled(Me, data)
+        End Function
+
+        Public Overrides Function Describe(ByVal value As String) As String
+            Return """{0}""".Frmt(value)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of String)

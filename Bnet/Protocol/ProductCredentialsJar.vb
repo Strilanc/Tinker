@@ -41,6 +41,10 @@ Namespace Bnet.Protocol
                     {"proof", value.AuthenticationProof}}
         End Function
 
+        Public Overrides Function Describe(ByVal value As ProductCredentials) As String
+            Return DataJar.Describe(PackRawValue(value))
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of ProductCredentials)
             Dim subControl = DataJar.MakeControl()
             Return New DelegatedValueEditor(Of ProductCredentials)(

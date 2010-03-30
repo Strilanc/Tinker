@@ -33,6 +33,12 @@ Namespace Pickling
             Return _subJars(key).Value.Pack(value).With(jar:=Me)
         End Function
 
+        Public Overrides Function Describe(ByVal value As TValue) As String
+            Dim key = _valueKeyExtractor(value)
+            If Not _subJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
+            Return _subJars(key).Value.Describe(value)
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of TValue)
             Dim keyControl = New ComboBox()
             If DirectCast(Nothing, TKey) IsNot Nothing Then

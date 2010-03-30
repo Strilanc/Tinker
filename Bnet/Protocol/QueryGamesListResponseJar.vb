@@ -46,7 +46,7 @@ Namespace Bnet.Protocol
         Inherits BaseJar(Of QueryGamesListResponse)
 
         Private Shared ReadOnly queryResultJar As INamedJar(Of QueryGameResponse) = New EnumUInt32Jar(Of QueryGameResponse)().Named("result")
-        Private Shared ReadOnly gameDataJar As New TupleJar(
+        Private Shared ReadOnly gameDataJar As INamedJar(Of IReadableList(Of NamedValueMap)) = New TupleJar(
                 New EnumUInt32Jar(Of WC3.Protocol.GameTypes)().Named("game type"),
                 New UInt32Jar().Named("language id"),
                 New IPEndPointJar().Named("host address"),
@@ -56,7 +56,7 @@ Namespace Bnet.Protocol
                 New UTF8Jar().NullTerminated.Named("game password"),
                 New TextHexUInt32Jar(digitCount:=1).Named("num free slots"),
                 New TextHexUInt32Jar(digitCount:=8).Named("game id"),
-                New WC3.Protocol.GameStatsJar().Named("game statstring"))
+                New WC3.Protocol.GameStatsJar().Named("game statstring")).Named("game").RepeatedWithCountPrefix(prefixSize:=4).Named("games")
 
         Private ReadOnly _clock As IClock
 
@@ -71,43 +71,49 @@ Namespace Bnet.Protocol
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As Pickling.IPickle(Of QueryGamesListResponse)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
-            Dim count = data.SubView(0, 4).ToUInt32
-            Dim games = New List(Of WC3.RemoteGameDescription)(capacity:=CInt(count))
-            Dim pickles = New List(Of ISimplePickle)(capacity:=CInt(count + 1))
-            Dim result = QueryGameResponse.Ok
-            Dim offset = 4
-            If count = 0 Then
-                'result of single-game query
-                If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
-                result = DirectCast(data.SubView(4, 4).ToUInt32, QueryGameResponse)
-                offset += 4
-                pickles.Add(queryResultJar.Pack(result))
+            If data.SubView(0, 4).ToUInt32 = 0 Then
+                'result of a single-game query
+                Dim pickle = queryResultJar.Parse(data.SubView(4))
+                Dim value = New QueryGamesListResponse(pickle.Value, {})
+                Dim datum = data.SubView(0, 8)
+                Return value.Pickled(Me, datum)
             Else
-                'games matching query
-                For Each repeat In count.Range
-                    Dim pickle = gameDataJar.Parse(data.SubView(offset))
-                    pickles.Add(pickle)
-                    offset += pickle.Data.Count
-                    games.Add(ParseRawGameDescription(pickle.Value, _clock))
-                Next repeat
+                'result of a game search
+                Dim pickle = gameDataJar.Parse(data)
+                Dim value = New QueryGamesListResponse(QueryGameResponse.Ok,
+                                                       ParseRawGameDescriptions(pickle.Value, _clock))
+                Return pickle.With(jar:=Me, value:=value)
             End If
+        End Function
 
-            Dim value = New QueryGamesListResponse(result, games)
-            Dim datum = data.SubView(0, offset)
-            Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(useSingleLineDescription:=False))
+        Public Overrides Function Describe(ByVal value As QueryGamesListResponse) As String
+            Return MakeListDescription({queryResultJar.Describe(value.Result),
+                                        gameDataJar.Describe(PackRawGameDescriptions(value.Games))})
         End Function
 
         Public Overrides Function Pack(Of TValue As QueryGamesListResponse)(ByVal value As TValue) As IPickle(Of TValue)
             Contract.Assume(value IsNot Nothing)
-            Dim pickles = New List(Of ISimplePickle)
             If value.Games.Count = 0 Then
-                pickles.Add(queryResultJar.Pack(value.Result))
+                Dim pickle = queryResultJar.Pack(value.Result)
+                Dim data = New Byte() {0, 0, 0, 0}.Concat(pickle.Data).ToReadableList
+                Return value.Pickled(Me, data)
             Else
-                pickles.AddRange(From game In value.Games
-                                 Select gameDataJar.Pack(PackRawGameDescription(game)))
+                Dim pickle = gameDataJar.Pack(PackRawGameDescriptions(value.Games))
+                Return pickle.With(jar:=Me, value:=value)
             End If
-            Dim data = CUInt(value.Games.Count).Bytes.Concat(Concat(From pickle In pickles Select (pickle.Data))).ToReadableList
-            Return value.Pickled(Me, data, Function() pickles.MakeListDescription(useSingleLineDescription:=False))
+        End Function
+
+        Private Shared Function PackRawGameDescriptions(ByVal games As IEnumerable(Of WC3.RemoteGameDescription)) As IReadableList(Of NamedValueMap)
+            Contract.Requires(games IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of NamedValueMap))() IsNot Nothing)
+            Return (From game In games Select PackRawGameDescription(game)).ToReadableList
+        End Function
+        Private Shared Function ParseRawGameDescriptions(ByVal games As IEnumerable(Of NamedValueMap),
+                                                         ByVal clock As IClock) As IReadableList(Of WC3.RemoteGameDescription)
+            Contract.Requires(games IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of WC3.RemoteGameDescription))() IsNot Nothing)
+            Return (From game In games Select ParseRawGameDescription(game, clock)).ToReadableList
         End Function
 
         Private Shared Function PackRawGameDescription(ByVal game As WC3.RemoteGameDescription) As NamedValueMap
@@ -145,7 +151,7 @@ Namespace Bnet.Protocol
 
         Public Overrides Function MakeControl() As IValueEditor(Of QueryGamesListResponse)
             Dim resultControl = queryResultJar.MakeControl()
-            Dim gamesControl = gameDataJar.Repeated.MakeControl()
+            Dim gamesControl = gameDataJar.MakeControl()
             Dim panel = PanelWithControls({resultControl.Control, gamesControl.Control})
             Return New DelegatedValueEditor(Of QueryGamesListResponse)(
                 Control:=panel,
@@ -154,10 +160,10 @@ Namespace Bnet.Protocol
                                 AddHandler gamesControl.ValueChanged, Sub() action()
                             End Sub,
                 getter:=Function() New QueryGamesListResponse(resultControl.Value,
-                                                              From vals In gamesControl.Value Select ParseRawGameDescription(vals, _clock)),
+                                                              ParseRawGameDescriptions(gamesControl.Value, _clock)),
                 setter:=Sub(value)
                             resultControl.Value = value.Result
-                            gamesControl.Value = (From game In value.Games Select PackRawGameDescription(game)).ToReadableList
+                            gamesControl.Value = PackRawGameDescriptions(value.Games)
                         End Sub)
         End Function
     End Class

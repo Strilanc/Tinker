@@ -20,7 +20,7 @@
             Contract.Assume(value IsNot Nothing)
             Dim pickles = (From e In value Select CType(_subJar.Pack(e), IPickle(Of T))).Cache
             Dim data = Concat(From p In pickles Select (p.Data)).ToReadableList
-            Return value.Pickled(Me, data, Function() pickles.MakeListDescription(_useSingleLineDescription))
+            Return value.Pickled(Me, data)
         End Function
 
         'verification disabled due to stupid verifier (1.2.30118.5)
@@ -43,7 +43,11 @@
 
             Dim datum = data.SubView(0, curOffset)
             Dim value = (From p In pickles Select (p.Value)).ToReadableList
-            Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
+            Return value.Pickled(Me, datum)
+        End Function
+
+        Public Overrides Function Describe(ByVal value As IReadableList(Of T)) As String
+            Return (From item In value Select _subJar.Describe(item)).MakeListDescription(_useSingleLineDescription)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
@@ -81,7 +85,7 @@
             Dim sizeData = CULng(value.Count).Bytes.Take(_prefixSize)
             Dim pickleData = Concat(From p In pickles Select (p.Data))
             Dim data = Concat(sizeData, pickleData).ToReadableList
-            Return value.Pickled(Me, data, Function() pickles.MakeListDescription(_useSingleLineDescription))
+            Return value.Pickled(Me, data)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of IReadableList(Of T))
@@ -105,8 +109,11 @@
 
             Dim value = (From p In pickles Select (p.Value)).ToReadableList
             Dim datum = data.SubView(0, curOffset)
-            Dim desc = Function() pickles.MakeListDescription(_useSingleLineDescription)
-            Return value.Pickled(Me, datum, desc)
+            Return value.Pickled(Me, datum)
+        End Function
+
+        Public Overrides Function Describe(ByVal value As IReadableList(Of T)) As String
+            Return (From item In value Select _subJar.Describe(item)).MakeListDescription(_useSingleLineDescription)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))

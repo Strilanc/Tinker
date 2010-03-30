@@ -72,6 +72,10 @@ Namespace WC3.Protocol
             Return pickle.With(jar:=Me, value:=CType(pickle.Value, GameAction))
         End Function
 
+        Public Overrides Function Describe(ByVal value As GameAction) As String
+            Return SubJar.Describe(value)
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of GameAction)
             Dim subControl = SubJar.MakeControl()
             Return New DelegatedValueEditor(Of GameAction)(

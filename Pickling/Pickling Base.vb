@@ -209,6 +209,7 @@
         Inherits ISimpleParseJar
         Inherits ISimplePackJar
         Function MakeControl() As ISimpleValueEditor
+        Function Describe(ByVal value As Object) As String
     End Interface
     '''<summary>Parses data and packs values into pickles.</summary>
     Public Interface IJar(Of T)
@@ -216,6 +217,7 @@
         Inherits IPackJar(Of T)
         Inherits IParseJar(Of T)
         Shadows Function MakeControl() As IValueEditor(Of T)
+        Shadows Function Describe(ByVal value As T) As String
     End Interface
     '''<summary>Parses data and packs values into pickles.</summary>
     Public MustInherit Class BaseJar(Of T)
@@ -224,6 +226,9 @@
         Public MustOverride Function Pack(Of TValue As T)(ByVal value As TValue) As IPickle(Of TValue) Implements IPackJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of T) Implements IParseJar(Of T).Parse
         Public MustOverride Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
+        Public Overridable Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
+            Return value.ToString()
+        End Function
 
         Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
             Return MakeControl()
@@ -234,6 +239,9 @@
         End Function
         Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ISimplePickle Implements ISimpleParseJar.Parse
             Return Parse(data)
+        End Function
+        Public Function SimpleDescribe(ByVal value As Object) As String Implements ISimpleJar.Describe
+            Return Describe(DirectCast(value, T))
         End Function
     End Class
 

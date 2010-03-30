@@ -26,8 +26,7 @@ Namespace Pickling
             Dim valuePickle = _valueJars(v.Key).Value.Pack(v.Value.Value)
 
             Dim data = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
-            Dim desc = Function() "{0}: {1}".Frmt(keyPickle.Description.Value, valuePickle.Description.Value)
-            Return value.Pickled(Me, data, desc)
+            Return value.Pickled(Me, data)
         End Function
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of KeyValuePair(Of TKey, ISimplePickle))
@@ -37,12 +36,18 @@ Namespace Pickling
 
             Dim value = New KeyValuePair(Of TKey, ISimplePickle)(keyPickle.Value, valuePickle)
             Dim datum = keyPickle.Data.Concat(valuePickle.Data).ToReadableList
-            Dim desc = Function() "{0}: {1}".Frmt(keyPickle.Description.Value, valuePickle.Description.Value)
-            Return value.Pickled(Me, datum, desc)
+            Return value.Pickled(Me, datum)
+        End Function
+
+        Public Overrides Function Describe(ByVal value As KeyValuePair(Of TKey, ISimplePickle)) As String
+            Return "{0}: {1}".Frmt(_keyJar.Describe(value.Key), _valueJars(value.Key).Value.Describe(value.Value.Value))
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of KeyValuePair(Of TKey, ISimplePickle))
             Dim keyControl = _keyJar.MakeControl()
+            If Not _valueJars.ContainsKey(keyControl.Value) Then
+                keyControl.Value = _valueJars.Keys.First
+            End If
             Dim valueControl = _valueJars(keyControl.Value).Value.MakeControl()
             Dim panel = PanelWithControls({keyControl.Control, valueControl.Control}, borderStyle:=BorderStyle.FixedSingle)
             Dim handlers = New List(Of Action)

@@ -72,6 +72,10 @@ Namespace WC3.Replay
             Return pickle.With(jar:=Me, value:=CType(pickle.Value, ReplayEntry))
         End Function
 
+        Public Overrides Function Describe(ByVal value As ReplayEntry) As String
+            Return SubJar.Describe(value)
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of ReplayEntry)
             Dim subControl = SubJar.MakeControl()
             Return New DelegatedValueEditor(Of ReplayEntry)(

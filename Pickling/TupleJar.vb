@@ -34,7 +34,7 @@ Namespace Pickling
             Next subJar
 
             Dim data = Concat(From p In pickles Select (p.Data)).ToReadableList
-            Return value.Pickled(Me, data, Function() pickles.MakeListDescription(_useSingleLineDescription))
+            Return value.Pickled(Me, data)
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As IPickle(Of NamedValueMap)
@@ -58,7 +58,11 @@ Namespace Pickling
 
             Dim value = New NamedValueMap(vals)
             Dim datum = data.SubView(0, curOffset)
-            Return value.Pickled(Me, datum, Function() pickles.MakeListDescription(_useSingleLineDescription))
+            Return value.Pickled(Me, datum)
+        End Function
+
+        Public Overrides Function Describe(ByVal value As NamedValueMap) As String
+            Return (From subJar In _subJars Select subJar.Describe(value.ItemRaw(subJar.Name))).MakeListDescription(_useSingleLineDescription)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of NamedValueMap)

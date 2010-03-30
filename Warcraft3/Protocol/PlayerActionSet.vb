@@ -64,6 +64,12 @@ Namespace WC3.Protocol
             Return pickle.With(jar:=Me, value:=value)
         End Function
 
+        Public Overrides Function Describe(ByVal value As PlayerActionSet) As String
+            Return DataJar.Describe(New Dictionary(Of InvariantString, Object) From {
+                                            {"source", value.Id},
+                                            {"actions", value.Actions}})
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of PlayerActionSet)
             Dim subControl = DataJar.MakeControl()
             Return New DelegatedValueEditor(Of PlayerActionSet)(
