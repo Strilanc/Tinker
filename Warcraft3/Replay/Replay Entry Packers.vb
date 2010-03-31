@@ -85,9 +85,7 @@ Namespace WC3.Replay
         <Pure()>
         Public Function MakeGameStateChecksum(ByVal checksum As UInt32) As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryGameStateChecksum, New Dictionary(Of InvariantString, Object) From {
-                    {"unknown", CByte(4)},
-                    {"checksum", checksum}})
+            Return ReplayEntry.FromValue(Format.ReplayEntryGameStateChecksum, checksum)
         End Function
         <Pure()>
         Public Function MakeLobbyChatMessage(ByVal sender As PlayerId,

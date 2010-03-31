@@ -46,11 +46,9 @@ Public Class ReplayFormatTest
     <TestMethod()>
     Public Sub ReplayEntryGameStateChecksumTest()
         JarTest(Format.ReplayEntryGameStateChecksum.Jar,
-                Data:={1,
+                data:={4,
                        2, 3, 4, 5},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"unknown", CByte(1)},
-                        {"checksum", &H5040302UI}})
+                value:=&H5040302UI)
     End Sub
     <TestMethod()>
     Public Sub ReplayEntryLoadStarted1Test()
