@@ -183,6 +183,11 @@ Namespace WC3.Protocol
         MapFileDataProblem = &H45
         '''<summary>Sent by clients in response to PING.</summary>
         Pong = &H46
+        ''' <summary>
+        ''' Same format as tick, except time span is always 0.
+        ''' Used when there is too much action data to fit in a single tick.
+        ''' </summary>
+        TickPreOverflow = &H48
 
         '''<summary>Tells players the time remaining in a tournament game. Causes players to disc in custom games.</summary>
         TournamentCountdown = &H50
@@ -490,6 +495,9 @@ Namespace WC3.Protocol
         Public Shared ReadOnly RequestDropLaggers As Definition(Of Object) = Define(PacketId.RequestDropLaggers,
                 New EmptyJar())
         Public Shared ReadOnly Tick As Definition(Of NamedValueMap) = Define(PacketId.Tick,
+                New UInt16Jar().Named("time span"),
+                New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Optional.Named("player action sets"))
+        Public Shared ReadOnly TickPreOverflow As Definition(Of NamedValueMap) = Define(PacketId.TickPreOverflow,
                 New UInt16Jar().Named("time span"),
                 New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Optional.Named("player action sets"))
         Public Shared ReadOnly Tock As Definition(Of NamedValueMap) = Define(PacketId.Tock,

@@ -9,11 +9,13 @@ Namespace WC3.Replay
         LoadStarted1 = &H1A
         LoadStarted2 = &H1B
         GameStarted = &H1C
-        PreTick = &H1E
+        TickPreOverflow = &H1E
         Tick = &H1F
         ChatMessage = &H20
+
         GameStateChecksum = &H22
         Desync = &H23
+
         TournamentForcedCountdown = &H2F
     End Enum
     <Flags()>
@@ -108,7 +110,7 @@ Namespace WC3.Replay
             Return Define(id, New TupleJar(jars.Prepend(jar1, jar2).ToArray))
         End Function
 
-        Public Shared ReadOnly ReplayHeader As New TupleJar(
+        Public Shared ReadOnly ReplayHeader As IJar(Of NamedValueMap) = New TupleJar(
                 New ASCIIJar().NullTerminated().Named("magic"),
                 New UInt32Jar().Named("header size"),
                 New UInt32Jar().Named("data compressed size"),
@@ -157,13 +159,14 @@ Namespace WC3.Replay
                         keyJar:=New EnumByteJar(Of Protocol.ChatType)().Named("type"),
                         valueJars:=New Dictionary(Of Protocol.ChatType, ISimpleJar) From {
                             {Protocol.ChatType.Game, New EnumUInt32Jar(Of Protocol.ChatGroup)().Named("receiving group")},
-                            {Protocol.ChatType.Lobby, New EmptyJar().Named("receiving group")}}).Named("type group"),
+                            {Protocol.ChatType.Lobby, New EmptyJar().Named("receiving group")}}
+                        ).Named("type group"),
                     New UTF8Jar().NullTerminated.Named("message")
                 ).DataSizePrefixed(prefixSize:=2).Named("type group message")))
         Public Shared ReadOnly ReplayEntryGameStateChecksum As Definition(Of UInt32) = Define(ReplayEntryId.GameStateChecksum,
                 New UInt32Jar(showhex:=True).DataSizePrefixed(prefixSize:=1))
         Public Shared ReadOnly ReplayEntryDesync As Definition(Of NamedValueMap) = Define(ReplayEntryId.Desync,
-                New UInt32Jar().Named("unknown1"),
+                New UInt32Jar().Named("tick count"),
                 New UInt32Jar(showHex:=True).DataSizePrefixed(prefixSize:=1).Named("checksum"),
                 New PlayerIdJar().RepeatedWithCountPrefix(prefixSize:=1, useSingleLineDescription:=True).Named("remaining players"))
         Public Shared ReadOnly ReplayEntryTournamentForcedCountdown As Definition(Of NamedValueMap) = Define(ReplayEntryId.TournamentForcedCountdown,
@@ -171,7 +174,7 @@ Namespace WC3.Replay
                 New UInt32Jar().Named("counter time"))
         Public Shared ReadOnly ReplayEntryLobbyState As Definition(Of NamedValueMap) = Define(ReplayEntryId.LobbyState,
                 WC3.Protocol.Packets.LobbyState.Jar)
-        Public Shared ReadOnly ReplayEntryPreTick As Definition(Of NamedValueMap) = Define(ReplayEntryId.PreTick, New TupleJar(
+        Public Shared ReadOnly ReplayEntryTickPreOverflow As Definition(Of NamedValueMap) = Define(ReplayEntryId.TickPreOverflow, New TupleJar(
                 New UInt16Jar().Named("time span"),
                 New Protocol.PlayerActionSetJar().Repeated.Named("player action sets")
             ).DataSizePrefixed(prefixSize:=2))
