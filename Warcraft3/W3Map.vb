@@ -412,7 +412,9 @@ Namespace WC3
 
         Private Shared Function NormalizeMapStringKey(ByVal key As InvariantString) As InvariantString
             For Each prefix In {"TRIGSTR_", "STRING "}
+                Contract.Assume(prefix IsNot Nothing)
                 If key.StartsWith(prefix) Then
+                    Contract.Assume(prefix.Length <= key.Length)
                     Return NormalizeMapStringKey(key.Substring(prefix.Length))
                 End If
             Next prefix
@@ -434,7 +436,7 @@ Namespace WC3
             'Open strings file and search for given key
             Using sr = New IO.StreamReader(mapArchive.OpenFileByName("war3map.wts").AsStream)
                 Do Until sr.EndOfStream
-                    Dim itemKey = NormalizeMapStringKey(sr.ReadLine())
+                    Dim itemKey = NormalizeMapStringKey(sr.ReadLine().AssumeNotNull)
                     If itemKey = "" Then Continue Do
                     If sr.ReadLine <> "{" Then Continue Do
                     Dim itemLines = New List(Of String)

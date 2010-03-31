@@ -117,6 +117,7 @@ Namespace WC3.Replay
                 Return _settings
             End Get
         End Property
+        <ContractVerification(False)>
         Public ReadOnly Property GameDuration As TimeSpan
             Get
                 Contract.Ensures(Contract.Result(Of TimeSpan)().Ticks >= 0)

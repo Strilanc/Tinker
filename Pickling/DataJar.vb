@@ -4,12 +4,13 @@ Namespace Pickling
         Inherits BaseJar(Of IReadableList(Of Byte))
 
         Public Overrides Function Pack(ByVal value As IReadableList(Of Byte)) As IEnumerable(Of Byte)
-            Return value
+            Return value.AssumeNotNull
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of Byte))
             Return data.ParsedWithDataCount(data.Count)
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As IReadableList(Of Byte)) As String
             Return "[{0}]".Frmt(value.ToHexString)
         End Function

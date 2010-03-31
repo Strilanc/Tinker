@@ -45,6 +45,7 @@ Namespace WC3.Replay
         End Operator
         Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
+            Contract.Assume(value.Value IsNot Nothing)
             Return New ReplayEntry(value.Key, value.Value)
         End Operator
 
@@ -72,6 +73,7 @@ Namespace WC3.Replay
                 keySelector:=Function(e) e.Id,
                 elementSelector:=Function(e) e.Jar))
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As ReplayEntry) As IEnumerable(Of Byte)
             Return SubJar.Pack(value)
         End Function
@@ -83,6 +85,7 @@ Namespace WC3.Replay
             Return parsed.WithValue(CType(parsed.Value, ReplayEntry))
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As ReplayEntry) As String
             Return SubJar.Describe(value)
         End Function

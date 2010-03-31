@@ -10,6 +10,7 @@ Namespace Bnet.Protocol
                     New IPAddressJar().Named("ip"),
                     New DataJar().Fixed(exactDataCount:=8).Named("unknown"))
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As System.Net.IPEndPoint) As IEnumerable(Of Byte)
             Dim addrBytes = value.Address.GetAddressBytes
             Dim vals = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {

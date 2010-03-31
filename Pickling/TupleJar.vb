@@ -21,6 +21,7 @@ Namespace Pickling
             Contract.Requires(subJars IsNot Nothing)
         End Sub
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As NamedValueMap) As IEnumerable(Of Byte)
             If value.Count > _subJars.Count Then Throw New PicklingException("Too many keys in dictionary")
             Dim missingKeys = From subJar In _subJars Where Not value.ContainsKey(subJar.Name)
@@ -28,6 +29,7 @@ Namespace Pickling
             Return Concat(From subJar In _subJars Select subJar.Pack(value.ItemRaw(subJar.Name)))
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of NamedValueMap)
             Dim vals = New Dictionary(Of InvariantString, Object)
             Dim usedDataCount = 0
@@ -36,6 +38,7 @@ Namespace Pickling
                 Dim parsed = subjar.Parse(data.SubView(usedDataCount))
                 vals(subjar.Name) = parsed.Value
                 usedDataCount += parsed.UsedDataCount
+                Contract.Assume(usedDataCount <= data.Count)
             Next subjar
 
             Return New NamedValueMap(vals).ParsedWithDataCount(usedDataCount)
@@ -50,7 +53,7 @@ Namespace Pickling
             Dim panel = PanelWithControls((From c In subControls Select c.Control),
                                           borderStyle:=BorderStyle.FixedSingle)
             For Each subControl In subControls
-                AddHandler subControl.ValueChanged, Sub() LayoutPanel(panel)
+                AddHandler subControl.AssumeNotNull.ValueChanged, Sub() LayoutPanel(panel)
             Next subControl
             Return New DelegatedValueEditor(Of NamedValueMap)(
                 Control:=panel,

@@ -11,6 +11,7 @@ Namespace Bnet.Protocol
                 New UInt32Jar().Named("unknown"),
                 New DataJar().Fixed(exactDataCount:=20).Named("proof"))
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As ProductCredentials) As IEnumerable(Of Byte)
             Return DataJar.Pack(PackRawValue(value))
         End Function
@@ -21,6 +22,8 @@ Namespace Bnet.Protocol
         End Function
 
         Private Shared Function ParseRawValue(ByVal vals As NamedValueMap) As ProductCredentials
+            Contract.Requires(vals IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ProductCredentials)() IsNot Nothing)
             Dim proof = vals.ItemAs(Of IReadableList(Of Byte))("proof")
             Contract.Assume(proof.Count = 20)
             Return New ProductCredentials(
@@ -30,6 +33,8 @@ Namespace Bnet.Protocol
                     proof:=proof)
         End Function
         Private Shared Function PackRawValue(ByVal value As ProductCredentials) As NamedValueMap
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
             Return New Dictionary(Of InvariantString, Object) From {
                     {"length", value.Length},
                     {"product", value.Product},
@@ -38,6 +43,7 @@ Namespace Bnet.Protocol
                     {"proof", value.AuthenticationProof}}
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As ProductCredentials) As String
             Return DataJar.Describe(PackRawValue(value))
         End Function

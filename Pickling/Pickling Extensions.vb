@@ -1,20 +1,33 @@
 ﻿Namespace Pickling
     Public Module PicklingExtensions
         <Extension()> <Pure()>
+        <ContractVerification(False)>
         Public Function PackPickle(Of T, TValue As T)(ByVal jar As IJar(Of T), ByVal value As TValue) As IPickle(Of TValue)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of TValue))() IsNot Nothing)
             Return New Pickle(Of TValue)(jar, value, jar.Pack(value).ToReadableList)
         End Function
         <Extension()> <Pure()>
         Public Function PackPickle(Of T)(ByVal jar As ISimpleJar, ByVal value As T) As IPickle(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Return New Pickle(Of T)(jar, value, jar.Pack(value).ToReadableList)
         End Function
         <Extension()> <Pure()>
         Public Function ParsePickle(Of T)(ByVal jar As IJar(Of T), ByVal data As IReadableList(Of Byte)) As IPickle(Of T)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IPickle(Of T))() IsNot Nothing)
             Dim parsed = jar.Parse(data)
             Return New Pickle(Of T)(jar, parsed.Value, data.SubView(0, parsed.UsedDataCount))
         End Function
         <Extension()> <Pure()>
         Public Function ParsePickle(ByVal jar As ISimpleJar, ByVal data As IReadableList(Of Byte)) As ISimplePickle
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ISimplePickle)() IsNot Nothing)
             Dim parsed = jar.Parse(data)
             Return New Pickle(Of Object)(jar, parsed.Value, data.SubView(0, parsed.UsedDataCount))
         End Function
@@ -22,10 +35,16 @@
         Public Function ParsedWithDataCount(Of T)(ByVal value As T, ByVal usedDataCount As Int32) As ParsedValue(Of T)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(usedDataCount >= 0)
+            Contract.Ensures(Contract.Result(Of ParsedValue(Of T))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ParsedValue(Of T))().UsedDataCount = usedDataCount)
             Return New ParsedValue(Of T)(value, usedDataCount)
         End Function
         <Extension()> <Pure()>
         Public Function WithValue(Of T1, T2)(ByVal parsedValue As ParsedValue(Of T1), ByVal value As T2) As ParsedValue(Of T2)
+            Contract.Requires(parsedValue IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ParsedValue(Of T2))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ParsedValue(Of T2))().UsedDataCount = parsedValue.UsedDataCount)
             Return New ParsedValue(Of T2)(value, parsedValue.UsedDataCount)
         End Function
 

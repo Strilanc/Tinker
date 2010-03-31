@@ -42,8 +42,10 @@
             Return If(_isFlagEnum, value.EnumFlagsAreDefined(), value.EnumValueIsDefined())
         End Function
 
+        <ContractVerification(False)>
         Private Function MakeFlagsControl() As IValueEditor(Of TEnum)
             Contract.Requires(_isFlagEnum)
+            Contract.Ensures(Contract.Result(Of IValueEditor(Of TEnum))() IsNot Nothing)
 
             Dim flags = EnumAllFlags(Of TEnum)(onlyDefined:=_checkDefined).ZipWithIndexes()
             Dim control = New CheckedListBox()
@@ -67,6 +69,7 @@
         Private Function MakeDefinedValueControl() As IValueEditor(Of TEnum)
             Contract.Requires(Not _isFlagEnum)
             Contract.Requires(_checkDefined)
+            Contract.Ensures(Contract.Result(Of IValueEditor(Of TEnum))() IsNot Nothing)
 
             Dim control = New ComboBox()
             control.DropDownStyle = ComboBoxStyle.DropDownList
@@ -84,7 +87,8 @@
         End Function
         Private Function MakeUndefinedValueControl() As IValueEditor(Of TEnum)
             Contract.Requires(Not _isFlagEnum)
-            Contract.Requires(_checkDefined)
+            Contract.Requires(Not _checkDefined)
+            Contract.Ensures(Contract.Result(Of IValueEditor(Of TEnum))() IsNot Nothing)
 
             Dim control = New ComboBox()
             control.DropDownStyle = ComboBoxStyle.DropDown

@@ -45,6 +45,7 @@ Namespace WC3.Protocol
         End Operator
         Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of GameActionId, Object)) As GameAction
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
+            Contract.Assume(value.Value IsNot Nothing)
             Return New GameAction(value.Key, value.Value)
         End Operator
 
@@ -72,6 +73,7 @@ Namespace WC3.Protocol
                 keySelector:=Function(e) e.Id,
                 elementSelector:=Function(e) e.Jar))
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As GameAction) As IEnumerable(Of Byte)
             Return SubJar.Pack(value)
         End Function
@@ -83,6 +85,7 @@ Namespace WC3.Protocol
             Return parsed.WithValue(CType(parsed.Value, GameAction))
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As GameAction) As String
             Return SubJar.Describe(value)
         End Function

@@ -540,11 +540,13 @@ Public Module PoorlyCategorizedFunctions
         End If
 
         'Position controls
-        panel.Controls(0).Top = margin
-        panel.Controls(0).Left = margin
+        panel.Controls(0).AssumeNotNull.Top = margin
+        panel.Controls(0).AssumeNotNull.Left = margin
         For Each i In panel.Controls.Count.Range.Skip(1)
-            Dim c = panel.Controls(i)
-            Dim p = panel.Controls(i - 1)
+            Contract.Assume(i > 0)
+            Contract.Assume(i < panel.Controls.Count)
+            Dim c = panel.Controls(i).AssumeNotNull
+            Dim p = panel.Controls(i - 1).AssumeNotNull
             If leftToRight Then
                 c.Left = p.Right + spacing
                 c.Top = margin
@@ -553,11 +555,12 @@ Public Module PoorlyCategorizedFunctions
                 c.Top = p.Bottom + spacing
             End If
         Next i
-        panel.Height = panel.Controls(panel.Controls.Count - 1).Bottom + margin
+        panel.Height = panel.Controls(panel.Controls.Count - 1).AssumeNotNull.Bottom + margin
 
         'Size controls
         Dim maxWidth = 0
         For Each c As Control In panel.Controls
+            Contract.Assume(c IsNot Nothing)
             If leftToRight Then
                 If panel.Width < c.Right + margin Then
                     panel.Width = c.Right + margin

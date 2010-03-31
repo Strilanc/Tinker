@@ -167,6 +167,7 @@
         Public Sub New(ByVal value As T, ByVal usedDataCount As Int32)
             Contract.Requires(value IsNot Nothing)
             Contract.Requires(usedDataCount >= 0)
+            Contract.Ensures(Me.UsedDataCount = usedDataCount)
             Me._value = value
             Me._usedDataCount = usedDataCount
         End Sub
@@ -200,6 +201,7 @@
         Implements IJar(Of T)
         <Pure()>
         Public Shadows Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
+            Contract.Requires(value IsNot Nothing)
             Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
@@ -237,14 +239,14 @@
             Return MakeControl()
         End Function
         Private Function SimplePack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
-            Return Pack(DirectCast(value, T))
+            Return Pack(DirectCast(value, T).AssumeNotNull)
         End Function
         Private Function SimpleParse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Object) Implements ISimpleJar.Parse
             Dim result = Parse(data)
             Return New ParsedValue(Of Object)(result.Value, result.UsedDataCount)
         End Function
         Public Function SimpleDescribe(ByVal value As Object) As String Implements ISimpleJar.Describe
-            Return Describe(DirectCast(value, T))
+            Return Describe(DirectCast(value, T).AssumeNotNull)
         End Function
     End Class
 
@@ -322,10 +324,20 @@
         Public Event ValueChanged(ByVal sender As IValueEditor(Of T)) Implements IValueEditor(Of T).ValueChanged
         Private Event ValueChangedSimple(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
 
+        <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_getter IsNot Nothing)
+            Contract.Invariant(_setter IsNot Nothing)
+            Contract.Invariant(_control IsNot Nothing)
+        End Sub
+
         Public Sub New(ByVal control As Control,
                        ByVal getter As Func(Of T),
                        ByVal setter As Action(Of T),
                        ByVal eventAdder As Action(Of Action))
+            Contract.Requires(control IsNot Nothing)
+            Contract.Requires(getter IsNot Nothing)
+            Contract.Requires(setter IsNot Nothing)
+            Contract.Requires(eventAdder IsNot Nothing)
             Me._control = control
             Me._getter = getter
             Me._setter = setter
@@ -337,7 +349,7 @@
             RaiseEvent ValueChangedSimple(Me)
         End Sub
 
-        Public ReadOnly Property Control As System.Windows.Forms.Control Implements ISimpleValueEditor.Control
+        Public ReadOnly Property Control As Control Implements ISimpleValueEditor.Control
             Get
                 Return _control
             End Get
@@ -345,7 +357,7 @@
 
         Public Property Value As T Implements IValueEditor(Of T).Value
             Get
-                Return _getter()
+                Return _getter().AssumeNotNull
             End Get
             Set(ByVal value As T)
                 Try
@@ -362,7 +374,7 @@
                 Return Me.Value
             End Get
             Set(ByVal value As Object)
-                Me.Value = DirectCast(value, T)
+                Me.Value = DirectCast(value, T).AssumeNotNull
             End Set
         End Property
     End Class

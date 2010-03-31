@@ -308,11 +308,12 @@ Namespace WC3
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(vals IsNot Nothing)
             Dim keyValue = vals.ItemAs(Of KeyValuePair(Of Protocol.NonGameActionType, Object))("value")
+            Contract.Assume(keyValue.Value IsNot Nothing)
 
             'Player Chat
             Select Case keyValue.Key
                 Case Protocol.NonGameActionType.GameChat, Protocol.NonGameActionType.LobbyChat
-                    Dim value = DirectCast(keyValue.Value, NamedValueMap)
+                    Dim value = DirectCast(keyValue.Value, NamedValueMap).AssumeNotNull
                     Dim message = value.ItemAs(Of String)("message")
                     Dim chatType = If(keyValue.Key = Protocol.NonGameActionType.GameChat,
                                       Protocol.ChatType.Game,

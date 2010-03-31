@@ -82,6 +82,9 @@
                                                  wc3Version:=New CachedExternalValues().WC3MajorVersion,
                                                  replayVersion:=My.Settings.ReplayBuildNumber)
 
+            Dim playerCount = CUInt(players.Count)
+            If playerCount <= 0 Then Throw New ArgumentOutOfRangeException("players", "No players.")
+            If playerCount > 12 Then Throw New ArgumentOutOfRangeException("players", "Too many players.")
             Dim primaryPlayer = players.First.AssumeNotNull
             Dim secondaryPlayers = players.Skip(1)
             writer.WriteEntry(MakeStartOfReplay(primaryPlayer.Id,
@@ -89,10 +92,11 @@
                                                 primaryPlayer.PeerData,
                                                 game.Settings.GameDescription.Name,
                                                 game.Settings.GameDescription.GameStats,
-                                                CUInt(secondaryPlayers.Count + 1),
+                                                playerCount,
                                                 game.Settings.GameDescription.GameType))
 
             For Each player In secondaryPlayers
+                Contract.Assume(player IsNot Nothing)
                 writer.WriteEntry(MakePlayerJoined(player.Id, player.Name, player.PeerData))
             Next player
 

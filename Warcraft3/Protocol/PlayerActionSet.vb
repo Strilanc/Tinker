@@ -46,10 +46,8 @@ Namespace WC3.Protocol
         Implements IEquatable(Of SpecificPlayerActionSet)
 
         Private ReadOnly _player As Player
-        Private ReadOnly _actions As IReadableList(Of GameAction)
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_player IsNot Nothing)
-            Contract.Invariant(_actions IsNot Nothing)
         End Sub
         Public Sub New(ByVal player As Player, ByVal actions As IReadableList(Of GameAction))
             MyBase.New(player.Id, actions)
@@ -81,6 +79,7 @@ Namespace WC3.Protocol
                 New PlayerIdJar().Named("source"),
                 New GameActionJar().Repeated.DataSizePrefixed(prefixSize:=2).Named("actions"))
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As PlayerActionSet) As IEnumerable(Of Byte)
             Return DataJar.Pack(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                             {"source", value.Id},
@@ -94,6 +93,7 @@ Namespace WC3.Protocol
             Return value.ParsedWithDataCount(parsed.UsedDataCount)
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As PlayerActionSet) As String
             Return DataJar.Describe(New Dictionary(Of InvariantString, Object) From {
                                             {"source", value.Id},

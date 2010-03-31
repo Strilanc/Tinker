@@ -551,6 +551,7 @@ Namespace WC3.Protocol
 
         <Pure()>
         Public Shared Function TypeIdString(ByVal value As UInt32) As String
+            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
             Dim bytes = value.Bytes()
             If (From b In bytes Where b < 32 Or b >= 128).None Then
                 'Ascii identifier (eg. 'hfoo' for human footman)

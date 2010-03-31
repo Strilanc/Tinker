@@ -54,18 +54,7 @@
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
             If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException()
-            Dim result As ParsedValue(Of T)
-            Try
-                result = SubJar.Parse(data.SubView(0, _dataSize))
-            Catch ex As PicklingException
-                '[Only wrap the exception as 'too limited data' if allowing all data causes it to go away]
-                Try
-                    Dim pickle = SubJar.Parse(data)
-                    Throw New PicklingException("Pickled value could not be parsed from limited data.", ex)
-                Catch exIgnored As PicklingException
-                End Try
-                Throw
-            End Try
+            Dim result = SubJar.Parse(data.SubView(0, _dataSize))
             If result.UsedDataCount <> _dataSize Then Throw New PicklingException("Parsed value did not use exactly {0} bytes.".Frmt(_dataSize))
             Return result
         End Function
@@ -95,18 +84,9 @@
             Return data
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
-            Try
-                Return SubJar.Parse(data.SubView(0, Math.Min(data.Count, _maxDataCount)))
-            Catch ex As PicklingException
-                '[Only wrap the exception as 'too limited data' if allowing all data causes it to go away]
-                Try
-                    Dim pickle = SubJar.Parse(data)
-                    Throw New PicklingException("Pickled value could not be parsed from limited data.", ex)
-                Catch exIgnored As PicklingException
-                End Try
-                Throw
-            End Try
+            Return SubJar.Parse(data.SubView(0, Math.Min(data.Count, _maxDataCount)))
         End Function
     End Class
 
@@ -208,6 +188,7 @@
             End If
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As Tuple(Of Boolean, T)) As String
             If Not value.Item1 Then Return "[Not Included]"
             Return _subJar.Describe(value.Item2)

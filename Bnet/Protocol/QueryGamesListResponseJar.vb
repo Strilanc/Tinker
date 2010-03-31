@@ -69,6 +69,7 @@ Namespace Bnet.Protocol
             Me._clock = clock
         End Sub
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As QueryGamesListResponse) As IEnumerable(Of Byte)
             If value.Games.Count = 0 Then
                 Return 0UI.Bytes.Concat(queryResultJar.Pack(value.Result))
@@ -77,12 +78,13 @@ Namespace Bnet.Protocol
             End If
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of QueryGamesListResponse)
             If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
             If data.SubView(0, 4).ToUInt32 = 0 Then
                 'result of a single-game query
                 Dim parsed = queryResultJar.Parse(data.SubView(4))
-                Return New QueryGamesListResponse(queryResultJar.Parse(data.SubView(4)).Value, {}).ParsedWithDataCount(8)
+                Return New QueryGamesListResponse(parsed.Value, {}).ParsedWithDataCount(8)
             Else
                 'result of a game search
                 Dim parsed = gameDataJar.Parse(data)
@@ -91,6 +93,7 @@ Namespace Bnet.Protocol
             End If
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As QueryGamesListResponse) As String
             Return MakeListDescription({queryResultJar.Describe(value.Result),
                                         gameDataJar.Describe(PackRawGameDescriptions(value.Games))})
@@ -109,6 +112,7 @@ Namespace Bnet.Protocol
             Return (From game In games Select ParseRawGameDescription(game, clock)).ToReadableList
         End Function
 
+        <ContractVerification(False)>
         Private Shared Function PackRawGameDescription(ByVal game As WC3.RemoteGameDescription) As NamedValueMap
             Contract.Requires(game IsNot Nothing)
             Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
@@ -124,15 +128,21 @@ Namespace Bnet.Protocol
                     {"game id", game.GameId},
                     {"game statstring", game.GameStats}}
         End Function
+        <ContractVerification(False)>
         Private Shared Function ParseRawGameDescription(ByVal vals As NamedValueMap, ByVal clock As IClock) As WC3.RemoteGameDescription
             Contract.Requires(vals IsNot Nothing)
+            Contract.Requires(clock IsNot Nothing)
             Contract.Ensures(Contract.Result(Of WC3.RemoteGameDescription)() IsNot Nothing)
             Dim totalSlots = CInt(vals.ItemAs(Of UInt32)("num free slots"))
+            If totalSlots <= 0 Then Throw New PicklingException("Total slots must be positive.")
+            If totalSlots > 12 Then Throw New PicklingException("Total slots must be at most 12.")
+            Dim gameId = vals.ItemAs(Of UInt32)("game id")
+            If gameId <= 0 Then Throw New PicklingException("game id must be positive and non-zero.")
             Dim usedSlots = 0
             Return New WC3.RemoteGameDescription(Name:=vals.ItemAs(Of String)("game name"),
                                                  gamestats:=vals.ItemAs(Of WC3.GameStats)("game statstring"),
                                                  location:=vals.ItemAs(Of Net.IPEndPoint)("host address"),
-                                                 gameId:=CUInt(vals.ItemAs(Of UInt32)("game id")),
+                                                 gameId:=gameId,
                                                  entryKey:=0,
                                                  totalSlotCount:=totalSlots,
                                                  gameType:=vals.ItemAs(Of WC3.Protocol.GameTypes)("game type"),

@@ -4,6 +4,7 @@ Namespace Bnet.Protocol
     Public Class IPAddressJar
         Inherits BaseJar(Of Net.IPAddress)
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As Net.IPAddress) As IEnumerable(Of Byte)
             Return value.GetAddressBytes()
         End Function

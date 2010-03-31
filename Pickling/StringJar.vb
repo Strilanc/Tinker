@@ -26,6 +26,7 @@ Namespace Pickling
             Me._maxCharCount = maxCharCount
         End Sub
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As String) As IEnumerable(Of Byte)
             If value.Length < _minCharCount Then Throw New PicklingException("Need at least {0} characters.".Frmt(_minCharCount))
             If _maxCharCount.HasValue AndAlso value.Length > _maxCharCount Then Throw New PicklingException("Need at most {0} characters.".Frmt(_maxCharCount))
@@ -46,6 +47,7 @@ Namespace Pickling
             Return """{0}""".Frmt(value)
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function MakeControl() As IValueEditor(Of String)
             Dim control = New TextBox()
             If _maxCharCount.HasValue Then control.MaxLength = _maxCharCount.Value

@@ -21,6 +21,7 @@ Namespace Pickling
             Me._useSingleLineDescription = useSingleLineDescription
         End Sub
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As KeyValuePair(Of TKey, Object)) As IEnumerable(Of Byte)
             If Not _valueJars.ContainsKey(value.Key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(value.Key))
             Dim keyData = _keyJar.Pack(value.Key)
@@ -37,16 +38,19 @@ Namespace Pickling
             Return value.ParsedWithDataCount(parsedKey.UsedDataCount + parsedValue.UsedDataCount)
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As KeyValuePair(Of TKey, Object)) As String
+            Dim keyDesc = _keyJar.Describe(value.Key)
+            Dim valueDesc = _valueJars(value.Key).Value.Describe(value.Value)
             Return If(_useSingleLineDescription,
-                      "{0}: {1}".Frmt(_keyJar.Describe(value.Key), _valueJars(value.Key).Value.Describe(value.Value)),
-                      {_keyJar.Describe(value.Key), _valueJars(value.Key).Value.Describe(value.Value)}.StringJoin(Environment.NewLine))
+                      "{0}: {1}".Frmt(keyDesc, valueDesc),
+                      {keyDesc, valueDesc}.StringJoin(Environment.NewLine))
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of KeyValuePair(Of TKey, Object))
             Dim keyControl = _keyJar.MakeControl()
             If Not _valueJars.ContainsKey(keyControl.Value) Then
-                keyControl.Value = _valueJars.Keys.First
+                keyControl.Value = _valueJars.Keys.First.AssumeNotNull
             End If
             Dim valueControl = _valueJars(keyControl.Value).Value.MakeControl()
             Dim panel = PanelWithControls({keyControl.Control, valueControl.Control}, borderStyle:=BorderStyle.FixedSingle)

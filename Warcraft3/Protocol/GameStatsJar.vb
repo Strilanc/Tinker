@@ -38,6 +38,7 @@ Namespace WC3.Protocol
                     New ByteJar().Named("unknown2"),
                     New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum"))
 
+        <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As GameStats) As IEnumerable(Of Byte)
             Return EncodeStatStringData(DataJar.Pack(PackDataValue(value))).Append(0)
         End Function
@@ -192,6 +193,10 @@ Namespace WC3.Protocol
                    Select decodedValue = valueMaskBitPair.Item1.WithBitSetTo(bitPosition:=0, bitValue:=valueMaskBitPair.Item2)
         End Function
 
+        <ContractVerification(False)>
+        Public Overrides Function Describe(ByVal value As GameStats) As String
+            Return DataJar.Describe(PackDataValue(value))
+        End Function
         Public Overrides Function MakeControl() As IValueEditor(Of GameStats)
             Dim subControl = DataJar.MakeControl()
             Return New DelegatedValueEditor(Of GameStats)(
