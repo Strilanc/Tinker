@@ -24,7 +24,7 @@
             Contract.Requires(game IsNot Nothing)
 
             Dim tickHandler As Game.TickEventHandler =
-                    Sub(sender, duration, actions) inQueue.QueueAction(Sub() OnTick(duration, actions))
+                    Sub(sender, duration, actualActions, visibleActions) inQueue.QueueAction(Sub() OnTick(duration, visibleActions))
             Dim chatHandler As Game.PlayerTalkedEventHandler =
                     Sub(sender, speaker, text, receivers) inQueue.QueueAction(Sub() OnChat(speaker, text, receivers))
             Dim leaveHandler As Game.PlayerLeftEventHandler =
@@ -115,9 +115,13 @@
         End Function
 
         Private Sub OnTick(ByVal duration As UShort,
-                           ByVal actions As IReadableList(Of Tuple(Of Player, Protocol.PlayerActionSet)))
-            Contract.Requires(actions IsNot Nothing)
-            _writer.WriteEntry(MakeTick(duration, (From action In actions Select action.Item2).ToReadableList))
+                           ByVal visibleActionStreaks As IReadableList(Of IReadableList(Of Protocol.PlayerActionSet)))
+            Contract.Requires(visibleActionStreaks IsNot Nothing)
+            For Each visibleActionStreak In visibleActionStreaks.SkipLast(1)
+                _writer.WriteEntry(MakeTickPreOverflow(visibleActionStreak))
+            Next visibleActionStreak
+            _writer.WriteEntry(MakeTick(duration, If(visibleActionStreaks.LastOrDefault,
+                                                     New Protocol.PlayerActionSet() {}.AsReadableList)))
         End Sub
         Private Sub OnChat(ByVal speaker As Player,
                            ByVal text As String,

@@ -44,18 +44,23 @@ Namespace WC3
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord,
-                             ByVal actions As IReadableList(Of Protocol.PlayerActionSet))
+                             ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet)))
+            Contract.Requires(actionStreaks IsNot Nothing)
             Contract.Requires(record IsNot Nothing)
             If isFake Then Return
             tickQueue.Enqueue(record)
             maxTockTime += record.length
-            SendPacket(Protocol.MakeTick(record.length, actions))
+            For Each preOverflowActionStreak In actionStreaks.SkipLast(1)
+                SendPacket(Protocol.MakeTickPreOverflow(preOverflowActionStreak))
+            Next preOverflowActionStreak
+            SendPacket(Protocol.MakeTick(record.length, actionStreaks.LastOrDefault))
         End Sub
         Public Function QueueSendTick(ByVal record As TickRecord,
-                                      ByVal actions As IReadableList(Of Protocol.PlayerActionSet)) As Task
+                                      ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet))) As Task
             Contract.Requires(record IsNot Nothing)
+            Contract.Requires(actionStreaks IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Return inQueue.QueueAction(Sub() SendTick(record, actions))
+            Return inQueue.QueueAction(Sub() SendTick(record, actionStreaks))
         End Function
 
         Private Sub ReceiveRequestDropLaggers(ByVal pickle As ISimplePickle)

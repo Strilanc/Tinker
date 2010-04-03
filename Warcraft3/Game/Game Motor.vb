@@ -4,7 +4,7 @@
 
         Private ReadOnly _kernel As GameKernel
         Private ReadOnly _lobby As GameLobby
-        Private ReadOnly _gameDataQueue As New Queue(Of Protocol.SpecificPlayerActionSet)
+        Private ReadOnly _actionsForNextTick As New List(Of Protocol.SpecificPlayerActionSet)
 
         Private _laggingPlayers As New List(Of Player)
         Private _gameTime As Integer
@@ -17,7 +17,10 @@
         Private ReadOnly _init As New OnetimeLock
 
         Public Event ReceivedPlayerActions(ByVal sender As GameMotor, ByVal player As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
-        Public Event Tick(ByVal sender As GameMotor, ByVal timeSpan As UShort, ByVal actionSets As IReadableList(Of Tuple(Of Player, Protocol.PlayerActionSet)))
+        Public Event Tick(ByVal sender As GameMotor,
+                          ByVal timeSpan As UShort,
+                          ByVal actualActionStreaks As IReadableList(Of IReadableList(Of Protocol.SpecificPlayerActionSet)),
+                          ByVal visibleActionStreaks As IReadableList(Of IReadableList(Of Protocol.PlayerActionSet)))
         Public Event RemovePlayer(ByVal sender As GameMotor, ByVal player As Player, ByVal wasExpected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -29,7 +32,7 @@
             Contract.Invariant(_kernel IsNot Nothing)
             Contract.Invariant(_lobby IsNot Nothing)
             Contract.Invariant(_gameTime >= 0)
-            Contract.Invariant(_gameDataQueue IsNot Nothing)
+            Contract.Invariant(_actionsForNextTick IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal defaultSpeedFactor As Double,
@@ -79,7 +82,7 @@
         Private Sub OnReceiveGameActions(ByVal sender As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
             Contract.Requires(sender IsNot Nothing)
             Contract.Requires(actions IsNot Nothing)
-            _gameDataQueue.Enqueue(New Protocol.SpecificPlayerActionSet(sender, actions))
+            _actionsForNextTick.Add(New Protocol.SpecificPlayerActionSet(sender, actions))
             RaiseEvent ReceivedPlayerActions(Me, sender, actions)
 
             '[async lag -wait command detection]
@@ -160,42 +163,56 @@
                 End If
             End If
         End Sub
+
+        Private Function SplitSequenceByDataSize(Of T)(ByVal sequence As IEnumerable(Of T),
+                                                       ByVal measure As Func(Of T, Int32),
+                                                       ByVal maxDataSize As Int32) As IReadableList(Of IReadableList(Of T))
+            Contract.Requires(sequence IsNot Nothing)
+            Contract.Requires(maxDataSize > 0)
+            Contract.Requires(measure IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of T)))() IsNot Nothing)
+            Dim result = New List(Of IReadableList(Of T))
+            Dim subSequence = New List(Of T)
+            Dim subSequenceDataCount = 0
+            For Each item In sequence
+                Dim itemDataCount = measure(item)
+                If itemDataCount > maxDataSize Then
+                    Throw New ArgumentException("Unable to fit an item within the max data size.", "maxDataSize")
+                ElseIf subSequenceDataCount + itemDataCount > maxDataSize Then
+                    subSequenceDataCount = 0
+                    result.Add(subSequence.AsReadableList)
+                    subSequence = New List(Of T)
+                End If
+                subSequence.Add(item)
+            Next item
+            Return result.AsReadableList
+        End Function
         <ContractVerification(False)>
         Private Sub SendQueuedGameData(ByVal record As TickRecord)
             Contract.Requires(record IsNot Nothing)
             'Include all the data we can fit in a packet
             Dim totalDataLength = 0
-            Dim outgoingActions = New List(Of Tuple(Of Player, Protocol.PlayerActionSet))(capacity:=_gameDataQueue.Count)
+
+            '[20 includes headers and a small safety margin]
             Dim jar = New Protocol.PlayerActionSetJar()
-            While _gameDataQueue.Count > 0
-                'peek
-                Dim e = _gameDataQueue.Peek()
-                Contract.Assume(e IsNot Nothing)
-                Dim actionDataLength = jar.Pack(e).Count
-                If totalDataLength + actionDataLength >= PacketSocket.DefaultBufferSize - 20 Then '[20 includes headers and a small safety margin]
-                    Exit While
-                End If
+            Dim actualActions = SplitSequenceByDataSize(_actionsForNextTick,
+                                                        Function(e) jar.Pack(e).Count,
+                                                        PacketSocket.DefaultBufferSize - 20)
+            _actionsForNextTick.Clear()
 
-                _gameDataQueue.Dequeue()
-                outgoingActions.Add(Tuple.Create(e.Player, New Protocol.PlayerActionSet(_lobby.GetVisiblePlayer(e.Player).Id, e.Actions)))
-                totalDataLength += actionDataLength
-            End While
+            'Adjust actions so they always appear to come from visible players
+            Dim visibleActions = (From subSequence In actualActions
+                                  Select (From actionSet In subSequence
+                                          Let id = _lobby.GetVisiblePlayer(actionSet.Player).Id
+                                          Select New Protocol.PlayerActionSet(id, actionSet.Actions)
+                                          ).ToReadableList
+                                  ).ToReadableList
 
-            'Send data
             For Each player In _kernel.Players
-                Contract.Assume(player IsNot Nothing)
-                If _lobby.IsPlayerVisible(player) Then
-                    player.QueueSendTick(record, (From e In outgoingActions Select e.Item2).ToReadableList)
-                Else
-                    Dim player_ = player
-                    player.QueueSendTick(record, (From e In outgoingActions
-                                                  Let pid = If(e.Item1 Is player_, player_, _lobby.GetVisiblePlayer(e.Item1)).Id
-                                                  Select New Protocol.PlayerActionSet(pid, e.Item2.Actions)
-                                                  ).ToReadableList)
-                End If
+                player.QueueSendTick(record, visibleActions)
             Next player
 
-            RaiseEvent Tick(Me, record.length, outgoingActions.AsReadableList)
+            RaiseEvent Tick(Me, record.length, actualActions, visibleActions)
         End Sub
 
         Public Function QueueGetTickPeriod() As Task(Of TimeSpan)

@@ -509,6 +509,13 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
         Return sequence.Skip(Math.Max(0, sequence.Count - count))
     End Function
+    <Extension()>
+    Public Function SkipLast(Of T)(ByVal sequence As IEnumerable(Of T), ByVal count As Integer) As IEnumerable(Of T)
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(count >= 0)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
+        Return sequence.Take(Math.Max(0, sequence.Count - count))
+    End Function
 
     <Extension()>
     Public Function PanelWithControls(ByVal controls As IEnumerable(Of Control),

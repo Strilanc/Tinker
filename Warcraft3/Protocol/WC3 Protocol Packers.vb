@@ -145,6 +145,15 @@ Namespace WC3.Protocol
             Return Packet.FromValue(Packets.HostConfirmHostLeaving, New Object)
         End Function
         <Pure()>
+        Public Function MakeTickPreOverflow(ByVal actions As IReadableList(Of PlayerActionSet),
+                                            Optional ByVal timeSpan As UShort = 0) As Packet
+            Contract.Requires(actions IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
+            Return Packet.FromValue(Packets.TickPreOverflow, New Dictionary(Of InvariantString, Object) From {
+                    {"time span", timeSpan},
+                    {"player action sets", Tuple.Create(True, actions)}})
+        End Function
+        <Pure()>
         Public Function MakeTick(ByVal timeSpan As UShort,
                                  Optional ByVal actions As IReadableList(Of PlayerActionSet) = Nothing) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)

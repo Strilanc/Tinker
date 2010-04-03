@@ -113,6 +113,15 @@ Namespace WC3.Replay
                         {"message", message}})}})
         End Function
         <Pure()>
+        Public Function MakeTickPreOverflow(ByVal actions As IReadableList(Of Protocol.PlayerActionSet),
+                                            Optional ByVal duration As UInt16 = Nothing) As ReplayEntry
+            Contract.Requires(actions IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
+            Return ReplayEntry.FromValue(Format.ReplayEntryTickPreOverflow, New Dictionary(Of InvariantString, Object) From {
+                    {"time span", duration},
+                    {"player action sets", actions}})
+        End Function
+        <Pure()>
         Public Function MakeTick(ByVal duration As UInt16,
                                  ByVal actions As IReadableList(Of Protocol.PlayerActionSet)) As ReplayEntry
             Contract.Requires(actions IsNot Nothing)

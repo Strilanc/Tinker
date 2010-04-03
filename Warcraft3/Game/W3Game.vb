@@ -40,7 +40,10 @@ Namespace WC3
         Public Event PlayerLeft(ByVal sender As Game, ByVal state As GameState, ByVal leaver As Player, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
         Public Event ChangedState(ByVal sender As Game, ByVal oldState As GameState, ByVal newState As GameState)
         Public Event ReceivedPlayerActions(ByVal sender As Game, ByVal player As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
-        Public Event Tick(ByVal sender As Game, ByVal timeSpan As UShort, ByVal actionSets As IReadableList(Of Tuple(Of Player, Protocol.PlayerActionSet)))
+        Public Event Tick(ByVal sender As Game,
+                          ByVal timeSpan As UShort,
+                          ByVal actualActionStreaks As IReadableList(Of IReadableList(Of Protocol.SpecificPlayerActionSet)),
+                          ByVal visibleActionStreaks As IReadableList(Of IReadableList(Of Protocol.PlayerActionSet)))
         Public Event RecordGameStarted(ByVal sender As Game)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
@@ -157,11 +160,15 @@ Namespace WC3
                                                   End Sub
             AddHandler _lobby.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
             AddHandler _motor.RemovePlayer, Sub(sender, player, wasExpected, reportedReason, reasonDescription) RemovePlayer(player, wasExpected, reportedReason, reasonDescription)
-            AddHandler _motor.Tick, Sub(sender, timeSpan, actionSets) _kernel.OutQueue.QueueAction(Sub() RaiseEvent Tick(Me, timeSpan, actionSets))
+            AddHandler _motor.Tick, Sub(sender, timeSpan, actualActions, visibleActions) _kernel.OutQueue.QueueAction(Sub() RaiseEvent Tick(Me, timeSpan, actualActions, visibleActions))
             AddHandler _motor.ReceivedPlayerActions, Sub(sender, player, actions) _kernel.OutQueue.QueueAction(Sub() RaiseEvent ReceivedPlayerActions(Me, player, actions))
             AddHandler _kernel.ChangedState, Sub(sender, oldState, newState) _kernel.OutQueue.QueueAction(Sub() RaiseEvent ChangedState(Me, oldState, newState))
             AddHandler _loadScreen.RecordGameStarted, Sub(sender) _kernel.OutQueue.QueueAction(Sub() RaiseEvent RecordGameStarted(Me))
-            AddHandler _loadScreen.EmptyTick, Sub(sender) _kernel.OutQueue.QueueAction(Sub() RaiseEvent Tick(Me, 0, New Tuple(Of Player, Protocol.PlayerActionSet)() {}.AsReadableList))
+            AddHandler _loadScreen.EmptyTick, Sub(sender) _kernel.OutQueue.QueueAction(
+                Sub() RaiseEvent Tick(sender:=Me,
+                                      TimeSpan:=0,
+                                      actualActionStreaks:=New IReadableList(Of Protocol.SpecificPlayerActionSet)() {}.AsReadableList,
+                                      visibleActionStreaks:=New IReadableList(Of Protocol.PlayerActionSet)() {}.AsReadableList))
             AddHandler _loadScreen.Finished, Sub(sender) _motor.QueueStart()
         End Sub
 
