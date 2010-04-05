@@ -133,7 +133,7 @@ Namespace WC3.Replay
                 New ByteJar().Named("unknown2"),
                 New Protocol.GameStatsJar().Named("game stats"),
                 New UInt32Jar().Named("player count"),
-                New EnumUInt32Jar(Of Protocol.GameTypes)().Named("game type"),
+                New EnumUInt32Jar(Of Protocol.GameTypes)(checkDefined:=False).Named("game type"),
                 New UInt32Jar().Named("language"))
         Public Shared ReadOnly ReplayEntryPlayerJoined As Definition(Of NamedValueMap) = Define(ReplayEntryId.PlayerJoined,
                 New PlayerIdJar().Named("joiner id"),
