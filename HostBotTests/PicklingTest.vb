@@ -443,12 +443,12 @@ Public Class PicklingTest
                                                     {5, New UInt16Jar()}})
         JarTest(jar,
                 equater:=Function(e1, e2) e1.Key = e2.Key AndAlso ObjectEqual(e1.Value, e2.Value),
-                value:=New KeyValuePair(Of UInt32, Object)(3UI, CByte(10)),
+                value:=3UI.KeyValue(Of Object)(CByte(10)),
                 data:={3, 0, 0, 0,
                        10})
         JarTest(jar,
                 equater:=Function(e1, e2) e1.Key = e2.Key AndAlso ObjectEqual(e1.Value, e2.Value),
-                value:=New KeyValuePair(Of UInt32, Object)(5UI, 10US),
+                value:=5UI.KeyValue(Of Object)(10US),
                 data:={5, 0, 0, 0,
                        10, 0})
     End Sub

@@ -95,8 +95,7 @@ Namespace WC3.Replay
             Return ReplayEntry.FromValue(Format.ReplayEntryChatMessage, New Dictionary(Of InvariantString, Object) From {
                     {"speaker", sender},
                     {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                        {"type group", New KeyValuePair(Of Protocol.ChatType, Object)(Protocol.ChatType.Lobby,
-                                                                                      New EmptyJar.EmptyValue)},
+                        {"type group", Protocol.ChatType.Lobby.KeyValue(Of Object)(New EmptyJar.EmptyValue)},
                         {"message", message}})}})
         End Function
         <Pure()>
@@ -108,8 +107,7 @@ Namespace WC3.Replay
             Return ReplayEntry.FromValue(Format.ReplayEntryChatMessage, New Dictionary(Of InvariantString, Object) From {
                     {"speaker", sender},
                     {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                        {"type group", New KeyValuePair(Of Protocol.ChatType, Object)(Protocol.ChatType.Game,
-                                                                                      receivingGroup)},
+                        {"type group", Protocol.ChatType.Game.KeyValue(Of Object)(receivingGroup)},
                         {"message", message}})}})
         End Function
         <Pure()>

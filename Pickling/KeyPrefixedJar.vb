@@ -34,7 +34,7 @@ Namespace Pickling
             If Not _valueJars.ContainsKey(parsedKey.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(parsedKey.Value))
             Dim parsedValue = _valueJars(parsedKey.Value).Value.Parse(data.SubView(parsedKey.UsedDataCount))
 
-            Dim value = New KeyValuePair(Of TKey, Object)(parsedKey.Value, parsedValue.Value)
+            Dim value = parsedKey.Value.KeyValue(parsedValue.Value)
             Return value.ParsedWithDataCount(parsedKey.UsedDataCount + parsedValue.UsedDataCount)
         End Function
 
@@ -76,7 +76,7 @@ Namespace Pickling
                                 AddHandler valueControl.ValueChanged, Sub() action()
                                 handlers.Add(action)
                             End Sub,
-                getter:=Function() New KeyValuePair(Of TKey, Object)(keyControl.Value, valueControl.Value),
+                getter:=Function() keyControl.Value.KeyValue(valueControl.Value),
                 setter:=Sub(value)
                             keyControl.Value = value.Key
                             valueControl.Value = value.Value

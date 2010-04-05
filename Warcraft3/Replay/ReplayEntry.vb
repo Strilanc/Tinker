@@ -41,7 +41,7 @@ Namespace WC3.Replay
 
         Public Shared Widening Operator CType(ByVal value As ReplayEntry) As KeyValuePair(Of ReplayEntryId, Object)
             Contract.Requires(value IsNot Nothing)
-            Return New KeyValuePair(Of ReplayEntryId, Object)(value.Id, value.Payload)
+            Return value.Id.KeyValue(value.Payload)
         End Operator
         Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of ReplayEntryId, Object)) As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)

@@ -34,13 +34,13 @@ Namespace WC3.Protocol
                     Return Packet.FromValue(Packets.Text, New Dictionary(Of InvariantString, Object) From {
                             {"requested receivers", receivers.ToReadableList},
                             {"speaker", sender},
-                            {"type group", New KeyValuePair(Of ChatType, Object)(chatType, receivingGroup.Value)},
+                            {"type group", chatType.KeyValue(Of Object)(receivingGroup.Value)},
                             {"message", text}})
                 Case chatType.Lobby
                     Return Packet.FromValue(Packets.Text, New Dictionary(Of InvariantString, Object) From {
                             {"requested receivers", receivers.ToReadableList},
                             {"speaker", sender},
-                            {"type group", New KeyValuePair(Of ChatType, Object)(chatType, New EmptyJar.EmptyValue)},
+                            {"type group", chatType.KeyValue(Of Object)(New EmptyJar.EmptyValue)},
                             {"message", text}})
                 Case Else
                     Throw chatType.MakeArgumentValueException("chatType")

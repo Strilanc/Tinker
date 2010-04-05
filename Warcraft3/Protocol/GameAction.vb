@@ -41,7 +41,7 @@ Namespace WC3.Protocol
 
         Public Shared Widening Operator CType(ByVal value As GameAction) As KeyValuePair(Of GameActionId, Object)
             Contract.Requires(value IsNot Nothing)
-            Return New KeyValuePair(Of GameActionId, Object)(value.Id, value.Payload)
+            Return value.Id.KeyValue(value.Payload)
         End Operator
         Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of GameActionId, Object)) As GameAction
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
