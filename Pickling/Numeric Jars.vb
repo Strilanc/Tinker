@@ -23,6 +23,17 @@
                       "0x" + value.ToString("X4", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
+        Public Overrides Function Parse(ByVal text As String) As Byte
+            Try
+                If New InvariantString(text).StartsWith("0x") Then
+                    Return Byte.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+                Else
+                    Return Byte.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
+                End If
+            Catch ex As ArgumentException
+                Throw New PicklingException("'{0}' is not a Byte value.".Frmt(text), ex)
+            End Try
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of Byte)
             Dim control = New NumericUpDown()
@@ -64,6 +75,17 @@
             Return If(_showHex,
                       "0x" + value.ToString("X4", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
+        End Function
+        Public Overrides Function Parse(ByVal text As String) As UInt16
+            Try
+                If New InvariantString(text).StartsWith("0x") Then
+                    Return UInt16.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+                Else
+                    Return UInt16.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
+                End If
+            Catch ex As ArgumentException
+                Throw New PicklingException("'{0}' is not a UInt16 value.".Frmt(text), ex)
+            End Try
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of UInt16)
@@ -107,6 +129,17 @@
                       "0x" + value.ToString("X8", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
+        Public Overrides Function Parse(ByVal text As String) As UInt32
+            Try
+                If New InvariantString(text).StartsWith("0x") Then
+                    Return UInt32.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+                Else
+                    Return UInt32.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
+                End If
+            Catch ex As ArgumentException
+                Throw New PicklingException("'{0}' is not a UInt32 value.".Frmt(text), ex)
+            End Try
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of UInt32)
             Dim control = New NumericUpDown()
@@ -149,8 +182,7 @@
                       "0x" + value.ToString("X16", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
-        Public Overloads Function Parse(ByVal text As String) As UInt64
-            Contract.Requires(text IsNot Nothing)
+        Public Overrides Function Parse(ByVal text As String) As UInt64
             Try
                 If New InvariantString(text).StartsWith("0x") Then
                     Return UInt64.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
@@ -160,16 +192,6 @@
             Catch ex As ArgumentException
                 Throw New PicklingException("'{0}' is not a UInt64 value.".Frmt(text), ex)
             End Try
-        End Function
-
-        Public Overrides Function MakeControl() As IValueEditor(Of UInt64)
-            Dim control = New TextBox()
-            control.Text = Describe(0)
-            Return New DelegatedValueEditor(Of UInt64)(
-                control:=control,
-                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
-                getter:=Function() Parse(control.Text),
-                setter:=Sub(value) control.Text = Describe(value))
         End Function
     End Class
 
@@ -189,23 +211,12 @@
         Public Overrides Function Describe(ByVal value As Single) As String
             Return value.ToString("r", CultureInfo.InvariantCulture)
         End Function
-        Public Overloads Function Parse(ByVal text As String) As Single
-            Contract.Requires(text IsNot Nothing)
+        Public Overrides Function Parse(ByVal text As String) As Single
             Try
                 Return Single.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
             Catch ex As ArgumentException
                 Throw New PicklingException("'{0}' is not a Single-precision value.".Frmt(text), ex)
             End Try
-        End Function
-
-        Public Overrides Function MakeControl() As IValueEditor(Of Single)
-            Dim control = New TextBox()
-            control.Text = Describe(0)
-            Return New DelegatedValueEditor(Of Single)(
-                control:=control,
-                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
-                getter:=Function() Parse(control.Text),
-                setter:=Sub(value) control.Text = Describe(value))
         End Function
     End Class
 
@@ -225,23 +236,12 @@
         Public Overrides Function Describe(ByVal value As Double) As String
             Return value.ToString("r", CultureInfo.InvariantCulture)
         End Function
-        Public Overloads Function Parse(ByVal text As String) As Double
-            Contract.Requires(text IsNot Nothing)
+        Public Overrides Function Parse(ByVal text As String) As Double
             Try
                 Return Double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
             Catch ex As ArgumentException
                 Throw New PicklingException("'{0}' is not a Double-precision value.".Frmt(text), ex)
             End Try
-        End Function
-
-        Public Overrides Function MakeControl() As IValueEditor(Of Double)
-            Dim control = New TextBox()
-            control.Text = Describe(0)
-            Return New DelegatedValueEditor(Of Double)(
-                control:=control,
-                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
-                getter:=Function() Parse(control.Text),
-                setter:=Sub(value) control.Text = Describe(value))
         End Function
     End Class
 End Namespace

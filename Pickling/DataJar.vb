@@ -14,36 +14,18 @@ Namespace Pickling
         Public Overrides Function Describe(ByVal value As IReadableList(Of Byte)) As String
             Return "[{0}]".Frmt(value.ToHexString)
         End Function
-
-        Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of Byte))
-            Dim control = New TextBox()
-            control.Text = ""
-            AddHandler control.TextChanged, Sub()
-                                                Try
-                                                    Dim v = (From word In DirectCast(control, TextBox).Text.Split(" "c)
-                                                             Where word <> ""
-                                                             Select CByte(word.FromHexToUInt64(ByteOrder.BigEndian))
-                                                             ).ToReadableList
-                                                    control.BackColor = SystemColors.Window
-                                                Catch ex As Exception When TypeOf ex Is ArgumentException OrElse
-                                                                           TypeOf ex Is OverflowException
-                                                    control.BackColor = Color.Pink
-                                                End Try
-                                            End Sub
-            Return New DelegatedValueEditor(Of IReadableList(Of Byte))(
-                control:=control,
-                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
-                getter:=Function()
-                            Try
-                                Return (From word In DirectCast(control, TextBox).Text.Split(" "c)
-                                        Where word <> ""
-                                        Select CByte(word.FromHexToUInt64(ByteOrder.BigEndian))
-                                        ).ToReadableList
-                            Catch ex As ArgumentException
-                                Throw New PicklingException("Invalid hex data.", ex)
-                            End Try
-                        End Function,
-                setter:=Sub(value) control.Text = value.ToHexString)
+        Public Overrides Function Parse(ByVal text As String) As IReadableList(Of Byte)
+            Try
+                Dim byteText = text
+                If byteText.StartsWith("[") Then byteText = byteText.Substring(1)
+                If byteText.EndsWith("]") Then byteText = byteText.Substring(0, byteText.Length - 1)
+                Return (From word In byteText.Split({" "}, StringSplitOptions.RemoveEmptyEntries)
+                        Select Byte.Parse(word, NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+                        ).ToReadableList
+            Catch ex As Exception When TypeOf ex Is ArgumentException OrElse
+                                       TypeOf ex Is FormatException
+                Throw New PicklingException("Invalid hex data.", ex)
+            End Try
         End Function
     End Class
 End Namespace

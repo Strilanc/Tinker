@@ -27,6 +27,9 @@
         Public Overrides Function MakeControl() As IValueEditor(Of T)
             Return _subJar.MakeControl()
         End Function
+        Public Overrides Function Parse(ByVal text As String) As T
+            Return _subJar.Parse(text)
+        End Function
     End Class
 
     '''<summary>Pickles values with data of a specified size.</summary>
@@ -192,11 +195,15 @@
             If Not value.HasValue Then Return "[Not Included]"
             Return _subJar.Describe(value.Value)
         End Function
+        Public Overrides Function Parse(ByVal text As String) As Maybe(Of T)
+            If text = "[Not Included]" Then Return Nothing
+            Return _subJar.Parse(text)
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of Maybe(Of T))
             Dim checkControl = New CheckBox()
             checkControl.Text = "Included"
-            checkControl.Checked = True
+            checkControl.Checked = False
             Dim valueControl = _subJar.MakeControl()
             Dim panel = PanelWithControls({checkControl, valueControl.Control})
             AddHandler checkControl.CheckedChanged, Sub() valueControl.Control.Enabled = checkControl.Checked
@@ -210,8 +217,12 @@
                             End Sub,
                 getter:=Function() If(checkControl.Checked, valueControl.Value.Maybe, New Maybe(Of T)()),
                 setter:=Sub(value)
-                            checkControl.Checked = value.HasValue
-                            If value.HasValue Then valueControl.Value = value.Value
+                            If value.HasValue Then
+                                If Not checkControl.Checked OrElse Not valueControl.Value.Equals(value.Value) Then
+                                    valueControl.Value = value.Value
+                                End If
+                            End If
+                            If checkControl.Checked <> value.HasValue Then checkControl.Checked = value.HasValue
                         End Sub)
         End Function
     End Class

@@ -64,6 +64,17 @@ Namespace WC3
             Return New PlayerId(data.First).ParsedWithDataCount(1)
         End Function
 
+        Public Overrides Function Parse(ByVal text As String) As PlayerId
+            Dim index As Byte
+            If text.StartsWith("pid") Then
+                index = Byte.Parse(text.Substring(3))
+            Else
+                index = Byte.Parse(text)
+            End If
+            If index < 1 OrElse index > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(index))
+            Return New PlayerId(index)
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of PlayerId)
             Dim label = New Label()
             Dim control = New NumericUpDown()

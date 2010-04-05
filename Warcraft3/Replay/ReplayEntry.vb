@@ -89,6 +89,9 @@ Namespace WC3.Replay
         Public Overrides Function Describe(ByVal value As ReplayEntry) As String
             Return SubJar.Describe(value)
         End Function
+        Public Overrides Function Parse(ByVal text As String) As ReplayEntry
+            Return SubJar.Parse(text)
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of ReplayEntry)
             Dim subControl = SubJar.MakeControl()

@@ -99,6 +99,11 @@ Namespace WC3.Protocol
                                             {"source", value.Id},
                                             {"actions", value.Actions}})
         End Function
+        Public Overrides Function Parse(ByVal text As String) As PlayerActionSet
+            Dim parsed = DataJar.Parse(text)
+            Return New PlayerActionSet(parsed.ItemAs(Of PlayerId)("source"),
+                                       parsed.ItemAs(Of IReadableList(Of GameAction))("actions"))
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of PlayerActionSet)
             Dim subControl = DataJar.MakeControl()

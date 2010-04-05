@@ -13,23 +13,12 @@ Namespace Bnet.Protocol
             Return DateTime.FromFileTime(data.Take(8).ToUInt64.BitwiseToInt64).ParsedWithDataCount(8)
         End Function
 
-        Public Overrides Function MakeControl() As IValueEditor(Of DateTime)
-            Dim control = New TextBox()
-            control.Text = DateTime.Now().ToString(CultureInfo.InvariantCulture)
-            AddHandler control.TextChanged, Sub() control.BackColor = If(Date.TryParse(control.Text, CultureInfo.InvariantCulture, DateTimeStyles.None, Nothing),
-                                                                         SystemColors.Window,
-                                                                         Color.Pink)
-            Return New DelegatedValueEditor(Of DateTime)(
-                control:=control,
-                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
-                getter:=Function()
-                            Try
-                                Return DateTime.Parse(control.Text, CultureInfo.InvariantCulture, DateTimeStyles.None)
-                            Catch ex As ArgumentException
-                                Throw New PicklingException("'{0}' is not a DateTime.".Frmt(control.Text), ex)
-                            End Try
-                        End Function,
-                setter:=Sub(value) control.Text = value.ToString(CultureInfo.InvariantCulture))
+        Public Overrides Function Parse(ByVal text As String) As DateTime
+            Try
+                Return DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.None)
+            Catch ex As ArgumentException
+                Throw New PicklingException("'{0}' is not a DateTime.".Frmt(text), ex)
+            End Try
         End Function
     End Class
 End Namespace

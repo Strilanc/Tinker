@@ -20,8 +20,7 @@ Namespace WC3.Protocol
                 Return "0x{0}".Frmt(value.ToString("X"))
             End If
         End Function
-        Public Overloads Function Parse(ByVal text As String) As UInt32
-            Contract.Requires(text IsNot Nothing)
+        Public Overrides Function Parse(ByVal text As String) As UInt32
             Try
                 If text Like New InvariantString("type '????'") Then
                     Dim bytes = System.Text.Encoding.ASCII.GetBytes(text.Substring("type '".Length, "????".Length))

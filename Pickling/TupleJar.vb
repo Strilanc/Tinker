@@ -47,6 +47,11 @@ Namespace Pickling
         Public Overrides Function Describe(ByVal value As NamedValueMap) As String
             Return (From subJar In _subJars Select subJar.Describe(value.ItemRaw(subJar.Name))).MakeListDescription(_useSingleLineDescription)
         End Function
+        Public Overrides Function Parse(ByVal text As String) As NamedValueMap
+            Return _subJars.Zip(text.SplitListDescription(_useSingleLineDescription)).ToDictionary(
+                keySelector:=Function(pair) pair.Item1.Name,
+                elementSelector:=Function(pair) pair.Item1.Parse(pair.Item2))
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of NamedValueMap)
             Dim subControls = (From subJar In _subJars Select (subJar.MakeControl())).Cache
@@ -65,7 +70,9 @@ Namespace Pickling
                 getter:=Function() _subJars.Zip(subControls).ToDictionary(Function(e) e.Item1.Name, Function(e) e.Item2.Value),
                 setter:=Sub(value)
                             For Each pair In _subJars.Zip(subControls)
-                                pair.Item2.Value = value.ItemRaw(pair.Item1.Name)
+                                Dim c = pair.Item2
+                                Dim v = value.ItemRaw(pair.Item1.Name)
+                                If Not c.Value.Equals(v) Then c.Value = v
                             Next pair
                         End Sub)
         End Function

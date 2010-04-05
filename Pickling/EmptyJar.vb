@@ -25,6 +25,10 @@ Namespace Pickling
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of EmptyValue)
             Return New ParsedValue(Of EmptyValue)(New EmptyValue, 0)
         End Function
+        Public Overrides Function Parse(ByVal text As String) As EmptyValue
+            If text <> "[No Data]" Then Throw New PicklingException("Not [No Data].")
+            Return New EmptyValue()
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of EmptyValue)
             Dim control = New Label()

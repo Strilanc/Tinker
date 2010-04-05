@@ -57,7 +57,35 @@
                 Return descriptions.StringJoin("; ")
             Else
                 If descriptions.None Then Return "{}"
-                Return {"{", descriptions.StringJoin(Environment.NewLine).Indent("    "), "}"}.StringJoin(Environment.NewLine)
+                Return {"{", descriptions.StringJoin(Environment.NewLine).Indent(New String(" "c, 4)), "}"}.StringJoin(Environment.NewLine)
+            End If
+        End Function
+        <Extension()> <Pure()>
+        Public Function SplitListDescription(ByVal text As String, Optional ByVal usedSingleLineDescription As Boolean = False) As IEnumerable(Of String)
+            Contract.Requires(text IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of String))() IsNot Nothing)
+            If usedSingleLineDescription Then
+                Return text.Split({"; "}, StringSplitOptions.None)
+            Else
+                Dim lines = From line In text.Split({Environment.NewLine}, StringSplitOptions.None).
+                            Skip(1).
+                            SkipLast(1)
+                            Select line.Substring(4)
+                If lines.None Then Return lines
+                Dim result = New List(Of String)
+                Dim acc As String = Nothing
+                For Each line In lines
+                    If acc Is Nothing Then
+                        acc = line
+                    ElseIf line = "}" OrElse line.StartsWith(" "c) Then
+                        acc += Environment.NewLine + line
+                    Else
+                        result.Add(acc)
+                        acc = line
+                    End If
+                Next line
+                If acc IsNot Nothing Then result.Add(acc)
+                Return result
             End If
         End Function
 

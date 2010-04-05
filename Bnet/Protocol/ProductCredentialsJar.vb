@@ -47,6 +47,9 @@ Namespace Bnet.Protocol
         Public Overrides Function Describe(ByVal value As ProductCredentials) As String
             Return DataJar.Describe(PackRawValue(value))
         End Function
+        Public Overrides Function Parse(ByVal text As String) As ProductCredentials
+            Return ParseRawValue(DataJar.Parse(text))
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of ProductCredentials)
             Dim subControl = DataJar.MakeControl()

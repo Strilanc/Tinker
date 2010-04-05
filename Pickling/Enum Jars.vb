@@ -37,6 +37,25 @@
         Public Overrides Function Describe(ByVal value As TEnum) As String
             Return If(_isFlagEnum, value.EnumFlagsToString(), value.ToString)
         End Function
+        Public Overrides Function Parse(ByVal text As String) As TEnum
+            Dim result As TEnum
+            If _isFlagEnum Then
+                Dim sflags = EnumAllFlags(Of TEnum)(onlyDefined:=_checkDefined).ToDictionary(
+                    keySelector:=Function(e) New InvariantString(Describe(e)),
+                    elementSelector:=Function(e) e)
+                Dim flags = From word In text.Split(","c)
+                            Select sflags(word.Trim)
+                result = flags.Aggregate(Of TEnum)(Nothing, Function(e1, e2) e1.EnumWith(e2))
+            Else
+                result = text.EnumParse(Of TEnum)(ignoreCase:=True)
+            End If
+
+            If _checkDefined AndAlso Not IsDefined(result) Then
+                Throw New PicklingException("Enumeration with value {0} of type {1} is not defined.".Frmt(Describe(result), GetType(TEnum)))
+            End If
+            Return result
+        End Function
+
         <Pure()>
         Private Function IsDefined(ByVal value As TEnum) As Boolean
             Return If(_isFlagEnum, value.EnumFlagsAreDefined(), value.EnumValueIsDefined())
@@ -52,7 +71,7 @@
             For Each e In flags
                 control.Items.Add(e.Item1.EnumFlagsToString())
             Next e
-            control.Height = control.GetItemHeight(0) * control.Items.Count
+            control.Height = control.GetItemHeight(0) * Math.Min(10, control.Items.Count)
 
             Return New DelegatedValueEditor(Of TEnum)(
                 control:=control,

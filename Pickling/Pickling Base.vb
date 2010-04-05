@@ -125,6 +125,7 @@
         Function Pack(ByVal value As Object) As IEnumerable(Of Byte)
         Function MakeControl() As ISimpleValueEditor
         Function Describe(ByVal value As Object) As String
+        Function Parse(ByVal text As String) As Object
 
         <ContractClassFor(GetType(ISimpleJar))>
         MustInherit Shadows Class ContractClass
@@ -150,6 +151,12 @@
             Public Function Pack(ByVal value As Object) As IEnumerable(Of Byte) Implements ISimpleJar.Pack
                 Contract.Requires(value IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
+            <Pure()>
+            Public Function Parse(ByVal text As String) As Object Implements ISimpleJar.Parse
+                Contract.Requires(text IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
                 Throw New NotSupportedException
             End Function
         End Class
@@ -194,6 +201,7 @@
         Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
         Shadows Function MakeControl() As IValueEditor(Of T)
         Shadows Function Describe(ByVal value As T) As String
+        Shadows Function Parse(ByVal text As String) As T
     End Interface
     <ContractClassFor(GetType(IJar(Of )))>
     Public MustInherit Class ContractClassIJar(Of T)
@@ -216,10 +224,17 @@
             Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
             Throw New NotSupportedException
         End Function
+        <Pure()>
         Public Shadows Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
             Contract.Requires(data IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ParsedValue(Of T))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ParsedValue(Of T))().UsedDataCount <= data.Count)
+            Throw New NotSupportedException
+        End Function
+        <Pure()>
+        Public Shadows Function Parse(ByVal text As String) As T Implements IJar(Of T).Parse
+            Contract.Requires(text IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
             Throw New NotSupportedException
         End Function
     End Class
@@ -230,9 +245,18 @@
 
         Public MustOverride Function Pack(ByVal value As T) As IEnumerable(Of Byte) Implements IJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
-        Public MustOverride Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
+        Public MustOverride Function Parse(ByVal text As String) As T Implements IJar(Of T).Parse
         Public Overridable Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
             Return value.ToString()
+        End Function
+        Public Overridable Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
+            Dim control = New TextBox()
+            control.Text = ""
+            Return New DelegatedValueEditor(Of T)(
+                control:=control,
+                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
+                getter:=Function() Parse(control.Text),
+                setter:=Sub(value) control.Text = Describe(value))
         End Function
 
         Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
@@ -247,6 +271,9 @@
         End Function
         Public Function SimpleDescribe(ByVal value As Object) As String Implements ISimpleJar.Describe
             Return Describe(DirectCast(value, T).AssumeNotNull)
+        End Function
+        Public Function SimpleParse(ByVal text As String) As Object Implements ISimpleJar.Parse
+            Return Parse(text)
         End Function
     End Class
 

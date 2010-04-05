@@ -39,6 +39,11 @@
         Public Overrides Function Describe(ByVal value As IReadableList(Of T)) As String
             Return (From item In value Select _subJar.Describe(item)).MakeListDescription(_useSingleLineDescription)
         End Function
+        Public Overrides Function Parse(ByVal text As String) As IReadableList(Of T)
+            Return (From line In text.SplitListDescription(_useSingleLineDescription)
+                    Select _subJar.Parse(line)
+                    ).ToReadableList
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
             Return New ListValueEditor(Of T)(_subJar)
@@ -96,6 +101,11 @@
         <ContractVerification(False)>
         Public Overrides Function Describe(ByVal value As IReadableList(Of T)) As String
             Return (From item In value Select _subJar.Describe(item)).MakeListDescription(_useSingleLineDescription)
+        End Function
+        Public Overrides Function Parse(ByVal text As String) As IReadableList(Of T)
+            Return (From line In text.SplitListDescription(_useSingleLineDescription)
+                    Select _subJar.Parse(line)
+                    ).ToReadableList
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
@@ -258,16 +268,36 @@
                 Return (From e In subControls Select (e.SubControl.Value)).ToReadableList
             End Get
             Set(ByVal value As IReadableList(Of T))
+                Dim needLayout = False
                 Try
                     _ignoreValueChanged = True
-                    subControls.Clear()
-                    For Each item In value.AssumeNotNull
-                        AddEntry(layout:=False).SubControl.Value = item.AssumeNotNull
-                    Next item
+
+                    'Clear extra controls
+                    If subControls.Count > value.Count Then
+                        subControls.RemoveRange(value.Count, subControls.Count - value.Count)
+                        needLayout = True
+                    End If
+
+                    'Fill existing controls, adding new ones as necessary
+                    For Each pair In value.AssumeNotNull.ZipWithIndexes
+                        Dim v = pair.Item1.AssumeNotNull
+                        Dim i = pair.Item2
+                        If i < subControls.Count Then
+                            Dim c = subControls(i).SubControl
+                            If Not v.Equals(c.Value) Then
+                                c.Value = v
+                                needLayout = True
+                            End If
+                        Else
+                            AddEntry(layout:=False).SubControl.Value = v
+                            needLayout = True
+                        End If
+                    Next pair
                 Finally
                     _ignoreValueChanged = False
                 End Try
-                RefreshLayout()
+
+                If needLayout Then RefreshLayout()
             End Set
         End Property
         Private Property ValueSimple As Object Implements ISimpleValueEditor.Value

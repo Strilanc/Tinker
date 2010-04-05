@@ -228,6 +228,13 @@ Namespace WC3.Protocol
             If AllocatedId = UInt32.MaxValue AndAlso CounterId = UInt32.MaxValue Then Return "[none]"
             Return "allocated id: {0}, counter id: {1}".Frmt(AllocatedId, CounterId)
         End Function
+        Public Shared Function Parse(ByVal text As String) As GameObjectId
+            Contract.Requires(text IsNot Nothing)
+            If text = "[none]" Then Return New GameObjectId(UInt32.MaxValue, UInt32.MaxValue)
+            If Not text Like "allocated id: #*, counter id: #*" Then Throw New FormatException("Not a recognized GameObjectId format.")
+            Dim words = text.Split({": ", ", "}, StringSplitOptions.RemoveEmptyEntries)
+            Return New GameObjectId(UInt32.Parse(words(1)), UInt32.Parse(words(3)))
+        End Function
     End Structure
 
     'verification disabled because this class causes the verifier to go OutOfMemory

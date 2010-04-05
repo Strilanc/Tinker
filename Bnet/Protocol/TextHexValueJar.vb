@@ -36,8 +36,8 @@ Namespace Bnet.Protocol
             Return value.ParsedWithDataCount(_digitCount)
         End Function
 
-        Public Overrides Function MakeControl() As IValueEditor(Of UInteger)
-            Return New UInt32Jar().MakeControl()
+        Public Overrides Function Parse(ByVal text As String) As UInteger
+            Return New UInt32Jar().Parse(text)
         End Function
     End Class
 End Namespace

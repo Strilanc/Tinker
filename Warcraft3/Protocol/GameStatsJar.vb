@@ -157,6 +157,7 @@ Namespace WC3.Protocol
             Dim relativePath As InvariantString = vals.ItemAs(Of String)("relative path")
             Dim hostName As InvariantString = vals.ItemAs(Of String)("host name")
             If sha1Checksum.HasValue AndAlso sha1Checksum.Value.Count <> 20 Then Throw New PicklingException("sha1 checksum must have have 20 bytes.")
+            If relativePath = "" Then relativePath = "Maps\"
             If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
 
             'Finish
@@ -197,6 +198,10 @@ Namespace WC3.Protocol
         Public Overrides Function Describe(ByVal value As GameStats) As String
             Return DataJar.Describe(PackDataValue(value))
         End Function
+        Public Overrides Function Parse(ByVal text As String) As GameStats
+            Return ParseDataValue(DataJar.Parse(text))
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of GameStats)
             Dim subControl = DataJar.MakeControl()
             Return New DelegatedValueEditor(Of GameStats)(

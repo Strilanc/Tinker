@@ -15,6 +15,10 @@ Namespace WC3.Protocol
             Return value.ParsedWithDataCount(8)
         End Function
 
+        Public Overrides Function Parse(ByVal text As String) As GameObjectId
+            Return GameObjectId.Parse(text)
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of GameObjectId)
             Dim allocControl = New UInt32Jar().Named("allocated id").MakeControl()
             Dim counterControl = New UInt32Jar().Named("counter id").MakeControl()

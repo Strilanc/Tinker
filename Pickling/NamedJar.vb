@@ -20,6 +20,11 @@ Namespace Pickling
         Public Overrides Function Describe(ByVal value As T) As String
             Return "{0}: {1}".Frmt(Name, SubJar.Describe(value))
         End Function
+        Public Overrides Function Parse(ByVal text As String) As T
+            Dim prefix = "{0}: ".Frmt(Name)
+            If Not text.StartsWith(prefix) Then Throw New ArgumentException("Incorrect named format.")
+            Return SubJar.Parse(text.Substring(prefix.Length))
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of T)
             Dim label = New Label()

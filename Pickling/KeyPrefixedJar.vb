@@ -46,6 +46,13 @@ Namespace Pickling
                       "{0}: {1}".Frmt(keyDesc, valueDesc),
                       {keyDesc, valueDesc}.StringJoin(Environment.NewLine))
         End Function
+        Public Overrides Function Parse(ByVal text As String) As KeyValuePair(Of TKey, Object)
+            Dim p = text.IndexOf(":"c)
+            If p < 0 Then Throw New PicklingException("Expected key:value style.")
+            Dim key = _keyJar.Parse(text.Substring(0, p).TrimEnd)
+            If Not _valueJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
+            Return key.KeyValue(_valueJars(key).Value.Parse(text.Substring(p + 1).TrimStart))
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of KeyValuePair(Of TKey, Object))
             Dim keyControl = _keyJar.MakeControl()
@@ -78,8 +85,8 @@ Namespace Pickling
                             End Sub,
                 getter:=Function() keyControl.Value.KeyValue(valueControl.Value),
                 setter:=Sub(value)
-                            keyControl.Value = value.Key
-                            valueControl.Value = value.Value
+                            If Not value.Key.Equals(keyControl.Value) Then keyControl.Value = value.Key
+                            If Not value.Value.Equals(valueControl.Value) Then valueControl.Value = value.Value
                         End Sub)
         End Function
     End Class

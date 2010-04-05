@@ -46,6 +46,13 @@ Namespace Pickling
         Public Overrides Function Describe(ByVal value As String) As String
             Return """{0}""".Frmt(value)
         End Function
+        Public Overrides Function Parse(ByVal text As String) As String
+            If text.StartsWith("""") AndAlso text.EndsWith("""") Then
+                Return text.Substring(1, text.Length - 2)
+            Else
+                Return text
+            End If
+        End Function
 
         <ContractVerification(False)>
         Public Overrides Function MakeControl() As IValueEditor(Of String)

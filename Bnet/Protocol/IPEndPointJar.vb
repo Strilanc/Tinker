@@ -29,6 +29,17 @@ Namespace Bnet.Protocol
                                                        parsed.Value.ItemAs(Of UInt16)("port")))
         End Function
 
+        Public Overrides Function Parse(ByVal text As String) As Net.IPEndPoint
+            Try
+                Dim words = text.Split(":"c)
+                If words.Count <> 2 Then Throw New ArgumentException("Expected address:port format.", "text")
+                Return New Net.IPEndPoint(Net.IPAddress.Parse(words.First), UInt16.Parse(words.Last))
+            Catch ex As Exception When TypeOf ex Is FormatException OrElse
+                                       TypeOf ex Is ArgumentException
+                Throw New PicklingException("'{0}' is not a Net.IPEndPoint".Frmt(text), ex)
+            End Try
+        End Function
+
         Public Overrides Function MakeControl() As IValueEditor(Of Net.IPEndPoint)
             Dim addressControl = New IPAddressJar().Named("address").MakeControl()
             Dim portControl = New UInt16Jar().Named("port").MakeControl()
@@ -41,8 +52,8 @@ Namespace Bnet.Protocol
                             End Sub,
                 getter:=Function() New Net.IPEndPoint(addressControl.Value, portControl.Value),
                 setter:=Sub(value)
-                            addressControl.Value = value.Address
-                            portControl.Value = CUShort(value.Port)
+                            If Not addressControl.Value.Equals(value.Address) Then addressControl.Value = value.Address
+                            If portControl.Value <> value.Port Then portControl.Value = CUShort(value.Port)
                         End Sub)
         End Function
     End Class
