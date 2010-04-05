@@ -151,15 +151,15 @@ Namespace WC3.Protocol
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.TickPreOverflow, New Dictionary(Of InvariantString, Object) From {
                     {"time span", timeSpan},
-                    {"player action sets", Tuple.Create(True, actions)}})
+                    {"player action sets", actions}})
         End Function
         <Pure()>
         Public Function MakeTick(ByVal timeSpan As UShort,
-                                 Optional ByVal actions As IReadableList(Of PlayerActionSet) = Nothing) As Packet
+                                 Optional ByVal actions As Maybe(Of IReadableList(Of PlayerActionSet)) = Nothing) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
             Return Packet.FromValue(Packets.Tick, New Dictionary(Of InvariantString, Object) From {
                     {"time span", timeSpan},
-                    {"player action sets", Tuple.Create(actions IsNot Nothing, actions)}})
+                    {"player action sets", actions}})
         End Function
 
         <Pure()>

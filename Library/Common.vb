@@ -119,6 +119,12 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Extension()> <Pure()>
+    Public Function Maybe(Of T)(ByVal value As T) As Maybe(Of T)
+        Contract.Requires(value IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of Maybe(Of T))().HasValue)
+        Return New Maybe(Of T)(value)
+    End Function
+    <Extension()> <Pure()>
     Public Function HasBitSet(ByVal value As Byte, ByVal bitPosition As Integer) As Boolean
         Return ((value >> bitPosition) And CByte(1)) <> 0
     End Function

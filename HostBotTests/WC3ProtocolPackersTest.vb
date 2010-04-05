@@ -80,7 +80,7 @@ Public Class WC3ProtocolPackersTest
                                                                      {"amount", 100UI},
                                                                      {"unknown", CByte(0)}})
                                             }.AsReadableList)
-                       }.AsReadableList)
+                       }.AsReadableList.Maybe)
     End Sub
     <TestMethod()>
     Public Sub MakeMapFileDataTest()

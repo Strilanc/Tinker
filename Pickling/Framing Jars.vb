@@ -155,7 +155,7 @@
 
     '''<summary>Pickles values which may or may not be included in the data.</summary>
     Public NotInheritable Class OptionalFramingJar(Of T)
-        Inherits BaseJar(Of Tuple(Of Boolean, T))
+        Inherits BaseJar(Of Maybe(Of T))
 
         Private ReadOnly _subJar As IJar(Of T)
 
@@ -168,33 +168,32 @@
             Me._subJar = subJar
         End Sub
 
-        Public Overrides Function Pack(ByVal value As System.Tuple(Of Boolean, T)) As IEnumerable(Of Byte)
-            Contract.Assume(value IsNot Nothing)
-            If value.Item1 Then
-                Contract.Assume(value.Item2 IsNot Nothing)
-                Return _subJar.Pack(value.Item2)
+        Public Overrides Function Pack(ByVal value As Maybe(Of T)) As IEnumerable(Of Byte)
+            If value.HasValue Then
+                Contract.Assume(value.Value IsNot Nothing)
+                Return _subJar.Pack(value.Value)
             Else
                 Return New Byte() {}
             End If
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Tuple(Of Boolean, T))
+        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Maybe(Of T))
             If data.Count > 0 Then
                 Dim parsed = _subJar.Parse(data)
-                Return parsed.WithValue(Tuple.Create(True, parsed.Value))
+                Return parsed.WithValue(Of Maybe(Of T))(parsed.Value)
             Else
-                Return Tuple.Create(False, CType(Nothing, T)).ParsedWithDataCount(0)
+                Return New Maybe(Of T)().ParsedWithDataCount(0)
             End If
         End Function
 
         <ContractVerification(False)>
-        Public Overrides Function Describe(ByVal value As Tuple(Of Boolean, T)) As String
-            If Not value.Item1 Then Return "[Not Included]"
-            Return _subJar.Describe(value.Item2)
+        Public Overrides Function Describe(ByVal value As Maybe(Of T)) As String
+            If Not value.HasValue Then Return "[Not Included]"
+            Return _subJar.Describe(value.Value)
         End Function
 
-        Public Overrides Function MakeControl() As IValueEditor(Of Tuple(Of Boolean, T))
+        Public Overrides Function MakeControl() As IValueEditor(Of Maybe(Of T))
             Dim checkControl = New CheckBox()
             checkControl.Text = "Included"
             checkControl.Checked = True
@@ -203,16 +202,16 @@
             AddHandler checkControl.CheckedChanged, Sub() valueControl.Control.Enabled = checkControl.Checked
             AddHandler valueControl.ValueChanged, Sub() LayoutPanel(panel)
 
-            Return New DelegatedValueEditor(Of Tuple(Of Boolean, T))(
+            Return New DelegatedValueEditor(Of Maybe(Of T))(
                 Control:=panel,
                 eventAdder:=Sub(action)
                                 AddHandler checkControl.CheckedChanged, Sub() action()
                                 AddHandler valueControl.ValueChanged, Sub() action()
                             End Sub,
-                getter:=Function() If(checkControl.Checked, Tuple.Create(True, valueControl.Value), Tuple.Create(False, DirectCast(Nothing, T))),
+                getter:=Function() If(checkControl.Checked, valueControl.Value.Maybe, New Maybe(Of T)()),
                 setter:=Sub(value)
-                            checkControl.Checked = value.Item1
-                            If value.Item1 Then valueControl.Value = value.Item2
+                            checkControl.Checked = value.HasValue
+                            If value.HasValue Then valueControl.Value = value.Value
                         End Sub)
         End Function
     End Class

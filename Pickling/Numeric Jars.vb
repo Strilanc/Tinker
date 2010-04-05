@@ -149,19 +149,27 @@
                       "0x" + value.ToString("X16", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
+        Public Overloads Function Parse(ByVal text As String) As UInt64
+            Contract.Requires(text IsNot Nothing)
+            Try
+                If New InvariantString(text).StartsWith("0x") Then
+                    Return UInt64.Parse(text.Substring(2), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+                Else
+                    Return UInt64.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
+                End If
+            Catch ex As ArgumentException
+                Throw New PicklingException("'{0}' is not a UInt64 value.".Frmt(text), ex)
+            End Try
+        End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of UInt64)
-            Dim control = New NumericUpDown()
-            control.Minimum = UInt64.MinValue
-            control.Maximum = UInt64.MaxValue
-            control.MaximumSize = New Size(200, control.PreferredSize.Height)
-            control.Hexadecimal = _showHex
-            control.Value = 0
+            Dim control = New TextBox()
+            control.Text = Describe(0)
             Return New DelegatedValueEditor(Of UInt64)(
                 control:=control,
-                eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
-                getter:=Function() CULng(control.Value),
-                setter:=Sub(value) control.Value = value)
+                eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
+                getter:=Function() Parse(control.Text),
+                setter:=Sub(value) control.Text = Describe(value))
         End Function
     End Class
 
@@ -179,26 +187,25 @@
         End Function
 
         Public Overrides Function Describe(ByVal value As Single) As String
-            Return value.ToString(CultureInfo.InvariantCulture)
+            Return value.ToString("r", CultureInfo.InvariantCulture)
+        End Function
+        Public Overloads Function Parse(ByVal text As String) As Single
+            Contract.Requires(text IsNot Nothing)
+            Try
+                Return Single.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
+            Catch ex As ArgumentException
+                Throw New PicklingException("'{0}' is not a Single-precision value.".Frmt(text), ex)
+            End Try
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of Single)
             Dim control = New TextBox()
-            control.Text = CSng(0).ToString("r", CultureInfo.InvariantCulture)
-            AddHandler control.TextChanged, Sub() control.BackColor = If(Single.TryParse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture, 0),
-                                                                         SystemColors.Window,
-                                                                         Color.Pink)
+            control.Text = Describe(0)
             Return New DelegatedValueEditor(Of Single)(
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
-                getter:=Function()
-                            Try
-                                Return Single.Parse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture)
-                            Catch ex As ArgumentException
-                                Throw New PicklingException("'{0}' is not a Single-precision value.".Frmt(control.Text), ex)
-                            End Try
-                        End Function,
-                setter:=Sub(value) control.Text = value.ToString("r", CultureInfo.InvariantCulture))
+                getter:=Function() Parse(control.Text),
+                setter:=Sub(value) control.Text = Describe(value))
         End Function
     End Class
 
@@ -216,26 +223,25 @@
         End Function
 
         Public Overrides Function Describe(ByVal value As Double) As String
-            Return value.ToString(CultureInfo.InvariantCulture)
+            Return value.ToString("r", CultureInfo.InvariantCulture)
+        End Function
+        Public Overloads Function Parse(ByVal text As String) As Double
+            Contract.Requires(text IsNot Nothing)
+            Try
+                Return Double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
+            Catch ex As ArgumentException
+                Throw New PicklingException("'{0}' is not a Double-precision value.".Frmt(text), ex)
+            End Try
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of Double)
             Dim control = New TextBox()
-            control.Text = CDbl(0).ToString("r", CultureInfo.InvariantCulture)
-            AddHandler control.TextChanged, Sub() control.BackColor = If(Double.TryParse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture, 0),
-                                                                         SystemColors.Window,
-                                                                         Color.Pink)
+            control.Text = Describe(0)
             Return New DelegatedValueEditor(Of Double)(
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
-                getter:=Function()
-                            Try
-                                Return Double.Parse(control.Text, NumberStyles.Float, CultureInfo.InvariantCulture)
-                            Catch ex As ArgumentException
-                                Throw New PicklingException("'{0}' is not a Double-precision value.".Frmt(control.Text), ex)
-                            End Try
-                        End Function,
-                setter:=Sub(value) control.Text = value.ToString("r", CultureInfo.InvariantCulture))
+                getter:=Function() Parse(control.Text),
+                setter:=Sub(value) control.Text = Describe(value))
         End Function
     End Class
 End Namespace

@@ -498,7 +498,7 @@ Namespace WC3.Protocol
                 New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Optional.Named("player action sets"))
         Public Shared ReadOnly TickPreOverflow As Definition(Of NamedValueMap) = Define(PacketId.TickPreOverflow,
                 New UInt16Jar().Named("time span"),
-                New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Optional.Named("player action sets"))
+                New PlayerActionSetJar().Repeated.CRC32ChecksumPrefixed(prefixSize:=2).Named("player action sets"))
         Public Shared ReadOnly Tock As Definition(Of NamedValueMap) = Define(PacketId.Tock,
                 New ByteJar().Named("unknown"),
                 New UInt32Jar(showhex:=True).Named("game state checksum"))

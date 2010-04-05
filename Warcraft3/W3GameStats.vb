@@ -34,13 +34,13 @@
         Private ReadOnly _playableWidth As UInt16
         Private ReadOnly _playableHeight As UInt16
         Private ReadOnly _mapChecksumXORO As UInt32
-        Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
+        Private ReadOnly _mapChecksumSHA1 As Maybe(Of IReadableList(Of Byte))
         Private ReadOnly _advertisedPath As InvariantString
         Private ReadOnly _hostName As InvariantString
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
-            Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
-            Contract.Invariant(_mapChecksumSHA1.Count = 20)
+            Contract.Invariant(Not _mapChecksumSHA1.HasValue OrElse _mapChecksumSHA1.Value IsNot Nothing)
+            Contract.Invariant(Not _mapChecksumSHA1.HasValue OrElse _mapChecksumSHA1.Value.Count = 20)
             Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
         End Sub
 
@@ -50,10 +50,10 @@
                 Return _hostName
             End Get
         End Property
-        Public ReadOnly Property MapChecksumSHA1 As IReadableList(Of Byte)
+        Public ReadOnly Property MapChecksumSHA1 As Maybe(Of IReadableList(Of Byte))
             Get
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-                Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
+                Contract.Ensures(Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().Value IsNot Nothing)
+                Contract.Ensures(Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().Value.Count = 20)
                 Return _mapChecksumSHA1
             End Get
         End Property
@@ -131,12 +131,12 @@
                        ByVal playableWidth As UInt16,
                        ByVal playableHeight As UInt16,
                        ByVal mapChecksumXORO As UInt32,
-                       ByVal mapChecksumSHA1 As IReadableList(Of Byte),
+                       ByVal mapChecksumSHA1 As Maybe(Of IReadableList(Of Byte)),
                        ByVal advertisedPath As InvariantString,
                        ByVal hostName As InvariantString)
             Contract.Requires(advertisedPath.StartsWith("Maps\"))
-            Contract.Requires(mapChecksumSHA1 IsNot Nothing)
-            Contract.Requires(mapChecksumSHA1.Count = 20)
+            Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value IsNot Nothing)
+            Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value.Count = 20)
 
             Me._randomHero = randomHero
             Me._randomRace = randomRace
@@ -180,7 +180,7 @@
                                  PlayableWidth:=map.PlayableWidth,
                                  PlayableHeight:=map.PlayableHeight,
                                  MapChecksumXORO:=map.MapChecksumXORO,
-                                 MapChecksumSHA1:=map.MapChecksumSHA1,
+                                 MapChecksumSHA1:=map.MapChecksumSHA1.Maybe,
                                  AdvertisedPath:=map.AdvertisedPath,
                                  hostName:=hostName)
         End Function
@@ -272,7 +272,10 @@
             If Me.AllowFullSharedControl <> other.AllowFullSharedControl Then Return False
             If Me.HostName <> other.HostName Then Return False
             If Me.LockTeams <> other.LockTeams Then Return False
-            If Not Me.MapChecksumSHA1.SequenceEqual(other.MapChecksumSHA1) Then Return False
+            If Me.MapChecksumSHA1.HasValue <> other.MapChecksumSHA1.HasValue Then Return False
+            If Me.MapChecksumSHA1.HasValue Then
+                If Not Me.MapChecksumSHA1.Value.SequenceEqual(other.MapChecksumSHA1.Value) Then Return False
+            End If
             If Me.MapChecksumXORO <> other.MapChecksumXORO Then Return False
             If Me.Observers <> other.Observers Then Return False
             If Me.PlayableHeight <> other.PlayableHeight Then Return False

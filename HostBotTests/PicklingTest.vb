@@ -415,15 +415,13 @@ Public Class PicklingTest
     <TestMethod()>
     Public Sub OptionalJarTest()
         Dim jar = New OptionalFramingJar(Of Byte)(New ByteJar())
-        Dim equater = Function(e1 As Tuple(Of Boolean, Byte), e2 As Tuple(Of Boolean, Byte)) e1.Equals(e2)
-        JarTest(jar, equater, Tuple.Create(True, CByte(5)), {5})
-        JarTest(jar, equater, Tuple.Create(False, CByte(0)), {}, appendSafe:=False)
+        JarTest(jar, data:={5}, value:=CByte(5))
+        JarTest(jar, data:={}, value:=New Maybe(Of Byte)(), appendSafe:=False)
 
         Dim jar2 = New OptionalFramingJar(Of String)(New UTF8Jar().NullTerminated)
-        Dim equater2 = Function(e1 As Tuple(Of Boolean, String), e2 As Tuple(Of Boolean, String)) e1.Equals(e2)
-        JarTest(jar2, equater2, Tuple.Create(True, ""), {0})
-        JarTest(jar2, equater2, Tuple.Create(False, CStr(Nothing)), {}, appendSafe:=False)
-        JarTest(jar2, equater2, Tuple.Create(True, "A"), {Asc("A"), 0})
+        JarTest(jar2, data:={0}, value:="")
+        JarTest(jar2, data:={}, value:=New Maybe(Of String)(), appendSafe:=False)
+        JarTest(jar2, data:={Asc("A"), 0}, value:="A")
         ExpectException(Of PicklingException)(Sub() jar2.Parse(New Byte() {92}.AsReadableList))
     End Sub
 

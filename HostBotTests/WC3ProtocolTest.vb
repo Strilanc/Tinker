@@ -492,16 +492,7 @@ Public Class WC3ProtocolTest
     Public Sub TickTest()
         JarTest(Packets.Tick.Jar,
                 appendSafe:=False,
-                equater:=Function(e1 As NamedValueMap, e2 As NamedValueMap)
-                             If e1.Count <> 2 Then Return False
-                             If e2.Count <> 2 Then Return False
-                             If e1.ItemAs(Of UShort)("time span") <> e2.ItemAs(Of UShort)("time span") Then Return False
-                             Dim a1 = e1.ItemAs(Of Tuple(Of Boolean, IReadableList(Of PlayerActionSet)))("player action sets")
-                             Dim a2 = e2.ItemAs(Of Tuple(Of Boolean, IReadableList(Of PlayerActionSet)))("player action sets")
-                             If Not ObjectEqual(a1.Item1, a2.Item1) Then Return False
-                             If Not ObjectEqual(a1.Item2, a2.Item2) Then Return False
-                             Return True
-                         End Function, data:={250, 0,
+                data:={250, 0,
                        208, 15,
                             1,
                                 6, 0,
@@ -510,20 +501,20 @@ Public Class WC3ProtocolTest
                                 100, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250US},
-                        {"player action sets", Tuple.Create(True, {New PlayerActionSet(New PlayerId(1),
+                        {"player action sets", {New PlayerActionSet(New PlayerId(1),
                                            {GameAction.FromValue(GameActions.CheatGold,
                                                                  New Dictionary(Of InvariantString, Object) From {
                                                                      {"amount", 100UI},
                                                                      {"unknown", CByte(2)}})
                                             }.AsReadableList)
-                                     }.AsReadableList)}
+                                     }.AsReadableList.Maybe}
                     })
         JarTest(Packets.Tick.Jar,
                 appendSafe:=False,
                 data:={100, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 100US},
-                        {"player action sets", Tuple.Create(False, CType(Nothing, IReadableList(Of PlayerActionSet)))}})
+                        {"player action sets", New Maybe(Of IReadableList(Of PlayerActionSet))()}})
     End Sub
     <TestMethod()>
     Public Sub TockTest()

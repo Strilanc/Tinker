@@ -413,7 +413,7 @@ Public Class BnetProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"result", UserAuthenticationFinishResult.Passed},
                         {"server password proof", proof},
-                        {"custom error info", Tuple.Create(True, "test")}
+                        {"custom error info", "test".Maybe}
                     })
     End Sub
     <TestMethod()>

@@ -36,7 +36,7 @@ Namespace WC3.Protocol
                     New UTF8Jar().NullTerminated.Named("relative path"),
                     New UTF8Jar().NullTerminated.Named("host name"),
                     New ByteJar().Named("unknown2"),
-                    New DataJar().Fixed(exactDataCount:=20).Named("sha1 checksum"))
+                    New DataJar().Fixed(exactDataCount:=20).Optional.Named("sha1 checksum"))
 
         <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As GameStats) As IEnumerable(Of Byte)
@@ -153,10 +153,10 @@ Namespace WC3.Protocol
             Dim playableWidth = vals.ItemAs(Of UInt16)("playable width")
             Dim playableHeight = vals.ItemAs(Of UInt16)("playable height")
             Dim xoroChecksum = vals.ItemAs(Of UInt32)("xoro checksum")
-            Dim sha1Checksum = vals.ItemAs(Of IReadableList(Of Byte))("sha1 checksum")
+            Dim sha1Checksum = vals.ItemAs(Of Maybe(Of IReadableList(Of Byte)))("sha1 checksum")
             Dim relativePath As InvariantString = vals.ItemAs(Of String)("relative path")
             Dim hostName As InvariantString = vals.ItemAs(Of String)("host name")
-            If sha1Checksum.Count <> 20 Then Throw New PicklingException("sha1 checksum must have have 20 bytes.")
+            If sha1Checksum.HasValue AndAlso sha1Checksum.Value.Count <> 20 Then Throw New PicklingException("sha1 checksum must have have 20 bytes.")
             If Not relativePath.StartsWith("Maps\") Then Throw New PicklingException("Relative path must start with 'Maps\'")
 
             'Finish

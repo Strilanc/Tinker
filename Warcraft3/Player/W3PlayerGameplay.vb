@@ -53,7 +53,7 @@ Namespace WC3
             For Each preOverflowActionStreak In actionStreaks.SkipLast(1)
                 SendPacket(Protocol.MakeTickPreOverflow(preOverflowActionStreak))
             Next preOverflowActionStreak
-            SendPacket(Protocol.MakeTick(record.length, actionStreaks.LastOrDefault))
+            SendPacket(Protocol.MakeTick(record.length, actionStreaks.LastOrDefault.Maybe))
         End Sub
         Public Function QueueSendTick(ByVal record As TickRecord,
                                       ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet))) As Task

@@ -29,7 +29,7 @@ Public Class GameStatsTest
         Assert.IsTrue(stats.PlayableWidth = 120)
         Assert.IsTrue(stats.PlayableHeight = 118)
         Assert.IsTrue(stats.mapChecksumXORO = 374747339)
-        Assert.IsTrue(stats.MapChecksumSHA1.SequenceEqual({&HF3, &H35, &H88, &H1E, &H71, &HD4, &HC8, &H41, &H4D, &H29, &H42, &H39, &H6F, &H6B, &H58, &HAE, &HA3, &HCD, &H9A, &H6F}))
+        Assert.IsTrue(stats.MapChecksumSHA1.Value.SequenceEqual({&HF3, &H35, &H88, &H1E, &H71, &HD4, &HC8, &H41, &H4D, &H29, &H42, &H39, &H6F, &H6B, &H58, &HAE, &HA3, &HCD, &H9A, &H6F}))
         Assert.IsTrue(stats.AdvertisedPath = "Maps\Download\DotA Allstars v6.64.w3x")
         Assert.IsTrue(stats.HostName = "Madeitonceagain")
 
