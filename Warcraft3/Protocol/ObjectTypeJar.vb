@@ -13,37 +13,38 @@ Namespace WC3.Protocol
             Return DataJar.Parse(data)
         End Function
 
-        Public Overrides Function Describe(ByVal value As UInteger) As String
-            Return GameActions.TypeIdString(value)
+        Public Overrides Function Describe(ByVal value As UInt32) As String
+            If value.Bytes.All(Function(b) b >= 32 AndAlso b <= 127) Then
+                Return "type '{0}'".Frmt(New String(System.Text.Encoding.ASCII.GetChars(value.Bytes(ByteOrder.BigEndian))))
+            Else
+                Return "0x{0}".Frmt(value.ToString("X"))
+            End If
+        End Function
+        Public Overloads Function Parse(ByVal text As String) As UInt32
+            Contract.Requires(text IsNot Nothing)
+            Try
+                If text Like New InvariantString("type '????'") Then
+                    Dim bytes = System.Text.Encoding.ASCII.GetBytes(text.Substring("type '".Length, "????".Length))
+                    Return bytes.ToUInt32(ByteOrder.BigEndian)
+                ElseIf text Like New InvariantString("0x*") Then
+                    Return UInt32.Parse(text.Substring("0x".Length), NumberStyles.HexNumber, CultureInfo.InvariantCulture)
+                Else
+                    Return UInt32.Parse(text, NumberStyles.Number, CultureInfo.InvariantCulture)
+                End If
+            Catch ex As Exception When TypeOf ex Is ArgumentException OrElse
+                                       TypeOf ex Is FormatException
+                Throw New PicklingException("Invalid game object type. Must be in rawcode (type 'hpea') or hex (0xABCDEF12) format.", ex)
+            End Try
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of UInt32)
             Dim control = New TextBox()
-            control.Text = "hpea"
+            control.Text = "type 'hpea'"
             Return New DelegatedValueEditor(Of UInt32)(
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
-                getter:=Function()
-                            Dim bytes = control.Text.ToAscBytes.Reverse
-                            If bytes.Count = 4 AndAlso (From b In bytes Where b < 32 Or b >= 128).None Then
-                                Return control.Text.ToAscBytes.Reverse.ToUInt32
-                            Else
-                                Try
-                                    bytes = (From word In control.Text.Split(" "c)
-                                             Where word <> ""
-                                             Select CByte(word.FromHexToUInt64(ByteOrder.BigEndian))
-                                             ).ToList
-                                    If bytes.Count <> 4 Then Throw New ArgumentException("Incorrect number of hex bytes.")
-                                    Return (From word In control.Text.Split(" "c)
-                                            Where word <> ""
-                                            Select CByte(word.FromHexToUInt64(ByteOrder.BigEndian))
-                                            ).ToUInt32
-                                Catch ex As ArgumentException
-                                    Throw New PicklingException("Invalid game object type. Must be in rawcode (eg. hpea) or 4 hex bytes (eg. 00 00 00 00) format.", ex)
-                                End Try
-                            End If
-                        End Function,
-                setter:=Sub(value) control.Text = GameActions.TypeIdString(value))
+                getter:=Function() Parse(control.Text),
+                setter:=Sub(value) control.Text = Describe(value))
         End Function
     End Class
 End Namespace

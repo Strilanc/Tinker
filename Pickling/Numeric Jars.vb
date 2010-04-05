@@ -29,6 +29,7 @@
             control.Minimum = Byte.MinValue
             control.Maximum = Byte.MaxValue
             control.MaximumSize = New Size(50, control.PreferredSize.Height)
+            control.Hexadecimal = _showHex
             control.Value = 0
             Return New DelegatedValueEditor(Of Byte)(
                 control:=control,
@@ -70,6 +71,7 @@
             control.Minimum = UInt16.MinValue
             control.Maximum = UInt16.MaxValue
             control.MaximumSize = New Size(70, control.PreferredSize.Height)
+            control.Hexadecimal = _showHex
             control.Value = 0
             Return New DelegatedValueEditor(Of UInt16)(
                 control:=control,
@@ -111,6 +113,7 @@
             control.Minimum = UInt32.MinValue
             control.Maximum = UInt32.MaxValue
             control.MaximumSize = New Size(100, control.PreferredSize.Height)
+            control.Hexadecimal = _showHex
             control.Value = 0
             Return New DelegatedValueEditor(Of UInt32)(
                 control:=control,
@@ -152,6 +155,7 @@
             control.Minimum = UInt64.MinValue
             control.Maximum = UInt64.MaxValue
             control.MaximumSize = New Size(200, control.PreferredSize.Height)
+            control.Hexadecimal = _showHex
             control.Value = 0
             Return New DelegatedValueEditor(Of UInt64)(
                 control:=control,

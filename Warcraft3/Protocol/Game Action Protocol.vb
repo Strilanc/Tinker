@@ -548,18 +548,5 @@ Namespace WC3.Protocol
                     New UTF8Jar().NullTerminated.Named("filename"),
                     New UTF8Jar().NullTerminated.Named("mission key"),
                     New UTF8Jar().NullTerminated.Named("key"))
-
-        <Pure()>
-        Public Shared Function TypeIdString(ByVal value As UInt32) As String
-            Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
-            Dim bytes = value.Bytes()
-            If (From b In bytes Where b < 32 Or b >= 128).None Then
-                'Ascii identifier (eg. 'hfoo' for human footman)
-                Return bytes.Reverse.ParseChrString(nullTerminated:=False)
-            Else
-                'Not ascii values, better just output hex
-                Return bytes.ToHexString
-            End If
-        End Function
     End Class
 End Namespace

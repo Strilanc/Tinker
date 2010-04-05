@@ -69,6 +69,7 @@ Namespace WC3
             Dim control = New NumericUpDown()
             control.Minimum = 1
             control.Maximum = 12
+            control.MaximumSize = New Size(50, control.PreferredSize.Height)
             control.Value = 1
             label.AutoSize = True
             label.Text = "pid"

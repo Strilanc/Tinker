@@ -108,7 +108,10 @@
                                 Throw New PicklingException("'{0}' is not a valid {1}".Frmt(control.Text, GetType(TEnum)), ex)
                             End Try
                         End Function,
-                setter:=Sub(value) control.Text = value.ToString)
+                setter:=Sub(value)
+                            control.SelectedIndex = -1
+                            control.Text = Describe(value)
+                        End Sub)
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of TEnum)
