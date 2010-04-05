@@ -51,27 +51,27 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatDisableTechRequirementsTest()
-        EmptyJarTest(GameActions.CheatDisableTechRequirements.Jar)
+        JarTest(GameActions.CheatDisableTechRequirements.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatDisableVictoryConditionsTest()
-        EmptyJarTest(GameActions.CheatDisableVictoryConditions.Jar)
+        JarTest(GameActions.CheatDisableVictoryConditions.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatEnableResearchTest()
-        EmptyJarTest(GameActions.CheatEnableResearch.Jar)
+        JarTest(GameActions.CheatEnableResearch.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatFastCooldownTest()
-        EmptyJarTest(GameActions.CheatFastCooldown.Jar)
+        JarTest(GameActions.CheatFastCooldown.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatFastDeathDecayTest()
-        EmptyJarTest(GameActions.CheatFastDeathDecay.Jar)
+        JarTest(GameActions.CheatFastDeathDecay.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatGodModeTest()
-        EmptyJarTest(GameActions.CheatGodMode.Jar)
+        JarTest(GameActions.CheatGodMode.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatGoldTest()
@@ -95,11 +95,11 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatInstantDefeatTest()
-        EmptyJarTest(GameActions.CheatInstantDefeat.Jar)
+        JarTest(GameActions.CheatInstantDefeat.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatInstantVictoryTest()
-        EmptyJarTest(GameActions.CheatInstantVictory.Jar)
+        JarTest(GameActions.CheatInstantVictory.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatLumberTest()
@@ -113,19 +113,19 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatNoDefeatTest()
-        EmptyJarTest(GameActions.CheatNoDefeat.Jar)
+        JarTest(GameActions.CheatNoDefeat.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatNoFoodLimitTest()
-        EmptyJarTest(GameActions.CheatNoFoodLimit.Jar)
+        JarTest(GameActions.CheatNoFoodLimit.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatRemoveFogOfWarTest()
-        EmptyJarTest(GameActions.CheatRemoveFogOfWar.Jar)
+        JarTest(GameActions.CheatRemoveFogOfWar.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatResearchUpgradesTest()
-        EmptyJarTest(GameActions.CheatResearchUpgrades.Jar)
+        JarTest(GameActions.CheatResearchUpgrades.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatSetTimeOfDayTest()
@@ -135,15 +135,15 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatSpeedConstructionTest()
-        EmptyJarTest(GameActions.CheatSpeedConstruction.Jar)
+        JarTest(GameActions.CheatSpeedConstruction.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatUnlimitedManaTest()
-        EmptyJarTest(GameActions.CheatUnlimitedMana.Jar)
+        JarTest(GameActions.CheatUnlimitedMana.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub DecreaseGameSpeedTest()
-        EmptyJarTest(GameActions.DecreaseGameSpeed.Jar)
+        JarTest(GameActions.DecreaseGameSpeed.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub DequeueBuildingOrderTest()
@@ -178,11 +178,11 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub EnterChooseBuildingSubmenuTest()
-        EmptyJarTest(GameActions.EnterChooseBuildingSubmenu.Jar)
+        JarTest(GameActions.EnterChooseBuildingSubmenu.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub EnterChooseHeroSkillSubmenuTest()
-        EmptyJarTest(GameActions.EnterChooseHeroSkillSubmenu.Jar)
+        JarTest(GameActions.EnterChooseHeroSkillSubmenu.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub FogObjectOrderTest()
@@ -429,7 +429,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub IncreaseGameSpeedTest()
-        EmptyJarTest(GameActions.IncreaseGameSpeed.Jar)
+        JarTest(GameActions.IncreaseGameSpeed.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub MinimapPingTest()
@@ -464,7 +464,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub PauseGameTest()
-        EmptyJarTest(GameActions.PauseGame.Jar)
+        JarTest(GameActions.PauseGame.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub PointOrderTest()
@@ -485,15 +485,15 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub PressedEscapeTest()
-        EmptyJarTest(GameActions.PressedEscape.Jar)
+        JarTest(GameActions.PressedEscape.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub PreSubGroupSelectionTest()
-        EmptyJarTest(GameActions.PreSubGroupSelection.Jar)
+        JarTest(GameActions.PreSubGroupSelection.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub ResumeGameTest()
-        EmptyJarTest(GameActions.ResumeGame.Jar)
+        JarTest(GameActions.ResumeGame.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub SaveGameFinishedTest()

@@ -13,7 +13,7 @@ Imports TinkerTests.PicklingTest
 Public Class WC3ProtocolTest
     <TestMethod()>
     Public Sub ClientConfirmHostLeavingTest()
-        EmptyJarTest(Packets.ClientConfirmHostLeaving.Jar)
+        JarTest(Packets.ClientConfirmHostLeaving.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub ClientMapInfoTest()
@@ -49,7 +49,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub HostConfirmHostLeavingTest()
-        EmptyJarTest(Packets.HostConfirmHostLeaving.Jar)
+        JarTest(Packets.HostConfirmHostLeaving.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub HostMapInfoTest()
@@ -398,7 +398,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ReadyTest()
-        EmptyJarTest(Packets.Ready.Jar)
+        JarTest(Packets.Ready.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub RejectEntryTest()
@@ -419,7 +419,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub RequestDropLaggersTest()
-        EmptyJarTest(Packets.RequestDropLaggers.Jar)
+        JarTest(Packets.RequestDropLaggers.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub SetDownloadSourceTest()
@@ -458,11 +458,11 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub StartCountdownTest()
-        EmptyJarTest(Packets.StartCountdown.Jar)
+        JarTest(Packets.StartCountdown.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub StartLoadingTest()
-        EmptyJarTest(Packets.StartLoading.Jar)
+        JarTest(Packets.StartLoading.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub TextTest()
@@ -486,7 +486,7 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"requested receivers", {New PlayerId(2), New PlayerId(3)}.ToReadableList},
                         {"speaker", New PlayerId(1)},
-                        {"type group", New KeyValuePair(Of ChatType, Object)(ChatType.Lobby, New Object)},
+                        {"type group", New KeyValuePair(Of ChatType, Object)(ChatType.Lobby, New EmptyJar.EmptyValue)},
                         {"message", "test"}
                     })
     End Sub

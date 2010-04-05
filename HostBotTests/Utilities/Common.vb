@@ -51,9 +51,6 @@ Friend Module TestingCommon
         Assert.IsTrue(Not task.Wait(millisecondsTimeout:=10))
     End Sub
 
-    Friend Sub EmptyJarTest(ByVal jar As ISimpleJar)
-        Assert.IsTrue(jar.GetType() = GetType(EmptyJar))
-    End Sub
     Friend Sub JarTest(Of T)(ByVal jar As IJar(Of T),
                              ByVal equater As Func(Of T, T, Boolean),
                              ByVal value As T,
@@ -147,7 +144,6 @@ Friend Module TestingCommon
     End Function
     Public Function ObjectEqual(ByVal v1 As Object, ByVal v2 As Object) As Boolean
         If v1.GetType Is v2.GetType Then
-            If v1.GetType Is GetType(Object) Then Return True
             If v1.GetType.IsGenericType AndAlso v1.GetType.GetGenericTypeDefinition Is GetType(KeyValuePair(Of ,)) Then
                 Dim mKey = v1.GetType.GetProperty("Key")
                 Dim mValue = v1.GetType.GetProperty("Value")

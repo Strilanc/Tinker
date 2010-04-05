@@ -22,7 +22,7 @@ Public Class ReplayFormatTest
                         {"speaker", New PlayerId(1)},
                         {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                             {"type group", New KeyValuePair(Of Protocol.ChatType, Object)(Protocol.ChatType.Lobby,
-                                                                                          New Object)},
+                                                                                          New EmptyJar.EmptyValue)},
                             {"message", "test"}})}})
         JarTest(Format.ReplayEntryChatMessage.Jar,
                 data:={1,

@@ -338,7 +338,7 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly CreateGame3 As Definition(Of UInt32) = Define(PacketId.CreateGame3,
                     New UInt32Jar().Named("result"))
 
-            Public Shared ReadOnly Null As Definition(Of Object) = Define(PacketId.Null,
+            Public Shared ReadOnly Null As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.Null,
                     New EmptyJar())
             Public Shared ReadOnly Ping As Definition(Of UInt32) = Define(PacketId.Ping,
                     New UInt32Jar(showHex:=True).Named("salt"))
@@ -420,7 +420,7 @@ Namespace Bnet.Protocol
                     New TextHexUInt32Jar(digitCount:=1).Named("num free slots"),
                     New TextHexUInt32Jar(digitCount:=8).Named("game id"),
                     New WC3.Protocol.GameStatsJar().Named("statstring"))
-            Public Shared ReadOnly CloseGame3 As Definition(Of Object) = Define(PacketId.CloseGame3,
+            Public Shared ReadOnly CloseGame3 As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.CloseGame3,
                     New EmptyJar())
             Public Shared ReadOnly JoinChannel As Definition(Of NamedValueMap) = Define(PacketId.JoinChannel,
                     New EnumUInt32Jar(Of JoinChannelType)().Named("join type"),
@@ -428,7 +428,7 @@ Namespace Bnet.Protocol
             Public Shared ReadOnly NetGamePort As Definition(Of UInt16) = Define(PacketId.NetGamePort,
                     New UInt16Jar().Named("port"))
 
-            Public Shared ReadOnly Null As Definition(Of Object) = Define(PacketId.Null,
+            Public Shared ReadOnly Null As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.Null,
                     New EmptyJar())
             Public Shared ReadOnly Ping As Definition(Of UInt32) = Define(PacketId.Ping,
                     New UInt32Jar(showhex:=True).Named("salt"))
@@ -439,7 +439,7 @@ Namespace Bnet.Protocol
                     New UInt32Jar().Named("request id"),
                     New UInt32Jar().Named("unknown"),
                     New UTF8Jar().NullTerminated.Named("filename"))
-            Public Shared ReadOnly GetIconData As Definition(Of Object) = Define(PacketId.GetIconData,
+            Public Shared ReadOnly GetIconData As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.GetIconData,
                     New EmptyJar())
         End Class
     End Class

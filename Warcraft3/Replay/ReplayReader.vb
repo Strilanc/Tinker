@@ -61,7 +61,9 @@ Namespace WC3.Replay
 
                 'Check header values
                 If header.ItemAs(Of String)("magic") <> Format.HeaderMagicValue Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect magic value).")
-                If header.ItemAs(Of String)("product id") <> "W3XP" Then Throw New IO.InvalidDataException("Not a wc3 replay (incorrect product id).")
+                If header.ItemAs(Of String)("product id") <> "W3XP" AndAlso header.ItemAs(Of String)("product id") <> "WAR3" Then
+                    Throw New IO.InvalidDataException("Not a wc3 replay (incorrect product id).")
+                End If
                 If header.ItemAs(Of UInt32)("header version") <> Format.HeaderVersion Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect version).")
                 If headerSize <> Format.HeaderSize Then Throw New IO.InvalidDataException("Not a recognized wc3 replay (incorrect header size).")
 

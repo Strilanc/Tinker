@@ -122,48 +122,53 @@ Public Class ComponentTest
         Dim t2 = New TestComponent2("t2")
         Dim addedItems = New List(Of IBotComponent)
         Dim removedItems = New List(Of IBotComponent)
+        Dim addedItemsLock = New Threading.AutoResetEvent(initialState:=False)
+        Dim removedItemsLock = New Threading.AutoResetEvent(initialState:=False)
         Dim c = New ComponentSet()
         c.QueueAddComponent(t1)
-        c.QueueCreateAsyncView(Sub(sender, item) addedItems.Add(item),
-                               Sub(sender, item) removedItems.Add(item))
-        WaitUntilTaskSucceeds(c.QueueAddComponent(t2))
+        c.QueueCreateAsyncView(Sub(sender, item)
+                                   addedItems.Add(item)
+                                   If addedItems.Count = 2 Then addedItemsLock.Set()
+                               End Sub,
+                               Sub(sender, item)
+                                   removedItems.Add(item)
+                                   If removedItems.Count = 1 Then removedItemsLock.Set()
+                               End Sub)
+        c.QueueAddComponent(t2)
         t1.Dispose()
-        'may take a moment to propagate
-        Dim flag = False
-        For i = 1 To 100
-            If addedItems.SequenceEqual({t1, t2}) AndAlso removedItems.SequenceEqual({t1}) Then
-                flag = True
-                Exit For
-            End If
-            Threading.Thread.Sleep(1)
-        Next i
-        Assert.IsTrue(flag)
+
+        Assert.IsTrue(addedItemsLock.WaitOne(millisecondsTimeout:=10000))
+        Assert.IsTrue(removedItemsLock.WaitOne(millisecondsTimeout:=10000))
+        Assert.IsTrue(addedItems.SequenceEqual({t1, t2}))
+        Assert.IsTrue(removedItems.SequenceEqual({t1}))
     End Sub
     <TestMethod()>
     Public Sub ComponentSetTest_AsyncViewT()
         Dim t1 = New TestComponent1("t1")
         Dim t2 = New TestComponent1("t2")
-        Dim t3 = New TestComponent2("t3")
+        Dim t3 = New TestComponent2("t3") '[should be ignored due to type]
         Dim addedItems = New List(Of TestComponent1)
         Dim removedItems = New List(Of TestComponent1)
+        Dim addedItemsLock = New Threading.AutoResetEvent(initialState:=False)
+        Dim removedItemsLock = New Threading.AutoResetEvent(initialState:=False)
         Dim c = New ComponentSet()
         c.QueueAddComponent(t2)
-        c.QueueCreateAsyncView(Of TestComponent1)(Sub(sender, item) addedItems.Add(item),
-                                                  Sub(sender, item) removedItems.Add(item))
+        c.QueueCreateAsyncView(Of TestComponent1)(Sub(sender, item)
+                                                      addedItems.Add(item)
+                                                      If addedItems.Count = 2 Then addedItemsLock.Set()
+                                                  End Sub,
+                                                  Sub(sender, item)
+                                                      removedItems.Add(item)
+                                                      If removedItems.Count = 1 Then removedItemsLock.Set()
+                                                  End Sub)
         c.QueueAddComponent(t1)
-        WaitUntilTaskSucceeds(c.QueueAddComponent(t3))
+        c.QueueAddComponent(t3)
         t2.Dispose()
         t3.Dispose()
-        'may take a moment to propagate
-        Dim flag = False
-        For i = 1 To 100
-            If addedItems.SequenceEqual({t2, t1}) AndAlso removedItems.SequenceEqual({t2}) Then
-                flag = True
-                Exit For
-            End If
-            Threading.Thread.Sleep(1)
-        Next i
-        Assert.IsTrue(flag)
+        Assert.IsTrue(addedItemsLock.WaitOne(millisecondsTimeout:=10000))
+        Assert.IsTrue(removedItemsLock.WaitOne(millisecondsTimeout:=10000))
+        Assert.IsTrue(addedItems.SequenceEqual({t2, t1}))
+        Assert.IsTrue(removedItems.SequenceEqual({t2}))
     End Sub
     <TestMethod()>
     Public Sub ComponentSetTest_GetAllComponentsT()

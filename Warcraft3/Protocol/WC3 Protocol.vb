@@ -198,7 +198,7 @@ Namespace WC3.Protocol
     <Flags()>
     Public Enum GameTypes As UInteger
         None = 0
-        CreateGameUnknown0 = 1 << 0 'this bit always seems to be set by wc3
+        Unknown0 = 1 << 0 '[always seems to be set in replays and custom games?]
 
         '''<summary>Setting this bit causes wc3 to check the map and disc if it is not signed by Blizzard</summary>
         AuthenticatedMakerBlizzard = 1 << 3
@@ -221,7 +221,6 @@ Namespace WC3.Protocol
         MaskMaker = MakerBlizzard Or MakerUser
         MaskType = TypeMelee Or TypeScenario
         MaskSize = SizeLarge Or SizeMedium Or SizeSmall
-
         MaskFilterable = MaskObs Or MaskMaker Or MaskType Or MaskSize
     End Enum
     Public Enum PlayerLeaveReason As UInt32
@@ -450,11 +449,11 @@ Namespace WC3.Protocol
 
         Public Shared ReadOnly OtherPlayerReady As Definition(Of PlayerId) = Define(PacketId.OtherPlayerReady,
                 New PlayerIdJar().Named("readied player"))
-        Public Shared ReadOnly StartLoading As Definition(Of Object) = Define(PacketId.StartLoading,
+        Public Shared ReadOnly StartLoading As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.StartLoading,
                 New EmptyJar())
-        Public Shared ReadOnly StartCountdown As Definition(Of Object) = Define(PacketId.StartCountdown,
+        Public Shared ReadOnly StartCountdown As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.StartCountdown,
                 New EmptyJar())
-        Public Shared ReadOnly Ready As Definition(Of Object) = Define(PacketId.Ready,
+        Public Shared ReadOnly Ready As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.Ready,
                 New EmptyJar())
         Public Shared ReadOnly LobbyState As Definition(Of NamedValueMap) = Define(PacketId.LobbyState,
                 New TupleJar(
@@ -492,7 +491,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly RemovePlayerFromLagScreen As Definition(Of NamedValueMap) = Define(PacketId.RemovePlayerFromLagScreen,
                 New PlayerIdJar().Named("lagger"),
                 New UInt32Jar().Named("marginal milliseconds used"))
-        Public Shared ReadOnly RequestDropLaggers As Definition(Of Object) = Define(PacketId.RequestDropLaggers,
+        Public Shared ReadOnly RequestDropLaggers As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.RequestDropLaggers,
                 New EmptyJar())
         Public Shared ReadOnly Tick As Definition(Of NamedValueMap) = Define(PacketId.Tick,
                 New UInt16Jar().Named("time span"),
@@ -507,9 +506,9 @@ Namespace WC3.Protocol
                 New GameActionJar().Repeated.CRC32ChecksumPrefixed.Named("actions"))
         Public Shared ReadOnly NewHost As Definition(Of PlayerId) = Define(PacketId.NewHost,
                 New PlayerIdJar().Named("player"))
-        Public Shared ReadOnly ClientConfirmHostLeaving As Definition(Of Object) = Define(PacketId.ClientConfirmHostLeaving,
+        Public Shared ReadOnly ClientConfirmHostLeaving As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.ClientConfirmHostLeaving,
                 New EmptyJar())
-        Public Shared ReadOnly HostConfirmHostLeaving As Definition(Of Object) = Define(PacketId.HostConfirmHostLeaving,
+        Public Shared ReadOnly HostConfirmHostLeaving As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.HostConfirmHostLeaving,
                 New EmptyJar())
 
         Public Shared ReadOnly LanRequestGame As Definition(Of NamedValueMap) = Define(PacketId.LanRequestGame,
@@ -585,7 +584,7 @@ Namespace WC3.Protocol
         Public Shared ReadOnly TournamentCountdown As Definition(Of NamedValueMap) = Define(PacketId.TournamentCountdown,
                 New UInt32Jar().Named("unknown"),
                 New UInt32Jar().Named("time left"))
-        Public Shared ReadOnly GameEnd As Definition(Of Object) = Define(PacketId.GameEnd,
+        Public Shared ReadOnly GameEnd As Definition(Of EmptyJar.EmptyValue) = Define(PacketId.GameEnd,
                 New EmptyJar())
         Public Shared ReadOnly EncryptedServerMeleeData As Definition(Of IReadableList(Of Byte)) = Define(PacketId.EncryptedServerMeleeData,
                 New DataJar().Named("encrypted data"))

@@ -96,7 +96,7 @@ Namespace WC3.Replay
                     {"speaker", sender},
                     {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                         {"type group", New KeyValuePair(Of Protocol.ChatType, Object)(Protocol.ChatType.Lobby,
-                                                                                      New Object)},
+                                                                                      New EmptyJar.EmptyValue)},
                         {"message", message}})}})
         End Function
         <Pure()>
