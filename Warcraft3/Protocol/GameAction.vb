@@ -15,17 +15,11 @@ Namespace WC3.Protocol
 
         Public Sub New(ByVal id As GameActionId, ByVal payload As Object)
             Contract.Requires(payload IsNot Nothing)
+            Contract.Ensures(Me.Id = id)
+            Contract.Ensures(Me.Payload Is payload)
             Me._id = id
             Me._payload = payload
         End Sub
-
-        Public Shared Function FromValue(Of T)(ByVal actionDefinition As GameActions.Definition(Of T),
-                                               ByVal value As T) As GameAction
-            Contract.Requires(actionDefinition IsNot Nothing)
-            Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
-            Return New GameAction(actionDefinition.Id, value)
-        End Function
 
         Public ReadOnly Property Id As GameActionId
             Get

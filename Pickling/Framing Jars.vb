@@ -5,7 +5,7 @@
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_subJar IsNot Nothing)
         End Sub
-        Public Sub New(ByVal subJar As IJar(Of T))
+        Protected Sub New(ByVal subJar As IJar(Of T))
             Contract.Requires(subJar IsNot Nothing)
             Me._subJar = subJar
         End Sub

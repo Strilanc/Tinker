@@ -77,7 +77,7 @@
                 For Each line In lines
                     If acc Is Nothing Then
                         acc = line
-                    ElseIf line = "}" OrElse line.StartsWith(" "c) Then
+                    ElseIf line = "}" OrElse line.StartsWith(" "c, StringComparison.Ordinal) Then
                         acc += Environment.NewLine + line
                     Else
                         result.Add(acc)

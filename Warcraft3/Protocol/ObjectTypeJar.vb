@@ -17,7 +17,7 @@ Namespace WC3.Protocol
             If value.Bytes.All(Function(b) b >= 32 AndAlso b <= 127) Then
                 Return "type '{0}'".Frmt(New String(System.Text.Encoding.ASCII.GetChars(value.Bytes(ByteOrder.BigEndian))))
             Else
-                Return "0x{0}".Frmt(value.ToString("X"))
+                Return "0x{0}".Frmt(value.ToString("X", CultureInfo.InvariantCulture))
             End If
         End Function
         Public Overrides Function Parse(ByVal text As String) As UInt32

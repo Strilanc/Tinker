@@ -44,4 +44,10 @@ Public Structure Maybe(Of T)
     Public Overrides Function ToString() As String
         Return If(HasValue, "Value: {0}".Frmt(Value), "No Value")
     End Function
+    Public Shared Operator =(ByVal value1 As Maybe(Of T), ByVal value2 As Maybe(Of T)) As Boolean
+        Return value1.Equals(value2)
+    End Operator
+    Public Shared Operator <>(ByVal value1 As Maybe(Of T), ByVal value2 As Maybe(Of T)) As Boolean
+        Return Not value1.Equals(value2)
+    End Operator
 End Structure

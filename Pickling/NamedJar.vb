@@ -22,7 +22,7 @@ Namespace Pickling
         End Function
         Public Overrides Function Parse(ByVal text As String) As T
             Dim prefix = "{0}: ".Frmt(Name)
-            If Not text.StartsWith(prefix) Then Throw New ArgumentException("Incorrect named format.")
+            If Not text.StartsWith(prefix, StringComparison.Ordinal) Then Throw New ArgumentException("Incorrect named format.")
             Return SubJar.Parse(text.Substring(prefix.Length))
         End Function
 

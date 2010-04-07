@@ -233,7 +233,8 @@ Namespace WC3.Protocol
             If text = "[none]" Then Return New GameObjectId(UInt32.MaxValue, UInt32.MaxValue)
             If Not text Like "allocated id: #*, counter id: #*" Then Throw New FormatException("Not a recognized GameObjectId format.")
             Dim words = text.Split({": ", ", "}, StringSplitOptions.RemoveEmptyEntries)
-            Return New GameObjectId(UInt32.Parse(words(1)), UInt32.Parse(words(3)))
+            Return New GameObjectId(AllocatedId:=UInt32.Parse(words(1), NumberStyles.Integer, CultureInfo.InvariantCulture),
+                                    CounterId:=UInt32.Parse(words(3), NumberStyles.Integer, CultureInfo.InvariantCulture))
         End Function
     End Structure
 

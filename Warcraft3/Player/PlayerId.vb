@@ -66,10 +66,10 @@ Namespace WC3
 
         Public Overrides Function Parse(ByVal text As String) As PlayerId
             Dim index As Byte
-            If text.StartsWith("pid") Then
-                index = Byte.Parse(text.Substring(3))
+            If text.StartsWith("pid", StringComparison.Ordinal) Then
+                index = Byte.Parse(text.Substring(3), NumberStyles.Integer, CultureInfo.InvariantCulture)
             Else
-                index = Byte.Parse(text)
+                index = Byte.Parse(text, NumberStyles.Integer, CultureInfo.InvariantCulture)
             End If
             If index < 1 OrElse index > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(index))
             Return New PlayerId(index)

@@ -17,6 +17,12 @@ Namespace Pickling
             Public Overloads Function Equals(ByVal other As EmptyValue) As Boolean Implements IEquatable(Of EmptyValue).Equals
                 Return True
             End Function
+            Public Shared Operator =(ByVal value1 As EmptyValue, ByVal value2 As EmptyValue) As Boolean
+                Return value1.Equals(value2)
+            End Operator
+            Public Shared Operator <>(ByVal value1 As EmptyValue, ByVal value2 As EmptyValue) As Boolean
+                Return Not value1.Equals(value2)
+            End Operator
         End Structure
 
         Public Overrides Function Pack(ByVal value As EmptyValue) As IEnumerable(Of Byte)

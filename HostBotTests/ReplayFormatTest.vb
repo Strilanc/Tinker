@@ -137,7 +137,7 @@ Public Class ReplayFormatTest
                         {"player action sets", New Protocol.PlayerActionSet() {}.AsReadableList}})
 
         JarTest(Format.ReplayEntryTick.Jar,
-                Data:={11, 0,
+                data:={11, 0,
                        250, 0,
                        2,
                            6, 0,
@@ -149,7 +149,7 @@ Public Class ReplayFormatTest
                         {"player action sets", New Protocol.PlayerActionSet() {
                             New Protocol.PlayerActionSet(New PlayerId(2),
                                                          New Protocol.GameAction() {
-                                Protocol.GameAction.FromValue(Protocol.GameActions.CheatGold, New Dictionary(Of InvariantString, Object) From {
+                                New Protocol.GameAction(Protocol.GameActionId.CheatGold, New Dictionary(Of InvariantString, Object) From {
                                     {"unknown", CByte(1)},
                                     {"amount", 5UI}})}.AsReadableList)}.AsReadableList}})
     End Sub

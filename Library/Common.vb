@@ -504,8 +504,8 @@ Public Module PoorlyCategorizedFunctions
     End Sub
 
     <Extension()>
-    Public Function Max(Of T As IComparable(Of T))(ByVal val1 As T, ByVal val2 As T) As T
-        Return If(val1.CompareTo(val2) >= 0, val1, val2)
+    Public Function Max(Of T As IComparable(Of T))(ByVal value1 As T, ByVal value2 As T) As T
+        Return If(value1.CompareTo(value2) >= 0, value1, value2)
     End Function
 
     <Extension()>

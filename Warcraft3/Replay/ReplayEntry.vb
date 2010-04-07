@@ -15,17 +15,11 @@ Namespace WC3.Replay
 
         Public Sub New(ByVal id As ReplayEntryId, ByVal payload As Object)
             Contract.Requires(payload IsNot Nothing)
+            Contract.Ensures(Me.Id = id)
+            Contract.Ensures(Me.Payload Is payload)
             Me._id = id
             Me._payload = payload
         End Sub
-
-        Public Shared Function FromValue(Of T)(ByVal definition As Format.Definition(Of T),
-                                               ByVal value As T) As ReplayEntry
-            Contract.Requires(definition IsNot Nothing)
-            Contract.Requires(value IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return New ReplayEntry(definition.Id, value)
-        End Function
 
         Public ReadOnly Property Id As ReplayEntryId
             Get

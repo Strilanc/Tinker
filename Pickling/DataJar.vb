@@ -17,8 +17,8 @@ Namespace Pickling
         Public Overrides Function Parse(ByVal text As String) As IReadableList(Of Byte)
             Try
                 Dim byteText = text
-                If byteText.StartsWith("[") Then byteText = byteText.Substring(1)
-                If byteText.EndsWith("]") Then byteText = byteText.Substring(0, byteText.Length - 1)
+                If byteText.StartsWith("[", StringComparison.Ordinal) Then byteText = byteText.Substring(1)
+                If byteText.EndsWith("]", StringComparison.Ordinal) Then byteText = byteText.Substring(0, byteText.Length - 1)
                 Return (From word In byteText.Split({" "}, StringSplitOptions.RemoveEmptyEntries)
                         Select Byte.Parse(word, NumberStyles.HexNumber, CultureInfo.InvariantCulture)
                         ).ToReadableList

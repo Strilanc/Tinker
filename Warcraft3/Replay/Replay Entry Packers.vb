@@ -16,7 +16,7 @@ Namespace WC3.Replay
             Contract.Requires(playerCount > 0)
             Contract.Requires(playerCount <= 12)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryStartOfReplay, New Dictionary(Of InvariantString, Object) From {
+            Return New ReplayEntry(ReplayEntryId.StartOfReplay, New Dictionary(Of InvariantString, Object) From {
                     {"unknown1", 1UI},
                     {"primary player id", primaryPlayerId},
                     {"primary player name", primaryPlayerName.ToString},
@@ -34,7 +34,7 @@ Namespace WC3.Replay
                                          ByVal peerData As IReadableList(Of Byte)) As ReplayEntry
             Contract.Requires(peerData IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryPlayerJoined, New Dictionary(Of InvariantString, Object) From {
+            Return New ReplayEntry(ReplayEntryId.PlayerJoined, New Dictionary(Of InvariantString, Object) From {
                            {"joiner id", id},
                            {"name", name.ToString},
                            {"shared data", peerData},
@@ -49,7 +49,7 @@ Namespace WC3.Replay
             Contract.Requires(defaultPlayerSlotCount > 0)
             Contract.Requires(defaultPlayerSlotCount <= 12)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryLobbyState, New Dictionary(Of InvariantString, Object) From {
+            Return New ReplayEntry(ReplayEntryId.LobbyState, New Dictionary(Of InvariantString, Object) From {
                     {"slots", (From slot In slots Select Protocol.SlotJar.PackSlot(slot)).ToReadableList},
                     {"random seed", randomSeed},
                     {"layout style", layoutStyle},
@@ -58,17 +58,17 @@ Namespace WC3.Replay
         <Pure()>
         Public Function MakeLoadStarted1() As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryLoadStarted1, 1UI)
+            Return New ReplayEntry(ReplayEntryId.LoadStarted1, 1UI)
         End Function
         <Pure()>
         Public Function MakeLoadStarted2() As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryLoadStarted2, 1UI)
+            Return New ReplayEntry(ReplayEntryId.LoadStarted2, 1UI)
         End Function
         <Pure()>
         Public Function MakeGameStarted() As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryGameStarted, 1UI)
+            Return New ReplayEntry(ReplayEntryId.GameStarted, 1UI)
         End Function
         <Pure()>
         Public Function MakePlayerLeft(ByVal unknown1 As UInt32,
@@ -76,7 +76,7 @@ Namespace WC3.Replay
                                        ByVal reportedReason As Protocol.PlayerLeaveReason,
                                        ByVal leaveCount As UInt32) As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryPlayerLeft, New Dictionary(Of InvariantString, Object) From {
+            Return New ReplayEntry(ReplayEntryId.PlayerLeft, New Dictionary(Of InvariantString, Object) From {
                     {"unknown1", unknown1},
                     {"leaver", leaver},
                     {"reason", reportedReason},
@@ -85,14 +85,14 @@ Namespace WC3.Replay
         <Pure()>
         Public Function MakeGameStateChecksum(ByVal checksum As UInt32) As ReplayEntry
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryGameStateChecksum, checksum)
+            Return New ReplayEntry(ReplayEntryId.GameStateChecksum, checksum)
         End Function
         <Pure()>
         Public Function MakeLobbyChatMessage(ByVal sender As PlayerId,
                                              ByVal message As String) As ReplayEntry
             Contract.Requires(message IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryChatMessage, New Dictionary(Of InvariantString, Object) From {
+            Return New ReplayEntry(ReplayEntryId.ChatMessage, New Dictionary(Of InvariantString, Object) From {
                     {"speaker", sender},
                     {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                         {"type group", Protocol.ChatType.Lobby.KeyValue(Of Object)(New EmptyJar.EmptyValue)},
@@ -104,7 +104,7 @@ Namespace WC3.Replay
                                             ByVal receivingGroup As Protocol.ChatGroup) As ReplayEntry
             Contract.Requires(message IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryChatMessage, New Dictionary(Of InvariantString, Object) From {
+            Return New ReplayEntry(ReplayEntryId.ChatMessage, New Dictionary(Of InvariantString, Object) From {
                     {"speaker", sender},
                     {"type group message", New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                         {"type group", Protocol.ChatType.Game.KeyValue(Of Object)(receivingGroup)},
@@ -115,7 +115,7 @@ Namespace WC3.Replay
                                             Optional ByVal duration As UInt16 = Nothing) As ReplayEntry
             Contract.Requires(actions IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryTickPreOverflow, New Dictionary(Of InvariantString, Object) From {
+            Return New ReplayEntry(ReplayEntryId.TickPreOverflow, New Dictionary(Of InvariantString, Object) From {
                     {"time span", duration},
                     {"player action sets", actions}})
         End Function
@@ -124,7 +124,7 @@ Namespace WC3.Replay
                                  ByVal actions As IReadableList(Of Protocol.PlayerActionSet)) As ReplayEntry
             Contract.Requires(actions IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ReplayEntry)() IsNot Nothing)
-            Return ReplayEntry.FromValue(Format.ReplayEntryTick, New Dictionary(Of InvariantString, Object) From {
+            Return New ReplayEntry(ReplayEntryId.Tick, New Dictionary(Of InvariantString, Object) From {
                     {"time span", duration},
                     {"player action sets", actions}})
         End Function
