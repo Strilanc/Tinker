@@ -185,5 +185,28 @@
             Contract.Ensures(Contract.Result(Of INamedJar(Of T))() IsNot Nothing)
             Return New NamedJar(Of T)(name, jar)
         End Function
+
+        <Extension()> <Pure()>
+        Public Sub SetValueIfDifferent(ByVal editor As ISimpleValueEditor, ByVal value As Object)
+            Contract.Requires(editor IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
+            Try
+                If value.Equals(editor.Value) Then Return
+                editor.Value = value
+            Catch ex As PicklingException
+                editor.Value = value
+            End Try
+        End Sub
+        <Extension()> <Pure()>
+        Public Sub SetValueIfDifferent(Of T)(ByVal editor As IValueEditor(Of T), ByVal value As T)
+            Contract.Requires(editor IsNot Nothing)
+            Contract.Requires(value IsNot Nothing)
+            Try
+                If value.Equals(editor.Value) Then Return
+                editor.Value = value
+            Catch ex As PicklingException
+                editor.Value = value
+            End Try
+        End Sub
     End Module
 End Namespace

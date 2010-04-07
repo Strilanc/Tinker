@@ -149,9 +149,9 @@ Public Class ReplayFormatTest
                         {"player action sets", New Protocol.PlayerActionSet() {
                             New Protocol.PlayerActionSet(New PlayerId(2),
                                                          New Protocol.GameAction() {
-                                New Protocol.GameAction(Protocol.GameActionId.CheatGold, New Dictionary(Of InvariantString, Object) From {
+                                New Protocol.GameAction(Protocol.GameActionId.CheatGold, New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                     {"unknown", CByte(1)},
-                                    {"amount", 5UI}})}.AsReadableList)}.AsReadableList}})
+                                    {"amount", 5UI}}))}.AsReadableList)}.AsReadableList}})
     End Sub
     <TestMethod()>
     Public Sub ReplayEntryTournamentForcedCountdownTest()

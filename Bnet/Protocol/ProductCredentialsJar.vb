@@ -25,7 +25,7 @@ Namespace Bnet.Protocol
             Contract.Requires(vals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of ProductCredentials)() IsNot Nothing)
             Dim proof = vals.ItemAs(Of IReadableList(Of Byte))("proof")
-            Contract.Assume(proof.Count = 20)
+            If proof.Count <> 20 Then Throw New PicklingException("Proof must have 20 bytes.")
             Return New ProductCredentials(
                     product:=vals.ItemAs(Of ProductType)("product"),
                     publicKey:=vals.ItemAs(Of UInt32)("public key"),

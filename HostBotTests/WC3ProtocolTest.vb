@@ -503,9 +503,9 @@ Public Class WC3ProtocolTest
                         {"time span", 250US},
                         {"player action sets", {New PlayerActionSet(New PlayerId(1),
                                            {New GameAction(GameActionId.CheatGold,
-                                                           New Dictionary(Of InvariantString, Object) From {
+                                                           New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                                                {"amount", 100UI},
-                                                               {"unknown", CByte(2)}})
+                                                               {"unknown", CByte(2)}}))
                                             }.AsReadableList)
                                      }.AsReadableList.Maybe}
                     })

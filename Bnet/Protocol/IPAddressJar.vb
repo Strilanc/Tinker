@@ -16,7 +16,8 @@ Namespace Bnet.Protocol
         Public Overrides Function Parse(ByVal text As String) As Net.IPAddress
             Try
                 Return Net.IPAddress.Parse(text)
-            Catch ex As ArgumentException
+            Catch ex As Exception When TypeOf ex Is ArgumentException OrElse
+                                       TypeOf ex Is FormatException
                 Throw New PicklingException("'{0}' is not an IPAddress.".Frmt(text), ex)
             End Try
         End Function

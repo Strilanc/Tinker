@@ -44,14 +44,15 @@ Namespace Pickling
             Dim valueDesc = _valueJars(value.Key).Value.Describe(value.Value)
             Return If(_useSingleLineDescription,
                       "{0}: {1}".Frmt(keyDesc, valueDesc),
-                      {keyDesc, valueDesc}.StringJoin(Environment.NewLine))
+                      "{0}, {1}".Frmt(keyDesc, valueDesc))
         End Function
         Public Overrides Function Parse(ByVal text As String) As KeyValuePair(Of TKey, Object)
-            Dim p = text.IndexOf(":"c)
-            If p < 0 Then Throw New PicklingException("Expected key:value style.")
+            Dim divider = If(_useSingleLineDescription, ":", ",")
+            Dim p = text.IndexOf(divider)
+            If p < 0 Then Throw New PicklingException("Expected key{0}value style.".Frmt(divider))
             Dim key = _keyJar.Parse(text.Substring(0, p).TrimEnd)
             If Not _valueJars.ContainsKey(key) Then Throw New PicklingException("No subjar with key {0}.".Frmt(key))
-            Return key.KeyValue(_valueJars(key).Value.Parse(text.Substring(p + 1).TrimStart))
+            Return key.KeyValue(_valueJars(key).Value.Parse(text.Substring(p + divider.Length).TrimStart))
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of KeyValuePair(Of TKey, Object))
@@ -85,8 +86,8 @@ Namespace Pickling
                             End Sub,
                 getter:=Function() keyControl.Value.KeyValue(valueControl.Value),
                 setter:=Sub(value)
-                            If Not value.Key.Equals(keyControl.Value) Then keyControl.Value = value.Key
-                            If Not value.Value.Equals(valueControl.Value) Then valueControl.Value = value.Value
+                            keyControl.SetValueIfDifferent(value.Key)
+                            valueControl.SetValueIfDifferent(value.Value)
                         End Sub,
                 disposer:=Sub()
                               keyControl.Dispose()

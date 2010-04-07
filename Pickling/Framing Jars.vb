@@ -217,12 +217,8 @@
                             End Sub,
                 getter:=Function() If(checkControl.Checked, valueControl.Value.Maybe, New Maybe(Of T)()),
                 setter:=Sub(value)
-                            If value.HasValue Then
-                                If Not checkControl.Checked OrElse Not valueControl.Value.Equals(value.Value) Then
-                                    valueControl.Value = value.Value
-                                End If
-                            End If
-                            If checkControl.Checked <> value.HasValue Then checkControl.Checked = value.HasValue
+                            checkControl.Checked = value.HasValue
+                            If value.HasValue Then valueControl.SetValueIfDifferent(value.Value)
                         End Sub,
                 disposer:=Sub()
                               checkControl.Dispose()

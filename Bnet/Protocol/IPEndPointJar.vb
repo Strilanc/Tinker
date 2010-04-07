@@ -52,8 +52,8 @@ Namespace Bnet.Protocol
                             End Sub,
                 getter:=Function() New Net.IPEndPoint(addressControl.Value, portControl.Value),
                 setter:=Sub(value)
-                            If Not addressControl.Value.Equals(value.Address) Then addressControl.Value = value.Address
-                            If portControl.Value <> value.Port Then portControl.Value = CUShort(value.Port)
+                            addressControl.SetValueIfDifferent(value.Address)
+                            portControl.SetValueIfDifferent(CUShort(value.Port))
                         End Sub,
                 disposer:=Sub()
                               addressControl.Dispose()

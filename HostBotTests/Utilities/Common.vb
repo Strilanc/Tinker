@@ -66,8 +66,8 @@ Friend Module TestingCommon
             Assert.IsTrue(jar.Describe(parsed.Value) = description)
         End If
 
-        Dim packed = jar.Pack(value)
-        Assert.IsTrue(packed.SequenceEqual(data))
+        Assert.IsTrue(jar.Pack(value).SequenceEqual(data))
+        Assert.IsTrue(equater(jar.Parse(jar.Describe(value)), value))
 
         Dim control = jar.MakeControl()
         control.Value = value

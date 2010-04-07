@@ -171,8 +171,8 @@ Namespace Bnet.Protocol
                 getter:=Function() New QueryGamesListResponse(resultControl.Value,
                                                               ParseRawGameDescriptions(gamesControl.Value, _clock)),
                 setter:=Sub(value)
-                            resultControl.Value = value.Result
-                            gamesControl.Value = PackRawGameDescriptions(value.Games)
+                            resultControl.SetValueIfDifferent(value.Result)
+                            gamesControl.SetValueIfDifferent(PackRawGameDescriptions(value.Games))
                         End Sub,
                 disposer:=Sub()
                               resultControl.Dispose()

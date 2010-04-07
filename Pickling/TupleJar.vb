@@ -73,9 +73,7 @@ Namespace Pickling
                 getter:=Function() _subJars.Zip(subControls).ToDictionary(Function(e) e.Item1.Name, Function(e) e.Item2.Value),
                 setter:=Sub(value)
                             For Each pair In _subJars.Zip(subControls)
-                                Dim c = pair.Item2
-                                Dim v = value.ItemRaw(pair.Item1.Name)
-                                If Not c.Value.Equals(v) Then c.Value = v
+                                pair.Item2.SetValueIfDifferent(value.ItemRaw(pair.Item1.Name))
                             Next pair
                         End Sub,
                 disposer:=Sub()

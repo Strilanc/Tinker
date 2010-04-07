@@ -13,10 +13,14 @@ Namespace Bnet.Protocol
             Return DateTime.FromFileTime(data.Take(8).ToUInt64.BitwiseToInt64).ParsedWithDataCount(8)
         End Function
 
+        Public Overrides Function Describe(ByVal value As Date) As String
+            Return value.ToString(CultureInfo.InvariantCulture)
+        End Function
         Public Overrides Function Parse(ByVal text As String) As DateTime
             Try
                 Return DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.None)
-            Catch ex As ArgumentException
+            Catch ex As Exception When TypeOf ex Is ArgumentException OrElse
+                                       TypeOf ex Is FormatException
                 Throw New PicklingException("'{0}' is not a DateTime.".Frmt(text), ex)
             End Try
         End Function
