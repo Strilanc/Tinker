@@ -48,9 +48,12 @@ Namespace Pickling
             Return (From subJar In _subJars Select subJar.Describe(value.ItemRaw(subJar.Name))).MakeListDescription(_useSingleLineDescription)
         End Function
         Public Overrides Function Parse(ByVal text As String) As NamedValueMap
-            Return _subJars.Zip(text.SplitListDescription(_useSingleLineDescription)).ToDictionary(
+            Dim lines = text.SplitListDescription(_useSingleLineDescription)
+            Dim result = _subJars.Zip(lines).ToDictionary(
                 keySelector:=Function(pair) pair.Item1.Name,
                 elementSelector:=Function(pair) pair.Item1.Parse(pair.Item2))
+            If lines.Count > _subJars.Count Then Throw New PicklingException("Extra lines found after tuple finished.")
+            Return result
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of NamedValueMap)

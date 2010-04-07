@@ -202,7 +202,10 @@ Namespace WC3.Protocol
 
         '''<summary>Setting this bit causes wc3 to check the map and disc if it is not signed by Blizzard</summary>
         AuthenticatedMakerBlizzard = 1 << 3
+
         OfficialMeleeGame = 1 << 5
+
+        SavedGame = 1 << 9
 
         PrivateGame = 1 << 11
 
