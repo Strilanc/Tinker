@@ -33,7 +33,12 @@ Namespace WC3.Protocol
                 setter:=Sub(value)
                             allocControl.Value = value.AllocatedId
                             counterControl.Value = value.CounterId
-                        End Sub)
+                        End Sub,
+                disposer:=Sub()
+                              allocControl.Dispose()
+                              counterControl.Dispose()
+                              panel.Dispose()
+                          End Sub)
         End Function
     End Class
 End Namespace

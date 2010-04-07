@@ -37,7 +37,12 @@ Namespace Pickling
                 Control:=panel,
                 eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
                 getter:=Function() subControl.Value,
-                setter:=Sub(value) subControl.Value = value)
+                setter:=Sub(value) subControl.Value = value,
+                disposer:=Sub()
+                              label.Dispose()
+                              subControl.Dispose()
+                              panel.Dispose()
+                          End Sub)
         End Function
 
         Public Overrides Function ToString() As String

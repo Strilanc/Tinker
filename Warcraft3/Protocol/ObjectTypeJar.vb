@@ -43,7 +43,8 @@ Namespace WC3.Protocol
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
                 getter:=Function() Parse(control.Text),
-                setter:=Sub(value) control.Text = Describe(value))
+                setter:=Sub(value) control.Text = Describe(value),
+                disposer:=Sub() control.Dispose())
         End Function
     End Class
 End Namespace

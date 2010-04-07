@@ -77,7 +77,13 @@ Namespace Pickling
                                 Dim v = value.ItemRaw(pair.Item1.Name)
                                 If Not c.Value.Equals(v) Then c.Value = v
                             Next pair
-                        End Sub)
+                        End Sub,
+                disposer:=Sub()
+                              For Each subControl In subControls
+                                  subControl.Dispose()
+                              Next subControl
+                              panel.Dispose()
+                          End Sub)
         End Function
     End Class
 End Namespace

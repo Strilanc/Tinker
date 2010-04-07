@@ -87,7 +87,12 @@ Namespace Pickling
                 setter:=Sub(value)
                             If Not value.Key.Equals(keyControl.Value) Then keyControl.Value = value.Key
                             If Not value.Value.Equals(valueControl.Value) Then valueControl.Value = value.Value
-                        End Sub)
+                        End Sub,
+                disposer:=Sub()
+                              keyControl.Dispose()
+                              valueControl.Dispose()
+                              panel.Dispose()
+                          End Sub)
         End Function
     End Class
 End Namespace

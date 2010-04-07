@@ -54,7 +54,12 @@ Namespace Bnet.Protocol
                 setter:=Sub(value)
                             If Not addressControl.Value.Equals(value.Address) Then addressControl.Value = value.Address
                             If portControl.Value <> value.Port Then portControl.Value = CUShort(value.Port)
-                        End Sub)
+                        End Sub,
+                disposer:=Sub()
+                              addressControl.Dispose()
+                              portControl.Dispose()
+                              panel.Dispose()
+                          End Sub)
         End Function
     End Class
 End Namespace

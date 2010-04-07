@@ -83,7 +83,8 @@
                             For Each pair In flags
                                 control.SetItemChecked(pair.Item2, value.EnumIncludes(pair.Item1))
                             Next pair
-                        End Sub)
+                        End Sub,
+                disposer:=Sub() control.Dispose())
         End Function
         Private Function MakeDefinedValueControl() As IValueEditor(Of TEnum)
             Contract.Requires(Not _isFlagEnum)
@@ -102,7 +103,8 @@
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.SelectedIndexChanged, Sub() action(),
                 getter:=Function() DirectCast(control.SelectedItem, TEnum),
-                setter:=Sub(value) control.SelectedItem = value)
+                setter:=Sub(value) control.SelectedItem = value,
+                disposer:=Sub() control.Dispose())
         End Function
         Private Function MakeUndefinedValueControl() As IValueEditor(Of TEnum)
             Contract.Requires(Not _isFlagEnum)
@@ -130,7 +132,8 @@
                 setter:=Sub(value)
                             control.SelectedIndex = -1
                             control.Text = Describe(value)
-                        End Sub)
+                        End Sub,
+                disposer:=Sub() control.Dispose())
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of TEnum)

@@ -89,7 +89,11 @@ Namespace WC3
                 control:=panel,
                 eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
                 getter:=Function() New PlayerId(CByte(control.Value)),
-                setter:=Sub(value) control.Value = value.Index)
+                setter:=Sub(value) control.Value = value.Index,
+                disposer:=Sub()
+                              label.Dispose()
+                              control.Dispose()
+                          End Sub)
         End Function
     End Class
 End Namespace

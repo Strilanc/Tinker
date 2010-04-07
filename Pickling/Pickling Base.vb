@@ -256,7 +256,8 @@
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
                 getter:=Function() Parse(control.Text),
-                setter:=Sub(value) control.Text = Describe(value))
+                setter:=Sub(value) control.Text = Describe(value),
+                disposer:=Sub() control.Dispose())
         End Function
 
         Private Function SimpleMakeControl() As ISimpleValueEditor Implements ISimpleJar.MakeControl
@@ -290,12 +291,15 @@
 
     <ContractClass(GetType(ISimpleValueEditor.ContractClass))>
     Public Interface ISimpleValueEditor
+        Inherits IDisposable
+
         ReadOnly Property Control As Control
         Property Value As Object
         Event ValueChanged(ByVal sender As ISimpleValueEditor)
 
         <ContractClassFor(GetType(ISimpleValueEditor))>
         MustInherit Class ContractClass
+            Inherits DisposableWithTask
             Implements ISimpleValueEditor
             Public Event ValueChanged(ByVal sender As ISimpleValueEditor) Implements ISimpleValueEditor.ValueChanged
             Public ReadOnly Property Control As System.Windows.Forms.Control Implements ISimpleValueEditor.Control
@@ -340,11 +344,13 @@
     End Class
 
     Public Class DelegatedValueEditor(Of T)
+        Inherits DisposableWithTask
         Implements IValueEditor(Of T)
 
         Private ReadOnly _getter As Func(Of T)
         Private ReadOnly _setter As Action(Of T)
         Private ReadOnly _control As Control
+        Private ReadOnly _disposer As Action
 
         Private _blockEvents As Boolean
 
@@ -355,19 +361,23 @@
             Contract.Invariant(_getter IsNot Nothing)
             Contract.Invariant(_setter IsNot Nothing)
             Contract.Invariant(_control IsNot Nothing)
+            Contract.Invariant(_disposer IsNot Nothing)
         End Sub
 
         Public Sub New(ByVal control As Control,
                        ByVal getter As Func(Of T),
                        ByVal setter As Action(Of T),
-                       ByVal eventAdder As Action(Of Action))
+                       ByVal eventAdder As Action(Of Action),
+                       ByVal disposer As Action)
             Contract.Requires(control IsNot Nothing)
             Contract.Requires(getter IsNot Nothing)
             Contract.Requires(setter IsNot Nothing)
             Contract.Requires(eventAdder IsNot Nothing)
+            Contract.Requires(disposer IsNot Nothing)
             Me._control = control
             Me._getter = getter
             Me._setter = setter
+            Me._disposer = disposer
             Call eventAdder(AddressOf RaiseValueChanged)
         End Sub
         Private Sub RaiseValueChanged()
@@ -404,5 +414,11 @@
                 Me.Value = DirectCast(value, T).AssumeNotNull
             End Set
         End Property
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
+            If finalizing Then Return Nothing
+            Call _disposer()
+            Return Nothing
+        End Function
     End Class
 End Namespace

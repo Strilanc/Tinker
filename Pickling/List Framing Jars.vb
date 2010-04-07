@@ -114,6 +114,7 @@
     End Class
 
     Public NotInheritable Class ListValueEditor(Of T)
+        Inherits DisposableWithTask
         Implements IValueEditor(Of IReadableList(Of T))
 
         Private ReadOnly subControls As New List(Of Entry)
@@ -133,6 +134,8 @@
         End Sub
 
         Private Class Entry
+            Inherits DisposableWithTask
+
             Private ReadOnly _subControl As IValueEditor(Of T)
             Private ReadOnly _removeControl As New Button() With {.Text = "Remove"}
             Private ReadOnly _insertControl As New Button() With {.Text = "Insert"}
@@ -185,6 +188,17 @@
                     Return _subControl
                 End Get
             End Property
+
+            Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As System.Threading.Tasks.Task
+                If finalizing Then Return Nothing
+                _subControl.Dispose()
+                _removeControl.Dispose()
+                _insertControl.Dispose()
+                _moveUpControl.Dispose()
+                _commandPanel.Dispose()
+                _fullPanel.Dispose()
+                Return Nothing
+            End Function
         End Class
 
         Public Sub New(ByVal subJar As IJar(Of T))
@@ -308,5 +322,15 @@
                 Me.Value = DirectCast(value, IReadableList(Of T))
             End Set
         End Property
+
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As System.Threading.Tasks.Task
+            If finalizing Then Return Nothing
+            For Each subControl In subControls
+                subControl.Dispose()
+            Next subControl
+            mainControl.Dispose()
+            addButton.Dispose()
+            Return Nothing
+        End Function
     End Class
 End Namespace

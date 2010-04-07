@@ -63,7 +63,8 @@ Namespace Pickling
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),
                 getter:=Function() control.Text,
-                setter:=Sub(value) control.Text = value)
+                setter:=Sub(value) control.Text = value,
+                disposer:=Sub() control.Dispose())
         End Function
     End Class
 

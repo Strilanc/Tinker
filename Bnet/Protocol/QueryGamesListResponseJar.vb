@@ -173,7 +173,12 @@ Namespace Bnet.Protocol
                 setter:=Sub(value)
                             resultControl.Value = value.Result
                             gamesControl.Value = PackRawGameDescriptions(value.Games)
-                        End Sub)
+                        End Sub,
+                disposer:=Sub()
+                              resultControl.Dispose()
+                              gamesControl.Dispose()
+                              panel.Dispose()
+                          End Sub)
         End Function
     End Class
 End Namespace

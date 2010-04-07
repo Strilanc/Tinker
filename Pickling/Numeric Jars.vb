@@ -46,7 +46,8 @@
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
                 getter:=Function() CByte(control.Value),
-                setter:=Sub(value) control.Value = value)
+                setter:=Sub(value) control.Value = value,
+                disposer:=Sub() control.Dispose())
         End Function
     End Class
 
@@ -99,7 +100,8 @@
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
                 getter:=Function() CUShort(control.Value),
-                setter:=Sub(value) control.Value = value)
+                setter:=Sub(value) control.Value = value,
+                disposer:=Sub() control.Dispose())
         End Function
     End Class
 
@@ -152,7 +154,8 @@
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.ValueChanged, Sub() action(),
                 getter:=Function() CUInt(control.Value),
-                setter:=Sub(value) control.Value = value)
+                setter:=Sub(value) control.Value = value,
+                disposer:=Sub() control.Dispose())
         End Function
     End Class
 

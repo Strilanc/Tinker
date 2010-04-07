@@ -57,7 +57,8 @@ Namespace Bnet.Protocol
                 Control:=subControl.Control,
                 eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
                 getter:=Function() ParseRawValue(subControl.Value),
-                setter:=Sub(value) subControl.Value = PackRawValue(value))
+                setter:=Sub(value) subControl.Value = PackRawValue(value),
+                disposer:=Sub() subControl.Dispose())
         End Function
     End Class
 End Namespace

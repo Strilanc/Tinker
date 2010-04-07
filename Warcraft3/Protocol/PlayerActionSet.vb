@@ -114,7 +114,8 @@ Namespace WC3.Protocol
                                                        subControl.Value.ItemAs(Of IReadableList(Of GameAction))("actions")),
                 setter:=Sub(value) subControl.Value = New Dictionary(Of InvariantString, Object) From {
                             {"source", value.Id},
-                            {"actions", value.Actions}})
+                            {"actions", value.Actions}},
+                disposer:=Sub() subControl.Dispose())
         End Function
     End Class
 End Namespace

@@ -223,7 +223,12 @@
                                 End If
                             End If
                             If checkControl.Checked <> value.HasValue Then checkControl.Checked = value.HasValue
-                        End Sub)
+                        End Sub,
+                disposer:=Sub()
+                              checkControl.Dispose()
+                              valueControl.Dispose()
+                              panel.Dispose()
+                          End Sub)
         End Function
     End Class
 

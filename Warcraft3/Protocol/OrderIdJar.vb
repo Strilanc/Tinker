@@ -55,7 +55,8 @@ Namespace WC3.Protocol
                 setter:=Sub(value)
                             control.SelectedIndex = -1
                             control.Text = Describe(value)
-                        End Sub)
+                        End Sub,
+                disposer:=Sub() control.Dispose())
         End Function
     End Class
 End Namespace

@@ -208,7 +208,8 @@ Namespace WC3.Protocol
                 Control:=subControl.Control,
                 eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
                 getter:=Function() ParseDataValue(subControl.Value),
-                setter:=Sub(value) subControl.Value =PackDataValue(value))
+                setter:=Sub(value) subControl.Value = PackDataValue(value),
+                disposer:=Sub() subControl.Dispose())
         End Function
     End Class
 End Namespace

@@ -99,7 +99,8 @@ Namespace WC3.Protocol
                 Control:=subControl.Control,
                 eventAdder:=Sub(action) AddHandler subControl.ValueChanged, Sub() action(),
                 getter:=Function() subControl.Value,
-                setter:=Sub(value) subControl.Value = value)
+                setter:=Sub(value) subControl.Value = value,
+                disposer:=Sub() subControl.Dispose())
         End Function
     End Class
 End Namespace

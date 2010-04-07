@@ -39,7 +39,8 @@ Namespace Pickling
                             End Sub,
                 getter:=Function() New EmptyValue(),
                 setter:=Sub(value)
-                        End Sub)
+                        End Sub,
+                disposer:=Sub() control.Dispose())
         End Function
     End Class
 End Namespace
