@@ -232,16 +232,17 @@ Namespace WC3
             End Get
         End Property
 
-        Public Enum SizeClass
-            Huge
-            Large
-            Medium
-            Small
-            Tiny
+        Public Enum SizeClass As Byte
+            Tiny = 0
+            Small = 1
+            Medium = 2
+            Large = 3
+            Huge = 4
         End Enum
+        '''<summary>Determines the size class shown to the user by warcraft 3.</summary>
         Public ReadOnly Property SizeClassification As SizeClass
             Get
-                '[I don't know if area works for irregular sizes; might be max instead]
+                'todo: check that these are correct for non-square sizes
                 Select Case PlayableWidth * PlayableHeight
                     Case Is <= 64 * 64 : Return SizeClass.Tiny
                     Case Is <= 128 * 128 : Return SizeClass.Small
@@ -251,20 +252,24 @@ Namespace WC3
                 End Select
             End Get
         End Property
-        Public ReadOnly Property GameType As Protocol.GameTypes
+        '''<summary>Determines the size class used for filtering by warcraft 3.</summary>
+        Private ReadOnly Property FilterSizeClassification As Protocol.GameTypes
             Get
-                Dim result = Protocol.GameTypes.MakerUser Or If(IsMelee, Protocol.GameTypes.TypeMelee, Protocol.GameTypes.TypeScenario)
                 Select Case SizeClassification
-                    Case SizeClass.Tiny, SizeClass.Small
-                        result = result Or Protocol.GameTypes.SizeSmall
-                    Case SizeClass.Medium
-                        result = result Or Protocol.GameTypes.SizeMedium
-                    Case SizeClass.Large, SizeClass.Huge
-                        result = result Or Protocol.GameTypes.SizeLarge
-                    Case Else
-                        Throw SizeClassification.MakeImpossibleValueException()
+                    Case Is <= SizeClass.Medium : Return Protocol.GameTypes.SizeSmall
+                    Case Is = SizeClass.Medium : Return Protocol.GameTypes.SizeMedium
+                    Case Is >= SizeClass.Medium : Return Protocol.GameTypes.SizeLarge
+                    Case Else : Throw New UnreachableException()
                 End Select
-                Return result
+            End Get
+        End Property
+        '''<summary>Determines the game type flags used for filtering by warcraft 3.</summary>
+        Public ReadOnly Property FilterGameType As Protocol.GameTypes
+            Get
+                'todo: distinguish blizzard maps from user maps
+                Return Protocol.GameTypes.MakerUser Or
+                       If(IsMelee, Protocol.GameTypes.TypeMelee, Protocol.GameTypes.TypeScenario) Or
+                       FilterSizeClassification
             End Get
         End Property
         Public ReadOnly Property FileAvailable As Boolean

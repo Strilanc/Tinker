@@ -224,7 +224,7 @@ Namespace WC3
                                             gameId:=AllocateGameId(),
                                             EntryKey:=0,
                                             totalSlotCount:=totalSlotCount,
-                                            GameType:=map.GameType,
+                                            GameType:=map.FilterGameType,
                                             state:=0,
                                             UsedSlotCount:=0,
                                             clock:=New SystemClock())
@@ -286,7 +286,7 @@ Namespace WC3
                                           gameid:=AllocateGameId(),
                                           entryKey:=0,
                                           totalSlotCount:=map.Slots.Count,
-                                          gameType:=map.GameType,
+                                          gameType:=map.FilterGameType,
                                           state:=0,
                                           usedSlotCount:=0,
                                           hostPort:=_portHandle.Port,

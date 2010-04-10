@@ -43,7 +43,7 @@
                                        GameId:=1,
                                        EntryKey:=0,
                                        totalSlotCount:=totalSlotCount,
-                                       GameType:=map.GameType,
+                                       GameType:=map.FilterGameType,
                                        state:=0,
                                        UsedSlotCount:=0,
                                        clock:=clock)
@@ -176,7 +176,7 @@
                                             GameId:=1,
                                             EntryKey:=0,
                                             totalSlotCount:=totalSlotCount,
-                                            GameType:=map.GameType,
+                                            GameType:=map.FilterGameType,
                                             state:=0,
                                             UsedSlotCount:=0,
                                             hostPort:=0,
