@@ -32,11 +32,18 @@ Namespace WC3.Replay
         Public Const HeaderVersion As UInt32 = 1
         Public Const BlockHeaderSize As Integer = 8
 
-        Private Shared ReadOnly _allDefinitions As New List(Of Definition)
+        Private Shared ReadOnly _allDefinitions As New Dictionary(Of ReplayEntryId, Definition)
         Public Shared ReadOnly Property AllDefinitions As IEnumerable(Of Definition)
             Get
                 Contract.Ensures(Contract.Result(Of IEnumerable(Of Definition))() IsNot Nothing)
-                Return _allDefinitions.AsReadOnly
+                Return _allDefinitions.Values
+            End Get
+        End Property
+        Public Shared ReadOnly Property DefinitionFor(ByVal id As ReplayEntryId) As Definition
+            Get
+                Contract.Ensures(Contract.Result(Of Definition)() IsNot Nothing)
+                If Not _allDefinitions.ContainsKey(id) Then Throw New ArgumentException("No definition defined for id: {0}.".Frmt(id))
+                Return _allDefinitions(id)
             End Get
         End Property
 
@@ -90,16 +97,12 @@ Namespace WC3.Replay
             End Property
         End Class
 
-        Private Shared Function IncludeDefinitionInAll(Of T As Definition)(ByVal def As T) As T
-            Contract.Requires(def IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of T)() Is def)
-            _allDefinitions.Add(def)
-            Return def
-        End Function
         Private Shared Function Define(Of T)(ByVal id As ReplayEntryId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
-            Return IncludeDefinitionInAll(New Definition(Of T)(id, jar))
+            Dim result = New Definition(Of T)(id, jar)
+            _allDefinitions.Add(id, result)
+            Return result
         End Function
         Private Shared Function Define(ByVal id As ReplayEntryId,
                                        ByVal jar1 As ISimpleNamedJar,

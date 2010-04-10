@@ -22,7 +22,10 @@ Namespace WC3.Protocol
             Me._payload = payload
         End Sub
         Public Shared Function FromDefinitionAndValue(Of TPayload)(ByVal definition As GameActions.Definition(Of TPayload),
-                                                      ByVal payload As TPayload) As GameAction
+                                                                   ByVal payload As TPayload) As GameAction
+            Contract.Requires(definition IsNot Nothing)
+            Contract.Requires(payload IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
             Return New GameAction(definition, payload)
         End Function
 

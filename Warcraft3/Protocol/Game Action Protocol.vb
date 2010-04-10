@@ -299,16 +299,12 @@ Namespace WC3.Protocol
             End Property
         End Class
 
-        Private Shared Function IncludeDefinitionInAll(Of T As Definition)(ByVal def As T) As T
-            Contract.Requires(def IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of T)() Is def)
-            _allDefinitions.Add(def.Id, def)
-            Return def
-        End Function
         Private Shared Function Define(Of T)(ByVal id As GameActionId, ByVal jar As IJar(Of T)) As Definition(Of T)
             Contract.Requires(jar IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Definition(Of T))() IsNot Nothing)
-            Return IncludeDefinitionInAll(New Definition(Of T)(id, jar))
+            Dim result = New Definition(Of T)(id, jar)
+            _allDefinitions.Add(id, result)
+            Return result
         End Function
         Private Shared Function Define(ByVal id As GameActionId,
                                        ByVal jar1 As ISimpleNamedJar,
