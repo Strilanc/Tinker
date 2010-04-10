@@ -5,81 +5,148 @@ Namespace WC3.Protocol
     '''<original-source> http://www.wc3c.net/tools/specs/W3GActions.txt </original-source>
     '''<remarks>Ids prefixed with 'Trigger' only occur if there is a trigger to catch them.</remarks>
     Public Enum GameActionId As Byte
-        'Global actions [0x00 to 0x07 (spaced to 0x0F)]
+        '''<summary>Occurs when a player pauses the game (no effect per player after three times in multiplayer).</summary>
+        '''<remarks>Entering a menu in singleplayer counts (as do other things which automatically hold the game).</remarks>
         PauseGame = &H1
+        '''<summary>Occurs when a player unpauses the game.</summary>
         ResumeGame = &H2
+        '''<summary>Occurs when a player sets the game speed (no effect in multiplayer).</summary>
         SetGameSpeed = &H3
+        '''<summary>Occurs when a player increases the game speed (by hitting +, no effect in multiplayer).</summary>
         IncreaseGameSpeed = &H4
+        '''<summary>Occurs when a player decreases the game speed (by hitting -, no effect in multiplayer).</summary>
         DecreaseGameSpeed = &H5
+        '''<summary>Occurs when a player initiate a save game.</summary>
         SaveGameStarted = &H6
+        '''<summary>Occurs when a player has finished performing a save game.</summary>
         SaveGameFinished = &H7
 
-        'Order actions [0x10 to 0x1E (spaced to 0x1F)]
+        '''<summary>Occurs when a player issues an order with no target (eg. berserk/autocaston/etc).</summary>
         SelfOrder = &H10
+        '''<summary>Occurs when a player issues an order targeting a point (eg. attackground/earthquake/etc).</summary>
         PointOrder = &H11
+        '''<summary>Occurs when a player issues an order targeting an object (eg. stormbolt/heal/harvest/etc).</summary>
         ObjectOrder = &H12
+        '''<summary>Occurs when a player issues an order to drop or give an item.</summary>
         DropOrGiveItem = &H13
+        '''<summary>Occurs when a player issues an order targeting a thing they see behind fog of war (eg. a tree or previously spotted building).</summary>
         FogObjectOrder = &H14
         '_unseen0x15 = &H15
+        '''<summary>Occurs when the set of units a player has selected changes (including when a selected unit dies).</summary>
         ChangeSelection = &H16
+        '''<summary>Occurs when a player assigns a unit group to a number key.</summary>
         AssignGroupHotkey = &H17
+        '''<summary>Occurs when a player hits a number key to select one of their assigned unit groups.</summary>
         SelectGroupHotkey = &H18
+        '''<summary>Occurs when a player changes the selected subgroup (eg. hitting tab to work with a different unit type from the group selected).</summary>
         SelectSubGroup = &H19
+        '''<summary>Seems to always occur before the SelectSubGroup action. Unsure what this action is for.</summary>
         PreSubGroupSelection = &H1A
+        '''<summary>Occurs when a player selects a unit, but only if there is a trigger waiting for the event.</summary>
         TriggerSelectionEvent = &H1B
+        '''<summary>Occurs when a player selects an item (or doodad?) on the ground.</summary>
         SelectGroundItem = &H1C
+        '''<summary>Occurs when a player cancels a hero revival.</summary>
         CancelHeroRevive = &H1D
+        '''<summary>Occurs when a player cancels/dequeues a building training/research order.</summary>
         DequeueBuildingOrder = &H1E
 
-        'Cheat actions [0x20 to 0x32 (spaced to 0x4F)]
+        '''<summary>Occurs when a player uses the TheDudeAbides cheat (no effect in multiplayer).</summary>
         CheatFastCooldown = &H20
         '_unseen0x21 = &H21
+        '''<summary>Occurs when a player uses the SomebodySetUpUsTheBomb cheat (no effect in multiplayer).</summary>
         CheatInstantDefeat = &H22
+        '''<summary>Occurs when a player uses the WarpTen cheat (no effect in multiplayer).</summary>
         CheatSpeedConstruction = &H23
+        '''<summary>Occurs when a player uses the IocainePowder cheat (no effect in multiplayer).</summary>
         CheatFastDeathDecay = &H24
+        '''<summary>Occurs when a player uses the PointBreak cheat (no effect in multiplayer).</summary>
         CheatNoFoodLimit = &H25
+        '''<summary>Occurs when a player uses the WhosYourDaddy cheat (no effect in multiplayer).</summary>
         CheatGodMode = &H26
+        '''<summary>Occurs when a player uses the KeyserSoze cheat (no effect in multiplayer).</summary>
         CheatGold = &H27
+        '''<summary>Occurs when a player uses the LeafItToMe cheat (no effect in multiplayer).</summary>
         CheatLumber = &H28
+        '''<summary>Occurs when a player uses the ThereIsNoSpoon cheat (no effect in multiplayer).</summary>
         CheatUnlimitedMana = &H29
+        '''<summary>Occurs when a player uses the StrengthAndHonor cheat (no effect in multiplayer).</summary>
         CheatNoDefeat = &H2A
+        '''<summary>Occurs when a player uses the ItVexesMe cheat (no effect in multiplayer).</summary>
         CheatDisableVictoryConditions = &H2B
+        '''<summary>Occurs when a player uses the WhoIsJohnGalt cheat (no effect in multiplayer).</summary>
         CheatEnableResearch = &H2C
+        '''<summary>Occurs when a player uses the GreedIsGood cheat (no effect in multiplayer).</summary>
         CheatGoldAndLumber = &H2D
+        '''<summary>Occurs when a player uses the RiseAndShine/LightsOut/DayLightSavings cheats (no effect in multiplayer).</summary>
         CheatSetTimeOfDay = &H2E
+        '''<summary>Occurs when a player uses the ISeeDeadPeople cheat (no effect in multiplayer).</summary>
         CheatRemoveFogOfWar = &H2F
+        '''<summary>Occurs when a player uses the Synergy cheat (no effect in multiplayer).</summary>
         CheatDisableTechRequirements = &H30
+        '''<summary>Occurs when a player uses the SharpAndShiny cheat (no effect in multiplayer).</summary>
         CheatResearchUpgrades = &H31
+        '''<summary>Occurs when a player uses the AllYourBaseAreBelongToUs cheat (no effect in multiplayer).</summary>
         CheatInstantVictory = &H32
 
-        'Alliance actions [0x50 to 0x51 (spaced to 0x5F)]
+        '''<summary>Occurs when a player changes alliance options.</summary>
         ChangeAllyOptions = &H50
+        '''<summary>Occurs when a player sends resources to another player.</summary>
         TransferResources = &H51
 
-        'Trigger related actions [0x60 to 0x75] [note: TriggerSelectionEvent is at 0x1B in the order actions] 
+        '''<summary>Occurs when a player says something, but only if the thing said matches a trigger chat event filter.</summary>
         TriggerChatEvent = &H60
+        '''<summary>Occurs when a player presses the escape key.</summary>
         PressedEscape = &H61
+        '''<summary>Occurs when a TriggerSleepAction finishes.</summary>
+        '''<remarks>This action exists to avoid desyncs because TriggerSleepAction inexplicably waits in real time instead of game time.</remarks>
         TriggerWaitFinished = &H62
         '_unseen0x63 = &H63
+        '''<summary>Occurs when a player clicks a trackable, but only if there is a trigger waiting for the event.</summary>
         TriggerMouseClickedTrackable = &H64
+        '''<summary>Occurs when a player mouses over a trackable, but only if there is a trigger waiting for the event.</summary>
         TriggerMouseTouchedTrackable = &H65
+        '''<summary>Occurs when a player enters the skills sub-menu of a hero.</summary>
         EnterChooseHeroSkillSubmenu = &H66
+        '''<summary>Occurs when a player enters the construction sub-menu of a builder.</summary>
         EnterChooseBuildingSubmenu = &H67
+        '''<summary>Occurs when a player pings the minimap.</summary>
         MinimapPing = &H68
+        '''<summary>Occurs when a player clicks a dialog button, whether or not a trigger is waiting for the event.</summary>
+        '''<remarks>
+        ''' This action is always paired with DialogAnyButtonClicked by wc3.
+        ''' However, if just this action is sent, only the 'specific button' type trigger events will fire.
+        '''</remarks>
         DialogButtonClicked = &H69
+        '''<summary>Occurs when a player clicks a dialog button, whether or not a trigger is waiting for the event.</summary>
+        '''<remarks>
+        ''' This action is always paired with DialogButtonClicked by wc3.
+        ''' However, if just this action is sent, only the 'any button on dialog' type trigger events will fire.
+        '''</remarks>
         DialogAnyButtonClicked = &H6A
+        '''<summary>Occurs when the map syncs an integer in game cache.</summary>
         GameCacheSyncInteger = &H6B
+        '''<summary>Occurs when the map syncs a real in game cache.</summary>
         GameCacheSyncReal = &H6C
+        '''<summary>Occurs when the map syncs a boolean in game cache.</summary>
         GameCacheSyncBoolean = &H6D
+        '''<summary>Occurs when the map syncs a unit in game cache.</summary>
         GameCacheSyncUnit = &H6E
+        '''<summary>Occurs when the map syncs a string in game cache.</summary>
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         GameCacheSyncString = &H6F
+        '''<summary>Occurs when the map syncs an integer without an assigned value in game cache.</summary>
         GameCacheSyncEmptyInteger = &H70
+        '''<summary>Occurs when the map syncs a string without an assigned value in game cache.</summary>
         '''<remarks>This is a guess based on the other syncs. I've never actually recorded this packet (the jass function to trigger it has a bug).</remarks>
         GameCacheSyncEmptyString = &H71
+        '''<summary>Occurs when the map syncs a boolean without an assigned value in game cache.</summary>
         GameCacheSyncEmptyBoolean = &H72
+        '''<summary>Occurs when the map syncs a unit without an assigned value in game cache.</summary>
         GameCacheSyncEmptyUnit = &H73
+        '''<summary>Occurs when the map syncs a real without an assigned value in game cache.</summary>
         GameCacheSyncEmptyReal = &H74
+        '''<summary>Occurs when a player presses or releases an arrow key, but only if there is a trigger waiting for the event.</summary>
         TriggerArrowKeyEvent = &H75
     End Enum
 
