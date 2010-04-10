@@ -16,7 +16,12 @@ Namespace WC3.Protocol
         End Function
 
         Public Overrides Function Parse(ByVal text As String) As GameObjectId
-            Return GameObjectId.Parse(text)
+            Try
+                Return GameObjectId.Parse(text)
+            Catch ex As Exception When TypeOf ex Is FormatException OrElse
+                                       TypeOf ex Is ArgumentException
+                Throw New PicklingException("'{0}' is not a GameObjectId value.".Frmt(text), ex)
+            End Try
         End Function
 
         Public Overrides Function MakeControl() As IValueEditor(Of GameObjectId)

@@ -188,7 +188,7 @@ Public Module PoorlyCategorizedFunctions
         Return v.DynamicDirectCastTo(Of T)()
     End Function
     <Extension()> <Pure()>
-    Public Function EnumWith(Of TEnum)(ByVal value As TEnum, ByVal [option] As TEnum) As Tenum
+    Public Function EnumWith(Of TEnum)(ByVal value As TEnum, ByVal [option] As TEnum) As TEnum
         Select Case [Enum].GetUnderlyingType(GetType(TEnum))
             Case GetType(SByte) : Return (value.DynamicDirectCastTo(Of SByte)() Or [option].DynamicDirectCastTo(Of SByte)()).DynamicDirectCastTo(Of TEnum)()
             Case GetType(Int16) : Return (value.DynamicDirectCastTo(Of Int16)() Or [option].DynamicDirectCastTo(Of Int16)()).DynamicDirectCastTo(Of TEnum)()
@@ -335,11 +335,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
 
         'Convert from digits in input base to BigInteger
-        Dim value = New BigInteger
-        For Each digit In digits.Reverse
-            value *= inputBase
-            value += digit
-        Next digit
+        Dim value = digits.Reverse.Aggregate(New BigInteger, Function(acc, e) acc * inputBase + e)
 
         'Convert from BigInteger to digits in output base
         Dim result = New List(Of Byte)
@@ -428,27 +424,21 @@ Public Module PoorlyCategorizedFunctions
                                Optional ByVal polyAlreadyReversed As Boolean = False) As UInt32()
         'Reverse the polynomial
         If Not polyAlreadyReversed Then
-            Dim polyRev = 0UI
-            For Each bit In poly.Bits
-                polyRev <<= 1
-                If bit Then polyRev += 1UI
-            Next bit
-            poly = polyRev
+            poly = poly.Bits.Aggregate(0UI, Function(acc, bit) (acc << 1) + If(bit, 1UI, 0UI))
         End If
 
         'Precompute the combined XOR masks for each byte
-        Dim xorTable(0 To 256 - 1) As UInteger
-        For Each i In xorTable.Count.Range
-            Dim accumulator = CUInt(i)
-            For Each repeat In 8.Range
-                Dim useXor = accumulator.Bits.First
-                accumulator >>= 1
-                If useXor Then accumulator = accumulator Xor poly
-            Next repeat
-            xorTable(i) = accumulator
-        Next i
+        Dim xorTable = From i In 256UI.Range
+                       Select 8.Range.Aggregate(CUInt(i),
+                                                Function(acc, e)
+                                                    If CBool(acc And &H1) Then
+                                                        Return (acc >> 1) Xor poly
+                                                    Else
+                                                        Return acc >> 1
+                                                    End If
+                                                End Function)
 
-        Return xorTable
+        Return xorTable.ToArray
     End Function
     <Extension()>
     Public Function CRC32(ByVal data As IReadableStream,
@@ -506,21 +496,6 @@ Public Module PoorlyCategorizedFunctions
     <Extension()>
     Public Function Max(Of T As IComparable(Of T))(ByVal value1 As T, ByVal value2 As T) As T
         Return If(value1.CompareTo(value2) >= 0, value1, value2)
-    End Function
-
-    <Extension()>
-    Public Function TakeLast(Of T)(ByVal sequence As IEnumerable(Of T), ByVal count As Integer) As IEnumerable(Of T)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(count >= 0)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-        Return sequence.Skip(Math.Max(0, sequence.Count - count))
-    End Function
-    <Extension()>
-    Public Function SkipLast(Of T)(ByVal sequence As IEnumerable(Of T), ByVal count As Integer) As IEnumerable(Of T)
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(count >= 0)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of T))() IsNot Nothing)
-        Return sequence.Take(Math.Max(0, sequence.Count - count))
     End Function
 
     <Extension()>

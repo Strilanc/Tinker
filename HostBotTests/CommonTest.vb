@@ -1,5 +1,4 @@
-﻿Imports Strilbrary.Collections
-Imports Microsoft.VisualStudio.TestTools.UnitTesting
+﻿Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Tinker
 
 <TestClass()>
