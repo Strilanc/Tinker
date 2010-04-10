@@ -9,7 +9,7 @@ Namespace Bnet.Protocol
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of DateTime)
-            If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
+            If data.Count < 8 Then Throw New PicklingNotEnoughDataException("A DateTime requires 8 bytes.")
             Return DateTime.FromFileTime(data.Take(8).ToUInt64.BitwiseToInt64).ParsedWithDataCount(8)
         End Function
 

@@ -57,14 +57,14 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
-            If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException("The fixed-size data requires {0} bytes.".Frmt(_dataSize))
             Dim result = SubJar.Parse(data.SubView(0, _dataSize))
             If result.UsedDataCount <> _dataSize Then Throw New PicklingException("Parsed value did not use exactly {0} bytes.".Frmt(_dataSize))
             Return result
         End Function
 
         Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException("The fixed-size data requires {0} bytes.".Frmt(_dataSize))
             Return SubJar.Children(data.SubView(0, _dataSize))
         End Function
     End Class
@@ -132,9 +132,9 @@
 
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
-            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The size prefix requires {0} bytes.".Frmt(_prefixSize))
             Dim dataSize = data.SubView(0, _prefixSize).ToUValue
-            If data.Count < _prefixSize + dataSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _prefixSize + dataSize Then Throw New PicklingNotEnoughDataException("The size-prefixed data requires the {0} bytes specified by the prefix.".Frmt(dataSize))
 
             Dim parsed = SubJar.Parse(data.SubView(_prefixSize, CInt(dataSize)))
             If parsed.UsedDataCount < dataSize Then Throw New PicklingException("Fragmented data.")
@@ -142,7 +142,7 @@
         End Function
 
         Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The size prefix requires {0} bytes.".Frmt(_prefixSize))
             Dim dataSize = data.SubView(0, _prefixSize).ToUValue
             Return New ISimpleJar() {New DataJar().Fixed(_prefixSize), SubJar.Fixed(CInt(dataSize))}
         End Function
@@ -288,17 +288,18 @@
 
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
-            If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException("The checksum requires {0} bytes.".Frmt(_checksumSize))
             Dim checksum = data.SubView(0, _checksumSize)
             Dim parsed = SubJar.Parse(data.SubView(_checksumSize))
-            If Not _checksumFunction(data.SubView(_checksumSize, parsed.UsedDataCount)).SequenceEqual(checksum) Then
-                Throw New PicklingException("Checksum didn't match.")
+            Dim expectedChecksum = _checksumFunction(data.SubView(_checksumSize, parsed.UsedDataCount))
+            If Not expectedChecksum.SequenceEqual(checksum) Then
+                Throw New PicklingException("Checksum didn't match. Should be [{0}], not [{1}].".Frmt(expectedChecksum.ToHexString, checksum.ToHexString))
             End If
             Return parsed.Value.ParsedWithDataCount(_checksumSize + parsed.UsedDataCount)
         End Function
 
         Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException("The checksum requires {0} bytes.".Frmt(_checksumSize))
             Return New ISimpleJar() {New DataJar().Fixed(_checksumSize), SubJar}
         End Function
     End Class

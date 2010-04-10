@@ -59,7 +59,7 @@ Namespace WC3
         End Function
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of PlayerId)
-            If data.Count < 1 Then Throw New PicklingNotEnoughDataException
+            If data.Count < 1 Then Throw New PicklingNotEnoughDataException("A PlayerId requires 1 byte.")
             If data.First < 1 OrElse data.First > 12 Then Throw New PicklingException("Invalid player id: {0}".Frmt(data.First))
             Return New PlayerId(data.First).ParsedWithDataCount(1)
         End Function

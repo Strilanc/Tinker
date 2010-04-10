@@ -31,7 +31,7 @@ Namespace Bnet.Protocol
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt32)
-            If data.Count < _digitCount Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _digitCount Then Throw New PicklingNotEnoughDataException("The TextHexValue requires {0} bytes.".Frmt(_digitCount))
             Dim value = CUInt(data.Take(_digitCount).ParseChrString(nullTerminated:=False).FromHexToUInt64(_byteOrder))
             Return value.ParsedWithDataCount(_digitCount)
         End Function

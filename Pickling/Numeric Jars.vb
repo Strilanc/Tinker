@@ -14,7 +14,7 @@
 
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Byte)
-            If data.Count < 1 Then Throw New PicklingNotEnoughDataException()
+            If data.Count < 1 Then Throw New PicklingNotEnoughDataException("A Byte requires 1 byte.")
             Return data.First.ParsedWithDataCount(1)
         End Function
 
@@ -69,7 +69,7 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt16)
-            If data.Count < 2 Then Throw New PicklingNotEnoughDataException()
+            If data.Count < 2 Then Throw New PicklingNotEnoughDataException("A UInt16 requires 2 bytes.")
             Return data.Take(2).ToUInt16(byteOrder).ParsedWithDataCount(2)
         End Function
 
@@ -124,7 +124,7 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt32)
-            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
+            If data.Count < 4 Then Throw New PicklingNotEnoughDataException("A UInt32 requires 4 bytes.")
             Return data.Take(4).ToUInt32(byteOrder).ParsedWithDataCount(4)
         End Function
 
@@ -179,7 +179,7 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt64)
-            If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
+            If data.Count < 8 Then Throw New PicklingNotEnoughDataException("A UInt64 requires 8 bytes.")
             Return data.Take(8).ToUInt64(byteOrder).ParsedWithDataCount(8)
         End Function
 
@@ -211,7 +211,7 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Single)
-            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
+            If data.Count < 4 Then Throw New PicklingNotEnoughDataException("A Single requires 4 bytes.")
             Return BitConverter.ToSingle(data.Take(4).ToArray, 0).ParsedWithDataCount(4)
         End Function
 
@@ -237,7 +237,7 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Double)
-            If data.Count < 8 Then Throw New PicklingNotEnoughDataException()
+            If data.Count < 8 Then Throw New PicklingNotEnoughDataException("A Double requires 8 bytes.")
             Return BitConverter.ToDouble(data.Take(8).ToArray, 0).ParsedWithDataCount(8)
         End Function
 

@@ -87,7 +87,7 @@
         End Function
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of T))
-            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The count prefix requires {0} bytes.".Frmt(_prefixSize))
             Dim elementCount = data.Take(_prefixSize).ToUValue
 
             Dim values = New List(Of T)
@@ -117,7 +117,7 @@
         End Function
 
         Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
+            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The count prefix requires {0} bytes.".Frmt(_prefixSize))
             Dim elementCount = data.Take(_prefixSize).ToUValue
             Return DirectCast(_subJar, ISimpleJar).Repeated(CInt(elementCount)).Prepend(New DataJar().Fixed(_prefixSize))
         End Function

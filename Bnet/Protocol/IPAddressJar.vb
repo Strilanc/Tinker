@@ -9,7 +9,7 @@ Namespace Bnet.Protocol
             Return value.GetAddressBytes()
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Net.IPAddress)
-            If data.Count < 4 Then Throw New PicklingNotEnoughDataException()
+            If data.Count < 4 Then Throw New PicklingNotEnoughDataException("An IP Address requires 4 bytes.")
             Return New Net.IPAddress(data.Take(4).ToArray).ParsedWithDataCount(4)
         End Function
 
