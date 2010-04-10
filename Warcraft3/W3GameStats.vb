@@ -41,7 +41,6 @@
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(Not _mapChecksumSHA1.HasValue OrElse _mapChecksumSHA1.Value IsNot Nothing)
             Contract.Invariant(Not _mapChecksumSHA1.HasValue OrElse _mapChecksumSHA1.Value.Count = 20)
-            Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
         End Sub
 
 #Region "Properties"
@@ -59,7 +58,6 @@
         End Property
         Public ReadOnly Property AdvertisedPath As InvariantString
             Get
-                Contract.Ensures(Contract.Result(Of InvariantString)().StartsWith("Maps\"))
                 Return _advertisedPath
             End Get
         End Property
@@ -134,7 +132,6 @@
                        ByVal mapChecksumSHA1 As Maybe(Of IReadableList(Of Byte)),
                        ByVal advertisedPath As InvariantString,
                        ByVal hostName As InvariantString)
-            Contract.Requires(advertisedPath.StartsWith("Maps\"))
             Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value IsNot Nothing)
             Contract.Requires(Not mapChecksumSHA1.HasValue OrElse mapChecksumSHA1.Value.Count = 20)
 
