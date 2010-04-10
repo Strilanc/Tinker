@@ -502,8 +502,9 @@ Public Class WC3ProtocolTest
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"time span", 250US},
                         {"player action sets", {New PlayerActionSet(New PlayerId(1),
-                                           {New GameAction(GameActionId.CheatGold,
-                                                           New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                                           {GameAction.FromDefinitionAndValue(
+                                                   GameActions.CheatGold,
+                                                   New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                                                {"amount", 100UI},
                                                                {"unknown", CByte(2)}}))
                                             }.AsReadableList)

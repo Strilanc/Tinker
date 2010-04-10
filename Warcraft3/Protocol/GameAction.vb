@@ -6,24 +6,29 @@ Namespace WC3.Protocol
         Implements IEquatable(Of GameAction)
 
         Private Shared ReadOnly SharedJar As New GameActionJar()
-        Private ReadOnly _id As GameActionId
+        Private ReadOnly _definition As GameActions.Definition
         Private ReadOnly _payload As Object
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
+            Contract.Invariant(_definition IsNot Nothing)
             Contract.Invariant(_payload IsNot Nothing)
         End Sub
 
-        Public Sub New(ByVal id As GameActionId, ByVal payload As Object)
+        Private Sub New(ByVal definition As GameActions.Definition, ByVal payload As Object)
             Contract.Requires(payload IsNot Nothing)
-            Contract.Ensures(Me.Id = id)
+            Contract.Ensures(Me.Definition Is definition)
             Contract.Ensures(Me.Payload Is payload)
-            Me._id = id
+            Me._definition = definition
             Me._payload = payload
         End Sub
+        Public Shared Function FromDefinitionAndValue(Of TPayload)(ByVal definition As GameActions.Definition(Of TPayload),
+                                                      ByVal payload As TPayload) As GameAction
+            Return New GameAction(definition, payload)
+        End Function
 
-        Public ReadOnly Property Id As GameActionId
+        Public ReadOnly Property Definition As GameActions.Definition
             Get
-                Return _id
+                Return _definition
             End Get
         End Property
         Public ReadOnly Property Payload As Object
@@ -35,23 +40,24 @@ Namespace WC3.Protocol
 
         Public Shared Widening Operator CType(ByVal value As GameAction) As KeyValuePair(Of GameActionId, Object)
             Contract.Requires(value IsNot Nothing)
-            Return value.Id.KeyValue(value.Payload)
+            Return value.Definition.Id.KeyValue(value.Payload)
         End Operator
         Public Shared Widening Operator CType(ByVal value As KeyValuePair(Of GameActionId, Object)) As GameAction
             Contract.Ensures(Contract.Result(Of GameAction)() IsNot Nothing)
             Contract.Assume(value.Value IsNot Nothing)
-            Return New GameAction(value.Key, value.Value)
+            Return New GameAction(GameActions.DefinitionFor(value.Key), value.Value)
         End Operator
 
         Public Overloads Function Equals(ByVal other As GameAction) As Boolean Implements System.IEquatable(Of GameAction).Equals
             If other Is Nothing Then Return False
+            If other.Definition IsNot Me.Definition Then Return False
             Return SharedJar.Pack(Me).SequenceEqual(SharedJar.Pack(other))
         End Function
         Public Overrides Function Equals(ByVal obj As Object) As Boolean
             Return Me.Equals(TryCast(obj, GameAction))
         End Function
         Public Overrides Function GetHashCode() As Integer
-            Return _id.GetHashCode()
+            Return _definition.Id.GetHashCode()
         End Function
         Public Overrides Function ToString() As String
             Return SharedJar.Describe(Me)

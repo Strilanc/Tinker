@@ -12,7 +12,16 @@ Imports TinkerTests.PicklingTest
 <TestClass()>
 Public Class GameActionProtocolTest
     <TestMethod()>
+    Public Sub AllActionsDefinedTest()
+        Assert.IsTrue(EnumValues(Of GameActionId)().Count = GameActions.AllDefinitions.Count)
+        For Each e In EnumValues(Of GameActionId)()
+            Assert.IsTrue(GameActions.DefinitionFor(e) IsNot Nothing)
+        Next e
+    End Sub
+
+    <TestMethod()>
     Public Sub AssignGroupHotkeyTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.AssignGroupHotkey) Is GameActions.AssignGroupHotkey)
         JarTest(GameActions.AssignGroupHotkey.Jar,
                 data:={1,
                        1, 0,
@@ -24,12 +33,14 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CancelHeroReviveTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CancelHeroRevive) Is GameActions.CancelHeroRevive)
         JarTest(GameActions.CancelHeroRevive.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0},
                 value:=New GameObjectId(2, 3))
     End Sub
     <TestMethod()>
     Public Sub ChangeAllyOptionsTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.ChangeAllyOptions) Is GameActions.ChangeAllyOptions)
         JarTest(GameActions.ChangeAllyOptions.Jar,
                 data:={1,
                        1 << 5, 1 << (10 - 8), 0, 0},
@@ -40,6 +51,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ChangeSelectionTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.ChangeSelection) Is GameActions.ChangeSelection)
         JarTest(GameActions.ChangeSelection.Jar,
                 data:={2,
                        1, 0,
@@ -51,30 +63,37 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatDisableTechRequirementsTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatDisableTechRequirements) Is GameActions.CheatDisableTechRequirements)
         JarTest(GameActions.CheatDisableTechRequirements.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatDisableVictoryConditionsTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatDisableVictoryConditions) Is GameActions.CheatDisableVictoryConditions)
         JarTest(GameActions.CheatDisableVictoryConditions.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatEnableResearchTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatEnableResearch) Is GameActions.CheatEnableResearch)
         JarTest(GameActions.CheatEnableResearch.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatFastCooldownTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatFastCooldown) Is GameActions.CheatFastCooldown)
         JarTest(GameActions.CheatFastCooldown.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatFastDeathDecayTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatFastDeathDecay) Is GameActions.CheatFastDeathDecay)
         JarTest(GameActions.CheatFastDeathDecay.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatGodModeTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatGodMode) Is GameActions.CheatGodMode)
         JarTest(GameActions.CheatGodMode.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatGoldTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatGold) Is GameActions.CheatGold)
         JarTest(GameActions.CheatGold.Jar,
                 data:={0,
                        100, 0, 0, 0},
@@ -85,6 +104,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatGoldAndLumberTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatGoldAndLumber) Is GameActions.CheatGoldAndLumber)
         JarTest(GameActions.CheatGoldAndLumber.Jar,
                 data:={0,
                        100, 0, 0, 0},
@@ -95,14 +115,17 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatInstantDefeatTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatInstantDefeat) Is GameActions.CheatInstantDefeat)
         JarTest(GameActions.CheatInstantDefeat.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatInstantVictoryTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatInstantVictory) Is GameActions.CheatInstantVictory)
         JarTest(GameActions.CheatInstantVictory.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatLumberTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatLumber) Is GameActions.CheatLumber)
         JarTest(GameActions.CheatLumber.Jar,
                 data:={0,
                        100, 0, 0, 0},
@@ -113,40 +136,49 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub CheatNoDefeatTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatNoDefeat) Is GameActions.CheatNoDefeat)
         JarTest(GameActions.CheatNoDefeat.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatNoFoodLimitTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatNoFoodLimit) Is GameActions.CheatNoFoodLimit)
         JarTest(GameActions.CheatNoFoodLimit.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatRemoveFogOfWarTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatRemoveFogOfWar) Is GameActions.CheatRemoveFogOfWar)
         JarTest(GameActions.CheatRemoveFogOfWar.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatResearchUpgradesTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatResearchUpgrades) Is GameActions.CheatResearchUpgrades)
         JarTest(GameActions.CheatResearchUpgrades.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatSetTimeOfDayTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatSetTimeOfDay) Is GameActions.CheatSetTimeOfDay)
         JarTest(GameActions.CheatSetTimeOfDay.Jar,
                 data:=BitConverter.GetBytes(CSng(12.0)),
                 value:=CSng(12.0))
     End Sub
     <TestMethod()>
     Public Sub CheatSpeedConstructionTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatSpeedConstruction) Is GameActions.CheatSpeedConstruction)
         JarTest(GameActions.CheatSpeedConstruction.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub CheatUnlimitedManaTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.CheatUnlimitedMana) Is GameActions.CheatUnlimitedMana)
         JarTest(GameActions.CheatUnlimitedMana.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub DecreaseGameSpeedTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.DecreaseGameSpeed) Is GameActions.DecreaseGameSpeed)
         JarTest(GameActions.DecreaseGameSpeed.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub DequeueBuildingOrderTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.DequeueBuildingOrder) Is GameActions.DequeueBuildingOrder)
         JarTest(GameActions.DequeueBuildingOrder.Jar,
                 data:={1,
                        &HFE, 0, 0, 0},
@@ -157,6 +189,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub DropOrGiveItemTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.DropOrGiveItem) Is GameActions.DropOrGiveItem)
         JarTest(GameActions.DropOrGiveItem.Jar,
                 data:=New Byte() _
                       {1, 0,
@@ -178,14 +211,17 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub EnterChooseBuildingSubmenuTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.EnterChooseBuildingSubmenu) Is GameActions.EnterChooseBuildingSubmenu)
         JarTest(GameActions.EnterChooseBuildingSubmenu.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub EnterChooseHeroSkillSubmenuTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.EnterChooseHeroSkillSubmenu) Is GameActions.EnterChooseHeroSkillSubmenu)
         JarTest(GameActions.EnterChooseHeroSkillSubmenu.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub FogObjectOrderTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.FogObjectOrder) Is GameActions.FogObjectOrder)
         JarTest(GameActions.FogObjectOrder.Jar,
                 data:=New Byte() _
                       {1, 0,
@@ -213,6 +249,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncBooleanTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.GameCacheSyncBoolean) Is GameActions.GameCacheSyncBoolean)
         JarTest(GameActions.GameCacheSyncBoolean.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
@@ -227,6 +264,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncIntegerTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.GameCacheSyncInteger) Is GameActions.GameCacheSyncInteger)
         JarTest(GameActions.GameCacheSyncInteger.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
@@ -241,6 +279,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncRealTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.GameCacheSyncReal) Is GameActions.GameCacheSyncReal)
         JarTest(GameActions.GameCacheSyncReal.Jar,
                 data:=New Byte() _
                       {116, 101, 115, 116, 0,
@@ -255,21 +294,8 @@ Public Class GameActionProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub GameCacheSyncStringTest()
-        JarTest(GameActions.GameCacheSyncString.Jar,
-                data:={116, 101, 115, 116, 0,
-                       101, 115, 116, 0,
-                       116, 101, 115, 0,
-                       101, 115, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"filename", "test"},
-                        {"mission key", "est"},
-                        {"key", "tes"},
-                        {"value", "es"}
-                    })
-    End Sub
-    <TestMethod()>
     Public Sub GameCacheSyncUnitTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.GameCacheSyncUnit) Is GameActions.GameCacheSyncUnit)
         JarTest(GameActions.GameCacheSyncUnit.Jar,
                 data:=New Byte() {
                        48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 0,
@@ -369,6 +395,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncEmptyBooleanTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.GameCacheSyncEmptyBoolean) Is GameActions.GameCacheSyncEmptyBoolean)
         JarTest(GameActions.GameCacheSyncEmptyBoolean.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
@@ -381,6 +408,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncEmptyIntegerTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.GameCacheSyncEmptyInteger) Is GameActions.GameCacheSyncEmptyInteger)
         JarTest(GameActions.GameCacheSyncEmptyInteger.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
@@ -393,6 +421,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameCacheSyncEmptyRealTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.GameCacheSyncEmptyReal) Is GameActions.GameCacheSyncEmptyReal)
         JarTest(GameActions.GameCacheSyncEmptyReal.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
@@ -404,19 +433,8 @@ Public Class GameActionProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub GameCacheSyncEmptyStringTest()
-        JarTest(GameActions.GameCacheSyncEmptyString.Jar,
-                data:={116, 101, 115, 116, 0,
-                       101, 115, 116, 0,
-                       116, 101, 115, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"filename", "test"},
-                        {"mission key", "est"},
-                        {"key", "tes"}
-                    })
-    End Sub
-    <TestMethod()>
     Public Sub GameCacheSyncEmptyUnitTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.GameCacheSyncEmptyUnit) Is GameActions.GameCacheSyncEmptyUnit)
         JarTest(GameActions.GameCacheSyncEmptyUnit.Jar,
                 data:={116, 101, 115, 116, 0,
                        101, 115, 116, 0,
@@ -429,10 +447,12 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub IncreaseGameSpeedTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.IncreaseGameSpeed) Is GameActions.IncreaseGameSpeed)
         JarTest(GameActions.IncreaseGameSpeed.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub MinimapPingTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.MinimapPing) Is GameActions.MinimapPing)
         JarTest(GameActions.MinimapPing.Jar,
                 data:=BitConverter.GetBytes(CSng(5)).Concat(
                       BitConverter.GetBytes(CSng(6))).Concat(
@@ -445,6 +465,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub ObjectOrderTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.ObjectOrder) Is GameActions.ObjectOrder)
         JarTest(GameActions.ObjectOrder.Jar,
                 data:=New Byte() _
                       {1, 0,
@@ -464,10 +485,12 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub PauseGameTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.PauseGame) Is GameActions.PauseGame)
         JarTest(GameActions.PauseGame.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub PointOrderTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.PointOrder) Is GameActions.PointOrder)
         JarTest(GameActions.PointOrder.Jar,
                 data:=New Byte() _
                       {1, 0,
@@ -485,30 +508,36 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub PressedEscapeTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.PressedEscape) Is GameActions.PressedEscape)
         JarTest(GameActions.PressedEscape.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub PreSubGroupSelectionTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.PreSubGroupSelection) Is GameActions.PreSubGroupSelection)
         JarTest(GameActions.PreSubGroupSelection.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub ResumeGameTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.ResumeGame) Is GameActions.ResumeGame)
         JarTest(GameActions.ResumeGame.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub SaveGameFinishedTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.SaveGameFinished) Is GameActions.SaveGameFinished)
         JarTest(GameActions.SaveGameFinished.Jar,
                 data:={1, 0, 0, 0},
                 value:=1UI)
     End Sub
     <TestMethod()>
     Public Sub SaveGameStartedTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.SaveGameStarted) Is GameActions.SaveGameStarted)
         JarTest(GameActions.SaveGameStarted.Jar,
                 data:={116, 101, 115, 116, 0},
                 value:="test")
     End Sub
     <TestMethod()>
     Public Sub SelectGroundItemTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.SelectGroundItem) Is GameActions.SelectGroundItem)
         JarTest(GameActions.SelectGroundItem.Jar,
                 data:={1,
                        2, 0, 0, 0, 3, 0, 0, 0},
@@ -519,6 +548,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SelectGroupHotkeyTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.SelectGroupHotkey) Is GameActions.SelectGroupHotkey)
         JarTest(GameActions.SelectGroupHotkey.Jar,
                 data:={1, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -528,6 +558,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SelectSubGroupTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.SelectSubGroup) Is GameActions.SelectSubGroup)
         JarTest(GameActions.SelectSubGroup.Jar,
                 data:={&HEF, &HBE, &HED, &HFE,
                        2, 0, 0, 0, 3, 0, 0, 0},
@@ -538,6 +569,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SelfOrderTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.SelfOrder) Is GameActions.SelfOrder)
         JarTest(GameActions.SelfOrder.Jar,
                 data:={1, 0,
                        3, 0, &HD, 0,
@@ -550,6 +582,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SetGameSpeedTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.SetGameSpeed) Is GameActions.SetGameSpeed)
         JarTest(GameActions.SetGameSpeed.Jar,
                 Function(e1 As GameSpeedSetting, e2 As GameSpeedSetting) e1 = e2,
                 data:={2},
@@ -557,6 +590,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TransferResourcesTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TransferResources) Is GameActions.TransferResources)
         JarTest(GameActions.TransferResources.Jar,
                 data:={1,
                        100, 0, 0, 0,
@@ -569,6 +603,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerArrowKeyEventTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TriggerArrowKeyEvent) Is GameActions.TriggerArrowKeyEvent)
         JarTest(GameActions.TriggerArrowKeyEvent.Jar,
                 Function(e1 As ArrowKeyEvent, e2 As ArrowKeyEvent) e1 = e2,
                 data:={4},
@@ -576,6 +611,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerChatEventTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TriggerChatEvent) Is GameActions.TriggerChatEvent)
         JarTest(GameActions.TriggerChatEvent.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        116, 101, 115, 116, 0},
@@ -585,7 +621,8 @@ Public Class GameActionProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TriggerDialogButtonClickedTest()
+    Public Sub DialogAnyButtonClickedTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.DialogAnyButtonClicked) Is GameActions.DialogAnyButtonClicked)
         JarTest(GameActions.DialogAnyButtonClicked.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        4, 0, 0, 0, 5, 0, 0, 0},
@@ -595,7 +632,8 @@ Public Class GameActionProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub TriggerDialogButtonClicked2Test()
+    Public Sub DialogButtonClickedTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.DialogButtonClicked) Is GameActions.DialogButtonClicked)
         JarTest(GameActions.DialogButtonClicked.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        4, 0, 0, 0, 5, 0, 0, 0},
@@ -606,18 +644,21 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerMouseClickedTrackableTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TriggerMouseClickedTrackable) Is GameActions.TriggerMouseClickedTrackable)
         JarTest(GameActions.TriggerMouseClickedTrackable.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0},
                 value:=New GameObjectId(2, 3))
     End Sub
     <TestMethod()>
     Public Sub TriggerMouseTouchedTrackableTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TriggerMouseTouchedTrackable) Is GameActions.TriggerMouseTouchedTrackable)
         JarTest(GameActions.TriggerMouseTouchedTrackable.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0},
                 value:=New GameObjectId(2, 3))
     End Sub
     <TestMethod()>
     Public Sub TriggerSelectionEventTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TriggerSelectionEvent) Is GameActions.TriggerSelectionEvent)
         JarTest(GameActions.TriggerSelectionEvent.Jar,
                 data:={1,
                        2, 0, 0, 0, 3, 0, 0, 0},
@@ -628,6 +669,7 @@ Public Class GameActionProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TriggerWaitFinishedTest()
+        Assert.IsTrue(GameActions.DefinitionFor(GameActionId.TriggerWaitFinished) Is GameActions.TriggerWaitFinished)
         JarTest(GameActions.TriggerWaitFinished.Jar,
                 data:={2, 0, 0, 0, 3, 0, 0, 0,
                        1, 0, 0, 0},

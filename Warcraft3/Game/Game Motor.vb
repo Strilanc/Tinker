@@ -86,7 +86,7 @@
             RaiseEvent ReceivedPlayerActions(Me, sender, actions)
 
             '[async lag -wait command detection]
-            If (From action In actions Where action.Id = Protocol.GameActionId.GameCacheSyncInteger
+            If (From action In actions Where action.Definition Is Protocol.GameActions.GameCacheSyncInteger
                                        Select vals = DirectCast(action.Payload, NamedValueMap)
                                        Where vals.ItemAs(Of String)("filename") = "HostBot.AsyncLag" AndAlso vals.ItemAs(Of String)("mission key") = "wait").Any Then
                 _asyncWaitTriggered = True
