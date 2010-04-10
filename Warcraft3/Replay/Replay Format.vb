@@ -40,6 +40,7 @@ Namespace WC3.Replay
             End Get
         End Property
 
+        '''<completionlist cref="Format"/>
         Public MustInherit Class Definition
             Private ReadOnly _id As ReplayEntryId
             Private ReadOnly _jar As ISimpleJar
@@ -66,6 +67,7 @@ Namespace WC3.Replay
                 End Get
             End Property
         End Class
+        '''<completionlist cref="Format"/>
         Public NotInheritable Class Definition(Of T)
             Inherits Definition
             Private ReadOnly _jar As IJar(Of T)

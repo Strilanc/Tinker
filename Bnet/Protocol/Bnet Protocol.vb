@@ -219,6 +219,7 @@ Namespace Bnet.Protocol
         End Sub
         Public Const PacketPrefixValue As Byte = &HFF
 
+        '''<completionlist cref="Packets"/>
         Public MustInherit Class Definition
             Private ReadOnly _id As PacketId
             Private ReadOnly _jar As ISimpleJar
@@ -245,6 +246,7 @@ Namespace Bnet.Protocol
                 End Get
             End Property
         End Class
+        '''<completionlist cref="Packets"/>
         Public NotInheritable Class Definition(Of T)
             Inherits Definition
             Private ReadOnly _jar As IJar(Of T)

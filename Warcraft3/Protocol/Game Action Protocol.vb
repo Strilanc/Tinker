@@ -319,6 +319,7 @@ Namespace WC3.Protocol
             End Get
         End Property
 
+        '''<completionlist cref="GameActions"/>
         Public MustInherit Class Definition
             Private ReadOnly _id As GameActionId
             Private ReadOnly _jar As ISimpleJar
@@ -345,6 +346,7 @@ Namespace WC3.Protocol
                 End Get
             End Property
         End Class
+        '''<completionlist cref="GameActions"/>
         Public NotInheritable Class Definition(Of T)
             Inherits Definition
             Private ReadOnly _jar As IJar(Of T)
