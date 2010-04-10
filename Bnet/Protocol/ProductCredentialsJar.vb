@@ -60,5 +60,9 @@ Namespace Bnet.Protocol
                 setter:=Sub(value) subControl.Value = PackRawValue(value),
                 disposer:=Sub() subControl.Dispose())
         End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            Return DataJar.Children(data)
+        End Function
     End Class
 End Namespace

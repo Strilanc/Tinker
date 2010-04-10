@@ -83,5 +83,9 @@ Namespace Pickling
                               panel.Dispose()
                           End Sub)
         End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            Return _subJars
+        End Function
     End Class
 End Namespace

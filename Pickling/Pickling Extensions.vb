@@ -48,6 +48,37 @@
             Return New ParsedValue(Of T2)(value, parsedValue.UsedDataCount)
         End Function
 
+        Public Structure JarSegment
+            Public ReadOnly Jar As ISimpleJar
+            Public ReadOnly Data As IReadableList(Of Byte)
+            Public Sub New(ByVal jar As ISimpleJar, ByVal data As IReadableList(Of Byte))
+                Me.Jar = jar
+                Me.Data = data
+            End Sub
+        End Structure
+
+        '''<summary>Recursively divides the data based on jars' children.</summary>
+        <Extension()> <Pure()>
+        Public Function RecursiveSegment(ByVal jar As ISimpleJar, ByVal data As IReadableList(Of Byte)) As Tree(Of JarSegment)
+            Contract.Requires(jar IsNot Nothing)
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Tree(Of ISimpleJar))() IsNot Nothing)
+
+            Dim jars = If(jar.Children(data), {})
+            If jars.None Then
+                Return New Tree(Of JarSegment)(New JarSegment(jar, data.SubView(0, jar.Parse(data).UsedDataCount)), New Tree(Of JarSegment)() {}.AsReadableList)
+            End If
+
+            Dim children = New List(Of Tree(Of JarSegment))
+            Dim n = 0
+            For Each subJar In jars
+                Dim child = subJar.RecursiveSegment(data.SubView(n))
+                children.Add(child)
+                n += child.Value.Data.Count
+            Next subJar
+            Return New Tree(Of JarSegment)(New JarSegment(jar, data.SubView(0, n)), children.AsReadableList)
+        End Function
+
         <Extension()> <Pure()>
         Public Function MakeListDescription(ByVal descriptions As IEnumerable(Of String),
                                             Optional ByVal useSingleLineDescription As Boolean = False) As String

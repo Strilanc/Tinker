@@ -30,6 +30,7 @@
         Public Overrides Function Parse(ByVal text As String) As T
             Return _subJar.Parse(text)
         End Function
+        Public MustOverride Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
     End Class
 
     '''<summary>Pickles values with data of a specified size.</summary>
@@ -61,6 +62,11 @@
             If result.UsedDataCount <> _dataSize Then Throw New PicklingException("Parsed value did not use exactly {0} bytes.".Frmt(_dataSize))
             Return result
         End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            If data.Count < _dataSize Then Throw New PicklingNotEnoughDataException()
+            Return SubJar.Children(data.SubView(0, _dataSize))
+        End Function
     End Class
 
     '''<summary>Pickles values with data up to a maximum size.</summary>
@@ -90,6 +96,10 @@
         <ContractVerification(False)>
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
             Return SubJar.Parse(data.SubView(0, Math.Min(data.Count, _maxDataCount)))
+        End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            Return SubJar.Children(data.SubView(0, Math.Min(data.Count, _maxDataCount)))
         End Function
     End Class
 
@@ -130,6 +140,12 @@
             If parsed.UsedDataCount < dataSize Then Throw New PicklingException("Fragmented data.")
             Return parsed.Value.ParsedWithDataCount(_prefixSize + parsed.UsedDataCount)
         End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
+            Dim dataSize = data.SubView(0, _prefixSize).ToUValue
+            Return New ISimpleJar() {New DataJar().Fixed(_prefixSize), SubJar.Fixed(CInt(dataSize))}
+        End Function
     End Class
 
     '''<summary>Pickles values with data followed by a null terminator.</summary>
@@ -153,6 +169,12 @@
             Dim parsed = SubJar.Parse(data.SubView(0, p))
             If parsed.UsedDataCount <> p Then Throw New PicklingException("Leftover data before null terminator.")
             Return parsed.Value.ParsedWithDataCount(parsed.UsedDataCount + 1)
+        End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            Dim p = data.IndexOf(0)
+            If p < 0 Then Throw New PicklingException("No null terminator found.")
+            Return If(SubJar.Fixed(p).Children(data), {SubJar.Fixed(p)}).Append(New ByteJar())
         End Function
     End Class
 
@@ -226,6 +248,11 @@
                               panel.Dispose()
                           End Sub)
         End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            If data.Count = 0 Then Return Nothing
+            Return _subJar.Children(data)
+        End Function
     End Class
 
     '''<summary>Pickles values with data prefixed by a checksum.</summary>
@@ -269,6 +296,11 @@
             End If
             Return parsed.Value.ParsedWithDataCount(_checksumSize + parsed.UsedDataCount)
         End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            If data.Count < _checksumSize Then Throw New PicklingNotEnoughDataException()
+            Return New ISimpleJar() {New DataJar().Fixed(_checksumSize), SubJar}
+        End Function
     End Class
 
     '''<summary>Pickles values with reversed data.</summary>
@@ -288,6 +320,10 @@
             Dim parsed = SubJar.Parse(data.Reverse.ToReadableList)
             If parsed.UsedDataCount <> data.Count Then Throw New PicklingException("Leftover reversed data.")
             Return parsed
+        End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            Return SubJar.Children(data.Reverse.ToReadableList)
         End Function
     End Class
 End Namespace

@@ -73,6 +73,12 @@ Friend Module TestingCommon
         control.Value = value
         Assert.IsTrue(equater(control.Value, value))
 
+        Dim segmentTree = jar.RecursiveSegment(data.ToReadableList)
+        Assert.IsTrue(segmentTree.Value.Data.SequenceEqual(data))
+        If segmentTree.Children.Any Then
+            Assert.IsTrue(data.SequenceEqual(Concat(From child In segmentTree.Children Select (child.Value.Data))))
+        End If
+
         If data.Count > 0 Then
             Try
                 Dim parsed2 = jar.Parse(data.Take(data.Count - 1).ToReadableList)

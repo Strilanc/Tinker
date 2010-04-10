@@ -96,5 +96,9 @@ Namespace WC3.Protocol
                 setter:=Sub(value) subControl.Value = value,
                 disposer:=Sub() subControl.Dispose())
         End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            Return SubJar.Children(data)
+        End Function
     End Class
 End Namespace

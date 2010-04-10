@@ -48,6 +48,10 @@
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
             Return New ListValueEditor(Of T)(_subJar)
         End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            Return _subJar.Repeated(Me.Parse(data).Value.Count)
+        End Function
     End Class
 
     '''<summary>Pickles lists of values, where the serialized form is prefixed by the number of items.</summary>
@@ -84,11 +88,11 @@
 
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of IReadableList(Of T))
             If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
-            Dim numElements = data.Take(_prefixSize).ToUValue
+            Dim elementCount = data.Take(_prefixSize).ToUValue
 
             Dim values = New List(Of T)
             Dim usedDataCount = _prefixSize
-            For repeat = 1UL To numElements
+            For repeat = 1UL To elementCount
                 Dim subParsed = _subJar.Parse(data.SubView(usedDataCount))
                 values.Add(subParsed.Value)
                 usedDataCount += subParsed.UsedDataCount
@@ -110,6 +114,12 @@
 
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
             Return New ListValueEditor(Of T)(_subJar)
+        End Function
+
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException()
+            Dim elementCount = data.Take(_prefixSize).ToUValue
+            Return DirectCast(_subJar, ISimpleJar).Repeated(CInt(elementCount)).Prepend(New DataJar().Fixed(_prefixSize))
         End Function
     End Class
 

@@ -126,6 +126,7 @@
         Function MakeControl() As ISimpleValueEditor
         Function Describe(ByVal value As Object) As String
         Function Parse(ByVal text As String) As Object
+        Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
 
         <ContractClassFor(GetType(ISimpleJar))>
         MustInherit Shadows Class ContractClass
@@ -157,6 +158,11 @@
             Public Function Parse(ByVal text As String) As Object Implements ISimpleJar.Parse
                 Contract.Requires(text IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Object)() IsNot Nothing)
+                Throw New NotSupportedException
+            End Function
+            <Pure()>
+            Public Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar) Implements ISimpleJar.Children
+                Contract.Requires(data IsNot Nothing)
                 Throw New NotSupportedException
             End Function
         End Class
@@ -207,6 +213,7 @@
     Public MustInherit Class ContractClassIJar(Of T)
         Inherits ISimpleJar.ContractClass
         Implements IJar(Of T)
+
         <Pure()>
         Public Shadows Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
             Contract.Requires(value IsNot Nothing)
@@ -246,12 +253,19 @@
         Public MustOverride Function Pack(ByVal value As T) As IEnumerable(Of Byte) Implements IJar(Of T).Pack
         Public MustOverride Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T) Implements IJar(Of T).Parse
         Public MustOverride Function Parse(ByVal text As String) As T Implements IJar(Of T).Parse
+        Public Overridable Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar) Implements ISimpleJar.Children
+            Return Nothing
+        End Function
         Public Overridable Function Describe(ByVal value As T) As String Implements IJar(Of T).Describe
             Return value.ToString()
         End Function
         Public Overridable Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
             Dim control = New TextBox()
             control.Text = ""
+            Dim defaultValue = DirectCast(Nothing, T)
+            If defaultValue IsNot Nothing Then '[T is a value type]
+                control.Text = Describe(defaultValue)
+            End If
             Return New DelegatedValueEditor(Of T)(
                 control:=control,
                 eventAdder:=Sub(action) AddHandler control.TextChanged, Sub() action(),

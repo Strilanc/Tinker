@@ -45,8 +45,12 @@ Namespace Pickling
                           End Sub)
         End Function
 
+        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
+            Return SubJar.Children(data)
+        End Function
+
         Public Overrides Function ToString() As String
-            Return _name
+            Return "{0}: {1}".Frmt(_name, SubJar)
         End Function
     End Class
 End Namespace
