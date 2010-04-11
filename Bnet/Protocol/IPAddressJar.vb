@@ -2,15 +2,19 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public Class IPAddressJar
-        Inherits BaseJar(Of Net.IPAddress)
+        Inherits BaseFixedSizeJar(Of Net.IPAddress)
 
         <ContractVerification(False)>
         Public Overrides Function Pack(ByVal value As Net.IPAddress) As IEnumerable(Of Byte)
             Return value.GetAddressBytes()
         End Function
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Net.IPAddress)
-            If data.Count < 4 Then Throw New PicklingNotEnoughDataException("An IP Address requires 4 bytes.")
-            Return New Net.IPAddress(data.Take(4).ToArray).ParsedWithDataCount(4)
+        Protected Overrides ReadOnly Property DataSize As UInt16
+            Get
+                Return 4
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Net.IPAddress
+            Return New Net.IPAddress(data.ToArray)
         End Function
 
         Public Overrides Function Parse(ByVal text As String) As Net.IPAddress

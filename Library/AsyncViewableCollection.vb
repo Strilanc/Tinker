@@ -26,18 +26,18 @@ Public Class AsyncViewableCollection(Of T)
 
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
-    Public Sub Add(ByVal item As T) Implements System.Collections.Generic.ICollection(Of T).Add
+    Public Sub Add(ByVal item As T) Implements ICollection(Of T).Add
         _items.Add(item)
         outQueue.QueueAction(Sub() RaiseEvent Added(Me, item))
     End Sub
-    Public Sub Clear() Implements System.Collections.Generic.ICollection(Of T).Clear
+    Public Sub Clear() Implements ICollection(Of T).Clear
         For Each e In _items
             Dim e_ = e
             outQueue.QueueAction(Sub() RaiseEvent Removed(Me, e_))
         Next e
         _items.Clear()
     End Sub
-    Public Function Remove(ByVal item As T) As Boolean Implements System.Collections.Generic.ICollection(Of T).Remove
+    Public Function Remove(ByVal item As T) As Boolean Implements ICollection(Of T).Remove
         Dim result = _items.Remove(item)
         If result Then outQueue.QueueAction(Sub() RaiseEvent Removed(Me, item))
         Return result
@@ -64,7 +64,7 @@ Public Class AsyncViewableCollection(Of T)
             Return False
         End Get
     End Property
-    Public Function GetEnumerator() As System.Collections.Generic.IEnumerator(Of T) Implements IEnumerable(Of T).GetEnumerator
+    Public Function GetEnumerator() As IEnumerator(Of T) Implements IEnumerable(Of T).GetEnumerator
         Return _items.GetEnumerator()
     End Function
     Private Function GetEnumeratorObj() As System.Collections.IEnumerator Implements System.Collections.IEnumerable.GetEnumerator

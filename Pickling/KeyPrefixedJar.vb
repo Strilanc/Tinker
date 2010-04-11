@@ -95,11 +95,5 @@ Namespace Pickling
                               panel.Dispose()
                           End Sub)
         End Function
-
-        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            Dim parsedKey = _keyJar.Parse(data)
-            If Not _valueJars.ContainsKey(parsedKey.Value) Then Throw New PicklingException("No subjar with key {0}.".Frmt(parsedKey.Value))
-            Return {_keyJar, _valueJars(parsedKey.Value).Value}
-        End Function
     End Class
 End Namespace

@@ -61,9 +61,5 @@ Namespace Bnet.Protocol
                               panel.Dispose()
                           End Sub)
         End Function
-
-        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            Return DataJar.Children(data)
-        End Function
     End Class
 End Namespace

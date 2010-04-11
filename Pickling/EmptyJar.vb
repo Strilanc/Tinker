@@ -29,7 +29,7 @@ Namespace Pickling
             Return New Byte() {}
         End Function
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of EmptyValue)
-            Return New ParsedValue(Of EmptyValue)(New EmptyValue, 0)
+            Return New EmptyValue().ParsedWithDataCount(0)
         End Function
         Public Overrides Function Parse(ByVal text As String) As EmptyValue
             If text <> "[No Data]" Then Throw New PicklingException("Not [No Data].")

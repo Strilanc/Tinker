@@ -6,7 +6,7 @@ Public Class ExceptionForm
 
     Public Sub New()
         InitializeComponent()
-        AddHandler Strilbrary.Exceptions.UnexpectedException, Sub(ex, context) inQueue.QueueAction(Sub() AddException(ex, context))
+        AddHandler UnexpectedException, Sub(ex, context) inQueue.QueueAction(Sub() AddException(ex, context))
     End Sub
 
     Public Event ExceptionCountChanged(ByVal sender As ExceptionForm)

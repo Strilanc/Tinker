@@ -2,15 +2,19 @@ Imports Tinker.Pickling
 
 Namespace Bnet.Protocol
     Public NotInheritable Class FileTimeJar
-        Inherits BaseJar(Of DateTime)
+        Inherits BaseFixedSizeJar(Of DateTime)
 
         Public Overrides Function Pack(ByVal value As DateTime) As IEnumerable(Of Byte)
             Return value.ToFileTime.BitwiseToUInt64.Bytes()
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of DateTime)
-            If data.Count < 8 Then Throw New PicklingNotEnoughDataException("A DateTime requires 8 bytes.")
-            Return DateTime.FromFileTime(data.Take(8).ToUInt64.BitwiseToInt64).ParsedWithDataCount(8)
+        Protected Overrides ReadOnly Property DataSize As UInt16
+            Get
+                Return 8
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As DateTime
+            Return DateTime.FromFileTime(data.ToUInt64.BitwiseToInt64)
         End Function
 
         Public Overrides Function Describe(ByVal value As Date) As String

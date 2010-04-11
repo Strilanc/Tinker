@@ -48,10 +48,6 @@
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
             Return New ListValueEditor(Of T)(_subJar)
         End Function
-
-        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            Return _subJar.Repeated(Me.Parse(data).Value.Count)
-        End Function
     End Class
 
     '''<summary>Pickles lists of values, where the serialized form is prefixed by the number of items.</summary>
@@ -114,12 +110,6 @@
 
         Public Overrides Function MakeControl() As IValueEditor(Of IReadableList(Of T))
             Return New ListValueEditor(Of T)(_subJar)
-        End Function
-
-        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            If data.Count < _prefixSize Then Throw New PicklingNotEnoughDataException("The count prefix requires {0} bytes.".Frmt(_prefixSize))
-            Dim elementCount = data.Take(_prefixSize).ToUValue
-            Return DirectCast(_subJar, ISimpleJar).Repeated(CInt(elementCount)).Prepend(New DataJar().Fixed(_prefixSize))
         End Function
     End Class
 

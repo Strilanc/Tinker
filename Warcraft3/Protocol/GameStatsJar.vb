@@ -209,9 +209,5 @@ Namespace WC3.Protocol
                 setter:=Sub(value) subControl.Value = PackDataValue(value),
                 disposer:=Sub() subControl.Dispose())
         End Function
-
-        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            Return MyBase.Children(data) '[do not use DataJar because data is encoded]
-        End Function
     End Class
 End Namespace

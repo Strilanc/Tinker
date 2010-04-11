@@ -203,6 +203,7 @@
     <Compile Include="Library\HoldPoint.vb" />
     <Compile Include="Library\Maybe.vb" />
     <Compile Include="Library\NamedValueMap.vb" />
+    <Compile Include="Pickling\Pickling Interfaces.vb" />
     <Compile Include="Pickling\NamedJar.vb" />
     <Compile Include="Pickling\List Framing Jars.vb" />
     <Compile Include="Pickling\Framing Jars.vb" />

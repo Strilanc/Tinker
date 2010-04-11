@@ -180,13 +180,5 @@ Namespace Bnet.Protocol
                               panel.Dispose()
                           End Sub)
         End Function
-
-        Public Overrides Function Children(ByVal data As IReadableList(Of Byte)) As IEnumerable(Of ISimpleJar)
-            If Me.Parse(data).Value.Games.Count = 0 Then
-                Return New ISimpleJar() {New UInt32Jar(), queryResultJar}
-            Else
-                Return {gameDataJar}
-            End If
-        End Function
     End Class
 End Namespace

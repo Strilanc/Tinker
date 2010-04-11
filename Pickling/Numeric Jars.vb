@@ -1,7 +1,7 @@
 ﻿Namespace Pickling
     '''<summary>Pickles 8-bit unsigned integers.</summary>
     Public NotInheritable Class ByteJar
-        Inherits BaseJar(Of Byte)
+        Inherits BaseFixedSizeJar(Of Byte)
         Private ReadOnly _showHex As Boolean
 
         Public Sub New(Optional ByVal showHex As Boolean = False)
@@ -12,10 +12,13 @@
             Return {value}
         End Function
 
-        <ContractVerification(False)>
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Byte)
-            If data.Count < 1 Then Throw New PicklingNotEnoughDataException("A Byte requires 1 byte.")
-            Return data.First.ParsedWithDataCount(1)
+        Protected Overrides ReadOnly Property DataSize As UInt16
+            Get
+                Return 1
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Byte
+            Return data.Single
         End Function
 
         Public Overrides Function Describe(ByVal value As Byte) As String
@@ -54,7 +57,7 @@
 
     '''<summary>Pickles 16-bit unsigned integers.</summary>
     Public NotInheritable Class UInt16Jar
-        Inherits BaseJar(Of UInt16)
+        Inherits BaseFixedSizeJar(Of UInt16)
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
@@ -68,9 +71,13 @@
             Return value.Bytes(byteOrder)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt16)
-            If data.Count < 2 Then Throw New PicklingNotEnoughDataException("A UInt16 requires 2 bytes.")
-            Return data.Take(2).ToUInt16(byteOrder).ParsedWithDataCount(2)
+        Protected Overrides ReadOnly Property DataSize As UInt16
+            Get
+                Return 2
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt16
+            Return data.ToUInt16(byteOrder)
         End Function
 
         Public Overrides Function Describe(ByVal value As UInt16) As String
@@ -109,7 +116,7 @@
 
     '''<summary>Pickles 32-bit unsigned integers.</summary>
     Public NotInheritable Class UInt32Jar
-        Inherits BaseJar(Of UInt32)
+        Inherits BaseFixedSizeJar(Of UInt32)
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
@@ -123,9 +130,13 @@
             Return value.Bytes(byteOrder)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt32)
-            If data.Count < 4 Then Throw New PicklingNotEnoughDataException("A UInt32 requires 4 bytes.")
-            Return data.Take(4).ToUInt32(byteOrder).ParsedWithDataCount(4)
+        Protected Overrides ReadOnly Property DataSize As UInt16
+            Get
+                Return 4
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt32
+            Return data.ToUInt32(byteOrder)
         End Function
 
         Public Overrides Function Describe(ByVal value As UInt32) As String
@@ -164,7 +175,7 @@
 
     '''<summary>Pickles 64-bit unsigned integers.</summary>
     Public NotInheritable Class UInt64Jar
-        Inherits BaseJar(Of UInt64)
+        Inherits BaseFixedSizeJar(Of UInt64)
         Private ReadOnly byteOrder As ByteOrder
         Private ReadOnly _showHex As Boolean
 
@@ -178,9 +189,13 @@
             Return value.Bytes(byteOrder)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of UInt64)
-            If data.Count < 8 Then Throw New PicklingNotEnoughDataException("A UInt64 requires 8 bytes.")
-            Return data.Take(8).ToUInt64(byteOrder).ParsedWithDataCount(8)
+        Protected Overrides ReadOnly Property DataSize As UInt16
+            Get
+                Return 8
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt64
+            Return data.ToUInt64(byteOrder)
         End Function
 
         Public Overrides Function Describe(ByVal value As UInt64) As String
@@ -204,15 +219,19 @@
 
     '''<summary>Pickles 32-bit floating point values (singles).</summary>
     Public NotInheritable Class Float32Jar
-        Inherits BaseJar(Of Single)
+        Inherits BaseFixedSizeJar(Of Single)
 
         Public Overrides Function Pack(ByVal value As Single) As IEnumerable(Of Byte)
             Return BitConverter.GetBytes(value)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Single)
-            If data.Count < 4 Then Throw New PicklingNotEnoughDataException("A Single requires 4 bytes.")
-            Return BitConverter.ToSingle(data.Take(4).ToArray, 0).ParsedWithDataCount(4)
+        Protected Overrides ReadOnly Property DataSize As UInt16
+            Get
+                Return 4
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Single
+            Return BitConverter.ToSingle(data.ToArray, 0)
         End Function
 
         Public Overrides Function Describe(ByVal value As Single) As String
@@ -230,15 +249,19 @@
 
     '''<summary>Pickles 64-bit floating point values (doubles).</summary>
     Public NotInheritable Class Float64Jar
-        Inherits BaseJar(Of Double)
+        Inherits BaseFixedSizeJar(Of Double)
 
         Public Overrides Function Pack(ByVal value As Double) As IEnumerable(Of Byte)
             Return BitConverter.GetBytes(value)
         End Function
 
-        Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of Double)
-            If data.Count < 8 Then Throw New PicklingNotEnoughDataException("A Double requires 8 bytes.")
-            Return BitConverter.ToDouble(data.Take(8).ToArray, 0).ParsedWithDataCount(8)
+        Protected Overrides ReadOnly Property DataSize As UShort
+            Get
+                Return 8
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Double
+            Return BitConverter.ToDouble(data.ToArray, 0)
         End Function
 
         Public Overrides Function Describe(ByVal value As Double) As String
