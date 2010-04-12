@@ -43,7 +43,7 @@ Namespace WC3.Replay
             Get
                 Contract.Ensures(Contract.Result(Of Definition)() IsNot Nothing)
                 If Not _allDefinitions.ContainsKey(id) Then Throw New ArgumentException("No definition defined for id: {0}.".Frmt(id))
-                Return _allDefinitions(id)
+                Return _allDefinitions(id).AssumeNotNull
             End Get
         End Property
 

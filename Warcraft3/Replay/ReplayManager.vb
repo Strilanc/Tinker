@@ -118,6 +118,7 @@
                            ByVal visibleActionStreaks As IReadableList(Of IReadableList(Of Protocol.PlayerActionSet)))
             Contract.Requires(visibleActionStreaks IsNot Nothing)
             For Each visibleActionStreak In visibleActionStreaks.SkipLast(1)
+                Contract.Assume(visibleActionStreak IsNot Nothing)
                 _writer.WriteEntry(MakeTickPreOverflow(visibleActionStreak))
             Next visibleActionStreak
             _writer.WriteEntry(MakeTick(duration, If(visibleActionStreaks.LastOrDefault,

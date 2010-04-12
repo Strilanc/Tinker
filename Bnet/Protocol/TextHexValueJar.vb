@@ -35,6 +35,7 @@ Namespace Bnet.Protocol
                 Return _digitCount
             End Get
         End Property
+        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInteger
             Return CUInt(data.ParseChrString(nullTerminated:=False).FromHexToUInt64(_byteOrder))
         End Function

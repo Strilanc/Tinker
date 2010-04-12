@@ -47,7 +47,7 @@ Namespace Pickling
             Return """{0}""".Frmt(value)
         End Function
         Public Overrides Function Parse(ByVal text As String) As String
-            If text.StartsWith("""", StringComparison.Ordinal) AndAlso text.EndsWith("""", StringComparison.Ordinal) Then
+            If text.Length >= 2 AndAlso text.StartsWith("""", StringComparison.Ordinal) AndAlso text.EndsWith("""", StringComparison.Ordinal) Then
                 Return text.Substring(1, text.Length - 2)
             Else
                 Return text

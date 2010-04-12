@@ -13,6 +13,7 @@ Namespace Bnet.Protocol
                 Return 8
             End Get
         End Property
+        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As DateTime
             Return DateTime.FromFileTime(data.ToUInt64.BitwiseToInt64)
         End Function
@@ -20,6 +21,7 @@ Namespace Bnet.Protocol
         Public Overrides Function Describe(ByVal value As Date) As String
             Return value.ToString(CultureInfo.InvariantCulture)
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As DateTime
             Try
                 Return DateTime.Parse(text, CultureInfo.InvariantCulture, DateTimeStyles.None)

@@ -146,13 +146,36 @@
     End Class
 
     '''<summary>Parses data of a fixed size and packs values into pickles.</summary>
+    <ContractClass(GetType(BaseFixedSizeJarContractClass(Of )))>
     Public MustInherit Class BaseFixedSizeJar(Of T)
         Inherits BaseJar(Of T)
         Protected MustOverride ReadOnly Property DataSize As UInt16
         Protected MustOverride Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As T
+        <ContractVerification(False)>
         Public NotOverridable Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of T)
             If data.Count < DataSize Then Throw New PicklingNotEnoughDataException("{0} requires {1} bytes.".Frmt(Me.GetType.Name, DataSize))
             Return FixedSizeParse(data.SubView(0, DataSize)).ParsedWithDataCount(DataSize)
+        End Function
+    End Class
+    <ContractClassFor(GetType(BaseFixedSizeJar(Of )))>
+    Public MustInherit Class BaseFixedSizeJarContractClass(Of T)
+        Inherits BaseFixedSizeJar(Of T)
+        Protected Overrides ReadOnly Property DataSize As UShort
+            Get
+                Throw New NotSupportedException
+            End Get
+        End Property
+        Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As T
+            Contract.Requires(data IsNot Nothing)
+            Contract.Requires(data.Count = DataSize)
+            Contract.Ensures(Contract.Result(Of T)() IsNot Nothing)
+            Throw New NotSupportedException
+        End Function
+        Public Overrides Function Pack(ByVal value As T) As System.Collections.Generic.IEnumerable(Of Byte)
+            Throw New NotSupportedException
+        End Function
+        Public Overloads Overrides Function Parse(ByVal text As String) As T
+            Throw New NotSupportedException
         End Function
     End Class
 

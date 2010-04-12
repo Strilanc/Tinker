@@ -17,6 +17,7 @@ Namespace Bnet.Protocol
             Return New Net.IPAddress(data.ToArray)
         End Function
 
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As Net.IPAddress
             Try
                 Return Net.IPAddress.Parse(text)

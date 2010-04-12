@@ -49,6 +49,7 @@
                 Return _hostName
             End Get
         End Property
+        <ContractVerification(False)>
         Public ReadOnly Property MapChecksumSHA1 As Maybe(Of IReadableList(Of Byte))
             Get
                 Contract.Ensures(Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().HasValue OrElse Contract.Result(Of Maybe(Of IReadableList(Of Byte)))().Value IsNot Nothing)
@@ -154,6 +155,7 @@
         ''' <summary>
         ''' Constructs the game stats using some values from a map.
         ''' </summary>
+        <ContractVerification(False)>
         Public Shared Function FromMapAndSettings(ByVal map As Map,
                                                   ByVal randomHero As Boolean,
                                                   ByVal randomRace As Boolean,
@@ -271,7 +273,7 @@
             If Me.LockTeams <> other.LockTeams Then Return False
             If Me.MapChecksumSHA1.HasValue <> other.MapChecksumSHA1.HasValue Then Return False
             If Me.MapChecksumSHA1.HasValue Then
-                If Not Me.MapChecksumSHA1.Value.SequenceEqual(other.MapChecksumSHA1.Value) Then Return False
+                If Not Me.MapChecksumSHA1.Value.AssumeNotNull.SequenceEqual(other.MapChecksumSHA1.Value.AssumeNotNull) Then Return False
             End If
             If Me.MapChecksumXORO <> other.MapChecksumXORO Then Return False
             If Me.Observers <> other.Observers Then Return False

@@ -31,6 +31,7 @@ Namespace Pickling
         Public Overrides Function Parse(ByVal data As IReadableList(Of Byte)) As ParsedValue(Of EmptyValue)
             Return New EmptyValue().ParsedWithDataCount(0)
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As EmptyValue
             If text <> "[No Data]" Then Throw New PicklingException("Not [No Data].")
             Return New EmptyValue()

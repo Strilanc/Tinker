@@ -29,6 +29,7 @@ Public Structure Maybe(Of T)
 
     Public Overloads Function Equals(ByVal other As Maybe(Of T)) As Boolean Implements IEquatable(Of Maybe(Of T)).Equals
         If Me.HasValue <> other.HasValue Then Return False
+        If Not Me.HasValue Then Return True
         If Me.Value Is Nothing Then
             Return other.Value Is Nothing
         Else

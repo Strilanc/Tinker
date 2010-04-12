@@ -46,6 +46,7 @@ Namespace Pickling
                       "{0}: {1}".Frmt(keyDesc, valueDesc),
                       "{0}, {1}".Frmt(keyDesc, valueDesc))
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As KeyValuePair(Of TKey, Object)
             Dim divider = If(_useSingleLineDescription, ":", ",")
             Dim p = text.IndexOf(divider)

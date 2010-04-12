@@ -22,6 +22,7 @@ Namespace WC3.Protocol
                 Return New ObjectTypeJar().Describe(value)
             End If
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As OrderId
             Try
                 Dim enumVal = text.EnumTryParse(Of OrderId)(ignoreCase:=True)

@@ -75,6 +75,7 @@
                 Dim result = New List(Of String)
                 Dim acc As String = Nothing
                 For Each line In lines
+                    Contract.Assume(line IsNot Nothing)
                     If acc Is Nothing Then
                         acc = line
                     ElseIf line = "}" OrElse line.StartsWith(" "c, StringComparison.Ordinal) Then

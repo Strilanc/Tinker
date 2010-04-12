@@ -51,9 +51,14 @@ Namespace WC3
             tickQueue.Enqueue(record)
             maxTockTime += record.length
             For Each preOverflowActionStreak In actionStreaks.SkipLast(1)
+                Contract.Assume(preOverflowActionStreak IsNot Nothing)
                 SendPacket(Protocol.MakeTickPreOverflow(preOverflowActionStreak))
             Next preOverflowActionStreak
-            SendPacket(Protocol.MakeTick(record.length, actionStreaks.LastOrDefault.Maybe))
+            If actionStreaks.Any Then
+                SendPacket(Protocol.MakeTick(record.length, actionStreaks.Last.AssumeNotNull.Maybe))
+            Else
+                SendPacket(Protocol.MakeTick(record.length))
+            End If
         End Sub
         Public Function QueueSendTick(ByVal record As TickRecord,
                                       ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet))) As Task

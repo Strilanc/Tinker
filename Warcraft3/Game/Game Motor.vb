@@ -170,7 +170,7 @@
             Contract.Requires(sequence IsNot Nothing)
             Contract.Requires(maxDataSize > 0)
             Contract.Requires(measure IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of T)))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of IReadableList(Of T)))() IsNot Nothing)
             Dim result = New List(Of IReadableList(Of T))
             Dim subSequence = New List(Of T)
             Dim subSequenceDataCount = 0

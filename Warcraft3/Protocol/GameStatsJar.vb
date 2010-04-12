@@ -111,6 +111,7 @@ Namespace WC3.Protocol
                     {"unknown1", CByte(0)},
                     {"unknown2", CByte(0)}}
         End Function
+        <ContractVerification(False)>
         Private Shared Function ParseDataValue(ByVal vals As NamedValueMap) As GameStats
             Contract.Requires(vals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of GameStats)() IsNot Nothing)
@@ -156,7 +157,9 @@ Namespace WC3.Protocol
             Dim sha1Checksum = vals.ItemAs(Of Maybe(Of IReadableList(Of Byte)))("sha1 checksum")
             Dim relativePath As InvariantString = vals.ItemAs(Of String)("relative path")
             Dim hostName As InvariantString = vals.ItemAs(Of String)("host name")
-            If sha1Checksum.HasValue AndAlso sha1Checksum.Value.Count <> 20 Then Throw New PicklingException("sha1 checksum must have have 20 bytes.")
+            If sha1Checksum.HasValue AndAlso sha1Checksum.Value.AssumeNotNull.Count <> 20 Then
+                Throw New PicklingException("sha1 checksum must have have 20 bytes.")
+            End If
 
             'Finish
             Return New GameStats(randomHero:=randomHero,
@@ -196,6 +199,7 @@ Namespace WC3.Protocol
         Public Overrides Function Describe(ByVal value As GameStats) As String
             Return DataJar.Describe(PackDataValue(value))
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As GameStats
             Return ParseDataValue(DataJar.Parse(text))
         End Function

@@ -257,7 +257,9 @@
             Dim r = AddEntry(layout:=False)
             Dim p = subControls.IndexOf(entry)
             Contract.Assume(p >= 0)
-            subControls(subControls.Count - 1) = subControls(p)
+            For i = subControls.Count - 1 To p + 1 Step -1
+                subControls(i) = subControls(i - 1)
+            Next i
             subControls(p) = r
             RefreshLayout()
         End Sub
@@ -281,6 +283,7 @@
             Get
                 Return (From e In subControls Select (e.SubControl.Value)).ToReadableList
             End Get
+            <ContractVerification(False)>
             Set(ByVal value As IReadableList(Of T))
                 Dim needLayout = False
                 Try
@@ -323,9 +326,10 @@
             End Set
         End Property
 
-        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As System.Threading.Tasks.Task
+        Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
             If finalizing Then Return Nothing
             For Each subControl In subControls
+                Contract.Assume(subControl IsNot Nothing)
                 subControl.Dispose()
             Next subControl
             mainControl.Dispose()

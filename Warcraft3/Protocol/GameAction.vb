@@ -15,6 +15,7 @@ Namespace WC3.Protocol
         End Sub
 
         Private Sub New(ByVal definition As GameActions.Definition, ByVal payload As Object)
+            Contract.Requires(definition IsNot Nothing)
             Contract.Requires(payload IsNot Nothing)
             Contract.Ensures(Me.Definition Is definition)
             Contract.Ensures(Me.Payload Is payload)

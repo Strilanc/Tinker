@@ -195,6 +195,7 @@
             If Not value.HasValue Then Return "[Not Included]"
             Return _subJar.Describe(value.Value)
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As Maybe(Of T)
             If text = "[Not Included]" Then Return Nothing
             Return _subJar.Parse(text)

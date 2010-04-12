@@ -20,6 +20,7 @@ Namespace WC3.Protocol
                 Return "0x{0}".Frmt(value.ToString("X", CultureInfo.InvariantCulture))
             End If
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As UInt32
             Try
                 If text Like New InvariantString("type '????'") Then

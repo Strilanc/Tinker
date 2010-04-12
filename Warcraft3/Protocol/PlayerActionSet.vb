@@ -99,6 +99,7 @@ Namespace WC3.Protocol
                                             {"source", value.Id},
                                             {"actions", value.Actions}})
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As PlayerActionSet
             Dim parsed = DataJar.Parse(text)
             Return New PlayerActionSet(parsed.ItemAs(Of PlayerId)("source"),

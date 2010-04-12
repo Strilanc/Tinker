@@ -17,6 +17,7 @@
                 Return 1
             End Get
         End Property
+        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Byte
             Return data.Single
         End Function
@@ -26,6 +27,7 @@
                       "0x" + value.ToString("X4", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As Byte
             Try
                 If New InvariantString(text).StartsWith("0x") Then
@@ -76,6 +78,7 @@
                 Return 2
             End Get
         End Property
+        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt16
             Return data.ToUInt16(byteOrder)
         End Function
@@ -85,6 +88,7 @@
                       "0x" + value.ToString("X4", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As UInt16
             Try
                 If New InvariantString(text).StartsWith("0x") Then
@@ -135,6 +139,7 @@
                 Return 4
             End Get
         End Property
+        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt32
             Return data.ToUInt32(byteOrder)
         End Function
@@ -144,6 +149,7 @@
                       "0x" + value.ToString("X8", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As UInt32
             Try
                 If New InvariantString(text).StartsWith("0x") Then
@@ -194,6 +200,7 @@
                 Return 8
             End Get
         End Property
+        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInt64
             Return data.ToUInt64(byteOrder)
         End Function
@@ -203,6 +210,7 @@
                       "0x" + value.ToString("X16", CultureInfo.InvariantCulture),
                       value.ToString(CultureInfo.InvariantCulture))
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As UInt64
             Try
                 If New InvariantString(text).StartsWith("0x") Then
@@ -230,6 +238,7 @@
                 Return 4
             End Get
         End Property
+        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Single
             Return BitConverter.ToSingle(data.ToArray, 0)
         End Function
@@ -237,6 +246,7 @@
         Public Overrides Function Describe(ByVal value As Single) As String
             Return value.ToString("r", CultureInfo.InvariantCulture)
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As Single
             Try
                 Return Single.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
@@ -260,6 +270,7 @@
                 Return 8
             End Get
         End Property
+        <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As Double
             Return BitConverter.ToDouble(data.ToArray, 0)
         End Function
@@ -267,6 +278,7 @@
         Public Overrides Function Describe(ByVal value As Double) As String
             Return value.ToString("r", CultureInfo.InvariantCulture)
         End Function
+        <ContractVerification(False)>
         Public Overrides Function Parse(ByVal text As String) As Double
             Try
                 Return Double.Parse(text, NumberStyles.Float, CultureInfo.InvariantCulture)
