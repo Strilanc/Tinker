@@ -8,7 +8,7 @@
 
         Private _laggingPlayers As New List(Of Player)
         Private _gameTime As Integer
-        Private _leftoverGameTime As Double
+        Private _leftoverTickDurations As TimeSpan
         Private _speedFactor As Double
         Private _tickPeriod As TimeSpan
         Private _lagLimit As TimeSpan
@@ -112,8 +112,6 @@
             If _tickClock Is Nothing Then Return 'stopped
 
             _tickClock = _tickClock.Restarted()
-            Dim dt = _tickClock.StartingTimeOnParentClock.TotalMilliseconds * _speedFactor
-            Dim dgt = CUShort(_tickPeriod.TotalMilliseconds * _speedFactor).ClampAtOrAbove(1)
 
             'Stop for laggers
             UpdateLagScreen()
@@ -123,14 +121,17 @@
             End If
 
             'Schedule next tick
-            _leftoverGameTime += dt - dgt
-            _leftoverGameTime = _leftoverGameTime.Between(-dgt * 10, dgt * 10)
-            Dim nextTickTime = CLng(dgt - _leftoverGameTime).Between(dgt \ 2US, dgt * 2US).Milliseconds
-            _kernel.Clock.AsyncWait(nextTickTime).QueueContinueWithAction(_kernel.InQueue, AddressOf OnTick)
+            Dim measuredTickDuration = _tickClock.StartingTimeOnParentClock
+            Dim expectedTickDuration = _tickPeriod
+            _leftoverTickDurations += measuredTickDuration - expectedTickDuration
+            _leftoverTickDurations = _leftoverTickDurations.Between(-5.Seconds, 5.Seconds)
+            Dim nextTickDuration = (_tickPeriod - _leftoverTickDurations).Between(expectedTickDuration.Times(0.5), expectedTickDuration.Times(2))
+            _kernel.Clock.AsyncWait(nextTickDuration).QueueContinueWithAction(_kernel.InQueue, AddressOf OnTick)
 
-            'Send
-            SendQueuedGameData(New TickRecord(dgt, _gameTime))
-            _gameTime += dgt
+            'Send tick
+            Dim gameTickDuration = CUShort(nextTickDuration.TotalMilliseconds * _speedFactor)
+            SendQueuedGameData(New TickRecord(gameTickDuration, _gameTime))
+            _gameTime += gameTickDuration
         End Sub
         Private Sub UpdateLagScreen()
             If _laggingPlayers.Count > 0 Then
@@ -185,6 +186,7 @@
                 End If
                 subSequence.Add(item)
             Next item
+            If subSequence.Any Then result.Add(subSequence.AsReadableList)
             Return result.AsReadableList
         End Function
         <ContractVerification(False)>

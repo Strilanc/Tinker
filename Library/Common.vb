@@ -92,7 +92,10 @@ Public Module PoorlyCategorizedFunctions
                 ).ToDictionary(keySelector:=Function(e) e.key, elementSelector:=Function(e) e.value)
     End Function
 #End Region
-
+    <Pure()> <Extension()>
+    Public Function Times(ByVal timeSpan As TimeSpan, ByVal factor As Double) As TimeSpan
+        Return New TimeSpan(CLng(timeSpan.Ticks * factor))
+    End Function
     <Pure()> <Extension()>
     Public Function ToUValue(ByVal data As IEnumerable(Of Byte),
                              Optional ByVal byteOrder As ByteOrder = ByteOrder.LittleEndian) As UInt64
