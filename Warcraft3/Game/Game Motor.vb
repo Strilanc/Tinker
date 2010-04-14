@@ -165,29 +165,36 @@
             End If
         End Sub
 
-        Private Function SplitSequenceByDataSize(Of T)(ByVal sequence As IEnumerable(Of T),
-                                                       ByVal measure As Func(Of T, Int32),
-                                                       ByVal maxDataSize As Int32) As IReadableList(Of IReadableList(Of T))
+        Private Function SplitSequenceByDataSize(Of TValue)(ByVal sequence As IEnumerable(Of TValue),
+                                                            ByVal measure As Func(Of TValue, Int32),
+                                                            ByVal maxDataSize As Int32) As IReadableList(Of IReadableList(Of TValue))
             Contract.Requires(sequence IsNot Nothing)
             Contract.Requires(maxDataSize > 0)
             Contract.Requires(measure IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IReadableList(Of IReadableList(Of T)))() IsNot Nothing)
-            Dim result = New List(Of IReadableList(Of T))
-            Dim subSequence = New List(Of T)
-            Dim subSequenceDataCount = 0
-            For Each item In sequence
-                Dim itemDataCount = measure(item)
-                If itemDataCount > maxDataSize Then
-                    Throw New ArgumentException("Unable to fit an item within the max data size.", "maxDataSize")
-                ElseIf subSequenceDataCount + itemDataCount > maxDataSize Then
-                    subSequenceDataCount = 0
-                    result.Add(subSequence.AsReadableList)
-                    subSequence = New List(Of T)
-                End If
-                subSequence.Add(item)
-            Next item
-            If subSequence.Any Then result.Add(subSequence.AsReadableList)
-            Return result.AsReadableList
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of TValue)))() IsNot Nothing)
+
+            Dim result = sequence.ZipWithPartialAggregates(
+                    seed:=Tuple.Create(0, 0),
+                    func:=Function(acc, e)
+                              Dim itemDataCount = measure(e)
+                              Dim sequenceDataCount = acc.Item1
+                              Dim sequenceIndex = acc.Item2
+                              If itemDataCount > maxDataSize Then
+                                  Throw New ArgumentException("Unable to fit an item within the max data size.", "maxDataSize")
+                              ElseIf sequenceDataCount + itemDataCount > maxDataSize Then
+                                  sequenceDataCount = itemDataCount
+                                  sequenceIndex += 1
+                              Else
+                                  sequenceDataCount += itemDataCount
+                              End If
+                              Return Tuple.Create(sequenceDataCount, sequenceIndex)
+                          End Function
+                ).GroupBy(keySelector:=Function(e) e.Item2.Item2,
+                          elementSelector:=Function(e) e.Item1)
+
+            Return (From subSequence In result
+                    Select subSequence.ToReadableList
+                    ).ToReadableList
         End Function
         <ContractVerification(False)>
         Private Sub SendQueuedGameData(ByVal record As TickRecord)

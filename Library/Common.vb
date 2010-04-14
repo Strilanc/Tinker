@@ -2,7 +2,6 @@ Imports System.Numerics
 
 '''<summary>A smattering of functions and other stuff that hasn't been placed in more reasonable groups yet.</summary>
 Public Module PoorlyCategorizedFunctions
-#Region "Strings Extra"
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
     <Pure()>
@@ -68,6 +67,21 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 
+    <Pure()>
+    Public Function [Default](Of T)() As T
+        Return Nothing
+    End Function
+    <Extension()> <Pure()>
+    Public Function ZipWithPartialAggregates(Of TValue, TAggregate)(ByVal sequence As IEnumerable(Of TValue),
+                                                                    ByVal seed As TAggregate,
+                                                                    ByVal func As Func(Of TAggregate, TValue, TAggregate)) As IEnumerable(Of Tuple(Of TValue, TAggregate))
+        Contract.Requires(sequence IsNot Nothing)
+        Contract.Requires(func IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Tuple(Of TValue, TAggregate)))() IsNot Nothing)
+        Return sequence.PartialAggregates(seed:=Tuple.Create([Default](Of TValue), seed),
+                                          func:=Function(acc, e) Tuple.Create(e, func(acc.Item2, e)))
+    End Function
+
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
     <Pure()>
@@ -91,7 +105,7 @@ Public Module PoorlyCategorizedFunctions
                 Let value = parser(pair.Substring(p + valueDivider.Length))
                 ).ToDictionary(keySelector:=Function(e) e.key, elementSelector:=Function(e) e.value)
     End Function
-#End Region
+
     <Pure()> <Extension()>
     Public Function Times(ByVal timeSpan As TimeSpan, ByVal factor As Double) As TimeSpan
         Return New TimeSpan(CLng(timeSpan.Ticks * factor))
@@ -323,6 +337,85 @@ Public Module PoorlyCategorizedFunctions
         End Try
     End Function
 
+    <Pure()> <Extension()>
+    Public Function RepeatForever(Of TValue)(ByVal value As TValue) As IEnumerable(Of TValue)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of TValue))() IsNot Nothing)
+        Return New EnumeratorForever(Of TValue)(value)
+    End Function
+    Private Class EnumeratorForever(Of T)
+        Implements IEnumerable(Of T)
+        Implements IEnumerator(Of T)
+
+        Private ReadOnly _value As T
+        Public Sub New(ByVal value As T)
+            Me._value = value
+        End Sub
+
+        Public Function GetEnumerator() As IEnumerator(Of T) Implements IEnumerable(Of T).GetEnumerator
+            Return New EnumeratorForever(Of T)(_value)
+        End Function
+        Public ReadOnly Property Current As T Implements IEnumerator(Of T).Current
+            Get
+                Return _value
+            End Get
+        End Property
+        Public Function MoveNext() As Boolean Implements Collections.IEnumerator.MoveNext
+            Return True
+        End Function
+
+        Public Sub Dispose() Implements IDisposable.Dispose
+            GC.SuppressFinalize(Me)
+        End Sub
+
+        Public Sub Reset() Implements Collections.IEnumerator.Reset
+        End Sub
+        Private Function GetEnumeratorObj() As Collections.IEnumerator Implements Collections.IEnumerable.GetEnumerator
+            Return GetEnumerator()
+        End Function
+        Private ReadOnly Property CurrentObj As Object Implements Collections.IEnumerator.Current
+            Get
+                Return _value
+            End Get
+        End Property
+    End Class
+
+    <Pure()> <Extension()>
+    Public Function Iterate(Of TState, TResult)(ByVal seed As TState, ByVal func As Func(Of TState, Tuple(Of TState, TResult))) As IEnumerable(Of TResult)
+        Contract.Requires(func IsNot Nothing)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of TResult))() IsNot Nothing)
+        Return True.RepeatForever().
+               PartialAggregates(seed:=Tuple.Create(seed, [Default](Of TResult)),
+                                 func:=Function(acc, e)
+                                           If acc Is Nothing Then Return acc
+                                           Return func(acc.Item1)
+                                       End Function).
+               TakeWhile(Function(e) e IsNot Nothing).
+               Select(Function(e) e.Item2)
+    End Function
+
+    <Pure()> <Extension()>
+    Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte),
+                                         ByVal base As UInt32) As BigInteger
+        Contract.Requires(digits IsNot Nothing)
+        Contract.Requires(base >= 2)
+        Contract.Requires(base <= 256)
+        Contract.Ensures(Contract.Result(Of BigInteger)() >= 0)
+        Return digits.Reverse.Aggregate(New BigInteger, Function(acc, e) acc * base + e)
+    End Function
+    <Pure()> <Extension()>
+    Public Function UnsignedDigits(ByVal value As BigInteger,
+                                   ByVal base As UInt32) As IEnumerable(Of Byte)
+        Contract.Requires(value >= 0)
+        Contract.Requires(base >= 2)
+        Contract.Requires(base <= 256)
+        Contract.Ensures(Contract.Result(Of IEnumerable(Of Byte))() IsNot Nothing)
+        Return value.Iterate(Function(numerator)
+                                 If numerator = 0 Then Return Nothing
+                                 Dim remainder = [Default](Of BigInteger)()
+                                 Dim quotient = BigInteger.DivRem(numerator, base, remainder)
+                                 Return Tuple.Create(quotient, CByte(remainder))
+                             End Function)
+    End Function
     ''' <summary>
     ''' Determines the little-endian digits in one base from the little-endian digits in another base.
     ''' </summary>
@@ -336,19 +429,7 @@ Public Module PoorlyCategorizedFunctions
         Contract.Requires(outputBase >= 2)
         Contract.Requires(outputBase <= 256)
         Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
-
-        'Convert from digits in input base to BigInteger
-        Dim value = digits.Reverse.Aggregate(New BigInteger, Function(acc, e) acc * inputBase + e)
-
-        'Convert from BigInteger to digits in output base
-        Dim result = New List(Of Byte)
-        Do Until value = 0
-            Dim remainder As BigInteger = Nothing
-            value = BigInteger.DivRem(value, outputBase, remainder)
-            result.Add(CByte(remainder))
-        Loop
-
-        Return result.ToReadableList
+        Return digits.ToUnsignedBigInteger(inputBase).UnsignedDigits(outputBase).ToReadableList
     End Function
     ''' <summary>
     ''' Determines a list starting with the elements of the given list but padded with default values to meet a minimum length.
@@ -476,17 +557,9 @@ Public Module PoorlyCategorizedFunctions
         Contract.Ensures(Contract.Result(Of IList(Of Integer))() IsNot Nothing)
 
         'parse numbers between 'v's
-        Dim vals = value.ToUpperInvariant.Split("V"c)
-        Dim nums = New List(Of Integer)
-        For Each e In vals
-            Dim b As Byte
-            Contract.Assume(e IsNot Nothing)
-            If Not Byte.TryParse(e, b) Then
-                Throw New InvalidOperationException("Non-numeric team limit '{0}'.".Frmt(e))
-            End If
-            nums.Add(b)
-        Next e
-        Return nums
+        Return (From e In value.ToUpperInvariant.Split("V"c)
+                Select CInt(Byte.Parse(e, NumberStyles.Integer))
+                ).ToList
     End Function
 
     Public Sub CheckIOData(ByVal clause As Boolean, ByVal message As String)
@@ -495,11 +568,6 @@ Public Module PoorlyCategorizedFunctions
         Contract.EnsuresOnThrow(Of IO.InvalidDataException)(Not clause)
         If Not clause Then Throw New IO.InvalidDataException(message)
     End Sub
-
-    <Extension()>
-    Public Function Max(Of T As IComparable(Of T))(ByVal value1 As T, ByVal value2 As T) As T
-        Return If(value1.CompareTo(value2) >= 0, value1, value2)
-    End Function
 
     <Extension()>
     Public Function PanelWithControls(ByVal controls As IEnumerable(Of Control),

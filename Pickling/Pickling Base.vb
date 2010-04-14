@@ -115,7 +115,7 @@
         Public Overridable Function MakeControl() As IValueEditor(Of T) Implements IJar(Of T).MakeControl
             Dim control = New TextBox()
             control.Text = ""
-            Dim defaultValue = DirectCast(Nothing, T)
+            Dim defaultValue = [Default](Of T)()
             If defaultValue IsNot Nothing Then '[T is a value type]
                 control.Text = Describe(defaultValue)
             End If

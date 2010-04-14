@@ -1,5 +1,7 @@
 ﻿Imports Microsoft.VisualStudio.TestTools.UnitTesting
 Imports Tinker
+Imports Strilbrary.Collections
+Imports Strilbrary.Time
 
 <TestClass()>
 Public Class CommonTest
@@ -11,7 +13,6 @@ Public Class CommonTest
         Assert.IsTrue(SplitText("test", maxLineLength:=2).SequenceEqual({"te", "st"}))
         Assert.IsTrue(SplitText("test", maxLineLength:=1).SequenceEqual({"t", "e", "s", "t"}))
     End Sub
-
     <TestMethod()>
     Public Sub SplitTextTest_WordBoundary()
         Assert.IsTrue(SplitText("test test test", maxLineLength:=4).SequenceEqual({"test", "test", "test"}))
@@ -27,10 +28,154 @@ Public Class CommonTest
         Assert.IsTrue(SplitText("  ", maxLineLength:=1).SequenceEqual({" ", ""}))
         Assert.IsTrue(SplitText(" a a ", maxLineLength:=1).SequenceEqual({"", "a", "a", ""}))
     End Sub
-
     <TestMethod()>
     Public Sub SplitTextTest_LineBoundary()
         Assert.IsTrue(SplitText("tes" + Environment.NewLine + "tes", maxLineLength:=10).SequenceEqual({"tes", "tes"}))
         Assert.IsTrue(SplitText("tes" + Environment.NewLine + "tested", maxLineLength:=4).SequenceEqual({"tes", "test", "ed"}))
+    End Sub
+
+    <TestMethod()>
+    Public Sub DefaultTest()
+        Assert.IsTrue([Default](Of Byte)() = 0)
+        Assert.IsTrue([Default](Of Action(Of Byte))() Is Nothing)
+    End Sub
+
+    <TestMethod()>
+    Public Sub ZipWithPartialAggregatesTest()
+        Assert.IsTrue({1, 2, 3, 4, 5}.ZipWithPartialAggregates(0, Function(acc, e) acc + e).SequenceEqual({1, 2, 3, 4, 5}.Zip({1, 3, 6, 10, 15})))
+        Assert.IsTrue(New Int32() {}.ZipWithPartialAggregates(0, Function(acc, e) acc + e).SequenceEqual({}))
+    End Sub
+
+    <TestMethod()>
+    Public Sub BuildDictionaryFromStringTest()
+    End Sub
+
+    <TestMethod()>
+    Public Sub TimesTest()
+        Assert.IsTrue(5.seconds.times(5) = 25.seconds)
+    End Sub
+
+    <TestMethod()>
+    Public Sub ToUValueTest()
+        Assert.IsTrue(New Byte() {3, 4, 5}.ToUValue = &H50403)
+        Assert.IsTrue(New Byte() {3, 4, 5}.ToUValue(Strilbrary.Values.ByteOrder.BigEndian) = &H30405)
+    End Sub
+    <TestMethod()>
+    Public Sub FindFileMatchingTest()
+    End Sub
+
+    <TestMethod()>
+    Public Sub MaybeTest()
+        Assert.IsTrue(5.Maybe = New Maybe(Of Int32)(5))
+    End Sub
+
+    <TestMethod()>
+    Public Sub HasBitSetTest()
+        Assert.IsTrue(CByte(1).HasBitSet(0))
+        Assert.IsTrue(1US.HasBitSet(0))
+        Assert.IsTrue(1UI.HasBitSet(0))
+        Assert.IsTrue(1UL.HasBitSet(0))
+
+        Assert.IsTrue(CByte(2).HasBitSet(1))
+        Assert.IsTrue(2US.HasBitSet(1))
+        Assert.IsTrue(2UI.HasBitSet(1))
+        Assert.IsTrue(2UL.HasBitSet(1))
+
+        Assert.IsTrue(Not CByte(2).HasBitSet(2))
+        Assert.IsTrue(Not 2US.HasBitSet(2))
+        Assert.IsTrue(Not 2UI.HasBitSet(2))
+        Assert.IsTrue(Not 2UL.HasBitSet(2))
+    End Sub
+    <TestMethod()>
+    Public Sub WithBitSetTo()
+        Assert.IsTrue(CByte(1).WithBitSetTo(2, True) = 5)
+        Assert.IsTrue(1US.WithBitSetTo(2, True) = 5)
+        Assert.IsTrue(1UI.WithBitSetTo(2, True) = 5)
+        Assert.IsTrue(1UL.WithBitSetTo(2, True) = 5)
+
+        Assert.IsTrue(CByte(1).WithBitSetTo(0, False) = 0)
+        Assert.IsTrue(1US.WithBitSetTo(0, False) = 0)
+        Assert.IsTrue(1UI.WithBitSetTo(0, False) = 0)
+        Assert.IsTrue(1UL.WithBitSetTo(0, False) = 0)
+    End Sub
+    <Flags()>
+    Private Enum F32 As UInteger
+        f1 = 1 << 1
+        f2 = 1 << 2
+        f3 = 1 << 3
+    End Enum
+    <TestMethod()>
+    Public Sub EnumIncludesTest()
+        Assert.IsTrue((F32.f1 Or F32.f2).EnumIncludes(F32.f1))
+        Assert.IsTrue((F32.f1 Or F32.f2).EnumIncludes(F32.f2))
+        Assert.IsTrue(Not (F32.f1 Or F32.f2).EnumIncludes(F32.f3))
+
+        Assert.IsTrue((F32.f1 Or F32.f2).EnumUInt32Includes(F32.f1))
+        Assert.IsTrue((F32.f1 Or F32.f2).EnumUInt32Includes(F32.f2))
+        Assert.IsTrue(Not (F32.f1 Or F32.f2).EnumUInt32Includes(F32.f3))
+    End Sub
+    <TestMethod()>
+    Public Sub EnumWithTest()
+        Assert.IsTrue(F32.f1.EnumWith(F32.f2) = (F32.f1 Or F32.f2))
+        Assert.IsTrue(F32.f1.EnumWith(F32.f1) = F32.f1)
+    End Sub
+    <TestMethod()>
+    Public Sub EnumWithSetTest()
+        Assert.IsTrue(F32.f1.EnumUInt32WithSet(F32.f2, True) = (F32.f1 Or F32.f2))
+        Assert.IsTrue(F32.f1.EnumUInt32WithSet(F32.f2, False) = F32.f1)
+        Assert.IsTrue(F32.f1.EnumUInt32WithSet(F32.f1, False) = 0)
+    End Sub
+    <TestMethod()>
+    Public Sub BitsTest()
+        Assert.IsTrue(CByte(5).Bits.SequenceEqual({True, False, True}.Concat(False.Repeated(8 - 3))))
+        Assert.IsTrue(5US.Bits.SequenceEqual({True, False, True}.Concat(False.Repeated(16 - 3))))
+        Assert.IsTrue(5UI.Bits.SequenceEqual({True, False, True}.Concat(False.Repeated(32 - 3))))
+        Assert.IsTrue(5UL.Bits.SequenceEqual({True, False, True}.Concat(False.Repeated(64 - 3))))
+    End Sub
+
+    <TestMethod()>
+    Public Sub RepeatForeverTest()
+        Assert.IsTrue(5.RepeatForever.Take(100).SequenceEqual(5.Repeated(100)))
+    End Sub
+
+    <TestMethod()>
+    Public Sub IterateTest()
+        Assert.IsTrue(5.Iterate(Function(acc) If(acc <= 0, Nothing, Tuple.Create(acc - 1, acc * acc))).SequenceEqual({25, 16, 9, 4, 1}))
+    End Sub
+
+    <TestMethod()>
+    Public Sub ToUnsignedBigIntegerTest()
+        Assert.IsTrue(New Byte() {}.ToUnsignedBigInteger = 0)
+        Assert.IsTrue(New Byte() {2, 1}.ToUnsignedBigInteger = 258)
+        Assert.IsTrue(New Byte() {2, 1}.ToUnsignedBigInteger(base:=10) = 12)
+    End Sub
+    <TestMethod()>
+    Public Sub UnsignedDigitsTest()
+        Assert.IsTrue(New Numerics.BigInteger(12).UnsignedDigits(base:=10).SequenceEqual({2, 1}))
+        Assert.IsTrue(New Numerics.BigInteger(258).ToUnsignedBytes.SequenceEqual({2, 1}))
+    End Sub
+    <TestMethod()>
+    Public Sub ConvertFromBaseToBaseTest()
+        Assert.IsTrue(New Byte() {2, 1}.ConvertFromBaseToBase(256, 10).SequenceEqual({8, 5, 2}))
+    End Sub
+
+    <TestMethod()>
+    Public Sub PaddedToTest()
+        Assert.IsTrue(New Byte() {5, 6}.PaddedTo(1).SequenceEqual({5, 6}))
+        Assert.IsTrue(New Byte() {}.PaddedTo(1).SequenceEqual({0}))
+    End Sub
+
+    <TestMethod()>
+    Public Sub SHA1Test()
+        Assert.IsTrue(Strilbrary.Values.ToAscBytes("The quick brown fox jumps over the lazy dog").SHA1.SequenceEqual({&H2F, &HD4, &HE1, &HC6, &H7A, &H2D, &H28, &HFC, &HED, &H84, &H9E, &HE1, &HBB, &H76, &HE7, &H39, &H1B, &H93, &HEB, &H12}))
+    End Sub
+    <TestMethod()>
+    Public Sub CRC32Test()
+        Assert.IsTrue(Strilbrary.Values.ToAscBytes("The quick brown fox jumps over the lazy dog").CRC32 = 1095738169)
+    End Sub
+
+    <TestMethod()>
+    Public Sub TeamVersusStringToTeamSizesTest()
+        Assert.IsTrue(TeamVersusStringToTeamSizes("5v5").SequenceEqual({5, 5}))
     End Sub
 End Class
