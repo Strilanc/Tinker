@@ -77,18 +77,14 @@ Namespace Bot
                 End If
 
                 'Data
-                Dim clientProfiles = New List(Of ClientProfile)
                 Dim clientProfileCount = reader.ReadUInt32()
-                For Each repeat In clientProfileCount.Range
-                    Dim p = New Bot.ClientProfile(reader)
-                    clientProfiles.Add(p)
-                Next repeat
-                Dim pluginProfiles = New List(Of PluginProfile)
+                Dim clientProfiles = (From repeat In clientProfileCount.Range
+                                      Select New Bot.ClientProfile(reader)
+                                      ).ToList
                 Dim pluginProfileCount = reader.ReadUInt32()
-                For Each repeat In pluginProfileCount.Range
-                    Dim p = New Bot.PluginProfile(reader)
-                    pluginProfiles.Add(p)
-                Next repeat
+                Dim pluginProfiles = (From repeat In pluginProfileCount.Range
+                                      Select New Bot.PluginProfile(reader)
+                                      ).ToReadableList
                 UpdateProfiles(clientProfiles, pluginProfiles)
             End SyncLock
         End Sub

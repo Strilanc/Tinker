@@ -308,17 +308,11 @@ Public Module PoorlyCategorizedFunctions
         End If
 
         'Check files in folder
-        Dim matches = New List(Of String)
-        For Each filepath In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
-            Contract.Assume(filepath IsNot Nothing)
-            Contract.Assume(filepath.Length > directory.Length)
-            Dim relativePath = filepath.Substring(directory.Length)
-            If relativePath Like likeQuery AndAlso relativePath Like dirQuery Then
-                matches.Add(relativePath)
-                If matches.Count >= maxResults Then Exit For
-            End If
-        Next filepath
-        Return matches
+        Return (From filepath In IO.Directory.GetFiles(directory, fileQuery, IO.SearchOption.AllDirectories)
+                Select relativePath = filepath.Substring(directory.Length)
+                Where relativePath Like likeQuery
+                Where relativePath Like dirQuery
+                ).Take(maxResults).ToList
     End Function
     Public Function GetDataFolderPath(ByVal subfolder As String) As String
         Contract.Requires(subfolder IsNot Nothing)

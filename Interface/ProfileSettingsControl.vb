@@ -35,16 +35,18 @@ Public Class ProfileSettingsControl
         profile.initialChannel = txtInitialChannel.Text.AssumeNotNull
         profile.CKLServerAddress = txtCKLServer.Text.AssumeNotNull
 
-        Dim currentUsers = New List(Of InvariantString)
-        For Each row As DataGridViewRow In gridUsers.Rows
-            If row.Cells(0).Value Is Nothing Then Continue For
-            Dim name = CStr(row.Cells(0).Value)
-            currentUsers.Add(name)
-            profile.Users.UpdateUser(New BotUser(name,
-                                                 CStr(row.Cells(1).Value),
-                                                 CStr(row.Cells(2).Value)))
-        Next row
-        profile.Users.RemoveAllExcept(currentUsers)
+        Dim currentUsers = (From row In gridUsers.Rows.OfType(Of DataGridViewRow)()
+                            Where row.Cells(0).Value IsNot Nothing
+                            Let name = New InvariantString(CStr(row.Cells(0).Value))
+                            Let packedPermissions = CStr(row.Cells(1).Value)
+                            Let packedSettings = CStr(row.Cells(2).Value)
+                            ).ToList
+        For Each user In currentUsers
+            profile.Users.UpdateUser(New BotUser(user.name,
+                                                 user.packedPermissions,
+                                                 user.packedSettings))
+        Next user
+        profile.Users.RemoveAllExcept(From user In currentUsers Select user.name)
     End Sub
 
     Private Sub btnDeleteProfile_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnDeleteProfile.Click

@@ -35,7 +35,8 @@ Namespace Bot
                 If profileNames.None Then Throw New ArgumentException("No profiles specified.")
 
                 'Attempt to connect to each listed profile
-                Dim asyncManagers = New List(Of Task(Of Bnet.ClientManager))()
+                Dim asyncCreatedManagers = New List(Of Task(Of Bnet.ClientManager))()
+                Dim asyncAddedManagers = New List(Of Task(Of Bnet.ClientManager))()
                 For Each profileName In profileNames
                     Contract.Assume(profileName IsNot Nothing)
                     'Create and connect
@@ -44,31 +45,29 @@ Namespace Bot
                     Dim asyncAdd = (From manager In asyncManager
                                     Select target.Components.QueueAddComponent(manager)
                                     ).Unwrap.AssumeNotNull
-                    Dim asyncClient = asyncAdd.ContinueWithFunc(Function() asyncManager.Result.Client)
-                    Dim asyncConnected = (From client In asyncClient
+                    Dim asyncConnected = (From client In asyncAdd.ContinueWithFunc(Function() asyncManager.Result.Client)
                                           Select client.QueueConnectAndLogOn(
                                                            remoteHost:=client.Profile.server.Split(" "c).First,
                                                            credentials:=New Bnet.ClientCredentials(client.Profile.userName, client.Profile.password))
                                                        ).Unwrap.AssumeNotNull
 
-                    'Cleanup on failure
-                    asyncManager.ContinueWithAction(Sub(manager) asyncConnected.Catch(Sub() manager.Dispose())).IgnoreExceptions()
                     'Store
-                    asyncManagers.Add(asyncConnected.ContinueWithFunc(Function() asyncManager.Result))
+                    asyncCreatedManagers.Add(asyncManager)
+                    asyncAddedManagers.Add(asyncConnected.ContinueWithFunc(Function() asyncManager.Result))
                 Next profileName
 
-                'Link connected clients when connections completed
+                'Async wait for all to complete
                 Dim result = New TaskCompletionSource(Of String)()
-                asyncManagers.AsAggregateTask.ContinueWithAction(
+                asyncAddedManagers.AsAggregateTask.ContinueWithAction(
                     Sub() result.SetResult("Connected")
                 ).Catch(
                     Sub(exception)
                         'Dispose all upon failure
-                        For Each futureManager In asyncManagers
-                            If futureManager.Status = TaskStatus.RanToCompletion Then
-                                futureManager.Result.Dispose()
+                        For Each asyncManager In asyncCreatedManagers
+                            If asyncManager.Status = TaskStatus.RanToCompletion Then
+                                asyncManager.Result.Dispose()
                             End If
-                        Next futureManager
+                        Next asyncManager
                         'Propagate
                         result.SetException(exception.InnerExceptions)
                     End Sub

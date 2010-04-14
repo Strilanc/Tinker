@@ -52,15 +52,11 @@ Public NotInheritable Class ConnectionAccepter
 
     '''<summary>Returns a list of all ports being listened on.</summary>
     Public Function EnumPorts() As IEnumerable(Of UShort)
-        Dim ports = New List(Of UShort)
         SyncLock lock
-            For Each listener In listeners
-                Contract.Assume(listener IsNot Nothing)
-                Contract.Assume(listener.LocalEndpoint IsNot Nothing)
-                ports.Add(CUShort(DirectCast(listener.LocalEndpoint, Net.IPEndPoint).Port))
-            Next listener
+            Return (From listener In listeners
+                    Select CUShort(DirectCast(listener.LocalEndpoint, Net.IPEndPoint).Port)
+                    ).Cache
         End SyncLock
-        Return ports
     End Function
 
     '''<summary>Stops listening for connections on the given port.</summary>

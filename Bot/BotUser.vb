@@ -280,24 +280,9 @@ Public NotInheritable Class BotUserSet
         Return _userMap.ContainsKey(name)
     End Function
 
-    Public Sub RemoveAllExcept(ByVal userNames As IList(Of InvariantString))
+    Public Sub RemoveAllExcept(ByVal userNames As IEnumerable(Of InvariantString))
         Contract.Requires(userNames IsNot Nothing)
-        'Find users not in the usernames list
-        Dim removedUsers = New List(Of String)
-        For Each key In _userMap.Keys
-            Dim keep = False
-            For Each keptName In userNames
-                If keptName = key Then
-                    keep = True
-                    Exit For
-                End If
-            Next keptName
-            If Not keep Then removedUsers.Add(key)
-        Next key
-
-        'Remove those users
-        For Each name In removedUsers
-            Contract.Assume(name IsNot Nothing)
+        For Each name In _userMap.Keys.Except(userNames)
             RemoveUser(name)
         Next name
     End Sub
