@@ -67,21 +67,6 @@ Public Module PoorlyCategorizedFunctions
         Return result
     End Function
 
-    <Pure()>
-    Public Function [Default](Of T)() As T
-        Return Nothing
-    End Function
-    <Extension()> <Pure()>
-    Public Function ZipWithPartialAggregates(Of TValue, TAggregate)(ByVal sequence As IEnumerable(Of TValue),
-                                                                    ByVal seed As TAggregate,
-                                                                    ByVal func As Func(Of TAggregate, TValue, TAggregate)) As IEnumerable(Of Tuple(Of TValue, TAggregate))
-        Contract.Requires(sequence IsNot Nothing)
-        Contract.Requires(func IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of Tuple(Of TValue, TAggregate)))() IsNot Nothing)
-        Return sequence.PartialAggregates(seed:=Tuple.Create([Default](Of TValue), seed),
-                                          func:=Function(acc, e) Tuple.Create(e, func(acc.Item2, e)))
-    End Function
-
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
     <Pure()>
@@ -329,62 +314,6 @@ Public Module PoorlyCategorizedFunctions
             e.RaiseAsUnexpected("Error creating folder: {0}.".Frmt(path))
             Throw
         End Try
-    End Function
-
-    <Pure()> <Extension()>
-    Public Function RepeatForever(Of TValue)(ByVal value As TValue) As IEnumerable(Of TValue)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of TValue))() IsNot Nothing)
-        Return New EnumeratorForever(Of TValue)(value)
-    End Function
-    Private Class EnumeratorForever(Of T)
-        Implements IEnumerable(Of T)
-        Implements IEnumerator(Of T)
-
-        Private ReadOnly _value As T
-        Public Sub New(ByVal value As T)
-            Me._value = value
-        End Sub
-
-        Public Function GetEnumerator() As IEnumerator(Of T) Implements IEnumerable(Of T).GetEnumerator
-            Return New EnumeratorForever(Of T)(_value)
-        End Function
-        Public ReadOnly Property Current As T Implements IEnumerator(Of T).Current
-            Get
-                Return _value
-            End Get
-        End Property
-        Public Function MoveNext() As Boolean Implements Collections.IEnumerator.MoveNext
-            Return True
-        End Function
-
-        Public Sub Dispose() Implements IDisposable.Dispose
-            GC.SuppressFinalize(Me)
-        End Sub
-
-        Public Sub Reset() Implements Collections.IEnumerator.Reset
-        End Sub
-        Private Function GetEnumeratorObj() As Collections.IEnumerator Implements Collections.IEnumerable.GetEnumerator
-            Return GetEnumerator()
-        End Function
-        Private ReadOnly Property CurrentObj As Object Implements Collections.IEnumerator.Current
-            Get
-                Return _value
-            End Get
-        End Property
-    End Class
-
-    <Pure()> <Extension()>
-    Public Function Iterate(Of TState, TResult)(ByVal seed As TState, ByVal func As Func(Of TState, Tuple(Of TState, TResult))) As IEnumerable(Of TResult)
-        Contract.Requires(func IsNot Nothing)
-        Contract.Ensures(Contract.Result(Of IEnumerable(Of TResult))() IsNot Nothing)
-        Return True.RepeatForever().
-               PartialAggregates(seed:=Tuple.Create(seed, [Default](Of TResult)),
-                                 func:=Function(acc, e)
-                                           If acc Is Nothing Then Return acc
-                                           Return func(acc.Item1)
-                                       End Function).
-               TakeWhile(Function(e) e IsNot Nothing).
-               Select(Function(e) e.Item2)
     End Function
 
     <Pure()> <Extension()>

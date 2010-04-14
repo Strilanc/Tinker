@@ -35,24 +35,8 @@ Public Class CommonTest
     End Sub
 
     <TestMethod()>
-    Public Sub DefaultTest()
-        Assert.IsTrue([Default](Of Byte)() = 0)
-        Assert.IsTrue([Default](Of Action(Of Byte))() Is Nothing)
-    End Sub
-
-    <TestMethod()>
-    Public Sub ZipWithPartialAggregatesTest()
-        Assert.IsTrue({1, 2, 3, 4, 5}.ZipWithPartialAggregates(0, Function(acc, e) acc + e).SequenceEqual({1, 2, 3, 4, 5}.Zip({1, 3, 6, 10, 15})))
-        Assert.IsTrue(New Int32() {}.ZipWithPartialAggregates(0, Function(acc, e) acc + e).SequenceEqual({}))
-    End Sub
-
-    <TestMethod()>
-    Public Sub BuildDictionaryFromStringTest()
-    End Sub
-
-    <TestMethod()>
     Public Sub TimesTest()
-        Assert.IsTrue(5.seconds.times(5) = 25.seconds)
+        Assert.IsTrue(5.Seconds.Times(5) = 25.Seconds)
     End Sub
 
     <TestMethod()>
@@ -131,16 +115,6 @@ Public Class CommonTest
         Assert.IsTrue(5US.Bits.SequenceEqual({True, False, True}.Concat(False.Repeated(16 - 3))))
         Assert.IsTrue(5UI.Bits.SequenceEqual({True, False, True}.Concat(False.Repeated(32 - 3))))
         Assert.IsTrue(5UL.Bits.SequenceEqual({True, False, True}.Concat(False.Repeated(64 - 3))))
-    End Sub
-
-    <TestMethod()>
-    Public Sub RepeatForeverTest()
-        Assert.IsTrue(5.RepeatForever.Take(100).SequenceEqual(5.Repeated(100)))
-    End Sub
-
-    <TestMethod()>
-    Public Sub IterateTest()
-        Assert.IsTrue(5.Iterate(Function(acc) If(acc <= 0, Nothing, Tuple.Create(acc - 1, acc * acc))).SequenceEqual({25, 16, 9, 4, 1}))
     End Sub
 
     <TestMethod()>
