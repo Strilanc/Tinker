@@ -146,7 +146,7 @@
                         If _lobby.IsPlayerVisible(p) OrElse (From q In _laggingPlayers
                                                              Where _lobby.GetVisiblePlayer(q) Is _lobby.GetVisiblePlayer(p_)).None Then
                             Contract.Assume(_lagClock IsNot Nothing)
-                            BroadcastPacket(Protocol.MakeRemovePlayerFromLagScreen(
+                            BroadcastPacket(Protocol.MakePlayerStoppedLagging(
                                 lagger:=_lobby.GetVisiblePlayer(p).Id,
                                 lagTimeInMilliseconds:=CUInt(_lagClock.ElapsedTime.TotalMilliseconds))).IgnoreExceptions()
                         End If
@@ -159,7 +159,7 @@
                                    ).ToList
                 _asyncWaitTriggered = False
                 If _laggingPlayers.Count > 0 Then
-                    BroadcastPacket(Protocol.MakeShowLagScreen(From p In _laggingPlayers Select p.Id)).IgnoreExceptions()
+                    BroadcastPacket(Protocol.MakePlayersLagging(From p In _laggingPlayers Select p.Id)).IgnoreExceptions()
                     _lagClock = _kernel.Clock.Restarted()
                 End If
             End If

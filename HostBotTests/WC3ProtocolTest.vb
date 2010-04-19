@@ -407,7 +407,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub RemovePlayerFromLagScreenTest()
-        JarTest(Packets.RemovePlayerFromLagScreen.Jar,
+        JarTest(Packets.PlayerStoppedLagging.Jar,
                 data:={4,
                        23, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -447,7 +447,7 @@ Public Class WC3ProtocolTest
                              {"id", New PlayerId(2)},
                              {"initial milliseconds used", 25UI}
                          })
-        JarTest(Packets.ShowLagScreen.Jar,
+        JarTest(Packets.PlayersLagging.Jar,
                 equater:=Function(e1 As IReadableList(Of NamedValueMap), e2 As IReadableList(Of NamedValueMap)) ObjectEqual(e1, e2),
                 data:={2,
                        2, 25, 0, 0, 0,

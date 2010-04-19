@@ -155,7 +155,7 @@
 
                 'Show lag screen with remaining loaders to sender
                 If VisibleUnreadyPlayers.Any Then
-                    sendingPlayer.QueueSendPacket(Protocol.MakeShowLagScreen(From p In VisibleUnreadyPlayers Select p.Id))
+                    sendingPlayer.QueueSendPacket(Protocol.MakePlayersLagging(From p In VisibleUnreadyPlayers Select p.Id))
                 End If
                 'Inform sender that load-in-game is occuring
                 If unreadyPlayers.Any Then
@@ -167,7 +167,7 @@
                     Contract.Assume(player IsNot Nothing)
                     _lobby.SendMessageTo("{0} finished loading.".Frmt(sendingPlayer.Name), player)
                     If visibleSenderReady Then
-                        player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(visibleSender.Id, 0))
+                        player.QueueSendPacket(Protocol.MakePlayerStoppedLagging(visibleSender.Id, 0))
                     End If
                 Next player
             Else
@@ -192,12 +192,12 @@
                 'Hide lag screen for tick
                 For Each other In visibleUnreadyPlayers
                     Contract.Assume(other IsNot Nothing)
-                    player.QueueSendPacket(Protocol.MakeRemovePlayerFromLagScreen(other.Id, 0))
+                    player.QueueSendPacket(Protocol.MakePlayerStoppedLagging(other.Id, 0))
                 Next other
                 'Empty tick
                 player.QueueSendPacket(Protocol.MakeTick(0))
                 'Reshow lag screen
-                player.QueueSendPacket(Protocol.MakeShowLagScreen(From p In visibleUnreadyPlayers Select p.Id))
+                player.QueueSendPacket(Protocol.MakePlayersLagging(From p In visibleUnreadyPlayers Select p.Id))
             Next player
 
             RaiseEvent EmptyTick(Me)

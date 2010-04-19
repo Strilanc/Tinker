@@ -3,19 +3,19 @@ Imports Tinker.Pickling
 Namespace WC3.Protocol
     Public Module Packers
         <Pure()>
-        Public Function MakeShowLagScreen(ByVal laggers As IEnumerable(Of PlayerId)) As Packet
+        Public Function MakePlayersLagging(ByVal laggers As IEnumerable(Of PlayerId)) As Packet
             Contract.Requires(laggers IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(Packets.ShowLagScreen, (From lagger In laggers
-                                                            Select New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
-                                                                    {"id", lagger},
-                                                                    {"initial milliseconds used", 2000UI}})).ToReadableList)
+            Return Packet.FromValue(Packets.PlayersLagging, (From lagger In laggers
+                                                             Select New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
+                                                                     {"id", lagger},
+                                                                     {"initial milliseconds used", 2000UI}})).ToReadableList)
         End Function
         <Pure()>
-        Public Function MakeRemovePlayerFromLagScreen(ByVal lagger As PlayerId,
-                                                      ByVal lagTimeInMilliseconds As UInteger) As Packet
+        Public Function MakePlayerStoppedLagging(ByVal lagger As PlayerId,
+                                                 ByVal lagTimeInMilliseconds As UInteger) As Packet
             Contract.Ensures(Contract.Result(Of Packet)() IsNot Nothing)
-            Return Packet.FromValue(Packets.RemovePlayerFromLagScreen, New Dictionary(Of InvariantString, Object) From {
+            Return Packet.FromValue(Packets.PlayerStoppedLagging, New Dictionary(Of InvariantString, Object) From {
                     {"lagger", lagger},
                     {"marginal milliseconds used", lagTimeInMilliseconds}})
         End Function
