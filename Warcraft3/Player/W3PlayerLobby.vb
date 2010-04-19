@@ -40,8 +40,8 @@ Namespace WC3
 
         Private Sub LobbyStart()
             state = PlayerState.Lobby
-            AddQueuedLocalPacketHandler(Protocol.Packets.PeerConnectionInfo, AddressOf OnReceivePeerConnectionInfo)
-            AddQueuedLocalPacketHandler(Protocol.Packets.ClientMapInfo, AddressOf OnReceiveClientMapInfo)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf OnReceivePeerConnectionInfo)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf OnReceiveClientMapInfo)
         End Sub
 
         Private Sub OnReceivePeerConnectionInfo(ByVal flags As IPickle(Of UInt16))

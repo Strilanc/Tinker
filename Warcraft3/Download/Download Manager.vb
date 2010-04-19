@@ -164,9 +164,9 @@ Namespace WC3.Download
             Contract.Requires(player IsNot Nothing)
 
             Dim playerHooks = New List(Of Task(Of IDisposable))() From {
-                    player.QueueAddPacketHandler(packetDefinition:=Protocol.Packets.ClientMapInfo,
+                    player.QueueAddPacketHandler(packetDefinition:=Protocol.ClientPackets.ClientMapInfo,
                                                  handler:=Function(pickle) QueueOnReceiveClientMapInfo(player, pickle)),
-                    player.QueueAddPacketHandler(packetDefinition:=Protocol.Packets.PeerConnectionInfo,
+                    player.QueueAddPacketHandler(packetDefinition:=Protocol.ClientPackets.PeerConnectionInfo,
                                                  handler:=Function(pickle) QueueOnReceivePeerConnectionInfo(player, pickle))
                 }
 

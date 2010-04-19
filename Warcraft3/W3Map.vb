@@ -111,7 +111,7 @@ Namespace WC3
                 End If
                 Dim hexData = From i In (arg.Length \ 2).Range.Skip(1)
                               Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
-                Dim vals = Protocol.Packets.HostMapInfo.Jar.Parse(hexData.ToReadableList).Value
+                Dim vals = Protocol.ServerPackets.HostMapInfo.Jar.Parse(hexData.ToReadableList).Value
 
                 'Extract values
                 Dim path As InvariantString = vals.ItemAs(Of String)("path")

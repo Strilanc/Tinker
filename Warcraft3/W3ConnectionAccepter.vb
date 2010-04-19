@@ -134,7 +134,7 @@ Namespace WC3
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 player.".Frmt(socket.Name))
             End If
 
-            Dim pickle = Protocol.Packets.Knock.Jar.ParsePickle(packetData.SubView(4))
+            Dim pickle = Protocol.ClientPackets.Knock.Jar.ParsePickle(packetData.SubView(4))
             Dim vals = pickle.Value
             Dim player = New W3ConnectingPlayer(vals.ItemAs(Of String)("name"),
                                                 vals.ItemAs(Of UInt32)("game id"),
@@ -168,7 +168,7 @@ Namespace WC3
             If packetData(1) <> Protocol.PacketId.PeerKnock Then
                 Throw New IO.InvalidDataException("{0} was not a warcraft 3 peer connection.".Frmt(socket.Name))
             End If
-            Dim pickle = Protocol.Packets.PeerKnock.Jar.ParsePickle(packetData.SubView(4))
+            Dim pickle = Protocol.PeerPackets.PeerKnock.Jar.ParsePickle(packetData.SubView(4))
             Dim vals = pickle.Value.AssumeNotNull
             Dim player = New W3ConnectingPeer(socket,
                                               vals.ItemAs(Of Byte)("receiver peer key"),

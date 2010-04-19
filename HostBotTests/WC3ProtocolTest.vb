@@ -13,11 +13,11 @@ Imports TinkerTests.PicklingTest
 Public Class WC3ProtocolTest
     <TestMethod()>
     Public Sub ClientConfirmHostLeavingTest()
-        JarTest(Packets.ClientConfirmHostLeaving.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ClientPackets.ClientConfirmHostLeaving.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub ClientMapInfoTest()
-        JarTest(Packets.ClientMapInfo.Jar,
+        JarTest(ClientPackets.ClientMapInfo.Jar,
                 data:={1, 0, 0, 0,
                        3,
                        128, 0, 0, 0},
@@ -29,7 +29,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GameActionTest()
-        JarTest(Packets.GameAction.Jar,
+        JarTest(ClientPackets.GameAction.Jar,
                 equater:=Function(e1, e2) ObjectEqual(e1, e2),
                 appendSafe:=False,
                 data:={0, 0, 0, 0},
@@ -37,7 +37,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub GreetTest()
-        JarTest(Packets.Greet.Jar,
+        JarTest(ServerPackets.Greet.Jar,
                 data:={0, 0,
                        2,
                        2, 0, &H17, &HE1, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
@@ -49,12 +49,12 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub HostConfirmHostLeavingTest()
-        JarTest(Packets.HostConfirmHostLeaving.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ServerPackets.HostConfirmHostLeaving.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub HostMapInfoTest()
         Dim sha1 = CByte(20).Range.ToReadableList
-        JarTest(Packets.HostMapInfo.Jar,
+        JarTest(ServerPackets.HostMapInfo.Jar,
                 data:=New Byte() _
                       {0, 0, 0, 0,
                        116, 101, 115, 116, 0,
@@ -73,7 +73,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub KnockTest()
-        JarTest(Packets.Knock.Jar,
+        JarTest(ClientPackets.Knock.Jar,
                 data:={42, 0, 0, 0,
                        99, 0, 0, 0,
                        0,
@@ -95,7 +95,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub LanCreateGameTest()
-        JarTest(Packets.LanCreateGame.Jar,
+        JarTest(ServerPackets.LanCreateGame.Jar,
                 data:={Asc("3"), Asc("r"), Asc("a"), Asc("w"),
                        20, 0, 0, 0,
                        42, 0, 0, 0},
@@ -107,7 +107,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub LanGameDetailsTest()
-        JarTest(Packets.LanGameDetails.Jar,
+        JarTest(ServerPackets.LanGameDetails.Jar,
                 data:=New Byte() _
                       {Asc("3"), Asc("r"), Asc("a"), Asc("w"),
                        20, 0, 0, 0,
@@ -140,13 +140,13 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub LanDestroyGameTest()
-        JarTest(Packets.LanDestroyGame.Jar,
+        JarTest(ServerPackets.LanDestroyGame.Jar,
                 data:={20, 0, 0, 0},
                 value:=20)
     End Sub
     <TestMethod()>
     Public Sub LanRefreshGameTest()
-        JarTest(Packets.LanRefreshGame.Jar,
+        JarTest(ServerPackets.LanRefreshGame.Jar,
                 data:={42, 0, 0, 0,
                        2, 0, 0, 0,
                        1, 0, 0, 0},
@@ -158,7 +158,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub LanRequestGameTest()
-        JarTest(Packets.LanRequestGame.Jar,
+        JarTest(ClientPackets.LanRequestGame.Jar,
                 data:={Asc("3"), Asc("r"), Asc("a"), Asc("w"),
                        20, 0, 0, 0,
                        0, 0, 0, 0},
@@ -170,7 +170,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub LeavingTest()
-        JarTest(Packets.Leaving.Jar,
+        JarTest(ClientPackets.Leaving.Jar,
                 data:={7, 0, 0, 0},
                 value:=PlayerLeaveReason.Quit,
                 equater:=Function(e1, e2) e1 = e2)
@@ -178,7 +178,7 @@ Public Class WC3ProtocolTest
     <TestMethod()>
     Public Sub LobbyStateTest()
         Dim slots = New List(Of Slot)()
-        JarTest(Packets.LobbyState.Jar,
+        JarTest(ServerPackets.LobbyState.Jar,
                 data:={7, 0,
                        0,
                        13, 0, 0, 0,
@@ -193,7 +193,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub MapFileDataTest()
-        JarTest(Packets.MapFileData.Jar,
+        JarTest(PeerPackets.MapFileData.Jar,
                 appendSafe:=False,
                 data:={2,
                        3,
@@ -211,7 +211,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub MapFileDataProblemTest()
-        JarTest(Packets.MapFileDataProblem.Jar,
+        JarTest(PeerPackets.MapFileDataProblem.Jar,
                 data:={2,
                        3,
                        0, 0, 0, 0},
@@ -223,7 +223,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub MapFileDataReceivedTest()
-        JarTest(Packets.MapFileDataReceived.Jar,
+        JarTest(PeerPackets.MapFileDataReceived.Jar,
                 data:={2,
                        3,
                        0, 0, 0, 0,
@@ -237,13 +237,13 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub NewHostTest()
-        JarTest(Packets.NewHost.Jar,
+        JarTest(ServerPackets.NewHost.Jar,
                 data:={1},
                 value:=New PlayerId(1))
     End Sub
     <TestMethod()>
     Public Sub NonGameActionTest()
-        JarTest(Packets.NonGameAction.Jar,
+        JarTest(ClientPackets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
                        4,
                        32,
@@ -256,7 +256,7 @@ Public Class WC3ProtocolTest
                                     {"receiving group", ChatGroup.Allies},
                                     {"message", "test"}
                                 }))}})
-        JarTest(Packets.NonGameAction.Jar,
+        JarTest(ClientPackets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
                        4,
                        16,
@@ -267,7 +267,7 @@ Public Class WC3ProtocolTest
                         {"value", NonGameActionType.LobbyChat.KeyValue(Of Object)(New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                                     {"message", "test"}
                                 }))}})
-        JarTest(Packets.NonGameAction.Jar,
+        JarTest(ClientPackets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
                        4,
                        17,
@@ -277,7 +277,7 @@ Public Class WC3ProtocolTest
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetTeam.KeyValue(Of Object)(CByte(1))}
                     })
-        JarTest(Packets.NonGameAction.Jar,
+        JarTest(ClientPackets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
                        4,
                        20,
@@ -287,7 +287,7 @@ Public Class WC3ProtocolTest
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetHandicap.KeyValue(Of Object)(CByte(100))}
                     })
-        JarTest(Packets.NonGameAction.Jar,
+        JarTest(ClientPackets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
                        4,
                        18,
@@ -297,7 +297,7 @@ Public Class WC3ProtocolTest
                         {"sender", New PlayerId(4)},
                         {"value", NonGameActionType.SetColor.KeyValue(Of Object)(PlayerColor.Blue)}
                     })
-        JarTest(Packets.NonGameAction.Jar,
+        JarTest(ClientPackets.NonGameAction.Jar,
                 data:={3, 1, 2, 3,
                        4,
                        19,
@@ -310,7 +310,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub OtherPlayerJoinedTest()
-        JarTest(Packets.OtherPlayerJoined.Jar,
+        JarTest(ServerPackets.OtherPlayerJoined.Jar,
                 data:={27, 0, 0, 0,
                        1,
                        116, 101, 115, 116, 0,
@@ -328,7 +328,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub OtherPlayerLeftTest()
-        JarTest(Packets.OtherPlayerLeft.Jar,
+        JarTest(ServerPackets.OtherPlayerLeft.Jar,
                 data:={1,
                        7, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -338,19 +338,19 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub OtherPlayerReadyTest()
-        JarTest(Packets.OtherPlayerReady.Jar,
+        JarTest(ServerPackets.OtherPlayerReady.Jar,
                 data:={3},
                 value:=New PlayerId(3))
     End Sub
     <TestMethod()>
     Public Sub PeerConnectionInfoTest()
-        JarTest(Packets.PeerConnectionInfo.Jar,
+        JarTest(ClientPackets.PeerConnectionInfo.Jar,
                 data:={7, 0},
                 value:=7)
     End Sub
     <TestMethod()>
     Public Sub PeerKnockTest()
-        JarTest(Packets.PeerKnock.Jar,
+        JarTest(PeerPackets.PeerKnock.Jar,
                 data:={42, 0, 0, 0,
                        0, 0, 0, 0,
                        1,
@@ -366,7 +366,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub PeerPingTest()
-        JarTest(Packets.PeerPing.Jar,
+        JarTest(PeerPackets.PeerPing.Jar,
                 data:={&HEF, &HBE, &HAD, &HDE,
                        7, 0, 0, 0,
                        1, 0, 0, 0},
@@ -378,36 +378,36 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub PeerPongTest()
-        JarTest(Packets.PeerPong.Jar,
+        JarTest(PeerPackets.PeerPong.Jar,
                 data:={&HEF, &HBE, &HAD, &HDE},
                 value:=&HDEADBEEFUI)
     End Sub
     <TestMethod()>
     Public Sub PingTest()
-        JarTest(Packets.Ping.Jar,
+        JarTest(ServerPackets.Ping.Jar,
                 data:={&HEF, &HBE, &HAD, &HDE},
                 value:=&HDEADBEEFUI)
     End Sub
     <TestMethod()>
     Public Sub PongTest()
-        JarTest(Packets.Pong.Jar,
+        JarTest(ClientPackets.Pong.Jar,
                 data:={&HEF, &HBE, &HAD, &HDE},
                 value:=&HDEADBEEFUI)
     End Sub
     <TestMethod()>
     Public Sub ReadyTest()
-        JarTest(Packets.Ready.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ClientPackets.Ready.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub RejectEntryTest()
-        JarTest(Packets.RejectEntry.Jar,
+        JarTest(ServerPackets.RejectEntry.Jar,
                 data:={27, 0, 0, 0},
                 value:=RejectReason.IncorrectPassword,
                 equater:=Function(e1, e2) e1 = e2)
     End Sub
     <TestMethod()>
-    Public Sub RemovePlayerFromLagScreenTest()
-        JarTest(Packets.PlayerStoppedLagging.Jar,
+    Public Sub PlayerStoppedLaggingTest()
+        JarTest(ServerPackets.PlayerStoppedLagging.Jar,
                 data:={4,
                        23, 0, 0, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -417,11 +417,11 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub RequestDropLaggersTest()
-        JarTest(Packets.RequestDropLaggers.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ClientPackets.RequestDropLaggers.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub SetDownloadSourceTest()
-        JarTest(Packets.SetDownloadSource.Jar,
+        JarTest(ServerPackets.SetDownloadSource.Jar,
                 data:={0, 0, 0, 0,
                        2},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -431,7 +431,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub SetUploadTargetTest()
-        JarTest(Packets.SetUploadTarget.Jar,
+        JarTest(ServerPackets.SetUploadTarget.Jar,
                 data:={0, 0, 0, 0,
                        3,
                        128, 0, 0, 0},
@@ -442,12 +442,12 @@ Public Class WC3ProtocolTest
                     })
     End Sub
     <TestMethod()>
-    Public Sub ShowLagScreenTest()
+    Public Sub PlayersLaggingTest()
         Dim lagger = New NamedValueMap(New Dictionary(Of InvariantString, Object) From {
                              {"id", New PlayerId(2)},
                              {"initial milliseconds used", 25UI}
                          })
-        JarTest(Packets.PlayersLagging.Jar,
+        JarTest(ServerPackets.PlayersLagging.Jar,
                 equater:=Function(e1 As IReadableList(Of NamedValueMap), e2 As IReadableList(Of NamedValueMap)) ObjectEqual(e1, e2),
                 data:={2,
                        2, 25, 0, 0, 0,
@@ -456,15 +456,15 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub StartCountdownTest()
-        JarTest(Packets.StartCountdown.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ServerPackets.StartCountdown.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub StartLoadingTest()
-        JarTest(Packets.StartLoading.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
+        JarTest(ServerPackets.StartLoading.Jar, data:={}, value:=New Pickling.EmptyJar.EmptyValue)
     End Sub
     <TestMethod()>
     Public Sub TextTest()
-        JarTest(Packets.Text.Jar,
+        JarTest(ServerPackets.Text.Jar,
                 data:={2, 2, 3,
                        1,
                        32,
@@ -476,7 +476,7 @@ Public Class WC3ProtocolTest
                         {"type group", ChatType.Game.KeyValue(Of Object)(ChatGroup.Allies)},
                         {"message", "test"}
                     })
-        JarTest(Packets.Text.Jar,
+        JarTest(ServerPackets.Text.Jar,
                 data:={2, 2, 3,
                        1,
                        16,
@@ -490,7 +490,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TickTest()
-        JarTest(Packets.Tick.Jar,
+        JarTest(ServerPackets.Tick.Jar,
                 appendSafe:=False,
                 data:={250, 0,
                        208, 15,
@@ -510,7 +510,7 @@ Public Class WC3ProtocolTest
                                             }.AsReadableList)
                                      }.AsReadableList.Maybe}
                     })
-        JarTest(Packets.Tick.Jar,
+        JarTest(ServerPackets.Tick.Jar,
                 appendSafe:=False,
                 data:={100, 0},
                 value:=New Dictionary(Of InvariantString, Object) From {
@@ -519,7 +519,7 @@ Public Class WC3ProtocolTest
     End Sub
     <TestMethod()>
     Public Sub TockTest()
-        JarTest(Packets.Tock.Jar,
+        JarTest(ClientPackets.Tock.Jar,
                 data:={1, 2, 3, 4, 5},
                 value:=New Dictionary(Of InvariantString, Object) From {
                         {"unknown", CByte(1)},

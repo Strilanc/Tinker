@@ -89,14 +89,14 @@ Namespace WC3
                                                    logger:=Me.logger,
                                                    clock:=New SystemClock))
 
-            AddQueuedPacketHandler(Protocol.Packets.Greet, AddressOf OnReceiveGreet)
-            AddQueuedPacketHandler(Protocol.Packets.HostMapInfo, AddressOf OnReceiveHostMapInfo)
-            AddQueuedPacketHandler(Protocol.Packets.Ping, AddressOf OnReceivePing)
-            AddQueuedPacketHandler(Protocol.Packets.OtherPlayerJoined, AddressOf OnReceiveOtherPlayerJoined)
-            AddQueuedPacketHandler(Protocol.Packets.OtherPlayerLeft, AddressOf OnReceiveOtherPlayerLeft)
-            AddQueuedPacketHandler(Protocol.Packets.StartLoading, AddressOf OnReceiveStartLoading)
-            AddQueuedPacketHandler(Protocol.Packets.Tick, AddressOf OnReceiveTick)
-            AddQueuedPacketHandler(Protocol.Packets.MapFileData, AddressOf OnReceiveMapFileData)
+            AddQueuedPacketHandler(Protocol.ServerPackets.Greet, AddressOf OnReceiveGreet)
+            AddQueuedPacketHandler(Protocol.ServerPackets.HostMapInfo, AddressOf OnReceiveHostMapInfo)
+            AddQueuedPacketHandler(Protocol.ServerPackets.Ping, AddressOf OnReceivePing)
+            AddQueuedPacketHandler(Protocol.ServerPackets.OtherPlayerJoined, AddressOf OnReceiveOtherPlayerJoined)
+            AddQueuedPacketHandler(Protocol.ServerPackets.OtherPlayerLeft, AddressOf OnReceiveOtherPlayerLeft)
+            AddQueuedPacketHandler(Protocol.ServerPackets.StartLoading, AddressOf OnReceiveStartLoading)
+            AddQueuedPacketHandler(Protocol.ServerPackets.Tick, AddressOf OnReceiveTick)
+            AddQueuedPacketHandler(Protocol.PeerPackets.MapFileData, AddressOf OnReceiveMapFileData)
 
             AsyncProduceConsumeUntilError(
                 producer:=AddressOf socket.AsyncReadPacket,
@@ -135,8 +135,8 @@ Namespace WC3
                                     pickle.Value.ItemAs(Of UInt32)("peer key"))
             otherPlayers.Add(player)
             Dim hooks = New List(Of IDisposable)
-            hooks.Add(player.AddPacketHandler(Protocol.Packets.PeerPing, Function(value) inQueue.QueueAction(Sub() OnPeerReceivePeerPing(player, value))))
-            hooks.Add(player.AddPacketHandler(Protocol.Packets.MapFileData, Function(value) inQueue.QueueAction(Sub() OnPeerReceiveMapFileData(player, value))))
+            hooks.Add(player.AddPacketHandler(Protocol.PeerPackets.PeerPing, Function(value) inQueue.QueueAction(Sub() OnPeerReceivePeerPing(player, value))))
+            hooks.Add(player.AddPacketHandler(Protocol.PeerPackets.MapFileData, Function(value) inQueue.QueueAction(Sub() OnPeerReceiveMapFileData(player, value))))
             AddHandler player.Disconnected, AddressOf OnPeerDisconnect
             hooks.Add(New DelegatedDisposable(Sub() RemoveHandler player.Disconnected, AddressOf OnPeerDisconnect))
             _playerHooks(player) = hooks

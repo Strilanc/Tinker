@@ -178,7 +178,7 @@ Namespace WC3.Replay
                 New UInt32Jar().Named("counter state"),
                 New UInt32Jar().Named("counter time"))
         Public Shared ReadOnly ReplayEntryLobbyState As Definition(Of NamedValueMap) = Define(ReplayEntryId.LobbyState,
-                WC3.Protocol.Packets.LobbyState.Jar)
+                WC3.Protocol.ServerPackets.LobbyState.Jar)
         Public Shared ReadOnly ReplayEntryTickPreOverflow As Definition(Of NamedValueMap) = Define(ReplayEntryId.TickPreOverflow, New TupleJar(
                 New UInt16Jar().Named("time span"),
                 New Protocol.PlayerActionSetJar().Repeated.Named("player action sets")

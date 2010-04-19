@@ -21,8 +21,8 @@ Namespace WC3
         Private Sub StartLoading()
             state = PlayerState.Loading
             SendPacket(Protocol.MakeStartLoading())
-            AddQueuedLocalPacketHandler(Protocol.Packets.Ready, AddressOf ReceiveReady)
-            AddQueuedLocalPacketHandler(Protocol.Packets.GameAction, AddressOf ReceiveGameAction)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.Ready, AddressOf ReceiveReady)
+            AddQueuedLocalPacketHandler(Protocol.ClientPackets.GameAction, AddressOf ReceiveGameAction)
         End Sub
         Public Function QueueStartLoading() As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
