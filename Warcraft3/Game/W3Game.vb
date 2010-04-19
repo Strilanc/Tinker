@@ -365,9 +365,9 @@ Namespace WC3
             'Clean slot
             Dim slot = _lobby.Slots.TryFindPlayerSlot(player)
             If slot IsNot Nothing Then
-                If slot.Contents.EnumPlayers.Contains(player) Then
-                    slot = slot.WithContents(slot.Contents.WithoutPlayer(player))
-                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot)
+                If slot.Value.Contents.EnumPlayers.Contains(player) Then
+                    slot = slot.Value.With(contents:=slot.Value.Contents.WithoutPlayer(player))
+                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.Value)
                 End If
             End If
 
@@ -451,18 +451,18 @@ Namespace WC3
 
             Dim target = (From player In slot.Contents.EnumPlayers Where player.Name = slotQuery).FirstOrDefault
             If target IsNot Nothing Then
-                _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithoutPlayer(target)))
+                _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithoutPlayer(target)))
                 RemovePlayer(target, True, Protocol.PlayerLeaveReason.Disconnect, "Booted")
             Else
                 For Each player In slot.Contents.EnumPlayers
                     Contract.Assume(player IsNot Nothing)
-                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithoutPlayer(player)))
+                    _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithoutPlayer(player)))
                     RemovePlayer(player, True, Protocol.PlayerLeaveReason.Disconnect, "Booted")
                 Next player
             End If
 
             If shouldCloseEmptiedSlot AndAlso slot.Contents.ContentType = SlotContents.Type.Empty Then
-                _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.WithContents(New SlotContentsClosed))
+                _lobby.Slots = _lobby.Slots.WithSlotsReplaced(slot.With(contents:=New SlotContentsClosed))
                 _lobby.ThrowChangedPublicState()
             End If
         End Sub
@@ -558,7 +558,7 @@ Namespace WC3
             For Each player In From p In _kernel.Players.Cache Where p.isFake
                 Contract.Assume(player IsNot Nothing)
                 Dim slot = _lobby.Slots.TryFindPlayerSlot(player)
-                If slot Is Nothing OrElse slot.Contents.Moveable Then
+                If slot Is Nothing OrElse slot.Value.Contents.Moveable Then
                     RemovePlayer(player, True, Protocol.PlayerLeaveReason.Disconnect, "Fake players removed before loading")
                 End If
             Next player

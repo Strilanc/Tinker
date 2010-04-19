@@ -30,22 +30,21 @@
             Contract.Requires(replacementSlots IsNot Nothing)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
             Return New SlotSet(From oldSlot In _slots
-                               Let newSlot = (From slot In replacementSlots Where slot.Index = oldSlot.Index).FirstOrDefault
-                               Select If(newSlot, oldSlot))
+                               Select (From slot In replacementSlots
+                                       Where slot.Index = oldSlot.Index
+                                       ).FirstOrDefault([Default]:=oldSlot))
         End Function
 
         '''<summary>Returns any slot matching a string. Checks index, color and player name.</summary>
         <Pure()>
         <ContractVerification(False)>
         Public Function FindMatchingSlot(ByVal query As InvariantString) As Slot
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Dim best = (From slot In _slots
                         Let match = slot.Matches(query)
                         Let contentType = slot.Contents.ContentType
                         ).MaxRelativeTo(Function(item) item.match * 3 - item.contentType)
             Contract.Assume(best IsNot Nothing)
             If best.match = Slot.Match.None Then Throw New OperationFailedException("No matching slot found.")
-            Contract.Assume(best.slot IsNot Nothing)
             Return best.slot
         End Function
 
@@ -60,24 +59,24 @@
             Return Me.WithSlotsReplaced(From pair In useableSlots.Zip(encodedHandicaps)
                                         Let slot = pair.Item1
                                         Let handicap = pair.Item2
-                                        Select slot.WithHandicap(handicap))
+                                        Select slot.With(handicap:=handicap))
         End Function
 
         <Pure()>
-        Public Function TryFindPlayerSlot(ByVal player As Player) As Slot
+        Public Function TryFindPlayerSlot(ByVal player As Player) As Slot?
             Contract.Requires(player IsNot Nothing)
             Return (From slot In _slots
                     From resident In slot.Contents.EnumPlayers
                     Where player Is resident
-                    Select slot).FirstOrDefault
+                    Select slot
+                    ).FirstOrNullableDefault
         End Function
         <Pure()>
         Public Function FindPlayerSlot(ByVal player As Player) As Slot
             Contract.Requires(player IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Dim result = TryFindPlayerSlot(player)
-            If result Is Nothing Then Throw New InvalidOperationException("No such player in a slot.")
-            Return result
+            If Not result.HasValue Then Throw New InvalidOperationException("No such player in a slot.")
+            Return result.Value
         End Function
 
         Public Function GetEnumerator() As IEnumerator(Of Slot) Implements IEnumerable(Of Slot).GetEnumerator

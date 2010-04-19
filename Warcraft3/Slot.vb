@@ -1,6 +1,8 @@
 ﻿Namespace WC3
     <DebuggerDisplay("{ToString}")>
-    Public NotInheritable Class Slot
+    Public Structure Slot
+        Implements IEquatable(Of Slot)
+
         Public Const ObserverTeamIndex As Byte = 12
         Public Enum LockState
             Unlocked = 0
@@ -20,9 +22,9 @@
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_index < 12)
             Contract.Invariant(_team <= 12)
-            Contract.Invariant(_contents IsNot Nothing)
         End Sub
 
+        '''<summary>Trivial constructor.</summary>
         Public Sub New(ByVal index As Byte,
                        ByVal contents As SlotContents,
                        ByVal color As Protocol.PlayerColor,
@@ -42,28 +44,6 @@
             Me._locked = locked
             Me._raceUnlocked = raceUnlocked
             Me._contents = contents
-        End Sub
-        <ContractVerification(False)>
-        Private Sub New(ByVal template As Slot,
-                        Optional ByVal index As Byte? = Nothing,
-                        Optional ByVal color As Protocol.PlayerColor? = Nothing,
-                        Optional ByVal team As Byte? = Nothing,
-                        Optional ByVal handicap As Byte? = Nothing,
-                        Optional ByVal race As Protocol.Races? = Nothing,
-                        Optional ByVal locked As LockState? = Nothing,
-                        Optional ByVal raceUnlocked As Boolean? = Nothing,
-                        Optional ByVal contents As SlotContents = Nothing)
-            Contract.Requires(template IsNot Nothing)
-            Contract.Requires(Not index.HasValue OrElse index.Value < 12)
-            Contract.Requires(Not team.HasValue OrElse team.Value <= 12)
-            Me._index = If(index, template.Index)
-            Me._color = If(color, template.Color)
-            Me._team = If(team, template.Team)
-            Me._handicap = If(handicap, template.Handicap)
-            Me._race = If(race, template.Race)
-            Me._locked = If(locked, template.Locked)
-            Me._raceUnlocked = If(raceUnlocked, template.RaceUnlocked)
-            Me._contents = If(contents, template.Contents)
         End Sub
 
         Public ReadOnly Property Index As Byte
@@ -106,53 +86,30 @@
         Public ReadOnly Property Contents As SlotContents
             Get
                 Contract.Ensures(Contract.Result(Of SlotContents)() IsNot Nothing)
-                Return _contents
+                Return If(_contents, New SlotContentsOpen())
             End Get
         End Property
 
         <Pure()>
         <ContractVerification(False)>
-        Public Function WithIndex(ByVal index As Byte) As Slot
-            Contract.Requires(index < 12)
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-            Return New Slot(Me, index:=index)
-        End Function
-        <Pure()>
-        <ContractVerification(False)>
-        Public Function WithColor(ByVal color As Protocol.PlayerColor) As Slot
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-            Return New Slot(Me, color:=color)
-        End Function
-        <Pure()>
-        <ContractVerification(False)>
-        Public Function WithHandicap(ByVal handicap As Byte) As Slot
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-            Return New Slot(Me, handicap:=handicap)
-        End Function
-        <Pure()>
-        <ContractVerification(False)>
-        Public Function WithTeam(ByVal team As Byte) As Slot
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-            Return New Slot(Me, team:=team)
-        End Function
-        <Pure()>
-        <ContractVerification(False)>
-        Public Function WithRace(ByVal race As Protocol.Races) As Slot
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-            Return New Slot(Me, race:=race)
-        End Function
-        <Pure()>
-        <ContractVerification(False)>
-        Public Function WithLock(ByVal locked As LockState) As Slot
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-            Return New Slot(Me, locked:=locked)
-        End Function
-        <Pure()>
-        <ContractVerification(False)>
-        Public Function WithContents(ByVal contents As SlotContents) As Slot
-            Contract.Requires(contents IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
-            Return New Slot(Me, contents:=contents)
+        Public Function [With](Optional ByVal index As Byte? = Nothing,
+                               Optional ByVal contents As SlotContents = Nothing,
+                               Optional ByVal color As Protocol.PlayerColor? = Nothing,
+                               Optional ByVal raceUnlocked As Boolean? = Nothing,
+                               Optional ByVal team As Byte? = Nothing,
+                               Optional ByVal race As Protocol.Races? = Nothing,
+                               Optional ByVal handicap As Byte? = Nothing,
+                               Optional ByVal locked As LockState? = Nothing) As Slot
+            Contract.Requires(Not index.HasValue OrElse index.Value < 12)
+            Contract.Requires(Not team.HasValue OrElse team.Value <= 12)
+            Return New Slot(index:=If(index, Me.Index),
+                            color:=If(color, Me.Color),
+                            team:=If(team, Me.Team),
+                            handicap:=If(handicap, Me.Handicap),
+                            race:=If(race, Me.Race),
+                            locked:=If(locked, Me.Locked),
+                            raceUnlocked:=If(raceUnlocked, Me.RaceUnlocked),
+                            contents:=If(contents, Me.Contents))
         End Function
 
         Public Enum Match
@@ -188,8 +145,31 @@
             Return Contents.AsyncGenerateDescription.Select(Function(desc) result + desc)
         End Function
 
+        Public Overloads Function Equals(ByVal other As Slot) As Boolean Implements IEquatable(Of Slot).Equals
+            Return Me._index = other._index AndAlso
+                   Me._color = other._color AndAlso
+                   Me._team = other._team AndAlso
+                   Me._handicap = other._handicap AndAlso
+                   Me._race = other._race AndAlso
+                   Me._raceUnlocked = other._raceUnlocked AndAlso
+                   Me._locked = other._locked AndAlso
+                   Me._contents Is other._contents
+            Return True
+        End Function
+        Public Overrides Function Equals(ByVal obj As Object) As Boolean
+            Return TypeOf obj Is Slot AndAlso Me.Equals(DirectCast(obj, Slot))
+        End Function
+        Public Shared Operator =(ByVal slot1 As Slot, ByVal slot2 As Slot) As Boolean
+            Return slot1.Equals(slot2)
+        End Operator
+        Public Shared Operator <>(ByVal slot1 As Slot, ByVal slot2 As Slot) As Boolean
+            Return Not slot1.Equals(slot2)
+        End Operator
+        Public Overrides Function GetHashCode() As Integer
+            Return _index.GetHashCode
+        End Function
         Public Overrides Function ToString() As String
             Return "Index:{0}, Team:{1}, ContentType:{2}".Frmt(Index, Team, Contents.GetType)
         End Function
-    End Class
+    End Structure
 End Namespace

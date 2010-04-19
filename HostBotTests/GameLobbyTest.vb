@@ -16,12 +16,14 @@ Public Class GameLobbyTest
                                                      color:=Protocol.PlayerColor.Red,
                                                      raceUnlocked:=True,
                                                      team:=0)
-    Private Shared ReadOnly TestOpenObsSlot As Slot = TestOpenSlot.WithTeam(Slot.ObserverTeamIndex).WithColor(Protocol.PlayerColor.Observer)
-    Private Shared ReadOnly TestPlayerObsSlot As Slot = TestPlayerSlot.WithTeam(Slot.ObserverTeamIndex).WithColor(Protocol.PlayerColor.Observer)
+    Private Shared ReadOnly TestOpenObsSlot As Slot = TestOpenSlot.With(team:=Slot.ObserverTeamIndex,
+                                                                        color:=Protocol.PlayerColor.Observer)
+    Private Shared ReadOnly TestPlayerObsSlot As Slot = TestPlayerSlot.With(team:=Slot.ObserverTeamIndex,
+                                                                            color:=Protocol.PlayerColor.Observer)
 
     <TestMethod()>
     Public Sub SetupTeamSizesCustomForcesTest_Open()
-        Dim slotSet = New SlotSet({TestOpenSlot.WithContents(New SlotContentsClosed)})
+        Dim slotSet = New SlotSet({TestOpenSlot.With(contents:=New SlotContentsClosed)})
         Dim result = GameLobby.SetupTeamSizesCustomForces(slotSet, {1})
         Assert.IsTrue(TypeOf result(0).Contents Is SlotContentsOpen)
     End Sub
@@ -41,9 +43,9 @@ Public Class GameLobbyTest
     <TestMethod()>
     Public Sub SetupTeamSizesCustomForcesTest_2to1()
         Dim slotSet = New SlotSet({TestOpenSlot,
-                                   TestOpenSlot.WithIndex(1),
-                                   TestOpenSlot.WithIndex(2).WithTeam(1),
-                                   TestOpenSlot.WithIndex(3).WithTeam(1)})
+                                   TestOpenSlot.With(index:=1),
+                                   TestOpenSlot.With(index:=2, team:=1),
+                                   TestOpenSlot.With(index:=3, team:=1)})
         Dim result = GameLobby.SetupTeamSizesCustomForces(slotSet, {1, 1})
         Assert.IsTrue(TypeOf result(0).Contents Is SlotContentsOpen)
         Assert.IsTrue(TypeOf result(1).Contents Is SlotContentsClosed)
@@ -53,9 +55,9 @@ Public Class GameLobbyTest
     <TestMethod()>
     Public Sub SetupTeamSizesCustomForcesTest_PlayersStay()
         Dim slotSet = New SlotSet({TestPlayerSlot,
-                                   TestOpenSlot.WithIndex(1),
-                                   TestOpenSlot.WithIndex(2).WithTeam(1),
-                                   TestPlayerSlot.WithIndex(3).WithTeam(1)})
+                                   TestOpenSlot.With(index:=1),
+                                   TestOpenSlot.With(index:=2, team:=1),
+                                   TestPlayerSlot.With(index:=3, team:=1)})
         Dim result = GameLobby.SetupTeamSizesCustomForces(slotSet, {1, 1})
         Assert.IsTrue(TypeOf result(0).Contents Is SlotContentsPlayer)
         Assert.IsTrue(TypeOf result(1).Contents Is SlotContentsClosed)
@@ -65,9 +67,9 @@ Public Class GameLobbyTest
     <TestMethod()>
     Public Sub SetupTeamSizesCustomForcesTest_PlayerMove()
         Dim slotSet = New SlotSet({TestPlayerSlot,
-                                   TestOpenSlot.WithIndex(1),
-                                   TestOpenSlot.WithIndex(2).WithTeam(1),
-                                   TestOpenSlot.WithIndex(3).WithTeam(1)})
+                                   TestOpenSlot.With(index:=1),
+                                   TestOpenSlot.With(index:=2, team:=1),
+                                   TestOpenSlot.With(index:=3, team:=1)})
         Dim result = GameLobby.SetupTeamSizesCustomForces(slotSet, {0, 1})
         Assert.IsTrue(TypeOf result(0).Contents Is SlotContentsClosed)
         Assert.IsTrue(TypeOf result(1).Contents Is SlotContentsClosed)
@@ -77,7 +79,7 @@ Public Class GameLobbyTest
     <TestMethod()>
     Public Sub SetupTeamSizesCustomForcesTest_ObsStay()
         Dim slotSet = New SlotSet({TestOpenSlot,
-                                   TestPlayerObsSlot.WithIndex(1)})
+                                   TestPlayerObsSlot.With(index:=1)})
         Dim result = GameLobby.SetupTeamSizesCustomForces(slotSet, {1})
         Assert.IsTrue(TypeOf result(0).Contents Is SlotContentsOpen)
         Assert.IsTrue(TypeOf result(1).Contents Is SlotContentsPlayer)
@@ -85,17 +87,17 @@ Public Class GameLobbyTest
     <TestMethod()>
     Public Sub SetupTeamSizesCustomForcesTest_Large()
         Dim slotSet = New SlotSet({TestPlayerSlot,
-                                   TestOpenSlot.WithIndex(1),
-                                   TestPlayerSlot.WithIndex(2),
-                                   TestPlayerSlot.WithIndex(3),
-                                   TestOpenSlot.WithIndex(4),
-                                   TestPlayerSlot.WithTeam(1).WithIndex(5),
-                                   TestOpenSlot.WithTeam(1).WithIndex(6),
-                                   TestPlayerSlot.WithTeam(1).WithIndex(7),
-                                   TestOpenSlot.WithTeam(1).WithIndex(8),
-                                   TestOpenSlot.WithTeam(1).WithIndex(9),
-                                   TestOpenObsSlot.WithIndex(10),
-                                   TestPlayerObsSlot.WithIndex(11)})
+                                   TestOpenSlot.With(index:=1),
+                                   TestPlayerSlot.With(index:=2),
+                                   TestPlayerSlot.With(index:=3),
+                                   TestOpenSlot.With(index:=4),
+                                   TestPlayerSlot.With(team:=1, index:=5),
+                                   TestOpenSlot.With(team:=1, index:=6),
+                                   TestPlayerSlot.With(team:=1, index:=7),
+                                   TestOpenSlot.With(team:=1, index:=8),
+                                   TestOpenSlot.With(team:=1, index:=9),
+                                   TestOpenObsSlot.With(index:=10),
+                                   TestPlayerObsSlot.With(index:=11)})
         Dim result = GameLobby.SetupTeamSizesCustomForces(slotSet, {2, 5})
         Assert.IsTrue(TypeOf result(0).Contents Is SlotContentsPlayer)
         Assert.IsTrue(TypeOf result(1).Contents Is SlotContentsClosed)

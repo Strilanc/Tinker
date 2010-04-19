@@ -211,7 +211,7 @@ Namespace WC3
             Contract.Assume(hostName IsNot Nothing)
             Dim gameStats = WC3.GameStats.FromMapAndArgument(map, hostName, argument)
 
-            Dim totalSlotCount = map.Slots.Count
+            Dim totalSlotCount = map.LobbySlots.Count
             Select Case gameStats.observers
                 Case WC3.GameObserverOption.FullObservers, WC3.GameObserverOption.Referees
                     totalSlotCount = 12
@@ -262,7 +262,9 @@ Namespace WC3
                                  contents:=New SlotContentsOpen,
                                  locked:=Slot.LockState.Frozen,
                                  team:=0)
-            Dim slot2 = slot1.WithIndex(1).WithColor(Protocol.PlayerColor.Blue).WithContents(New SlotContentsClosed)
+            Dim slot2 = slot1.With(index:=1,
+                                   color:=Protocol.PlayerColor.Blue,
+                                   contents:=New SlotContentsClosed)
             Contract.Assume(sha1Checksum.Count = 20)
             Dim map = New WC3.Map(streamFactory:=Nothing,
                                   advertisedPath:="Maps\AdminGame.w3x",
@@ -276,7 +278,7 @@ Namespace WC3
                                   name:="Admin Game",
                                   playableWidth:=256,
                                   playableHeight:=56,
-                                  slots:={slot1, slot2}.AsReadableList)
+                                  lobbySlots:={slot1, slot2}.AsReadableList)
 
             Dim hostName = Application.ProductName
             Contract.Assume(hostName IsNot Nothing)
@@ -285,7 +287,7 @@ Namespace WC3
                                           GameStats:=WC3.GameStats.FromMapAndArgument(map, hostName, New Commands.CommandArgument("")),
                                           gameid:=AllocateGameId(),
                                           entryKey:=0,
-                                          totalSlotCount:=map.Slots.Count,
+                                          totalSlotCount:=map.LobbySlots.Count,
                                           gameType:=map.FilterGameType,
                                           state:=0,
                                           usedSlotCount:=0,

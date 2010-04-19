@@ -48,8 +48,8 @@
             Next pid
 
             If _settings.UseMultiObs Then
-                If _settings.Map.Slots.Count <= 10 Then
-                    For Each i In 10.Range.Skip(_settings.Map.Slots.Count)
+                If _settings.Map.LobbySlots.Count <= 10 Then
+                    For Each i In 10.Range.Skip(_settings.Map.LobbySlots.Count)
                         CloseSlot(_slots(i).MatchableId)
                     Next i
                     Dim playerIndex = _freeIndexes.First
@@ -88,8 +88,8 @@
             Dim result = New List(Of Slot)
 
             'Create player slots
-            result.AddRange(From slot In settings.Map.Slots
-                            Select slot.WithLock(settings.DefaultSlotLockState))
+            result.AddRange(From slot In settings.Map.LobbySlots
+                            Select slot.With(locked:=settings.DefaultSlotLockState))
 
             'Create observer slots
             Select Case settings.GameDescription.GameStats.Observers
@@ -145,10 +145,10 @@
         End Property
 
         Public Sub LobbyCatchRemovedPlayer(ByVal player As Player,
-                                           ByVal slot As Slot)
+                                           ByVal slot As Slot?)
             Contract.Requires(player IsNot Nothing)
 
-            If slot Is Nothing OrElse slot.Contents.PlayerIndex Is Nothing Then
+            If slot Is Nothing OrElse slot.Value.Contents.PlayerIndex Is Nothing Then
                 _freeIndexes.Add(player.Id)
             End If
             If player Is _fakeHostPlayer Then
@@ -174,7 +174,7 @@
         End Function
 
         Public Function AddFakePlayer(ByVal name As InvariantString,
-                                      Optional ByVal slot As Slot = Nothing) As Player
+                                      Optional ByVal slot As Slot? = Nothing) As Player
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             If Not AcceptingPlayers Then
@@ -195,7 +195,7 @@
             'Make player
             Dim newPlayer = New Player(index, name, Logger)
             If slot IsNot Nothing Then
-                _slots = _slots.WithSlotsReplaced(slot.WithContents(New SlotContentsPlayer(newPlayer)))
+                _slots = _slots.WithSlotsReplaced(slot.Value.With(contents:=New SlotContentsPlayer(newPlayer)))
             End If
             _kernel.Players.Add(newPlayer)
 
@@ -231,7 +231,6 @@
                 Throw New InvalidOperationException("No slot available for player.")
             End If
             Dim slot = slotMatch.s
-            Contract.Assume(slot IsNot Nothing)
 
             'Allocate id
             Dim id As PlayerId
@@ -259,14 +258,15 @@
 
             Return Tuple.Create(slot, id)
         End Function
-        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer, ByVal slot As Slot, ByVal id As PlayerId) As Player
+        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer,
+                                   ByVal slot As Slot,
+                                   ByVal id As PlayerId) As Player
             Contract.Requires(connectingPlayer IsNot Nothing)
-            Contract.Requires(slot IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             'Add
             Dim newPlayer = New Player(id, connectingPlayer, _kernel.Clock, _downloadManager, Logger)
-            _slots = _slots.WithSlotsReplaced(slot.WithContents(slot.Contents.WithPlayer(newPlayer)))
+            _slots = _slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithPlayer(newPlayer)))
             _kernel.Players.Add(newPlayer)
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
 
@@ -306,8 +306,7 @@
             End If
 
             Dim space = AllocateSpaceForNewPlayer(connectingPlayer)
-            Contract.Assume(space.Item1 IsNot Nothing)
-            Return AddPlayer(connectingPlayer, space.item1, space.item2)
+            Return AddPlayer(connectingPlayer, space.Item1, space.Item2)
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
@@ -336,16 +335,14 @@
                                                 ByVal coveredSlot As Slot,
                                                 ByVal coveredPlayersId As PlayerId) As SlotSet
             Contract.Requires(slots IsNot Nothing)
-            Contract.Requires(coveringSlot IsNot Nothing)
-            Contract.Requires(coveredSlot IsNot Nothing)
             Contract.Requires(coveringSlot.Contents.EnumPlayers.None)
             Contract.Requires(coveringSlot.Contents.EnumPlayers.Count = 1)
             Contract.Ensures(Contract.Result(Of SlotSet)() IsNot Nothing)
 
             Dim coveringPlayer = coveringSlot.Contents.EnumPlayers.Single
             Contract.Assume(coveringPlayer IsNot Nothing)
-            Return slots.WithSlotsReplaced(coveringSlot.WithContents(New SlotContentsCovering(coveredSlot.MatchableId, coveringPlayer)),
-                                           coveredSlot.WithContents(New SlotContentsCovered(coveringSlot.MatchableId, coveredPlayersId, {})))
+            Return slots.WithSlotsReplaced(coveringSlot.With(contents:=New SlotContentsCovering(coveredSlot.MatchableId, coveringPlayer)),
+                                           coveredSlot.With(contents:=New SlotContentsCovered(coveringSlot.MatchableId, coveredPlayersId, {})))
         End Function
 
         Public Function SendMapPiece(ByVal receiver As Download.IPlayerDownloadAspect,
@@ -368,7 +365,6 @@
         <Pure()>
         <ContractVerification(False)>
         Public Function FindMatchingSlot(ByVal query As InvariantString) As Slot
-            Contract.Ensures(Contract.Result(Of Slot)() IsNot Nothing)
             Dim best = (From slot In _slots
                         Let match = slot.Matches(query)
                         Let content = slot.Contents.ContentType
@@ -379,10 +375,11 @@
 
         Public Sub OnPlayerSetColor(ByVal sender As Player, ByVal newColor As Protocol.PlayerColor)
             Contract.Requires(sender IsNot Nothing)
-            Dim slot = _slots.TryFindPlayerSlot(sender)
+            Dim trySlot = _slots.TryFindPlayerSlot(sender)
+            If Not trySlot.HasValue Then Return
+            Dim slot = trySlot.Value
 
             'Validate
-            If slot Is Nothing Then Return
             If slot.Color = newColor Then Return
             If slot.Locked = slot.LockState.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
@@ -390,46 +387,48 @@
             If Not newColor.EnumValueIsDefined Then Return '[not a valid color]
 
             'check for duplicates
-            Dim colorOwner = (From otherSlot In _slots Where otherSlot.Color = newColor).FirstOrDefault
+            Dim colorOwner = (From otherSlot In _slots Where otherSlot.Color = newColor).FirstOrNullableDefault
             If colorOwner IsNot Nothing Then
-                If Not _settings.Map.UsesFixedPlayerSettings AndAlso colorOwner.Contents.ContentType = SlotContents.Type.Empty Then
-                    _slots = _slots.WithSlotsReplaced(colorOwner, colorOwner.WithColor(slot.Color))
+                If Not _settings.Map.UsesFixedPlayerSettings AndAlso colorOwner.Value.Contents.ContentType = SlotContents.Type.Empty Then
+                    _slots = _slots.WithSlotsReplaced(colorOwner.Value, colorOwner.Value.With(color:=slot.Color))
                 End If
             End If
 
             'change color
-            _slots = _slots.WithSlotsReplaced(slot.WithColor(newColor))
+            _slots = _slots.WithSlotsReplaced(slot.With(Color:=newColor))
             RaiseEvent ChangedPublicState(Me)
         End Sub
         Public Sub OnPlayerSetRace(ByVal sender As Player, ByVal newRace As Protocol.Races)
             Contract.Requires(sender IsNot Nothing)
-            Dim slot = _slots.TryFindPlayerSlot(sender)
+            Dim trySlot = _slots.TryFindPlayerSlot(sender)
+            If trySlot Is Nothing Then Return
+            Dim slot = trySlot.Value
 
             'Validate
-            If slot Is Nothing Then Return
             If slot.Locked = slot.LockState.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If Not AcceptingPlayers Then Return '[too late]
             If Not newRace.EnumValueIsDefined OrElse newRace = Protocol.Races.Unlocked Then Return '[not a valid race]
 
             'Perform
-            _slots = _slots.WithSlotsReplaced(slot.withRace(newRace))
+            _slots = _slots.WithSlotsReplaced(slot.With(race:=newRace))
             RaiseEvent ChangedPublicState(Me)
         End Sub
         Public Sub OnPlayerSetHandicap(ByVal sender As Player, ByVal newHandicap As Byte)
             Contract.Requires(sender IsNot Nothing)
-            Dim slot = _slots.TryFindPlayerSlot(sender)
+            Dim trySlot = _slots.TryFindPlayerSlot(sender)
+            If trySlot Is Nothing Then Return
+            Dim slot = trySlot.Value
 
             'Validate
-            If slot Is Nothing Then Return
-            If slot.locked = slot.LockState.Frozen Then Return '[no changes allowed]
+            If slot.Locked = slot.LockState.Frozen Then Return '[no changes allowed]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If Not AcceptingPlayers Then Return '[too late]
 
             'Perform
             Select Case newHandicap
                 Case 50, 60, 70, 80, 90, 100
-                    _slots = _slots.WithSlotsReplaced(slot.WithHandicap(newHandicap))
+                    _slots = _slots.WithSlotsReplaced(slot.With(handicap:=newHandicap))
                 Case Else
                     Return '[invalid handicap]
             End Select
@@ -438,11 +437,12 @@
         End Sub
         Public Sub OnPlayerSetTeam(ByVal sender As Player, ByVal newTeam As Byte)
             Contract.Requires(sender IsNot Nothing)
-            Dim slot = _slots.TryFindPlayerSlot(sender)
+            Dim trySlot = _slots.TryFindPlayerSlot(sender)
+            If trySlot Is Nothing Then Return
+            Dim slot = trySlot.Value
 
             'Validate
-            If slot Is Nothing Then Return
-            If slot.locked <> slot.LockState.Unlocked Then Return '[no teams changes allowed]
+            If slot.Locked <> slot.LockState.Unlocked Then Return '[no teams changes allowed]
             If newTeam > slot.ObserverTeamIndex Then Return '[invalid value]
             If Not slot.Contents.Moveable Then Return '[slot is weird]
             If Not AcceptingPlayers Then Return '[too late]
@@ -458,23 +458,22 @@
             'Perform
             If Not _settings.Map.UsesCustomForces Then
                 If slot.Team <> newTeam AndAlso slot.Team = WC3.Slot.ObserverTeamIndex Then
-                    If (From s In _slots Where s.Team <> WC3.Slot.ObserverTeamIndex).Count >= _settings.Map.Slots.Count Then
+                    If (From s In _slots Where s.Team <> WC3.Slot.ObserverTeamIndex).Count >= _settings.Map.LobbySlots.Count Then
                         Dim partner = (From s In _slots
                                        Where s.Team <> WC3.Slot.ObserverTeamIndex
                                        Where s.Contents.ContentType = SlotContents.Type.Empty
-                                       ).FirstOrDefault
+                                       ).FirstOrNullableDefault
                         If partner Is Nothing Then Return 'would exceed max player slots
-                        _slots = _slots.WithSlotsReplaced(partner.WithTeam(slot.Team))
+                        _slots = _slots.WithSlotsReplaced(partner.Value.With(team:=slot.Team))
                     End If
                 End If
                 'set slot to target team
-                _slots = _slots.WithSlotsReplaced(slot.WithTeam(newTeam))
+                _slots = _slots.WithSlotsReplaced(slot.With(team:=newTeam))
             Else
                 'swap with next open slot from target team
                 For Each offset_mod In _slots.Count.Range
                     Dim nextIndex = (slot.Index + offset_mod) Mod _slots.Count
                     Dim nextSlot = _slots(nextIndex)
-                    Contract.Assume(nextSlot IsNot Nothing)
                     If nextSlot.Team = newTeam AndAlso nextSlot.Contents.WantPlayer(sender.Name) >= SlotContents.WantPlayerPriority.Open Then
                         SwapSlotContents(nextSlot, slot)
                         Exit For
@@ -492,8 +491,9 @@
             If Not AcceptingPlayers Then Throw New InvalidOperationException("Can't reserve slots after launch.")
             Dim slot As Slot
             If slotQuery Is Nothing Then
-                slot = (From s In _slots Where s.Contents.WantPlayer() = SlotContents.WantPlayerPriority.Open).FirstOrDefault
-                If slot Is Nothing Then Throw New InvalidOperationException("No available slot.")
+                Dim trySlot = (From s In _slots Where s.Contents.WantPlayer() = SlotContents.WantPlayerPriority.Open).FirstOrNullableDefault
+                If trySlot Is Nothing Then Throw New InvalidOperationException("No available slot.")
+                slot = trySlot.Value
             Else
                 slot = FindMatchingSlot(slotQuery.Value)
             End If
@@ -522,21 +522,21 @@
         '''<summary>Opens the slot with the given index, unless the slot contains a player.</summary>
         Public Sub OpenSlot(ByVal slotQuery As InvariantString)
             ModifySlot(slotQuery,
-                       Function(slot) slot.WithContents(New SlotContentsOpen),
+                       Function(slot) slot.With(contents:=New SlotContentsOpen),
                        avoidPlayers:=True)
         End Sub
 
         '''<summary>Places a computer with the given difficulty in the slot with the given index, unless the slot contains a player.</summary>
         Public Sub ComputerizeSlot(ByVal slotQuery As InvariantString, ByVal cpu As Protocol.ComputerLevel)
             ModifySlot(slotQuery,
-                       Function(slot) slot.WithContents(New SlotContentsComputer(cpu)),
+                       Function(slot) slot.With(contents:=New SlotContentsComputer(cpu)),
                        avoidPlayers:=True)
         End Sub
 
         '''<summary>Closes the slot with the given index, unless the slot contains a player.</summary>
         Public Sub CloseSlot(ByVal slotQuery As InvariantString)
             ModifySlot(slotQuery,
-                       Function(slot) slot.WithContents(New SlotContentsClosed),
+                       Function(slot) slot.With(contents:=New SlotContentsClosed),
                        avoidPlayers:=True)
         End Sub
 
@@ -545,14 +545,12 @@
             If Not AcceptingPlayers Then Throw New InvalidOperationException("Can't swap slots after launch.")
             Dim slot1 = FindMatchingSlot(slotQuery1)
             Dim slot2 = FindMatchingSlot(slotQuery2)
-            If slot1 Is slot2 Then Throw New InvalidOperationException("Slot {0} is slot '{1}'.".Frmt(slotQuery1, slotQuery2))
+            If slot1 = slot2 Then Throw New InvalidOperationException("Slot {0} is slot '{1}'.".Frmt(slotQuery1, slotQuery2))
             SwapSlotContents(slot1, slot2)
             RaiseEvent ChangedPublicState(Me)
         End Sub
         Public Sub SwapSlotContents(ByVal slot1 As Slot, ByVal slot2 As Slot)
-            Contract.Requires(slot1 IsNot Nothing)
-            Contract.Requires(slot2 IsNot Nothing)
-            _slots = _slots.WithSlotsReplaced(slot1.WithContents(slot2.Contents), slot2.WithContents(slot1.Contents))
+            _slots = _slots.WithSlotsReplaced(slot1.With(contents:=slot2.Contents), slot2.With(contents:=slot1.Contents))
             RaiseEvent ChangedPublicState(Me)
         End Sub
 
@@ -564,9 +562,11 @@
             End If
 
             Dim slot = FindMatchingSlot(slotQuery)
-            Dim swapColorSlot = (From x In _slots Where x.Color = color).FirstOrDefault
-            If swapColorSlot IsNot Nothing Then _slots = _slots.WithSlotsReplaced(swapColorSlot, swapColorSlot.WithColor(slot.color))
-            _slots = _slots.WithSlotsReplaced(slot.WithColor(color))
+            Dim swapColorSlot = (From x In _slots
+                                 Where x.Color = color
+                                 ).FirstOrDefault([default]:=slot)
+            _slots = _slots.WithSlotsReplaced(swapColorSlot, swapColorSlot.With(color:=slot.Color))
+            _slots = _slots.WithSlotsReplaced(slot.With(color:=color))
 
             RaiseEvent ChangedPublicState(Me)
         End Sub
@@ -574,7 +574,7 @@
         Public Sub SetSlotRace(ByVal slotQuery As InvariantString, ByVal race As Protocol.Races)
             ModifySlot(slotQuery, Function(slot)
                                       If Not slot.RaceUnlocked Then Throw New InvalidOperationException("The map says that slot's race is locked.")
-                                      Return slot.WithRace(race)
+                                      Return slot.With(race:=race)
                                   End Function)
         End Sub
 
@@ -582,24 +582,24 @@
             If _settings.Map.UsesCustomForces Then Throw New InvalidOperationException("The map says that all teams are locked.")
             ModifySlot(slotQuery, Function(slot)
                                       If slot.Team <> team AndAlso slot.Team = WC3.Slot.ObserverTeamIndex Then
-                                          If (From s In _slots Where s.Team <> WC3.Slot.ObserverTeamIndex).Count >= _settings.Map.Slots.Count Then
-                                              Throw New InvalidOperationException("You can only have {0} non-obs slots.".Frmt(_settings.Map.Slots.Count))
+                                          If (From s In _slots Where s.Team <> WC3.Slot.ObserverTeamIndex).Count >= _settings.Map.LobbySlots.Count Then
+                                              Throw New InvalidOperationException("You can only have {0} non-obs slots.".Frmt(_settings.Map.LobbySlots.Count))
                                           End If
                                       End If
-                                      Return slot.WithTeam(team)
+                                      Return slot.With(team:=team)
                                   End Function)
         End Sub
 
         Public Sub SetSlotHandicap(ByVal slotQuery As InvariantString, ByVal handicap As Byte)
-            ModifySlot(slotQuery, Function(slot) slot.WithHandicap(handicap))
+            ModifySlot(slotQuery, Function(slot) slot.With(handicap:=handicap))
         End Sub
 
         Public Sub SetSlotLocked(ByVal slotQuery As InvariantString, ByVal locked As Slot.LockState)
-            ModifySlot(slotQuery, Function(slot) slot.WithLock(locked))
+            ModifySlot(slotQuery, Function(slot) slot.With(locked:=locked))
         End Sub
 
         Public Sub SetAllSlotsLocked(ByVal locked As Slot.LockState)
-            _slots = _slots.WithSlotsReplaced(From slot In _slots Select slot.WithLock(locked))
+            _slots = _slots.WithSlotsReplaced(From slot In _slots Select slot.With(locked:=locked))
         End Sub
 
         '''<summary>Returns the number of slots potentially available for new players.</summary>
@@ -620,7 +620,7 @@
             If _settings.Map.UsesCustomForces Then
                 _slots = SetupTeamSizesCustomForces(_slots, desiredTeamSizes)
             Else
-                _slots = SetupTeamSizesMeleeForces(_slots, desiredTeamSizes, maxNonObserverSlots:=_settings.Map.Slots.Count)
+                _slots = SetupTeamSizesMeleeForces(_slots, desiredTeamSizes, maxNonObserverSlots:=_settings.Map.LobbySlots.Count)
             End If
 
             RaiseEvent ChangedPublicState(Me)
@@ -651,12 +651,13 @@
             Dim assignedSlots = From pair In affectedSlots.Take(maxNonObserverSlots).Zip(teamIndexes)
                                 Let slot = pair.Item1
                                 Let team = pair.Item2
-                                Select slot.WithTeam(team).WithContents(If(slot.Contents.ContentType = SlotContents.Type.Empty,
-                                                                           New SlotContentsOpen,
-                                                                           slot.Contents))
+                                Select slot.With(team:=team,
+                                                 contents:=If(slot.Contents.ContentType = SlotContents.Type.Empty,
+                                                              New SlotContentsOpen,
+                                                              slot.Contents))
             Dim closedSlots = From slot In affectedSlots.Skip(assignedSlots.Count)
                               Where slot.Team <> WC3.Slot.ObserverTeamIndex
-                              Select slot.WithContents(New SlotContentsClosed)
+                              Select slot.With(contents:=New SlotContentsClosed)
 
             'Transform
             Return slotSet.WithSlotsReplaced(assignedSlots).WithSlotsReplaced(closedSlots)
@@ -702,15 +703,15 @@
             result = result.WithSlotsReplaced(From slotPair In usedAvailableSlots.Zip(playerBlockedSlots)
                                               Let availableSlot = slotPair.Item1
                                               Let blockedSlot = slotPair.Item2
-                                              From slot In {availableSlot.WithContents(blockedSlot.Contents),
-                                                            blockedSlot.WithContents(New SlotContentsClosed)}
+                                              From slot In {availableSlot.With(contents:=blockedSlot.Contents),
+                                                            blockedSlot.With(contents:=New SlotContentsClosed)}
                                               Select slot)
             'close empty blocked slots
             result = result.WithSlotsReplaced(From slot In emptyBlockedSlots
-                                              Select slot.WithContents(New SlotContentsClosed))
+                                              Select slot.With(contents:=New SlotContentsClosed))
             'open unused available slots
             result = result.WithSlotsReplaced(From slot In unusedAvailableSlots
-                                              Select slot.WithContents(New SlotContentsOpen))
+                                              Select slot.With(contents:=New SlotContentsOpen))
 
             Return result
         End Function

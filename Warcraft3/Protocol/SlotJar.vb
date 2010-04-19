@@ -19,7 +19,6 @@ Namespace WC3.Protocol
 
         Public Shared Function PackSlot(ByVal slot As Slot,
                                         Optional ByVal receiver As Player = Nothing) As NamedValueMap
-            Contract.Requires(slot IsNot Nothing)
             Contract.Requires(receiver IsNot Nothing)
             Contract.Ensures(Contract.Result(Of NamedValueMap)() IsNot Nothing)
             Dim pid = slot.Contents.DataPlayerIndex(receiver)

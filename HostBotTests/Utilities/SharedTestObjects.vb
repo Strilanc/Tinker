@@ -19,7 +19,7 @@ Friend Module SharedTestObjects
         name:="Test Map",
         playableWidth:=256,
         playableHeight:=256,
-        slots:={New Slot(index:=0,
+        lobbySlots:={New Slot(index:=0,
                          raceunlocked:=False,
                          color:=PlayerColor.Red,
                          team:=0,

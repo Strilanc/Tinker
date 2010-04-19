@@ -1,38 +1,52 @@
 Namespace WC3
     Public NotInheritable Class Map
+        '''<summary>Creates streams for accessing the file data. Null when no file is available.</summary>
         Private ReadOnly _streamFactory As Func(Of NonNull(Of IRandomReadableStream))
+        '''<summary>The machine-independent path that wc3 will use when communicating (eg. "Maps\PlunderIsle.w3m").</summary>
         Private ReadOnly _advertisedPath As InvariantString
+        '''<summary>The size of the file data.</summary>
         Private ReadOnly _fileSize As UInteger
+        '''<summary>The crc32 checksum of the file data.</summary>
         Private ReadOnly _fileChecksumCRC32 As UInt32
+        '''<summary>A custom checksum of some of the map archive's files' data.</summary>
         Private ReadOnly _mapChecksumXORO As UInt32
+        '''<summary>The sha1 hash of some of the map archive's files' data.</summary>
         Private ReadOnly _mapChecksumSHA1 As IReadableList(Of Byte)
-        Private ReadOnly _slots As IReadableList(Of Slot)
+        '''<summary>The slot layout used for game lobbies.</summary>
+        Private ReadOnly _lobbySlots As IReadableList(Of Slot)
+        '''<summary>The width of the map's playable area.</summary>
         Private ReadOnly _playableWidth As UInt16
+        '''<summary>The height of the map's playable area.</summary>
         Private ReadOnly _playableHeight As UInt16
+        '''<summary>Indicates if the map is a melee map (as opposed to a custom map).</summary>
         Private ReadOnly _isMelee As Boolean
+        '''<summary>The map's name.</summary>
         Private ReadOnly _name As InvariantString
-        Private ReadOnly _usesFixedPlayerSettings As Boolean
+        '''<summary>Indicates if player teams should be kept fixed.</summary>
         Private ReadOnly _usesCustomForces As Boolean
+        '''<summary>Indicates if player colors and races should be kept fixed.</summary>
+        Private ReadOnly _usesFixedPlayerSettings As Boolean
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_advertisedPath.StartsWith("Maps\"))
             Contract.Invariant(_fileSize > 0)
             Contract.Invariant(_mapChecksumSHA1 IsNot Nothing)
             Contract.Invariant(_mapChecksumSHA1.Count = 20)
-            Contract.Invariant(_slots IsNot Nothing)
-            Contract.Invariant(_slots.Count > 0)
-            Contract.Invariant(_slots.Count <= 12)
+            Contract.Invariant(_lobbySlots IsNot Nothing)
+            Contract.Invariant(_lobbySlots.Count > 0)
+            Contract.Invariant(_lobbySlots.Count <= 12)
             Contract.Invariant(_playableWidth > 0)
             Contract.Invariant(_playableHeight > 0)
         End Sub
 
+        '''<summary>Trivial constructor.</summary>
         Public Sub New(ByVal streamFactory As Func(Of NonNull(Of IRandomReadableStream)),
                        ByVal advertisedPath As InvariantString,
                        ByVal fileSize As UInteger,
                        ByVal fileChecksumCRC32 As UInt32,
                        ByVal mapChecksumXORO As UInt32,
                        ByVal mapChecksumSHA1 As IReadableList(Of Byte),
-                       ByVal slots As IReadableList(Of Slot),
+                       ByVal lobbySlots As IReadableList(Of Slot),
                        ByVal playableWidth As UInt16,
                        ByVal playableHeight As UInt16,
                        ByVal isMelee As Boolean,
@@ -43,9 +57,9 @@ Namespace WC3
             Contract.Requires(fileSize > 0)
             Contract.Requires(mapChecksumSHA1 IsNot Nothing)
             Contract.Requires(mapChecksumSHA1.Count = 20)
-            Contract.Requires(slots IsNot Nothing)
-            Contract.Requires(slots.Count > 0)
-            Contract.Requires(slots.Count <= 12)
+            Contract.Requires(lobbySlots IsNot Nothing)
+            Contract.Requires(lobbySlots.Count > 0)
+            Contract.Requires(lobbySlots.Count <= 12)
             Contract.Requires(playableWidth > 0)
             Contract.Requires(playableHeight > 0)
 
@@ -55,7 +69,7 @@ Namespace WC3
             Me._fileChecksumCRC32 = fileChecksumCRC32
             Me._mapChecksumXORO = mapChecksumXORO
             Me._mapChecksumSHA1 = mapChecksumSHA1
-            Me._slots = slots
+            Me._lobbySlots = lobbySlots
             Me._playableWidth = playableHeight
             Me._playableHeight = playableWidth
             Me._isMelee = isMelee
@@ -89,7 +103,7 @@ Namespace WC3
                                FileChecksumCRC32:=crcStream.CRC32,
                                MapChecksumSHA1:=ComputeMapSha1Checksum(mapArchive, war3PatchArchive),
                                MapChecksumXORO:=ComputeMapXoro(mapArchive, war3PatchArchive),
-                               Slots:=info.slots,
+                               lobbySlots:=info.slots,
                                PlayableWidth:=info.playableWidth,
                                PlayableHeight:=info.playableHeight,
                                IsMelee:=info.options.EnumUInt32Includes(MapOptions.Melee),
@@ -125,8 +139,11 @@ Namespace WC3
                                      contents:=New SlotContentsOpen,
                                      locked:=Slot.LockState.Frozen,
                                      team:=0)
-                Dim slot2 = slot1.WithIndex(1).WithColor(Protocol.PlayerColor.Blue)
-                Dim slot3 = slot1.WithIndex(2).WithColor(Protocol.PlayerColor.Teal).WithContents(New SlotContentsComputer(Protocol.ComputerLevel.Normal))
+                Dim slot2 = slot1.With(index:=1,
+                                       color:=Protocol.PlayerColor.Blue)
+                Dim slot3 = slot1.With(index:=2,
+                                       color:=Protocol.PlayerColor.Teal,
+                                       contents:=New SlotContentsComputer(Protocol.ComputerLevel.Normal))
                 Dim slots = {slot1, slot2, slot3}.AsReadableList
                 Contract.Assume(sha1.Count = 20)
                 Contract.Assume(slots.Count = 3)
@@ -139,7 +156,7 @@ Namespace WC3
                                FileChecksumCRC32:=crc32,
                                MapChecksumXORO:=xoro,
                                MapChecksumSHA1:=sha1,
-                               slots:=slots,
+                               lobbySlots:=slots,
                                PlayableWidth:=256,
                                PlayableHeight:=256,
                                IsMelee:=True,
@@ -184,12 +201,12 @@ Namespace WC3
                 Return _mapChecksumSHA1
             End Get
         End Property
-        Public ReadOnly Property Slots As IReadableList(Of Slot)
+        Public ReadOnly Property LobbySlots As IReadableList(Of Slot)
             Get
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count > 0)
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count <= 12)
-                Return _slots
+                Return _lobbySlots
             End Get
         End Property
         Public ReadOnly Property PlayableWidth As UInt16
@@ -546,7 +563,7 @@ Namespace WC3
                 Dim saveCount = stream.ReadUInt32()
                 Dim editorVersion = stream.ReadExact(4)
 
-                Dim mapName = SafeGetMapString(mapArchive, nameKey:=stream.ReadNullTerminatedString(maxLength:=256)) 'map description key
+                Dim mapName = SafeGetMapString(mapArchive, nameKey:=stream.ReadNullTerminatedString(maxLength:=256))
 
                 Dim mapAuthor = stream.ReadNullTerminatedString(maxLength:=256)
                 Dim mapDescription = stream.ReadNullTerminatedString(maxLength:=256)
@@ -602,7 +619,8 @@ Namespace WC3
             End Using
         End Function
         <ContractVerification(False)>
-        Private Shared Function ReadMapInfoSlotsAndForces(ByVal stream As IReadableStream, ByVal options As MapOptions) As IReadableList(Of Slot)
+        Private Shared Function ReadMapInfoSlotsAndForces(ByVal stream As IReadableStream,
+                                                          ByVal options As MapOptions) As IReadableList(Of Slot)
             Contract.Requires(stream IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Slot))().Count > 0)
@@ -632,19 +650,17 @@ Namespace WC3
                              Let name = stream.ReadNullTerminatedString(maxLength:=256)
                              ).ToArray
 
-            Dim result = New List(Of Slot)()
-
-            'Setup slots
+            'Determine Lobby Slots
+            Dim lobbySlots = New List(Of Slot)()
             For Each item In slotData
                 'Check
                 CheckIOData(item.colorData.EnumValueIsDefined, "Unrecognized map slot color: {0}.".Frmt(item.colorData))
                 CheckIOData(item.raceData <= 4, "Unrecognized map slot race data: {0}.".Frmt(item.raceData))
                 CheckIOData(item.typeData >= 1 AndAlso item.typeData <= 3, "Unrecognized map slot type data: {0}.".Frmt(item.typeData))
 
-                'Use
+                'Convert
                 Dim race = Protocol.Races.Random
                 Dim raceUnlocked = Not options.EnumUInt32Includes(MapOptions.FixedPlayerSettings)
-                Dim contents As SlotContents
                 Select Case item.raceData
                     Case 0 : raceUnlocked = True
                     Case 1 : race = Protocol.Races.Human
@@ -653,39 +669,42 @@ Namespace WC3
                     Case 4 : race = Protocol.Races.NightElf
                     Case Else : Throw New UnreachableException
                 End Select
+                Dim contents As SlotContents
                 Select Case item.typeData
                     Case 1 : contents = New SlotContentsOpen()
                     Case 2 : contents = New SlotContentsComputer(Protocol.ComputerLevel.Normal)
                     Case 3 : Continue For 'neutral slots not shown in lobby
                     Case Else : Throw New UnreachableException
                 End Select
-                result.Add(New Slot(index:=CByte(result.Count),
+
+                'Use
+                lobbySlots.Add(New Slot(index:=CByte(lobbySlots.Count),
                                     raceUnlocked:=raceUnlocked,
                                     Color:=item.colorData,
                                     contents:=contents,
                                     race:=race,
                                     team:=0))
             Next item
-            Contract.Assert(result.Count <= rawSlotCount)
-            CheckIOData(result.Count > 0, "Map contains no player slots.")
+            Contract.Assert(lobbySlots.Count <= rawSlotCount)
+            CheckIOData(lobbySlots.Count > 0, "Map contains no player slots.")
 
-            'Setup Teams
+            'Assign Teams and Return
             If options.EnumUInt32Includes(MapOptions.Melee) Then
-                result = (From pair In result.ZipWithIndexes
-                          Let slot = pair.Item1
-                          Let team = pair.Item2
-                          Select slot.WithTeam(CByte(team)).WithRace(Protocol.Races.Random)
-                          ).ToList
+                Return (From pair In lobbySlots.ZipWithIndexes
+                        Let slot = pair.Item1
+                        Let team = pair.Item2
+                        Select slot.With(team:=CByte(team),
+                                         race:=Protocol.Races.Random)
+                        ).ToReadableList
             Else
-                result = (From slot In result
-                          Let team = (From force In forceData
-                                      Where force.memberBitField.Bits(slot.Color)
-                                      Select force.index).Single
-                          Select slot.WithTeam(team)
-                          ).ToList
+                Return (From slot In lobbySlots
+                        Let team = (From force In forceData
+                                    Where force.memberBitField.Bits(slot.Color)
+                                    Select force.index
+                                    ).Single
+                        Select slot.With(team:=team)
+                        ).ToReadableList
             End If
-
-            Return result.AsReadableList
         End Function
 #End Region
     End Class

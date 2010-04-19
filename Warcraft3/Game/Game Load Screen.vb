@@ -57,7 +57,7 @@
             For Each player In From p In _kernel.Players
                                Where p.isFake
                                Where _lobby.IsPlayerVisible(p)
-                               Where _lobby.Slots.TryFindPlayerSlot(p).Contents.Moveable
+                               Where _lobby.Slots.FindPlayerSlot(p).Contents.Moveable '[assumes the fake player definitely has a slot, because we're screwed otherwise anyways]
                 Contract.Assume(player IsNot Nothing)
                 _readyPlayers.Add(player)
                 _lobby.BroadcastPacket(Protocol.MakeOtherPlayerReady(player.Id), Nothing)
