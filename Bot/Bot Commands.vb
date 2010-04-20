@@ -130,8 +130,8 @@ Namespace Bot
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
-                Dim profileName As InvariantString = If(argument.TryGetOptionalNamedValue("profile"), "default")
-                Dim clientName As InvariantString = argument.RawValue(0)
+                Dim profileName = If(argument.TryGetOptionalNamedValue("profile"), "default").ToInvariant
+                Dim clientName = argument.RawValue(0).ToInvariant
 
                 Return Bnet.ClientManager.AsyncCreateFromProfile(clientName, profileName, target).Select(
                     Function(manager)
@@ -179,8 +179,8 @@ Namespace Bot
                 'parse
                 Dim args = argument.RawValue(0).Split(":"c)
                 If args.Length <> 2 Then Throw New ArgumentException("Expected a component argument like: type:name.")
-                Dim type As InvariantString = args(0)
-                Dim name As InvariantString = args(1).AssumeNotNull
+                Dim type = args(0).ToInvariant
+                Dim name = args(1).AssumeNotNull.ToInvariant
                 'dispose
                 Return target.Components.QueueFindComponent(type, name).ContinueWithFunc(
                     Function(component)
@@ -199,7 +199,7 @@ Namespace Bot
                            Permissions:="root:1")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-                Dim argSetting As InvariantString = argument.RawValue(0)
+                Dim argSetting = argument.RawValue(0).ToInvariant
 
                 Dim settingValue As Object
                 Select Case argSetting
@@ -289,7 +289,7 @@ Namespace Bot
                            Permissions:="root:2")
             End Sub
             Protected Overrides Function PerformInvoke(ByVal target As MainBot, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
-                Dim argSetting As InvariantString = argument.RawValue(0)
+                Dim argSetting = argument.RawValue(0).ToInvariant
                 Dim argValue = argument.RawValue(1)
 
                 Dim valueIntegral As UShort
@@ -329,8 +329,8 @@ Namespace Bot
                 Dim args = argumentHead.Split(":"c)
                 If args.Length <> 2 Then Throw New ArgumentException("Expected a component type:name.")
                 Contract.Assume(args(1) IsNot Nothing)
-                Dim type As InvariantString = args(0)
-                Dim name As InvariantString = args(1)
+                Dim type = args(0).ToInvariant
+                Dim name = args(1).ToInvariant
                 'send
                 Return (From component In target.Components.QueueFindComponent(type, name)
                         Select component.InvokeCommand(user, argumentRest)

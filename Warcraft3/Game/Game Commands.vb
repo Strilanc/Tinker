@@ -201,7 +201,7 @@ Namespace WC3
             Protected Overloads Overrides Function PerformInvoke(ByVal target As Game, ByVal user As BotUser, ByVal argument As CommandArgument) As Task(Of String)
                 Contract.Assume(target IsNot Nothing)
                 Dim val As Task(Of Double)
-                Dim argSetting As InvariantString = argument.RawValue(0)
+                Dim argSetting = argument.RawValue(0).ToInvariant
                 Select Case argSetting
                     Case "TickPeriod" : val = From e In target.Motor.QueueGetTickPeriod Select e.TotalMilliseconds
                     Case "LagLimit" : val = From e In target.Motor.QueueGetLagLimit Select e.TotalMilliseconds
@@ -336,7 +336,7 @@ Namespace WC3
                 Dim vald As Double
                 Dim isShort = UShort.TryParse(argument.RawValue(1), val_us)
                 Dim isDouble = Double.TryParse(argument.RawValue(1), vald)
-                Dim argSetting As InvariantString = argument.RawValue(0)
+                Dim argSetting = argument.RawValue(0).ToInvariant
                 Select Case argSetting
                     Case "TickPeriod"
                         If Not isShort Or val_us < 1 Or val_us > 20000 Then Throw New ArgumentException("Invalid value")

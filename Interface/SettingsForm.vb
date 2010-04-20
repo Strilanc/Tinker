@@ -241,7 +241,7 @@ Public Class SettingsForm
             Try
                 Dim path = OpenFileDialog.FileName
                 My.Settings.last_plugin_dir = IO.Path.GetDirectoryName(path)
-                Dim pluginName As InvariantString = IO.Path.GetFileNameWithoutExtension(path)
+                Dim pluginName = IO.Path.GetFileNameWithoutExtension(path).ToInvariant
                 If pluginName.EndsWith("plugin") Then
                     pluginName = pluginName.Substring(0, pluginName.Length - "plugin".Length)
                 End If

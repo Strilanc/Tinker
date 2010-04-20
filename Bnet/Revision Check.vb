@@ -51,7 +51,7 @@ Namespace Bnet
         Private Function ParseChallengeSeed(ByVal challengeSeed As String) As UInt32
             Contract.Requires(challengeSeed IsNot Nothing)
 
-            Dim invIndexString As InvariantString = challengeSeed
+            Dim invIndexString = challengeSeed.ToInvariant
             If Not invIndexString Like "ver-ix86-#.mpq" AndAlso Not invIndexString Like "ix86ver#.mpq" Then
                 Throw New ArgumentException("Unrecognized Index String: {0}".Frmt(challengeSeed), "challengeSeed")
             End If

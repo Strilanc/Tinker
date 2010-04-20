@@ -87,8 +87,8 @@ Namespace WC3
             Dim war3PatchArchive = MPQ.Archive.FromFile(IO.Path.Combine(wc3PatchMPQFolder, "War3Patch.mpq"))
             Dim info = ReadMapInfo(mapArchive)
 
-            Dim basePath As InvariantString = wc3MapFolder.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
-            Dim relPath As InvariantString = filePath.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
+            Dim basePath = wc3MapFolder.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar).ToInvariant
+            Dim relPath = filePath.ToString.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar).ToInvariant
             If Not basePath.EndsWith(IO.Path.DirectorySeparatorChar) Then basePath += IO.Path.DirectorySeparatorChar
             If relPath.StartsWith(basePath) Then
                 relPath = relPath.Substring(basePath.Length)
@@ -128,7 +128,7 @@ Namespace WC3
                 Dim vals = Protocol.ServerPackets.HostMapInfo.Jar.Parse(hexData.ToReadableList).Value
 
                 'Extract values
-                Dim path As InvariantString = vals.ItemAs(Of String)("path")
+                Dim path = vals.ItemAs(Of String)("path").ToInvariant
                 Dim size = vals.ItemAs(Of UInt32)("size")
                 Dim crc32 = vals.ItemAs(Of UInt32)("crc32")
                 Dim xoro = vals.ItemAs(Of UInt32)("xoro checksum")

@@ -661,7 +661,7 @@ Namespace Bnet
             'Parse address setting
             Dim remoteHost = ""
             Dim remotePort = 0US
-            Dim remoteEndPointArg As InvariantString = If(My.Settings.bnls, "")
+            Dim remoteEndPointArg = If(My.Settings.bnls, "").ToInvariant
             If remoteEndPointArg <> "" Then
                 Dim hostPortPair = remoteEndPointArg.ToString.Split(":"c)
                 remoteHost = hostPortPair(0)

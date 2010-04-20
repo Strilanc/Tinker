@@ -8,7 +8,7 @@
             Try
                 Dim i = argument.IndexOf(" "c)
                 If i = -1 Then i = argument.Length
-                Dim subcommand As InvariantString = argument.Substring(0, i)
+                Dim subcommand = argument.Substring(0, i).ToInvariant
 
                 Dim argDesc = If(component.IsArgumentPrivate(subcommand), "{0} [arguments hidden]".Frmt(subcommand), argument)
                 component.Logger.Log("Command: {0}".Frmt(argDesc), LogMessageType.Typical)

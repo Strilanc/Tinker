@@ -27,7 +27,7 @@ Namespace WC3.Protocol
         DequeueBuildingOrder = &H1E
 
         CheatFastCooldown = &H20
-        '_unseen0x21 = &H21
+        '_unseen0x21 = &H21 [maybe for the level-changing cheat, which is an impossible to observe action]
         CheatInstantDefeat = &H22
         CheatSpeedConstruction = &H23
         CheatFastDeathDecay = &H24
@@ -64,9 +64,9 @@ Namespace WC3.Protocol
         GameCacheSyncReal = &H6C
         GameCacheSyncBoolean = &H6D
         GameCacheSyncUnit = &H6E
-        '_unseen0x6F = &H6F
+        '_unseen0x6F = &H6F [probably meant to be GameCacheSyncString, but wc3 seems unable to send or receive it]
         GameCacheSyncEmptyInteger = &H70
-        '_unseen0x71 = &H71
+        '_unseen0x71 = &H71 [probably meant to be GameCacheSyncEmptyString, but wc3 seems unable to send or receive it]
         GameCacheSyncEmptyBoolean = &H72
         GameCacheSyncEmptyUnit = &H73
         GameCacheSyncEmptyReal = &H74

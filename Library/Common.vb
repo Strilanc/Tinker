@@ -86,7 +86,7 @@ Public Module PoorlyCategorizedFunctions
 
         Return (From pair In pairs
                 Let p = pair.IndexOf(valueDivider, StringComparison.Ordinal)
-                Let key As InvariantString = pair.Substring(0, p)
+                Let key = pair.Substring(0, p).ToInvariant
                 Let value = parser(pair.Substring(p + valueDivider.Length))
                 ).ToDictionary(keySelector:=Function(e) e.key, elementSelector:=Function(e) e.value)
     End Function
@@ -282,7 +282,7 @@ Public Module PoorlyCategorizedFunctions
 
         'Separate directory and filename patterns
         fileQuery = fileQuery.Replace(IO.Path.AltDirectorySeparatorChar, IO.Path.DirectorySeparatorChar)
-        Dim dirQuery As InvariantString = "*"
+        Dim dirQuery = "*".ToInvariant
         If fileQuery.Contains(IO.Path.DirectorySeparatorChar) Then
             Dim words = fileQuery.Split(IO.Path.DirectorySeparatorChar)
             Dim filePattern = words.Last

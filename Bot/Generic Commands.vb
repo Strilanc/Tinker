@@ -31,7 +31,7 @@ Namespace Bot
                 'Run download on a separate thread to avoid blocking anything
                 Return ThreadedFunc(
                     Function()
-                        Dim site As InvariantString = argument.NamedValue("site")
+                        Dim site = argument.NamedValue("site").ToInvariant
                         Dim mapId = argument.RawValue(0)
                         Select Case site
                             Case "epicwar"
