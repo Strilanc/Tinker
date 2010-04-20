@@ -171,7 +171,7 @@
             Contract.Requires(sequence IsNot Nothing)
             Contract.Requires(maxDataSize > 0)
             Contract.Requires(measure IsNot Nothing)
-            Contract.Ensures(Contract.Result(Of IEnumerable(Of IEnumerable(Of TValue)))() IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IReadableList(Of IReadableList(Of TValue)))() IsNot Nothing)
 
             Dim result = sequence.ZipWithPartialAggregates(
                     seed:=Tuple.Create(0, 0),

@@ -269,6 +269,7 @@ Public Module PoorlyCategorizedFunctions
                           End Sub)
     End Function
 
+    <ContractVerification(False)>
     Public Function FindFilesMatching(ByVal fileQuery As String,
                                       ByVal likeQuery As InvariantString,
                                       ByVal directory As InvariantString,
@@ -316,6 +317,7 @@ Public Module PoorlyCategorizedFunctions
         End Try
     End Function
 
+    <ContractVerification(False)>
     <Pure()> <Extension()>
     Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte),
                                          ByVal base As UInt32) As BigInteger

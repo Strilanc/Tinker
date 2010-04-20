@@ -113,61 +113,79 @@ Namespace WC3
             End Using
         End Function
 
+        Public Shared Function FromHostMapInfoPacket(ByVal data As IEnumerable(Of Byte)) As Map
+            Contract.Requires(data IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
+
+            'Parse map values
+            Dim vals = Protocol.ServerPackets.HostMapInfo.Jar.Parse(data.ToReadableList).Value
+            Dim path = vals.ItemAs(Of String)("path").ToInvariant
+            Dim size = vals.ItemAs(Of UInt32)("size")
+            Dim crc32 = vals.ItemAs(Of UInt32)("crc32")
+            Dim xoro = vals.ItemAs(Of UInt32)("xoro checksum")
+            Dim sha1 = vals.ItemAs(Of IReadableList(Of Byte))("sha1 checksum")
+            Contract.Assume(sha1.Count = 20)
+            If Not path.StartsWith("Maps\") Then Throw New IO.InvalidDataException("Invalid map path.")
+            If size <= 0 Then Throw New IO.InvalidDataException("Invalid file size.")
+
+            'Mock the remaining values
+            Dim name = path.ToString.Split("\"c).Last
+            Dim isMelee = True
+            Dim usesCustomForces = False
+            Dim usesFixedPlayerSettings = False
+            Dim playableDiameter = 256US
+            Dim slot1 = New Slot(index:=0,
+                                 raceUnlocked:=False,
+                                 Color:=Protocol.PlayerColor.Red,
+                                 contents:=New SlotContentsOpen,
+                                 locked:=Slot.LockState.Frozen,
+                                 team:=0)
+            Dim slot2 = slot1.With(index:=1,
+                                   color:=Protocol.PlayerColor.Blue)
+            Dim slot3 = slot1.With(index:=2,
+                                   color:=Protocol.PlayerColor.Teal,
+                                   contents:=New SlotContentsComputer(Protocol.ComputerLevel.Normal))
+            Dim lobbySlots = {slot1, slot2, slot3}.AsReadableList
+            Contract.Assume(lobbySlots.Count = 3)
+
+            'Finish
+            Return New Map(streamFactory:=Nothing,
+                           AdvertisedPath:=path,
+                           FileSize:=size,
+                           FileChecksumCRC32:=crc32,
+                           MapChecksumXORO:=xoro,
+                           MapChecksumSHA1:=sha1,
+                           lobbySlots:=lobbySlots,
+                           PlayableWidth:=playableDiameter,
+                           PlayableHeight:=playableDiameter,
+                           isMelee:=isMelee,
+                           usesCustomForces:=usesCustomForces,
+                           usesFixedPlayerSettings:=usesFixedPlayerSettings,
+                           name:=name)
+        End Function
+
         Public Shared Function FromArgument(ByVal arg As String) As Map
             Contract.Requires(arg IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Map)() IsNot Nothing)
             If arg.Length <= 0 Then
                 Throw New ArgumentException("Empty argument.")
-            ElseIf arg.StartsWith("0x", StringComparison.OrdinalIgnoreCase) Then 'Map specified by HostMapInfo packet data
-                'Parse
-                If arg Like "0x*[!0-9a-fA-F]" OrElse arg.Length Mod 2 <> 0 Then
-                    Throw New ArgumentException("Invalid map meta data. [0x prefix should be followed by hex HostMapInfo packet data].")
-                End If
-                Dim hexData = From i In (arg.Length \ 2).Range.Skip(1)
-                              Select CByte(arg.Substring(i * 2, 2).FromHexToUInt64(ByteOrder.BigEndian))
-                Dim vals = Protocol.ServerPackets.HostMapInfo.Jar.Parse(hexData.ToReadableList).Value
-
-                'Extract values
-                Dim path = vals.ItemAs(Of String)("path").ToInvariant
-                Dim size = vals.ItemAs(Of UInt32)("size")
-                Dim crc32 = vals.ItemAs(Of UInt32)("crc32")
-                Dim xoro = vals.ItemAs(Of UInt32)("xoro checksum")
-                Dim sha1 = vals.ItemAs(Of IReadableList(Of Byte))("sha1 checksum")
-                Dim slot1 = New Slot(index:=0,
-                                     raceUnlocked:=False,
-                                     Color:=Protocol.PlayerColor.Red,
-                                     contents:=New SlotContentsOpen,
-                                     locked:=Slot.LockState.Frozen,
-                                     team:=0)
-                Dim slot2 = slot1.With(index:=1,
-                                       color:=Protocol.PlayerColor.Blue)
-                Dim slot3 = slot1.With(index:=2,
-                                       color:=Protocol.PlayerColor.Teal,
-                                       contents:=New SlotContentsComputer(Protocol.ComputerLevel.Normal))
-                Dim slots = {slot1, slot2, slot3}.AsReadableList
-                Contract.Assume(sha1.Count = 20)
-                Contract.Assume(slots.Count = 3)
-                If Not path.StartsWith("Maps\") Then Throw New IO.InvalidDataException("Invalid map path.")
-                If size <= 0 Then Throw New IO.InvalidDataException("Invalid file size.")
-
-                Return New Map(streamFactory:=Nothing,
-                               AdvertisedPath:=path,
-                               FileSize:=size,
-                               FileChecksumCRC32:=crc32,
-                               MapChecksumXORO:=xoro,
-                               MapChecksumSHA1:=sha1,
-                               lobbySlots:=slots,
-                               PlayableWidth:=256,
-                               PlayableHeight:=256,
-                               IsMelee:=True,
-                               UsesCustomForces:=False,
-                               UsesFixedPlayerSettings:=False,
-                               Name:=path)
-            Else 'Map specified by path
-                Dim mapPath = My.Settings.mapPath.AssumeNotNull
-                Return Map.FromFile(filePath:=IO.Path.Combine(mapPath, FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", mapPath)),
-                                    wc3MapFolder:=mapPath,
-                                    wc3PatchMPQFolder:=My.Settings.war3path.AssumeNotNull)
+            ElseIf arg.StartsWith("0x", StringComparison.OrdinalIgnoreCase) Then
+                'Map specified by HostMapInfo packet data
+                Try
+                    Return FromHostMapInfoPacket(From hexValue In arg.Partitioned(partitionSize:=2).Skip(1)
+                                                 Select Byte.Parse(hexValue.AsString, NumberStyles.HexNumber, CultureInfo.InvariantCulture))
+                Catch ex As Exception When TypeOf ex Is FormatException OrElse
+                                           TypeOf ex Is ArgumentException OrElse
+                                           TypeOf ex Is Pickling.PicklingException
+                    Throw New ArgumentException("Invalid map meta data. [0x prefix should be followed by hex HostMapInfo packet data].", ex)
+                End Try
+            Else
+                'Map specified by path
+                Dim mapFolderPath = My.Settings.mapPath.AssumeNotNull
+                Dim wc3FolderPath = My.Settings.war3path.AssumeNotNull
+                Return Map.FromFile(filePath:=IO.Path.Combine(mapFolderPath, FindFileMatching("*{0}*".Frmt(arg), "*.[wW]3[mxMX]", mapFolderPath)),
+                                    wc3MapFolder:=mapFolderPath,
+                                    wc3PatchMPQFolder:=wc3FolderPath)
             End If
         End Function
 
@@ -314,6 +332,39 @@ Namespace WC3
             End Using
         End Function
 
+        Private Shared Function MapChecksumOverridableFileStreams(ByVal mapArchive As MPQ.Archive,
+                                                                  ByVal war3PatchArchive As MPQ.Archive) As IEnumerable(Of IReadableStream)
+            Contract.Requires(mapArchive IsNot Nothing)
+            Contract.Requires(war3PatchArchive IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of IReadableStream))() IsNot Nothing)
+
+            Return From filename In {"scripts\common.j", "scripts\blizzard.j"}
+                   Let archive = If(mapArchive.Hashtable.Contains(filename), mapArchive, war3PatchArchive)
+                   Select archive.OpenFileByName(filename)
+        End Function
+        Private Shared Function MapChecksumFileStreams(ByVal mapArchive As MPQ.Archive) As IEnumerable(Of IReadableStream)
+            Contract.Requires(mapArchive IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of IEnumerable(Of IReadableStream))() IsNot Nothing)
+
+            Dim scriptFile = From filename In {"war3map.j", "scripts\war3map.j"}
+                             Where mapArchive.Hashtable.Contains(filename)
+                             Take 1
+                             Select mapArchive.OpenFileByName(filename)
+
+            Dim dataFiles = From filename In {"war3map.w3e",
+                                              "war3map.wpm",
+                                              "war3map.doo",
+                                              "war3map.w3u",
+                                              "war3map.w3b",
+                                              "war3map.w3d",
+                                              "war3map.w3a",
+                                              "war3map.w3q"}
+                            Where mapArchive.Hashtable.Contains(filename)
+                            Select mapArchive.OpenFileByName(filename)
+
+            Return scriptFile.Concat(dataFiles)
+        End Function
+
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
         <ContractVerification(False)>
         Private Shared Function ComputeMapSha1Checksum(ByVal mapArchive As MPQ.Archive,
@@ -322,114 +373,51 @@ Namespace WC3
             Contract.Requires(war3PatchArchive IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
-            Dim streams As New List(Of IReadableStream)
-
-            'Overridable map files from war3patch.mpq
-            For Each filename In {"scripts\common.j",
-                                  "scripts\blizzard.j"}
-                Contract.Assume(filename IsNot Nothing)
-                Dim mpqToUse = If(mapArchive.Hashtable.Contains(filename),
-                                  mapArchive,
-                                  war3PatchArchive)
-                streams.Add(mpqToUse.OpenFileByName(filename))
-            Next filename
-
-            'Magic value
-            streams.Add(New Byte() {&H9E, &H37, &HF1, &H3}.AsReadableStream)
-
-            'Important map files
-            For Each fileset In {"war3map.j|scripts\war3map.j",
-                                 "war3map.w3e",
-                                 "war3map.wpm",
-                                 "war3map.doo",
-                                 "war3map.w3u",
-                                 "war3map.w3b",
-                                 "war3map.w3d",
-                                 "war3map.w3a",
-                                 "war3map.w3q"}
-                Contract.Assume(fileset IsNot Nothing)
-                Dim filenameToUse = (From filename In fileset.Split("|"c)
-                                     Where mapArchive.Hashtable.Contains(filename)).FirstOrDefault
-                If filenameToUse IsNot Nothing Then
-                    streams.Add(mapArchive.OpenFileByName(filenameToUse))
-                End If
-            Next fileset
-
-            Using stream = New ConcatStream(streams)
-                Using sha = New Security.Cryptography.SHA1Managed()
-                    Return sha.ComputeHash(stream.AsStream).AsReadableList
-                End Using
+            Using sha = New Security.Cryptography.SHA1Managed(),
+                  stream = New ConcatStream(Concat(MapChecksumOverridableFileStreams(mapArchive, war3PatchArchive),
+                                                   {New IO.MemoryStream(&H3F1379EUI.Bytes).AsRandomReadableStream},
+                                                   MapChecksumFileStreams(mapArchive)))
+                Return sha.ComputeHash(stream.AsStream).AsReadableList
             End Using
         End Function
 
+        '''<summary>Combines parts of the Xoro checksum.</summary>
         Private Shared Function XoroAccumulate(ByVal accumulator As UInt32, ByVal value As UInt32) As UInt32
             Dim result = accumulator Xor value
             result = (result << 3) Or (result >> 29)
             Return result
         End Function
-
         '''<summary>Computes parts of the Xoro checksum.</summary>
-        Private Shared Function ComputeStreamXoro(ByVal stream As IRandomReadableStream) As UInt32
+        Private Shared Function ComputeStreamXoro(ByVal stream As IReadableStream) As UInt32
             Contract.Requires(stream IsNot Nothing)
-            Dim val = 0UI
-
-            'Process complete dwords
-            For repeat = 1 To stream.Length \ 4
-                val = XoroAccumulate(val, stream.ReadUInt32())
-            Next repeat
-
-            'Process bytes not in a complete dword
-            For repeat = 1 To stream.Length Mod 4
-                val = XoroAccumulate(val, stream.ReadByte())
-            Next repeat
-
-            Return val
+            Dim result = 0UI
+            Do
+                Dim data = stream.ReadBestEffort(maxCount:=4)
+                If data.Count = 4 Then
+                    result = XoroAccumulate(result, data.ToUInt32)
+                Else
+                    For Each b In data
+                        result = XoroAccumulate(result, b)
+                    Next b
+                    Return result
+                End If
+            Loop
         End Function
-
         '''<summary>Computes one of the checksums used to uniquely identify maps.</summary>
         Private Shared Function ComputeMapXoro(ByVal mapArchive As MPQ.Archive,
                                                ByVal war3PatchArchive As MPQ.Archive) As UInt32
             Contract.Requires(mapArchive IsNot Nothing)
             Contract.Requires(war3PatchArchive IsNot Nothing)
-            Dim result = 0UI
 
-            'Overridable map files from war3patch.mpq
-            For Each filename In {"scripts\common.j",
-                                  "scripts\blizzard.j"}
-                Contract.Assume(filename IsNot Nothing)
-                Dim mpqToUse = If(mapArchive.Hashtable.Contains(filename),
-                                  mapArchive,
-                                  war3PatchArchive)
-                Using stream = mpqToUse.OpenFileByName(filename)
-                    result = result Xor ComputeStreamXoro(stream)
-                End Using
-            Next filename
-            result = XoroAccumulate(0, result)
+            Dim overridableChecksum = (From stream In MapChecksumOverridableFileStreams(mapArchive, war3PatchArchive)
+                                       Select ComputeStreamXoro(stream)
+                                       ).Aggregate(Function(e1, e2) e1 Xor e2)
+            Dim magicChecksum = &H3F1379EUI
+            Dim fileChecksums = From stream In MapChecksumFileStreams(mapArchive)
+                                Select ComputeStreamXoro(stream)
 
-            'Magic value
-            result = XoroAccumulate(result, &H3F1379E)
-
-            'Important map files
-            For Each fileset In {"war3map.j|scripts\war3map.j",
-                                 "war3map.w3e",
-                                 "war3map.wpm",
-                                 "war3map.doo",
-                                 "war3map.w3u",
-                                 "war3map.w3b",
-                                 "war3map.w3d",
-                                 "war3map.w3a",
-                                 "war3map.w3q"}
-                Contract.Assume(fileset IsNot Nothing)
-                Dim filenameToUse = (From filename In fileset.Split("|"c)
-                                     Where mapArchive.Hashtable.Contains(filename)).FirstOrDefault
-                If filenameToUse IsNot Nothing Then
-                    Using stream = mapArchive.OpenFileByName(filenameToUse)
-                        result = XoroAccumulate(result, ComputeStreamXoro(stream))
-                    End Using
-                End If
-            Next fileset
-
-            Return result
+            Dim allChecksums = {overridableChecksum, magicChecksum}.Concat(fileChecksums)
+            Return allChecksums.Aggregate(0UI, AddressOf XoroAccumulate)
         End Function
 
         Private Shared Function NormalizeMapStringKey(ByVal key As InvariantString) As InvariantString
@@ -448,7 +436,6 @@ Namespace WC3
                 Return key
             End If
         End Function
-
         '''<summary>Finds a string in the war3map.wts file. Returns null if the string is not found.</summary>
         Private Shared Function TryGetMapString(ByVal mapArchive As MPQ.Archive,
                                                 ByVal key As InvariantString) As String
@@ -476,7 +463,6 @@ Namespace WC3
             'Not found
             Return Nothing
         End Function
-
         ''' <summary>
         ''' Finds a string in the war3map.wts file.
         ''' Returns the key if the string is not found.
