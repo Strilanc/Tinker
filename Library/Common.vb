@@ -317,19 +317,6 @@ Public Module PoorlyCategorizedFunctions
     End Function
 
     <Pure()> <Extension()>
-    Public Function FirstOrNullableDefault(Of T As Structure)(ByVal sequence As IEnumerable(Of T)) As T?
-        Contract.Requires(sequence IsNot Nothing)
-        Dim e = sequence.GetEnumerator()
-        Return If(e.MoveNext, e.Current, [Default](Of T?))
-    End Function
-    <Pure()> <Extension()>
-    Public Function FirstOrDefault(Of T)(ByVal sequence As IEnumerable(Of T),
-                                         ByVal [default] As T) As T
-        Contract.Requires(sequence IsNot Nothing)
-        Dim e = sequence.GetEnumerator()
-        Return If(e.MoveNext, e.Current, [default])
-    End Function
-    <Pure()> <Extension()>
     Public Function ToUnsignedBigInteger(ByVal digits As IEnumerable(Of Byte),
                                          ByVal base As UInt32) As BigInteger
         Contract.Requires(digits IsNot Nothing)
