@@ -13,14 +13,14 @@ Public Class BnetProtocolJarsTest
     <TestMethod()>
     Public Sub TextHexUInt32JarTest()
         Dim jar = New TextHexUInt32Jar(digitCount:=8, ByteOrder:=ByteOrder.BigEndian)
-        JarTest(jar, &HDEADBEEFUI, "deadbeef".ToAscBytes)
-        JarTest(jar, 1, "00000001".ToAscBytes)
-        JarTest(jar, 0, "00000000".ToAscBytes)
-        JarTest(jar, &HDEADBEEFUI, "deadbeef".ToAscBytes)
+        JarTest(jar, &HDEADBEEFUI, "deadbeef".ToAsciiBytes)
+        JarTest(jar, 1, "00000001".ToAsciiBytes)
+        JarTest(jar, 0, "00000000".ToAsciiBytes)
+        JarTest(jar, &HDEADBEEFUI, "deadbeef".ToAsciiBytes)
         jar = New TextHexUInt32Jar(digitCount:=6, ByteOrder:=ByteOrder.LittleEndian)
-        JarTest(jar, &HDEADBEUI, "ebdaed".ToAscBytes)
-        JarTest(jar, 1, "100000".ToAscBytes)
-        JarTest(jar, 0, "000000".ToAscBytes)
+        JarTest(jar, &HDEADBEUI, "ebdaed".ToAsciiBytes)
+        JarTest(jar, 1, "100000".ToAsciiBytes)
+        JarTest(jar, 0, "000000".ToAsciiBytes)
         ExpectException(Of PicklingException)(Sub() jar.Pack(&HDEADBEEFUI))
     End Sub
     <TestMethod()>

@@ -148,7 +148,7 @@ Namespace Bnet
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 40)
 
-                Dim userIdAuthData = "{0}:{1}".Frmt(Me._userName.ToUpperInvariant, Me._password.ToUpperInvariant).ToAscBytes
+                Dim userIdAuthData = "{0}:{1}".Frmt(Me._userName.ToUpperInvariant, Me._password.ToUpperInvariant).ToAsciiBytes
                 Dim passwordKey = Concat(accountSalt, userIdAuthData.SHA1).SHA1.ToUnsignedBigInteger
                 Dim verifier = BigInteger.ModPow(G, passwordKey, N)
                 Dim serverKey = serverPublicKeyBytes.SHA1.Take(4).Reverse.ToUnsignedBigInteger
@@ -176,7 +176,7 @@ Namespace Bnet
                 Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
 
                 Return Concat(FixedSalt,
-                              UserName.ToUpperInvariant.ToAscBytes.SHA1,
+                              UserName.ToUpperInvariant.ToAsciiBytes.SHA1,
                               accountSalt,
                               PublicKeyBytes,
                               serverPublicKeyBytes,

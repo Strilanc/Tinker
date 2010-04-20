@@ -19,7 +19,7 @@ Namespace Bnet.Protocol
         End Sub
 
         Public Overrides Function Pack(ByVal value As UInteger) As IEnumerable(Of Byte)
-            Dim digits = value.ToString("x{0}".Frmt(_digitCount), CultureInfo.InvariantCulture).ToAscBytes
+            Dim digits = value.ToString("x{0}".Frmt(_digitCount), CultureInfo.InvariantCulture).ToAsciiBytes.ToArray
             Contract.Assume(digits.Length >= _digitCount)
             If digits.Length > _digitCount Then Throw New PicklingException("Value {0} is too large to fit into {1} hex digits.".Frmt(value, _digitCount))
             Select Case _byteOrder
@@ -37,7 +37,7 @@ Namespace Bnet.Protocol
         End Property
         <ContractVerification(False)>
         Protected Overrides Function FixedSizeParse(ByVal data As IReadableList(Of Byte)) As UInteger
-            Return CUInt(data.ParseChrString(nullTerminated:=False).FromHexToUInt64(_byteOrder))
+            Return CUInt(data.ToAsciiChars.FromHexToUInt64(_byteOrder))
         End Function
 
         Public Overrides Function Parse(ByVal text As String) As UInteger

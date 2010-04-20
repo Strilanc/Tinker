@@ -141,11 +141,11 @@ Public Class CommonTest
 
     <TestMethod()>
     Public Sub SHA1Test()
-        Assert.IsTrue(Strilbrary.Values.ToAscBytes("The quick brown fox jumps over the lazy dog").SHA1.SequenceEqual({&H2F, &HD4, &HE1, &HC6, &H7A, &H2D, &H28, &HFC, &HED, &H84, &H9E, &HE1, &HBB, &H76, &HE7, &H39, &H1B, &H93, &HEB, &H12}))
+        Assert.IsTrue(Strilbrary.Values.ToAsciiBytes("The quick brown fox jumps over the lazy dog").SHA1.SequenceEqual({&H2F, &HD4, &HE1, &HC6, &H7A, &H2D, &H28, &HFC, &HED, &H84, &H9E, &HE1, &HBB, &H76, &HE7, &H39, &H1B, &H93, &HEB, &H12}))
     End Sub
     <TestMethod()>
     Public Sub CRC32Test()
-        Assert.IsTrue(Strilbrary.Values.ToAscBytes("The quick brown fox jumps over the lazy dog").CRC32 = 1095738169)
+        Assert.IsTrue(Strilbrary.Values.ToAsciiBytes("The quick brown fox jumps over the lazy dog").CRC32 = 1095738169)
     End Sub
 
     <TestMethod()>

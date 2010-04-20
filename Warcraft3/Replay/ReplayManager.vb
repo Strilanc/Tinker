@@ -62,8 +62,9 @@
             End If
 
             'Strip invalid characters
-            defaultFileName = New String((From c In defaultFileName
-                                          Select If(IO.Path.GetInvalidFileNameChars.Contains(c), "."c, c)).ToArray)
+            defaultFileName = (From c In defaultFileName
+                               Select If(IO.Path.GetInvalidFileNameChars.Contains(c), "."c, c)
+                               ).AsString
 
             'Append a number if necessary
             Dim filename = IO.Path.Combine(folder, defaultFileName + ".w3g")

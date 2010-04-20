@@ -85,8 +85,9 @@ Namespace Bnet
                     Contract.Ensures(Contract.Result(Of String)() IsNot Nothing)
                     Const SuffixCharacters As String = "~!@#$%^&*(+-=,./\'"":;"
                     Dim result = BaseGameDescription.Name
-                    Dim suffix = New String((From b In _failCount.Bytes.ConvertFromBaseToBase(256, CUInt(SuffixCharacters.Length))
-                                             Select SuffixCharacters(b)).ToArray)
+                    Dim suffix = (From i In _failCount.Bytes.ConvertFromBaseToBase(256, CUInt(SuffixCharacters.Length))
+                                  Select SuffixCharacters(i)
+                                  ).AsString
                     If result.Length + suffix.Length > Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength Then
                         result = result.Substring(0, Bnet.Protocol.Packets.ClientToServer.MaxGameNameLength - suffix.Length)
                     End If

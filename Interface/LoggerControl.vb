@@ -163,7 +163,7 @@ Public Class LoggerControl
                 LogMessage(msg, Color.Red)
                 Return False
             End Try
-            Dim bb = ("-------------------------" + Environment.NewLine).ToAscBytes
+            Dim bb = ("-------------------------" + Environment.NewLine).ToAsciiBytes.ToArray
             filestream.Write(bb, 0, bb.Length)
             Return True
         End SyncLock
@@ -197,7 +197,9 @@ Public Class LoggerControl
                 numQueuedMessages += 1
             End If
             If filestream IsNot Nothing Then
-                Dim data = (("[{0}]: {1}{2}").Frmt(DateTime.Now().ToString("dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture), message.Message, Environment.NewLine)).ToAscBytes
+                Dim data = "[{0}]: {1}{2}".Frmt(DateTime.Now().ToString("dd/MM/yy HH:mm:ss.ffff", CultureInfo.InvariantCulture),
+                                                message.Message,
+                                                Environment.NewLine).ToAsciiBytes.ToArray
                 filestream.Write(data, 0, data.Length)
             End If
         End SyncLock

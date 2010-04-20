@@ -5,7 +5,7 @@ Public Module StreamExtensions
     Public Sub WriteNullTerminatedString(ByVal bw As IWritableStream, ByVal data As String)
         Contract.Requires(bw IsNot Nothing)
         Contract.Requires(data IsNot Nothing)
-        bw.Write(data.ToAscBytes(True).AsReadableList)
+        bw.Write(data.ToAsciiBytes.Append(0).ToReadableList)
     End Sub
     'verification disabled due to stupid verifier (1.2.30118.5)
     <ContractVerification(False)>
@@ -22,7 +22,7 @@ Public Module StreamExtensions
             Contract.Assert(data.Count <= maxLength)
             Dim b = reader.ReadByte()
             If b = 0 Then
-                Return data.ParseChrString(nullTerminated:=False)
+                Return data.ToAsciiChars.AsString
             ElseIf data.Count < maxLength Then
                 data.Add(b)
             Else

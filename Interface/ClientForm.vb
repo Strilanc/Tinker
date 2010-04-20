@@ -45,7 +45,7 @@ Public Class ClientForm
         Dim serializedData = My.Settings.botstore
         If serializedData IsNot Nothing AndAlso serializedData <> "" Then
             Try
-                Using r = New IO.BinaryReader(New IO.MemoryStream(serializedData.ToAscBytes))
+                Using r = New IO.BinaryReader(New IO.MemoryStream(serializedData.ToAsciiBytes.ToArray))
                     _bot.Settings.ReadFrom(r)
                 End Using
             Catch ex As Exception When TypeOf ex Is IO.IOException OrElse
@@ -144,7 +144,7 @@ Public Class ClientForm
             End Using
             Dim data = m.ToArray
             Contract.Assume(data IsNot Nothing)
-            My.Settings.botstore = data.ParseChrString(nullTerminated:=False)
+            My.Settings.botstore = data.ToAsciiChars.AsString
         End Using
     End Sub
 
