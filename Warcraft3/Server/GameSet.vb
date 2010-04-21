@@ -57,13 +57,15 @@
             End Set
         End Property
 
-        Private Function AsyncTryAcceptPlayer(ByVal player As W3ConnectingPlayer) As Task(Of Game)
-            Contract.Requires(player IsNot Nothing)
+        Private Function AsyncTryAcceptPlayer(ByVal knockData As Protocol.KnockData,
+                                              ByVal socket As W3Socket) As Task(Of Game)
+            Contract.Requires(knockData IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
             Dim result = New TaskCompletionSource(Of Game)()
 
             Dim futureSelectGame = _games.FutureSelect(
-                filterFunction:=Function(game) game.QueueAddPlayer(player).ContinueWith(
+                filterFunction:=Function(game) game.QueueAddPlayer(knockData, socket).ContinueWith(
                                         Function(task) task.Status = TaskStatus.RanToCompletion AndAlso task.Result IsNot Nothing
                                     ))
 
@@ -80,10 +82,12 @@
             )
             Return result.Task.AssumeNotNull
         End Function
-        Public Function QueueTryAcceptPlayer(ByVal player As W3ConnectingPlayer) As Task(Of Game)
-            Contract.Requires(player IsNot Nothing)
+        Public Function QueueTryAcceptPlayer(ByVal knockData As Protocol.KnockData,
+                                             ByVal socket As W3Socket) As Task(Of Game)
+            Contract.Requires(knockData IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Game))() IsNot Nothing)
-            Return inQueue.QueueFunc(Function() AsyncTryAcceptPlayer(player)).Unwrap.AssumeNotNull
+            Return inQueue.QueueFunc(Function() AsyncTryAcceptPlayer(knockData, socket)).Unwrap.AssumeNotNull
         End Function
 
         Private Function TryFindGame(ByVal name As InvariantString) As Game

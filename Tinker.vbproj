@@ -219,6 +219,7 @@
     <Compile Include="Warcraft3\Download\Download Client.vb" />
     <Compile Include="Warcraft3\Game\Game Kernel.vb" />
     <Compile Include="Warcraft3\Protocol\PlayerActionSet.vb" />
+    <Compile Include="Warcraft3\Protocol\WC3 Protocol Values.vb" />
     <Compile Include="Warcraft3\Replay\Replay Entry Packers.vb" />
     <Compile Include="Warcraft3\Replay\ReplayEntry.vb" />
     <Compile Include="Warcraft3\SlotContents.vb" />

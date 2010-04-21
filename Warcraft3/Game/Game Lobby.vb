@@ -218,13 +218,12 @@
         End Sub
 
         <ContractVerification(False)>
-        Private Function AllocateSpaceForNewPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Tuple(Of Slot, PlayerId)
-            Contract.Requires(connectingPlayer IsNot Nothing)
+        Private Function AllocateSpaceForNewPlayer(ByVal name As InvariantString) As Tuple(Of Slot, PlayerId)
             Contract.Ensures(Not _freeIndexes.Contains(Contract.Result(Of Tuple(Of Slot, PlayerId))().Item2))
 
             'Choose Slot
             Dim slotMatch = (From s In _slots
-                             Let match = s.Contents.WantPlayer(connectingPlayer.Name)
+                             Let match = s.Contents.WantPlayer(name)
                              ).Max(comparator:=Function(e1, e2) e1.match - e2.match)
             Contract.Assume(slotMatch IsNot Nothing)
             If slotMatch.match < SlotContents.WantPlayerPriority.Open Then
@@ -234,7 +233,7 @@
 
             'Allocate id
             Dim id As PlayerId
-            If slot.Contents.WantPlayer(connectingPlayer.Name) = SlotContents.WantPlayerPriority.ReservationForPlayer Then
+            If slot.Contents.WantPlayer(name) = SlotContents.WantPlayerPriority.ReservationForPlayer Then
                 Contract.Assume(slot.Contents.PlayerIndex.HasValue)
                 id = slot.Contents.PlayerIndex.Value
                 For Each player In slot.Contents.EnumPlayers
@@ -258,14 +257,16 @@
 
             Return Tuple.Create(slot, id)
         End Function
-        Private Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer,
+        Private Function AddPlayer(ByVal knockData As Protocol.KnockData,
+                                   ByVal socket As W3Socket,
                                    ByVal slot As Slot,
                                    ByVal id As PlayerId) As Player
-            Contract.Requires(connectingPlayer IsNot Nothing)
+            Contract.Requires(knockData IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             'Add
-            Dim newPlayer = Player.MakeRemote(id, connectingPlayer, _kernel.Clock, _downloadManager, Logger)
+            Dim newPlayer = Player.MakeRemote(id, knockData, socket, _kernel.Clock, _downloadManager, Logger)
             _slots = _slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithPlayer(newPlayer)))
             _kernel.Players.Add(newPlayer)
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)
@@ -295,18 +296,20 @@
 
             Return newPlayer
         End Function
-        Public Function AddPlayer(ByVal connectingPlayer As W3ConnectingPlayer) As Player
-            Contract.Requires(connectingPlayer IsNot Nothing)
+        Public Function AddPlayer(ByVal knockData As Protocol.KnockData,
+                                  ByVal socket As W3Socket) As Player
+            Contract.Requires(knockData IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             If Not AcceptingPlayers Then
                 Throw New InvalidOperationException("No longer accepting players.")
-            ElseIf Not connectingPlayer.Socket.Connected Then
+            ElseIf Not socket.Connected Then
                 Throw New InvalidOperationException("Player isn't connected.")
             End If
 
-            Dim space = AllocateSpaceForNewPlayer(connectingPlayer)
-            Return AddPlayer(connectingPlayer, space.Item1, space.Item2)
+            Dim space = AllocateSpaceForNewPlayer(knockData.Name)
+            Return AddPlayer(knockData, socket, space.Item1, space.Item2)
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task
@@ -395,7 +398,7 @@
             End If
 
             'change color
-            _slots = _slots.WithSlotsReplaced(slot.With(Color:=newColor))
+            _slots = _slots.WithSlotsReplaced(slot.With(color:=newColor))
             RaiseEvent ChangedPublicState(Me)
         End Sub
         Public Sub OnPlayerSetRace(ByVal sender As Player, ByVal newRace As Protocol.Races)

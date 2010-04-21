@@ -602,10 +602,12 @@ Namespace WC3
                 Return _lobby.StartPlayerHoldPoint
             End Get
         End Property
-        Public Function QueueAddPlayer(ByVal newPlayer As W3ConnectingPlayer) As Task(Of Player)
-            Contract.Requires(newPlayer IsNot Nothing)
+        Public Function QueueAddPlayer(ByVal knockData As Protocol.KnockData,
+                                       ByVal socket As W3Socket) As Task(Of Player)
+            Contract.Requires(knockData IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task(Of Player))() IsNot Nothing)
-            Return _kernel.InQueue.QueueFunc(Function() _lobby.AddPlayer(newPlayer))
+            Return _kernel.InQueue.QueueFunc(Function() _lobby.AddPlayer(knockData, socket))
         End Function
         Public Function QueueSendMapPiece(ByVal player As Download.IPlayerDownloadAspect,
                                           ByVal position As UInt32) As Task

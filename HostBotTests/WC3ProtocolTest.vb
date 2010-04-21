@@ -82,16 +82,14 @@ Public Class WC3ProtocolTest
                        116, 101, 115, 116, 0,
                        1, 0,
                        2, 0, &H17, &HE1, 127, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                value:=New Dictionary(Of InvariantString, Object) From {
-                        {"game id", 42UI},
-                        {"entry key", 99UI},
-                        {"unknown value", CByte(0)},
-                        {"listen port", 6112US},
-                        {"peer key", 16UI},
-                        {"name", "test"},
-                        {"peer data", New Byte() {0}.AsReadableList},
-                        {"internal address", New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)}
-                    })
+                value:=New KnockData(gameid:=42UI,
+                                     entrykey:=99UI,
+                                     unknown:=CByte(0),
+                                     listenport:=6112US,
+                                     peerkey:=16UI,
+                                     name:="test",
+                                     peerdata:=New Byte() {0}.AsReadableList,
+                                     internalEndPoint:=New Net.IPEndPoint(Net.IPAddress.Loopback, 6113)))
     End Sub
     <TestMethod()>
     Public Sub LanCreateGameTest()

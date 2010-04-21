@@ -119,7 +119,7 @@ Namespace WC3
     Public NotInheritable Class W3ConnectionAccepter
         Inherits W3ConnectionAccepterBase
 
-        Public Event Connection(ByVal sender As W3ConnectionAccepter, ByVal player As W3ConnectingPlayer)
+        Public Event Connection(ByVal sender As W3ConnectionAccepter, ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
 
         Public Sub New(ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
@@ -135,18 +135,10 @@ Namespace WC3
             End If
 
             Dim pickle = Protocol.ClientPackets.Knock.Jar.ParsePickle(packetData.SubView(4))
-            Dim vals = pickle.Value
-            Dim player = New W3ConnectingPlayer(vals.ItemAs(Of String)("name"),
-                                                vals.ItemAs(Of UInt32)("game id"),
-                                                vals.ItemAs(Of UInt32)("entry key"),
-                                                vals.ItemAs(Of UInt32)("peer key"),
-                                                vals.ItemAs(Of IReadableList(Of Byte))("peer data"),
-                                                vals.ItemAs(Of UInt16)("listen port"),
-                                                vals.ItemAs(Of Net.IPEndPoint)("internal address"),
-                                                socket)
+            Dim knockData = pickle.Value
 
-            socket.Name = player.Name
-            RaiseEvent Connection(Me, player)
+            socket.Name = knockData.Name
+            RaiseEvent Connection(Me, knockData, socket)
             Return pickle
         End Function
     End Class

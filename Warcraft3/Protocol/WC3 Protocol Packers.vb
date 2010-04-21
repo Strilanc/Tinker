@@ -280,15 +280,15 @@ Namespace WC3.Protocol
             If internalAddress Is Nothing Then
                 internalAddress = New Net.IPAddress(GetCachedIPAddressBytes(external:=True))
             End If
-            Return Packet.FromValue(ClientPackets.Knock, New Dictionary(Of InvariantString, Object) From {
-                    {"game id", gameId},
-                    {"entry key", entryKey},
-                    {"unknown value", CByte(0)},
-                    {"listen port", listenPort},
-                    {"peer key", peerKey},
-                    {"name", name.ToString},
-                    {"peer data", New Byte() {0}.AsReadableList},
-                    {"internal address", New Net.IPEndPoint(internalAddress, sendingPort)}})
+            Return Packet.FromValue(ClientPackets.Knock, New KnockData(
+                    gameId:=gameId,
+                    entryKey:=entryKey,
+                    unknown:=CByte(0),
+                    listenPort:=listenPort,
+                    peerKey:=peerKey,
+                    name:=name,
+                    peerData:=New Byte() {0}.AsReadableList,
+                    internalEndPoint:=New Net.IPEndPoint(internalAddress, sendingPort)))
         End Function
         <Pure()>
         Public Function MakeReady() As Packet

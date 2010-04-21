@@ -119,15 +119,16 @@
             _games.Remove(gameId)
         End Sub
 
-        Private Sub Accept(ByVal connector As W3ConnectingPlayer)
-            Contract.Requires(connector IsNot Nothing)
-            If Not _games.ContainsKey(connector.GameId) Then Throw New IO.InvalidDataException()
-            Dim game = _games(connector.GameId)
+        Private Sub Accept(ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
+            Contract.Requires(knockData IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
+            If Not _games.ContainsKey(knockData.GameId) Then Throw New IO.InvalidDataException()
+            Dim game = _games(knockData.GameId)
             Contract.Assume(game IsNot Nothing)
             AsyncTcpConnect(game.RemoteGame.Address, game.RemoteGame.Port).ContinueWith(
                 Sub(task)
                     If task.Status = TaskStatus.Faulted Then
-                        connector.Socket.Disconnect(expected:=False, reason:="Failed to interconnect with game host: {0}.".Frmt(task.Exception.Summarize))
+                        socket.Disconnect(expected:=False, reason:="Failed to interconnect with game host: {0}.".Frmt(task.Exception.Summarize))
                         Return
                     End If
 
@@ -135,15 +136,15 @@
                                                           localendpoint:=CType(task.Result.Client.LocalEndPoint, Net.IPEndPoint),
                                                           remoteendpoint:=CType(task.Result.Client.RemoteEndPoint, Net.IPEndPoint),
                                                           clock:=_clock))
-                    w.SendPacket(Protocol.MakeKnock(connector.Name,
-                                                    connector.ListenPort,
-                                                    CUShort(connector.RemoteEndPoint.Port),
+                    w.SendPacket(Protocol.MakeKnock(knockData.Name,
+                                                    knockData.ListenPort,
+                                                    CUShort(knockData.InternalEndPoint.Port),
                                                     game.RemoteGame.GameId,
                                                     game.RemoteGame.EntryKey,
-                                                    connector.PeerKey,
-                                                    connector.RemoteEndPoint.Address))
+                                                    knockData.PeerKey,
+                                                    knockData.InternalEndPoint.Address))
 
-                    StreamRelay.InterShunt(w.Socket.SubStream, connector.Socket.Socket.SubStream)
+                    StreamRelay.InterShunt(w.Socket.SubStream, socket.Socket.SubStream)
                 End Sub
             )
         End Sub

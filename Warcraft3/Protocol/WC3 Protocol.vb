@@ -507,15 +507,8 @@ Namespace WC3.Protocol
             Public Shared ReadOnly GameAction As Definition(Of IReadableList(Of GameAction)) = Define(PacketId.GameAction,
                     New GameActionJar().Repeated.CRC32ChecksumPrefixed.Named("actions"))
             '''<summary>First thing sent by clients upon connection. Requests entry into the game.</summary>
-            Public Shared ReadOnly Knock As Definition(Of NamedValueMap) = Define(PacketId.Knock,
-                    New UInt32Jar().Named("game id"),
-                    New UInt32Jar(showhex:=True).Named("entry key"),
-                    New ByteJar().Named("unknown value"),
-                    New UInt16Jar().Named("listen port"),
-                    New UInt32Jar(showhex:=True).Named("peer key"),
-                    New UTF8Jar(maxCharCount:=MaxPlayerNameLength).NullTerminated.Limited(maxDataCount:=MaxSerializedPlayerNameLength).Named("name"),
-                    New DataJar().DataSizePrefixed(prefixSize:=1).Named("peer data"),
-                    New Bnet.Protocol.IPEndPointJar().Named("internal address"))
+            Public Shared ReadOnly Knock As Definition(Of KnockData) = Define(PacketId.Knock,
+                    New KnockDataJar())
             '''<summary>Response to <see cref="ServerPackets.LanRefreshGame"/> or <see cref="ServerPackets.LanCreateGame"/> when clients want to know game info.</summary>
             Public Shared ReadOnly LanRequestGame As Definition(Of NamedValueMap) = Define(PacketId.LanRequestGame,
                     New ASCIIJar().Reversed.Fixed(exactDataCount:=4).Named("product id"),

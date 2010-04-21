@@ -79,9 +79,9 @@ Namespace WC3
                        ByVal packetHandler As Protocol.W3PacketHandler,
                        ByVal remoteEndPoint As Net.IPEndPoint,
                        ByVal taskTestCanHost As Task,
-                       Optional ByVal initialState As PlayerState = PlayerState.Lobby,
                        Optional ByVal pinger As Pinger = Nothing,
                        Optional ByVal socket As W3Socket = Nothing,
+                       Optional ByVal initialState As PlayerState = PlayerState.Lobby,
                        Optional ByVal downloadManager As Download.Manager = Nothing)
             Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(remoteEndPoint IsNot Nothing)
@@ -91,6 +91,7 @@ Namespace WC3
             If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
             Me._id = id
             Me._name = name
+            Me._state = initialState
             Me._isFake = isFake
             Me._logger = logger
             Me._pinger = pinger
@@ -102,11 +103,10 @@ Namespace WC3
             Me._remoteEndPoint = remoteEndPoint
             Me._taskTestCanHost = taskTestCanHost
             Me._downloadManager = downloadManager
-            Me._state = initialState
 
             Me._taskTestCanHost.IgnoreExceptions()
         End Sub
-        '''<summary>Creates a fake player.</summary>
+
         Public Shared Function MakeFake(ByVal id As PlayerId,
                                         ByVal name As InvariantString,
                                         Optional ByVal logger As Logger = Nothing) As Player
@@ -129,33 +129,36 @@ Namespace WC3
             Return player
         End Function
 
-        '''<summary>Creates a real player.</summary>
         Public Shared Function MakeRemote(ByVal id As PlayerId,
-                                          ByVal connectingPlayer As W3ConnectingPlayer,
+                                          ByVal knockData As Protocol.KnockData,
+                                          ByVal socket As W3Socket,
                                           ByVal clock As IClock,
                                           ByVal downloadManager As Download.Manager,
                                           Optional ByVal logger As Logger = Nothing) As Player
-            Contract.Assume(connectingPlayer IsNot Nothing)
-            Contract.Assume(connectingPlayer IsNot Nothing)
+            Contract.Assume(knockData IsNot Nothing)
+            Contract.Assume(socket IsNot Nothing)
+            Contract.Assume(clock IsNot Nothing)
+            Contract.Assume(downloadManager IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             logger = If(logger, New Logger)
-            connectingPlayer.Socket.Logger = logger
-            Dim taskTestCanHost = AsyncTcpConnect(connectingPlayer.Socket.RemoteEndPoint.Address, connectingPlayer.ListenPort)
+            socket.Logger = logger
+            Dim taskTestCanHost = AsyncTcpConnect(socket.RemoteEndPoint.Address, knockData.ListenPort)
+            taskTestCanHost.ContinueWithAction(Sub(value) value.Close()).IgnoreExceptions()
             Dim pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
 
             Dim player = New Player(id:=id,
-                                    Name:=connectingPlayer.Name,
+                                    Name:=knockData.Name,
                                     IsFake:=False,
                                     logger:=logger,
-                                    PeerKey:=connectingPlayer.PeerKey,
-                                    PeerData:=connectingPlayer.PeerData,
-                                    ListenPort:=connectingPlayer.ListenPort,
-                                    packetHandler:=New Protocol.W3PacketHandler(connectingPlayer.Name, logger),
-                                    RemoteEndPoint:=connectingPlayer.Socket.RemoteEndPoint,
+                                    PeerKey:=knockData.PeerKey,
+                                    PeerData:=knockData.PeerData,
+                                    ListenPort:=knockData.ListenPort,
+                                    PacketHandler:=New Protocol.W3PacketHandler(knockData.Name, logger),
+                                    RemoteEndPoint:=socket.RemoteEndPoint,
                                     taskTestCanHost:=taskTestCanHost,
                                     pinger:=pinger,
-                                    socket:=connectingPlayer.Socket,
+                                    socket:=socket,
                                     downloadManager:=downloadManager)
 
             player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.NonGameAction, AddressOf player.ReceiveNonGameAction)
@@ -166,7 +169,7 @@ Namespace WC3
             player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf player.OnReceivePeerConnectionInfo)
             player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf player.OnReceiveClientMapInfo)
             player.AddRemotePacketHandler(Protocol.ClientPackets.Pong, Function(pickle) player._pinger.QueueReceivedPong(pickle.Value))
-            AddHandler connectingPlayer.Socket.Disconnected, AddressOf player.OnSocketDisconnected
+            AddHandler socket.Disconnected, AddressOf player.OnSocketDisconnected
             AddHandler pinger.SendPing, Sub(sender, salt) player.QueueSendPacket(Protocol.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) player.QueueDisconnect(expected:=False,
                                                                           reportedReason:=Protocol.PlayerLeaveReason.Disconnect,

@@ -90,47 +90,42 @@ Namespace WC3
 
             'Parse
             Dim pickle = Protocol.ClientPackets.Knock.Jar.ParsePickle(data.SubView(4))
-            Dim vals = pickle.Value
-            Dim player = New W3ConnectingPlayer(Name:=vals.ItemAs(Of String)("name"),
-                                                gameid:=vals.ItemAs(Of UInt32)("game id"),
-                                                entrykey:=vals.ItemAs(Of UInt32)("entry key"),
-                                                peerkey:=vals.ItemAs(Of UInt32)("peer key"),
-                                                peerData:=vals.ItemAs(Of IReadableList(Of Byte))("peer data"),
-                                                listenport:=vals.ItemAs(Of UInt16)("listen port"),
-                                                remoteendpoint:=vals.ItemAs(Of Net.IPEndPoint)("internal address"),
-                                                socket:=socket)
+            Dim knockData = pickle.Value
 
             'Handle
             Dim oldSocketName = socket.Name
-            _logger.Log(Function() "{0} self-identified as {1} and wants to join game with id = {2}".Frmt(oldSocketName, player.Name, player.GameId), LogMessageType.Positive)
-            socket.Name = player.Name
+            _logger.Log(Function() "{0} self-identified as {1} and wants to join game with id = {2}".Frmt(oldSocketName,
+                                                                                                          knockData.Name,
+                                                                                                          knockData.GameId), LogMessageType.Positive)
+            socket.Name = knockData.Name
             _logger.Log(Function() "Received {0} from {1}".Frmt(Protocol.PacketId.Knock, oldSocketName), LogMessageType.DataEvent)
             _logger.Log(Function() "Received {0} from {1}: {2}".Frmt(Protocol.PacketId.Knock, oldSocketName, pickle.Description), LogMessageType.DataParsed)
-            inQueue.QueueAction(Sub() OnPlayerIntroduction(player))
+            inQueue.QueueAction(Sub() OnPlayerIntroduction(knockData, socket))
         End Sub
 
         '''<summary>Handles connecting players that have sent their Knock packet.</summary>
-        Private Sub OnPlayerIntroduction(ByVal player As W3ConnectingPlayer)
-            Contract.Requires(player IsNot Nothing)
+        Private Sub OnPlayerIntroduction(ByVal knockData As Protocol.KnockData, ByVal socket As W3Socket)
+            Contract.Requires(knockData IsNot Nothing)
+            Contract.Requires(socket IsNot Nothing)
 
             'Get player's desired game set
-            If Not _gameSets.ContainsKey(player.GameId) Then
-                _logger.Log("{0} specified an invalid game id ({1})".Frmt(player.Name, player.GameId), LogMessageType.Negative)
-                player.Socket.SendPacket(Protocol.MakeReject(Protocol.RejectReason.GameNotFound))
-                player.Socket.Disconnect(expected:=False, reason:="Invalid game id")
+            If Not _gameSets.ContainsKey(knockData.GameId) Then
+                _logger.Log("{0} specified an invalid game id ({1})".Frmt(knockData.Name, knockData.GameId), LogMessageType.Negative)
+                socket.SendPacket(Protocol.MakeReject(Protocol.RejectReason.GameNotFound))
+                socket.Disconnect(expected:=False, reason:="Invalid game id")
                 Return
             End If
-            Dim entry = _gameSets(player.GameId)
+            Dim entry = _gameSets(knockData.GameId)
             Contract.Assume(entry IsNot Nothing)
 
             'Send player to game set
-            entry.QueueTryAcceptPlayer(player).ContinueWithAction(
-                Sub(game) _logger.Log("{0} entered {1}.".Frmt(player.Name, game.Name), LogMessageType.Positive)
+            entry.QueueTryAcceptPlayer(knockData, socket).ContinueWithAction(
+                Sub(game) _logger.Log("{0} entered {1}.".Frmt(knockData.Name, game.Name), LogMessageType.Positive)
             ).Catch(
                 Sub(exception)
-                    _logger.Log("A game could not be found for {0}.".Frmt(player.Name), LogMessageType.Negative)
-                    player.Socket.SendPacket(Protocol.MakeReject(Protocol.RejectReason.GameFull))
-                    player.Socket.Disconnect(expected:=True, reason:="A game could not be found for {0}.".Frmt(player.Name))
+                    _logger.Log("A game could not be found for {0}.".Frmt(knockData.Name), LogMessageType.Negative)
+                    socket.SendPacket(Protocol.MakeReject(Protocol.RejectReason.GameFull))
+                    socket.Disconnect(expected:=True, reason:="A game could not be found for {0}.".Frmt(knockData.Name))
                 End Sub
             )
         End Sub
