@@ -298,10 +298,6 @@
     <Compile Include="Library\AsyncViewableCollection.vb" />
     <Compile Include="Library\PacketSocket.vb" />
     <Compile Include="Library\PacketHandler.vb" />
-    <Compile Include="Warcraft3\Player\W3PlayerGameplay.vb" />
-    <Compile Include="Warcraft3\Player\W3PlayerLoadScreen.vb" />
-    <Compile Include="Warcraft3\Player\W3PlayerLobby.vb" />
-    <Compile Include="Warcraft3\Player\W3PlayerPart.vb" />
     <Compile Include="Warcraft3\Server\GameSet.vb" />
     <Compile Include="Warcraft3\Server\GameSettings.vb" />
     <Compile Include="Warcraft3\Protocol\GameStatsJar.vb" />

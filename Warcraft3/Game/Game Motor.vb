@@ -1,4 +1,19 @@
 ﻿Namespace WC3
+    Public NotInheritable Class TickRecord
+        Public ReadOnly length As UShort
+        Public ReadOnly startTime As Integer
+        Public ReadOnly Property EndTime() As Integer
+            Get
+                Return length + startTime
+            End Get
+        End Property
+
+        Public Sub New(ByVal length As UShort, ByVal startTime As Integer)
+            Me.length = length
+            Me.startTime = startTime
+        End Sub
+    End Class
+
     Public Class GameMotor
         Inherits DisposableWithTask
 
@@ -174,22 +189,21 @@
             Contract.Ensures(Contract.Result(Of IReadableList(Of IReadableList(Of TValue)))() IsNot Nothing)
 
             Dim result = sequence.ZipWithPartialAggregates(
-                    seed:=Tuple.Create(0, 0),
+                    seed:=New With {.sequenceDataCount = 0,
+                                    .sequenceIndex = 0},
                     func:=Function(acc, e)
                               Dim itemDataCount = measure(e)
-                              Dim sequenceDataCount = acc.Item1
-                              Dim sequenceIndex = acc.Item2
                               If itemDataCount > maxDataSize Then
                                   Throw New ArgumentException("Unable to fit an item within the max data size.", "maxDataSize")
-                              ElseIf sequenceDataCount + itemDataCount > maxDataSize Then
-                                  sequenceDataCount = itemDataCount
-                                  sequenceIndex += 1
+                              ElseIf acc.sequenceDataCount + itemDataCount > maxDataSize Then
+                                  Return New With {.sequenceDataCount = itemDataCount,
+                                                   .sequenceIndex = acc.sequenceIndex + 1}
                               Else
-                                  sequenceDataCount += itemDataCount
+                                  Return New With {.sequenceDataCount = acc.sequenceDataCount + itemDataCount,
+                                                   .sequenceIndex = acc.sequenceIndex}
                               End If
-                              Return Tuple.Create(sequenceDataCount, sequenceIndex)
                           End Function
-                ).GroupBy(keySelector:=Function(e) e.Item2.Item2,
+                ).GroupBy(keySelector:=Function(e) e.Item2.sequenceIndex,
                           elementSelector:=Function(e) e.Item1)
 
             Return (From subSequence In result
