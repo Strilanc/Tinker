@@ -415,8 +415,8 @@ Namespace WC3
             If player Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
             If adminPlayer IsNot Nothing Then Throw New InvalidOperationException("A player is already the admin.")
             If password IsNot Nothing Then
-                player.adminAttemptCount += 1
-                If player.adminAttemptCount > 5 Then Throw New InvalidOperationException("Too many tries.")
+                player.AdminAttemptCount += 1
+                If player.AdminAttemptCount > 5 Then Throw New InvalidOperationException("Too many tries.")
                 If password <> Settings.AdminPassword Then
                     Throw New InvalidOperationException("Incorrect password.")
                 End If
@@ -582,11 +582,11 @@ Namespace WC3
             If Not Settings.IsAutoStarted Then Throw New InvalidOperationException("Game is not set to start automatically.")
             Dim p = TryFindPlayer(name)
             If p Is Nothing Then Throw New InvalidOperationException("No player found with the name '{0}'.".Frmt(name))
-            p.hasVotedToStart = val
+            p.HasVotedToStart = val
             If Not val Then Return
 
             Dim numPlayers = (From q In _kernel.Players Where Not q.isFake).Count
-            Dim numInFavor = (From q In _kernel.Players Where Not q.isFake AndAlso q.hasVotedToStart).Count
+            Dim numInFavor = (From q In _kernel.Players Where Not q.isFake AndAlso q.HasVotedToStart).Count
             If numPlayers >= 2 AndAlso numInFavor * 3 >= numPlayers * 2 Then
                 TryStartCountdown()
             End If
