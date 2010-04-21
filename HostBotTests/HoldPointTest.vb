@@ -28,7 +28,7 @@ Public Class HoldPointTest
     Public Sub FutureHandlerTest()
         Dim p = New HoldPoint(Of Object)()
         Dim f = New TaskCompletionSource(Of Boolean)()
-        p.IncludeFutureHandler(Function() f.Task)
+        p.IncludeTaskHandler(Function() f.Task)
         Dim r = p.Hold(Nothing)
         ExpectTaskToIdle(r)
         f.SetResult(True)
@@ -44,9 +44,9 @@ Public Class HoldPointTest
     <TestMethod()>
     Public Sub FutureHandlerExceptionTest()
         Dim p = New HoldPoint(Of Object)()
-        p.IncludeFutureHandler(Function() As Task
-                                   Throw New InvalidOperationException()
-                               End Function)
+        p.IncludeTaskHandler(Function() As Task
+                                 Throw New InvalidOperationException()
+                             End Function)
         Dim r = p.Hold(Nothing)
         WaitUntilTaskFails(r)
     End Sub
@@ -55,7 +55,7 @@ Public Class HoldPointTest
         Dim p = New HoldPoint(Of Object)()
         Dim flag = 0
         Dim f = New TaskCompletionSource(Of Boolean)()
-        p.IncludeFutureHandler(Function() f.Task)
+        p.IncludeTaskHandler(Function() f.Task)
         p.IncludeActionHandler(Sub() flag += 1)
         Dim r = p.Hold(Nothing)
         ExpectTaskToIdle(r)
@@ -68,7 +68,7 @@ Public Class HoldPointTest
         Dim p = New HoldPoint(Of Object)()
         Dim flag = 0
         Dim f = New TaskCompletionSource(Of Boolean)()
-        p.IncludeFutureHandler(Function() f.Task).Dispose()
+        p.IncludeTaskHandler(Function() f.Task).Dispose()
         p.IncludeActionHandler(Sub() flag += 1).Dispose()
         Dim r = p.Hold(Nothing)
         WaitUntilTaskSucceeds(r)

@@ -290,7 +290,7 @@
     <Compile Include="Components\GenericBotComponentControl.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Library\CachedValues.vb" />
+    <Compile Include="Bnet\Product Info Provider.vb" />
     <Compile Include="Commands\CommandTemplate.vb" />
     <Compile Include="Commands\PartialCommand.vb" />
     <Compile Include="Commands\ProjectedCommand.vb" />

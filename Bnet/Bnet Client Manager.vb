@@ -146,7 +146,7 @@ Namespace Bnet
                 authenticator = New CDKeyProductAuthenticator(profile.cdKeyROC, profile.cdKeyTFT)
             End If
 
-            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedExternalValues, authenticator, clock, logger)).AsTask
+            Return New Bnet.ClientManager(clientName, bot, New Bnet.Client(profile, New CachedWC3InfoProvider, authenticator, clock, logger)).AsTask
         End Function
 
         Protected Overrides Function PerformDispose(ByVal finalizing As Boolean) As Task

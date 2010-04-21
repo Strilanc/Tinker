@@ -193,7 +193,7 @@ Public Class SettingsForm
         My.Settings.Save()
         Me.wantSave = True
 
-        CachedExternalValues.Recache()
+        CachedWC3InfoProvider.TryCache(My.Settings.war3path.AssumeNotNull)
 
         Dispose()
     End Sub
@@ -270,7 +270,7 @@ Public Class SettingsForm
     End Sub
 
     Private Sub txtProgramPath_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles txtProgramPath.TextChanged
-        lblWar3FolderPathError.Visible = Not CachedExternalValues.Recache(txtProgramPath.Text)
+        lblWar3FolderPathError.Visible = Not CachedWC3InfoProvider.TryCache(txtProgramPath.Text)
     End Sub
 
     Private Sub btnLoadReplayBuildNumber_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles btnLoadReplayBuildNumber.Click

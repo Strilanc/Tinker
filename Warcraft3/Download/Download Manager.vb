@@ -68,7 +68,7 @@ Namespace WC3.Download
 
             _hooks.Add(_clock.AsyncRepeat(UpdatePeriod, Sub() inQueue.QueueAction(AddressOf OnTick)).AsTask)
 
-            _hooks.Add(startPlayerHoldPoint.IncludeFutureHandler(Function(arg) inQueue.QueueFunc(
+            _hooks.Add(startPlayerHoldPoint.IncludeTaskHandler(Function(arg) inQueue.QueueFunc(
                                     Function() OnGameStartPlayerHold(arg)).Unwrap).AsTask)
         End Sub
 

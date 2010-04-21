@@ -9,25 +9,25 @@ Imports System.Collections.Generic
 <TestClass()>
 Public Class BnetClientTest
     Private Class TestExternalProvider
-        Implements Tinker.IExternalValues
+        Implements Tinker.IProductInfoProvider
 
-        Public Function GenerateRevisionCheck(ByVal folder As String, ByVal seedString As String, ByVal challengeString As String) As UInteger Implements IExternalValues.GenerateRevisionCheck
+        Public Function GenerateRevisionCheck(ByVal folder As String, ByVal seedString As String, ByVal challengeString As String) As UInteger Implements IProductInfoProvider.GenerateRevisionCheck
             Return 0
         End Function
 
-        Public ReadOnly Property WC3ExeVersion As IReadableList(Of Byte) Implements IExternalValues.WC3ExeVersion
+        Public ReadOnly Property WC3ExeVersion As IReadableList(Of Byte) Implements IProductInfoProvider.ExeVersion
             Get
                 Return New Byte() {1, 2, 3, 4}.AsReadableList
             End Get
         End Property
 
-        Public ReadOnly Property WC3FileSize As UInteger Implements IExternalValues.WC3FileSize
+        Public ReadOnly Property WC3FileSize As UInteger Implements IProductInfoProvider.FileSize
             Get
                 Return 10
             End Get
         End Property
 
-        Public ReadOnly Property WC3LastModifiedTime As Date Implements IExternalValues.WC3LastModifiedTime
+        Public ReadOnly Property WC3LastModifiedTime As Date Implements IProductInfoProvider.LastModifiedTime
             Get
                 Return Now()
             End Get

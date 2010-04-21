@@ -14,6 +14,7 @@ Public Class ClientForm
             trayIcon.Text = Application.ProductName
             CacheIPAddresses()
 
+            CachedWC3InfoProvider.TryCache(My.Settings.war3path.AssumeNotNull)
             InitBot()
             InitMainControl()
             InitFinish()

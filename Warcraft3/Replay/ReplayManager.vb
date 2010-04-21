@@ -80,7 +80,7 @@
             Contract.Assume(file.CanSeek)
             Dim writer = New Replay.ReplayWriter(stream:=file.AsRandomWritableStream,
                                                  settings:=ReplaySettings.Online,
-                                                 wc3Version:=New CachedExternalValues().WC3MajorVersion,
+                                                 wc3Version:=New CachedWC3InfoProvider().MajorVersion,
                                                  replayVersion:=My.Settings.ReplayBuildNumber)
 
             Dim playerCount = CUInt(players.Count)

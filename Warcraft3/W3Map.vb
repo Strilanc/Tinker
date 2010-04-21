@@ -375,7 +375,7 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of IReadableList(Of Byte))().Count = 20)
             Using sha = New Security.Cryptography.SHA1Managed(),
                   stream = New ConcatStream(Concat(MapChecksumOverridableFileStreams(mapArchive, war3PatchArchive),
-                                                   {New IO.MemoryStream(&H3F1379EUI.Bytes).AsRandomReadableStream},
+                                                   {New IO.MemoryStream(&H3F1379EUI.Bytes).AsReadableStream},
                                                    MapChecksumFileStreams(mapArchive)))
                 Return sha.ComputeHash(stream.AsStream).AsReadableList
             End Using

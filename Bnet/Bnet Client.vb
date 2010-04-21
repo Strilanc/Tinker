@@ -43,7 +43,7 @@ Namespace Bnet
         Private ReadOnly outQueue As CallQueue
         Private ReadOnly inQueue As CallQueue
 
-        Private ReadOnly _externalProvider As IExternalValues
+        Private ReadOnly _externalProvider As IProductInfoProvider
         Private ReadOnly _clock As IClock
         Private ReadOnly _profile As Bot.ClientProfile
         Private ReadOnly _productAuthenticator As IProductAuthenticator
@@ -166,7 +166,7 @@ Namespace Bnet
         End Sub
 
         Public Sub New(ByVal profile As Bot.ClientProfile,
-                       ByVal externalProvider As IExternalValues,
+                       ByVal externalProvider As IProductInfoProvider,
                        ByVal productAuthenticator As IProductAuthenticator,
                        ByVal clock As IClock,
                        Optional ByVal logger As Logger = Nothing)
@@ -415,7 +415,7 @@ Namespace Bnet
 
             'Introductions
             socket.SubStream.Write({1}, 0, 1) 'protocol version
-            SendPacket(Protocol.MakeAuthenticationBegin(_externalProvider.WC3MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
+            SendPacket(Protocol.MakeAuthenticationBegin(_externalProvider.MajorVersion, New Net.IPAddress(GetCachedIPAddressBytes(external:=False))))
 
             BeginHandlingPackets()
             Return Me._futureConnected.Task
@@ -649,12 +649,12 @@ Namespace Bnet
                 Throw New OperationCanceledException("Failed to compute revision check.", ex)
             End Try
             SendPacket(Protocol.MakeAuthenticationFinish(
-                       version:=_externalProvider.WC3ExeVersion,
+                       version:=_externalProvider.ExeVersion,
                        revisionCheckResponse:=revisionCheckResponse,
                        clientCDKeySalt:=clientCdKeySalt,
                        cdKeyOwner:=My.Settings.cdKeyOwner,
-                       exeInformation:="war3.exe {0} {1}".Frmt(_externalProvider.WC3LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
-                                                               _externalProvider.WC3FileSize),
+                       exeInformation:="war3.exe {0} {1}".Frmt(_externalProvider.LastModifiedTime.ToString("MM/dd/yy hh:mm:ss", CultureInfo.InvariantCulture),
+                                                               _externalProvider.FileSize),
                        productAuthentication:=keys))
 
             ChangeState(ClientState.WaitingForProgramAuthenticationFinish)
