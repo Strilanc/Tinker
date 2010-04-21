@@ -25,8 +25,8 @@ Namespace WC3
 
         Private ReadOnly _isFake As Boolean
         Private ReadOnly _logger As Logger
-        Private ReadOnly _inQueue As CallQueue = New TaskedCallQueue
-        Private ReadOnly _outQueue As CallQueue = New TaskedCallQueue
+        Private ReadOnly _inQueue As CallQueue
+        Private ReadOnly _outQueue As CallQueue
 
         Private ReadOnly _pinger As Pinger
         Private ReadOnly _socket As W3Socket
@@ -35,12 +35,12 @@ Namespace WC3
         Private ReadOnly _taskTestCanHost As Task
 
         Private _ready As Boolean
-        Private _state As PlayerState = PlayerState.Lobby
+        Private _state As PlayerState
         Private _maxTockTime As Integer
         Private _totalTockTime As Integer
         Private _downloadManager As Download.Manager
         Private _numPeerConnections As Integer
-        Private _reportedDownloadPosition As UInt32? = Nothing
+        Private _reportedDownloadPosition As UInt32?
 
         Public Property HasVotedToStart As Boolean
         Public Property AdminAttemptCount As Integer
@@ -50,12 +50,14 @@ Namespace WC3
         Public Event ReceivedGameActions(ByVal sender As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
         Public Event SuperficialStateUpdated(ByVal sender As Player)
         Public Event ReceivedRequestDropLaggers(ByVal sender As Player)
+        Public Event ReceivedReady(ByVal sender As Player)
+        Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As NamedValueMap)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_logger IsNot Nothing)
             Contract.Invariant(_inQueue IsNot Nothing)
-            Contract.Invariant(_peerData IsNot Nothing)
             Contract.Invariant(_outQueue IsNot Nothing)
+            Contract.Invariant(_peerData IsNot Nothing)
             Contract.Invariant(_tickQueue IsNot Nothing)
             Contract.Invariant(_packetHandler IsNot Nothing)
             Contract.Invariant(_remoteEndPoint IsNot Nothing)
@@ -82,13 +84,16 @@ Namespace WC3
                        Optional ByVal pinger As Pinger = Nothing,
                        Optional ByVal socket As W3Socket = Nothing,
                        Optional ByVal initialState As PlayerState = PlayerState.Lobby,
-                       Optional ByVal downloadManager As Download.Manager = Nothing)
+                       Optional ByVal downloadManager As Download.Manager = Nothing,
+                       Optional ByVal inQueue As CallQueue = Nothing,
+                       Optional ByVal outQueue As CallQueue = Nothing)
             Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(remoteEndPoint IsNot Nothing)
             Contract.Requires(remoteEndPoint.Address IsNot Nothing)
             Contract.Requires(taskTestCanHost IsNot Nothing)
             Contract.Requires(logger IsNot Nothing)
             If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
+
             Me._id = id
             Me._name = name
             Me._state = initialState
@@ -103,6 +108,8 @@ Namespace WC3
             Me._remoteEndPoint = remoteEndPoint
             Me._taskTestCanHost = taskTestCanHost
             Me._downloadManager = downloadManager
+            Me._inQueue = If(inQueue, New TaskedCallQueue)
+            Me._outQueue = If(outQueue, New TaskedCallQueue)
 
             Me._taskTestCanHost.IgnoreExceptions()
         End Sub
@@ -161,14 +168,19 @@ Namespace WC3
                                     socket:=socket,
                                     downloadManager:=downloadManager)
 
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.NonGameAction, AddressOf player.ReceiveNonGameAction)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Leaving, AddressOf player.ReceiveLeaving)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.NonGameAction, AddressOf player.OnReceiveNonGameAction)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Leaving, AddressOf player.OnReceiveLeaving)
             player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Pong, AddressOf player.OnReceivePong)
             player.AddQueuedLocalPacketHandler(Protocol.PeerPackets.MapFileDataReceived, AddressOf player.IgnorePacket)
             player.AddQueuedLocalPacketHandler(Protocol.PeerPackets.MapFileDataProblem, AddressOf player.IgnorePacket)
             player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf player.OnReceivePeerConnectionInfo)
             player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf player.OnReceiveClientMapInfo)
-            player.AddRemotePacketHandler(Protocol.ClientPackets.Pong, Function(pickle) player._pinger.QueueReceivedPong(pickle.Value))
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Ready, AddressOf player.OnReceiveReady)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.GameAction, AddressOf player.OnReceiveGameAction)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Tock, AddressOf player.OnReceiveTock)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.RequestDropLaggers, AddressOf player.OnReceiveRequestDropLaggers)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientConfirmHostLeaving, Sub() player.SendPacket(Protocol.MakeHostConfirmHostLeaving()))
+            player.AddRemotePacketHandler(Protocol.ClientPackets.Pong, AddressOf player._pinger.QueueReceivedPong)
             AddHandler socket.Disconnected, AddressOf player.OnSocketDisconnected
             AddHandler pinger.SendPing, Sub(sender, salt) player.QueueSendPacket(Protocol.MakePing(salt))
             AddHandler pinger.Timeout, Sub(sender) player.QueueDisconnect(expected:=False,
@@ -232,24 +244,24 @@ Namespace WC3
         End Property
 
         Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                           ByVal handler As Action(Of IPickle(Of T))) As IDisposable
+                                                           ByVal handler As Action(Of T)) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
-            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) _inQueue.QueueAction(Sub() handler(packetDefinition.Jar.ParsePickle(data))))
+            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) _inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data).Value)))
         End Function
 
         Private Function AddRemotePacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                      ByVal handler As Func(Of IPickle(Of T), Task)) As IDisposable
+                                                      ByVal handler As Func(Of T, Task)) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
             _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
-            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.ParsePickle(data)))
+            Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) handler(packetDefinition.Jar.Parse(data).Value))
         End Function
         Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                    ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable) _
+                                                    ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
                                                     Implements Download.IPlayerDownloadAspect.QueueAddPacketHandler
             Return _inQueue.QueueFunc(Function() AddRemotePacketHandler(packetDefinition, handler))
         End Function
@@ -329,7 +341,7 @@ Namespace WC3
             Return QueueDisconnect(expected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Disposed")
         End Function
 
-        Private Sub OnReceivePong(ByVal pickle As IPickle(Of UInt32))
+        Private Sub OnReceivePong(ByVal salt As UInt32)
             _outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
         End Sub
 
@@ -341,24 +353,20 @@ Namespace WC3
             Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
         End Function
 
-        Private Sub OnReceivePeerConnectionInfo(ByVal flags As IPickle(Of UInt16))
-            Contract.Requires(flags IsNot Nothing)
-            _numPeerConnections = (From i In 12.Range Where flags.Value.HasBitSet(i)).Count
+        Private Sub OnReceivePeerConnectionInfo(ByVal flags As UInt16)
+            _numPeerConnections = (From i In 12.Range Where flags.HasBitSet(i)).Count
             Contract.Assume(_numPeerConnections <= 12)
             RaiseEvent SuperficialStateUpdated(Me)
         End Sub
-        Private Sub OnReceiveClientMapInfo(ByVal pickle As IPickle(Of NamedValueMap))
-            Contract.Requires(pickle IsNot Nothing)
-            _reportedDownloadPosition = pickle.Value.ItemAs(Of UInt32)("total downloaded")
+        Private Sub OnReceiveClientMapInfo(ByVal vals As NamedValueMap)
+            Contract.Requires(vals IsNot Nothing)
+            _reportedDownloadPosition = vals.ItemAs(Of UInt32)("total downloaded")
             _outQueue.QueueAction(Sub() RaiseEvent StateUpdated(Me))
         End Sub
 #End Region
 
 #Region "Load Screen"
-
-        Public Event ReceivedReady(ByVal sender As Player)
-        Private Sub ReceiveReady(ByVal pickle As ISimplePickle)
-            Contract.Requires(pickle IsNot Nothing)
+        Private Sub OnReceiveReady(ByVal value As EmptyJar.EmptyValue)
             _ready = True
             _logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)
             _outQueue.QueueAction(Sub() RaiseEvent ReceivedReady(Me))
@@ -367,8 +375,6 @@ Namespace WC3
         Private Sub StartLoading()
             _state = PlayerState.Loading
             SendPacket(Protocol.MakeStartLoading())
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.Ready, AddressOf ReceiveReady)
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.GameAction, AddressOf ReceiveGameAction)
         End Sub
         Public Function QueueStartLoading() As Task
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
@@ -379,9 +385,6 @@ Namespace WC3
 #Region "GamePlay"
         Public Sub GamePlayStart()
             _state = PlayerState.Playing
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.Tock, AddressOf ReceiveTock)
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.RequestDropLaggers, AddressOf ReceiveRequestDropLaggers)
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientConfirmHostLeaving, Sub() SendPacket(Protocol.MakeHostConfirmHostLeaving()))
         End Sub
 
         Private Sub SendTick(ByVal record As TickRecord,
@@ -409,16 +412,16 @@ Namespace WC3
             Return _inQueue.QueueAction(Sub() SendTick(record, actionStreaks))
         End Function
 
-        Private Sub ReceiveRequestDropLaggers(ByVal pickle As ISimplePickle)
+        Private Sub OnReceiveRequestDropLaggers(ByVal value As EmptyJar.EmptyValue)
             RaiseEvent ReceivedRequestDropLaggers(Me)
         End Sub
 
-        Private Sub ReceiveGameAction(ByVal pickle As IPickle(Of IReadableList(Of Protocol.GameAction)))
-            Contract.Requires(pickle IsNot Nothing)
-            _outQueue.QueueAction(Sub() RaiseEvent ReceivedGameActions(Me, pickle.Value))
+        Private Sub OnReceiveGameAction(ByVal actions As IReadableList(Of Protocol.GameAction))
+            Contract.Requires(actions IsNot Nothing)
+            _outQueue.QueueAction(Sub() RaiseEvent ReceivedGameActions(Me, actions))
         End Sub
-        Private Sub ReceiveTock(ByVal pickle As IPickle(Of NamedValueMap))
-            Contract.Requires(pickle IsNot Nothing)
+        Private Sub OnReceiveTock(ByVal vals As NamedValueMap)
+            Contract.Requires(vals IsNot Nothing)
             If _tickQueue.Count <= 0 Then
                 _logger.Log("Banned behavior: {0} responded to a tick which wasn't sent.".Frmt(Name), LogMessageType.Problem)
                 Disconnect(True, Protocol.PlayerLeaveReason.Disconnect, "overticked")
@@ -444,19 +447,15 @@ Namespace WC3
 #End Region
 
 #Region "Part"
-        Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As NamedValueMap)
-
-        Private Sub ReceiveNonGameAction(ByVal pickle As IPickle(Of NamedValueMap))
-            Contract.Requires(pickle IsNot Nothing)
-            RaiseEvent ReceivedNonGameAction(Me, pickle.Value)
+        Private Sub OnReceiveNonGameAction(ByVal vals As NamedValueMap)
+            Contract.Requires(vals IsNot Nothing)
+            RaiseEvent ReceivedNonGameAction(Me, vals)
         End Sub
 
-        Private Sub IgnorePacket(ByVal pickle As IPickle(Of NamedValueMap))
+        Private Sub IgnorePacket(ByVal vals As NamedValueMap)
         End Sub
 
-        Private Sub ReceiveLeaving(ByVal pickle As IPickle(Of Protocol.PlayerLeaveReason))
-            Contract.Requires(pickle IsNot Nothing)
-            Dim leaveType = pickle.Value
+        Private Sub OnReceiveLeaving(ByVal leaveType As Protocol.PlayerLeaveReason)
             Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
         End Sub
 
@@ -465,7 +464,7 @@ Namespace WC3
                 If _state <> PlayerState.Lobby Then Return 100
                 If IsFake OrElse _downloadManager Is Nothing Then Return 254 'Not a real player, show "|CF"
                 If _reportedDownloadPosition Is Nothing Then Return 255
-                Return CByte((_reportedDownloadPosition * 100UL) \ _downloadManager.FileSize)
+                Return CByte((_reportedDownloadPosition.Value * 100UL) \ _downloadManager.FileSize)
             End Get
         End Property
 

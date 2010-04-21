@@ -7,7 +7,7 @@ Namespace WC3.Download
         ReadOnly Property Name As InvariantString
         ReadOnly Property Id As PlayerId
         Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                             ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable)
+                                             ByVal handler As Func(Of T, Task)) As Task(Of IDisposable)
         Function MakePacketOtherPlayerJoined() As Protocol.Packet
         Function QueueSendPacket(ByVal packet As Protocol.Packet) As Task
         Function QueueDisconnect(ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String) As Task
@@ -31,7 +31,7 @@ Namespace WC3.Download
                 End Get
             End Property
             Public Function QueueAddPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
-                                                        ByVal handler As Func(Of IPickle(Of T), Task)) As Task(Of IDisposable) _
+                                                        ByVal handler As Func(Of T, Task)) As Task(Of IDisposable) _
                                                         Implements IPlayerDownloadAspect.QueueAddPacketHandler
                 Contract.Requires(packetDefinition IsNot Nothing)
                 Contract.Requires(handler IsNot Nothing)

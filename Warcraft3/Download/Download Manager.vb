@@ -165,9 +165,9 @@ Namespace WC3.Download
 
             Dim playerHooks = New List(Of Task(Of IDisposable))() From {
                     player.QueueAddPacketHandler(packetDefinition:=Protocol.ClientPackets.ClientMapInfo,
-                                                 handler:=Function(pickle) QueueOnReceiveClientMapInfo(player, pickle)),
+                                                 handler:=Function(value) QueueOnReceiveClientMapInfo(player, value)),
                     player.QueueAddPacketHandler(packetDefinition:=Protocol.ClientPackets.PeerConnectionInfo,
-                                                 handler:=Function(pickle) QueueOnReceivePeerConnectionInfo(player, pickle))
+                                                 handler:=Function(value) QueueOnReceivePeerConnectionInfo(player, value))
                 }
 
 
@@ -186,21 +186,19 @@ Namespace WC3.Download
 #End Region
 
 #Region "Communication-Triggered"
-        Private Function QueueOnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of NamedValueMap)) As Task
+        Private Function QueueOnReceiveClientMapInfo(ByVal player As IPlayerDownloadAspect, ByVal vals As NamedValueMap) As Task
             Contract.Requires(player IsNot Nothing)
-            Contract.Requires(pickle IsNot Nothing)
+            Contract.Requires(vals IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
-            Dim vals = pickle.Value
             Return inQueue.QueueAction(Sub() OnReceiveClientMapInfo(player:=player,
                                                                     state:=vals.ItemAs(Of Protocol.MapTransferState)("transfer state"),
                                                                     position:=vals.ItemAs(Of UInt32)("total downloaded")))
         End Function
-        Private Function QueueOnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal pickle As IPickle(Of UInt16)) As Task
+        Private Function QueueOnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal flags As UInt16) As Task
             Contract.Requires(player IsNot Nothing)
-            Contract.Requires(pickle IsNot Nothing)
             Contract.Ensures(Contract.Result(Of Task)() IsNot Nothing)
             Return inQueue.QueueAction(Sub() OnReceivePeerConnectionInfo(player:=player,
-                                                                         flags:=pickle.Value))
+                                                                         flags:=flags))
         End Function
 
         Private Sub OnReceivePeerConnectionInfo(ByVal player As IPlayerDownloadAspect, ByVal flags As UInt32)
