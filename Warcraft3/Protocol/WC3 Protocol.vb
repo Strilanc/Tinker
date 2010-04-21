@@ -211,7 +211,6 @@ Namespace WC3.Protocol
     Public Module Packets
         Public Const PacketPrefix As Byte = &HF7
 
-        '''<completionlist cref="Packets"/>
         Public MustInherit Class Definition
             Private ReadOnly _id As PacketId
             Private ReadOnly _jar As ISimpleJar
@@ -238,7 +237,6 @@ Namespace WC3.Protocol
                 End Get
             End Property
         End Class
-        '''<completionlist cref="Packets"/>
         Public NotInheritable Class Definition(Of T)
             Inherits Definition
             Private ReadOnly _jar As IJar(Of T)
