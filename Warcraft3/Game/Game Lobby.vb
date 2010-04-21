@@ -265,7 +265,7 @@
             Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
             'Add
-            Dim newPlayer = New Player(id, connectingPlayer, _kernel.Clock, _downloadManager, Logger)
+            Dim newPlayer = Player.MakeRemote(id, connectingPlayer, _kernel.Clock, _downloadManager, Logger)
             _slots = _slots.WithSlotsReplaced(slot.With(contents:=slot.Contents.WithPlayer(newPlayer)))
             _kernel.Players.Add(newPlayer)
             Logger.Log("{0} has entered the game.".Frmt(newPlayer.Name), LogMessageType.Positive)

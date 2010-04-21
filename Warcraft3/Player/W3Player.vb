@@ -71,16 +71,18 @@ Namespace WC3
 
         Public Sub New(ByVal id As PlayerId,
                        ByVal name As InvariantString,
-                       ByVal peerData As IReadableList(Of Byte),
+                       ByVal isFake As Boolean,
+                       ByVal logger As Logger,
                        ByVal peerKey As UInt32,
+                       ByVal peerData As IReadableList(Of Byte),
+                       ByVal listenPort As UInt16,
+                       ByVal packetHandler As Protocol.W3PacketHandler,
                        ByVal remoteEndPoint As Net.IPEndPoint,
                        ByVal taskTestCanHost As Task,
-                       ByVal isFake As Boolean,
-                       ByVal packetHandler As Protocol.W3PacketHandler,
-                       ByVal logger As Logger,
+                       Optional ByVal initialState As PlayerState = PlayerState.Lobby,
                        Optional ByVal pinger As Pinger = Nothing,
-                       Optional ByVal downloadManager As Download.Manager = Nothing,
-                       Optional ByVal socket As W3Socket = Nothing)
+                       Optional ByVal socket As W3Socket = Nothing,
+                       Optional ByVal downloadManager As Download.Manager = Nothing)
             Contract.Requires(peerData IsNot Nothing)
             Contract.Requires(remoteEndPoint IsNot Nothing)
             Contract.Requires(remoteEndPoint.Address IsNot Nothing)
@@ -90,18 +92,19 @@ Namespace WC3
             Me._id = id
             Me._name = name
             Me._isFake = isFake
-            Me._logger = Logger
+            Me._logger = logger
             Me._pinger = pinger
             Me._socket = socket
             Me._peerKey = peerKey
             Me._peerData = peerData
+            Me._listenPort = listenPort
             Me._packetHandler = packetHandler
             Me._remoteEndPoint = remoteEndPoint
             Me._taskTestCanHost = taskTestCanHost
             Me._downloadManager = downloadManager
+            Me._state = initialState
 
             Me._taskTestCanHost.IgnoreExceptions()
-            LobbyStart()
         End Sub
         '''<summary>Creates a fake player.</summary>
         Public Shared Function MakeFake(ByVal id As PlayerId,
@@ -113,63 +116,64 @@ Namespace WC3
             hostFail.SetException(New ArgumentException("Fake players can't host."))
             logger = If(logger, New Logger)
 
-            Return New Player(id:=id,
-                              name:=name,
-                              PeerData:=New Byte() {0}.AsReadableList,
-                              PeerKey:=0,
-                              RemoteEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
-                              taskTestCanHost:=hostFail.Task,
-                              IsFake:=True,
-                              logger:=logger,
-                              PacketHandler:=New Protocol.W3PacketHandler(name, logger))
+            Dim player = New Player(id:=id,
+                                    name:=name,
+                                    IsFake:=True,
+                                    logger:=logger,
+                                    PeerKey:=0,
+                                    PeerData:=New Byte() {0}.AsReadableList,
+                                    ListenPort:=0,
+                                    PacketHandler:=New Protocol.W3PacketHandler(name, logger),
+                                    RemoteEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
+                                    taskTestCanHost:=hostFail.Task)
+            Return player
         End Function
 
         '''<summary>Creates a real player.</summary>
-        Public Sub New(ByVal id As PlayerId,
-                       ByVal connectingPlayer As W3ConnectingPlayer,
-                       ByVal clock As IClock,
-                       ByVal downloadManager As Download.Manager,
-                       Optional ByVal logger As Logger = Nothing)
-            'Contract.Requires(game IsNot Nothing)
-            'Contract.Requires(connectingPlayer IsNot Nothing)
+        Public Shared Function MakeRemote(ByVal id As PlayerId,
+                                          ByVal connectingPlayer As W3ConnectingPlayer,
+                                          ByVal clock As IClock,
+                                          ByVal downloadManager As Download.Manager,
+                                          Optional ByVal logger As Logger = Nothing) As Player
             Contract.Assume(connectingPlayer IsNot Nothing)
+            Contract.Assume(connectingPlayer IsNot Nothing)
+            Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
 
-            Me._logger = If(logger, New Logger)
-            Me._packetHandler = New Protocol.W3PacketHandler(connectingPlayer.Name, Me._logger)
-            connectingPlayer.Socket.Logger = Me._logger
-            Me._peerKey = connectingPlayer.PeerKey
-            Me._peerData = connectingPlayer.PeerData
+            logger = If(logger, New Logger)
+            connectingPlayer.Socket.Logger = logger
+            Dim taskTestCanHost = AsyncTcpConnect(connectingPlayer.Socket.RemoteEndPoint.Address, connectingPlayer.ListenPort)
+            Dim pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
 
-            Me._downloadManager = downloadManager
-            Me._socket = connectingPlayer.Socket
-            Me._name = connectingPlayer.Name
-            Me._listenPort = connectingPlayer.ListenPort
-            Me._id = id
-            Me._remoteEndPoint = _socket.RemoteEndPoint
-            AddHandler _socket.Disconnected, AddressOf OnSocketDisconnected
+            Dim player = New Player(id:=id,
+                                    Name:=connectingPlayer.Name,
+                                    IsFake:=False,
+                                    logger:=logger,
+                                    PeerKey:=connectingPlayer.PeerKey,
+                                    PeerData:=connectingPlayer.PeerData,
+                                    ListenPort:=connectingPlayer.ListenPort,
+                                    packetHandler:=New Protocol.W3PacketHandler(connectingPlayer.Name, logger),
+                                    RemoteEndPoint:=connectingPlayer.Socket.RemoteEndPoint,
+                                    taskTestCanHost:=taskTestCanHost,
+                                    pinger:=pinger,
+                                    socket:=connectingPlayer.Socket,
+                                    downloadManager:=downloadManager)
 
-            AddRemotePacketHandler(Protocol.ClientPackets.Pong, Function(pickle)
-                                                                    _outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
-                                                                    Return _pinger.QueueReceivedPong(pickle.Value)
-                                                                End Function)
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.NonGameAction, AddressOf ReceiveNonGameAction)
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.Leaving, AddressOf ReceiveLeaving)
-            AddQueuedLocalPacketHandler(Protocol.PeerPackets.MapFileDataReceived, AddressOf IgnorePacket)
-            AddQueuedLocalPacketHandler(Protocol.PeerPackets.MapFileDataProblem, AddressOf IgnorePacket)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.NonGameAction, AddressOf player.ReceiveNonGameAction)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Leaving, AddressOf player.ReceiveLeaving)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Pong, AddressOf player.OnReceivePong)
+            player.AddQueuedLocalPacketHandler(Protocol.PeerPackets.MapFileDataReceived, AddressOf player.IgnorePacket)
+            player.AddQueuedLocalPacketHandler(Protocol.PeerPackets.MapFileDataProblem, AddressOf player.IgnorePacket)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf player.OnReceivePeerConnectionInfo)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf player.OnReceiveClientMapInfo)
+            player.AddRemotePacketHandler(Protocol.ClientPackets.Pong, Function(pickle) player._pinger.QueueReceivedPong(pickle.Value))
+            AddHandler connectingPlayer.Socket.Disconnected, AddressOf player.OnSocketDisconnected
+            AddHandler pinger.SendPing, Sub(sender, salt) player.QueueSendPacket(Protocol.MakePing(salt))
+            AddHandler pinger.Timeout, Sub(sender) player.QueueDisconnect(expected:=False,
+                                                                          reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
+                                                                          reasonDescription:="Stopped responding to pings.")
 
-            LobbyStart()
-
-            'Test hosting
-            Me._taskTestCanHost = AsyncTcpConnect(_socket.RemoteEndPoint.Address, ListenPort)
-            Me._taskTestCanHost.IgnoreExceptions()
-
-            'Pings
-            _pinger = New Pinger(period:=5.Seconds, timeoutCount:=10, clock:=clock)
-            AddHandler _pinger.SendPing, Sub(sender, salt) QueueSendPacket(Protocol.MakePing(salt))
-            AddHandler _pinger.Timeout, Sub(sender) QueueDisconnect(expected:=False,
-                                                                   reportedReason:=Protocol.PlayerLeaveReason.Disconnect,
-                                                                   reasonDescription:="Stopped responding to pings.")
-        End Sub
+            Return player
+        End Function
 
         Public ReadOnly Property Id As PlayerId Implements Download.IPlayerDownloadAspect.Id
             Get
@@ -322,6 +326,10 @@ Namespace WC3
             Return QueueDisconnect(expected:=True, reportedReason:=Protocol.PlayerLeaveReason.Disconnect, reasonDescription:="Disposed")
         End Function
 
+        Private Sub OnReceivePong(ByVal pickle As IPickle(Of UInt32))
+            _outQueue.QueueAction(Sub() RaiseEvent SuperficialStateUpdated(Me))
+        End Sub
+
 #Region "Lobby"
         <Pure()>
         <ContractVerification(False)>
@@ -329,12 +337,6 @@ Namespace WC3
             Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
             Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
         End Function
-
-        Private Sub LobbyStart()
-            _state = PlayerState.Lobby
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf OnReceivePeerConnectionInfo)
-            AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf OnReceiveClientMapInfo)
-        End Sub
 
         Private Sub OnReceivePeerConnectionInfo(ByVal flags As IPickle(Of UInt16))
             Contract.Requires(flags IsNot Nothing)
