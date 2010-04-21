@@ -45,13 +45,9 @@ Namespace WC3
         Public Property HasVotedToStart As Boolean
         Public Property AdminAttemptCount As Integer
 
+        Public Event SuperficialStateUpdated(ByVal sender As Player)
         Public Event StateUpdated(ByVal sender As Player)
         Public Event Disconnected(ByVal sender As Player, ByVal expected As Boolean, ByVal reportedReason As Protocol.PlayerLeaveReason, ByVal reasonDescription As String)
-        Public Event ReceivedGameActions(ByVal sender As Player, ByVal actions As IReadableList(Of Protocol.GameAction))
-        Public Event SuperficialStateUpdated(ByVal sender As Player)
-        Public Event ReceivedRequestDropLaggers(ByVal sender As Player)
-        Public Event ReceivedReady(ByVal sender As Player)
-        Public Event ReceivedNonGameAction(ByVal sender As Player, ByVal vals As NamedValueMap)
 
         <ContractInvariantMethod()> Private Sub ObjectInvariant()
             Contract.Invariant(_logger IsNot Nothing)
@@ -168,18 +164,22 @@ Namespace WC3
                                     socket:=socket,
                                     downloadManager:=downloadManager)
 
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.NonGameAction, AddressOf player.OnReceiveNonGameAction)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Leaving, AddressOf player.OnReceiveLeaving)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Pong, AddressOf player.OnReceivePong)
-            player.AddQueuedLocalPacketHandler(Protocol.PeerPackets.MapFileDataReceived, AddressOf player.IgnorePacket)
-            player.AddQueuedLocalPacketHandler(Protocol.PeerPackets.MapFileDataProblem, AddressOf player.IgnorePacket)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf player.OnReceivePeerConnectionInfo)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf player.OnReceiveClientMapInfo)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Ready, AddressOf player.OnReceiveReady)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.GameAction, AddressOf player.OnReceiveGameAction)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Tock, AddressOf player.OnReceiveTock)
-            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.RequestDropLaggers, AddressOf player.OnReceiveRequestDropLaggers)
+            'packets with no handler [within the Player class; received packets without a logger or handler kill the connection]
+            player.AddPacketLogger(Protocol.PeerPackets.MapFileDataProblem)
+            player.AddPacketLogger(Protocol.PeerPackets.MapFileDataReceived)
+            player.AddPacketLogger(Protocol.ClientPackets.NonGameAction)
+            player.AddPacketLogger(Protocol.ClientPackets.RequestDropLaggers)
+            player.AddPacketLogger(Protocol.ClientPackets.GameAction)
+
+            'packets with associated handler
             player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientConfirmHostLeaving, Sub() player.SendPacket(Protocol.MakeHostConfirmHostLeaving()))
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.ClientMapInfo, AddressOf player.OnReceiveClientMapInfo)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Leaving, AddressOf player.OnReceiveLeaving)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.PeerConnectionInfo, AddressOf player.OnReceivePeerConnectionInfo)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Pong, AddressOf player.OnReceivePong)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Ready, AddressOf player.OnReceiveReady)
+            player.AddQueuedLocalPacketHandler(Protocol.ClientPackets.Tock, AddressOf player.OnReceiveTock)
+
             player.AddRemotePacketHandler(Protocol.ClientPackets.Pong, AddressOf player._pinger.QueueReceivedPong)
             AddHandler socket.Disconnected, AddressOf player.OnSocketDisconnected
             AddHandler pinger.SendPing, Sub(sender, salt) player.QueueSendPacket(Protocol.MakePing(salt))
@@ -243,12 +243,16 @@ Namespace WC3
             End Get
         End Property
 
+        Private Sub AddPacketLogger(ByVal packetDefinition As Protocol.Packets.Definition)
+            Contract.Requires(packetDefinition IsNot Nothing)
+            _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
+        End Sub
         Private Function AddQueuedLocalPacketHandler(Of T)(ByVal packetDefinition As Protocol.Packets.Definition(Of T),
                                                            ByVal handler As Action(Of T)) As IDisposable
             Contract.Requires(packetDefinition IsNot Nothing)
             Contract.Requires(handler IsNot Nothing)
             Contract.Ensures(Contract.Result(Of IDisposable)() IsNot Nothing)
-            _packetHandler.AddLogger(packetDefinition.Id, packetDefinition.Jar)
+            AddPacketLogger(packetDefinition)
             Return _packetHandler.AddHandler(packetDefinition.Id, Function(data) _inQueue.QueueAction(Sub() handler(packetDefinition.Jar.Parse(data).Value)))
         End Function
 
@@ -369,7 +373,6 @@ Namespace WC3
         Private Sub OnReceiveReady(ByVal value As EmptyJar.EmptyValue)
             _ready = True
             _logger.Log("{0} is ready".Frmt(Name), LogMessageType.Positive)
-            _outQueue.QueueAction(Sub() RaiseEvent ReceivedReady(Me))
         End Sub
 
         Private Sub StartLoading()
@@ -412,14 +415,6 @@ Namespace WC3
             Return _inQueue.QueueAction(Sub() SendTick(record, actionStreaks))
         End Function
 
-        Private Sub OnReceiveRequestDropLaggers(ByVal value As EmptyJar.EmptyValue)
-            RaiseEvent ReceivedRequestDropLaggers(Me)
-        End Sub
-
-        Private Sub OnReceiveGameAction(ByVal actions As IReadableList(Of Protocol.GameAction))
-            Contract.Requires(actions IsNot Nothing)
-            _outQueue.QueueAction(Sub() RaiseEvent ReceivedGameActions(Me, actions))
-        End Sub
         Private Sub OnReceiveTock(ByVal vals As NamedValueMap)
             Contract.Requires(vals IsNot Nothing)
             If _tickQueue.Count <= 0 Then
@@ -447,14 +442,6 @@ Namespace WC3
 #End Region
 
 #Region "Part"
-        Private Sub OnReceiveNonGameAction(ByVal vals As NamedValueMap)
-            Contract.Requires(vals IsNot Nothing)
-            RaiseEvent ReceivedNonGameAction(Me, vals)
-        End Sub
-
-        Private Sub IgnorePacket(ByVal vals As NamedValueMap)
-        End Sub
-
         Private Sub OnReceiveLeaving(ByVal leaveType As Protocol.PlayerLeaveReason)
             Disconnect(True, leaveType, "Controlled exit with reported result: {0}".Frmt(leaveType))
         End Sub

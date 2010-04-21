@@ -72,8 +72,10 @@
 
             _lobby.StartPlayerHoldPoint.IncludeActionHandler(
                 Sub(newPlayer)
-                    AddHandler newPlayer.ReceivedRequestDropLaggers, Sub() _kernel.InQueue.QueueAction(Sub() OnDropLagger(newPlayer))
-                    AddHandler newPlayer.ReceivedGameActions, Sub(sender, actions) _kernel.InQueue.QueueAction(Sub() OnReceiveGameActions(sender, actions))
+                    newPlayer.QueueAddPacketHandler(Protocol.ClientPackets.RequestDropLaggers,
+                                                    handler:=Function() _kernel.InQueue.QueueAction(Sub() OnReceiveRequestDropLagger(newPlayer)))
+                    newPlayer.QueueAddPacketHandler(Protocol.ClientPackets.GameAction,
+                                                    handler:=Function(value) _kernel.InQueue.QueueAction(Sub() OnReceiveGameActions(newPlayer, value)))
                 End Sub)
         End Sub
 
@@ -108,7 +110,7 @@
             End If
         End Sub
 
-        Private Sub OnDropLagger(ByVal sender As Player)
+        Private Sub OnReceiveRequestDropLagger(ByVal sender As Player)
             For Each player In _laggingPlayers
                 Contract.Assume(player IsNot Nothing)
                 RaiseEvent RemovePlayer(Me, player, True, Protocol.PlayerLeaveReason.Disconnect, "Lagger dropped")

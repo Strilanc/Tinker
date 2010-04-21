@@ -46,7 +46,9 @@
 
             For Each player In _kernel.Players
                 Contract.Assume(player IsNot Nothing)
-                AddHandler player.ReceivedReady, Sub(sender) _kernel.InQueue.QueueAction(Sub() OnReceiveReady(sender))
+                Dim p_ = player
+                player.QueueAddPacketHandler(Protocol.ClientPackets.Ready,
+                                             handler:=Function(value) _kernel.InQueue.QueueAction(Sub() OnReceiveReady(p_)))
                 player.QueueStartLoading()
             Next player
 

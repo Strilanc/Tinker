@@ -142,7 +142,7 @@ Namespace WC3
                     AddHandler newPlayer.Disconnected, Sub(player, expected, reportedReason, reasonDescription) _kernel.InQueue.QueueAction(Sub() RemovePlayer(player, expected, reportedReason, reasonDescription))
                     AddHandler newPlayer.SuperficialStateUpdated, Sub() QueueThrowUpdated()
                     AddHandler newPlayer.StateUpdated, Sub() _kernel.InQueue.QueueAction(AddressOf _lobby.ThrowChangedPublicState)
-                    AddHandler newPlayer.ReceivedNonGameAction, Sub(player, values) _kernel.InQueue.QueueAction(Sub() ReceiveNonGameAction(player, values))
+                    newPlayer.QueueAddPacketHandler(Protocol.ClientPackets.NonGameAction, Function(vals) _kernel.InQueue.QueueAction(Sub() ReceiveNonGameAction(newPlayer, vals)))
 
                     If Settings.Greeting <> "" Then
                         _lobby.SendMessageTo(message:=Settings.Greeting, player:=newPlayer, display:=False)
