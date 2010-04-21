@@ -50,7 +50,7 @@ Friend Module SharedTestObjects
             Map:=TestMap,
             GameDescription:=TestDesc,
             argument:=TestArgument)
-    Friend ReadOnly TestPlayer As New Player(
+    Friend ReadOnly TestPlayer As Player = Player.MakeFake(
         id:=New PlayerId(1),
         name:="test")
 End Module

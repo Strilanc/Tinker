@@ -193,7 +193,7 @@
             _freeIndexes.Remove(index)
 
             'Make player
-            Dim newPlayer = New Player(index, name, Logger)
+            Dim newPlayer = Player.MakeFake(index, name, Logger)
             If slot IsNot Nothing Then
                 _slots = _slots.WithSlotsReplaced(slot.Value.With(contents:=New SlotContentsPlayer(newPlayer)))
             End If

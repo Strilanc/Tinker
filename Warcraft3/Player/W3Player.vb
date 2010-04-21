@@ -21,6 +21,7 @@ Namespace WC3
         Private ReadOnly _peerKey As UInt32
         Private ReadOnly _peerData As IReadableList(Of Byte)
         Private ReadOnly _listenPort As UShort
+        Private ReadOnly _remoteEndPoint As Net.IPEndPoint
 
         Private ReadOnly _isFake As Boolean
         Private ReadOnly _logger As Logger
@@ -57,6 +58,8 @@ Namespace WC3
             Contract.Invariant(_outQueue IsNot Nothing)
             Contract.Invariant(_tickQueue IsNot Nothing)
             Contract.Invariant(_packetHandler IsNot Nothing)
+            Contract.Invariant(_remoteEndPoint IsNot Nothing)
+            Contract.Invariant(_remoteEndPoint.Address IsNot Nothing)
             Contract.Invariant(_taskTestCanHost IsNot Nothing)
 
             Contract.Invariant(_socket Is Nothing = IsFake)
@@ -66,23 +69,60 @@ Namespace WC3
             Contract.Invariant(_numPeerConnections <= 12)
         End Sub
 
-        '''<summary>Creates a fake player.</summary>
         Public Sub New(ByVal id As PlayerId,
                        ByVal name As InvariantString,
-                       Optional ByVal logger As Logger = Nothing)
+                       ByVal peerData As IReadableList(Of Byte),
+                       ByVal peerKey As UInt32,
+                       ByVal remoteEndPoint As Net.IPEndPoint,
+                       ByVal taskTestCanHost As Task,
+                       ByVal isFake As Boolean,
+                       ByVal packetHandler As Protocol.W3PacketHandler,
+                       ByVal logger As Logger,
+                       Optional ByVal pinger As Pinger = Nothing,
+                       Optional ByVal downloadManager As Download.Manager = Nothing,
+                       Optional ByVal socket As W3Socket = Nothing)
+            Contract.Requires(peerData IsNot Nothing)
+            Contract.Requires(remoteEndPoint IsNot Nothing)
+            Contract.Requires(remoteEndPoint.Address IsNot Nothing)
+            Contract.Requires(taskTestCanHost IsNot Nothing)
+            Contract.Requires(logger IsNot Nothing)
             If name.Length > Protocol.Packets.MaxPlayerNameLength Then Throw New ArgumentException("Player name must be less than 16 characters long.")
-            Me._logger = If(logger, New Logger)
-            Me._packetHandler = New Protocol.W3PacketHandler(name, Me._logger)
             Me._id = id
-            Me._peerData = New Byte() {0}.AsReadableList
             Me._name = name
-            Me._isFake = True
+            Me._isFake = isFake
+            Me._logger = Logger
+            Me._pinger = pinger
+            Me._socket = socket
+            Me._peerKey = peerKey
+            Me._peerData = peerData
+            Me._packetHandler = packetHandler
+            Me._remoteEndPoint = remoteEndPoint
+            Me._taskTestCanHost = taskTestCanHost
+            Me._downloadManager = downloadManager
+
+            Me._taskTestCanHost.IgnoreExceptions()
             LobbyStart()
+        End Sub
+        '''<summary>Creates a fake player.</summary>
+        Public Shared Function MakeFake(ByVal id As PlayerId,
+                                        ByVal name As InvariantString,
+                                        Optional ByVal logger As Logger = Nothing) As Player
+            Contract.Ensures(Contract.Result(Of Player)() IsNot Nothing)
+
             Dim hostFail = New TaskCompletionSource(Of Boolean)
             hostFail.SetException(New ArgumentException("Fake players can't host."))
-            Me._taskTestCanHost = hostFail.Task
-            Me._taskTestCanHost.IgnoreExceptions()
-        End Sub
+            logger = If(logger, New Logger)
+
+            Return New Player(id:=id,
+                              name:=name,
+                              PeerData:=New Byte() {0}.AsReadableList,
+                              PeerKey:=0,
+                              RemoteEndPoint:=New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0),
+                              taskTestCanHost:=hostFail.Task,
+                              IsFake:=True,
+                              logger:=logger,
+                              PacketHandler:=New Protocol.W3PacketHandler(name, logger))
+        End Function
 
         '''<summary>Creates a real player.</summary>
         Public Sub New(ByVal id As PlayerId,
@@ -105,6 +145,7 @@ Namespace WC3
             Me._name = connectingPlayer.Name
             Me._listenPort = connectingPlayer.ListenPort
             Me._id = id
+            Me._remoteEndPoint = _socket.RemoteEndPoint
             AddHandler _socket.Disconnected, AddressOf OnSocketDisconnected
 
             AddRemotePacketHandler(Protocol.ClientPackets.Pong, Function(pickle)
@@ -130,21 +171,6 @@ Namespace WC3
                                                                    reasonDescription:="Stopped responding to pings.")
         End Sub
 
-        Public ReadOnly Property PeerKey As UInt32
-            Get
-                Return _peerKey
-            End Get
-        End Property
-        Public ReadOnly Property IsFake As Boolean
-            Get
-                Return _isFake
-            End Get
-        End Property
-        Public ReadOnly Property IsReady As Boolean
-            Get
-                Return isFake OrElse _ready
-            End Get
-        End Property
         Public ReadOnly Property Id As PlayerId Implements Download.IPlayerDownloadAspect.Id
             Get
                 Return _id
@@ -155,9 +181,28 @@ Namespace WC3
                 Return _name
             End Get
         End Property
-        Public ReadOnly Property ListenPort As UShort
+        Public ReadOnly Property IsFake As Boolean
             Get
-                Return _listenPort
+                Return _isFake
+            End Get
+        End Property
+        Public ReadOnly Property IsReady As Boolean
+            Get
+                Return IsFake OrElse _ready
+            End Get
+        End Property
+        Public ReadOnly Property CanHost As HostTestResult
+            Get
+                Select Case _taskTestCanHost.Status
+                    Case TaskStatus.Faulted : Return HostTestResult.Fail
+                    Case TaskStatus.RanToCompletion : Return HostTestResult.Pass
+                    Case Else : Return HostTestResult.Test
+                End Select
+            End Get
+        End Property
+        Public ReadOnly Property PeerKey As UInt32
+            Get
+                Return _peerKey
             End Get
         End Property
         Public ReadOnly Property PeerData As IReadableList(Of Byte)
@@ -166,22 +211,16 @@ Namespace WC3
                 Return _peerData
             End Get
         End Property
-        Public ReadOnly Property CanHost() As HostTestResult
+        Public ReadOnly Property ListenPort As UShort
             Get
-                Dim testState = _taskTestCanHost.Status
-                Select Case testState
-                    Case TaskStatus.Faulted : Return HostTestResult.Fail
-                    Case TaskStatus.RanToCompletion : Return HostTestResult.Pass
-                    Case Else : Return HostTestResult.Test
-                End Select
+                Return _listenPort
             End Get
         End Property
         Public ReadOnly Property RemoteEndPoint As Net.IPEndPoint
             Get
                 Contract.Ensures(Contract.Result(Of Net.IPEndPoint)() IsNot Nothing)
                 Contract.Ensures(Contract.Result(Of Net.IPEndPoint)().Address IsNot Nothing)
-                If isFake Then Return New Net.IPEndPoint(New Net.IPAddress({0, 0, 0, 0}), 0)
-                Return _socket.RemoteEndPoint
+                Return _remoteEndPoint
             End Get
         End Property
 
@@ -226,7 +265,7 @@ Namespace WC3
                                ByVal reportedReason As Protocol.PlayerLeaveReason,
                                ByVal reasonDescription As String)
             Contract.Requires(reasonDescription IsNot Nothing)
-            If Not Me.isFake Then
+            If Not Me.IsFake Then
                 _socket.Disconnect(expected, reasonDescription)
             End If
             If _pinger IsNot Nothing Then _pinger.Dispose()
@@ -239,7 +278,7 @@ Namespace WC3
 
         Private Sub SendPacket(ByVal pk As Protocol.Packet)
             Contract.Requires(pk IsNot Nothing)
-            If Me.isFake Then Return
+            If Me.IsFake Then Return
             _socket.SendPacket(pk)
         End Sub
         Public Function QueueSendPacket(ByVal packet As Protocol.Packet) As Task Implements Download.IPlayerDownloadAspect.QueueSendPacket
@@ -288,7 +327,7 @@ Namespace WC3
         <ContractVerification(False)>
         Public Function MakePacketOtherPlayerJoined() As Protocol.Packet Implements Download.IPlayerDownloadAspect.MakePacketOtherPlayerJoined
             Contract.Ensures(Contract.Result(Of Protocol.Packet)() IsNot Nothing)
-            Return Protocol.MakeOtherPlayerJoined(Name, Id, peerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
+            Return Protocol.MakeOtherPlayerJoined(Name, Id, PeerKey, PeerData, New Net.IPEndPoint(RemoteEndPoint.Address, ListenPort))
         End Function
 
         Private Sub LobbyStart()
@@ -344,7 +383,7 @@ Namespace WC3
                              ByVal actionStreaks As IEnumerable(Of IReadableList(Of Protocol.PlayerActionSet)))
             Contract.Requires(actionStreaks IsNot Nothing)
             Contract.Requires(record IsNot Nothing)
-            If isFake Then Return
+            If IsFake Then Return
             _tickQueue.Enqueue(record)
             _maxTockTime += record.length
             For Each preOverflowActionStreak In actionStreaks.SkipLast(1)
@@ -419,7 +458,7 @@ Namespace WC3
         Public ReadOnly Property AdvertisedDownloadPercent() As Byte
             Get
                 If _state <> PlayerState.Lobby Then Return 100
-                If isFake OrElse _downloadManager Is Nothing Then Return 254 'Not a real player, show "|CF"
+                If IsFake OrElse _downloadManager Is Nothing Then Return 254 'Not a real player, show "|CF"
                 If _reportedDownloadPosition Is Nothing Then Return 255
                 Return CByte((_reportedDownloadPosition * 100UL) \ _downloadManager.FileSize)
             End Get
